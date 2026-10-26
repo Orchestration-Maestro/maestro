@@ -61,11 +61,6 @@ const KEEPALIVE: Duration = Duration::from_millis(1000);
 /// The environment variable naming the write log.
 const LOG_VARIABLE: &str = "MAESTRO_TUI_WRITE_LOG";
 
-/// Writes synchronously through the shared byte advancement when no writer is running.
-pub(super) fn emit(text: &str) -> io::Result<()> {
-    super::tty_writer::write_sync(text)
-}
-
 /// The first failure among `steps` that have already run, if any.
 pub(super) fn first_failure(steps: impl IntoIterator<Item = io::Result<()>>) -> io::Result<()> {
     steps.into_iter().fold(Ok(()), Result::and)

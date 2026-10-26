@@ -232,6 +232,8 @@ impl State {
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
+            Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
+            Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => {
@@ -402,7 +404,7 @@ impl State {
     }
 
     /// Retains the same admission while an already-selected operation settles.
-    fn admit(&self, work: Work, admission: Admission) {
+    pub(super) fn admit(&self, work: Work, admission: Admission) {
         self.stage(Box::pin(async move {
             work.await;
             drop(admission);
@@ -446,7 +448,7 @@ impl State {
     fn ui(&self, id: u64, request: crate::ui_reads::Request) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Ui(ui)) = capability.as_deref() {
-            request.answer(ui);
+            request.answer(ui, &self.registry);
         } else {
             request.reject("extension UI resource ended");
         }

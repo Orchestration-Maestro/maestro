@@ -38,12 +38,80 @@ pub(crate) enum Request {
     SetEditorText(String, Reply),
     /// Reads the original editor's current text.
     GetEditorText(Sender<Result<String, String>>),
+    /// Looks up, selects or reports themes and tool expansion on the original UI.
+    Theme(crate::ui_themes::ThemeRequest),
+    /// Replaces the footer with the component an authored factory builds, or restores it.
+    Footer(
+        Option<crate::guest_calls::Handle>,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
+    /// Replaces the header with the component an authored factory builds, or restores it.
+    Header(
+        Option<crate::guest_calls::Handle>,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
+    /// Shows the component an authored factory builds under one widget key.
+    WidgetFactory(
+        String,
+        crate::guest_calls::Handle,
+        crate::api_reads::Endpoint,
+        Option<ExtensionWidgetOptions>,
+        Reply,
+    ),
+    /// Adds an authored terminal input listener under the original extension.
+    OnTerminalInput(
+        crate::guest_calls::Handle,
+        crate::api_reads::Endpoint,
+        Sender<Result<crate::local_resources::effects::SubscriptionEndpoint, String>>,
+    ),
 }
 
 impl Request {
     /// Calls the original native UI outside all capability-table borrows.
-    pub(crate) fn answer(self, ui: &ExtensionUIContext) {
+    pub(crate) fn answer(
+        self,
+        ui: &ExtensionUIContext,
+        registry: &crate::local_resources::Registry,
+    ) {
         let (result, reply) = match self {
+            Self::OnTerminalInput(handler, api, reply) => {
+                let _ = reply.send(registry.terminal_input(ui, handler, &api));
+                return;
+            }
+            Self::Theme(request) => {
+                request.answer(ui, registry);
+                return;
+            }
+            Self::Footer(factory, api, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory =
+                        factory.map(|factory| factory.footer_factory(registry.clone(), &api));
+                    ui.set_footer(factory).map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
+                return;
+            }
+            Self::Header(factory, api, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory =
+                        factory.map(|factory| factory.component_factory(registry.clone(), &api));
+                    ui.set_header(factory).map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
+                return;
+            }
+            Self::WidgetFactory(key, factory, api, options, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory = factory.component_factory(registry.clone(), &api);
+                    let content = Some(WidgetContent::Factory(factory));
+                    ui.set_widget(key, content, options)
+                        .map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
+                return;
+            }
             Self::Notify(message, kind, reply) => (ui.notify(message, kind), reply),
             Self::Status(key, text, reply) => (ui.set_status(key, text), reply),
             Self::WorkingMessage(message, reply) => (ui.set_working_message(message), reply),
@@ -71,7 +139,14 @@ impl Request {
             Self::GetEditorText(reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
-            Self::Notify(_, _, reply)
+            Self::OnTerminalInput(_, _, reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+            Self::Theme(request) => request.reject(error),
+            Self::WidgetFactory(.., reply)
+            | Self::Header(_, _, reply)
+            | Self::Footer(_, _, reply)
+            | Self::Notify(_, _, reply)
             | Self::Status(_, _, reply)
             | Self::WorkingMessage(_, reply)
             | Self::WorkingVisible(_, reply)
@@ -87,9 +162,100 @@ impl Request {
     }
 }
 
+/// Settles one dialog with its own answer type.
+type Answer<T> = tokio::sync::oneshot::Sender<Result<T, String>>;
+
+/// One dialog on the original UI, with the reply its answer settles.
+pub(crate) enum Dialog {
+    /// Shows a selector over ordered literal choices.
+    Select(String, Vec<String>, Answer<Option<String>>),
+    /// Asks for confirmation of a literal message.
+    Confirm(String, String, Answer<bool>),
+    /// Reads one line with an optional placeholder.
+    Input(String, Option<String>, Answer<Option<String>>),
+    /// Reads several lines with optional prefilled text.
+    Editor(String, Option<String>, Answer<Option<String>>),
+}
+
+/// A dialog with its independently retained cancellation and unchanged timeout.
+pub(crate) struct DialogRequest {
+    /// The dialog and its reply.
+    pub(crate) dialog: Dialog,
+    /// Original native signal, resolved on the local owner.
+    pub(crate) signal: Option<crate::local_resources::SignalEndpoint>,
+    /// Caller milliseconds.
+    pub(crate) timeout: Option<f64>,
+}
+
+impl DialogRequest {
+    /// Starts the dialog on the original UI and settles its reply when it ends.
+    pub(crate) fn start(
+        self,
+        ui: &ExtensionUIContext,
+        signal: Option<maestro_extensions::Cancellation>,
+    ) -> crate::local_resources::Work {
+        let opts = Some(maestro_extensions::ExtensionUIDialogOptions {
+            signal,
+            timeout: self.timeout,
+        });
+        match self.dialog {
+            Dialog::Select(title, options, reply) => settle(ui.select(title, options, opts), reply),
+            Dialog::Confirm(title, message, reply) => {
+                settle(ui.confirm(title, message, opts), reply)
+            }
+            Dialog::Input(title, placeholder, reply) => {
+                settle(ui.input(title, placeholder, opts), reply)
+            }
+            Dialog::Editor(title, prefill, reply) => settle(ui.editor(title, prefill), reply),
+        }
+    }
+
+    /// Settles the dialog with `error` without starting it.
+    pub(crate) fn reject(self, error: &str) {
+        let error = error.to_owned();
+        let _ = match self.dialog {
+            Dialog::Select(.., reply) | Dialog::Input(.., reply) | Dialog::Editor(.., reply) => {
+                reply.send(Err(error)).is_ok()
+            }
+            Dialog::Confirm(.., reply) => reply.send(Err(error)).is_ok(),
+        };
+    }
+}
+
+/// Settles `reply` with the dialog's answer or the host's message.
+fn settle<T: 'static>(
+    dialog: maestro_extensions::types::ExtensionUIFuture<T>,
+    reply: Answer<T>,
+) -> crate::local_resources::Work {
+    Box::pin(async move {
+        let _ = reply.send(dialog.await.map_err(|error| error.to_string()));
+    })
+}
+
 /// Store-safe ownership of the originally acquired local UI.
 #[derive(Clone)]
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+
+impl Endpoint {
+    /// Admits one dialog on the original local owner and waits for its answer.
+    pub(crate) async fn dialog<T>(
+        &self,
+        dialog: impl FnOnce(Answer<T>) -> Dialog,
+        signal: Option<crate::local_resources::SignalEndpoint>,
+        timeout: Option<f64>,
+    ) -> Result<T, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                let request = DialogRequest {
+                    dialog: dialog(reply),
+                    signal,
+                    timeout,
+                };
+                Message::Dialog(id, request, admission)
+            })
+            .await
+    }
+}
 
 impl crate::read_imports::ReadEndpoint for Endpoint {
     type Request = Request;

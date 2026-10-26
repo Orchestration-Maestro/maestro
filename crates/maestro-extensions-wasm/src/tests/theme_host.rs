@@ -286,6 +286,21 @@ impl host::HostTheme for State {
             .theme_text(&this, "getColorMode", &json!([]))?
             .map(|text| mode(&text)))
     }
+    fn thinking_border(
+        &mut self,
+        this: Resource<Theme>,
+        level: String,
+        text: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        self.theme_text(&this, "thinkingBorder", &json!([level, text]))
+    }
+    fn bash_mode_border(
+        &mut self,
+        this: Resource<Theme>,
+        text: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        self.theme_text(&this, "bashModeBorder", &json!([text]))
+    }
     fn drop(&mut self, this: Resource<Theme>) -> wasmtime::Result<()> {
         let key = self.table.get(&this)?.0.clone();
         self.observed.log(format!("theme-drop {key}"));

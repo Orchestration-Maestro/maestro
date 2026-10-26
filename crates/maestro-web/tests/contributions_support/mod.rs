@@ -111,6 +111,16 @@ pub(crate) async fn until(module: &JsValue, target: &Node, ready: impl Fn() -> b
         call(module, "changed", &js_sys::Array::of1(target)).await;
     }
 }
+/// A meter reading the UTF-16 code units that changes below `target` published since its
+/// previous reading, outside elements matching a nonempty `skip` selector.
+pub(crate) async fn published(module: &JsValue, target: &Node, skip: &str) -> impl Fn() -> f64 {
+    let measure = call(module, "written", &js_sys::Array::of1(&skip.into())).await;
+    let take: js_sys::Function = call(module, "recorder", &js_sys::Array::of2(target, &measure))
+        .await
+        .dyn_into()
+        .unwrap();
+    move || take.call0(&JsValue::NULL).unwrap().as_f64().unwrap()
+}
 /// Call a driver binding the harness exposes on the page.
 pub(crate) async fn driver(name: &str, argument: &str) -> JsValue {
     let window = web_sys::window().unwrap();
@@ -260,4 +270,18 @@ pub(crate) fn select(node: &Node, selector: &str) -> Element {
         .query_selector(selector)
         .unwrap()
         .unwrap_or_else(|| panic!("missing {selector}"))
+}
+/// Whether `element` holds the page focus.
+pub(crate) fn focused(element: &Element) -> bool {
+    document()
+        .active_element()
+        .is_some_and(|active| active.is_same_node(Some(element)))
+}
+/// The disclosure button of a collapsible tool header row, absent from a plain header.
+pub(crate) fn disclosure(header: &Node) -> Option<HtmlElement> {
+    header
+        .unchecked_ref::<Element>()
+        .query_selector(":scope > button.maestro-tool-chevron")
+        .unwrap()
+        .map(wasm_bindgen::JsCast::unchecked_into)
 }

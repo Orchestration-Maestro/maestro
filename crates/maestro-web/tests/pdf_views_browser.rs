@@ -1,11 +1,8 @@
 //! Real browser PDF pages, native errors and surface transitions.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::support;
-use maestro_web::{
-    AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
-};
+use maestro_web::browser::attachment_content::*;
 use num_traits::ToPrimitive as _;
-use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::*};
 /// Original complete fixture bytes.
 fn bytes(multi: bool) -> &'static [u8] {
@@ -16,25 +13,12 @@ fn bytes(multi: bool) -> &'static [u8] {
     }
 }
 /// Original encoded bytes for either public consumer.
-fn encoded(multi: bool) -> String {
+pub(crate) fn encoded(multi: bool) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
 use crate::reading_browser_support;
 use reading_browser_support::{View, check, click, js, run};
-/// Original aliased PDF attachment.
-fn record() -> Rc<RefCell<maestro_web::Attachment>> {
-    Rc::new(RefCell::new(maestro_web::Attachment {
-        id: "same".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
-        file_name: "original.pdf".into(),
-        mime_type: "application/pdf".into(),
-        size: bytes(true).len(),
-        content: encoded(true),
-        extracted_text: Some("literal text".into()),
-        preview: None,
-    }))
-}
 /// All native pages retain original order, raster dimensions and bounded geometry.
 #[wasm_bindgen]
 pub fn pdf_native_pages_keep_order_geometry_and_separators() {
@@ -78,16 +62,6 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
             "document.querySelector('.maestro-pdf').parentElement.getBoundingClientRect().width<=2",
         );
     }
-    view.size = egui::vec2(400., 300.);
-    let generic = create_artifact_element("a.zip", "", view.host.clone()).unwrap();
-    drop(std::mem::replace(&mut view.element, generic));
-    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
-    for _ in 0..3 {
-        view.overlay(&mut overlay, vec![]);
-    }
-    check(
-        "(()=>{const r=document.querySelector('.maestro-pdf');return getComputedStyle(r).padding==='0px'&&r.querySelectorAll('img').length===3&&[...r.querySelectorAll('img')].every((p,i)=>p.src===pages[i])&&r.getBoundingClientRect().width<=1000})()",
-    );
 }
 
 /// Artifact separators keep the source's collapsed page margins.
@@ -102,22 +76,9 @@ pub fn pdf_artifact_native_page_gap_follows_source_spacing() {
     );
 }
 
-/// Overlay separators keep the source's collapsed page margins.
+/// The artifact viewport paints the page background without a frame or shadow.
 #[wasm_bindgen]
-pub fn pdf_overlay_native_page_gap_follows_source_spacing() {
-    let view = View::new("current.pdf", &encoded(true));
-    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
-    for _ in 0..4 {
-        view.overlay(&mut overlay, vec![]);
-    }
-    check(
-        "(()=>{const p=[...document.querySelectorAll('.maestro-pdf img')];return p.length===3&&p.slice(1).every((p,i)=>Math.abs(p.getBoundingClientRect().top-document.querySelectorAll('.maestro-pdf img')[i].getBoundingClientRect().bottom-33)<0.5)})()",
-    );
-}
-
-/// The native overlay viewport owns panel chrome independently of the artifact.
-#[wasm_bindgen]
-pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
+pub fn pdf_artifact_native_viewport_keeps_background_without_frame() {
     let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
         view.pack = support::brand::pack(pack).unwrap();
@@ -126,41 +87,6 @@ pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
             maestro_theme::BrandMode::Light,
         ] {
             view.mode = mode;
-            let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
-            for _ in 0..4 {
-                view.overlay(&mut overlay, vec![]);
-            }
-            check(
-                r"(()=>{
-                    const content=document.querySelector('.maestro-pdf:not(.maestro-pdf-artifact)');
-                    const viewport=content.parentElement, style=getComputedStyle(viewport);
-                    const bounds=viewport.getBoundingClientRect();
-                    const page=content.querySelector('img'), before=page.getBoundingClientRect();
-                    const probe=document.createElement('div');
-                    viewport.append(probe);
-                    probe.style.background='var(--maestro-color-panel)';
-                    probe.style.border='1px solid var(--maestro-color-border)';
-                    const expected=getComputedStyle(probe);
-                    const framed=style.backgroundColor===expected.backgroundColor
-                        && ['Top','Right','Bottom','Left'].every(edge=>
-                            style['border'+edge+'Color']===expected.borderTopColor
-                            && Math.abs(parseFloat(style['border'+edge+'Width'])-1)<0.5
-                            && style['border'+edge+'Style']==='solid');
-                    probe.remove();
-                    if(!framed) throw Error('bounded viewport has no panel frame');
-                    if(style.overflowY!=='auto' || bounds.height<=0 || bounds.bottom>800
-                        || bounds.top<0 || content.getBoundingClientRect().height<=bounds.height)
-                        throw Error('fixture must overflow a visible bounded viewport');
-                    viewport.scrollTop=80;
-                    const after=viewport.getBoundingClientRect(), moved=page.getBoundingClientRect();
-                    return viewport.scrollTop>0
-                        && Math.abs(before.top-moved.top-viewport.scrollTop)<0.5
-                        && ['top','right','bottom','left'].every(edge=>Math.abs(bounds[edge]-after[edge])<0.5)
-                        && getComputedStyle(viewport).borderBottomStyle==='solid'
-                        && getComputedStyle(content).borderTopWidth==='0px';
-                })()",
-            );
-            drop(overlay);
             view.draw(false, vec![]);
             check(
                 "(()=>{const r=document.querySelector('.maestro-pdf-artifact'),s=getComputedStyle(r),p=document.createElement('div');r.append(p);p.style.background='var(--maestro-color-background)';const ok=s.backgroundColor===getComputedStyle(p).backgroundColor&&s.borderTopWidth==='0px'&&s.boxShadow==='none';p.remove();return ok})()",
@@ -229,27 +155,6 @@ pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
             .unwrap(),
         "Erreur PDF"
     );
-    let generic = create_artifact_element("a.zip", "", view.host.clone()).unwrap();
-    drop(std::mem::replace(&mut view.element, generic));
-    *view.host.failure.borrow_mut() = Some("<script>literal 雪 & quotes</script>".repeat(80));
-    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error h3').textContent")
-            .as_string()
-            .unwrap(),
-        "Erreur fichier"
-    );
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error p').textContent")
-            .as_string()
-            .unwrap(),
-        "<script>literal 雪 & quotes</script>".repeat(80)
-    );
-    check(
-        "(()=>{const r=document.querySelector('.maestro-file-error'),p=r.querySelector('div'),a=r.getBoundingClientRect(),b=p.getBoundingClientRect();return !r.querySelector('script')&&b.width<=672&&Math.abs(a.left+a.width/2-b.left-b.width/2)<1&&getComputedStyle(r).padding==='0px'&&getComputedStyle(p.querySelector('p')).whiteSpace==='pre-wrap'})()",
-    );
 }
 
 /// Edits cancel partial documents; the real header saves only current bytes.
@@ -311,113 +216,6 @@ pub fn pdf_native_clear_while_rendering_keeps_completed_pages() {
     );
 }
 
-/// Existing overlay failure triggers and details survive the native-text move.
-#[wasm_bindgen]
-pub fn overlay_native_errors_preserve_existing_behaviour() {
-    let view = View::new("current.pdf", &encoded(true));
-    let record = record();
-    *view.host.failure.borrow_mut() = Some("preview failure".into());
-    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error h3').textContent")
-            .as_string()
-            .unwrap(),
-        "Error loading file"
-    );
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error p').textContent")
-            .as_string()
-            .unwrap(),
-        "preview failure"
-    );
-    run(
-        "globalThis.errorRoot=document.querySelector('.maestro-file-error');const range=document.createRange();range.selectNodeContents(errorRoot.querySelector('p'));getSelection().removeAllRanges();getSelection().addRange(range)",
-    );
-    for mime in [
-        "image/png",
-        "text/plain",
-        "presentationml",
-        "wordprocessingml",
-        "ms-excel",
-    ] {
-        record.borrow_mut().mime_type = mime.into();
-        record.borrow_mut().content = "record edits must not retry loading".into();
-        view.overlay(&mut overlay, vec![]);
-        check(
-            "errorRoot===document.querySelector('.maestro-file-error')&&getSelection().toString()==='preview failure'&&!document.querySelector('.maestro-pdf')&&errorRoot.querySelector('div').getBoundingClientRect().width<=672",
-        );
-    }
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().content = encoded(true);
-    view.overlay(&mut overlay, vec![]);
-    assert_overlay_text_failure(&view, &mut overlay, &record);
-    drop(overlay);
-    assert_presentation_failure(&view, &record);
-    assert_empty_error_and_save_failure(&view, &record);
-}
-
-/// Non-reading transitions release old roots, including same-tag previews.
-#[wasm_bindgen]
-pub fn reading_content_switches_release_old_native_roots() {
-    let view = View::new("current.pdf", &encoded(true));
-    let record = record();
-    // Warm up the overlay controls without consuming a PDF frame.
-    record.borrow_mut().mime_type = "text/plain".into();
-    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    record.borrow_mut().mime_type = "application/pdf".into();
-    view.overlay(&mut overlay, vec![]);
-    check("document.querySelectorAll('.maestro-pdf img').length===1");
-    run(
-        "globalThis.oldRoot=document.querySelector('.maestro-pdf');globalThis.firstPage=oldRoot.querySelector('img').src;",
-    );
-    view.toggle(&mut overlay, "Text");
-    check(
-        "!oldRoot.isConnected&&[...document.querySelectorAll('pre')].some(p=>p.textContent==='literal text')",
-    );
-    view.toggle(&mut overlay, "PDF");
-    check(
-        "document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf img').src===firstPage",
-    );
-    for mime in ["text/plain", "image/png", "wordprocessingml"] {
-        run("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
-        record.borrow_mut().mime_type = mime.into();
-        record.borrow_mut().r#type = if mime == "image/png" {
-            maestro_app::browser::utils::attachment_utils::AttachmentType::Image
-        } else {
-            maestro_app::browser::utils::attachment_utils::AttachmentType::Document
-        };
-        view.overlay(&mut overlay, vec![]);
-        check("!oldRoot.isConnected&&!document.querySelector('.maestro-pdf')");
-        record.borrow_mut().mime_type = "application/pdf".into();
-        record.borrow_mut().r#type =
-            maestro_app::browser::utils::attachment_utils::AttachmentType::Document;
-        view.overlay(&mut overlay, vec![]);
-        check(
-            "document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf').isConnected",
-        );
-    }
-    *view.host.failure.borrow_mut() = Some("failure".into());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    check(
-        "document.querySelector('.maestro-file-error h3').textContent==='Error loading file'&&document.querySelector('.maestro-file-error p').textContent==='failure'",
-    );
-    run("globalThis.oldError=document.querySelector('.maestro-file-error')");
-    view.toggle(&mut overlay, "Text");
-    check("!oldError.isConnected&&!document.querySelector('.maestro-file-error')");
-    view.toggle(&mut overlay, "PDF");
-    check("document.querySelectorAll('.maestro-pdf img').length===1");
-    run("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
-    drop(overlay);
-    check(
-        "!lastRoot.isConnected&&!document.querySelector('.maestro-pdf')&&!document.querySelector('.maestro-file-error')",
-    );
-}
-
 /// Check literal diagnostics, caller styling and selection in the current mode.
 fn assert_artifact_error_chrome(view: &mut View) {
     view.element.set_content("Zg==".into());
@@ -476,148 +274,6 @@ fn assert_complete_pdf_encodings(view: &mut View) {
     }
 }
 
-/// Text failures stay dominant, including when native error publication fails.
-fn assert_overlay_text_failure(
-    view: &View,
-    overlay: &mut AttachmentOverlay,
-    record: &Rc<RefCell<maestro_web::Attachment>>,
-) {
-    view.toggle(overlay, "Text");
-    check(
-        "!document.querySelector('.maestro-file-error')&&[...document.querySelectorAll('pre')].some(p=>p.textContent==='literal text')",
-    );
-    record.borrow_mut().extracted_text = Some("retained alias".into());
-    view.overlay(overlay, vec![]);
-    check("[...document.querySelectorAll('pre')].some(p=>p.textContent==='retained alias')");
-    *view.host.failure.borrow_mut() = Some("text failure".into());
-    view.overlay(overlay, vec![]);
-    view.overlay(overlay, vec![]);
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error p').textContent")
-            .as_string()
-            .unwrap(),
-        "text failure"
-    );
-    record.borrow_mut().mime_type = "image/png".into();
-    view.overlay(overlay, vec![]);
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error p').textContent")
-            .as_string()
-            .unwrap(),
-        "text failure"
-    );
-    record.borrow_mut().mime_type = "application/pdf".into();
-    view.overlay(overlay, vec![]);
-    *view.host.failure.borrow_mut() = Some("publication rejected".into());
-    assert!(matches!(
-        view.try_overlay(overlay, vec![]),
-        Err(
-            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
-                AttachmentHostError::Presentation(_)
-            )
-        )
-    ));
-    view.overlay(overlay, vec![]);
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error p').textContent")
-            .as_string()
-            .unwrap(),
-        "text failure"
-    );
-    view.toggle(overlay, "PDF");
-    check(
-        "!document.querySelector('.maestro-file-error')&&document.querySelectorAll('.maestro-pdf img').length===1",
-    );
-}
-
-/// Presentation text retains its established one-shot failure detail.
-fn assert_presentation_failure(view: &View, record: &Rc<RefCell<maestro_web::Attachment>>) {
-    record.borrow_mut().mime_type = "presentationml".into();
-    *view.host.failure.borrow_mut() = Some("presentation failure".into());
-    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    assert_eq!(
-        js("document.querySelector('.maestro-file-error p').textContent")
-            .as_string()
-            .unwrap(),
-        "presentation failure"
-    );
-    drop(overlay);
-}
-
-/// Suppressed empty errors keep the body, save policy and close control live.
-fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_web::Attachment>>) {
-    record.borrow_mut().mime_type = "application/pdf".into();
-    *view.host.failure.borrow_mut() = Some(String::new());
-    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    check(
-        "!document.querySelector('.maestro-file-error')&&document.querySelectorAll('.maestro-pdf img').length>0",
-    );
-    view.toggle(&mut overlay, "Text");
-    view.host.fail_download.set(true);
-    let result = view.try_overlay(&mut overlay, click(egui::pos2(728., 24.)));
-    assert!(matches!(
-        result,
-        Err(
-            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
-                AttachmentHostError::Host(_)
-            )
-        )
-    ));
-    assert!(Rc::ptr_eq(
-        view.host.downloads.borrow().last().unwrap(),
-        record
-    ));
-    view.host.fail_download.set(false);
-    view.overlay(&mut overlay, vec![]);
-    check(
-        "!document.querySelector('.maestro-file-error')&&[...document.querySelectorAll('pre')].some(p=>p.textContent==='retained alias')",
-    );
-    view.overlay(
-        &mut overlay,
-        vec![egui::Event::Key {
-            key: egui::Key::Escape,
-            physical_key: None,
-            pressed: true,
-            repeat: false,
-            modifiers: egui::Modifiers::NONE,
-        }],
-    );
-    check(
-        "!document.querySelector('.maestro-file-error')&&!document.querySelector('.maestro-pdf')",
-    );
-}
-
-/// The bounded overlay paints its outer shadow without scrolling its chrome.
-/// # Panics
-/// Panics when the browser's painted output differs from the required result.
-#[wasm_bindgen]
-pub async fn reading_frame_shadow_paints_outside_clipped_viewport() {
-    let mut view = View::new("current.pdf", &encoded(true));
-    view.density = js("devicePixelRatio").as_f64().unwrap().to_f32().unwrap();
-    view.overlay_size = egui::vec2(1200., 600.);
-    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    support::reading_paint::observe("overlay-shadow").await;
-    for path in ["brand.json", "signal.json"] {
-        view.pack = support::brand::pack(path).unwrap();
-        for mode in [
-            maestro_theme::BrandMode::Dark,
-            maestro_theme::BrandMode::Light,
-        ] {
-            view.mode = mode;
-            view.overlay(&mut overlay, vec![]);
-            support::reading_paint::observe("overlay-shadow").await;
-        }
-    }
-    drop(overlay);
-    check("!document.querySelector('.maestro-pdf')");
-}
-
 /// Neighboring artifact pages and error bodies retain their actual native paint.
 /// # Panics
 /// Panics when capture loses existing paint or adds an outer frame shadow.
@@ -642,19 +298,6 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
             support::reading_paint::observe("neighbors-error").await;
         }
     }
-    view.element = create_artifact_element("empty.pdf", "", view.host.clone()).unwrap();
-    let record = record();
-    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
-    *view.host.failure.borrow_mut() = Some("preview failure <tag> ".repeat(40));
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    support::reading_paint::observe("neighbors-error").await;
-    drop(overlay);
-    record.borrow_mut().mime_type = "text/plain".into();
-    record.borrow_mut().content = "literal text".into();
-    let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    support::reading_paint::observe("neighbors-text").await;
 }
 
 /// Exercise the actual native content boundary, not a controlled outer host.

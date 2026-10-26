@@ -94,7 +94,11 @@ impl host::HostAuthStorage for State {
             .get(&this)?
             .flag("has_auth", &[json!(provider)])
             .map(host::RouteValue::Boolean);
-        self.push(super::host::Route(Some(result)))
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn get_auth_status(
         &mut self,
@@ -107,7 +111,11 @@ impl host::HostAuthStorage for State {
             .record("get_auth_status", &[json!(provider)])
             .and_then(|value| value.ok_or("missing credential record".into()))
             .map(host::RouteValue::Text);
-        self.push(super::host::Route(Some(result)))
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self

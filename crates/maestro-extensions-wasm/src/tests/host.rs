@@ -515,8 +515,15 @@ impl host::HostCallbackEmitter for State {
         Ok(())
     }
 }
-/// A host operation the test host completed before returning it; it makes no nested call.
-pub struct Route(pub(super) Option<Result<host::RouteValue, String>>);
+/// A host operation's nested calls into this instance, in order, before its own result.
+pub struct Route {
+    /// Nested calls not handed out yet, each with what its result settles.
+    pub(super) steps: std::collections::VecDeque<(host::LocalCall, super::ui_host::Nested)>,
+    /// What the nested call the guest is running settles.
+    pub(super) running: Option<super::ui_host::Nested>,
+    /// The operation's own result.
+    pub(super) result: Option<Result<host::RouteValue, String>>,
+}
 
 /// A deferred nested call; the test host never makes one.
 pub struct Settlement;
@@ -536,18 +543,34 @@ impl State {
         &mut self,
         result: Result<(), String>,
     ) -> wasmtime::Result<Resource<Route>> {
-        self.push(Route(Some(result.map(|()| host::RouteValue::Unit))))
+        self.push(Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result.map(|()| host::RouteValue::Unit)),
+        })
     }
 }
 
 impl host::HostImportRoute for State {
     fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
-        let result = self.table.get_mut(&this)?.0.take();
+        let route = self.table.get_mut(&this)?;
+        if let Some((call, nested)) = route.steps.pop_front() {
+            route.running = Some(nested);
+            return Ok(host::RouteStep::Invoke(call));
+        }
         Ok(host::RouteStep::Done(
-            result.unwrap_or(Ok(host::RouteValue::Unit)),
+            route.result.take().unwrap_or(Ok(host::RouteValue::Unit)),
         ))
     }
-    fn resume(&mut self, _: Resource<Route>, _: host::LocalResult) -> wasmtime::Result<()> {
+    fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
+        let nested = self.table.get_mut(&this)?.running.take();
+        let failure = match nested {
+            Some(nested) => self.settle_nested(nested, value)?,
+            None => None,
+        };
+        if let Some(error) = failure {
+            self.table.get_mut(&this)?.result = Some(Err(error));
+        }
         Ok(())
     }
     fn defer(&mut self, _: Resource<Route>) -> wasmtime::Result<Resource<Settlement>> {
@@ -856,7 +879,11 @@ impl host::Host for State {
                 .map(host::RouteValue::Credentials)
                 .map_err(|error| error.to_string())
         });
-        self.push(Route(Some(result)))
+        self.push(Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn create_auth_storage(
         &mut self,
@@ -1424,6 +1451,8 @@ impl host::HostWithStore<State> for Imports {
         prepare: Option<Resource<Identity>>,
         execute: Resource<Identity>,
         schemas: Vec<(String, Resource<Identity>)>,
+        render_call: Option<Resource<Identity>>,
+        render_result: Option<Resource<Identity>>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Resource<Route>>> {
         std::future::ready(accessor.with(|mut access| {
             let state = access.get();
@@ -1439,10 +1468,12 @@ impl host::HostWithStore<State> for Imports {
                     .schemas
                     .push((name.clone(), pointer, handler.rep()));
             }
-            let result =
-                state
-                    .observed
-                    .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
+            let rep = |handler: Option<Resource<Identity>>| handler.map(|handler| handler.rep());
+            let result = state.observed.register_tool(
+                &metadata,
+                (rep(prepare), execute.rep()),
+                (rep(render_call), rep(render_result)),
+            );
             state.routed(result)
         }))
     }

@@ -4,7 +4,10 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+use maestro_extensions_wasm::{
+    CallbackEmitter, Component, ComponentView, ExtensionAPI, ExtensionResult, ToolRenderCall,
+    ToolRenderContext, ToolRenderResult,
+};
 use serde_json::json;
 use std::rc::Rc;
 
@@ -42,8 +45,10 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
 }
 
 /// Uses the original update callback, cancellation and per-call context capabilities.
-pub(super) fn tool(api: &ExtensionAPI) -> ExtensionResult<()> {
+fn tool(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: serde_json::from_value(json!({"name":"canonical-tool", "label":" Literal tool ", "description":" Literal tool description ", "parameters":{"type":"object"}})).map_err(|error| error.to_string())?,
         prepare_arguments: Some(Rc::new(|args, emitter| {
             emitter.emit("canonical-prepare", args.clone())?;
@@ -54,6 +59,75 @@ pub(super) fn tool(api: &ExtensionAPI) -> ExtensionResult<()> {
             (update.ok_or("missing tool update")?)(serde_json::from_value(json!({"content":[],"details":details})).map_err(|error| error.to_string())?)?;
             serde_json::from_value(json!({"content":[{"type":"text","text":" literal result "}],"details":details,"terminate":false})).map_err(|error| error.to_string())
         })),
+    })
+}
+
+/// Fixed lines a renderer returns.
+struct Lines(Vec<String>);
+
+impl ComponentView for Lines {
+    fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        Ok(self.0.clone())
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+/// A rendering's row fields, its count in the row's typed state and its previous component.
+fn row_report(slot: &str, ctx: &ToolRenderContext) -> ExtensionResult<String> {
+    let seen = ctx.state::<u32>();
+    *seen.borrow_mut() += 1;
+    let seen = *seen.borrow();
+    if ctx.args.as_ref().is_some_and(|args| args["fail"] == true) {
+        return Err("paint failed".into());
+    }
+    if ctx.args.as_ref().is_some_and(|args| args["redraw"] == true) {
+        (ctx.invalidate)()?;
+    }
+    Ok(json!([
+        slot,
+        ctx.tool_call_id,
+        ctx.args,
+        ctx.cwd,
+        ctx.phase.args_complete,
+        ctx.expanded,
+        seen,
+        ctx.last_component.is_some()
+    ])
+    .to_string())
+}
+
+/// Registers the canonical tool or the painter tool.
+pub(super) fn register_tool(api: &ExtensionAPI, args: &str) -> ExtensionResult<()> {
+    if args == "register-painter" {
+        return painter(api);
+    }
+    tool(api)
+}
+
+/// Registers a tool whose renderers report what they read about their row.
+fn painter(api: &ExtensionAPI) -> ExtensionResult<()> {
+    let render_call: ToolRenderCall = Rc::new(|args, _, ctx, _| {
+        Ok(Component::new(Lines(vec![
+            row_report("call", ctx)?,
+            json!(args).to_string(),
+        ])))
+    });
+    let render_result: ToolRenderResult = Rc::new(|result, options, _, ctx, _| {
+        let report = row_report("result", ctx)?;
+        Ok(Component::new(Lines(vec![
+            report,
+            json!(result).to_string(),
+            json!([options.expanded, options.is_partial]).to_string(),
+        ])))
+    });
+    api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        metadata: serde_json::from_value(json!({"name":"bridge-painter", "label":"Painter", "description":"Paints rows", "parameters":{"type":"object"}})).map_err(|error| error.to_string())?,
+        prepare_arguments: None,
+        execute: Rc::new(|_, _, _, _, _| Box::pin(async { Err("not executed".to_owned()) })),
+        render_call: Some(render_call),
+        render_result: Some(render_result),
     })
 }
 

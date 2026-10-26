@@ -34,3 +34,11 @@ mod model_support;
 
 #[path = "../../maestro-extensions/tests/support/command_operations.rs"]
 mod context_actions;
+
+#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
+#[allow(dead_code, reason = "Shared terminal fixture.")]
+mod manual_runtime;
+
+#[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
+#[allow(dead_code, reason = "Shared terminal fixture.")]
+mod recording_terminal;

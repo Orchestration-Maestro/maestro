@@ -141,7 +141,7 @@ pub fn options(
         Box::leak(Box::new(ThemeState::new(get_theme_directories().unwrap())));
     let theme = state.theme();
     RpcModeOptions {
-        workspace: Rc::new(ClosureWorkspace(workspace)),
+        workspace: Some(Rc::new(ClosureWorkspace(workspace))),
         session: Some(maestro_app::RpcSessionOptions {
             runtime,
             process: Rc::new(NativeRpcProcess),

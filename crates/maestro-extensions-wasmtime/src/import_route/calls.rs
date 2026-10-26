@@ -17,6 +17,10 @@ use crate::{
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
+mod credentials;
+mod ui;
+use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
+
 /// Owned operands of one nested renderer call.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -240,6 +244,9 @@ pub(super) enum LocalCall {
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
+    /// A terminal input listener.
+    #[component(name = "terminal-input")]
+    TerminalInput(LocalTerminalInput),
     /// A synchronous callback prefix.
     #[component(name = "synchronous")]
     Synchronous(LocalSynchronous),
@@ -273,6 +280,12 @@ pub(super) enum LocalCall {
     /// An execution of returned shell operations.
     #[component(name = "bash")]
     Bash(LocalBash),
+    /// A component factory.
+    #[component(name = "factory")]
+    Factory(LocalFactory),
+    /// A tool rendering.
+    #[component(name = "tool-render")]
+    ToolRender(LocalToolRender),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -297,6 +310,9 @@ pub(super) enum LocalResult {
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
+    /// The terminal input listener's decision or its error.
+    #[component(name = "terminal-input")]
+    TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),
     /// Unit result of a synchronous prefix, or the authored error.
     #[component(name = "synchronous")]
     Synchronous(Result<(), String>),
@@ -315,6 +331,12 @@ pub(super) enum LocalResult {
     /// Optional exit status, or the authored error.
     #[component(name = "bash")]
     Bash(Result<Option<f64>, String>),
+    /// The built component identities, or the authored error.
+    #[component(name = "factory")]
+    Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// The rendered component and new row state identities, or the authored error.
+    #[component(name = "tool-render")]
+    ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -323,19 +345,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
-        Call::Credential(crate::guest_calls::credentials::CredentialCall::Backend(call)) => {
-            LocalCall::AuthBackend(LocalBackend {
-                target: call.handler.id,
-                update: table.push(call.update.clone())?,
-                asynchronous: call.asynchronous,
-            })
-        }
-        Call::Credential(crate::guest_calls::credentials::CredentialCall::Fallback(call)) => {
-            LocalCall::AuthFallback(LocalFallback {
-                target: call.handler.id,
-                provider: call.provider.clone(),
-            })
-        }
+        Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
             message: call.message.clone(),
@@ -360,6 +370,9 @@ pub(super) fn lower(
             node: table.push(call.node.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
+        call @ (Call::ToolRender(_) | Call::Factory(_) | Call::TerminalInput(_)) => {
+            ui::lower(table, call)?
+        }
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -538,6 +551,23 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
+        }
+        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
+            let value = match value {
+                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Factory(call), LocalResult::Factory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);

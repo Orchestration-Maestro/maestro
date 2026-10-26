@@ -9,14 +9,16 @@ pub mod dom;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
 pub use components::input::Input;
+pub use components::message_list::MessageList;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
 };
 pub use components::messages::{
-    AbortedMessage, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageDebugView,
-    ToolMessageProps, UserMessage, UserMessageInput,
+    AbortedMessage, AssistantMessage, ToolMessage, ToolMessageDebugView, UserMessage,
 };
+pub use components::streaming_message_container::StreamingMessageContainer;
 pub use components::thinking_block::ThinkingBlock;
+#[cfg(target_arch = "wasm32")]
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod export_html;
 pub mod icons;
@@ -36,7 +38,9 @@ pub use maestro_app::browser::components::messages::{
     ArtifactMessage, UserMessageWithAttachments, convert_attachments, default_convert_to_llm,
     is_artifact_message, is_user_message_with_attachments,
 };
-pub use maestro_app::browser::utils::attachment_utils::{Attachment, load_attachment};
+pub use maestro_app::browser::utils::attachment_utils::{
+    Attachment, SharedAttachment, load_attachment,
+};
 pub use maestro_app::browser::utils::proxy_utils::{
     apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
 };
@@ -70,6 +74,8 @@ pub use tools::artifacts::artifact_element::ArtifactElement;
 pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
 /// Retained tabbed artifact views using the application-selected filename.
 pub use tools::artifacts::ArtifactsPanel;
+#[cfg(target_arch = "wasm32")]
+pub use tools::artifacts::html_artifact::HtmlArtifact;
 
 pub use maestro_app::{
     SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,

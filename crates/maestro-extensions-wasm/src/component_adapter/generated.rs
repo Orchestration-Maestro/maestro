@@ -3,6 +3,7 @@
 
 use std::marker::PhantomData;
 
+use super::imports::Dialog;
 use super::{Capabilities, Imports};
 use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
@@ -11,9 +12,11 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
-mod exports;
 #[path = "generated_route.rs"]
 mod route;
+
+#[path = "generated_glue.rs"]
+mod glue;
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
@@ -137,7 +140,6 @@ impl Imports for Generated {
         set_label(entry_id: &str, label: Option<&str>) => host::set_label;
         set_active_tools(tool_names: &[String]) => host::set_active_tools;
         set_thinking_level(level: &str) => host::set_thinking_level;
-        register_tool(metadata: &str, prepare: Option<&host::Callback>, execute: &host::Callback, schemas: &[(String, &host::Callback)]) => host::register_tool;
         append_entry(custom_type: &str, data: Option<&str>) => host::append_entry;
     } }
     forward_resources! { routed {
@@ -153,6 +155,10 @@ impl Imports for Generated {
         ui_paste_to_editor(resource: &Self::Ui, text: &str) => paste_to_editor(text);
         ui_set_editor_text(resource: &Self::Ui, text: &str) => set_editor_text(text);
         ui_set_title(resource: &Self::Ui, title: &str) => set_title(title);
+        ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
+        ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
+        ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
+        ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
         command_abort(context: &Self::CommandContext) => abort();
@@ -233,7 +239,21 @@ impl Imports for Generated {
         theme_get_fg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_fg_ansi(color);
         theme_get_bg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_bg_ansi(color);
         theme_get_color_mode(theme: &Self::Theme) -> ExtensionResult<crate::ColorMode> => get_color_mode();
+        theme_thinking_border(theme: &Self::Theme, level: &str, text: &str) -> ExtensionResult<String> => thinking_border(level, text);
+        theme_bash_mode_border(theme: &Self::Theme, text: &str) -> ExtensionResult<String> => bash_mode_border(text);
         ui_get_editor_text(resource: &Self::Ui) -> ExtensionResult<String> => get_editor_text();
+        ui_on_terminal_input(resource: &Self::Ui, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_terminal_input(handler);
+        ui_theme(resource: &Self::Ui) -> ExtensionResult<Self::Theme> => theme();
+        ui_get_all_themes(resource: &Self::Ui) -> ExtensionResult<Vec<crate::ThemeInfo>> => get_all_themes();
+        ui_get_theme(resource: &Self::Ui, name: &str) -> ExtensionResult<Option<Self::Theme>> => get_theme(name);
+        ui_set_theme_name(resource: &Self::Ui, name: &str) -> ExtensionResult<crate::ThemeSetResult> => set_theme_name(name);
+        ui_set_theme(resource: &Self::Ui, theme: &Self::Theme) -> ExtensionResult<crate::ThemeSetResult> => set_theme(theme);
+        ui_get_tools_expanded(resource: &Self::Ui) -> ExtensionResult<bool> => get_tools_expanded();
+        invalidate(invalidator: &Self::Invalidator) -> ExtensionResult<()> => invalidate();
+        footer_get_git_branch(footer: &Self::FooterData) -> ExtensionResult<Option<String>> => get_git_branch();
+        footer_get_extension_statuses(footer: &Self::FooterData) -> ExtensionResult<Vec<(String, String)>> => get_extension_statuses();
+        footer_get_available_provider_count(footer: &Self::FooterData) -> ExtensionResult<f64> => get_available_provider_count();
+        footer_on_branch_change(footer: &Self::FooterData, listener: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_branch_change(listener);
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();
@@ -274,76 +294,52 @@ impl Imports for Generated {
         command_cwd(context: &host::CommandContext) -> ExtensionResult<String> => cwd();
         command(context: &host::ReplacedSessionContext) -> host::CommandContext => command();
     }
-    fn fork<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        entry_id: &'a str,
-        data: Option<String>,
-        with_session: Option<&'a Self::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.fork(entry_id.to_owned(), data, with_session))
-    }
-    fn navigate_tree<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        target_id: &'a str,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.navigate_tree(target_id.to_owned(), options))
-    }
-    fn switch_session<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        path: &'a str,
-        options: Option<()>,
-        with_session: Option<&'a Self::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.switch_session(
-            path.to_owned(),
-            options.map(|()| host::SwitchSessionOptions { with_session }),
-        ))
-    }
-    fn reload<'a>(&'a self, context: &'a Self::CommandContext) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.reload())
-    }
-    fn replaced_send_message<'a>(
-        &'a self,
-        context: &'a Self::ReplacedContext,
-        message: String,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.send_message(message, options))
-    }
-    fn replaced_send_user_message<'a>(
-        &'a self,
-        target: &'a Self::ReplacedContext,
-        content: String,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(target.send_user_message(content, options))
-    }
-
     type Writer = host::SessionManager;
 
-    fn call<'a>(
-        &'a self,
-        operation: &'a str,
-        data: String,
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, String> {
-        Box::pin(host::call(operation.to_owned(), data, signal))
-    }
-
-    fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
-        Box::pin(host::set_model(model))
-    }
+    forward_resources! { asynchronous functions {
+        call<'a>(operation: &'a str, data: String, signal: Option<&'a Self::Signal>) -> String => host::call[operation.to_owned(), data, signal];
+        set_model<'a>(model: String) -> bool => host::set_model[model];
+        event_emit<'a>(channel: String, data: String) -> () => host::event_emit[channel, data];
+    } }
 
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
-    fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
-        Box::pin(host::event_emit(channel, data))
-    }
     type Ui = host::ExtensionUiContext;
+    type Tui = host::Tui;
+    type Invalidator = host::ToolInvalidator;
+    fn register_tool(
+        &self,
+        metadata: &str,
+        callbacks: super::imports::ToolCallbacks<'_, host::Callback>,
+        schemas: &[(String, &host::Callback)],
+    ) -> ExtensionResult<()> {
+        let (prepare, execute) = (callbacks.prepare, callbacks.execute);
+        let renderers = (callbacks.render_call, callbacks.render_result);
+        route::drive(&host::register_tool(
+            metadata,
+            prepare,
+            execute,
+            schemas,
+            renderers.0,
+            renderers.1,
+        ))
+    }
+    type FooterData = host::FooterData;
+
+    forward_resources! { asynchronous {
+        ui_select<'a>(resource: Self::Ui, title: String, options: Vec<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => select(title, options, dialog.signal, dialog.timeout);
+        ui_confirm<'a>(resource: Self::Ui, title: String, message: String, dialog: Dialog<'a, Self::Signal>) -> bool => confirm(title, message, dialog.signal, dialog.timeout);
+        ui_input<'a>(resource: Self::Ui, title: String, placeholder: Option<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => input(title, placeholder, dialog.signal, dialog.timeout);
+        ui_editor<'a>(resource: Self::Ui, title: String, prefill: Option<String>) -> Option<String> => editor(title, prefill);
+        fork<'a>(context: Self::CommandContext, entry_id: &'a str, data: Option<String>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => fork(entry_id.to_owned(), data, with_session);
+        navigate_tree<'a>(context: Self::CommandContext, target_id: &'a str, options: Option<String>) -> SessionChangeResult => navigate_tree(target_id.to_owned(), options);
+        switch_session<'a>(context: Self::CommandContext, path: &'a str, options: Option<()>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => switch_session(path.to_owned(), options.map(|()| host::SwitchSessionOptions { with_session }));
+        new_session<'a>(context: Self::CommandContext, session_data: Option<NewSessionCommandData>, setup: Option<&'a Self::Callback>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => new_session(session_data, setup, with_session);
+        reload<'a>(context: Self::CommandContext) -> () => reload();
+        wait_for_idle<'a>(context: Self::CommandContext) -> () => wait_for_idle();
+        replaced_send_message<'a>(context: Self::ReplacedContext, message: String, options: Option<String>) -> () => send_message(message, options);
+        replaced_send_user_message<'a>(target: Self::ReplacedContext, content: String, options: Option<String>) -> () => send_user_message(content, options);
+    } }
     type Registry = host::ModelRegistry;
 
     fn registry_get_api_key_and_headers<'a>(
@@ -396,19 +392,19 @@ impl Imports for Generated {
         let handle = host::Callback::new();
         (handle.id(), handle)
     }
+}
 
-    fn wait_for_idle<'a>(&'a self, context: &'a host::CommandContext) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.wait_for_idle())
-    }
-
-    fn new_session<'a>(
-        &'a self,
-        context: &'a host::CommandContext,
-        session_data: Option<NewSessionCommandData>,
-        setup: Option<&'a host::Callback>,
-        with_session: Option<&'a host::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.new_session(session_data, setup, with_session))
+/// Transfers a rendered component and a new row's state to the host as their identities.
+fn rendered_row(
+    (component, row): (
+        crate::ExtensionResult<crate::Component>,
+        Option<std::rc::Rc<crate::types::ToolRow>>,
+    ),
+) -> host::ToolRendered {
+    let identity = || super::callbacks::Identity::<Generated>::new(&Generated);
+    host::ToolRendered {
+        component: component.map(|component| identity().transfer(component)),
+        row: row.map(|row| identity().transfer(row)),
     }
 }
 

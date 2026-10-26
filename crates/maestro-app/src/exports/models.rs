@@ -3,7 +3,7 @@
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
 pub use maestro_agent::{
-    AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn,
+    AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, SharedAgentTool, StreamFn,
 };
 
 pub use maestro_models::{

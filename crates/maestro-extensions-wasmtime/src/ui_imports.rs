@@ -1,16 +1,18 @@
 //! Canonical UI imports delegate through the existing typed local request pump.
 use crate::{
+    guest_calls::Callback,
+    local_resources::SignalEndpoint,
     read_imports::{ReadEndpoint, add_routed_operand, operand},
-    ui_reads::{Endpoint, Request},
+    ui_reads::{Dialog, Endpoint, Request},
 };
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Resource},
+    component::{Accessor, ComponentType, Lift, LinkerInstance, Resource},
 };
 use wasmtime_wasi::WasiView;
 
 /// Installs every UI method declared by the canonical host interface.
-pub(crate) fn add_to_linker<T: WasiView + 'static>(
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_routed_operand(
@@ -48,13 +50,18 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
         },
     )?;
     editor(host)?;
+    dialogs(host)?;
+    widget_factory(host)?;
     notification(host)?;
     status(host)?;
     widget(host)
 }
 
-/// Keeps editor mutations on the same reentrant route as other native UI actions.
-fn editor<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+/// Keeps editor mutations on the same reentrant route as other native UI actions, and adds
+/// terminal input listeners under the original extension.
+fn editor<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     add_routed_operand(
         host,
         "[method]extension-ui-context.paste-to-editor",
@@ -72,6 +79,137 @@ fn editor<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::
         "[method]extension-ui-context.get-editor-text",
         Request::GetEditorText,
         crate::read_imports::resource::<T, Endpoint>,
+    )?;
+    host.func_wrap(
+        "[method]extension-ui-context.on-terminal-input",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, handler): (Resource<Endpoint>, Resource<Callback>)| {
+            let callback = crate::callback_imports::retain(store.data_mut(), &handler)?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let result = endpoint.read(|reply| Request::OnTerminalInput(callback, api, reply));
+            let result = match result {
+                Ok(subscription) => Ok(store.data_mut().ctx().table.push(subscription)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
+        },
+    )
+}
+
+/// The original UI and dialog signal named by a dialog's borrowed resources.
+fn dialog_owners<T: WasiView + 'static>(
+    accessor: &Accessor<T>,
+    resource: &Resource<Endpoint>,
+    signal: Option<&Resource<SignalEndpoint>>,
+) -> wasmtime::Result<(Endpoint, Option<SignalEndpoint>)> {
+    accessor.with(|mut access| {
+        let table = &access.get().ctx().table;
+        let signal = signal
+            .map(|signal| table.get(signal).cloned())
+            .transpose()?;
+        Ok((table.get(resource)?.clone(), signal))
+    })
+}
+
+/// Forwards each dialog with its literal operands, signal and timeout to the original UI.
+fn dialogs<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.select",
+        |accessor, (resource, title, options, signal, timeout): DialogOperands<Vec<String>>| {
+            Box::pin(async move {
+                let (ui, signal) = dialog_owners(accessor, &resource, signal.as_ref())?;
+                let select = |reply| Dialog::Select(title, options, reply);
+                Ok((ui.dialog(select, signal, timeout).await,))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.confirm",
+        |accessor, (resource, title, message, signal, timeout): DialogOperands<String>| {
+            Box::pin(async move {
+                let (ui, signal) = dialog_owners(accessor, &resource, signal.as_ref())?;
+                let confirm = |reply| Dialog::Confirm(title, message, reply);
+                Ok((ui.dialog(confirm, signal, timeout).await,))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.input",
+        |accessor,
+         (resource, title, placeholder, signal, timeout): DialogOperands<Option<String>>| {
+            Box::pin(async move {
+                let (ui, signal) = dialog_owners(accessor, &resource, signal.as_ref())?;
+                let input = |reply| Dialog::Input(title, placeholder, reply);
+                Ok((ui.dialog(input, signal, timeout).await,))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.editor",
+        |accessor, (resource, title, prefill): (Resource<Endpoint>, String, Option<String>)| {
+            Box::pin(async move {
+                let (ui, _) = dialog_owners(accessor, &resource, None)?;
+                let editor = |reply| Dialog::Editor(title, prefill, reply);
+                Ok((ui.dialog(editor, None, None).await,))
+            })
+        },
+    )
+}
+
+/// A dialog's UI, title, own operand, borrowed signal and timeout.
+type DialogOperands<O> = (
+    Resource<Endpoint>,
+    String,
+    O,
+    Option<Resource<SignalEndpoint>>,
+    Option<f64>,
+);
+
+/// Shows the component an authored factory builds, which the native owner may build before
+/// the import returns.
+fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "[method]extension-ui-context.set-widget-factory",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, key, factory, options): (
+            Resource<Endpoint>,
+            String,
+            Resource<Callback>,
+            Option<WidgetOptions>,
+        )| {
+            let factory = crate::callback_imports::retain(store.data_mut(), &factory)?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let options = options.map(Into::into);
+            let route =
+                endpoint.route(|reply| Request::WidgetFactory(key, factory, api, options, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]extension-ui-context.set-footer",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
+            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let route = endpoint.route(|reply| Request::Footer(factory, api, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]extension-ui-context.set-header",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
+            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let route = endpoint.route(|reply| Request::Header(factory, api, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
     )
 }
 

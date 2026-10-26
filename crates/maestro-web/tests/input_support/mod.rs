@@ -1,7 +1,7 @@
 //! Controlled observations of the shared native content boundary.
 #![cfg(test)]
 use maestro_theme::BrandPresentation;
-use maestro_web::{Attachment, Input, browser::attachment_content::*, browser::timer::Timer};
+use maestro_web::{Input, browser::attachment_content::*, browser::timer::Timer};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -136,7 +136,7 @@ impl AttachmentHost for Host {
     fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn take_escape(&self) -> bool {

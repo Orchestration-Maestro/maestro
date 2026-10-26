@@ -148,6 +148,21 @@ intact. Metadata transport does not validate invocation arguments; argument prep
 and validation remain with the model argument validator. Model-server JSON limits do
 not apply to these author-supplied declarations.
 
+### Tool renderers
+
+`render_call` and `render_result` are optional and independent. Each returns a `Component`
+that the host shows in the tool's row. A call renderer gets the arguments as they stand,
+the live theme, a `ToolRenderContext` and a `CallbackEmitter`. A result renderer also gets
+the `AgentToolResult` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+
+`ToolRenderContext` holds the row's `tool_call_id`, arguments, working directory,
+`ToolRenderPhase`, expansion, image visibility and error flag. `last_component` is the
+component that the same renderer returned for the row last time. `invalidate()` asks the
+host to redraw the row. `state::<S>()` returns the row's state of type `S`. It is created
+with its default the first time it is read and shared by both renderers of the row on
+every rendering, so a value set by the call renderer is visible to the result renderer.
+The row keeps its state and previous components until the host releases the row.
+
 ### Executable schema nodes
 
 Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a
@@ -436,7 +451,79 @@ with the host.
 A request borrows its text and lines only for the synchronous call; the host owns
 anything it retains. Clones of the facade share the acquired resource, so a handle
 kept past its callback keeps reading that resource, and a second acquisition stays
-independent. Widget factories remain outside this interface.
+independent.
+
+`set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
+factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
+and returns an `ExtensionComponent`: the component and an optional disposal. The host
+runs the disposal of the widget a key already shows before it runs the new factory, and
+both finish before the setter returns. `set_widget` with lines or `None` disposes a
+factory widget under the same key too. The factory's captures stay usable while the
+host shows the component and are released after the host removes it. A factory error
+is the setter's error.
+
+`set_footer` replaces the footer with the component a `FooterFactory` builds from the
+terminal, the theme and the `FooterData` the host lends, or restores the host's footer
+with `None`; the host disposes the custom footer it replaces first. `FooterData` reads
+the current branch, extension statuses in insertion order and provider count on every
+call, so a retained footer sees later changes. `on_branch_change` keeps its
+`BranchChangeListener` until the returned subscription is unsubscribed; dropping the
+subscription keeps it.
+
+`set_header` replaces the header with the component a factory builds, or restores the
+host's header with `None`. The host disposes the custom header it replaces first, and a
+host that has not built its own header yet runs no factory.
+
+### Themes and tool expansion
+
+`theme` returns the UI's live theme, which reads the host's later selections.
+`get_all_themes` lists `ThemeInfo` records in the host's order, with an absent `path`
+for a theme without a file. `get_theme` loads a theme by name without selecting it and
+returns `None` for an unknown name. `set_theme` selects a theme with
+`ThemeSelection::Name` or a host-supplied `ThemeSelection::Theme` and returns the host's
+`ThemeSetResult`, whose `error` explains a selection that did not apply; a theme the
+author built itself cannot be passed back and returns an error. A host rejection is an
+error, not a failed selection. `get_tools_expanded` and `set_tools_expanded` read and
+change the tool output expansion.
+
+`Theme::get_thinking_border_color` and `Theme::get_bash_mode_border_color` return a
+`BorderColor` callback that asks the theme's owner to color text with the border color
+of a `ModelThinkingLevel` or of the shell mode. The level-to-color choice stays with the
+host's theme, and each call reads the theme the handle currently observes.
+
+### Terminal input
+
+`on_terminal_input` adds a listener that sees each raw chunk of terminal input before
+the focused component does. It runs synchronously with a callback emitter, like the
+other synchronous callbacks, and returns `None` to leave the chunk as it is or a
+`TerminalInputResult`: `consume: Some(true)` stops the chunk, `data` replaces it for the
+listeners after it, and absent members leave it unchanged. When both are set,
+consumption wins. A listener's error reaches the host with its message. `unsubscribe`
+on the returned `Subscription` removes the listener; dropping the subscription keeps
+it. The host owns the order of listeners and the delivery of what remains.
+
+### Dialogs
+
+`select`, `confirm`, `input` and `editor` ask the host for an answer and return a
+future that owns its operands, so it may outlive the handle that started it:
+
+| Method | Request | Dismissal |
+| --- | --- | --- |
+| `select` | A title and the ordered choices, repetitions and empty entries included. | `None` |
+| `confirm` | A title and a message. | `false` |
+| `input` | A title and an optional placeholder. | `None` |
+| `editor` | A title and optional prefilled text. | `None` |
+
+`ExtensionUIDialogOptions::timeout` reaches the host's dialog as the supplied
+milliseconds, without a guest timer or a changed value. A supplied `signal` gets a
+host signal of its own for that dialog: an abort before the call, or while the dialog
+waits, reaches the host, which decides what the dialog answers. The guest adds no
+deadline or dismissal of its own. When the dialog returns, its listener on the
+caller's signal is removed, so the caller can keep the signal, abort it later or
+pass it to another dialog. An absent placeholder or
+prefill stays distinct from an empty one, and an empty answer stays distinct from a
+dismissal. A host rejection resolves to its message; it is never turned into a
+dismissal.
 
 The component example's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction

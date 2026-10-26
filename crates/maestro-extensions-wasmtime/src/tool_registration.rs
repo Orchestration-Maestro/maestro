@@ -1,5 +1,5 @@
 //! Authored metadata becomes the real native local tool definition.
-use crate::local_resources::Registry;
+use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::{
     EventBus, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
 };
@@ -53,6 +53,7 @@ fn optional<T>(value: Presence<T>) -> Option<T> {
 pub(crate) fn definition(
     metadata: &str,
     callbacks: crate::schema_registration::ToolCallbacks,
+    (render_call, render_result): (Option<Handle>, Option<Handle>),
     registry: Registry,
     events: EventBus<Local>,
 ) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value>, String> {
@@ -62,7 +63,11 @@ pub(crate) fn definition(
     let parameters = parameters.with_code(crate::schema_registration::code(
         schemas, &registry, &events,
     ));
-    let prepare_arguments = prepare.map(|prepare| prepare.prepare(registry.clone(), events));
+    let prepare_arguments =
+        prepare.map(|prepare| prepare.prepare(registry.clone(), events.clone()));
+    let render_call =
+        render_call.map(|render| render.render_call(registry.clone(), events.clone()));
+    let render_result = render_result.map(|render| render.render_result(registry.clone(), events));
     Ok(ToolDefinition {
         definition: Tool {
             name: metadata.name,
@@ -79,7 +84,7 @@ pub(crate) fn definition(
         execution_mode: optional(metadata.execution_mode),
         prepare_arguments,
         execute: execute.execute(registry),
-        render_call: None,
-        render_result: None,
+        render_call,
+        render_result,
     })
 }

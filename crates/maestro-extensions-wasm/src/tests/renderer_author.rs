@@ -103,6 +103,16 @@ impl ThemePort for LocalTheme {
     fn get_color_mode(&self) -> ExtensionResult<maestro_extensions_wasm::ColorMode> {
         unanswered()
     }
+    fn thinking_border(
+        &self,
+        _: maestro_extensions_wasm::ModelThinkingLevel,
+        _: &str,
+    ) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn bash_mode_border(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
 }
 impl Drop for LocalTheme {
     fn drop(&mut self) {

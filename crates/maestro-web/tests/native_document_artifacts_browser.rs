@@ -13,11 +13,11 @@ use web_sys::{Element, HtmlElement};
 /// One recorded document package and its visible content.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Package {
+pub(crate) struct Package {
     /// Descriptive package name.
-    name: String,
+    pub(crate) name: String,
     /// Complete original bytes, encoded for the artifact setter.
-    content: String,
+    pub(crate) content: String,
     /// Ordered rendered page count.
     pages: u32,
     /// Visible page text, in page order.
@@ -43,7 +43,7 @@ struct Link {
     href: Option<String>,
 }
 /// Read all seventeen document packages.
-fn packages() -> Vec<Package> {
+pub(crate) fn packages() -> Vec<Package> {
     serde_json::from_str(include_str!("fixtures/native_document_artifacts.json")).unwrap()
 }
 /// Apply source text to a fresh artifact.
@@ -73,43 +73,7 @@ pub fn docx_artifact_dom_uses_full_document_options(import_module: &js_sys::Func
         let root = artifact(&case.content).mount(&view).unwrap();
         body().append_child(&root.node).unwrap();
         let node: &Element = root.node.unchecked_ref();
-        let pages = node.query_selector_all("section.docx").unwrap();
-        assert_eq!(pages.length(), case.pages, "{}", case.name);
-        let text: Vec<String> = (0..pages.length())
-            .map(|index| {
-                let page: HtmlElement = pages.item(index).unwrap().unchecked_into();
-                page.inner_text()
-            })
-            .collect();
-        assert_eq!(text, case.text, "{}", case.name);
-        for (selector, count) in [
-            ("img", case.images),
-            ("table", case.tables),
-            ("math", case.math),
-        ] {
-            assert_eq!(
-                node.query_selector_all(selector).unwrap().length(),
-                count,
-                "{} {selector}",
-                case.name
-            );
-        }
-        let links = node.query_selector_all("a").unwrap();
-        assert_eq!(usize::try_from(links.length()).unwrap(), case.links.len());
-        for (index, expected) in case.links.iter().enumerate() {
-            let link: Element = links
-                .item(u32::try_from(index).unwrap())
-                .unwrap()
-                .unchecked_into();
-            assert_eq!(link.text_content().as_deref(), Some(expected.text.as_str()));
-            assert_eq!(link.get_attribute("href"), expected.href);
-        }
-        assert_eq!(
-            node.text_content().unwrap().contains("@font-face"),
-            case.has_fonts,
-            "{}",
-            case.name
-        );
+        assert_document(node, &case);
         body().remove_child(&root.node).unwrap();
     }
 }
@@ -420,4 +384,45 @@ async fn assert_cancelled_shapes(view: &maestro_web::dom::DomView, page: &wasm_b
         .unwrap()
         .remove();
     body().remove_child(&live.node).unwrap();
+}
+
+/// Observe the same rendered-document contract through each public native consumer.
+pub(crate) fn assert_document(node: &Element, case: &Package) {
+    let pages = node.query_selector_all("section.docx").unwrap();
+    assert_eq!(pages.length(), case.pages, "{}", case.name);
+    let text: Vec<String> = (0..pages.length())
+        .map(|index| {
+            let page: HtmlElement = pages.item(index).unwrap().unchecked_into();
+            page.inner_text()
+        })
+        .collect();
+    assert_eq!(text, case.text, "{}", case.name);
+    for (selector, count) in [
+        ("img", case.images),
+        ("table", case.tables),
+        ("math", case.math),
+    ] {
+        assert_eq!(
+            node.query_selector_all(selector).unwrap().length(),
+            count,
+            "{} {selector}",
+            case.name
+        );
+    }
+    let links = node.query_selector_all("a").unwrap();
+    assert_eq!(usize::try_from(links.length()).unwrap(), case.links.len());
+    for (index, expected) in case.links.iter().enumerate() {
+        let link: Element = links
+            .item(u32::try_from(index).unwrap())
+            .unwrap()
+            .unchecked_into();
+        assert_eq!(link.text_content().as_deref(), Some(expected.text.as_str()));
+        assert_eq!(link.get_attribute("href"), expected.href);
+    }
+    assert_eq!(
+        node.text_content().unwrap().contains("@font-face"),
+        case.has_fonts,
+        "{}",
+        case.name
+    );
 }

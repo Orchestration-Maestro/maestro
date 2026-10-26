@@ -792,7 +792,7 @@ fn workspace_only_connections_refuse_session_commands() {
         });
         let options = RpcModeOptions {
             session: None,
-            workspace: Rc::new(ClosureWorkspace(no_workspace())),
+            workspace: Some(Rc::new(ClosureWorkspace(no_workspace()))),
         };
         let input = Box::new(JsonlLineReader::new(
             b"{\"id\":\"session\",\"type\":\"get_state\"}\n{\"id\":\"workspace\",\"type\":\"ping\"}\n".as_slice(),
@@ -813,5 +813,43 @@ fn workspace_only_connections_refuse_session_commands() {
         );
         assert_eq!(lines[1]["id"], "workspace");
         assert_eq!(lines[1]["command"], "ping");
+    });
+}
+
+/// A session-only connection uses the ordinary unknown-command response for workspace input.
+#[test]
+fn workspace_commands_without_provider_are_unknown() {
+    on_task_set(|_| async {
+        use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
+        let lines = Rc::new(RefCell::new(Vec::new()));
+        let written = Rc::clone(&lines);
+        let output = Rc::new(move |line: &maestro_app::rpc_mode::RpcLine| {
+            written
+                .borrow_mut()
+                .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
+            Ok(())
+        });
+        let input = Box::new(JsonlLineReader::new(
+            b"{\"id\":\"workspace\",\"type\":\"ping\"}\n{\"id\":\"other\",\"type\":\"not_known\"}\n".as_slice(),
+        ));
+        let outcome = maestro_app::run_rpc_connection(
+            input,
+            output,
+            RpcModeOptions {
+                session: None,
+                workspace: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(outcome, RpcConnectionOutcome::Eof);
+        let lines = lines.borrow();
+        assert_eq!(
+            lines.as_slice(),
+            [
+                json!({"type":"response", "command":"ping", "success":false, "error":"Unknown command: ping"}),
+                json!({"type":"response", "command":"not_known", "success":false, "error":"Unknown command: not_known"}),
+            ]
+        );
     });
 }

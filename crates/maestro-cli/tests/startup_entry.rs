@@ -1,7 +1,7 @@
 //! The command-line startup entry over its existing application owners.
 
 /// The extracted native pair runs work on the supplied local set without starting input.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn native_selector_terminal_drives_the_supplied_local_set() {
     use std::rc::Rc;

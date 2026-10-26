@@ -40,6 +40,10 @@ pub(crate) enum Request {
     BgAnsi(String, Reply<String>),
     /// Reads the current conversion mode.
     ColorMode(Reply<ColorMode>),
+    /// Colors text with the border color of a thinking level.
+    ThinkingBorder(String, String, Reply<String>),
+    /// Colors text with the shell mode border color.
+    BashModeBorder(String, Reply<String>),
 }
 
 impl Request {
@@ -57,6 +61,8 @@ impl Request {
             }
             Self::Fg(_, _, reply)
             | Self::Bg(_, _, reply)
+            | Self::ThinkingBorder(_, _, reply)
+            | Self::BashModeBorder(_, reply)
             | Self::Bold(_, reply)
             | Self::Italic(_, reply)
             | Self::Underline(_, reply)
@@ -106,7 +112,7 @@ impl Request {
     }
 
     /// Applies native color validation and text decorations without a parallel formatter.
-    fn text(self, theme: &Theme) {
+    fn text(self, theme: &Rc<Theme>) {
         let (result, reply) = match self {
             Self::Fg(color, text, reply) => (
                 theme
@@ -134,6 +140,12 @@ impl Request {
                     .map_err(|error| error.to_string()),
                 reply,
             ),
+            Self::ThinkingBorder(level, text, reply) => {
+                (Ok(theme.get_thinking_border_color(&level)(&text)), reply)
+            }
+            Self::BashModeBorder(text, reply) => {
+                (Ok(theme.get_bash_mode_border_color()(&text)), reply)
+            }
             Self::Bold(text, reply) => (Ok(Theme::bold(&text, true)), reply),
             Self::Italic(text, reply) => (Ok(Theme::italic(&text, true)), reply),
             Self::Underline(text, reply) => (Ok(Theme::underline(&text, true)), reply),

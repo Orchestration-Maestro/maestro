@@ -7,6 +7,23 @@ run does before its frontend starts, and runs the configuration and session
 selectors through supplied presenters. It is a command-line frontend; every
 selector widget stays in `maestro-chat`.
 
+## Executables
+
+Run the source executable with `cargo run --locked -p maestro -- --help`.
+Use `--version` for version-only output, `--mode rpc` for the standard-stream
+protocol, or no mode flag for interactive startup when stdin is a terminal.
+Redirected stdin selects print mode. Non-interactive startup reserves stdout
+for protocol or result records, including during help and version handling.
+
+`maestro-model-account` is a separate binary for account help, provider listing
+and login: `cargo run --locked -p maestro --bin maestro-model-account -- --help`.
+It does not run session startup.
+
+The executable loads authored extension components through the native component
+adapter on its one local executor. Unix supplies the real terminal and selectors;
+other native targets retain the terminal adapter's unsupported-operation boundary.
+Package commands wait for their queued settings writes before the process returns.
+
 ## Arguments
 
 `input::args::parse_args` consumes an authored argument list and retains it as
@@ -79,7 +96,7 @@ and returns the print status, including nonzero statuses. Errors stop at their
 original phase.
 
 The library startup entry composes this dispatch with parsing, session selection
-and runtime creation. Native executable wiring remains separate.
+and runtime creation. The native executable supplies the concrete chat, RPC and selector adapters.
 
 ## Print mode
 

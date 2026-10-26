@@ -292,6 +292,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro",
         &[
+            "maestro-theme",
+            "maestro-tui",
+            "maestro-tui-crossterm",
+            "maestro-process",
             "maestro-app",
             "maestro-cli",
             "maestro-rpc",
@@ -523,20 +527,14 @@ pub(crate) fn exact(name: &str) -> bool {
 
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
-    if name == "maestro" {
-        &["maestro-app", "maestro-multiplexer"]
-    } else if matches!(
-        name,
-        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer"
-    ) {
-        &["maestro-app"]
-    } else if name == "maestro-daemon" {
-        &["maestro-terminal"]
-    } else if name == "maestro-tui-crossterm" {
-        &["maestro-tui", "maestro-text"]
-    } else if exact(name) {
-        rule(name).map_or(&[], |rule| rule.dependencies)
-    } else {
-        &[]
+    match name {
+        "maestro" => &["maestro-app"],
+        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer" => {
+            &["maestro-app"]
+        }
+        "maestro-daemon" => &["maestro-terminal"],
+        "maestro-tui-crossterm" => &["maestro-tui", "maestro-text"],
+        name if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
+        _ => &[],
     }
 }

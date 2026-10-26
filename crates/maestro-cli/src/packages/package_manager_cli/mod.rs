@@ -61,6 +61,8 @@ struct Prepared {
     manager: Rc<dyn PackageManager>,
     /// The retained raw global settings, taken before the manager was built.
     settings: Settings,
+    /// The same settings owner whose queued writes must finish before command exit.
+    settings_manager: Rc<RefCell<SettingsManager>>,
 }
 
 /// Load settings, report their failures and build the manager in that order.
@@ -73,11 +75,12 @@ fn prepare(context: &PackageCommandContext<'_>) -> io::Result<Prepared> {
     let manager = (context.create_package_manager)(PackageManagerOptions {
         cwd,
         agent_dir,
-        settings_manager: settings,
+        settings_manager: Rc::clone(&settings),
     })?;
     Ok(Prepared {
         manager,
         settings: snapshot,
+        settings_manager: settings,
     })
 }
 
@@ -255,7 +258,10 @@ pub async fn handle_package_command(
     }
     let prepared = prepare(context)?;
     presentation::set_progress(&prepared.manager, context);
-    match operate(&options, &prepared, context).await {
+    let outcome = operate(&options, &prepared, context).await;
+    let flush = prepared.settings_manager.borrow().flush();
+    flush.await;
+    match outcome {
         Ok(()) => Ok(true),
         Err(error) => {
             presentation::failure(&error.to_string(), context)?;

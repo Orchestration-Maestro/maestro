@@ -19,6 +19,7 @@ mod event_registration;
 mod exec;
 mod exec_imports;
 mod factory;
+mod footer_data;
 pub use factory::artifact_factory;
 mod guest_calls;
 mod guest_component;
@@ -48,6 +49,7 @@ mod tree_imports;
 mod tree_reads;
 mod ui_imports;
 mod ui_reads;
+mod ui_themes;
 mod writer_imports;
 mod writer_reads;
 

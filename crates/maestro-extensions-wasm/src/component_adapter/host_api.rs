@@ -1,32 +1,16 @@
 //! Registrations and actions forwarded to the host imports.
 
+use std::rc::Rc;
+
 use super::callbacks::Identity;
 use super::exports::encode_value;
-use super::imports::Imports;
+use super::imports::{Imports, ToolCallbacks};
+use super::signals::Mirror;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
-use std::rc::Rc;
 
 /// The host imports behind the facade.
 pub(super) struct Host<I: Imports>(pub(super) I);
-
-/// An execution's caller-signal listener, removed when the execution settles or is dropped.
-struct Listening(Option<crate::Subscription>);
-
-impl Listening {
-    /// Removes the listener once, returning the host's rejection.
-    fn remove(&mut self) -> ExtensionResult<()> {
-        self.0
-            .take()
-            .map_or(Ok(()), |subscription| subscription.unsubscribe())
-    }
-}
-
-impl Drop for Listening {
-    fn drop(&mut self) {
-        let _ = self.remove();
-    }
-}
 
 impl<I: Imports> ExtensionHost for Host<I> {
     fn auth_storage_from_backend(
@@ -78,36 +62,11 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move {
             let data = encode_value(&(command, args, options.as_ref()))?;
             let caller = options.and_then(|options| options.signal);
-            let native = caller
-                .as_ref()
-                .map(|_| self.0.new_signal())
-                .transpose()?
-                .map(Rc::new);
-            let mut listening = Listening(
-                caller
-                    .as_ref()
-                    .zip(native.as_ref())
-                    .map(|(caller, native)| {
-                        let (imports, native) = (self.0.clone(), Rc::clone(native));
-                        caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
-                    })
-                    .transpose()?,
-            );
-            let aborted = caller.as_ref().is_some_and(crate::AbortSignal::aborted);
-            let notified = native
-                .as_deref()
-                .filter(|_| aborted)
-                .map(|native| self.0.signal_abort(native))
-                .transpose();
-            let result = match notified {
-                Ok(_) => self.0.call("exec", data, native.as_deref()).await,
-                Err(error) => Err(error),
-            };
-            let removed = listening.remove();
-            result.and_then(|data| {
-                removed?;
-                super::session::decode(&data)
-            })
+            let mirror = Mirror::new(&self.0, caller.as_ref())?;
+            let result = self.0.call("exec", data, mirror.signal()).await;
+            mirror
+                .settle(result)
+                .and_then(|data| super::session::decode(&data))
         })
     }
 
@@ -258,6 +217,8 @@ impl<I: Imports> ExtensionHost for Host<I> {
             metadata,
             prepare_arguments,
             execute,
+            render_call,
+            render_result,
         } = tool;
         let encoded = super::tools::encode_metadata(&metadata)?;
         let code = metadata
@@ -272,22 +233,32 @@ impl<I: Imports> ExtensionHost for Host<I> {
             })
             .collect::<Vec<_>>();
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
+        let render_call = render_call.map(|render| (Identity::new(&self.0), render));
+        let render_result = render_result.map(|render| (Identity::new(&self.0), render));
         let identity = Identity::new(&self.0);
-        let result = self.0.register_tool(
-            &encoded,
-            prepare.as_ref().map(|(identity, _)| &identity.handle),
-            &identity.handle,
-            &code
-                .iter()
-                .map(|(pointer, id)| (pointer.clone(), &id.handle))
-                .collect::<Vec<_>>(),
-        );
+        let callbacks = ToolCallbacks {
+            prepare: prepare.as_ref().map(|(identity, _)| &identity.handle),
+            execute: &identity.handle,
+            render_call: render_call.as_ref().map(|(identity, _)| &identity.handle),
+            render_result: render_result.as_ref().map(|(identity, _)| &identity.handle),
+        };
+        let schemas = code
+            .iter()
+            .map(|(pointer, id)| (pointer.clone(), &id.handle))
+            .collect::<Vec<_>>();
+        let result = self.0.register_tool(&encoded, callbacks, &schemas);
         for (_, identity) in code {
             identity.settle(result.is_ok());
         }
         result?;
         if let Some((identity, prepare)) = prepare {
             identity.keep(prepare);
+        }
+        if let Some((identity, render)) = render_call {
+            identity.keep(render);
+        }
+        if let Some((identity, render)) = render_result {
+            identity.keep(render);
         }
         identity.keep(execute);
         Ok(())

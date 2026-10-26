@@ -12,9 +12,12 @@ use wasmtime_wasi::WasiView;
 pub(crate) mod bash;
 mod credentials;
 pub(crate) mod events;
+mod factories;
+pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
 pub(crate) mod schema;
+mod terminal;
 pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.
@@ -58,6 +61,14 @@ pub(crate) struct Exports {
     events: events::Exports,
     /// Actual preparation and execution exports.
     tools: tools::Exports,
+    /// Actual terminal input export.
+    terminal: terminal::Exports,
+    /// Actual component factory export.
+    factories: factories::Exports,
+    /// Native component disposal.
+    dispose: Abort,
+    /// Native branch change listener.
+    branch_change: Abort,
     /// Actual command, completion and shortcut exports.
     registered: registrations::Exports,
     /// Actual authored setup entry point.
@@ -106,6 +117,8 @@ impl Exports {
             .ok_or_else(|| wasmtime::format_err!("missing extension guest interface"))?;
         let registered = registrations::Exports::new(store, instance, &guest)?;
         let tools = tools::Exports::new(store, instance, &guest)?;
+        let terminal = terminal::Exports::new(store, instance, &guest)?;
+        let factories = factories::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
@@ -117,6 +130,10 @@ impl Exports {
             events,
             bash,
             tools,
+            terminal,
+            factories,
+            dispose: typed(store, instance, &guest, "invoke-dispose")?,
+            branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
             setup: typed(store, instance, &guest, "invoke-setup")?,
             with_session: typed(store, instance, &guest, "invoke-with-session")?,
@@ -148,19 +165,26 @@ impl Exports {
             Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
-            Call::Synchronous(call) => self.prefix(accessor, call).await?,
-            Call::Tail(handler, reply) => {
-                let callback = accessor.with(|mut access| {
-                    access.get().ctx().table.push(Callback { id: handler.id })
-                })?;
-                let result = self
-                    .tail
-                    .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
-                    .await;
-                accessor.with(|mut access| access.get().ctx().table.delete(callback))?;
-                let _ = reply.send(result?.0);
+            call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
+                self.ui(accessor, call).await?;
             }
+            Call::Synchronous(call) => self.prefix(accessor, call).await?,
+            Call::Tail(handler, reply) => self.tail(accessor, &handler, reply).await?,
 
+            call @ (Call::Setup(..) | Call::WithSession(..)) => {
+                self.session(accessor, call).await?;
+            }
+            Call::Release(release) => self.release(accessor, release).await?,
+        }
+        Ok(())
+    }
+    /// Enters one session setup callback with its retained session capability.
+    async fn session<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
             Call::Setup(handler, writer, reply) => {
                 let result = session(accessor, self.setup, handler, writer).await?;
                 let _ = reply.send(result);
@@ -169,12 +193,27 @@ impl Exports {
                 let result = session(accessor, self.with_session, handler, context).await?;
                 let _ = reply.send(result);
             }
-            Call::Release(release) => self.release(accessor, release).await?,
+            _ => return Err(wasmtime::format_err!("expected a session callback")),
         }
         Ok(())
     }
-    /// Answers factory initialization before tearing down a failing Store.
-    async fn start<T: crate::callback_imports::CallbackView + 'static>(
+
+    /// Enters one terminal input listener or component factory export.
+    async fn ui<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
+            Call::Factory(call) => self.factories.invoke(accessor, call).await,
+            Call::ToolRender(call) => self.factories.render(accessor, call).await,
+            _ => Err(wasmtime::format_err!("expected a UI callback")),
+        }
+    }
+
+    /// Enters the authored factory; its failure answers the load before the Store is torn down.
+    async fn start<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
         reply: crate::lifecycle::replies::Reply<()>,
@@ -187,6 +226,25 @@ impl Exports {
         let _ = reply.send(Ok(()));
         Ok(())
     }
+
+    /// Awaits an independently owned listener tail and sends its result.
+    async fn tail<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        handler: &Callback,
+        reply: crate::lifecycle::replies::Reply<()>,
+    ) -> wasmtime::Result<()> {
+        let callback = accessor
+            .with(|mut access| access.get().ctx().table.push(Callback { id: handler.id }))?;
+        let result = self
+            .tail
+            .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
+            .await;
+        accessor.with(|mut access| access.get().ctx().table.delete(callback))?;
+        let _ = reply.send(result?.0);
+        Ok(())
+    }
+
     /// Retires a callback identity, entering the guest's release export once it is unused.
     async fn release<T: crate::callback_imports::CallbackView + 'static>(
         &self,
@@ -232,8 +290,13 @@ impl Exports {
             SynchronousKind::Listener => self.listener,
             SynchronousKind::CompactionComplete => self.compaction_complete,
             SynchronousKind::CompactionError => self.compaction_error,
-            SynchronousKind::Abort => {
-                let result = self.abort.call_concurrent(accessor, (handler, frame)).await;
+            SynchronousKind::Abort | SynchronousKind::Dispose | SynchronousKind::BranchChange => {
+                let export = match call.kind {
+                    SynchronousKind::Abort => self.abort,
+                    SynchronousKind::Dispose => self.dispose,
+                    _ => self.branch_change,
+                };
+                let result = export.call_concurrent(accessor, (handler, frame)).await;
                 return finish(accessor, (callback, emitter), call.completion, result);
             }
         };

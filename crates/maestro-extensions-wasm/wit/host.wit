@@ -58,6 +58,10 @@ interface host {
         get-fg-ansi: func(color: string) -> result<string, string>;
         get-bg-ansi: func(color: string) -> result<string, string>;
         get-color-mode: func() -> result<color-mode, string>;
+        /// Colors text with the border color of a thinking level.
+        thinking-border: func(level: string, text: string) -> result<string, string>;
+        /// Colors text with the shell mode border color.
+        bash-mode-border: func(text: string) -> result<string, string>;
     }
     /// Registers a renderer without invoking it.
     register-message-renderer: func(custom-type: string, handler: borrow<callback>) -> result<_, string>;
@@ -117,8 +121,16 @@ interface host {
     record local-key { target: u32, emitter: callback-emitter }
     /// One nested same-instance argument preparation.
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
+    /// What a terminal input listener decided; absent members leave the input as it is.
+    record terminal-input-result { consume: option<bool>, data: option<string> }
+    /// One nested same-instance tool rendering.
+    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
+    /// One nested same-instance component factory.
+    record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
+    /// One nested same-instance terminal input chunk.
+    record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.
@@ -170,6 +182,7 @@ interface host {
         unit(local-unit),
         key(local-key),
         prepare(local-prepare),
+        terminal-input(local-terminal-input),
         synchronous(local-synchronous),
         schema(local-schema),
         event(local-event),
@@ -181,6 +194,8 @@ interface host {
         with-session(local-continuation),
         tail(u32),
         bash(local-bash),
+        factory(local-factory),
+        tool-render(local-tool-render),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -190,12 +205,15 @@ interface host {
         unit(result<_, string>),
         key(result<bool, string>),
         prepared(result<string, string>),
+        terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
         bash(result<option<f64>, string>),
+        factory(result<factory-component, string>),
+        tool-render(result<tool-rendered, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-value { unit, boolean(bool), text(string), credentials(auth-storage), catalog(model-registry) }
@@ -281,6 +299,40 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// Terminal handle lent to a component factory.
+    resource tui;
+    /// Which renderer a tool rendering enters.
+    enum tool-render-slot { call, %result }
+    /// What a tool renderer reads about its row at this rendering.
+    record tool-render-info {
+        tool-call-id: string, args: option<string>, cwd: string, phase: tool-render-phase,
+        expanded: bool, show-images: bool, is-error: bool,
+    }
+    /// Execution progress of a tool row.
+    record tool-render-phase { execution-started: bool, args-complete: bool, is-partial: bool }
+    /// One tool rendering: the renderer slot, the identity of the row's guest state once it
+    /// has one, the row context and the independently supplied callback operands.
+    record tool-render { slot: tool-render-slot, row: option<u32>, info: tool-render-info, args: option<string>, %result: option<string>, options: option<tool-render-result-options> }
+    /// Options supplied to the result callback independently of the row context.
+    record tool-render-result-options { expanded: bool, is-partial: bool }
+    /// A tool rendering's component or error, with new row state retained in either case.
+    record tool-rendered { component: result<callback, string>, row: option<callback> }
+    /// Redraws one tool row.
+    resource tool-invalidator { invalidate: func() -> result<_, string>; }
+    /// The footer metadata a footer factory may read; each read is current.
+    resource footer-data {
+        get-git-branch: func() -> result<option<string>, string>;
+        get-extension-statuses: func() -> result<list<tuple<string, string>>, string>;
+        get-available-provider-count: func() -> result<f64, string>;
+        /// Calls the listener when the branch may have changed; dropping the subscription keeps it.
+        on-branch-change: func(listener: borrow<callback>) -> result<subscription, string>;
+    }
+    /// A component a factory built, with the disposal the host calls when it removes it.
+    record factory-component { component: callback, dispose: option<callback> }
+    /// One available theme; a theme without a file has no path.
+    record theme-info { name: string, path: option<string> }
+    /// Whether a theme selection applied, with the host's message when it did not.
+    record theme-set-result { success: bool, error: option<string> }
     /// Independently retained opaque UI capability.
     resource extension-ui-context {
         notify: func(message: string, kind: option<notification-type>) -> import-route;
@@ -290,10 +342,38 @@ interface host {
         set-working-indicator: func(options: option<working-indicator-options>) -> import-route;
         set-hidden-thinking-label: func(label: option<string>) -> import-route;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> import-route;
+        /// Replaces the footer with the component a factory builds, or restores the host footer.
+        set-footer: func(factory: option<borrow<callback>>) -> import-route;
+        /// Replaces the header with the component a factory builds, or restores the host header.
+        set-header: func(factory: option<borrow<callback>>) -> import-route;
+        /// Shows the component a factory builds; the host disposes the widget it replaces first.
+        set-widget-factory: func(key: string, factory: borrow<callback>, options: option<extension-widget-options>) -> import-route;
         set-title: func(title: string) -> import-route;
         paste-to-editor: func(text: string) -> import-route;
         set-editor-text: func(text: string) -> import-route;
         get-editor-text: func() -> result<string, string>;
+        /// Adds a raw terminal input listener; dropping the subscription keeps it.
+        on-terminal-input: func(handler: borrow<callback>) -> result<subscription, string>;
+        /// The live theme of this UI.
+        theme: func() -> result<theme, string>;
+        /// Every available theme in the host's order.
+        get-all-themes: func() -> result<list<theme-info>, string>;
+        /// Loads a theme by name without selecting it.
+        get-theme: func(name: string) -> result<option<theme>, string>;
+        /// Selects a theme by name.
+        set-theme-name: func(name: string) -> result<theme-set-result, string>;
+        /// Selects a retained theme.
+        set-theme: func(theme: borrow<theme>) -> result<theme-set-result, string>;
+        get-tools-expanded: func() -> result<bool, string>;
+        set-tools-expanded: func(expanded: bool) -> import-route;
+        /// Resolves to the chosen option, or none on dismissal.
+        select: async func(title: string, options: list<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
+        /// Resolves to false on dismissal.
+        confirm: async func(title: string, message: string, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<bool, string>;
+        /// Resolves to the entered line, or none on dismissal.
+        input: async func(title: string, placeholder: option<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
+        /// Resolves to the edited text, or none on dismissal.
+        editor: async func(title: string, prefill: option<string>) -> result<option<string>, string>;
     }
     /// Resolved credentials, retaining key and header presence.
     record request-auth {
@@ -438,7 +518,7 @@ interface host {
         name: string, description: option<string>, completions: option<borrow<callback>>, handler: borrow<callback>,
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
-    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>) -> import-route;
+    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
     /// Registers JSON provider data, queued until the host binds.
     register-provider: func(name: string, config: string) -> import-route;
     /// Unregisters a provider, including its queued registrations.

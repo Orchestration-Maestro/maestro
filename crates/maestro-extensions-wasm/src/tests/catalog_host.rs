@@ -206,7 +206,11 @@ impl host::HostModelRegistry for State {
             .record("getAvailable", &[])
             .and_then(|v| v.ok_or("missing list".into()))
             .map(host::RouteValue::Text);
-        self.push(super::host::Route(Some(result)))
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn find(
         &mut self,
@@ -242,7 +246,11 @@ impl host::HostModelRegistry for State {
             .get(&this)?
             .flag("hasConfiguredAuth", &[json!(model)])
             .map(host::RouteValue::Boolean);
-        self.push(super::host::Route(Some(result)))
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn get_provider_auth_status(
         &mut self,
@@ -255,7 +263,11 @@ impl host::HostModelRegistry for State {
             .record("getProviderAuthStatus", &[json!(provider)])
             .and_then(|v| v.ok_or("missing status".into()))
             .map(host::RouteValue::Text);
-        self.push(super::host::Route(Some(result)))
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn get_provider_display_name(
         &mut self,

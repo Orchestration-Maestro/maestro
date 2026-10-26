@@ -9,19 +9,19 @@ use std::rc::Rc;
 
 use super::Imports;
 use crate::types::finite::encode_value;
-use crate::{ColorMode, ExtensionResult, SourceInfo, Theme, ThemePort};
+use crate::{ColorMode, ExtensionResult, ModelThinkingLevel, SourceInfo, Theme, ThemePort};
 
 /// Owned host theme kept by the facade.
-struct Retained<I: Imports> {
+pub(super) struct Retained<I: Imports> {
     /// The host the theme belongs to.
     imports: I,
     /// The retained host resource.
-    theme: I::Theme,
+    pub(super) theme: I::Theme,
 }
 
 /// Wraps an independently owned host theme.
 pub(super) fn theme<I: Imports>(imports: I, theme: I::Theme) -> Theme {
-    Theme::new(Rc::new(Retained { imports, theme }))
+    Theme::supplied(Rc::new(Retained { imports, theme }))
 }
 
 impl<I: Imports> ThemePort for Retained<I> {
@@ -72,5 +72,12 @@ impl<I: Imports> ThemePort for Retained<I> {
     }
     fn get_color_mode(&self) -> ExtensionResult<ColorMode> {
         self.imports.theme_get_color_mode(&self.theme)
+    }
+    fn thinking_border(&self, level: ModelThinkingLevel, text: &str) -> ExtensionResult<String> {
+        self.imports
+            .theme_thinking_border(&self.theme, &level.to_string(), text)
+    }
+    fn bash_mode_border(&self, text: &str) -> ExtensionResult<String> {
+        self.imports.theme_bash_mode_border(&self.theme, text)
     }
 }

@@ -101,6 +101,13 @@ kinds! {
         Schema(crate::schema_code::Handler),
         CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
         CredentialFallback(crate::FallbackResolver),
+        TerminalInput(crate::TerminalInputHandler),
+        ComponentFactory(crate::ComponentFactory),
+        ToolRenderCall(crate::ToolRenderCall),
+        ToolRenderResult(crate::ToolRenderResult),
+        ToolRow(std::rc::Rc<crate::types::ToolRow>),
+        FooterFactory(crate::FooterFactory),
+        BranchChange(crate::BranchChangeListener),
     }
     once {
         Abort(crate::AbortListener),

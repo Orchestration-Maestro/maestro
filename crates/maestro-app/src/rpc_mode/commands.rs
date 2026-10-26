@@ -284,11 +284,18 @@ impl Connection {
         command: String,
         workspace_command: workspace::RpcCommand,
     ) -> RpcResponse {
+        let Some(workspace) = &self.workspace else {
+            return RpcResponse::Error {
+                id: None,
+                error: format!("Unknown command: {command}"),
+                command: Some(command),
+            };
+        };
         let connection = Rc::downgrade(self);
         let events = Rc::new(move |event: workspace_schema::EventData| {
             write_to(&connection, RpcRecord::WorkspaceEvent(&event))
         });
-        let result = self.workspace.execute(workspace_command, events).await;
+        let result = workspace.execute(workspace_command, events).await;
         RpcResponse::Workspace(Box::new(workspace::RpcResponse {
             id,
             command,

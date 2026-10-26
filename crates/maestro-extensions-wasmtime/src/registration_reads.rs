@@ -30,6 +30,8 @@ pub(crate) enum Request {
         execute: Handle,
         /// The schema bindings admitted for this declaration.
         schemas: crate::schema_registration::Schemas,
+        /// Independently optional call and result renderers.
+        renderers: (Option<Handle>, Option<Handle>),
         /// Catchable native registration result.
         reply: Reply,
     },
@@ -59,6 +61,25 @@ pub(crate) enum Request {
     },
 }
 
+/// Registers one tool declaration with its callbacks and optional renderers.
+fn tool(
+    api: &ExtensionAPI<Local>,
+    registry: &Registry,
+    metadata: &str,
+    callbacks: crate::schema_registration::ToolCallbacks,
+    renderers: (Option<Handle>, Option<Handle>),
+) -> Result<(), String> {
+    let definition = crate::tool_registration::definition(
+        metadata,
+        callbacks,
+        renderers,
+        registry.clone(),
+        api.events.clone(),
+    )?;
+    api.register_tool(definition)
+        .map_err(|error| error.to_string())
+}
+
 impl Request {
     /// Calls native registration outside all resource-table borrows.
     pub(crate) fn answer(self, api: &ExtensionAPI<Local>, registry: &Registry) {
@@ -82,10 +103,11 @@ impl Request {
                 prepare,
                 execute,
                 schemas,
+                renderers,
                 reply,
             } => {
-                let result = register_tool(api, registry, &metadata, (prepare, execute), schemas);
-                let _ = reply.send(result);
+                let callbacks = (prepare, execute, schemas);
+                let _ = reply.send(tool(api, registry, &metadata, callbacks, renderers));
                 return;
             }
             Self::Command {
@@ -153,24 +175,4 @@ impl Endpoint {
         self.0
             .route(|id, reply| Message::Registration(id, request(reply)))
     }
-}
-
-/// Constructs the tools-owned definition before registering it on the original facade.
-fn register_tool(
-    api: &ExtensionAPI<Local>,
-    registry: &Registry,
-    metadata: &str,
-    handlers: (Option<Handle>, Handle),
-    schemas: crate::schema_registration::Schemas,
-) -> Result<(), String> {
-    crate::tool_registration::definition(
-        metadata,
-        (handlers.0, handlers.1, schemas),
-        registry.clone(),
-        api.events.clone(),
-    )
-    .and_then(|definition| {
-        api.register_tool(definition)
-            .map_err(|error| error.to_string())
-    })
 }
