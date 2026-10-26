@@ -197,7 +197,7 @@ impl LocalBash {
             ))
             .into());
         }
-        let mut builder = tokio::process::Command::new(shell.shell);
+        let mut builder = maestro_process::command(shell.shell);
         builder
             .args(shell.args)
             .arg(command)

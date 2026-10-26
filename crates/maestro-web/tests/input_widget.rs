@@ -121,10 +121,7 @@ impl AttachmentHost for DefaultHost {
     fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(
-        &self,
-        _: Rc<std::cell::RefCell<maestro_web::Attachment>>,
-    ) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn take_escape(&self) -> bool {

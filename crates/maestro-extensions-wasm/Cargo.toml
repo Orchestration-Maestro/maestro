@@ -59,6 +59,14 @@ path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "resource_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "resource_component_reloaded"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "send_user_message"
 path = "../../examples/extensions/send_user_message.rs"
 crate-type = ["cdylib"]

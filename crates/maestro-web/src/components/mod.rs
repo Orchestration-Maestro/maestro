@@ -3,11 +3,14 @@ pub mod attachment_tile;
 pub mod diff;
 /// Retained single-line browser input.
 pub mod input;
+/// Completed transcript history placed by emitted position.
+pub mod message_list;
 /// Open custom-message role callbacks.
 pub mod message_renderer_registry;
 /// Retained transcript message rows.
 pub mod messages;
-pub(crate) mod native_text;
+/// The message being streamed, published once per frame.
+pub mod streaming_message_container;
 /// Retained reasoning disclosure.
 pub mod thinking_block;
 
@@ -33,6 +36,9 @@ pub mod markdown_block;
 pub mod console_block;
 /// Native custom-provider summary and current actions.
 pub mod custom_provider_card;
+/// Shared native mode selection.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod mode_toggle;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
 

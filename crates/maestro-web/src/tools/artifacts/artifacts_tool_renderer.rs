@@ -1,14 +1,11 @@
 //! Artifact command selection over borrowed raw and native operands.
 use super::artifact_pill::Pill;
 use crate::{
-    components::{
-        console_block::ConsoleVariant,
-        diff::{DiffProps, diff},
-    },
+    components::{console_block::ConsoleVariant, diff::DiffProps},
     tools::{
         renderer_registry::get_text_output,
         renderers::{
-            card_content::Caption,
+            card_content::{Caption, CardOutput},
             collapsible_card::{ArtifactTemplate, Body, CollapsibleCard, Phase},
             default_renderer::status,
         },
@@ -115,23 +112,23 @@ impl<'a> Field<'a> {
         }
     }
 }
-impl<D> ToolRenderer<JsonObject, D> for ArtifactsToolRenderer {
+impl<D, C: CardOutput> ToolRenderer<JsonObject, D, C> for ArtifactsToolRenderer {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         self.prepare(params.map(Input::Raw), result.as_ref(), is_streaming)
     }
 }
-impl<D> ToolRenderer<Value, D> for ArtifactsToolRenderer {
+impl<D, C: CardOutput> ToolRenderer<Value, D, C> for ArtifactsToolRenderer {
     fn render(
         &self,
         params: Option<&Value>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let empty = JsonObject::new();
         self.prepare(
             json_params(params, &empty).map(Input::Raw),
@@ -140,24 +137,24 @@ impl<D> ToolRenderer<Value, D> for ArtifactsToolRenderer {
         )
     }
 }
-impl<D> ToolRenderer<ArtifactsParams, D> for ArtifactsToolRenderer {
+impl<D, C: CardOutput> ToolRenderer<ArtifactsParams, D, C> for ArtifactsToolRenderer {
     fn render(
         &self,
         params: Option<&ArtifactsParams>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         self.prepare(params.map(Input::Native), result.as_ref(), is_streaming)
     }
 }
 impl ArtifactsToolRenderer {
     /// Select a template and own only the fields that survive that selection.
-    fn prepare<D>(
+    fn prepare<D, C: CardOutput>(
         &self,
         params: Option<Input<'_>>,
         result: Option<&ToolResultMessageView<'_, D>>,
         streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let command_field = params.and_then(|params| params.field("command"));
         let command = command_field.and_then(Field::text).unwrap_or_default();
         let outcome = match result {
@@ -203,7 +200,6 @@ impl ArtifactsToolRenderer {
                     text: display.into_owned(),
                     filename: filename.and_then(Field::text).map(str::to_owned),
                     panel: self.artifacts_panel.clone(),
-                    actions: None,
                 }),
             );
         }
@@ -266,13 +262,13 @@ fn template(command: &str, preparing: bool, outcome: Outcome) -> ArtifactTemplat
     }
 }
 /// Select mutually exclusive body operands without validating discarded fields.
-fn body(
+fn body<C: CardOutput>(
     params: Option<Input<'_>>,
     (command, filename): (&str, Option<Field<'_>>),
     outcome: Outcome,
     output: String,
     template: ArtifactTemplate,
-) -> Result<Body, ToolUiError> {
+) -> Result<Body<C>, ToolUiError> {
     let complete = matches!(outcome, Outcome::Success);
     let error = matches!(outcome, Outcome::Error);
     let mut body = Body {
@@ -327,10 +323,10 @@ fn body(
     Ok(body)
 }
 /// Reached replacement validation differs between pending/error and success.
-fn replacements(
+fn replacements<C: CardOutput>(
     params: Option<Input<'_>>,
     complete: bool,
-) -> Result<Option<Box<dyn crate::tools::types::ToolContent>>, ToolUiError> {
+) -> Result<Option<C>, ToolUiError> {
     let old = params.and_then(|params| params.field("old_str"));
     let new = params.and_then(|params| params.field("new_str"));
     if !complete && (old.is_none() || new.is_none()) {
@@ -343,7 +339,7 @@ fn replacements(
             .transpose()
             .map(|text| text.unwrap_or_default().to_owned())
     };
-    Ok(Some(diff(DiffProps {
+    Ok(Some(C::diff(DiffProps {
         old_text: operand(old)?,
         new_text: operand(new)?,
         title: None,

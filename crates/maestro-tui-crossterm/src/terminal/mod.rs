@@ -1,19 +1,31 @@
-//! The Unix process terminal: raw standard input, streamed text input, the enhanced keyboard
-//! negotiation, bracketed paste, progress and the write log.
+//! The process terminal: raw standard input, streamed text input, the enhanced keyboard
+//! negotiation, bracketed paste, progress and the write log. The `unix` and `windows`
+//! modules own what each platform acquires, reads and writes; the rest is shared.
 
-mod descriptor;
 mod dimensions;
 mod input;
 mod lifecycle;
 mod output;
-mod tty_writer;
+#[cfg(any(windows, test))]
+mod producer;
+#[cfg(any(windows, test))]
+mod reader;
+#[cfg(unix)]
+mod unix;
+#[cfg(windows)]
+mod windows;
+
+#[cfg(unix)]
+use unix as platform;
+#[cfg(windows)]
+use windows as platform;
 
 use std::cell::{Cell, RefCell};
 use std::future::Future;
 use std::io;
 use std::path::PathBuf;
 use std::pin::Pin;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::time::Duration;
 
 use maestro_tui::Terminal;
@@ -24,11 +36,33 @@ use tokio::time::Instant;
 use crate::output_errors::{FailureSource, OutputErrors};
 use dimensions::Dimensions;
 use lifecycle::Running;
-pub use lifecycle::wait_for_input;
 use output::{
     CLEAR_FROM_CURSOR, CLEAR_LINE, CLEAR_SCREEN, CURSOR_HIDE, CURSOR_SHOW, PROGRESS_CLEAR,
     append_log, log_destination, relative_move, title,
 };
+pub use platform::wait_for_input;
+
+/// Where output goes; each platform supplies one, retained across input generations.
+trait OutputPort {
+    /// Prepares output for a started terminal, with any task it needs on `local`; nothing by
+    /// default.
+    fn open(&self, _local: &LocalSet, _shared: Weak<Shared>) -> io::Result<()> {
+        Ok(())
+    }
+
+    /// Writes `text`, or accepts it for the writer.
+    fn write(&self, text: &str) -> io::Result<()>;
+
+    /// Ends the writer, writing what it still holds; nothing by default.
+    fn finish(&self) -> io::Result<()> {
+        Ok(())
+    }
+
+    /// Accepted bytes not yet written; none by default.
+    fn pending(&self) -> usize {
+        0
+    }
+}
 
 /// Receives the input the terminal delivers, one framed chunk at a time.
 type InputCallback = Box<dyn FnMut(&str)>;
@@ -36,7 +70,7 @@ type InputCallback = Box<dyn FnMut(&str)>;
 /// Notified when the window size changed.
 type ResizeCallback = Box<dyn FnMut()>;
 
-/// A Unix terminal connection over the standard descriptors of the process.
+/// A terminal connection over the standard input and output of the process.
 ///
 /// See the [native terminal](crate) guide for the runtime it requires.
 pub struct ProcessTerminal {
@@ -79,8 +113,9 @@ struct Shared {
     failure: RefCell<Option<io::Error>>,
     /// The callbacks registered for native output failures.
     errors: Rc<OutputErrors>,
-    /// The one live output writer, retained across input generations.
-    output: RefCell<Option<Rc<tty_writer::TtyWriter>>>,
+    /// Where output goes: the live writer, retained across input generations, or a
+    /// synchronous write.
+    output: platform::Output,
 }
 
 impl Shared {
@@ -94,13 +129,7 @@ impl Shared {
     /// Writes `text` to the running writer, or synchronously while stopped, without
     /// announcing a failure; the caller retains and announces the one it gets.
     fn write_output(&self, text: &str) -> io::Result<()> {
-        let writer = self.output.borrow().clone();
-        if let Some(writer) = writer {
-            writer.write(text);
-            Ok(())
-        } else {
-            output::emit(text)
-        }
+        self.output.write(text)
     }
 
     /// Writes conditional controls through the same output owner.
@@ -110,8 +139,7 @@ impl Shared {
 
     /// Takes the writer out of service before draining any retained front.
     fn finish_output(&self) -> io::Result<()> {
-        let writer = self.output.take();
-        writer.map_or(Ok(()), |writer| writer.finish())
+        self.output.finish()
     }
 
     /// Whether `generation` is the one whose task may still act.
@@ -190,7 +218,7 @@ impl ProcessTerminal {
                 dimensions: Dimensions::observe(),
                 failure: RefCell::new(None),
                 errors: Rc::new(OutputErrors::default()),
-                output: RefCell::new(None),
+                output: platform::Output::new(),
             }),
             running: None,
             progress: None,
@@ -224,11 +252,7 @@ impl Terminal for ProcessTerminal {
     }
 
     fn pending_output_bytes(&self) -> usize {
-        self.shared
-            .output
-            .borrow()
-            .as_ref()
-            .map_or(0, |writer| writer.pending())
+        self.shared.output.pending()
     }
 
     fn columns(&self) -> usize {

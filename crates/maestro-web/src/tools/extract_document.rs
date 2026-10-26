@@ -2,7 +2,7 @@
 use super::{
     renderer_registry::get_text_output,
     renderers::{
-        card_content::{Caption, field},
+        card_content::{Caption, CardOutput, field},
         collapsible_card::{Body, CollapsibleCard, Phase},
         default_renderer::status,
     },
@@ -19,13 +19,13 @@ use serde_json::Value;
 pub struct ExtractDocumentRenderer;
 /// Shared document-extraction renderer value.
 pub const EXTRACT_DOCUMENT_RENDERER: ExtractDocumentRenderer = ExtractDocumentRenderer;
-impl ToolRenderer<JsonObject, Value> for ExtractDocumentRenderer {
+impl<C: CardOutput> ToolRenderer<JsonObject, Value, C> for ExtractDocumentRenderer {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let url = if let Some(params) = params {
             if result.is_some() {
                 field(Some(params), "url")?.map(std::borrow::Cow::into_owned)
@@ -57,13 +57,15 @@ impl ToolRenderer<JsonObject, Value> for ExtractDocumentRenderer {
         ))
     }
 }
-impl ToolRenderer<ExtractDocumentParams, ExtractDocumentResult> for ExtractDocumentRenderer {
+impl<C: CardOutput> ToolRenderer<ExtractDocumentParams, ExtractDocumentResult, C>
+    for ExtractDocumentRenderer
+{
     fn render(
         &self,
         params: Option<&ExtractDocumentParams>,
         result: Option<ToolResultMessageView<'_, ExtractDocumentResult>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         use num_traits::ToPrimitive as _;
         let url = params
             .map(|p| p.url.clone())
@@ -135,14 +137,14 @@ fn success(name: &str, format: &str, size: f64) -> String {
         ryu_js::Buffer::new().format_to_fixed(size / 1024., 1)
     )
 }
-/// Select literal output and status without retaining native result borrows.
-fn prepare<D>(
+/// Select literal output and status for any representation without retaining native result borrows.
+fn prepare<D, C: CardOutput>(
     params: bool,
     url: Option<String>,
     caption: Option<String>,
     result: Option<&ToolResultMessageView<'_, D>>,
     state: super::renderer_registry::ToolHeaderState,
-) -> ToolRenderResult {
+) -> ToolRenderResult<C> {
     let caption = caption.unwrap_or_else(|| {
         if params {
             "Extracting document..."
