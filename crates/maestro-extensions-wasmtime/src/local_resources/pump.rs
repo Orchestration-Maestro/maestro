@@ -445,7 +445,7 @@ impl State {
     fn ui(&self, id: u64, request: crate::ui_reads::Request) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Ui(ui)) = capability.as_deref() {
-            request.answer(ui);
+            request.answer(ui, &self.registry);
         } else {
             request.reject("extension UI resource ended");
         }

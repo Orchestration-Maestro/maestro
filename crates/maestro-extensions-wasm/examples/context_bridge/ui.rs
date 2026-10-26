@@ -6,15 +6,19 @@
 )]
 use maestro_extensions_wasm::{
     AbortSignal, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, NotificationType, WidgetPlacement, WorkingIndicatorOptions,
+    ExtensionWidgetOptions, NotificationType, Subscription, TerminalInputResult, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 use serde_json::{Value, json};
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
 pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
     if let Some(operation) = args.strip_prefix("editor ") {
         return editor(context, operation);
+    }
+    if let Some(request) = args.strip_prefix("ui terminal ") {
+        return terminal(context, request);
     }
     let clear = args == "ui clear";
     let ui = context.ui()?;
@@ -73,6 +77,38 @@ pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> Extensi
         _ => json!(ui.editor(title, text("prefill")).await?),
     };
     Ok(answer.to_string())
+}
+
+thread_local! {
+    /// Terminal input subscriptions by label.
+    static LISTENING: RefCell<HashMap<String, Subscription>> = RefCell::default();
+}
+
+/// Adds, unsubscribes or drops the labelled terminal input listener `request` names. The
+/// listener consumes `consume`, passes `pass` on, fails on `fail` and otherwise replaces the
+/// chunk with its label and the chunk.
+fn terminal(context: &ExtensionContext, request: &str) -> ExtensionResult<String> {
+    let (action, label) = request.split_once(' ').ok_or("missing listener label")?;
+    if action != "listen" {
+        let subscription = LISTENING.with_borrow_mut(|listening| listening.remove(label));
+        let subscription = subscription.ok_or("unknown listener")?;
+        if action == "unsubscribe" {
+            subscription.unsubscribe()?;
+        }
+        return Ok(format!("{action} {label}"));
+    }
+    let named = label.to_owned();
+    let subscription = context.ui()?.on_terminal_input(Rc::new(move |data, _| {
+        let decision = |consume, data| Some(TerminalInputResult { consume, data });
+        match data {
+            "consume" => Ok(decision(Some(true), Some("ignored".into()))),
+            "pass" => Ok(None),
+            "fail" => Err(format!("{named} failed")),
+            _ => Ok(decision(None, Some(format!("{named}:{data}")))),
+        }
+    }))?;
+    LISTENING.with_borrow_mut(|listening| listening.insert(label.to_owned(), subscription));
+    Ok(format!("listen {label}"))
 }
 
 /// Reads and edits the originally acquired UI without interpreting the supplied text.

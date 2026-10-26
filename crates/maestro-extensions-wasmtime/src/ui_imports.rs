@@ -1,5 +1,6 @@
 //! Canonical UI imports delegate through the existing typed local request pump.
 use crate::{
+    guest_calls::Callback,
     local_resources::SignalEndpoint,
     read_imports::{ReadEndpoint, add_routed_operand, operand},
     ui_reads::{Dialog, Endpoint, Request},
@@ -11,7 +12,7 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 /// Installs every UI method declared by the canonical host interface.
-pub(crate) fn add_to_linker<T: WasiView + 'static>(
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_routed_operand(
@@ -55,8 +56,11 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
     widget(host)
 }
 
-/// Keeps editor mutations on the same reentrant route as other native UI actions.
-fn editor<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+/// Keeps editor mutations on the same reentrant route as other native UI actions, and adds
+/// terminal input listeners under the original extension.
+fn editor<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     add_routed_operand(
         host,
         "[method]extension-ui-context.paste-to-editor",
@@ -74,6 +78,21 @@ fn editor<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::
         "[method]extension-ui-context.get-editor-text",
         Request::GetEditorText,
         crate::read_imports::resource::<T, Endpoint>,
+    )?;
+    host.func_wrap(
+        "[method]extension-ui-context.on-terminal-input",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, handler): (Resource<Endpoint>, Resource<Callback>)| {
+            let callback = crate::callback_imports::retain(store.data_mut(), &handler)?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let result = endpoint.read(|reply| Request::OnTerminalInput(callback, api, reply));
+            let result = match result {
+                Ok(subscription) => Ok(store.data_mut().ctx().table.push(subscription)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
+        },
     )
 }
 

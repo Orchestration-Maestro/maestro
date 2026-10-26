@@ -20,6 +20,7 @@ pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod schema;
+pub(crate) mod terminal;
 pub(crate) mod tools;
 pub(crate) use bash::{BashCall, BashRequest};
 pub(crate) use registrations::RegisteredCall;
@@ -55,6 +56,8 @@ pub(crate) enum Call<H = Handle> {
     Tool(ToolCall<H>),
     /// The original weak schema allocation and guest callback admission.
     Schema(schema::Invocation<H>),
+    /// Delivers one chunk of terminal input to an authored listener.
+    TerminalInput(terminal::Input<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.

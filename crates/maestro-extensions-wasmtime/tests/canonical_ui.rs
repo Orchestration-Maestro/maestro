@@ -2,7 +2,7 @@
 #![cfg(test)]
 use maestro_extensions::{
     Cancellation, EventError, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
-    WorkingIndicatorOptions,
+    InputListenerResult, TerminalInputHandler, WorkingIndicatorOptions,
     types::{ExtensionUIContextPort, ExtensionUIFuture, NotificationType, WidgetContent},
 };
 use serde_json::{Value, json};
@@ -358,6 +358,118 @@ fn canonical_dialogs_forward_operands_answers_and_errors() {
                 "host call of {request}"
             );
         }
+        bus.clear();
+    });
+}
+
+/// Live terminal input listeners in registration order, with the identities removed so far.
+#[derive(Default)]
+struct Terminal {
+    /// Listeners by registration identity.
+    listeners: Rc<RefCell<Vec<(usize, TerminalInputHandler)>>>,
+    /// Identities whose removal the guest requested.
+    removed: Rc<RefCell<Vec<usize>>>,
+    /// What each listener decided when a notification reentered it.
+    reentered: RefCell<Vec<String>>,
+}
+impl Terminal {
+    /// Every live listener's decision about `data`, in registration order.
+    fn deliver(&self, data: &str) -> Vec<String> {
+        let listeners: Vec<TerminalInputHandler> = self
+            .listeners
+            .borrow()
+            .iter()
+            .map(|(_, listener)| listener.clone())
+            .collect();
+        listeners
+            .iter()
+            .map(|listener| match listener.call(data.to_owned()) {
+                Ok(InputListenerResult::Pass) => "pass".to_owned(),
+                Ok(InputListenerResult::Consume) => "consume".to_owned(),
+                Ok(InputListenerResult::Replace(data)) => format!("replace {data}"),
+                Err(error) => format!("error {error}"),
+            })
+            .collect()
+    }
+}
+impl ExtensionUIContextPort for Terminal {
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        maestro_theme::LiveTheme::default()
+    }
+    fn notify(&self, _message: String, _kind: Option<NotificationType>) -> Result<(), EventError> {
+        let decisions = self.deliver("reenter");
+        self.reentered.borrow_mut().extend(decisions);
+        Ok(())
+    }
+    fn on_terminal_input(
+        &self,
+        handler: TerminalInputHandler,
+    ) -> Result<maestro_extensions::types::UIUnsubscribe, EventError> {
+        let mut listeners = self.listeners.borrow_mut();
+        let id = listeners.len();
+        listeners.push((id, handler));
+        let (listeners, removed) = (Rc::clone(&self.listeners), Rc::clone(&self.removed));
+        Ok(Rc::new(move || {
+            removed.borrow_mut().push(id);
+            listeners.borrow_mut().retain(|(live, _)| *live != id);
+            Ok(())
+        }))
+    }
+}
+
+#[test]
+fn canonical_terminal_input_reaches_listeners_and_removal() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let ui = Rc::new(Terminal::default());
+        runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        let run = async |args: &str| {
+            handler(
+                format!("ui terminal {args}"),
+                runner.create_command_context(),
+            )
+            .await
+            .unwrap_err()
+            .to_string()
+        };
+        assert_eq!(run("listen a").await, "listen a");
+        assert_eq!(run("listen b").await, "listen b");
+        for (data, expected) in [
+            ("x 雪", ["replace a:x 雪", "replace b:x 雪"]),
+            ("consume", ["consume", "consume"]),
+            ("pass", ["pass", "pass"]),
+            ("fail", ["error a failed", "error b failed"]),
+        ] {
+            assert_eq!(ui.deliver(data), expected, "listeners decide {data:?}");
+        }
+        assert_eq!(run("unsubscribe a").await, "unsubscribe a");
+        assert_eq!(*ui.removed.borrow(), [0]);
+        assert_eq!(run("drop b").await, "drop b");
+        assert_eq!(
+            ui.deliver("y"),
+            ["replace b:y"],
+            "a dropped subscription keeps b"
+        );
+        handler("ui imports".into(), runner.create_command_context())
+            .await
+            .unwrap_err();
+        assert_eq!(
+            *ui.reentered.borrow(),
+            ["replace b:reenter"],
+            "a listener reentered from a waiting import answers"
+        );
         bus.clear();
     });
 }

@@ -210,6 +210,9 @@ enum Capability {
     SignalSubscription(Rc<dyn Fn()>),
     /// Original live theme supplied by native rendering.
     Theme(maestro_extensions::LiveTheme),
+    /// Removes a terminal input listener from the UI it was added to; dropping it keeps the
+    /// listener.
+    UiSubscription(Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
 }
@@ -259,9 +262,17 @@ impl Registry {
         &self,
         api: &crate::api_reads::Endpoint,
     ) -> Result<maestro_extensions::EventBus<maestro_extensions::Local>, String> {
+        self.facade(api).map(|api| api.events)
+    }
+
+    /// The original extension facade behind an API resource.
+    pub(crate) fn facade(
+        &self,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<maestro_extensions::ExtensionAPI<maestro_extensions::Local>, String> {
         let capability = self.capability(api.0.id);
         match capability.as_deref() {
-            Some(Capability::Api(api)) => Ok(api.events.clone()),
+            Some(Capability::Api(api)) => Ok(api.clone()),
             _ => Err("extension API resource ended".to_owned()),
         }
     }

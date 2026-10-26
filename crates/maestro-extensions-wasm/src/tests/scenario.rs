@@ -140,6 +140,9 @@ pub trait Driver {
     fn previous_signal(&mut self) -> &mut Option<usize>;
     /// Repeats release through a fresh borrow of an existing identity.
     async fn repeat_release(&mut self, handler: u32) -> Result<(), String>;
+    /// Delivers one terminal input chunk to every live terminal input listener in
+    /// registration order and returns each listener's answer.
+    async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String>;
     /// Delivers one compaction notification through an existing borrowed emitter.
     async fn notify_compaction(
         &mut self,

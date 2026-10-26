@@ -1111,6 +1111,13 @@ impl Imports for Controlled {
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
     }
+    fn ui_on_terminal_input(
+        &self,
+        resource: &Ui,
+        handler: &Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        super::ui_host::on_terminal_input(&mut self.observed.borrow_mut(), resource.key, handler.id)
+    }
     fn ui_select<'a>(
         &'a self,
         resource: &'a Ui,

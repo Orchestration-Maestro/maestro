@@ -56,6 +56,12 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
+            Self::TerminalInput(call) => Call::TerminalInput(crate::guest_calls::terminal::Input {
+                handler: completion.callback(call.handler),
+                data: call.data,
+                emitter: call.emitter,
+                reply: call.reply,
+            }),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
                 kind: call.kind,

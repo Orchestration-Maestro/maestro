@@ -99,6 +99,7 @@ kinds! {
         Component(crate::Component),
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
+        TerminalInput(crate::TerminalInputHandler),
     }
     once {
         Abort(crate::AbortListener),

@@ -33,7 +33,7 @@ pub struct CompactOptions {
     pub on_error: Option<CompactionError>,
 }
 pub use crate::bindings::maestro::extension::host::{
-    ContextUsage, ExtensionWidgetOptions, NotificationType, WidgetPlacement,
+    ContextUsage, ExtensionWidgetOptions, NotificationType, TerminalInputResult, WidgetPlacement,
     WorkingIndicatorOptions,
 };
 use crate::{Model, ModelRegistry, ReadonlySessionManager};
@@ -81,6 +81,8 @@ port! {
         fn set_editor_text(text: &str) -> ();
         /// Reads the host editor's current text.
         fn get_editor_text() -> String;
+        /// Adds a raw terminal input listener; dropping the subscription keeps it.
+        fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
     }
     owned {
         /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.
@@ -105,6 +107,15 @@ port! {
         fn editor(title: String, prefill: Option<String>) -> Option<String>;
     }
 }
+
+/// A raw terminal input listener with callback-scoped emission; `None` leaves the input as it
+/// is.
+pub type TerminalInputHandler = Rc<
+    dyn for<'a> Fn(
+        &str,
+        crate::CallbackEmitter<'a>,
+    ) -> ExtensionResult<Option<TerminalInputResult>>,
+>;
 
 /// Options of a dialog, forwarded without choosing host defaults.
 #[derive(Clone, Default)]

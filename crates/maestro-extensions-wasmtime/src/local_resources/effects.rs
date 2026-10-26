@@ -101,6 +101,21 @@ impl Registry {
             .map(SubscriptionEndpoint)
     }
 
+    /// Adds an authored terminal input listener to the original UI and retains its remover.
+    pub(crate) fn terminal_input(
+        &self,
+        ui: &maestro_extensions::ExtensionUIContext,
+        handler: crate::guest_calls::Handle,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<SubscriptionEndpoint, String> {
+        let listener = handler.terminal_input(self.clone(), &self.facade(api)?);
+        let remove = ui
+            .on_terminal_input(listener)
+            .map_err(|error| error.to_string())?;
+        self.insert(Capability::UiSubscription(remove))
+            .map(SubscriptionEndpoint)
+    }
+
     /// Retains the native theme supplied to one renderer invocation.
     pub(crate) fn theme(&self, theme: LiveTheme) -> Result<ThemeEndpoint, String> {
         self.insert(Capability::Theme(theme)).map(ThemeEndpoint)
@@ -140,6 +155,9 @@ impl State {
                     Some(Capability::SignalSubscription(remove)) => {
                         remove();
                         Ok(())
+                    }
+                    Some(Capability::UiSubscription(remove)) => {
+                        remove().map_err(|error| error.to_string())
                     }
                     _ => Err("extension subscription resource ended".to_owned()),
                 };

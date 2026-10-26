@@ -14,6 +14,7 @@ pub(crate) mod events;
 pub(crate) mod registrations;
 mod renderers;
 pub(crate) mod schema;
+mod terminal;
 pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.
@@ -55,6 +56,8 @@ pub(crate) struct Exports {
     events: events::Exports,
     /// Actual preparation and execution exports.
     tools: tools::Exports,
+    /// Actual terminal input export.
+    terminal: terminal::Exports,
     /// Actual command, completion and shortcut exports.
     registered: registrations::Exports,
     /// Actual authored setup entry point.
@@ -103,6 +106,7 @@ impl Exports {
             .ok_or_else(|| wasmtime::format_err!("missing extension guest interface"))?;
         let registered = registrations::Exports::new(store, instance, &guest)?;
         let tools = tools::Exports::new(store, instance, &guest)?;
+        let terminal = terminal::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
@@ -113,6 +117,7 @@ impl Exports {
             events,
             bash,
             tools,
+            terminal,
             registered,
             setup: typed(store, instance, &guest, "invoke-setup")?,
             with_session: typed(store, instance, &guest, "invoke-with-session")?,
@@ -151,6 +156,7 @@ impl Exports {
             Call::Schema(call) => self.schema.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
+            Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await?,
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
             Call::Tail(handler, reply) => {
                 let callback = accessor.with(|mut access| {

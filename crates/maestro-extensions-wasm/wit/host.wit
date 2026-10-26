@@ -106,6 +106,10 @@ interface host {
     record local-key { target: u32, emitter: callback-emitter }
     /// One nested same-instance argument preparation.
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
+    /// What a terminal input listener decided; absent members leave the input as it is.
+    record terminal-input-result { consume: option<bool>, data: option<string> }
+    /// One nested same-instance terminal input chunk.
+    record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
     enum local-kind { listener, compaction-complete, compaction-error, abort }
     /// One nested same-instance synchronous callback prefix.
@@ -155,6 +159,7 @@ interface host {
         unit(local-unit),
         key(local-key),
         prepare(local-prepare),
+        terminal-input(local-terminal-input),
         synchronous(local-synchronous),
         schema(local-schema),
         event(local-event),
@@ -174,6 +179,7 @@ interface host {
         unit(result<_, string>),
         key(result<bool, string>),
         prepared(result<string, string>),
+        terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
         event(result<event-outcome, string>),
@@ -277,6 +283,8 @@ interface host {
         paste-to-editor: func(text: string) -> import-route;
         set-editor-text: func(text: string) -> import-route;
         get-editor-text: func() -> result<string, string>;
+        /// Adds a raw terminal input listener; dropping the subscription keeps it.
+        on-terminal-input: func(handler: borrow<callback>) -> result<subscription, string>;
         /// Resolves to the chosen option, or none on dismissal.
         select: async func(title: string, options: list<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
         /// Resolves to false on dismissal.

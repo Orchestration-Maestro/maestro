@@ -37,7 +37,8 @@ pub use context::{
     ExtensionUIContext, ExtensionUIContextPort, ExtensionUIDialogOptions, ExtensionWidgetOptions,
     ForkData, ForkOptions, NavigateTreeOptions, NewSessionCommandOptions, NotificationType,
     ReplacedSessionContext, ReplacedSessionContextPort, SetupSession, SignalPort,
-    SwitchSessionOptions, WidgetPlacement, WithSession, WorkingIndicatorOptions,
+    SwitchSessionOptions, TerminalInputHandler, TerminalInputResult, WidgetPlacement, WithSession,
+    WorkingIndicatorOptions,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use event_data::EventData;

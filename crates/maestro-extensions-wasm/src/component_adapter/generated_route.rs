@@ -88,6 +88,9 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
                 .map_err(crate::schema_error::to_wire),
         ),
+        host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
+            exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
+        ),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call => return asynchronous(call),
     };

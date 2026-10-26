@@ -1073,6 +1073,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-setup",
             "invoke-shortcut",
             "invoke-tail",
+            "invoke-terminal-input",
             "invoke-tool",
             "invoke-with-session",
             "start"

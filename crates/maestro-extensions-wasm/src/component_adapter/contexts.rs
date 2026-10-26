@@ -2,14 +2,15 @@
 
 use std::rc::Rc;
 
-use super::callbacks::Scoped;
+use super::callbacks::{Identity, Scoped};
+use super::event_bus::subscription;
 use super::imports::{Dialog, Imports};
 use super::session::reader;
 use super::{model_registry::registry, session::decode};
 use crate::{
     ContextUsage, ExtensionUIContext, ExtensionUIContextPort, ExtensionUIDialogOptions,
     ExtensionWidgetOptions, Model, ModelRegistry, NotificationType, ReadonlySessionManager,
-    WorkingIndicatorOptions,
+    Subscription, TerminalInputHandler, WorkingIndicatorOptions,
 };
 /// Independently retained UI resource.
 struct Ui<I: Imports> {
@@ -79,6 +80,14 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     }
     fn get_editor_text(&self) -> ExtensionResult<String> {
         self.imports.ui_get_editor_text(&self.resource)
+    }
+    fn on_terminal_input(&self, handler: TerminalInputHandler) -> ExtensionResult<Subscription> {
+        let identity = Identity::new(&self.imports);
+        let remover = self
+            .imports
+            .ui_on_terminal_input(&self.resource, &identity.handle)?;
+        identity.keep(handler);
+        Ok(subscription(self.imports.clone(), remover))
     }
     fn select(
         &self,

@@ -129,6 +129,46 @@ pub fn settle(observed: &mut Observed, key: usize, aborted: &Value) {
     observed.log(format!("ui {key} settle {}", json!([aborted])));
 }
 
+/// The bus channel of the terminal input listeners added through the acquisition `key`.
+pub fn terminal_channel(key: usize) -> String {
+    format!("terminal {key}")
+}
+
+/// Records one terminal input listener added through the acquisition `key`, then registers
+/// it on that acquisition's channel unless the host refuses it.
+pub fn on_terminal_input(
+    observed: &mut Observed,
+    key: usize,
+    handler: u32,
+) -> Result<super::bus_host::Subscription, String> {
+    call(observed, key, "onTerminalInput", &json!([]))?;
+    observed.bus.on(&terminal_channel(key), handler)
+}
+
+/// The terminal input listeners in registration order, across acquisitions.
+pub fn terminal_listeners(observed: &Observed) -> Vec<u32> {
+    observed
+        .bus
+        .listeners
+        .iter()
+        .filter(|(channel, _)| channel.starts_with("terminal "))
+        .map(|(_, id)| *id)
+        .collect()
+}
+
+/// A terminal input listener's consumption and replacement members.
+pub type Decision = (Option<bool>, Option<String>);
+
+/// One listener's answer: its decision, with absent members kept absent, or its failure.
+pub fn terminal_answer(answer: Result<Option<Decision>, String>) -> Value {
+    match answer {
+        Ok(decision) => json!({
+            "ok": decision.map(|(consume, data)| json!({ "consume": consume, "data": data }))
+        }),
+        Err(error) => json!({ "error": error }),
+    }
+}
+
 /// The decision supplied for the dialog that is settling.
 pub fn decision(observed: &mut Observed) -> Value {
     observed.ui.answer.take().unwrap_or(Value::Null)
@@ -391,6 +431,18 @@ impl host::HostExtensionUiContext for State {
         let key = self.table.get(&this)?.0;
         let result = set_editor_text(&mut self.observed, key, &text);
         self.routed(result)
+    }
+
+    fn on_terminal_input(
+        &mut self,
+        this: Resource<Ui>,
+        handler: Resource<super::host::Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Subscription>, String>> {
+        let key = self.table.get(&this)?.0;
+        match on_terminal_input(&mut self.observed, key, handler.rep()) {
+            Ok(subscription) => Ok(Ok(self.table.push(subscription)?)),
+            Err(error) => Ok(Err(error)),
+        }
     }
 
     fn get_editor_text(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<String, String>> {

@@ -734,3 +734,109 @@ async fn dialog_rejections(driver: &mut impl Driver) -> Result<(), String> {
 fn advanced_ui_rejections_keep_exact_messages() -> Result<(), String> {
     on_both_adapters!(dialog_rejections)
 }
+
+/// One listener's decision as the driver reports it.
+fn decided(consume: Option<bool>, data: Option<&str>) -> Value {
+    json!({ "ok": { "consume": consume, "data": data } })
+}
+
+/// Each listener answers every chunk with its own decision: no result, absent members, empty
+/// or replaced data, consumption either way, both together, or its exact failure.
+async fn terminal_decisions(driver: &mut impl Driver) -> Result<(), String> {
+    for label in ["a", "b"] {
+        let listen = json!({ "op": "listen", "label": label });
+        assert_eq!(operate(driver, listen).await?, json!({ "ok": "listening" }));
+    }
+    let rows = [
+        ("none", json!({ "ok": null }), json!({ "ok": null })),
+        ("absent", decided(None, None), decided(None, None)),
+        ("empty", decided(None, Some("")), decided(None, Some(""))),
+        (
+            "雪 \u{1b}[A",
+            decided(None, Some("a 雪 \u{1b}[A")),
+            decided(None, Some("b 雪 \u{1b}[A")),
+        ),
+        (
+            "pass",
+            decided(Some(false), None),
+            decided(Some(false), None),
+        ),
+        (
+            "consume",
+            decided(Some(true), None),
+            decided(Some(true), None),
+        ),
+        (
+            "both",
+            decided(Some(true), Some("a both")),
+            decided(Some(true), Some("b both")),
+        ),
+        (
+            "fail",
+            json!({ "error": "a failed 雪\nhere" }),
+            json!({ "error": "b failed 雪\nhere" }),
+        ),
+    ];
+    for (data, first, second) in rows {
+        assert_eq!(
+            driver.terminal_input(data).await?,
+            [first, second],
+            "listeners in registration order answer {data:?}"
+        );
+    }
+    Ok(())
+}
+
+/// An unsubscribed listener stops answering, a dropped subscription keeps its listener, and a
+/// later listener answers after the ones still live.
+async fn terminal_removal(driver: &mut impl Driver) -> Result<(), String> {
+    let unlisten = json!({ "op": "unlisten", "label": "a" });
+    assert_eq!(
+        operate(driver, unlisten).await?,
+        json!({ "ok": "unsubscribed" })
+    );
+    assert_eq!(
+        driver.terminal_input("x").await?,
+        [decided(None, Some("b x"))]
+    );
+    let forget = json!({ "op": "forget", "label": "b" });
+    assert_eq!(operate(driver, forget).await?, json!({ "ok": "dropped" }));
+    assert_eq!(
+        driver.terminal_input("x").await?,
+        [decided(None, Some("b x"))],
+        "dropping the subscription keeps the listener"
+    );
+    let listen = json!({ "op": "listen", "label": "c" });
+    assert_eq!(operate(driver, listen).await?, json!({ "ok": "listening" }));
+    assert_eq!(
+        driver.terminal_input("y").await?,
+        [decided(None, Some("b y")), decided(None, Some("c y"))]
+    );
+    Ok(())
+}
+
+/// Terminal input listeners keep their decisions, failures and removal through both adapters.
+async fn terminal_input(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    terminal_decisions(driver).await?;
+    terminal_removal(driver).await?;
+    let emitted: Vec<Value> = driver
+        .bus_emissions()
+        .into_iter()
+        .filter(|(channel, _)| channel == "terminal-input")
+        .map(|(_, data)| data)
+        .collect();
+    assert_eq!(
+        emitted.first(),
+        Some(&json!(["a", "none"])),
+        "listeners emit through their call"
+    );
+    assert_eq!(emitted.len(), 20, "every invocation emitted once");
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn terminal_input_keeps_transform_consume_and_removal() -> Result<(), String> {
+    on_both_adapters!(terminal_input)
+}

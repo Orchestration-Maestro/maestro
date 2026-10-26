@@ -68,6 +68,8 @@ pub use maestro_theme::Theme;
 pub use maestro_theme::ThemeBg;
 /// Foreground color key, including authored names.
 pub use maestro_theme::ThemeColor;
+/// What a terminal input listener decided about one chunk of input.
+pub use maestro_tui::tui::InputListenerResult;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,

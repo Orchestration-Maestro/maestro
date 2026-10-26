@@ -113,4 +113,20 @@ impl<I: Imports> Exports<I> {
         };
         listener(CallbackEmitter::new(&port))
     }
+
+    /// Runs the terminal input listener under this identity on one chunk, with its borrowed
+    /// emitter.
+    pub(crate) fn invoke_terminal_input(
+        &self,
+        handler: u32,
+        data: &str,
+        emitter: &I::Emitter,
+    ) -> ExtensionResult<Option<crate::TerminalInputResult>> {
+        let listener = callbacks::find::<crate::TerminalInputHandler>(handler)?;
+        let port = Emitter {
+            imports: &self.imports,
+            handle: emitter,
+        };
+        listener(data, CallbackEmitter::new(&port))
+    }
 }

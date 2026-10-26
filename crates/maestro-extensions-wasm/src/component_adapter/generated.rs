@@ -144,6 +144,7 @@ impl Imports for Generated {
         theme_get_bg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_bg_ansi(color);
         theme_get_color_mode(theme: &Self::Theme) -> ExtensionResult<crate::ColorMode> => get_color_mode();
         ui_get_editor_text(resource: &Self::Ui) -> ExtensionResult<String> => get_editor_text();
+        ui_on_terminal_input(resource: &Self::Ui, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_terminal_input(handler);
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();
@@ -420,6 +421,18 @@ impl<E: Extension> Guest for Glue<E> {
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<()>> {
         std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
+    }
+
+    fn invoke_terminal_input(
+        handler: &host::Callback,
+        data: String,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<Option<host::TerminalInputResult>>> {
+        std::future::ready(Exports::new(Generated).invoke_terminal_input(
+            handler.id(),
+            &data,
+            emitter,
+        ))
     }
 
     async fn start() -> ExtensionResult<()> {

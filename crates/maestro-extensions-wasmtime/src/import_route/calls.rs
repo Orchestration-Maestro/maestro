@@ -67,6 +67,18 @@ pub(super) struct LocalKey {
     emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested terminal input chunk.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalTerminalInput {
+    /// Authored identity of the terminal input listener.
+    target: u32,
+    /// The literal chunk.
+    data: String,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
 /// Owned operands of one nested argument preparation.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -214,6 +226,9 @@ pub(super) enum LocalCall {
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
+    /// A terminal input listener.
+    #[component(name = "terminal-input")]
+    TerminalInput(LocalTerminalInput),
     /// A synchronous callback prefix.
     #[component(name = "synchronous")]
     Synchronous(LocalSynchronous),
@@ -268,6 +283,9 @@ pub(super) enum LocalResult {
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
+    /// The terminal input listener's decision or its error.
+    #[component(name = "terminal-input")]
+    TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),
     /// Unit result of a synchronous prefix, or the authored error.
     #[component(name = "synchronous")]
     Synchronous(Result<(), String>),
@@ -316,6 +334,11 @@ pub(super) fn lower(
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::TerminalInput(call) => LocalCall::TerminalInput(LocalTerminalInput {
+            target: call.handler.id,
+            data: call.data.clone(),
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
@@ -484,6 +507,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
+        }
+        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);

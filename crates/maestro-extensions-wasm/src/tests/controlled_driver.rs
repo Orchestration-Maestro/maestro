@@ -349,6 +349,24 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn terminal_input(
+        &mut self,
+        data: &str,
+    ) -> impl Future<Output = Result<Vec<serde_json::Value>, String>> {
+        let listeners = super::ui_host::terminal_listeners(&self.host.observed());
+        let exports = self.exports();
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let answers = listeners
+            .into_iter()
+            .map(|id| {
+                let answer = exports.invoke_terminal_input(id, data, &emitter);
+                super::ui_host::terminal_answer(
+                    answer.map(|decision| decision.map(|it| (it.consume, it.data))),
+                )
+            })
+            .collect();
+        std::future::ready(Ok(answers))
+    }
     fn prepare_key(
         &mut self,
         handler: u32,

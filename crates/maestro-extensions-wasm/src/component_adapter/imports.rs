@@ -552,6 +552,12 @@ pub trait Imports: Clone + 'static {
     fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
     /// Reads the host editor's current text.
     fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Adds the terminal input listener under `handler`, returning its host remover.
+    fn ui_on_terminal_input(
+        &self,
+        resource: &Self::Ui,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
     /// Forwards a selector with its ordered options.
     fn ui_select<'a>(
         &'a self,

@@ -38,12 +38,26 @@ pub(crate) enum Request {
     SetEditorText(String, Reply),
     /// Reads the original editor's current text.
     GetEditorText(Sender<Result<String, String>>),
+    /// Adds an authored terminal input listener under the original extension.
+    OnTerminalInput(
+        crate::guest_calls::Handle,
+        crate::api_reads::Endpoint,
+        Sender<Result<crate::local_resources::effects::SubscriptionEndpoint, String>>,
+    ),
 }
 
 impl Request {
     /// Calls the original native UI outside all capability-table borrows.
-    pub(crate) fn answer(self, ui: &ExtensionUIContext) {
+    pub(crate) fn answer(
+        self,
+        ui: &ExtensionUIContext,
+        registry: &crate::local_resources::Registry,
+    ) {
         let (result, reply) = match self {
+            Self::OnTerminalInput(handler, api, reply) => {
+                let _ = reply.send(registry.terminal_input(ui, handler, &api));
+                return;
+            }
             Self::Notify(message, kind, reply) => (ui.notify(message, kind), reply),
             Self::Status(key, text, reply) => (ui.set_status(key, text), reply),
             Self::WorkingMessage(message, reply) => (ui.set_working_message(message), reply),
@@ -69,6 +83,9 @@ impl Request {
     pub(crate) fn reject(self, error: &str) {
         match self {
             Self::GetEditorText(reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+            Self::OnTerminalInput(_, _, reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
             Self::Notify(_, _, reply)

@@ -6,13 +6,15 @@
 )]
 
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
 use maestro_extensions_wasm::{
     AbortListener, AbortSignal, CallbackEmitter, CallbackEmitterPort, CommandOptions,
     CompactOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionResult,
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, NotificationType,
-    SignalPort, Subscription, SubscriptionPort, WidgetPlacement, WorkingIndicatorOptions,
+    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -297,6 +299,45 @@ impl Controller {
 thread_local! {
     /// Caller signals kept after their dialogs, by creation order.
     static KEPT: RefCell<Vec<Rc<Controller>>> = RefCell::default();
+    /// Terminal input subscriptions by label.
+    static LISTENING: RefCell<HashMap<String, Subscription>> = RefCell::default();
+}
+
+/// The decision the listener `label` makes about the chunk `data`.
+fn terminal_decision(label: &str, data: &str) -> ExtensionResult<Option<TerminalInputResult>> {
+    let decision = |consume, data| Some(TerminalInputResult { consume, data });
+    Ok(match data {
+        "none" => None,
+        "absent" => decision(None, None),
+        "empty" => decision(None, Some(String::new())),
+        "consume" => decision(Some(true), None),
+        "pass" => decision(Some(false), None),
+        "both" => decision(Some(true), Some(format!("{label} both"))),
+        "fail" => return Err(format!("{label} failed 雪\nhere")),
+        _ => decision(None, Some(format!("{label} {data}"))),
+    })
+}
+
+/// Adds the terminal input listener `label` through a fresh acquisition.
+fn listen(ctx: &ExtensionContext, label: String) -> ExtensionResult<Value> {
+    let named = label.clone();
+    let subscription = ctx.ui()?.on_terminal_input(Rc::new(move |data, emitter| {
+        emitter.emit("terminal-input", json!([named, data]))?;
+        terminal_decision(&named, data)
+    }))?;
+    LISTENING.with_borrow_mut(|listening| listening.insert(label, subscription));
+    Ok(json!("listening"))
+}
+
+/// Unsubscribes the listener `label`, or drops its subscription without unsubscribing.
+fn stop_listening(label: &str, unsubscribe: bool) -> ExtensionResult<Value> {
+    let subscription = LISTENING.with_borrow_mut(|listening| listening.remove(label));
+    let subscription = subscription.ok_or("unknown listener")?;
+    if unsubscribe {
+        subscription.unsubscribe()?;
+        return Ok(json!("unsubscribed"));
+    }
+    Ok(json!("dropped"))
 }
 
 /// Aborts the kept caller signal `index` and reports how many listeners it still had.
@@ -403,6 +444,21 @@ enum Operation {
         /// The dialog.
         call: Dialog,
     },
+    /// Adds a labelled terminal input listener through a fresh acquisition.
+    Listen {
+        /// Listener label.
+        label: String,
+    },
+    /// Unsubscribes a labelled terminal input listener.
+    Unlisten {
+        /// Listener label.
+        label: String,
+    },
+    /// Drops a labelled terminal input subscription without unsubscribing.
+    Forget {
+        /// Listener label.
+        label: String,
+    },
     /// Aborts a caller signal kept after its dialog.
     AbortKept {
         /// Creation index of the kept signal.
@@ -482,6 +538,9 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
         Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
         Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
+        Operation::Listen { label } => caught(listen(ctx, label).map(Some)),
+        Operation::Unlisten { label } => caught(stop_listening(&label, true).map(Some)),
+        Operation::Forget { label } => caught(stop_listening(&label, false).map(Some)),
         Operation::Observe => observe(api, ctx)?,
         Operation::Compact => compact(api, ctx)?,
         Operation::Emit { channel, input } => {

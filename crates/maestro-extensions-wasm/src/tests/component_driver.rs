@@ -462,6 +462,41 @@ impl Driver for ComponentDriver {
         &mut self.previous
     }
 
+    async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String> {
+        let listeners = self.observed(super::ui_host::terminal_listeners);
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let mut answers = Vec::new();
+        for id in listeners {
+            let emitter = harness
+                .store
+                .data_mut()
+                .table
+                .push(super::bus_host::Emitter { key: 0 })
+                .map_err(|e| e.to_string())?;
+            let operands = (
+                borrow(id),
+                data.to_owned(),
+                Resource::new_borrow(emitter.rep()),
+            );
+            let answer = harness
+                .exports
+                .func_invoke_terminal_input()
+                .call_async(&mut harness.store, operands)
+                .await
+                .map_err(|e| e.to_string())?
+                .0;
+            harness
+                .store
+                .data_mut()
+                .table
+                .delete(emitter)
+                .map_err(|e| e.to_string())?;
+            answers.push(super::ui_host::terminal_answer(
+                answer.map(|decision| decision.map(|it| (it.consume, it.data))),
+            ));
+        }
+        Ok(answers)
+    }
     async fn prepare_key(&mut self, handler: u32, args: &str) -> Result<String, String> {
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
         let emitter = harness

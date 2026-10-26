@@ -404,6 +404,17 @@ anything it retains. Clones of the facade share the acquired resource, so a hand
 kept past its callback keeps reading that resource, and a second acquisition stays
 independent. Widget factories remain outside this interface.
 
+### Terminal input
+
+`on_terminal_input` adds a listener that sees each raw chunk of terminal input before
+the focused component does. It runs synchronously with a callback emitter, like the
+other synchronous callbacks, and returns `None` to leave the chunk as it is or a
+`TerminalInputResult`: `consume: Some(true)` stops the chunk, `data` replaces it for the
+listeners after it, and absent members leave it unchanged. When both are set,
+consumption wins. A listener's error reaches the host with its message. `unsubscribe`
+on the returned `Subscription` removes the listener; dropping the subscription keeps
+it. The host owns the order of listeners and the delivery of what remains.
+
 ### Dialogs
 
 `select`, `confirm`, `input` and `editor` ask the host for an answer and return a

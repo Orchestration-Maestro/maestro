@@ -205,7 +205,7 @@ fn command(
         if let Some(request) = args.strip_prefix("dialog ") {
             return Err(ui::dialog(&context, request).await?);
         }
-        if args == "ui imports" || args == "ui clear" || args.starts_with("editor ") {
+        if args.starts_with("ui ") || args.starts_with("editor ") {
             return Err(ui::observe(&context, &args)?);
         }
         if args == "imports" {
