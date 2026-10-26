@@ -57,8 +57,32 @@ fn helper_segments_keep_both_widths_and_style() {
     check("helper_segments_keep_both_widths_and_style");
 }
 
+#[test]
+fn helper_key_vocabulary_and_modifiers_match_host() {
+    check("helper_key_vocabulary_and_modifiers_match_host");
+}
+
+#[test]
+fn helper_keyboard_state_is_shared_with_host() {
+    check("helper_keyboard_state_is_shared_with_host");
+}
+
+#[test]
+fn helper_key_decoding_forwards_all_result_branches() {
+    check("helper_key_decoding_forwards_all_result_branches");
+}
+
+#[test]
+fn helper_key_matching_keeps_modifier_negatives() {
+    check("helper_key_matching_keeps_modifier_negatives");
+}
+
 /// Executes every recorded row of one behavior through the unchanged author fixture.
 fn check(name: &str) {
+    if name.starts_with("helper_key") && maestro_test_process::run_alone(name).unwrap() {
+        return;
+    }
+    let original = maestro_tui::is_kitty_protocol_active();
     super::components::local(async {
         let bus = super::components::TracedBus::new();
         let runtime = create_extension_runtime::<Local>();
@@ -91,11 +115,15 @@ fn check(name: &str) {
             let observed: Value =
                 serde_json::from_str(&result).unwrap_or_else(|e| panic!("{e}: {result}"));
             assert_eq!(observed, row["ok"], "{row}");
+            if let Some(active) = row["context"]["kittyProtocolActive"].as_bool() {
+                assert_eq!(maestro_tui::is_kitty_protocol_active(), active);
+            }
             count += 1;
         }
         assert_ne!(count, 0);
         drop(owner);
         drop(runner);
         bus.controller.clear();
+        maestro_tui::set_kitty_protocol_active(original);
     });
 }

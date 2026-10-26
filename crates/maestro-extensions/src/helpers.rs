@@ -1,11 +1,15 @@
 //! Ordinary component helper operands delegate to their existing domain owners.
 use serde::{Serialize, de::DeserializeOwned};
+mod keys;
 
 /// Dispatches a synchronous helper without retaining any operands.
 ///
 /// # Errors
 /// Returns malformed operands or the native owner's failure unchanged.
 pub fn call(operation: &str, data: &str) -> Result<String, String> {
+    if operation.starts_with("keys.") {
+        return keys::call(operation, data);
+    }
     match operation {
         "visible_width" => {
             let (text,): (String,) = decode(data)?;

@@ -27,3 +27,14 @@ the after side. Width-bearing results report the actual selected cells.
 calls the supplied `FnOnce` exactly once with that string. It does not clip an
 over-width line. The callback may borrow local state and runs before the helper
 returns; neither a successful call nor an error retains it.
+
+## Keys
+
+`keys::Key` provides the named literals and forwards every modifier constructor
+to the native key owner. `super_key` is the Rust spelling of the super modifier.
+Key identifiers remain open strings.
+
+Matching, parsing, printable decoding, repeat and release checks use native
+terminal input handling. Optional keys and scalars return `None` when absent.
+The enhanced keyboard flag is shared with the native host and other API handles;
+setting it is a process-wide effect, not component-local state.

@@ -39,6 +39,12 @@ mod system_prompt;
 #[cfg(test)]
 mod tests;
 
+/// Native terminal key vocabulary and decoding.
+pub mod keys;
+pub use keys::{
+    Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
+    is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
+};
 mod tui;
 mod types;
 pub use tui::*;

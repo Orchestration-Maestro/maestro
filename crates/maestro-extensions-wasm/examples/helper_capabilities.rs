@@ -8,6 +8,8 @@
 use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult};
 use serde_json::Value;
 use std::rc::Rc;
+#[path = "helper_capabilities/keys.rs"]
+mod keys;
 #[path = "helper_capabilities/text.rs"]
 mod text;
 
@@ -37,6 +39,12 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
 
 /// Returns the complete observation as the command's catchable result.
 fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
+    if request["operation"]
+        .as_str()
+        .is_some_and(|op| op.starts_with("k."))
+    {
+        return keys::observe(api, request);
+    }
     let args = &request["args"];
     text::observe(api, request["operation"].as_str().unwrap_or_default(), args)
 }

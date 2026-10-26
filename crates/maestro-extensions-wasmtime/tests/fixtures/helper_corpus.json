@@ -829,5 +829,1244 @@
       "after": "\u001b[4m ",
       "afterWidth": 1
     }
+  },
+  {
+    "test": "helper_key_vocabulary_and_modifiers_match_host",
+    "operation": "k.Key",
+    "args": [],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": {
+      "escape": "escape",
+      "esc": "esc",
+      "enter": "enter",
+      "return": "return",
+      "tab": "tab",
+      "space": "space",
+      "backspace": "backspace",
+      "delete": "delete",
+      "insert": "insert",
+      "clear": "clear",
+      "home": "home",
+      "end": "end",
+      "pageUp": "pageUp",
+      "pageDown": "pageDown",
+      "up": "up",
+      "down": "down",
+      "left": "left",
+      "right": "right",
+      "f1": "f1",
+      "f2": "f2",
+      "f3": "f3",
+      "f4": "f4",
+      "f5": "f5",
+      "f6": "f6",
+      "f7": "f7",
+      "f8": "f8",
+      "f9": "f9",
+      "f10": "f10",
+      "f11": "f11",
+      "f12": "f12",
+      "backtick": "`",
+      "hyphen": "-",
+      "equals": "=",
+      "leftbracket": "[",
+      "rightbracket": "]",
+      "backslash": "\\",
+      "semicolon": ";",
+      "quote": "'",
+      "comma": ",",
+      "period": ".",
+      "slash": "/",
+      "exclamation": "!",
+      "at": "@",
+      "hash": "#",
+      "dollar": "$",
+      "percent": "%",
+      "caret": "^",
+      "ampersand": "&",
+      "asterisk": "*",
+      "leftparen": "(",
+      "rightparen": ")",
+      "underscore": "_",
+      "plus": "+",
+      "pipe": "|",
+      "tilde": "~",
+      "leftbrace": "{",
+      "rightbrace": "}",
+      "colon": ":",
+      "lessthan": "<",
+      "greaterthan": ">",
+      "question": "?",
+      "ctrl": "ctrl+x",
+      "shift": "shift+x",
+      "alt": "alt+x",
+      "super": "super+x",
+      "ctrlShift": "ctrl+shift+x",
+      "shiftCtrl": "shift+ctrl+x",
+      "ctrlAlt": "ctrl+alt+x",
+      "altCtrl": "alt+ctrl+x",
+      "shiftAlt": "shift+alt+x",
+      "altShift": "alt+shift+x",
+      "ctrlSuper": "ctrl+super+x",
+      "superCtrl": "super+ctrl+x",
+      "shiftSuper": "shift+super+x",
+      "superShift": "super+shift+x",
+      "altSuper": "alt+super+x",
+      "superAlt": "super+alt+x",
+      "ctrlShiftAlt": "ctrl+shift+alt+x",
+      "ctrlShiftSuper": "ctrl+shift+super+x"
+    }
+  },
+  {
+    "test": "helper_keyboard_state_is_shared_with_host",
+    "operation": "k.isKittyProtocolActive",
+    "args": [],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_keyboard_state_is_shared_with_host",
+    "operation": "k.isKittyProtocolActive",
+    "args": [],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "enter"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "up"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "ctrl+a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "x"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "enter"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "up"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "ctrl+a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "x"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\r",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[A",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;5u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:2u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:3u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "x",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[8364u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\r",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[A",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;5u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:2u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:3u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "x",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[8364u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u0001",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u0001",
+      "a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "a",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "a",
+      "a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;5u",
+      "a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
   }
 ]
