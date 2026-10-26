@@ -702,6 +702,13 @@ enum Operation {
     },
     /// Registers the painter tool, whose renderers report what they read.
     Painter,
+    /// Shows an authored editor through a retained component.
+    AuthoredEditorContract,
+    /// Calls an authored asynchronous completion provider.
+    CompletionContract {
+        /// Whether completion was explicitly requested.
+        force: Option<bool>,
+    },
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -892,6 +899,17 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 .and_then(|tool| api.register_tool(tool))
                 .map(|()| None),
         ),
+        Operation::AuthoredEditorContract => {
+            caught(super::authored_editor_author::install(&ctx.ui()?).map(|()| None))
+        }
+        Operation::CompletionContract { force } => {
+            let signal = AbortSignal::new(Rc::new(Caller(Rc::default())));
+            caught(
+                super::completion_author::run(ctx.ui()?, signal, force)
+                    .await
+                    .map(Some),
+            )
+        }
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
         Operation::DropKept => {
             drop(ALIASES.take());

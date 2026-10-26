@@ -1,0 +1,49 @@
+# Authored editor and completion contracts
+
+The guest library defines `EditorComponent` and `AutocompleteProvider` for authored
+editors and completion providers. These interfaces describe author operations;
+they do not yet install an editor or provider into the application's UI. The
+host-backed `Editor` and `CustomEditor` facades remain separate.
+
+## Editors
+
+Implement `ComponentView` for rendering and invalidation, then `EditorComponent`
+for text access, input, submission/change callback setters and a change-callback
+getter. Its required
+`handle_input` is separate from `ComponentView`'s optional input handler. When an
+editor is also used as an ordinary component, delegate that handler with
+`EditorComponent::handle_input(self, data, emitter)`.
+
+Every operation is synchronous and returns `ExtensionResult`. `CallbackEmitter`
+is `Copy`: reuse it across several editor operations in one callback. Its copies
+borrow the same frame and cannot outlive that invocation. Retain callbacks and
+editor state, not emitters. Callbacks run after releasing any mutable borrow of editor state, so a
+handler can call back into the same editor.
+
+History, cursor insertion, expanded text, completion-provider installation,
+border color and padding/completion-row setters are optional. Their defaults
+return `Ok(None)`. `Some(())` means an operation ran; `None` means it is absent.
+An expanded-text reader that gets `None` can fall back to `get_text`. An error is
+neither absence nor a successful no-op.
+
+## Completion providers
+
+`AutocompleteProvider::get_suggestions` returns an asynchronous `ExtensionFuture`.
+It receives the edited lines, a `CursorPosition` and `CompletionOptions`. Cursor
+columns are UTF-8 byte offsets. The options borrow an `AbortSignal`; clone the
+signal when keeping it independently. `force: None`, `Some(false)` and
+`Some(true)` remain distinct. Providers choose how to react to cancellation.
+
+`AutocompleteSuggestions` holds candidates and the prefix they replace.
+`Ok(None)` means no suggestions; `Ok(Some(...))` with an empty candidate list is
+a separate result. Candidate values, labels, descriptions and prefixes remain
+literal, including empty strings and newlines.
+
+`apply_completion` is synchronous and returns `CompletionResult`, with the edited
+lines and cursor. `should_trigger_file_completion` is also synchronous. Its
+default `Ok(None)` leaves the decision to the caller; `Some(false)` and
+`Some(true)` are explicit decisions. Provider errors remain errors.
+
+A wrapper can retain an `Rc<dyn AutocompleteProvider>` and delegate requests to
+it. UI wrapper stacking, editor factories and their retained host transports are
+not exposed by these interfaces alone.

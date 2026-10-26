@@ -11,6 +11,8 @@ mod port;
 mod agent;
 mod autocomplete;
 pub use autocomplete::*;
+mod editor_component;
+pub use editor_component::EditorComponent;
 mod event_bus;
 pub use event_bus::*;
 mod bash_executor;

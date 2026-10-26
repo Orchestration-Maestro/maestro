@@ -18,12 +18,16 @@ use serde_json::{Value, from_value, json};
 
 #[path = "action_author.rs"]
 mod action_author;
+#[path = "authored_editor_author.rs"]
+mod authored_editor_author;
 #[path = "bus_author.rs"]
 mod bus_author;
 #[path = "catalog_author.rs"]
 mod catalog_author;
 #[path = "compaction_author.rs"]
 mod compaction_author;
+#[path = "completion_author.rs"]
+mod completion_author;
 #[path = "reader_author.rs"]
 mod reader_author;
 #[path = "registration_author.rs"]

@@ -505,6 +505,10 @@ text runs the change handler first. A custom editor also offers input to its
 runs its interrupt, exit and image-paste handlers and the `on_action` handlers of the
 application actions its manager binds; replacing an action keeps its place.
 
+The [authored editor and completion contracts](guest_ui.md) describe `EditorComponent`,
+`AutocompleteProvider` and their optional operations. They are separate from the host-backed
+editor facades and do not yet install replacements into the UI.
+
 ### Themes and tool expansion
 
 `theme` returns the UI's live theme, which reads the host's later selections.
