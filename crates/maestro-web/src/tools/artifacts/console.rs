@@ -83,6 +83,10 @@ type Click = EventSubscription<Closure<dyn Fn()>>;
 struct Mounted {
     /// Current controller operands.
     binding: RefCell<Binding>,
+    /// Prefix already published by a full render or append.
+    processed: Cell<usize>,
+    /// Error count in that published prefix.
+    errors: Cell<usize>,
     /// Summary button retaining keyboard focus.
     summary: Element,
     /// Summary label retaining its text node.
@@ -127,6 +131,8 @@ impl DomContent for Console {
             .map_err(|error| ToolUiError::native(&error))?;
         let mounted = Rc::new(Mounted {
             binding: RefCell::new(self.binding(view)),
+            processed: Cell::default(),
+            errors: Cell::default(),
             summary,
             label,
             glyph,
@@ -146,30 +152,34 @@ impl DomContent for Console {
         })
     }
     fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
-        let mounted = root
-            .owner
-            .as_ref()
-            .and_then(|owner| owner.downcast_ref::<Rc<Mounted>>())
-            .ok_or_else(|| ToolUiError::Presentation("Missing artifact console state".into()))?;
+        let mounted = mounted(root)?;
         let previous = mounted.binding.replace(self.binding(view));
         drop(previous);
         mounted.render()
     }
 }
 impl Console {
+    /// Publish newly appended lines to a root mounted by this console.
+    /// Use [`DomContent::update`] after clearing, editing or replacing existing lines.
+    /// # Errors
+    /// Returns a missing-root, value formatting or native rendering failure.
+    pub fn append(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
+        let mounted = mounted(root)?;
+        let previous = mounted.binding.replace(self.binding(view));
+        drop(previous);
+        mounted.append()
+    }
+    /// Read one native operand without retaining a history borrow during its conversion.
+    fn line(&self, index: usize) -> Option<LogEntry> {
+        self.logs.borrow().get(index).cloned()
+    }
     /// Format each whole native operand once in log order.
     pub(crate) fn get_logs_text(&self) -> Result<String, ToolUiError> {
-        let logs = self.logs.borrow().clone();
-        logs.iter()
-            .map(|line| {
-                Ok(format!(
-                    "[{}] {}",
-                    line.r#type.label(),
-                    native_string(&line.text.0).map_err(|error| ToolUiError::native(&error))?
-                ))
-            })
-            .collect::<Result<Vec<_>, ToolUiError>>()
-            .map(|lines| lines.join("\n"))
+        let mut lines = Vec::new();
+        while let Some(line) = self.line(lines.len()) {
+            lines.push(copy_line(&line)?);
+        }
+        Ok(lines.join("\n"))
     }
     /// Capture handles without retaining the controller itself.
     fn binding(&self, view: &DomView) -> Binding {
@@ -207,7 +217,7 @@ impl Mounted {
         Ok(())
     }
     /// Publish expanded controls through the existing copy element and its feedback owner.
-    fn controls(&self, binding: &Binding) -> Result<(), ToolUiError> {
+    fn controls(self: &Rc<Self>, binding: &Binding) -> Result<(), ToolUiError> {
         let previous = self.i18n.replace(Rc::clone(&binding.view.i18n));
         drop(previous);
         if !binding.console.expanded.get() {
@@ -248,6 +258,7 @@ impl Mounted {
                 &self.i18n,
                 copy_button::FEEDBACK_MS,
                 None,
+                Some(self.copied_text()),
             )
             .map_err(|error| ToolUiError::native(&error))?;
             self.copy.replace(Some(copy.clone()));
@@ -256,22 +267,62 @@ impl Mounted {
                 .map_err(|error| ToolUiError::native(&error))?;
             copy
         };
-        copy.set_attribute("text", &binding.console.get_logs_text()?)
-            .map_err(|error| ToolUiError::native(&error))?;
         copy.set_attribute("title", &binding.view.i18n.text("Copy logs")?)
             .map_err(|error| ToolUiError::native(&error))?;
         Ok(())
     }
-    /// Reconcile summary and positional literal rows without replacing unchanged text.
-    fn render(&self) -> Result<(), ToolUiError> {
+    /// The current controller's whole logs, formatted only when the copy control is activated.
+    fn copied_text(self: &Rc<Self>) -> copy_button::TextSource {
+        let owner = Rc::downgrade(self);
+        Rc::new(move || {
+            let console = Rc::clone(&owner.upgrade()?.binding.borrow().console);
+            console.get_logs_text().ok()
+        })
+    }
+    /// Append only the new suffix; collapsed histories need only their new kinds counted.
+    fn append(&self) -> Result<(), ToolUiError> {
         let binding = self.binding.borrow().clone();
-        let logs = binding.console.logs.borrow().clone();
-        let errors = logs
-            .iter()
-            .filter(|line| line.r#type == LogType::Error)
-            .count();
+        let console = &binding.console;
+        let expanded = console.expanded.get();
+        let mut index = self.processed.get();
+        loop {
+            let kind = console.logs.borrow().get(index).map(|line| line.r#type);
+            let Some(kind) = kind else { break };
+            self.errors
+                .set(self.errors.get() + usize::from(kind == LogType::Error));
+            self.processed.set(index + 1);
+            if expanded && let Some(line) = console.line(index) {
+                self.render_row(index, &line, &binding.view.document)?;
+            }
+            index += 1;
+        }
+        self.summary(&binding)?;
+        self.scroll(&binding);
+        Ok(())
+    }
+    /// Reconcile all operands after a replacement or disclosure change.
+    fn render(self: &Rc<Self>) -> Result<(), ToolUiError> {
+        let binding = self.binding.borrow().clone();
+        self.controls(&binding)?;
+        self.render_rows(&binding)?;
+        {
+            let logs = binding.console.logs.borrow();
+            self.processed.set(logs.len());
+            self.errors.set(
+                logs.iter()
+                    .filter(|line| line.r#type == LogType::Error)
+                    .count(),
+            );
+        }
+        self.summary(&binding)?;
+        self.scroll(&binding);
+        Ok(())
+    }
+    /// Reconcile the count and disclosure without visiting the published history.
+    fn summary(&self, binding: &Binding) -> Result<(), ToolUiError> {
+        let errors = self.errors.get();
         let count = if errors == 0 {
-            logs.len().to_string()
+            self.processed.get().to_string()
         } else {
             format!("{errors} {}", if errors == 1 { "error" } else { "errors" })
         };
@@ -294,43 +345,24 @@ impl Mounted {
         self.rows
             .unchecked_ref::<web_sys::HtmlElement>()
             .set_hidden(!expanded);
-        let visible = if expanded { logs.as_slice() } else { &[] };
-        self.controls(&binding)?;
-        self.render_rows(visible, &binding.view.document)?;
-        if expanded && binding.console.autoscroll.get() {
-            crate::components::console_block::scroll_bottom(&self.rows);
-        }
         Ok(())
     }
-    /// Keep rows positional, removing only the no-longer-published suffix.
-    fn render_rows(
-        &self,
-        logs: &[LogEntry],
-        document: &web_sys::Document,
-    ) -> Result<(), ToolUiError> {
-        for (index, line) in logs.iter().enumerate() {
-            let index = u32::try_from(index)
-                .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
-            let row = if let Some(row) = self.rows.child_nodes().item(index) {
-                row.unchecked_into::<Element>()
-            } else {
-                let row = element(document, "div", "")?;
-                self.rows
-                    .append_child(&row)
-                    .map_err(|error| ToolUiError::native(&error))?;
-                row
-            };
-            row.set_class_name(if line.r#type == LogType::Error {
-                "maestro-artifact-error"
-            } else {
-                "maestro-artifact-log"
-            });
-            set_text_if_changed(
-                &row,
-                &format!("[{}] {}", line.r#type.label(), value_text(&line.text.0)?),
-            );
+    /// Follow the final published row only while the user has enabled it.
+    fn scroll(&self, binding: &Binding) {
+        if binding.console.expanded.get() && binding.console.autoscroll.get() {
+            crate::components::console_block::scroll_bottom(&self.rows);
         }
-        while self.rows.child_nodes().length() as usize > logs.len() {
+    }
+    /// Keep rows positional, removing only the no-longer-published suffix.
+    fn render_rows(&self, binding: &Binding) -> Result<(), ToolUiError> {
+        let mut index = 0;
+        if binding.console.expanded.get() {
+            while let Some(line) = binding.console.line(index) {
+                self.render_row(index, &line, &binding.view.document)?;
+                index += 1;
+            }
+        }
+        while self.rows.child_nodes().length() as usize > index {
             if let Some(row) = self.rows.last_child() {
                 self.rows
                     .remove_child(&row)
@@ -339,6 +371,50 @@ impl Mounted {
         }
         Ok(())
     }
+    /// Reconcile one literal row, releasing all history borrows before projecting native text.
+    fn render_row(
+        &self,
+        index: usize,
+        line: &LogEntry,
+        document: &web_sys::Document,
+    ) -> Result<(), ToolUiError> {
+        let index =
+            u32::try_from(index).map_err(|error| ToolUiError::Presentation(error.to_string()))?;
+        let row = if let Some(row) = self.rows.child_nodes().item(index) {
+            row.unchecked_into::<Element>()
+        } else {
+            let row = element(document, "div", "")?;
+            self.rows
+                .append_child(&row)
+                .map_err(|error| ToolUiError::native(&error))?;
+            row
+        };
+        row.set_class_name(if line.r#type == LogType::Error {
+            "maestro-artifact-error"
+        } else {
+            "maestro-artifact-log"
+        });
+        set_text_if_changed(
+            &row,
+            &format!("[{}] {}", line.r#type.label(), value_text(&line.text.0)?),
+        );
+        Ok(())
+    }
+}
+/// Owned state of a root originally mounted by a console.
+fn mounted(root: &DomRoot) -> Result<&Rc<Mounted>, ToolUiError> {
+    root.owner
+        .as_ref()
+        .and_then(|owner| owner.downcast_ref::<Rc<Mounted>>())
+        .ok_or_else(|| ToolUiError::Presentation("Missing artifact console state".into()))
+}
+/// Format one whole native operand for the copy control or explicit log reader.
+fn copy_line(line: &LogEntry) -> Result<String, ToolUiError> {
+    Ok(format!(
+        "[{}] {}",
+        line.r#type.label(),
+        native_string(&line.text.0).map_err(|error| ToolUiError::native(&error))?
+    ))
 }
 /// Reconcile a glyph without replacing an unchanged native node.
 fn icon(holder: &Element, name: &str) -> Result<(), ToolUiError> {

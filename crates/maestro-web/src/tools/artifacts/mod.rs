@@ -12,6 +12,8 @@ pub mod artifact_element;
 pub mod docx_artifact;
 pub mod excel_artifact;
 pub mod generic_artifact;
+#[cfg(target_arch = "wasm32")]
+pub mod html_artifact;
 pub mod image_artifact;
 pub mod markdown_artifact;
 pub mod pdf_artifact;

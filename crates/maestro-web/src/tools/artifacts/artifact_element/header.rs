@@ -9,6 +9,17 @@ use js_sys::Uint8Array;
 /// Control row of one independent artifact header.
 const ROW: &str = "maestro-artifact-header";
 
+/// Create an empty header row.
+/// # Errors
+/// Returns the native creation failure.
+pub(crate) fn row(view: &DomView) -> Result<web_sys::Element, ToolUiError> {
+    let row = view
+        .document
+        .create_element("div")
+        .map_err(|error| ToolUiError::native(&error))?;
+    row.set_class_name(ROW);
+    Ok(row)
+}
 /// Build a header row holding one download control for the caller's complete original bytes.
 /// # Errors
 /// Returns native creation or localization failures.
@@ -18,11 +29,7 @@ pub(crate) fn download(
     mime: &str,
     bytes: &[u8],
 ) -> Result<DomRoot, ToolUiError> {
-    let row = view
-        .document
-        .create_element("div")
-        .map_err(|error| ToolUiError::native(&error))?;
-    row.set_class_name(ROW);
+    let row = row(view)?;
     let mut control = download_button(
         view,
         DownloadButtonProps {
