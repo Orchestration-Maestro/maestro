@@ -53,6 +53,7 @@ mod hello_example;
 mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
+mod host_widgets;
 mod join;
 mod json_payloads;
 mod observed;
@@ -96,6 +97,9 @@ mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;
 pub(crate) mod ui_host;
+pub(crate) mod widget_component;
+mod widget_controlled;
+pub(crate) mod widget_host;
 mod with_deps_example;
 mod working_message_example;
 
@@ -1069,12 +1073,14 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-component-factory",
             "invoke-dispose",
             "invoke-event",
+            "invoke-highlight",
             "invoke-listener",
             "invoke-prepare",
             "invoke-renderer",
             "invoke-schema",
             "invoke-setup",
             "invoke-shortcut",
+            "invoke-style",
             "invoke-tail",
             "invoke-terminal-input",
             "invoke-tool",

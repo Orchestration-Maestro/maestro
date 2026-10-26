@@ -47,7 +47,7 @@ fn recording(steps: &Rc<RefCell<Vec<String>>>) -> ModuleLoader<Local> {
     Rc::new(move |path: &str| {
         steps.borrow_mut().push(format!("load {path}"));
         let (factory, steps, path) = (
-            artifact_factory(path.to_owned()),
+            artifact_factory(path.to_owned(), crate::support::widgets()),
             steps.clone(),
             path.to_owned(),
         );

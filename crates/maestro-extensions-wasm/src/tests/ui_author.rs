@@ -702,6 +702,12 @@ enum Operation {
     },
     /// Registers the painter tool, whose renderers report what they read.
     Painter,
+    /// Runs a host widget script.
+    Widgets {
+        /// The steps, in order.
+        steps: Vec<super::widget_author::Step>,
+    },
+
     /// Shows a labelled factory widget whose component the author also keeps.
     KeptWidget {
         /// Label the widget renders.
@@ -886,6 +892,7 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 .and_then(|tool| api.register_tool(tool))
                 .map(|()| None),
         ),
+        Operation::Widgets { steps } => super::widget_author::run(steps),
         Operation::DropKept => {
             drop(ALIASES.take());
             json!("dropped")

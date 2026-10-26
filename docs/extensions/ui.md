@@ -184,6 +184,16 @@ padding and completion height call the plain operation by default. An editor bac
 by an extension component overrides them to return its original failure, and a
 wrapping editor forwards them rather than calling the plain operations.
 
+## Host widgets
+
+`ExtensionWidgets` builds the widgets whose look depends on the host: Markdown laid out
+for the host terminal, the live theme's Markdown styles with the host's code
+highlighting, and the application's dynamic border. Every mode supplies one, so an
+extension can build widgets without an interactive UI; only showing them goes through
+the UI context. Text, boxes, containers and spacers need nothing from the host and come
+from the toolkit directly. `maestro_extensions::widgets` re-exports those toolkit
+widgets beside the capability, and the chat crate's `ExtensionWidgetHost` implements it.
+
 ## Custom components
 
 `custom_component` passes the host's close operation to the factory. The close

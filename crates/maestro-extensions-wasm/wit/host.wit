@@ -118,6 +118,10 @@ interface host {
     record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
+    /// One nested same-instance text styling.
+    record local-style { target: u32, text: string }
+    /// One nested same-instance code highlighting.
+    record local-highlight { target: u32, code: string, lang: option<string> }
     /// Selects the authored callback export a nested synchronous call enters.
     enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
@@ -181,6 +185,8 @@ interface host {
         bash(local-bash),
         factory(local-factory),
         tool-render(local-tool-render),
+        style(local-style),
+        highlight(local-highlight),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -198,12 +204,23 @@ interface host {
         bash(result<option<f64>, string>),
         factory(result<factory-component, string>),
         tool-render(result<tool-rendered, string>),
+        style(result<string, string>),
+        highlight(result<list<string>, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-step { invoke(local-call), done(result<_, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
     resource import-route {
         next: func() -> route-step;
+        resume: func(value: local-result);
+        /// Releases the native caller once the nested call's prefix ran; its result follows.
+        defer: func() -> local-settlement;
+    }
+    /// One step of a host rendering that may call back into this same instance.
+    variant render-step { invoke(local-call), done(result<list<string>, string>) }
+    /// A host rendering in progress on this instance, advanced by the guest.
+    resource render-route {
+        next: func() -> render-step;
         resume: func(value: local-result);
         /// Releases the native caller once the nested call's prefix ran; its result follows.
         defer: func() -> local-settlement;
@@ -284,6 +301,71 @@ interface host {
     }
     /// Terminal handle lent to a component factory.
     resource tui;
+    /// A host text styling function.
+    resource style { apply: func(text: string) -> result<string, string>; }
+    /// The host's code highlighting.
+    resource highlighter { highlight: func(code: string, lang: option<string>) -> result<list<string>, string>; }
+    /// A styling function the host calls: one it supplied, or an authored callback.
+    variant style-source { host(borrow<style>), authored(borrow<callback>) }
+    /// Code highlighting the host calls: its own, or an authored callback.
+    variant highlight-source { host(borrow<highlighter>), authored(borrow<callback>) }
+    /// Markdown element styles, code highlighting and code-row prefix.
+    record markdown-styles {
+        heading: style-source, link: style-source, link-url: style-source, code: style-source,
+        code-block: style-source, code-block-border: style-source, quote: style-source,
+        quote-border: style-source, hr: style-source, list-bullet: style-source, bold: style-source,
+        italic: style-source, strikethrough: style-source, underline: style-source,
+        highlight-code: option<highlight-source>, code-block-indent: option<string>,
+    }
+    /// Markdown styles that read the live theme, with the host's code highlighting.
+    record markdown-theme {
+        heading: style, link: style, link-url: style, code: style, code-block: style,
+        code-block-border: style, quote: style, quote-border: style, hr: style, list-bullet: style,
+        bold: style, italic: style, strikethrough: style, underline: style, highlight-code: highlighter,
+    }
+    /// A text decoration of Markdown's base style.
+    enum text-decoration { bold, italic, strikethrough, underline }
+    /// Base style of Markdown text.
+    record default-text-style {
+        color: option<style-source>, bg-color: option<style-source>, decorations: list<text-decoration>,
+    }
+    /// A child to add to a host container: a host widget, or an authored component.
+    variant widget-child { widget(borrow<widget>), component(borrow<callback>) }
+    /// A child to remove: a host widget, or the identity an authored component was added under.
+    variant child-key { widget(borrow<widget>), component(u32) }
+    /// A toolkit or application widget the host built for this extension.
+    resource widget {
+        /// Renders rows at a width; the host may call back into this instance first.
+        render: func(width: u32) -> render-route;
+        /// Drops cached rows, the children's included.
+        invalidate: func() -> import-route;
+        /// Replaces the text of a text or Markdown widget.
+        set-text: func(text: string) -> result<_, string>;
+        /// Replaces or removes the row background of a text widget or box.
+        set-background: func(style: option<style-source>) -> result<_, string>;
+        /// Replaces the row count of a spacer.
+        set-lines: func(lines: u32) -> result<_, string>;
+        /// Appends a child to a container or box.
+        add-child: func(child: widget-child) -> result<_, string>;
+        /// Removes the first occurrence of a child from a container or box.
+        remove-child: func(child: child-key) -> result<_, string>;
+        /// Removes every child of a container or box.
+        clear: func() -> result<_, string>;
+    }
+    /// Wrapped text between padding, over an optional row background.
+    new-text: func(text: string, padding-x: u32, padding-y: u32, background: option<style-source>) -> result<widget, string>;
+    /// Children between padding, over an optional row background.
+    new-box: func(padding-x: u32, padding-y: u32, background: option<style-source>) -> result<widget, string>;
+    /// Children rendered in order.
+    new-container: func() -> result<widget, string>;
+    /// Blank rows.
+    new-spacer: func(lines: u32) -> result<widget, string>;
+    /// Markdown between padding, laid out for the host terminal.
+    new-markdown: func(text: string, padding-x: u32, padding-y: u32, theme: markdown-styles, style: option<default-text-style>) -> result<widget, string>;
+    /// A full-width rule painted by `color`, or by the live border color.
+    new-dynamic-border: func(color: option<style-source>) -> result<widget, string>;
+    /// The live theme's Markdown styles.
+    get-markdown-theme: func() -> result<markdown-theme, string>;
     /// Which renderer a tool rendering enters.
     enum tool-render-slot { call, %result }
     /// What a tool renderer reads about its row at this rendering.

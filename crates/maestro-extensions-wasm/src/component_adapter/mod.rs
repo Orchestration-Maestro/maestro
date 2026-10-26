@@ -32,8 +32,16 @@ mod theme;
 pub(crate) mod tool_renders;
 mod tools;
 mod ui;
+mod widgets;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
+#[cfg(test)]
+pub(crate) use widgets::authored_component;
+pub(crate) use widgets::{Builder, install};
+pub(crate) use widgets::{
+    ChildKey, ChildRef, HighlightRef, HostMarkdownTheme, MarkdownStyles, StyleRef, TextStyle,
+    WidgetImports, invoke_highlight, invoke_style, widget_host,
+};
 
 pub(crate) use callbacks::release;
 pub(crate) use exports::{Capabilities, Exports};

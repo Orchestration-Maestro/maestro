@@ -15,7 +15,7 @@ fn events() -> EventBus<Local> {
 
 #[test]
 fn schema_identity_cache_matches_actual_captures_and_retires_without_admission() {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
     let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
@@ -35,7 +35,7 @@ fn schema_identity_cache_matches_actual_captures_and_retires_without_admission()
     );
     let node = schema.remove("").unwrap();
     assert_eq!(registry.schema_origin(&node).unwrap().id(), id);
-    let (foreign, _) = Pump::new();
+    let (foreign, _) = Pump::new(crate::tests::support::widgets());
     assert!(foreign.registry().schema_origin(&node).is_none());
     let replaced = replacement_node();
     assert!(registry.schema_origin(&replaced).is_none());
@@ -126,9 +126,12 @@ async fn growth_runner() -> (
     let native = maestro_extensions::create_extension_runtime::<Local>();
     let (owner, api) = super::api::api(native.clone());
     eprintln!("growth: factory start");
-    crate::factory::artifact_factory(std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap())(api)
-        .await
-        .unwrap();
+    crate::factory::artifact_factory(
+        std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap(),
+        crate::tests::support::widgets(),
+    )(api)
+    .await
+    .unwrap();
     eprintln!("growth: factory done");
     let runner = maestro_extensions::ExtensionRunner::<Local>::new(
         Rc::new(std::sync::RwLock::new(vec![owner.clone()])),
@@ -163,7 +166,7 @@ fn schema_check_during_a_routed_request_runs_through_that_route() {
         .build()
         .unwrap()
         .block_on(async {
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let registry = pump.registry();
             let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
@@ -254,7 +257,7 @@ fn routed_base_conversion_preserves_null_replacements_and_diagnostics() {
         .unwrap()
         .block_on(async {
             for (response, expected) in cases {
-                let (mut pump, admission) = Pump::new();
+                let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
                 let registry = pump.registry();
                 let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
                 let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());

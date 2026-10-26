@@ -58,6 +58,7 @@ impl Call {
             }),
             Self::Factory(call) => Call::Factory(factory(call, completion)),
             Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
+            Self::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
             Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),

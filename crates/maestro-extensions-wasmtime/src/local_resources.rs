@@ -13,6 +13,7 @@ pub(crate) mod effects;
 mod footer;
 mod signals;
 mod synchronous;
+mod widgets;
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -98,6 +99,8 @@ pub(crate) enum Message {
     Theme(u64, crate::theme_reads::Request),
     /// Reads or subscribes to the footer metadata lent to a footer factory.
     Footer(u64, crate::footer_data::Request),
+    /// Builds, uses or lends host widgets and styles.
+    Widgets(crate::widget_reads::WidgetMessage),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -158,10 +161,10 @@ impl Lease {
 
     /// Sends a request whose native code may call back into this instance; the guest
     /// drives the returned route until the request's own result arrives.
-    pub(crate) fn route(
+    pub(crate) fn route<T: Send + 'static>(
         &self,
-        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<(), String>>) -> Message,
-    ) -> crate::import_route::Route {
+        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<T, String>>) -> Message,
+    ) -> crate::import_route::Route<T> {
         let (reply, response) = std::sync::mpsc::channel();
         let (nested, route) = crate::import_route::Route::new(response);
         let _ = self
@@ -222,6 +225,12 @@ enum Capability {
     Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
     /// Original redraw capability of one tool row.
     Invalidate(Rc<dyn Fn()>),
+    /// A host widget the extension built.
+    Widget(Rc<crate::widget_reads::Widget>),
+    /// A lent host style.
+    Style(maestro_extensions::widgets::BorderColor),
+    /// The lent host highlighting.
+    Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
     /// Original terminal lent to a component factory.
     Tui {
         /// Ownership alone crosses the opaque canonical terminal resource.
@@ -252,6 +261,8 @@ pub(crate) struct Registry {
     requests: WeakUnboundedSender<Message>,
     /// Receiver access is weak until a synchronous invocation has been admitted.
     pump: std::rc::Weak<pump::State>,
+    /// Builds the widgets whose look depends on the host.
+    widgets: Rc<dyn maestro_extensions::ExtensionWidgets>,
 }
 
 impl Registry {

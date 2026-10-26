@@ -12,6 +12,7 @@ use wasmtime_wasi::WasiView;
 pub(crate) mod bash;
 pub(crate) mod events;
 mod factories;
+mod paints;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -62,6 +63,8 @@ pub(crate) struct Exports {
     terminal: terminal::Exports,
     /// Actual component factory export.
     factories: factories::Exports,
+    /// Authored styling and highlighting exports.
+    paints: paints::Exports,
     /// Native component disposal.
     dispose: Abort,
     /// Native branch change listener.
@@ -116,6 +119,7 @@ impl Exports {
         let tools = tools::Exports::new(store, instance, &guest)?;
         let terminal = terminal::Exports::new(store, instance, &guest)?;
         let factories = factories::Exports::new(store, instance, &guest)?;
+        let paints = paints::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
@@ -128,6 +132,7 @@ impl Exports {
             tools,
             terminal,
             factories,
+            paints,
             dispose: typed(store, instance, &guest, "invoke-dispose")?,
             branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
@@ -160,7 +165,10 @@ impl Exports {
             Call::Schema(call) => self.schema.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
-            call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
+            call @ (Call::TerminalInput(_)
+            | Call::Factory(_)
+            | Call::ToolRender(_)
+            | Call::Paint(_)) => {
                 self.ui(accessor, call).await?;
             }
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -188,6 +196,7 @@ impl Exports {
             Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
             Call::Factory(call) => self.factories.invoke(accessor, call).await,
             Call::ToolRender(call) => self.factories.render(accessor, call).await,
+            Call::Paint(call) => self.paints.invoke(accessor, call).await,
             _ => Err(wasmtime::format_err!("expected a UI callback")),
         }
     }

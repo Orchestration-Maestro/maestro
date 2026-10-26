@@ -69,6 +69,10 @@ interface guest {
     invoke-branch-change: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a component's disposal once with its synchronous emitter.
     invoke-dispose: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Styles text with an authored styling function.
+    invoke-style: async func(handler: borrow<callback>, text: string) -> result<string, string>;
+    /// Highlights code with an authored highlighting function.
+    invoke-highlight: async func(handler: borrow<callback>, code: string, lang: option<string>) -> result<list<string>, string>;
     /// Runs a terminal input listener on one chunk with its synchronous emitter.
     invoke-terminal-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<option<terminal-input-result>, string>;
 }

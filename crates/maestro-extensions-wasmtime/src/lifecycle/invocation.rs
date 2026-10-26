@@ -45,6 +45,9 @@ impl Call {
             Self::TerminalInput(call) => attach(&call.reply, completion),
             Self::Factory(call) => attach(&call.reply, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
+            Self::Paint(crate::guest_calls::paints::PaintCall::Highlight(_, _, _, reply)) => {
+                attach(reply, completion);
+            }
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),
@@ -54,7 +57,8 @@ impl Call {
                 }
                 RegisteredCall::Completion(_, _, reply) => attach(reply, completion),
             },
-            Self::Tool(ToolCall::Prepare { reply, .. } | ToolCall::Execute { reply, .. }) => {
+            Self::Tool(ToolCall::Prepare { reply, .. } | ToolCall::Execute { reply, .. })
+            | Self::Paint(crate::guest_calls::paints::PaintCall::Style(_, _, reply)) => {
                 attach(reply, completion);
             }
             Self::Release(release) => {

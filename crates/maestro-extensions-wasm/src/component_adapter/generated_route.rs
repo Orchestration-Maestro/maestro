@@ -28,9 +28,46 @@ pub(super) fn drive(route: &host::ImportRoute) -> ExtensionResult<()> {
     }
 }
 
+/// Completes a host rendering, running each nested call it makes into this instance.
+///
+/// # Errors
+/// Returns the rendering's own error.
+pub(super) fn drive_render(route: &host::RenderRoute) -> ExtensionResult<Vec<String>> {
+    loop {
+        match route.next() {
+            host::RenderStep::Done(result) => return result,
+            host::RenderStep::Invoke(call) => start(route, dispatch(call)),
+        }
+    }
+}
+
+/// A host operation in progress that hands this instance its nested calls.
+trait Progress {
+    /// Returns a nested call's result.
+    fn resume(&self, value: host::LocalResult);
+    /// Releases the host caller now; the nested call's result follows through the settlement.
+    fn defer(&self) -> host::LocalSettlement;
+}
+impl Progress for host::ImportRoute {
+    fn resume(&self, value: host::LocalResult) {
+        host::ImportRoute::resume(self, value);
+    }
+    fn defer(&self) -> host::LocalSettlement {
+        host::ImportRoute::defer(self)
+    }
+}
+impl Progress for host::RenderRoute {
+    fn resume(&self, value: host::LocalResult) {
+        host::RenderRoute::resume(self, value);
+    }
+    fn defer(&self) -> host::LocalSettlement {
+        host::RenderRoute::defer(self)
+    }
+}
+
 /// Runs a nested call's prefix now; a call still pending continues in this guest's task and
 /// delivers its result through its settlement, so the host caller is released at once.
-fn start(route: &host::ImportRoute, mut running: Running) {
+fn start(route: &impl Progress, mut running: Running) {
     match running
         .as_mut()
         .poll(&mut Context::from_waker(Waker::noop()))
@@ -94,6 +131,12 @@ fn dispatch(call: host::LocalCall) -> Running {
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
+        host::LocalCall::Style(call) => {
+            host::LocalResult::Style(super::super::invoke_style(call.target, &call.text))
+        }
+        host::LocalCall::Highlight(call) => host::LocalResult::Highlight(
+            super::super::invoke_highlight(call.target, &call.code, call.lang.as_deref()),
+        ),
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))

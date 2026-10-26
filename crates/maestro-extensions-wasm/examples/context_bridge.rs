@@ -50,6 +50,10 @@ mod ui;
 mod theme;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "../src/tests/widget_author.rs"]
+mod widget_author;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/schema.rs"]
 mod schema;
 

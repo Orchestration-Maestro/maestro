@@ -17,6 +17,7 @@ use wasmtime::component::{ComponentType, Lower};
 pub(crate) mod bash;
 pub(crate) mod events;
 pub(crate) mod factories;
+pub(crate) mod paints;
 pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
@@ -64,6 +65,8 @@ pub(crate) enum Call<H = Handle> {
     Factory(factories::FactoryCall<H>),
     /// Renders one tool row through its authored renderer.
     ToolRender(tool_renders::ToolRenderCall<H>),
+    /// Calls an authored styling or highlighting function for a host widget.
+    Paint(paints::PaintCall<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.

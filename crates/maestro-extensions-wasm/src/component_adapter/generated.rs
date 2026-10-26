@@ -18,6 +18,9 @@ mod route;
 #[path = "generated_glue.rs"]
 mod glue;
 
+#[path = "generated_widgets.rs"]
+mod widgets;
+
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;

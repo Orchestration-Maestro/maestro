@@ -14,6 +14,7 @@ use wasmtime::{
 };
 
 mod calls;
+mod records;
 use calls::LocalResult;
 
 /// A nested same-instance call; its strong ownership travels in its completion.
@@ -66,19 +67,19 @@ impl Nested {
     }
 }
 
-/// Store-side ticket for one native operation in progress.
-pub(crate) struct Route {
+/// Store-side ticket for one native operation in progress, with its own result type.
+pub(crate) struct Route<T = ()> {
     /// Nested calls of the operation, closed when the operation returns.
     nested: Receiver<Nested>,
     /// The operation's own result, sent before its nested calls close.
-    result: Receiver<Result<(), String>>,
+    result: Receiver<Result<T, String>>,
     /// Outstanding nested call, settled exactly once by the guest.
     pending: Option<Nested>,
 }
 
-impl Route {
+impl<T> Route<T> {
     /// Opens the nested-call channel beside the operation's own reply.
-    pub(crate) fn new(result: Receiver<Result<(), String>>) -> (Sender<Nested>, Self) {
+    pub(crate) fn new(result: Receiver<Result<T, String>>) -> (Sender<Nested>, Self) {
         let (send, nested) = std::sync::mpsc::channel();
         let route = Self {
             nested,
@@ -97,7 +98,7 @@ impl Route {
     }
 
     /// Waits for the next nested call, or for the operation's own result once it returned.
-    pub(crate) fn next(&mut self) -> Result<Nested, Result<(), String>> {
+    pub(crate) fn next(&mut self) -> Result<Nested, Result<T, String>> {
         self.nested.recv().map_err(|_| {
             self.result
                 .recv()
@@ -139,47 +140,31 @@ enum RouteStep {
     Done(Result<(), String>),
 }
 
-/// Installs the progress ticket and the later settlement on the original host interface.
+/// One step of a host rendering, as the guest receives it.
+#[derive(ComponentType, Lower)]
+#[component(variant)]
+enum RenderStep {
+    /// A nested same-instance call to run now.
+    #[component(name = "invoke")]
+    Invoke(calls::LocalCall),
+    /// The rendering's rows.
+    #[component(name = "done")]
+    Done(Result<Vec<String>, String>),
+}
+
+/// Installs the progress tickets and the later settlement on the original host interface.
 pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, Route>(host, "import-route")?;
     crate::context_imports::add_resource::<T, Settlement>(host, "local-settlement")?;
-    host.func_wrap(
-        "[method]import-route.next",
-        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route>,)| {
-            let next = store.data_mut().ctx().table.get_mut(&resource)?.next();
-            let step = match next {
-                Ok(nested) => {
-                    let table = store.data_mut().ctx().table;
-                    let local = calls::lower(table, &nested.call)?;
-                    table.get_mut(&resource)?.pending = Some(nested);
-                    RouteStep::Invoke(local)
-                }
-                Err(result) => RouteStep::Done(result),
-            };
-            Ok((step,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]import-route.resume",
-        |mut store: StoreContextMut<'_, T>, (resource, value): (Resource<Route>, LocalResult)| {
-            let nested = store.data_mut().ctx().table.get_mut(&resource)?.take()?;
-            nested.settle(store.data_mut(), value)
-        },
-    )?;
-    host.func_wrap(
-        "[method]import-route.defer",
-        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route>,)| {
-            let mut nested = store.data_mut().ctx().table.get_mut(&resource)?.take()?;
-            nested.started();
-            Ok((store
-                .data_mut()
-                .ctx()
-                .table
-                .push(Settlement(Some(nested)))?,))
-        },
-    )?;
+    progress::<T, (), RouteStep>(host, "import-route", |step| match step {
+        Ok(local) => RouteStep::Invoke(local),
+        Err(result) => RouteStep::Done(result),
+    })?;
+    progress::<T, Vec<String>, RenderStep>(host, "render-route", |step| match step {
+        Ok(local) => RenderStep::Invoke(local),
+        Err(result) => RenderStep::Done(result),
+    })?;
     host.func_wrap(
         "[method]local-settlement.finish",
         |mut store: StoreContextMut<'_, T>,
@@ -193,10 +178,61 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
     Ok(())
 }
 
+/// Installs one progress ticket whose final result lowers through `step`.
+fn progress<T, V, S>(
+    host: &mut LinkerInstance<'_, T>,
+    name: &str,
+    step: fn(Result<calls::LocalCall, Result<V, String>>) -> S,
+) -> wasmtime::Result<()>
+where
+    T: crate::callback_imports::CallbackView + 'static,
+    V: Send + 'static,
+    S: ComponentType + Lower + Send + Sync + 'static,
+{
+    crate::context_imports::add_resource::<T, Route<V>>(host, name)?;
+    host.func_wrap(
+        &format!("[method]{name}.next"),
+        move |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route<V>>,)| {
+            let next = store.data_mut().ctx().table.get_mut(&resource)?.next();
+            let local = match next {
+                Ok(nested) => {
+                    let table = store.data_mut().ctx().table;
+                    let local = calls::lower(table, &nested.call)?;
+                    table.get_mut(&resource)?.pending = Some(nested);
+                    Ok(local)
+                }
+                Err(result) => Err(result),
+            };
+            Ok((step(local),))
+        },
+    )?;
+    host.func_wrap(
+        &format!("[method]{name}.resume"),
+        |mut store: StoreContextMut<'_, T>,
+         (resource, value): (Resource<Route<V>>, LocalResult)| {
+            let nested = store.data_mut().ctx().table.get_mut(&resource)?.take()?;
+            nested.settle(store.data_mut(), value)
+        },
+    )?;
+    host.func_wrap(
+        &format!("[method]{name}.defer"),
+        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route<V>>,)| {
+            let mut nested = store.data_mut().ctx().table.get_mut(&resource)?.take()?;
+            nested.started();
+            Ok((store
+                .data_mut()
+                .ctx()
+                .table
+                .push(Settlement(Some(nested)))?,))
+        },
+    )?;
+    Ok(())
+}
+
 /// Pushes a native operation's ticket for the guest to drive.
-pub(crate) fn push<T: wasmtime_wasi::WasiView>(
+pub(crate) fn push<T: wasmtime_wasi::WasiView, V: Send + 'static>(
     store: &mut T,
-    route: Route,
-) -> wasmtime::Result<Resource<Route>> {
+    route: Route<V>,
+) -> wasmtime::Result<Resource<Route<V>>> {
     Ok(store.ctx().table.push(route)?)
 }

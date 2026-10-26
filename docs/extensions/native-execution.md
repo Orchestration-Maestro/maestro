@@ -1,7 +1,8 @@
 # Native component execution
 
-`maestro-extensions-wasmtime::artifact_factory(path)` creates a local extension
-factory for an already-built component. Pass it to
+`maestro-extensions-wasmtime::artifact_factory(path, widgets)` creates a local extension
+factory for an already-built component whose host widgets `widgets`, an
+`ExtensionWidgets`, builds. Pass it to
 `maestro_extensions::load_extension_from_factory` on a Tokio local task set.
 Construction does not discover files or compile source.
 

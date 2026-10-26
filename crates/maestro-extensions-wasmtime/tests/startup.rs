@@ -24,7 +24,7 @@ pub(super) async fn failed() {
     );
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let error = load_extension_from_factory(
-        artifact_factory(path.clone()),
+        artifact_factory(path.clone(), crate::support::widgets()),
         "/failed-startup".into(),
         bus.for_extension(),
         runtime,

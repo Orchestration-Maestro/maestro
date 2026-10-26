@@ -97,6 +97,8 @@ impl Header {
 
 /// What the result of a nested call the host made settles.
 pub enum Nested {
+    /// An authored component's invalidation.
+    Invalidate,
     /// A footer factory, whose component replaces the current footer.
     Footer,
     /// A header factory, whose component replaces the current header.
@@ -132,6 +134,8 @@ pub struct Bank {
     pub footer: Footer,
     /// Whether tool output is expanded.
     tools: bool,
+    /// Host widgets the extension built.
+    pub hosted: super::widget_host::Bank,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -619,7 +623,8 @@ impl State {
             (
                 _,
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
-            ) => Ok(Some(error)),
+            )
+            | (Nested::Invalidate, host::LocalResult::Unit(Err(error))) => Ok(Some(error)),
             _ => Ok(None),
         }
     }

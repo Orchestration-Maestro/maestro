@@ -106,6 +106,8 @@ kinds! {
         ToolRow(std::rc::Rc<crate::types::ToolRow>),
         FooterFactory(crate::FooterFactory),
         BranchChange(crate::BranchChangeListener),
+        Style(crate::Style),
+        Highlight(crate::Highlight),
     }
     once {
         Abort(crate::AbortListener),
@@ -139,6 +141,11 @@ pub(super) struct Identity<I: Imports> {
 }
 
 impl<I: Imports> Identity<I> {
+    /// Key of the identity.
+    pub(super) fn id(&self) -> u32 {
+        self.id
+    }
+
     /// Asks the host for a fresh identity.
     pub(super) fn new(imports: &I) -> Self {
         let (id, handle) = imports.new_callback();

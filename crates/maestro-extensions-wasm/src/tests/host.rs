@@ -580,6 +580,78 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn new_text(
+        &mut self,
+        text: String,
+        padding_x: u32,
+        padding_y: u32,
+        background: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(background.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "text",
+            text,
+            padding: (padding_x, padding_y),
+            paint,
+            ..Default::default()
+        })
+    }
+    fn new_box(
+        &mut self,
+        padding_x: u32,
+        padding_y: u32,
+        background: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(background.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "box",
+            padding: (padding_x, padding_y),
+            paint,
+            ..Default::default()
+        })
+    }
+    fn new_container(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_widget(super::widget_host::Build {
+            kind: "container",
+            ..Default::default()
+        })
+    }
+    fn new_spacer(
+        &mut self,
+        lines: u32,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_widget(super::widget_host::Build {
+            kind: "spacer",
+            lines,
+            ..Default::default()
+        })
+    }
+    fn new_markdown(
+        &mut self,
+        text: String,
+        padding_x: u32,
+        padding_y: u32,
+        theme: host::MarkdownStyles,
+        style: Option<host::DefaultTextStyle>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_markdown(text, (padding_x, padding_y), &theme, style.as_ref())
+    }
+    fn new_dynamic_border(
+        &mut self,
+        color: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(color.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "border",
+            paint,
+            ..Default::default()
+        })
+    }
+    fn get_markdown_theme(&mut self) -> wasmtime::Result<Result<host::MarkdownTheme, String>> {
+        self.markdown_theme().map(Ok)
+    }
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,

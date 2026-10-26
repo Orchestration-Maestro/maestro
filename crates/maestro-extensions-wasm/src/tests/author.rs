@@ -51,6 +51,8 @@ mod theme_author;
 mod tool_author;
 #[path = "ui_author.rs"]
 pub(crate) mod ui_author;
+#[path = "widget_author.rs"]
+mod widget_author;
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {

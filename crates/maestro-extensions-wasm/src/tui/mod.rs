@@ -32,38 +32,77 @@ pub trait ComponentView {
     fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()>;
 }
 
+mod widgets;
+use widgets::Widget;
+pub use widgets::{
+    Box, Container, DefaultTextStyle, DynamicBorder, Highlight, Markdown, MarkdownTheme, Spacer,
+    Style, Text, TextDecoration, get_markdown_theme,
+};
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) use widgets::{Widget as HostWidgetHandle, WidgetHost, WidgetPort};
+
 /// Independently retained component; clones share the authored view.
 #[derive(Clone)]
-pub struct Component(Rc<dyn ComponentView>);
+pub struct Component {
+    /// The view.
+    view: Rc<dyn ComponentView>,
+    /// The host widget the view forwards to, when it is one.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    widget: Option<Widget>,
+}
 impl Component {
     /// Retains the supplied author view.
     #[must_use]
     pub fn new(view: impl ComponentView + 'static) -> Self {
-        Self(Rc::new(view))
+        Self {
+            view: Rc::new(view),
+            #[cfg(any(test, target_arch = "wasm32"))]
+            widget: None,
+        }
+    }
+    /// A view of a host widget, which the host keeps as the widget itself.
+    fn hosted(view: impl ComponentView + 'static, widget: Widget) -> Self {
+        #[cfg(not(any(test, target_arch = "wasm32")))]
+        drop(widget);
+        Self {
+            view: Rc::new(view),
+            #[cfg(any(test, target_arch = "wasm32"))]
+            widget: Some(widget),
+        }
+    }
+    /// The host widget behind this component, when it is one.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn widget(&self) -> Option<&Widget> {
+        self.widget.as_ref()
+    }
+    /// Whether both share one view.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn same(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.view, &other.view)
     }
     /// Renders at the supplied width.
     /// # Errors
     /// Returns the author's failure.
     pub fn render(&self, width: u32, emitter: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
-        self.0.render(width, emitter)
+        self.view.render(width, emitter)
     }
     /// Forwards input to the retained view.
     /// # Errors
     /// Returns the author's failure.
     pub fn handle_input(&self, data: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
-        self.0.handle_input(data, emitter)
+        self.view.handle_input(data, emitter)
     }
     /// Reads the retained view's current release preference.
     /// # Errors
     /// Returns the author's failure.
     pub fn wants_key_release(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
-        self.0.wants_key_release(emitter)
+        self.view.wants_key_release(emitter)
     }
     /// Invalidates the retained view.
     /// # Errors
     /// Returns the author's failure.
     pub fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
-        self.0.invalidate(emitter)
+        self.view.invalidate(emitter)
     }
 }
 

@@ -10,6 +10,7 @@ mod canonical_json;
 mod canonical_schema;
 mod canonical_theme;
 mod canonical_ui;
+mod canonical_widgets;
 mod component_events;
 mod component_loading;
 mod components;

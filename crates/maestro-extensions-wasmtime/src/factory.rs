@@ -4,7 +4,7 @@ use crate::{
     lifecycle::{self, replies::Replies},
     local_resources::Pump,
 };
-use maestro_extensions::{ExtensionFactory, Local};
+use maestro_extensions::{ExtensionFactory, ExtensionWidgets, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
@@ -12,16 +12,20 @@ use wasmtime::{
     component::{Component, Linker},
 };
 
-/// Creates a local factory for one authored extension component at the supplied path.
+/// Creates a local factory for one authored extension component at the supplied path, whose
+/// host widgets `widgets` builds.
 ///
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
-pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
+pub fn artifact_factory(
+    path: String,
+    widgets: Rc<dyn ExtensionWidgets>,
+) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
-        let path = path.clone();
+        let (path, widgets) = (path.clone(), widgets.clone());
         Box::pin(async move {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(widgets);
             let endpoint = pump.registry().api(api)?;
             let (calls, incoming) = mpsc::unbounded_channel();
             let shutdown = Arc::new(tokio::sync::Notify::new());

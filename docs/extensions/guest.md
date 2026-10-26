@@ -440,6 +440,36 @@ subscription keeps it.
 host's header with `None`. The host disposes the custom header it replaces first, and a
 host that has not built its own header yet runs no factory.
 
+### Host widgets
+
+`Text`, `Box`, `Container`, `Spacer`, `Markdown` and `DynamicBorder` are widgets the host
+builds and keeps; each facade forwards to the host's widget. Building one needs no UI, so
+an extension may build widgets in any mode, and only showing them goes through the UI.
+`From<&Text>` and the other conversions make a widget a `Component`, which a factory
+returns or a container holds; the host keeps such a child as the widget itself.
+
+| Widget | Operations beside `render` and `invalidate` |
+| --- | --- |
+| `Text::new(text, padding_x, padding_y, custom_bg_fn)` | `set_text`, `set_custom_bg_fn` |
+| `Box::new(padding_x, padding_y, bg_fn)` | `add_child`, `remove_child`, `clear`, `set_bg_fn` |
+| `Container::new()` | `add_child`, `remove_child`, `clear` |
+| `Spacer::new(lines)` | `set_lines` |
+| `Markdown::new(text, padding_x, padding_y, theme, default_text_style)` | `set_text` |
+| `DynamicBorder::new(color)` | none |
+
+A container or box renders host widgets and authored components in insertion order; the
+same component may be added more than once, `remove_child` removes its first occurrence and
+an absent child changes nothing. A removed child stays usable. An authored component may
+render host widgets from its own `render`, which runs while the host renders its parent.
+
+A `Style` styles text: `Style::new` wraps an authored function, which the host calls while
+it renders. `get_markdown_theme` returns a `MarkdownTheme` whose styles read the live theme
+and whose `Highlight` is the host's code highlighting; those go back to the host as its own
+when a widget uses them. An authored `MarkdownTheme` may supply its own styles, highlighting
+and code-block indent. The first failure of an authored style or highlighting is the next
+`render` or `invalidate` error of the widget that uses it. `DynamicBorder` without a color
+paints with the live border color.
+
 ### Themes and tool expansion
 
 `theme` returns the UI's live theme, which reads the host's later selections.
@@ -1036,4 +1066,4 @@ and the style algorithms, so every call reads its current state:
 
 The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
 owner's message. A theme kept past its renderer call observes later theme changes and provenance
-edits made through any of its clones. Widget composition is not exposed here.
+edits made through any of its clones.

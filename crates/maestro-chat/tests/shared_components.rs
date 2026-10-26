@@ -165,6 +165,43 @@ fn border_uses_live_theme_but_custom_color_needs_no_theme() {
 }
 
 #[test]
+fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
+    use maestro_app::ExtensionWidgets;
+    use maestro_tui::{Markdown, MarkdownOptions};
+    let (state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let terminal = TerminalImage::new(|_| None, || 1);
+    let host =
+        maestro_chat::ExtensionWidgetHost::new(live.clone(), highlighter.clone(), terminal.clone());
+    let border = host.dynamic_border(None);
+    let application = DynamicBorder::new(live.clone(), None);
+    assert_eq!(border.render(4), application.render(4));
+    state.set_theme_instance(colors(35, 36, 37, 38)).unwrap();
+    assert_eq!(
+        border.render(4),
+        application.render(4),
+        "the border follows the live theme"
+    );
+    let painted = host.dynamic_border(Some(Rc::new(|text| format!("[{text}]"))));
+    assert_eq!(painted.render(2), ["[──]"]);
+    let options = || MarkdownOptions {
+        clean_content: false,
+        padding_x: 1,
+        padding_y: 0,
+        default_text_style: None,
+    };
+    let text = "# Title\n\n```rust\nfn main() {}\n```";
+    let built = host.markdown(text.into(), options(), Rc::new(host.markdown_theme()));
+    let theme = maestro_theme::get_markdown_theme(live, highlighter, true);
+    let direct = Markdown::new(text.into(), options(), Rc::new(theme), terminal);
+    assert_eq!(
+        built.render(24),
+        direct.render(24),
+        "the toolkit Markdown with the live styles"
+    );
+}
+
+#[test]
 fn border_returns_painter_output_without_preserving_rule_glyphs() {
     let state = published::unpublished();
     let border = DynamicBorder::new(state.theme(), Some(Rc::new(|text| text.replace('─', "="))));

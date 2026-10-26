@@ -10,7 +10,7 @@ Turning a resolved path into a factory is the only step that depends on the
 module format, so the caller supplies it as a `ModuleLoader<E>`. It returns
 `Ok(Some(factory))` for a module that exports one, `Ok(None)` for a module that
 exports none, and `Err` when the module cannot be loaded. For built components,
-a loader that returns `artifact_factory(path)` from `maestro-extensions-wasmtime`
+a loader that returns `artifact_factory(path, widgets)` from `maestro-extensions-wasmtime`
 loads each component through the path, discovery and registration rules below
 (see [native component execution](native-execution.md)); the executable does
 not wire that loader in yet. Like

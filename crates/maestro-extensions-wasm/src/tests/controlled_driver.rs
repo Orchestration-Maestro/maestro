@@ -41,8 +41,12 @@ pub struct ControlledDriver {
 impl ControlledDriver {
     /// A driver with a fresh host.
     pub fn new() -> Self {
+        let host = Controlled::default();
+        crate::component_adapter::install(std::rc::Rc::new(crate::component_adapter::Builder(
+            host.clone(),
+        )));
         Self {
-            host: Controlled::default(),
+            host,
             components: Vec::new(),
             bash: Vec::new(),
             last_bash: None,

@@ -174,6 +174,25 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(Exports::new(Generated).invoke_dispose(handler.id(), emitter))
     }
 
+    fn invoke_style(
+        handler: &host::Callback,
+        text: String,
+    ) -> impl Future<Output = ExtensionResult<String>> {
+        std::future::ready(super::super::invoke_style(handler.id(), &text))
+    }
+
+    fn invoke_highlight(
+        handler: &host::Callback,
+        code: String,
+        lang: Option<String>,
+    ) -> impl Future<Output = ExtensionResult<Vec<String>>> {
+        std::future::ready(super::super::invoke_highlight(
+            handler.id(),
+            &code,
+            lang.as_deref(),
+        ))
+    }
+
     fn invoke_terminal_input(
         handler: &host::Callback,
         data: String,
@@ -187,6 +206,7 @@ impl<E: Extension> Guest for Glue<E> {
     }
 
     async fn start() -> ExtensionResult<()> {
+        super::super::install(super::widgets::widget_host());
         Exports::new(Generated).start::<E>().await
     }
 

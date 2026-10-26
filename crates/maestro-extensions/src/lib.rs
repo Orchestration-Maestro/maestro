@@ -75,9 +75,9 @@ pub use types::{
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
     ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIContextBinding,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler, MessageRenderOptions,
-    MessageRenderer, MessageRendererCall, NavigateTreeHandler, NewSessionHandler,
-    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, ExtensionWidgets, ForkHandler,
+    MessageRenderOptions, MessageRenderer, MessageRendererCall, NavigateTreeHandler,
+    NewSessionHandler, RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
     SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
     WorkingIndicatorOptions,
 };
@@ -139,4 +139,13 @@ pub use maestro_tools::{
     ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
+/// Toolkit widgets an extension host builds, and the capability that builds the ones whose
+/// look depends on the host.
+pub mod widgets {
+    pub use crate::types::ExtensionWidgets;
+    pub use maestro_tui::{
+        Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, Spacer, Text,
+        TextDecoration, editor_component::BorderColor,
+    };
+}
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

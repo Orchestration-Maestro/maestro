@@ -1,9 +1,16 @@
 //! Typed nested same-instance calls, lowered from native calls and settled from guest results.
+use super::records::{
+    LocalBash, LocalCommand, LocalCompletion, LocalContinuation, LocalEvent, LocalFactory,
+    LocalHighlight, LocalKey, LocalPrepare, LocalRender, LocalRenderer, LocalSchema, LocalSetup,
+    LocalShortcut, LocalStyle, LocalSynchronous, LocalTerminalInput, LocalTool, LocalToolRender,
+    LocalUnit,
+};
 use crate::{
     context_imports::{CommandContext, Context},
     guest_calls::{
-        BashRequest, Call, Callback, RegisteredCall, SynchronousKind,
+        Call, Callback, RegisteredCall,
         events::Returned,
+        paints::PaintCall,
         renderers::{ComponentCall, ComponentMethod},
         tools::ToolCall,
     },
@@ -13,231 +20,8 @@ use crate::{
         registrations::Item,
         tools::{Capabilities as ToolResources, Invocation as ToolInvocation},
     },
-    local_resources::effects::{EmitterEndpoint, ThemeEndpoint},
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
-
-/// Owned operands of one nested renderer call.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalRenderer {
-    /// Authored identity in the shared callback inventory.
-    target: u32,
-    /// Complete custom-message document.
-    message: String,
-    /// Actual caller expansion choice.
-    expanded: bool,
-    /// Transferred theme capability.
-    theme: Resource<ThemeEndpoint>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested component render.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalRender {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Actual caller viewport width.
-    width: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested input or invalidation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalUnit {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Literal input, or absence for invalidation.
-    data: Option<String>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested key-release query.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalKey {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested tool rendering.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalToolRender {
-    /// Authored identity of the renderer.
-    target: u32,
-    /// The rendering operands.
-    render: crate::guest_calls::tool_renders::Render,
-    /// Original live theme, transferred.
-    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
-    /// The row's redraw capability, transferred.
-    invalidator: Resource<crate::local_resources::effects::InvalidatorEndpoint>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested component factory.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalFactory {
-    /// Authored identity of the factory.
-    target: u32,
-    /// Original terminal, transferred.
-    tui: Resource<crate::local_resources::effects::TuiEndpoint>,
-    /// Original live theme, transferred.
-    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
-    /// Original footer metadata of a footer factory, transferred.
-    footer: Option<Resource<crate::footer_data::Endpoint>>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested terminal input chunk.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalTerminalInput {
-    /// Authored identity of the terminal input listener.
-    target: u32,
-    /// The literal chunk.
-    data: String,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested argument preparation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalPrepare {
-    /// Authored identity of the tool preparation callback.
-    target: u32,
-    /// Complete argument document.
-    args: String,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested schema method on the still-borrowed native operand.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalSchema {
-    /// Authored identity of the retained schema node.
-    target: u32,
-    /// Exact author method requested by the checker.
-    operation: crate::schema_wire::Operation,
-    /// Invocation-local borrowed operand capability.
-    node: Resource<crate::schema_reads::Endpoint>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested synchronous callback prefix.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalSynchronous {
-    /// Authored identity of the callback.
-    target: u32,
-    /// Authored callback export.
-    kind: SynchronousKind,
-    /// Exact data document.
-    data: String,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested event callback.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalEvent {
-    /// Authored identity of the event handler.
-    target: u32,
-    /// Complete tagged event document.
-    event: String,
-    /// Original invocation context and optional cancellation.
-    resources: EventResources,
-}
-
-/// Owned operands of one nested command.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalCommand {
-    /// Authored identity of the command handler.
-    target: u32,
-    /// Exact command arguments.
-    args: String,
-    /// Original command context.
-    ctx: Resource<CommandContext>,
-}
-
-/// Owned operands of one nested argument completion.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalCompletion {
-    /// Authored identity of the completion callback.
-    target: u32,
-    /// Exact argument prefix.
-    prefix: String,
-}
-
-/// Owned operands of one nested shortcut.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalShortcut {
-    /// Authored identity of the shortcut handler.
-    target: u32,
-    /// Original ordinary context.
-    ctx: Resource<Context>,
-}
-
-/// Owned operands of one nested tool execution.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalTool {
-    /// Authored identity of the tool execution callback.
-    target: u32,
-    /// Exact invocation identity and arguments.
-    invocation: ToolInvocation,
-    /// Original per-call context, cancellation and progress observer.
-    resources: ToolResources,
-}
-
-/// Owned operands of one nested session setup.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalSetup {
-    /// Authored identity of the setup callback.
-    target: u32,
-    /// Original writable session.
-    writer: Resource<crate::writer_reads::Endpoint>,
-}
-
-/// Owned operands of one nested session continuation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalContinuation {
-    /// Authored identity of the continuation.
-    target: u32,
-    /// Original replacement context.
-    ctx: Resource<crate::replaced_reads::Endpoint>,
-}
-
-/// Owned operands of one nested execution of returned shell operations.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalBash {
-    /// Authored identity of the returned operations.
-    target: u32,
-    /// Exact execution operands.
-    request: BashRequest,
-    /// Original output frame and optional cancellation.
-    resources: BashResources,
-}
 
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
@@ -300,6 +84,12 @@ pub(super) enum LocalCall {
     /// A tool rendering.
     #[component(name = "tool-render")]
     ToolRender(LocalToolRender),
+    /// An authored styling.
+    #[component(name = "style")]
+    Style(LocalStyle),
+    /// An authored highlighting.
+    #[component(name = "highlight")]
+    Highlight(LocalHighlight),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -348,6 +138,12 @@ pub(super) enum LocalResult {
     /// The rendered component and new row state identities, or the authored error.
     #[component(name = "tool-render")]
     ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
+    /// The styled text, or the authored error.
+    #[component(name = "style")]
+    Style(Result<String, String>),
+    /// The highlighted rows, or the authored error.
+    #[component(name = "highlight")]
+    Highlight(Result<Vec<String>, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -410,8 +206,24 @@ pub(super) fn lower(
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Registered(call) => registered(table, call)?,
+        Call::Paint(call) => paint(call),
         call => asynchronous(table, call)?,
     })
+}
+
+/// Marshals one authored styling or highlighting.
+fn paint(call: &PaintCall<Callback>) -> LocalCall {
+    match call {
+        PaintCall::Style(handler, text, _) => LocalCall::Style(LocalStyle {
+            target: handler.id,
+            text: text.clone(),
+        }),
+        PaintCall::Highlight(handler, code, lang, _) => LocalCall::Highlight(LocalHighlight {
+            target: handler.id,
+            code: code.clone(),
+            lang: lang.clone(),
+        }),
+    }
 }
 
 /// Marshals one retained component method.
@@ -555,7 +367,8 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             };
             let _ = call.reply.send(value);
         }
-        (Call::Component(ComponentCall::Render(_, _, _, reply)), LocalResult::Render(value)) => {
+        (Call::Component(ComponentCall::Render(_, _, _, reply)), LocalResult::Render(value))
+        | (Call::Paint(PaintCall::Highlight(_, _, _, reply)), LocalResult::Highlight(value)) => {
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
@@ -564,7 +377,8 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {
             let _ = reply.send(value);
         }
-        (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
+        (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value))
+        | (Call::Paint(PaintCall::Style(_, _, reply)), LocalResult::Style(value)) => {
             let _ = reply.send(value);
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
@@ -590,6 +404,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);
         }
+
         (call, value) => settle_asynchronous(store, call, value)?,
     }
     Ok(())

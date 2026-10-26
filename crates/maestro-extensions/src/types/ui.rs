@@ -1,6 +1,7 @@
 //! Terminal UI capabilities offered to extension callbacks.
 mod callbacks;
 mod editor;
+mod widgets;
 use crate::{EventError, footer_data_provider::ReadonlyFooterDataProvider};
 pub use callbacks::UIHostCall;
 pub use editor::{
@@ -17,6 +18,7 @@ use std::{
     ops::Deref,
     rc::Rc,
 };
+pub use widgets::ExtensionWidgets;
 
 /// A local UI operation that settles with its result or the host's error.
 pub type ExtensionUIFuture<T> = <Local as Execution>::Future<'static, Result<T, EventError>>;

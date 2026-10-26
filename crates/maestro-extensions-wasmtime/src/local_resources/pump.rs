@@ -73,13 +73,14 @@ impl Drop for JoinGuard {
 
 impl Pump {
     /// Separates startup admission from the local owner without spawning work.
-    pub(crate) fn new() -> (Self, Admission) {
+    pub(crate) fn new(widgets: Rc<dyn maestro_extensions::ExtensionWidgets>) -> (Self, Admission) {
         let (requests, receiver) = unbounded_channel();
         let state = Rc::new_cyclic(|state| State {
             registry: Registry {
                 resources: Rc::default(),
                 requests: requests.downgrade(),
                 pump: state.clone(),
+                widgets,
             },
             requests: RefCell::new(receiver),
             pending: RefCell::new(FuturesUnordered::new()),
@@ -233,6 +234,7 @@ impl State {
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
+            Message::Widgets(message) => self.widgets(message),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => {
                 let removed = self.registry.resources.borrow_mut().entries.remove(&id);
