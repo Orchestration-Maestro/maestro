@@ -1085,3 +1085,12 @@ owner's message. A theme kept past its renderer call observes later theme change
 edits made through any of its clones. Widget composition is not exposed here.
 
 See [native helpers](guest_operations.md) for synchronous terminal operations.
+
+## Standard operating-system interfaces
+
+Rust standard-library environment, file and byte I/O use the host's WASI 0.2
+baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
+0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
+and `wit_stream` byte-stream construction. Both generations use the same host
+context; neither introduces an extension-specific permission list. See
+[component operating environment](host_io.md) for access and platform limits.

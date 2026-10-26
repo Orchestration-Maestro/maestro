@@ -141,8 +141,9 @@ algorithm, and the facades add no crate-graph edge (delivery 1).
 ### Guest network and processes
 
 The full-user host gives components the user's network (name lookup, connect, listen) and detached child processes.
-It writes component stdout without splitting a host frame. Local sockets arrive through `maestro-ipc`, the one
-local-socket owner (delivery 59).
+While the native terminal's queued output runs, component stdout goes through the same ordered queue,
+so it never splits a host frame. Other modes and regular-file destinations inherit stdout.
+Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery 59).
 
 ### Shared libraries
 

@@ -1326,6 +1326,7 @@ pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Compon
 fn component_linker(engine: &Engine) -> wasmtime::Result<Linker<State>> {
     let mut linker = Linker::new(engine);
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
     Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
     Ok(linker)
 }

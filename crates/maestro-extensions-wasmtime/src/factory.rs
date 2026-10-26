@@ -19,7 +19,27 @@ use wasmtime::{
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
 pub fn artifact_factory(path: String, installation_version: String) -> ExtensionFactory<Local> {
-    factory(path, installation_version, None)
+    factory(path, installation_version, None, None)
+}
+
+/// Creates an artifact factory whose standard output uses the supplied byte writer.
+///
+/// The writer is shared across initialization and later callbacks on the Store thread.
+/// Closing one guest output view does not close the caller's sink. The caller owns
+/// terminal lifecycle and supplies the `terminal` observation. Other streams stay inherited.
+#[must_use]
+pub fn artifact_factory_with_stdout(
+    path: String,
+    installation_version: String,
+    stdout: Box<dyn std::io::Write + Send>,
+    terminal: bool,
+) -> ExtensionFactory<Local> {
+    factory(
+        path,
+        installation_version,
+        Some(crate::wasi::Output::new(stdout, terminal)),
+        None,
+    )
 }
 
 /// Creates the production component factory with application-supplied native effects.
@@ -32,17 +52,19 @@ pub fn artifact_factory_with_io(
     installation_version: String,
     io: Rc<dyn maestro_extensions::native_io::NativeIo>,
 ) -> ExtensionFactory<Local> {
-    factory(path, installation_version, Some(io))
+    factory(path, installation_version, None, Some(io))
 }
 
-/// Retains the original supplied effects for each independently loaded component.
+/// Retains supplied output and native effects for each component.
 fn factory(
     path: String,
     installation_version: String,
+    output: Option<crate::wasi::Output>,
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
+        let output = output.clone();
         let io = io.clone();
         let installation_version = installation_version.clone();
         Box::pin(async move {
@@ -57,7 +79,9 @@ fn factory(
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path, installation_version);
+            let state =
+                lifecycle::State::new(endpoint, callbacks, &path, installation_version, output)
+                    .map_err(|error| error.to_string())?;
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {
@@ -79,8 +103,9 @@ fn worker(
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) {
-    // WASI clock waits sleep on this runtime's timer.
+    // Standard I/O uses this Store thread's existing reactor and timer.
     let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_io()
         .enable_time()
         .build();
     match runtime {

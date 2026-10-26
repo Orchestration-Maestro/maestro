@@ -14,7 +14,9 @@ environment variable, so a component can find files installed beside it. The
 value is the factory's `path` as supplied. Through `load_extensions` that is the
 module loader's lexically normalized absolute path, which keeps
 directory-symlink spelling. It is a host path, so keep the host's separator when
-deriving sibling paths. The instance does not receive the host's own environment.
+deriving sibling paths. Other native environment entries are inherited unchanged;
+see [component operating environment](host_io.md) for the delivered access and
+remaining filesystem limitations.
 
 Each extension has one component Store and one local request receiver. Native
 contexts, UI and session owners stay on their original thread. Typed requests

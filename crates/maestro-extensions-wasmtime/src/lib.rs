@@ -20,7 +20,7 @@ mod exec;
 mod exec_imports;
 mod factory;
 mod footer_data;
-pub use factory::{artifact_factory, artifact_factory_with_io};
+pub use factory::{artifact_factory, artifact_factory_with_io, artifact_factory_with_stdout};
 mod guest_calls;
 mod guest_component;
 mod guest_exports;
@@ -64,6 +64,7 @@ mod tree_reads;
 mod ui_imports;
 mod ui_reads;
 mod ui_themes;
+mod wasi;
 mod writer_imports;
 mod writer_reads;
 
