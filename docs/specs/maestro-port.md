@@ -371,7 +371,7 @@ from the optional foundation utility described below.
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
-| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
+| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
 `maestro-cli` is a command-line frontend, not an interactive view. Its `config_selector`
 module is only the wrapper that runs a chat-owned configuration view through a

@@ -306,6 +306,21 @@ fn core_to_dedicated_dependency_is_rejected() {
 }
 
 #[test]
+fn root_can_wire_native_presentation_and_process_adapters() {
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        "maestro",
+        "maestro-theme",
+        "maestro-tui-crossterm",
+        "maestro-process",
+    ]);
+    let manifest = workspace.root.path().join("crates/maestro/Cargo.toml");
+    let original = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(&manifest, format!("{original}\nmaestro-theme = {{ path = \"../maestro-theme\" }}\nmaestro-tui = {{ path = \"../maestro-tui\" }}\nmaestro-tui-crossterm = {{ path = \"../maestro-tui-crossterm\" }}\nmaestro-process = {{ path = \"../maestro-process\" }}\n")).unwrap();
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
 fn real_workspace_obeys_crate_rules() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()

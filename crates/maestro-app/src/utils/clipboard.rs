@@ -64,7 +64,7 @@ fn run_tool(
 ) -> bool {
     operations
         .spawn_sync(
-            Command::new(program).args(args),
+            maestro_process::command(program).args(args),
             SpawnSyncOptions::Capture {
                 max_buffer_bytes: None,
                 stdout: maestro_process::OutputMode::Discard,
@@ -94,7 +94,10 @@ fn copy_to_display(operations: &impl ClipboardOperations, text: &str) -> bool {
         && wayland_display
         && run_tool(operations, "which", &["wl-copy"], None)
         && operations
-            .spawn(Command::new("wl-copy"), Some(text.as_bytes().to_vec()))
+            .spawn(
+                maestro_process::command("wl-copy"),
+                Some(text.as_bytes().to_vec()),
+            )
             .is_ok()
     {
         return true;

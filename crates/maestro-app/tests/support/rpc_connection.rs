@@ -216,7 +216,7 @@ pub fn unspawned(
     let (written, lines) = mpsc::unbounded_channel::<String>();
     let signals = Rc::new(Signals::default());
     let options = RpcModeOptions {
-        workspace: Rc::new(ClosureWorkspace(workspace)),
+        workspace: Some(Rc::new(ClosureWorkspace(workspace))),
         session: Some(maestro_app::RpcSessionOptions {
             runtime,
             process: Rc::clone(&signals) as Rc<dyn RpcProcessPort>,

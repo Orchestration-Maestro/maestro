@@ -93,6 +93,14 @@ name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "resource_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "resource_component_reloaded"
+crate-type = ["cdylib"]
+
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
