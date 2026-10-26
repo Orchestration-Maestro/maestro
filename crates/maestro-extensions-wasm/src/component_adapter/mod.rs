@@ -56,3 +56,5 @@ pub(crate) use imports::ToolListing;
 
 /// Decode a complete JSON payload with the nesting admitted by authored schemas.
 pub(crate) use maestro_request::parameter_schema::transport::decode_json;
+
+pub(crate) mod auth_storage;

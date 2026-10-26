@@ -677,6 +677,13 @@ fn session_shared_records_edge_is_scoped() {
 }
 
 #[test]
+fn credentials_shared_records_edge_is_scoped() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-credentials", "maestro-request"]);
+    check_permitted_declarations(&workspace, "maestro-credentials", &["maestro-request"]);
+}
+
+#[test]
 fn theme_shared_records_edge_is_scoped() {
     let allowed = Workspace::new();
     allowed.foundation(&["maestro-theme", "maestro-request"]);
