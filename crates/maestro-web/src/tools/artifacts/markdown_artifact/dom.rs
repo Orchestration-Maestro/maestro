@@ -39,7 +39,7 @@ impl DomContent for MarkdownArtifact {
             .and_then(|owner| owner.downcast_ref::<Rc<Regions>>())
             .ok_or_else(|| ToolUiError::Presentation("Markdown body is not mounted".into()))?;
         *self.body.borrow_mut() = Rc::downgrade(body);
-        body.bind(&self.toggle);
+        body.bind(&self.toggle, view)?;
         body.update(view, &self.preview, &self.source)?;
         body.show(self.toggle.mode())
     }

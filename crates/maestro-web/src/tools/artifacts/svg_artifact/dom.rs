@@ -152,7 +152,7 @@ impl DomContent for SvgArtifact {
             .and_then(|owner| owner.downcast_ref::<Mounted>())
             .ok_or_else(|| ToolUiError::Presentation("SVG body is not mounted".into()))?
             .0;
-        state.regions.bind(&self.toggle);
+        state.regions.bind(&self.toggle, view)?;
         *state.view.borrow_mut() = view.clone();
         *self.body.borrow_mut() = Rc::downgrade(&state.regions);
         state

@@ -53,10 +53,10 @@ impl State {
                 html.sandbox_url_provider
                     .clone_from(&self.options.url.borrow());
             }
+            if changed {
+                entry.borrow_mut().revision = Rc::new(());
+            }
             artifact.set_content(content.into())?;
-        }
-        if changed {
-            entry.borrow_mut().revision = Rc::new(());
         }
         if let Some(root) = root {
             super::super::native::update(&controller, &root, &self.view.borrow())?;

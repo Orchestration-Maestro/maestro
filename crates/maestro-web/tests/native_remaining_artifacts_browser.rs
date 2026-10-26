@@ -814,10 +814,52 @@ pub async fn artifacts_panel_dom_source_properties_follow_their_controller(
             .await
             .unwrap();
         assert_panel_source_record(&caller, &root, tag, name, source);
+        if matches!(tag, "html-artifact" | "svg-artifact" | "pdf-artifact") {
+            assert_panel_property_edit(&panel, &caller, &root, (name, tag), &view);
+        }
     }
     caller.open_artifact("literal.txt");
     assert_eq!(opened.get(), 1);
     root.node.unchecked_ref::<web_sys::Element>().remove();
+}
+
+/// Native property edits survive panel refreshes and reach SDK lookup and new headers.
+fn assert_panel_property_edit(
+    panel: &maestro_web::ArtifactsPanel,
+    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    root: &DomRoot,
+    (name, tag): (&str, &str),
+    view: &DomView,
+) {
+    let edited = match tag {
+        "html-artifact" => "<p>edited</p>",
+        "svg-artifact" => "<svg xmlns='http://www.w3.org/2000/svg'><title>edited</title></svg>",
+        _ => "AQ==",
+    };
+    let element = select(&root.node, tag);
+    js_sys::Reflect::set(&element, &"content".into(), &edited.into()).unwrap();
+    let live = panel.get_native_artifact_element(name).unwrap();
+    assert_eq!(live.borrow().content(), edited, "{tag} SDK source");
+    caller.show_artifact("literal.txt");
+    caller.show_artifact(name);
+    assert!(select(&root.node, tag).is_same_node(Some(&element)));
+    assert_eq!(
+        js_sys::Reflect::get(&element, &"content".into())
+            .unwrap()
+            .as_string()
+            .as_deref(),
+        Some(edited),
+        "{tag} source after tab changes"
+    );
+    let header = live.borrow().get_header_buttons(view).unwrap();
+    if tag != "pdf-artifact" {
+        assert_eq!(
+            select(&header.node, "copy-button")
+                .get_attribute("text")
+                .as_deref(),
+            Some(edited)
+        );
+    }
 }
 
 /// Native element properties and application records retain the same source bytes.
@@ -889,7 +931,89 @@ pub async fn artifacts_panel_dom_errors_clear_after_a_successful_rewrite(import:
             .width()
             > 0.
     );
+    assert_html_rewrite_recovery(&panel, &caller, &root, &import).await;
     root.node.unchecked_ref::<web_sys::Element>().remove();
+}
+
+/// Failed source execution still invalidates cached copy and download operands.
+async fn assert_html_rewrite_recovery(
+    panel: &maestro_web::ArtifactsPanel,
+    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    root: &DomRoot,
+    import: &js_sys::Function,
+) {
+    use maestro_app::{DiagnosticErrorInfo, SharedHandle};
+    for (command, source, fail) in [
+        ("create", "<p>before</p>", false),
+        ("rewrite", "<p>after</p>", true),
+        ("rewrite", "<p>after</p>", false),
+    ] {
+        panel.set_sandbox_url_provider(if fail {
+            Some(SharedHandle::new(|| {
+                Err(DiagnosticErrorInfo::error("address failed"))
+            }))
+        } else {
+            None
+        });
+        (caller.tool().execute)(
+            "write".into(),
+            serde_json::json!({"command":command, "filename":"page.html", "content":source}),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    }
+    assert_eq!(
+        panel
+            .get_native_artifact_element("page.html")
+            .unwrap()
+            .borrow()
+            .content(),
+        "<p>after</p>"
+    );
+    let header = select(&root.node, ".maestro-artifact-active-header");
+    assert_eq!(
+        select(&header.clone().into(), "copy-button")
+            .get_attribute("text")
+            .as_deref(),
+        Some("<p>after</p>")
+    );
+    let expected = standalone_panel_html(panel);
+    let fixture = crate::session_download_browser::Fixture::import(import).await;
+    fixture
+        .saved(
+            &select(&header.into(), "button[title='Download HTML']").unchecked_into(),
+            expected.as_bytes(),
+            "text/html",
+            "page.html",
+        )
+        .await;
+}
+
+/// Prepare the current HTML source through its live sandbox for byte-exact download checks.
+fn standalone_panel_html(panel: &maestro_web::ArtifactsPanel) -> String {
+    let live = panel.get_native_artifact_element("page.html").unwrap();
+    let artifact = live.borrow();
+    let maestro_web::NativeArtifact::Html(html) = &*artifact else {
+        unreachable!()
+    };
+    html.sandbox_iframe_ref
+        .borrow()
+        .as_ref()
+        .unwrap()
+        .prepare_html_document(
+            "artifact-page.html",
+            "<p>after</p>",
+            &html.runtime_providers,
+            Some(
+                maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
+                    is_html_artifact: true,
+                    is_standalone: true,
+                },
+            ),
+        )
+        .unwrap()
 }
 
 /// Nested panels retain their own localization operands and do not consume another panel's tab events.
@@ -1037,6 +1161,24 @@ pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Fu
         !source.has_attribute("hidden"),
         "an unchanged update must preserve the current controller's user selection"
     );
+    let mut rebound = MarkdownArtifact::default();
+    rebound.set_content("# rebound".into());
+    rebound.update(&root, &view).unwrap();
+    assert!(source.has_attribute("hidden"));
+    assert!(
+        !select(&header.node, "button[title='Code']")
+            .class_name()
+            .contains("maestro-toggle-selected")
+    );
+    select(&header.node, "button[title='Code']")
+        .unchecked_into::<web_sys::HtmlElement>()
+        .click();
+    assert!(
+        !source.has_attribute("hidden"),
+        "a formerly selected Code button must select the rebound controller"
+    );
+    rebound.update(&root, &view).unwrap();
+    assert!(!source.has_attribute("hidden"));
     root.node.unchecked_ref::<web_sys::Element>().remove();
     header.node.unchecked_ref::<web_sys::Element>().remove();
 }

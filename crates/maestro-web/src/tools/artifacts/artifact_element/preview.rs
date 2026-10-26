@@ -23,6 +23,8 @@ pub(crate) struct Regions {
     pub(crate) node: Element,
     /// Selection of the controller that last updated this body.
     selection: RefCell<PreviewCodeToggle>,
+    /// Live independent mode controls, retained by their header roots rather than the body.
+    headers: RefCell<Vec<Weak<DomRoot>>>,
     /// Preview placement.
     preview: DomRoot,
     /// Source placement.
@@ -56,6 +58,7 @@ impl Regions {
         Ok(Rc::new(Self {
             node,
             selection: RefCell::new(toggle.shared()),
+            headers: RefCell::default(),
             preview,
             source,
             preview_region,
@@ -73,9 +76,26 @@ impl Regions {
         source.update(&self.source, view)
     }
     /// Retarget subsequent header actions to the controller that now owns this body.
-    pub(crate) fn bind(&self, toggle: &PreviewCodeToggle) {
+    pub(crate) fn bind(
+        &self,
+        toggle: &PreviewCodeToggle,
+        view: &DomView,
+    ) -> Result<(), ToolUiError> {
         let previous = self.selection.replace(toggle.shared());
         drop(previous);
+        self.headers
+            .borrow_mut()
+            .retain(|header| header.strong_count() > 0);
+        let headers: Vec<_> = self
+            .headers
+            .borrow()
+            .iter()
+            .filter_map(Weak::upgrade)
+            .collect();
+        for header in headers {
+            toggle.update(&header, view)?;
+        }
+        Ok(())
     }
     /// Show the chosen region without disturbing native selection or scrolling.
     pub(crate) fn show(&self, mode: ViewMode) -> Result<(), ToolUiError> {
@@ -104,16 +124,24 @@ pub(crate) fn header(
         .class_list()
         .add_1("maestro-artifact-preview-header")
         .map_err(|error| ToolUiError::native(&error))?;
-    let toggle = toggle.shared();
-    let control = toggle.mount(view)?;
+    let control = Rc::new(toggle.mount(view)?);
+    if let Some(mounted) = body.borrow().upgrade() {
+        mounted.headers.borrow_mut().push(Rc::downgrade(&control));
+    }
     let body = Rc::clone(body);
-    let changed = Closure::<dyn Fn()>::new(move || {
-        let mounted = body.borrow().upgrade();
-        if let Some(mounted) = mounted {
-            // A native event has no error channel; a failed change keeps the previous region.
-            let _ = mounted.show(toggle.mode());
-        }
-    });
+    let changed =
+        Closure::<dyn Fn(web_sys::CustomEvent)>::new(move |event: web_sys::CustomEvent| {
+            let mode = match event.detail().as_string().as_deref() {
+                Some("preview") => ViewMode::Preview,
+                Some("code") => ViewMode::Code,
+                _ => return,
+            };
+            let mounted = body.borrow().upgrade();
+            if let Some(mounted) = mounted {
+                // A native event has no error channel; a failed change keeps the previous region.
+                let _ = mounted.show(mode);
+            }
+        });
     let event = EventSubscription::new(control.node.clone().into(), "mode-change", changed)
         .map_err(|e| ToolUiError::native(&e))?;
     header
