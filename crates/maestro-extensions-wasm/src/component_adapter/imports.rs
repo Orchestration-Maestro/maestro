@@ -35,6 +35,12 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Waits using the selected native duration and borrowed cancellation.
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()>;
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
         &'a self,

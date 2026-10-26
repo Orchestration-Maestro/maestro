@@ -23,6 +23,14 @@ mod glue;
 struct Generated;
 
 impl Imports for Generated {
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(host::sleep(duration, signal))
+    }
+
     type JsonNode = host::JsonNode;
     fn get_all_tools(&self) -> ExtensionResult<super::ToolListing<Self::Callback>> {
         let listing = host::get_all_tools()?;

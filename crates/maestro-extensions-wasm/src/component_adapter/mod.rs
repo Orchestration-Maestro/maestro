@@ -24,6 +24,7 @@ pub(crate) mod factories;
 mod generated;
 mod host_api;
 mod imports;
+mod io;
 mod model_registry;
 mod schema;
 mod session;

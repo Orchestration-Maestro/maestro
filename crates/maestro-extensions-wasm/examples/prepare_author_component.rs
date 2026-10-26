@@ -18,6 +18,7 @@ fn main() -> Result<(), String> {
     build::compile(path).map_err(|error| error.to_string())?;
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
+    let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
     let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
     let hooks = build::component("hook_component", "MAESTRO_HOOK_COMPONENT")?;
     let resources = build::component("resource_component", "MAESTRO_RESOURCE_COMPONENT")?;
@@ -30,9 +31,10 @@ fn main() -> Result<(), String> {
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCATION_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\n",
+                 MAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\n",
                 path.display(),
                 context.display(),
+                native_io.display(),
                 location.display(),
                 hooks.display(),
                 resources.display(),

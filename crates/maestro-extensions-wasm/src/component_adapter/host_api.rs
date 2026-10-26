@@ -11,6 +11,9 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn native_io(&self) -> std::rc::Rc<dyn crate::io::NativeIo> {
+        std::rc::Rc::new(super::io::Io(self.0.clone()))
+    }
     fn exec<'a>(
         &'a self,
         command: &'a str,

@@ -518,6 +518,27 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            self.observe()
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                Err("Aborted".into())
+            } else {
+                Ok(())
+            }
+        })
+    }
+
     type BashOutput = super::shell_host::NativeReceiver;
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
         self.observe().shell.outputs[output.id].data(bytes)

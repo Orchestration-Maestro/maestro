@@ -197,6 +197,7 @@ impl State {
             Message::Exec(id, request, reply, admission) => {
                 self.start_exec(id, request, reply, admission);
             }
+            Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
             Message::Auth(id, model, reply, admission) => {
                 self.start_auth(id, *model, reply, admission);

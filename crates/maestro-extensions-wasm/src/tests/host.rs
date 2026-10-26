@@ -1354,6 +1354,35 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    async fn sleep(
+        accessor: &Accessor<State, Self>,
+        duration: (u64, u32),
+        signal: Option<Resource<Flag>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let aborted = |a: &Accessor<State, Self>| {
+            a.with(|mut a| {
+                signal
+                    .as_ref()
+                    .is_some_and(|s| a.get().table.get(s).unwrap().0.load(Ordering::SeqCst))
+            })
+        };
+        if aborted(accessor) {
+            return Ok(Err("Aborted".into()));
+        }
+        let hold = accessor.with(|mut a| {
+            a.get()
+                .observed
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            a.get().observed.take_hold()
+        });
+        pause(hold).await;
+        Ok(if aborted(accessor) {
+            Err("Aborted".into())
+        } else {
+            Ok(())
+        })
+    }
+
     async fn call(
         accessor: &Accessor<State, Self>,
         operation: String,

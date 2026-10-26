@@ -21,6 +21,8 @@ pub use tools::*;
 pub mod bindings;
 mod compaction;
 mod exec;
+/// Native operation capability.
+pub mod io;
 pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;

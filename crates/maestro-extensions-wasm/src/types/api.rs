@@ -96,6 +96,8 @@ port! {
         fn exec<'a>(command: &'a str, args: &'a [String], options: Option<crate::ExecOptions>) -> crate::ExecResult;
     }
     infallible {
+        /// Returns independently retained native operations.
+        fn native_io() -> Rc<dyn crate::io::NativeIo>;
         /// Returns the supplied host bus.
         fn events() -> crate::EventBus;
     }

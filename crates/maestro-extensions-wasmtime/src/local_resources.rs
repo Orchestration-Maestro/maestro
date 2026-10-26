@@ -11,6 +11,7 @@ pub(crate) mod bash_output;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
+pub(crate) mod native_io;
 mod signals;
 mod synchronous;
 pub(crate) use synchronous::Completion;
@@ -49,6 +50,12 @@ pub(crate) enum Message {
         u64,
         crate::exec::Request,
         tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Waits through the native owner without blocking other requests.
+    Sleep(
+        native_io::Wait,
+        tokio::sync::oneshot::Sender<Result<(), String>>,
         Admission,
     ),
     /// Starts an admitted command operation without blocking request consumption.
