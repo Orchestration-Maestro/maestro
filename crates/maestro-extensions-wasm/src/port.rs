@@ -21,14 +21,14 @@ macro_rules! port {
                 fn $method:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;
             )*
         }
-        $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
+        $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident<$lifetime:lifetime>($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
         $(infallible {
             $( $(#[$infallible_meta:meta])* fn $infallible:ident() -> $value:ty; )*
         })?
     ) => {
         $(#[$port_meta])*
         pub trait $port {
-            $($( $(#[$async_meta])* fn $async_method(&self $(, $async_arg: $async_ty)*) -> ExtensionFuture<'_, $async_ret>; )*)?
+            $($( $(#[$async_meta])* fn $async_method<$lifetime>(&$lifetime self $(, $async_arg: $async_ty)*) -> ExtensionFuture<$lifetime, $async_ret>; )*)?
             $($( $(#[$infallible_meta])* fn $infallible(&self) -> $value; )*)?
             $(
                 $(#[$meta])*
@@ -74,6 +74,16 @@ macro_rules! port {
 /// Implements resource and function forwarding without duplicating a body per import.
 #[cfg(target_arch = "wasm32")]
 macro_rules! forward_resources {
+    (routed functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) => $function:path;)* }) => {
+        $(fn $name(&self $(, $arg: $ty)*) -> ExtensionResult<()> {
+            route::drive(&$function($($arg),*))
+        })*
+    };
+    (routed { $($name:ident($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) => $method:ident($($value:expr),* $(,)?);)* }) => {
+        $(fn $name(&self, $resource: $resource_ty $(, $arg: $ty)*) -> ExtensionResult<()> {
+            route::drive(&$resource.$method($($value),*))
+        })*
+    };
     (functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path;)* }) => {
         $(fn $name(&self $(, $arg: $ty)*) -> $ret {
             $function($($arg),*)

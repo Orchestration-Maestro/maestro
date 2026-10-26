@@ -20,7 +20,7 @@ pub use maestro_extensions::types::events::*;
 /// What a session-changing command reports back: whether it was cancelled.
 pub use maestro_extensions::types::SessionChangeResult;
 
-pub use maestro_extensions::types::{ExtensionFlag, FlagType};
+pub use maestro_extensions::types::{ExtensionFlag, ExtensionFlagOptions, FlagType};
 
 /// The option records of the session-changing command operations.
 pub use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};

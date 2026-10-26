@@ -12,4 +12,4 @@ pub use maestro_entry::compaction::{CompactionSettings, FileOperations};
 pub type CompactionPreparation = maestro_entry::compaction::CompactionPreparation<AgentMessage>;
 
 /// A compaction an extension supplies, with opaque JSON text details.
-pub type CompactionResult = maestro_entry::compaction::CompactionResult<String>;
+pub type CompactionResult = maestro_entry::compaction::CompactionResult<crate::JsonText>;

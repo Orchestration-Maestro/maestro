@@ -1,5 +1,6 @@
 //! The host side of the extension world as the adapter logic sees it.
 
+use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};
 use crate::{
@@ -34,6 +35,7 @@ pub trait Imports: Clone + 'static {
         &'a self,
         context: &'a Self::CommandContext,
         path: &'a str,
+        options: Option<()>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
     /// Forwards reload through the owned host capability.
@@ -168,6 +170,13 @@ pub trait Imports: Clone + 'static {
     fn get_thinking_level(&self) -> ExtensionResult<String>;
     /// Forwards the ordinary action.
     fn set_thinking_level(&self, level: &str) -> ExtensionResult<()>;
+    /// Sends ordinary call data with an optional borrowed signal.
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String>;
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
     /// Registers JSON provider data.
@@ -178,7 +187,7 @@ pub trait Imports: Clone + 'static {
     fn compact(
         &self,
         context: &Self::Context,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Self::Callback>,
         error: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
@@ -186,7 +195,7 @@ pub trait Imports: Clone + 'static {
     fn command_compact(
         &self,
         context: &Self::CommandContext,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Self::Callback>,
         error: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
@@ -253,6 +262,38 @@ pub trait Imports: Clone + 'static {
     type Callback: 'static;
     /// Independently retained theme owner.
     type Theme: 'static;
+    /// Reads the theme name.
+    fn theme_name(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Reads the theme file path.
+    fn theme_source_path(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Reads the theme provenance document.
+    fn theme_source_info(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Replaces the theme provenance document, or clears it.
+    fn theme_set_source_info(
+        &self,
+        theme: &Self::Theme,
+        source: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Applies a foreground color.
+    fn theme_fg(&self, theme: &Self::Theme, color: &str, text: &str) -> ExtensionResult<String>;
+    /// Applies a background color.
+    fn theme_bg(&self, theme: &Self::Theme, color: &str, text: &str) -> ExtensionResult<String>;
+    /// Applies bold styling.
+    fn theme_bold(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies italic styling.
+    fn theme_italic(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies underline styling.
+    fn theme_underline(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies inverse styling.
+    fn theme_inverse(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies strikethrough styling.
+    fn theme_strikethrough(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Reads a foreground escape.
+    fn theme_get_fg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Reads a background escape.
+    fn theme_get_bg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Reads the color depth.
+    fn theme_get_color_mode(&self, theme: &Self::Theme) -> ExtensionResult<crate::ColorMode>;
     /// Registers a renderer against its host callback identity.
     fn register_message_renderer(
         &self,
@@ -333,8 +374,21 @@ pub trait Imports: Clone + 'static {
     /// Returns the host's message when it rejects the entry.
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()>;
 
+    /// Creates one independently owned cancellation for a pending operation.
+    fn new_signal(&self) -> ExtensionResult<Self::Signal>;
+    /// Aborts the supplied native cancellation without selecting a current context.
+    fn signal_abort(&self, signal: &Self::Signal) -> ExtensionResult<()>;
     /// Whether the operation was cancelled.
     fn aborted(&self, signal: &Self::Signal) -> bool;
+    /// Registers a callback the host runs once when `signal` is cancelled.
+    ///
+    /// # Errors
+    /// Returns the host's message when it rejects the registration.
+    fn signal_subscribe(
+        &self,
+        signal: &Self::Signal,
+        listener: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
 
     /// The working directory of the session an ordinary context is bound to.
     ///
@@ -356,7 +410,7 @@ pub trait Imports: Clone + 'static {
     fn new_session<'a>(
         &'a self,
         context: &'a Self::CommandContext,
-        data: NewSessionCommandData,
+        data: Option<NewSessionCommandData>,
         setup: Option<&'a Self::Callback>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
@@ -535,6 +589,12 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionResult<()>;
     /// Forwards the terminal title.
     fn ui_set_title(&self, resource: &Self::Ui, title: &str) -> ExtensionResult<()>;
+    /// Forwards text the host editor receives as a paste.
+    fn ui_paste_to_editor(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
+    /// Forwards the replacement text of the host editor.
+    fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
+    /// Reads the host editor's current text.
+    fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
     /// Forwards the corresponding host capability call.
     fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool>;
     /// Forwards the corresponding host capability call.

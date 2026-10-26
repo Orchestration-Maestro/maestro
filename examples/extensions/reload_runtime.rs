@@ -40,7 +40,7 @@ fn reload_runtime_tool(api: ExtensionAPI) -> ToolDefinition {
                     content: vec![UserBlock::Text(TextContent::new(
                         "Queued /reload-runtime as a follow-up command.".into(),
                     ))],
-                    details: Presence::Present("{}".into()),
+                    details: Presence::Present(String::from("{}").into()),
                     terminate: Presence::Missing,
                 })
             })

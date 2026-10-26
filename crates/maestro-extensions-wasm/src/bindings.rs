@@ -13,6 +13,7 @@ wit_bindgen::generate!({
     async: [
         "-import:maestro:extension/host@0.1.0#callback-emit",
         "-import:maestro:extension/host@0.1.0#get-all-tools",
+        "-import:maestro:extension/host@0.1.0#register-tool",
     ],
     world: "extension",
     pub_export_macro: true,
@@ -39,6 +40,8 @@ pub(crate) mod host_side {
             "maestro:extension/host.subscription": crate::tests::bus_host::Subscription,
             "maestro:extension/host.callback-emitter": crate::tests::bus_host::Emitter,
             "maestro:extension/host.tool-update": crate::tests::host::Update,
+            "maestro:extension/host.import-route": crate::tests::host::Route,
+            "maestro:extension/host.local-settlement": crate::tests::host::Settlement,
             "maestro:extension/host.callback": crate::tests::host::Identity,
             "maestro:extension/host.json-node": crate::tests::host::JsonNode,
             "maestro:extension/host.abort-signal": crate::tests::host::Flag,

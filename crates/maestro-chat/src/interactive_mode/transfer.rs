@@ -1,10 +1,10 @@
-//! The export command, its path argument and the native bundle preparation.
+//! Session transfer commands, their path argument and native export preparation.
 
 use super::InteractiveMode;
 use maestro_app::configuration::config::{
     APP_NAME, get_package_dir, installation::Installation, paths,
 };
-use maestro_app::{NativeExportOperations, is_whitespace_scalar};
+use maestro_app::{ExtensionUIContextPort, NativeExportOperations, is_whitespace_scalar};
 use std::{error::Error, path::Path, rc::Rc};
 
 impl InteractiveMode {
@@ -78,5 +78,74 @@ pub(super) fn get_path_command_argument<'a>(text: &'a str, command: &str) -> Opt
             .split_once(quote)
             .map(|(path, _)| path),
         _ => arguments.split(is_whitespace_scalar).next(),
+    }
+}
+
+impl InteractiveMode {
+    /// Confirms importing an authored path, clears progress, replaces the session and
+    /// reports the result, asking once for the offered directory when it is missing.
+    ///
+    /// # Errors
+    /// Returns a dialog or notice failure outside the first attempt, or any retry failure.
+    pub(super) async fn handle_import_command(&self, text: &str) -> Result<(), Box<dyn Error>> {
+        let Some(path) = get_path_command_argument(text, "/import").filter(|path| !path.is_empty())
+        else {
+            return Ok(self.show_error("Usage: /import <path.jsonl>")?);
+        };
+        if !self
+            .confirm(
+                "Import session".to_owned(),
+                format!("Replace current session with {path}?"),
+                None,
+            )
+            .await
+            .map_err(|error| -> Box<dyn Error> { error })?
+        {
+            return Ok(self.show_status("Import cancelled")?);
+        }
+        self.stop_working_loader();
+        match self.runtime_host.import_from_jsonl(path, None).await {
+            Ok(result) => {
+                if let Err(error) = self.show_import_result(path, result) {
+                    self.handle_fatal_runtime_error("Failed to import session", error.as_ref());
+                }
+                Ok(())
+            }
+            Err(maestro_app::AgentSessionRuntimeError::MissingSessionCwd(error)) => {
+                let Some(cwd) = self
+                    .prompt_for_missing_session_cwd(&error)
+                    .await
+                    .map_err(|error| -> Box<dyn Error> { error })?
+                    .filter(|cwd| !cwd.is_empty())
+                else {
+                    return Ok(self.show_status("Import cancelled")?);
+                };
+                let result = self
+                    .runtime_host
+                    .import_from_jsonl(path, Some(&cwd))
+                    .await?;
+                self.show_import_result(path, result)
+            }
+            Err(maestro_app::AgentSessionRuntimeError::SessionImportFileNotFound(error)) => {
+                Ok(self.show_error(&format!("Failed to import session: {error}"))?)
+            }
+            Err(error) => self.handle_fatal_runtime_error("Failed to import session", &error),
+        }
+    }
+
+    /// Reports an import veto or replays the replacement and names the authored path.
+    ///
+    /// # Errors
+    /// Returns a replay or notice failure without changing its caller's catch boundary.
+    fn show_import_result(
+        &self,
+        path: &str,
+        result: maestro_app::SessionChangeResult,
+    ) -> Result<(), Box<dyn Error>> {
+        if result.cancelled {
+            return Ok(self.show_status("Import cancelled")?);
+        }
+        self.render_current_session_state()?;
+        Ok(self.show_status(&format!("Session imported from: {path}"))?)
     }
 }

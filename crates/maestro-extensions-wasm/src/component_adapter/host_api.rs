@@ -5,11 +5,72 @@ use super::exports::encode_value;
 use super::imports::Imports;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
+use std::rc::Rc;
 
 /// The host imports behind the facade.
 pub(super) struct Host<I: Imports>(pub(super) I);
 
+/// An execution's caller-signal listener, removed when the execution settles or is dropped.
+struct Listening(Option<crate::Subscription>);
+
+impl Listening {
+    /// Removes the listener once, returning the host's rejection.
+    fn remove(&mut self) -> ExtensionResult<()> {
+        self.0
+            .take()
+            .map_or(Ok(()), |subscription| subscription.unsubscribe())
+    }
+}
+
+impl Drop for Listening {
+    fn drop(&mut self) {
+        let _ = self.remove();
+    }
+}
+
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn exec<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: Option<crate::ExecOptions>,
+    ) -> crate::ExtensionFuture<'a, crate::ExecResult> {
+        Box::pin(async move {
+            let data = encode_value(&(command, args, options.as_ref()))?;
+            let caller = options.and_then(|options| options.signal);
+            let native = caller
+                .as_ref()
+                .map(|_| self.0.new_signal())
+                .transpose()?
+                .map(Rc::new);
+            let mut listening = Listening(
+                caller
+                    .as_ref()
+                    .zip(native.as_ref())
+                    .map(|(caller, native)| {
+                        let (imports, native) = (self.0.clone(), Rc::clone(native));
+                        caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
+                    })
+                    .transpose()?,
+            );
+            let aborted = caller.as_ref().is_some_and(crate::AbortSignal::aborted);
+            let notified = native
+                .as_deref()
+                .filter(|_| aborted)
+                .map(|native| self.0.signal_abort(native))
+                .transpose();
+            let result = match notified {
+                Ok(_) => self.0.call("exec", data, native.as_deref()).await,
+                Err(error) => Err(error),
+            };
+            let removed = listening.remove();
+            result.and_then(|data| {
+                removed?;
+                super::session::decode(&data)
+            })
+        })
+    }
+
     fn register_message_renderer(
         &self,
         custom_type: &str,
@@ -158,33 +219,33 @@ impl<I: Imports> ExtensionHost for Host<I> {
             prepare_arguments,
             execute,
         } = tool;
+        let encoded = super::tools::encode_metadata(&metadata)?;
         let code = metadata
             .parameters
             .code()
             .iter()
             .map(|(pointer, node)| {
-                (
-                    pointer.clone(),
-                    Identity::new(&self.0),
-                    super::schema::handler(node.clone()),
-                )
+                let identity = Identity::new(&self.0);
+                let handler = super::schema::handler(node.clone());
+                identity.stage(handler);
+                (pointer.clone(), identity)
             })
             .collect::<Vec<_>>();
-        let metadata = super::tools::encode_metadata(&metadata)?;
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
         let identity = Identity::new(&self.0);
-        self.0.register_tool(
-            &metadata,
+        let result = self.0.register_tool(
+            &encoded,
             prepare.as_ref().map(|(identity, _)| &identity.handle),
             &identity.handle,
             &code
                 .iter()
-                .map(|(pointer, id, _)| (pointer.clone(), &id.handle))
+                .map(|(pointer, id)| (pointer.clone(), &id.handle))
                 .collect::<Vec<_>>(),
-        )?;
-        for (_, identity, handler) in code {
-            identity.keep(handler);
+        );
+        for (_, identity) in code {
+            identity.settle(result.is_ok());
         }
+        result?;
         if let Some((identity, prepare)) = prepare {
             identity.keep(prepare);
         }

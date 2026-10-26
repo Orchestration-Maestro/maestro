@@ -4,6 +4,7 @@ mod authentication;
 mod autocomplete;
 mod bash;
 mod bindings;
+mod commands;
 mod debug;
 mod events;
 mod extension_ui;
@@ -1234,7 +1235,7 @@ fn startup_callback_registration_does_not_retain_the_mode() {
 }
 
 /// The operations an extension supplies for a shell command.
-pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations>;
+pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations + Send + Sync>;
 
 /// The failures the mode's work reported.
 pub(super) type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
@@ -1299,6 +1300,20 @@ pub(super) fn on_tasks<T>(body: impl Future<Output = T>) -> T {
 /// Submits `text` through the editor's installed submission.
 pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
+}
+
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
+///
+/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
+/// caller runs it: such work, like a running shell command's output, can end only after the
+/// caller's later steps.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    let mut work = runtime.take_futures();
+    let command = work.pop().expect("the input handed over its work");
+    for earlier in work {
+        maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
+    }
+    command.await.err().into_iter().collect()
 }
 
 /// Waits until `path` exists, yielding so the work that creates it runs.
@@ -1775,14 +1790,28 @@ fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
                 .unwrap();
             drop(manager);
             seed_replaced_session(&world);
+            let shell = Rc::new(BashExecutionComponent::new(
+                "old".to_owned(),
+                maestro_tui::TUI::clone(&world.mode.ui),
+                world.themes.theme(),
+                false,
+            ));
+            world
+                .mode
+                .pending_shells
+                .borrow_mut()
+                .push(Rc::clone(&shell));
+            *world.mode.active_shell.borrow_mut() = Some(shell);
             world.mode.render_current_session_state().unwrap();
             assert_eq!(
                 (
                     world.mode.compaction_queued_messages.borrow().is_empty(),
                     world.mode.streaming.borrow().is_none(),
+                    world.mode.pending_shells.borrow().is_empty(),
+                    active(&world).is_none(),
                 ),
-                (true, true),
-                "the replaced session's queued input and active stream are discarded"
+                (true, true, true, true),
+                "the replaced session's queued input, stream and shell rows are discarded"
             );
             let rows = world.mode.chat_container.render(100);
             assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");

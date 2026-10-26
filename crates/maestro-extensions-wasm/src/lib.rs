@@ -20,6 +20,8 @@ pub use tools::*;
 #[doc(hidden)]
 pub mod bindings;
 mod compaction;
+mod exec;
+pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
 mod loader;

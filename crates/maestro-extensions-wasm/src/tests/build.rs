@@ -18,15 +18,21 @@ const TARGET: &str = "wasm32-wasip2";
 /// Returns the build's failure, which names the target to install when it is missing.
 pub fn author_component() -> Result<&'static Path, String> {
     static BUILT: OnceLock<Result<PathBuf, String>> = OnceLock::new();
-    BUILT.get_or_init(build).as_deref().map_err(Clone::clone)
+    BUILT
+        .get_or_init(|| component("author_component", "MAESTRO_AUTHOR_COMPONENT"))
+        .as_deref()
+        .map_err(Clone::clone)
 }
 
-/// Runs the author build and finds the artifact it reports.
-fn build() -> Result<PathBuf, String> {
-    if let Some(path) = std::env::var_os("MAESTRO_AUTHOR_COMPONENT") {
+/// Builds a named author example, unless its artifact is supplied by the environment.
+///
+/// # Errors
+/// Returns build failure or a diagnostic when Cargo reports no component artifact.
+pub fn component(example: &str, environment: &str) -> Result<PathBuf, String> {
+    if let Some(path) = std::env::var_os(environment) {
         return Ok(PathBuf::from(path));
     }
-    example_component("author_component")
+    example_component(example)
 }
 
 /// Builds one registered example and finds the component artifact it reports.

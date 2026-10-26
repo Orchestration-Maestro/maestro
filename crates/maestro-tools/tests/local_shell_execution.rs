@@ -460,8 +460,9 @@ impl maestro_tools::BashOperations for Supplied {
 #[test]
 fn supplied_bash_operations_keep_open_result_values() {
     run(async {
-        let operations: std::sync::Arc<dyn maestro_tools::BashOperations> =
-            std::sync::Arc::new(Supplied);
+        let operations: std::sync::Arc<
+            <maestro_models::Threaded as maestro_tools::BashExecution>::Operations,
+        > = std::sync::Arc::new(Supplied);
         let signal = Cancellation::new();
         signal.abort();
         let env = [(OsString::from("MARK"), OsString::from("supplied"))]

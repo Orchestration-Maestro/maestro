@@ -327,10 +327,13 @@ pub(super) fn replace_effects(
 ) -> Rc<InteractiveMode> {
     let mut mode = Rc::try_unwrap(mode).unwrap_or_else(|_| panic!("unique mode"));
     mode.lifecycle.effects = effects;
-    Rc::new_cyclic(|this| {
+    let mode = Rc::new_cyclic(|this| {
         mode.this = this.clone();
         mode
-    })
+    });
+    let rebind = super::super::extensions::rebind_callback(Rc::downgrade(&mode));
+    mode.runtime_host.set_rebind_session(Some(rebind));
+    mode
 }
 
 /// Signal callbacks whose ownership the controlled native registration keeps.

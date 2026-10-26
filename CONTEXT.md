@@ -39,7 +39,7 @@ From `docs/specs/maestro-port.md`.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.
-- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects. The shared signal belongs to `maestro-cancellation`; only models and the terminal toolkit may depend on this leaf with no internal dependencies.
+- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects. The shared signal belongs to `maestro-cancellation`; only models and the terminal toolkit may depend on it, and it depends only on `maestro-listeners`, which keeps each signal's synchronous abort observers.
 - **Scripted simulator:** An opt-in protocol adapter with queued responses, builders, chunking, pacing, usage/cache simulation and request-observing factories.
 
 - **Requested thinking:** The application's supplied effort choice.
@@ -231,7 +231,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native, std-only test-support leaf that owns one named test's isolated execution: its checked-output operations start a libtest child and prove the child started exactly that test; argument-only invocation checks eligibility and leaves startup proof with the caller; distinct from product process execution (**Process**). It is reached only through native development dependencies of its declared callers. See the [contract](docs/specs/maestro-port.md#test-process-owner).
 - **Foundation utility:** The `maestro-path` library of lexical path operations, native component normalization and home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
 - **Directory listing:** The core leaf `maestro-listing` below layer 0, owning one directory's entries sorted by file name on every platform; resources, theme, the terminal toolkit, tools, session and the application list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
-- **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application and extensions subscribe and walk through it and keep their own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
+- **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application, extensions and cancellation subscribe and walk through it and keep their own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
 - **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
 - **Dependencies:** The generated `maestro-dependencies` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
@@ -321,3 +321,10 @@ From `docs/specs/tool-additions.md`.
   models, process, terminal and workspace may use it through native development
   edges, and tests capture only through it.
   See the [contract](docs/specs/maestro-port.md#test-tracing-owner).
+
+The parameter-schema owner also owns the component metadata transport in
+`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+as `schema_transport`. Guest registration and enumeration use that same codec;
+ordinary provider and persisted JSON omit the carried schema kinds. This adds no
+crate dependency: both extension adapters already reach the request owner through
+their declared edges.

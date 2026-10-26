@@ -26,14 +26,7 @@ use std::{
 const NOT_INITIALIZED: &str =
     "Extension runtime not initialized. Action methods cannot be called during extension loading.";
 
-/// Configured-value commands that never run: no extension test configures one.
-pub(crate) struct NoCommands;
-
-impl maestro_credentials::ConfigValueOperations for NoCommands {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("no helper requested")
-    }
-}
+pub(crate) use crate::session::NoCommands;
 
 pub(crate) fn catalog() -> SharedHandle<ModelRegistry> {
     let auth = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::default()));

@@ -5,12 +5,16 @@
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
-    AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
+    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, KeybindingsManager,
+    ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,
+    ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
-use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
+use maestro_tui::{
+    AutocompleteProvider, Cancellation, Component, Container, EditorOptions, TUI, TerminalImage,
+    Text,
+};
 use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
@@ -22,6 +26,7 @@ mod actions;
 mod authentication;
 mod autocomplete;
 mod bash;
+mod commands;
 mod compaction_queue;
 mod debug;
 mod dispatch;
@@ -140,6 +145,10 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// The selected search program for file completion, absent until startup prepares it.
     fd_path: RefCell<Option<String>>,
+    /// The final provider also installed on the default editor.
+    autocomplete_provider: RefCell<Option<Rc<dyn AutocompleteProvider<Signal = Cancellation>>>>,
+    /// Bound factories in registration order, including repeated handles.
+    autocomplete_provider_wrappers: RefCell<Vec<AutocompleteProviderFactory>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -172,13 +181,11 @@ impl InteractiveMode {
         let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
-        let footer_data_provider = FooterDataProvider::new(
-            session.session_manager().borrow().get_cwd().to_owned(),
-            operations.clone(),
-        );
+        let cwd = session.session_manager().borrow().get_cwd().to_owned();
+        let footer_data_provider = FooterDataProvider::new(cwd, operations.clone());
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
-        Ok(Rc::new_cyclic(|this| Self {
+        let mode = Rc::new_cyclic(|this| Self {
             shutdown_requested: Cell::new(false),
             this: this.clone(),
             lifecycle: lifecycle::LifecycleState::default(),
@@ -209,6 +216,8 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             fd_path: RefCell::default(),
+            autocomplete_provider: RefCell::default(),
+            autocomplete_provider_wrappers: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
@@ -223,7 +232,10 @@ impl InteractiveMode {
             unsubscribe: RefCell::default(),
             working: working::WorkingState::default(),
             streaming: RefCell::default(),
-        }))
+        });
+        let rebind = extensions::rebind_callback(Rc::downgrade(&mode));
+        mode.runtime_host.set_rebind_session(Some(rebind));
+        Ok(mode)
     }
 
     /// Installs lifecycle handlers, selects unseen release history, prepares search
@@ -286,8 +298,9 @@ impl InteractiveMode {
         self.update_available_provider_count()
     }
 
-    /// Clears the transcript and the pending-message rows, then replays the current session
-    /// with the initial replay's footer, history and compaction effects.
+    /// Clears the transcript, the pending-message rows and the shell rows waiting there, then
+    /// replays the current session with the initial replay's footer, history and compaction
+    /// effects.
     ///
     /// # Errors
     /// Returns the failure of reading the session context, of a stored record, of a row's
@@ -296,6 +309,8 @@ impl InteractiveMode {
         self.chat_container.clear();
         self.pending_messages_container.clear();
         self.compaction_queued_messages.borrow_mut().clear();
+        self.pending_shells.borrow_mut().clear();
+        drop(self.active_shell.take());
         drop(self.streaming.take());
         self.render_initial_messages()
     }

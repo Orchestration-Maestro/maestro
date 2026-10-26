@@ -1,5 +1,6 @@
 //! Shared integration-test executable.
 #![cfg(test)]
+mod application_message_encoding;
 
 mod application_message_records;
 mod branch_summary;

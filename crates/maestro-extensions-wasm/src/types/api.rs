@@ -95,7 +95,9 @@ port! {
     }
     asynchronous {
         /// Selects the supplied model through the host.
-        fn set_model(model: Model) -> bool;
+        fn set_model<'a>(model: Model) -> bool;
+        /// Executes a literal program and argument vector through the host.
+        fn exec<'a>(command: &'a str, args: &'a [String], options: Option<crate::ExecOptions>) -> crate::ExecResult;
     }
     infallible {
         /// Returns the supplied host bus.
@@ -116,6 +118,20 @@ impl ExtensionAPI {
 }
 
 impl ExtensionAPI {
+    /// Executes a literal program and argument vector through the host.
+    ///
+    /// # Errors
+    /// Returns encoding, host or result-decoding errors unchanged.
+    #[must_use]
+    pub fn exec<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: Option<crate::ExecOptions>,
+    ) -> ExtensionFuture<'a, crate::ExecResult> {
+        self.0.exec(command, args, options)
+    }
+
     /// Selects the supplied model through the host and awaits its boolean reply.
     #[must_use]
     pub fn set_model(&self, model: Model) -> ExtensionFuture<'_, bool> {

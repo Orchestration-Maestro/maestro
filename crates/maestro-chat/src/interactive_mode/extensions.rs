@@ -57,7 +57,7 @@ impl InteractiveMode {
     /// starts the graceful shutdown; while streaming, the agent's end starts it.
     ///
     /// # Errors
-    /// Returns the session start, resource discovery, listing or notice failure.
+    /// Returns the session start, resource discovery, completion, listing or notice failure.
     pub(super) async fn bind_current_session_extensions(
         self: &Rc<Self>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -90,7 +90,8 @@ impl InteractiveMode {
         let session = self.runtime_host.session();
         self.themes
             .set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        self.setup_autocomplete_provider();
+        self.setup_autocomplete_provider()
+            .map_err(|error| -> Box<dyn std::error::Error> { error })?;
         self.setup_extension_shortcuts(&session.extension_runner());
         self.show_loaded_resources(super::resources::ShowLoadedResourcesOptions {
             show_diagnostics_when_quiet: true,
@@ -151,6 +152,29 @@ impl InteractiveMode {
         self.ui.request_render(false);
         Ok(())
     }
+}
+
+/// The runtime's replacement continuation: rebinds the mode, while it is alive, before
+/// the runtime continues with the replacement session.
+///
+/// The mode is reached weakly, so the runtime that the mode owns does not keep it alive.
+pub(super) fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindSession {
+    Rc::new(move |_session| {
+        let mode = mode.upgrade();
+        Box::pin(async move {
+            let Some(mode) = mode else {
+                return Ok(());
+            };
+            mode.rebind_current_session().await.map_err(|error| {
+                error
+                    .downcast::<maestro_app::DiagnosticErrorInfo>()
+                    .map_or_else(
+                        |error| maestro_app::DiagnosticErrorInfo::error(error.to_string()),
+                        |error| *error,
+                    )
+            })
+        })
+    })
 }
 
 /// The interceptor that starts the first selected handler matching the typed input.

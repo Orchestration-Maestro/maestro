@@ -70,7 +70,10 @@ impl<I: Imports> ModelRegistryPort for Registry<I> {
         self.imports
             .registry_unregister_provider(&self.resource, name)
     }
-    fn get_api_key_for_provider(&self, provider: &str) -> ExtensionFuture<'_, Option<String>> {
+    fn get_api_key_for_provider<'a>(
+        &'a self,
+        provider: &'a str,
+    ) -> ExtensionFuture<'a, Option<String>> {
         self.imports
             .registry_get_api_key_for_provider(&self.resource, provider.to_owned())
     }

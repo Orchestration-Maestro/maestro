@@ -59,7 +59,7 @@ impl BashOperations for Script {
 
 /// An answer supplying `script` as the command's operations.
 fn scripting(script: &Arc<Script>) -> Answer {
-    let operations = Arc::clone(script) as Arc<dyn BashOperations>;
+    let operations = Arc::clone(script) as Arc<dyn BashOperations + Send + Sync>;
     Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
         Some(Interception {
             operations: Some(Arc::clone(&operations)),

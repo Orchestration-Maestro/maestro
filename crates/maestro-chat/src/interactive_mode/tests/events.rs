@@ -546,7 +546,7 @@ fn drawn(world: &World) {
 }
 
 /// A shared assistant message with `content`, its stop reason and an optional error.
-fn shared(content: &Value, stop: &str, error: Option<&str>) -> SharedAssistantMessage {
+pub(super) fn shared(content: &Value, stop: &str, error: Option<&str>) -> SharedAssistantMessage {
     let AgentMessage::Assistant(shared) = message(assistant(content, stop, error)) else {
         panic!("an assistant record");
     };
@@ -1007,7 +1007,10 @@ fn ended_messages(world: &World) -> Rc<RefCell<Vec<SharedAssistantMessage>>> {
 
 /// Prompts `run` through `world`'s real session, answering each provider request with
 /// `respond`, and waits for the prompt and every retry to settle under a paused clock.
-async fn prompted(world: &World, respond: impl Fn(usize, &AssistantMessageEventStream) + 'static) {
+pub(super) async fn prompted(
+    world: &World,
+    respond: impl Fn(usize, &AssistantMessageEventStream) + 'static,
+) {
     let session = world.host.session();
     let services = world.host.services();
     services.auth_storage.set_runtime_api_key("unknown", "key");

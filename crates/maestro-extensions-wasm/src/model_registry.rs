@@ -37,9 +37,9 @@ port! {
     }
     asynchronous {
         /// Resolves credentials for the supplied model.
-        fn get_api_key_and_headers(model: Model) -> ResolvedRequestAuth;
+        fn get_api_key_and_headers<'a>(model: Model) -> ResolvedRequestAuth;
         /// Resolves the provider's request key.
-        fn get_api_key_for_provider(provider: &str) -> Option<String>;
+        fn get_api_key_for_provider<'a>(provider: &'a str) -> Option<String>;
     }
 }
 /// Retained catalog; clones share its host owner.
@@ -67,7 +67,10 @@ impl ModelRegistry {
     /// # Errors
     /// Returns the host failure.
     #[must_use]
-    pub fn get_api_key_for_provider(&self, provider: &str) -> ExtensionFuture<'_, Option<String>> {
+    pub fn get_api_key_for_provider<'a>(
+        &'a self,
+        provider: &'a str,
+    ) -> ExtensionFuture<'a, Option<String>> {
         self.0.get_api_key_for_provider(provider)
     }
 }

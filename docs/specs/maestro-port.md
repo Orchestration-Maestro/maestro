@@ -98,9 +98,9 @@ Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtim
 
 Event payloads and results cross the existing generic native-async export as plain JSON beside their typed capability envelope. Use the shared records' existing serde_json representation, not duplicate guest models or a second serializer format. Finite floating-point numbers roundtrip exactly, including signed zero. Ordinary host serialization turns nonfinite numbers into null; this does not promise that null decodes into a required number. An extension writing Infinity or NaN receives a clear error before its edited event or result is encoded. This explicit error is the accepted difference from retaining the nonfinite value until serialization. No bit-encoded numbers, numeric transport wrappers or compatibility decoder are permitted. Shared records retain their existing optional-field semantics without added Presence wrappers; unshared event fields still preserve their meaningful missing/null distinctions. Preserve separate event-edit and callback-result outcomes when either fails.
 
-Use Wasmtime/wasmtime-wasi 49.0.4 and the Rust SDK bindings for one WebAssembly component system. The application extension world uses WASI 0.3 native async, with WASI 0.2 interfaces needed by Rust standard-library basics. Support an authoring language when its toolchain emits the required component contract. Rust is the initial qualified authoring path; JavaScript/TypeScript authoring is unavailable until its tooling supports that contract. Do not add a polling workaround, a separate legacy source loader, a second host or an out-of-process extension protocol. Runtime JIT is allowed; install/use never invokes Rust/Cargo compilation.
+Use Wasmtime/wasmtime-wasi at unmodified upstream commit `ffff2e2db24a291f02429f123aba1631fa8eea67` and the Rust SDK bindings for one WebAssembly component system. Replace this temporary Git pin with the first published release containing its queued-event delivery fix. The application extension world uses WASI 0.3 native async, with WASI 0.2 interfaces needed by Rust standard-library basics. Support an authoring language when its toolchain emits the required component contract. Rust is the initial qualified authoring path; JavaScript/TypeScript authoring is unavailable until its tooling supports that contract. Do not add a polling workaround, a separate legacy source loader, a second host or an out-of-process extension protocol. Runtime JIT is allowed; install/use never invokes Rust/Cargo compilation.
 
-The component SDK preserves every host capability: ordered live events/hooks, transforming and cancelling operations, tool schemas/validation/progress/results, commands and command-only context methods, flags, shortcuts, providers/OAuth/streams, source discovery, session queries/entries, messaging, exec/network/files, live getters, themes, renderers, custom editor/components, focusable overlays, status/footer/header/widgets and reload. UI render/input/invalidate calls remain synchronous where their callers require it; asynchronous work uses native async and owned resources, not JSON-only replies. UI-entering interactive execution and its synchronous callbacks share the caller-owned local executor. Independent native I/O and the default embedding SDK retain thread-safe execution; this adds no scheduler or runtime setting. Use shape A capability interfaces and typed resources; register handlers one by one so the host retains per-handler semantics. Messages, entries, provider payloads and tool arguments use session JSON losslessly. The domain owns registration records, bound actions and owned context handles. ExtensionRuntime is the shared action/provider record; application callbacks supply host operations. Only the Wasmtime adapter owns its engine/linker/bindings, one actor per generation on a multi-thread Tokio runtime, stream pipes and trap diagnostics. The guest owns one canonical WIT source checked against host code generation. Network operations use the WIT http interface backed by host reqwest, not a second WASI HTTP library. The shared interface hides runtime-library types.
+The component SDK preserves every host capability: ordered live events/hooks, transforming and cancelling operations, tool schemas/validation/progress/results, commands and command-only context methods, flags, shortcuts, providers/OAuth/streams, source discovery, session queries/entries, messaging, exec/network/files, live getters, themes, renderers, custom editor/components, focusable overlays, status/footer/header/widgets and reload. UI render/input/invalidate calls remain synchronous where their callers require it; asynchronous work uses native async and owned resources, not JSON-only replies. UI-entering interactive execution and its synchronous callbacks share the caller-owned local executor. Independent native I/O and the default embedding SDK retain thread-safe execution; this adds no scheduler or runtime setting. Use shape A capability interfaces and typed resources; register handlers one by one so the host retains per-handler semantics. Messages, entries, provider payloads and tool arguments use session JSON losslessly. The domain owns the existing ExtensionRuntime action record, factory facade and local contexts. Only the Wasmtime adapter owns its engine/linker/bindings, one component instance per extension, stream pipes and trap diagnostics. Typed requests connect its thread-safe Store to the caller's local domain/UI owners; synchronous callbacks pump requests on the original local receiver. Callback emission retains the bus's emit-time listener snapshot in registration order. The guest invokes its own listeners locally and waits for each consecutive host-listener segment through a synchronous import before continuing; nested emissions repeat that walk. Each own listener keeps an independent native callback frame, error destination and tail boundary. Foreign instances retain the callback-return delivery rule. Internal callback exports are async-typed so synchronous host requests may wait on the dedicated Store thread; guest author callbacks and callback emission remain synchronous. This adds no second receiver or Store lifecycle. The guest owns one canonical WIT source checked against host code generation. Optional command and compaction options retain absence separately from a present empty record across that interface; model reads return owned values. Network operations use the WIT http interface backed by host reqwest, not a second WASI HTTP library. The shared interface hides runtime-library types.
 
 Extensions receive the user's full effective permissions through host operations. Add no capability grants, restriction policy, fuel, memory limits or deadlines. Preserve registration-specific collision behavior: same-extension replacement, cross-extension rules and individually diagnosed provider failures; there is no whole-owner atomic validation policy. Hooks iterate current collections in load/registration order. Presence of UI does not imply every mode implements the same methods, and every disposal/reload does not automatically settle dialogs.
 
@@ -324,7 +324,7 @@ from the optional foundation utility described below.
 |---|---|---|---|
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
-| `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
+| `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
@@ -381,6 +381,12 @@ declarations or the same module anywhere else in the crate.
 
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
 
+`maestro-tools::BashExecution::Operations` selects the retained shell operation
+bounds. Local operations may retain caller-local state; threaded operations retain
+`Send + Sync`. Holders use `E::Shared<E::Operations>`: `Rc` for local operations
+and `Arc` for threaded operations. Both families borrow their original output
+sink only during execution and share the existing native driver.
+
 `maestro-models` serves FTP proxy script sources with its own native client inside the
 existing source loader; no crate gains an FTP dependency and
 `workspace-crates.json` gains no edge. That client owns the plain-FTP subset the loader
@@ -391,8 +397,9 @@ command so a credential never reaches a diagnostic, and the loader keeps the
 modification/cache decision. FTPS, uploads, active FTP and public client options are not
 part of that caller.
 
-`maestro-cancellation` owns cooperative cancellation below layer 0, with no
-internal dependencies. Only models and the terminal toolkit may depend on it.
+`maestro-cancellation` owns cooperative cancellation below layer 0. Its only
+internal dependency is `maestro-listeners`, which keeps the synchronous abort
+observers of each signal. Only models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
@@ -530,8 +537,8 @@ position, while removing and re-registering it moves it to the last position.
 A caller may instead admit every registration as its own entry, as an
 event-emitter listener list keeps them; each removal operation then removes its
 own registration. Traversal sees the collection as it is at each step. Models,
-the terminal toolkit, the agent, the application, the extension runtime and the
-terminal adapter may depend on it.
+the terminal toolkit, the agent, the application, the extension runtime, the
+terminal adapter and the cancellation leaf may depend on it.
 Each caller keeps its own borrowing, locking, delivery and settlement policy:
 the leaf holds no lock, runs no callback under its own borrow and returns removed
 ownership to the caller. Its storage is a flat ordered list plus an identity
@@ -629,6 +636,13 @@ toolkit/text dependency, or make the scenario harness a development target.
 `maestro-extensions` to `maestro-credentials`, declared for native targets only,
 lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
+The native component adapter (`maestro-extensions-wasmtime`) may depend on
+`maestro-catalog`, `maestro-credentials`, `maestro-models`, `maestro-session`,
+`maestro-theme` and `maestro-tui` as native-only development dependencies. Its composition tests
+reuse the extension test support to build real catalogs, credentials, messages,
+sessions and themes. The toolkit edge supplies the real terminal and UI to observe
+component-factory width synchronously; it adds no new production layer crossing.
+These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
@@ -997,3 +1011,10 @@ JSON-owned and the Presence adaptation belongs beside the shared records. Fork
 position stays entry-owned. One event inventory supplies author unions and the
 guest data adapter. Resources, cancellation, finite-number checks, stream snapshots
 and encoding stay adapter-owned.
+
+The parameter-schema owner also owns the component metadata transport in
+`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+as `schema_transport`. Guest registration and enumeration use that same codec;
+ordinary provider and persisted JSON omit the carried schema kinds. This adds no
+crate dependency: both extension adapters already reach the request owner through
+their declared edges.
