@@ -26,12 +26,12 @@ path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "hidden_thinking_label"
-path = "../../examples/extensions/hidden_thinking_label.rs"
+name = "helper_capabilities"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "helper_capabilities"
+name = "hidden_thinking_label"
+path = "../../examples/extensions/hidden_thinking_label.rs"
 crate-type = ["cdylib"]
 
 [[example]]
