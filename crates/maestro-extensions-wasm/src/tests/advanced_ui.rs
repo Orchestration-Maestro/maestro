@@ -696,3 +696,41 @@ async fn dialog_owners(driver: &mut impl Driver) -> Result<(), String> {
 fn each_context_acquires_the_selected_ui_owner() -> Result<(), String> {
     on_both_adapters!(dialog_owners)
 }
+
+/// Each dialog returns the host's empty, Unicode or multi-line rejection unchanged, never as a
+/// dismissal, and the same UI keeps answering afterwards.
+async fn dialog_rejections(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let calls = [
+        json!({ "op": "select", "title": "Pick", "options": ["a"] }),
+        json!({ "op": "confirm", "title": "Sure", "message": "m" }),
+        json!({ "op": "input", "title": "Name", "placeholder": "" }),
+        json!({ "op": "editor", "title": "Edit" }),
+    ];
+    for call in &calls {
+        for error in ["", "dialog 雪 \u{feff}", "first\nsecond\r\nthird"] {
+            let control = json!({ "op": "control", "error": error, "answer": "kept" });
+            assert_eq!(operate(driver, control).await?, json!("controlled"));
+            assert_eq!(
+                operate(driver, json!({ "op": "dialog", "call": call })).await?,
+                json!({ "error": error }),
+                "exact host rejection of {call}"
+            );
+        }
+    }
+    let control = json!({ "op": "control", "answer": "after" });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    assert_eq!(
+        operate(driver, json!({ "op": "dialog", "call": calls[0] })).await?,
+        json!({ "ok": "after" }),
+        "the UI still answers after its rejections"
+    );
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0, "no UI resource stays lent");
+    Ok(())
+}
+
+#[test]
+fn advanced_ui_rejections_keep_exact_messages() -> Result<(), String> {
+    on_both_adapters!(dialog_rejections)
+}
