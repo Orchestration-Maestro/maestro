@@ -541,3 +541,112 @@ fn native_child_handles_outlive_the_callback() -> ExtensionResult<()> {
     );
     Ok(())
 }
+
+#[test]
+fn native_fetch_forwards_the_complete_request() -> ExtensionResult<()> {
+    use crate::http::Request;
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let flag = Flag::default();
+    for body in [None, Some(vec![]), Some(vec![0, 255, 226, 130, 172])] {
+        let response = super::block_on(io.fetch(Request {
+            url: "http://loopback/Ω".into(),
+            method: body.as_ref().map(|_| "POST".into()),
+            headers: vec![("X-Author".into(), " value Ω ".into())],
+            body: body.clone(),
+            signal: Some(signal(&host, host.signal(&flag))),
+        }))?;
+        assert_eq!(response.status(), 200);
+        let observed = host.observed();
+        let request = observed.native_http.requests.last().unwrap();
+        assert_eq!(request.url, "http://loopback/Ω");
+        assert_eq!(request.method, body.as_ref().map(|_| "POST".into()));
+        assert_eq!(request.headers, [("X-Author".into(), " value Ω ".into())]);
+        assert_eq!(request.body, body);
+        assert_eq!(request.signal, Some(flag.key()));
+    }
+    Ok(())
+}
+
+#[test]
+fn native_response_keeps_metadata_and_body_presence() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for status in [200, 204] {
+        host.observe().native_http.status = status;
+        host.observe().native_http.status_text = "Owned reason".into();
+        host.observe().native_http.headers = vec![("x-response".into(), "value".into())];
+        host.observe().native_http.body = (status != 204).then(Vec::new);
+        let response = super::block_on(io.fetch(crate::http::Request {
+            url: "http://loopback/".into(),
+            method: None,
+            headers: vec![],
+            body: None,
+            signal: None,
+        }))?;
+        assert_eq!(response.status(), status);
+        assert!(response.ok());
+        assert_eq!(response.status_text(), "Owned reason");
+        assert_eq!(response.headers(), [("x-response".into(), "value".into())]);
+        if status == 204 {
+            assert!(response.body().is_none());
+        } else {
+            let body = response.body().unwrap();
+            assert!(std::rc::Rc::ptr_eq(&body, &response.body().unwrap()));
+            assert_eq!(super::block_on(body.read())?, None);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn native_response_yields_bytes_before_body_completion() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_http.body = Some(vec![vec![0, 255, 226], vec![130, 172, 1]]);
+    let io = captured_api(&host)?.native_io();
+    let response = super::block_on(io.fetch(crate::http::Request {
+        url: "http://loopback/".into(),
+        method: None,
+        headers: vec![],
+        body: None,
+        signal: None,
+    }))?;
+    let body = response.body().unwrap();
+    assert_eq!(super::block_on(body.read())?, Some(vec![0, 255, 226]));
+    let (hold, _started, open) = gate();
+    host.observe().hold_next_idle(hold);
+    let mut next = body.read();
+    assert!(
+        next.as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    open.send(()).unwrap();
+    assert_eq!(super::block_on(next)?, Some(vec![130, 172, 1]));
+    assert_eq!(super::block_on(body.read())?, None);
+    Ok(())
+}
+
+#[test]
+fn native_response_close_keeps_caller_signal_live() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let flag = Flag::default();
+    let caller = signal(&host, host.signal(&flag));
+    let response = super::block_on(io.fetch(crate::http::Request {
+        url: "http://loopback/".into(),
+        method: None,
+        headers: vec![],
+        body: None,
+        signal: Some(super::signal_callbacks::authored(caller.clone())),
+    }))?;
+    let body = response.body().unwrap();
+    drop(response);
+    assert_eq!(host.observed().bus.listeners.len(), 1);
+    body.close()?;
+    assert!(!caller.aborted());
+    drop(body);
+    assert!(host.observed().bus.listeners.is_empty());
+    assert!(!caller.aborted());
+    Ok(())
+}

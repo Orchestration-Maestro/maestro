@@ -30,6 +30,7 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.response": crate::tests::native_http_host::Response,
             "maestro:extension/host.child-process": crate::tests::native_io_host::Child,
             "maestro:extension/host.readable": crate::tests::native_io_host::Reader,
             "maestro:extension/host.writable": crate::tests::native_io_host::Writer,

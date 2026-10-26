@@ -75,6 +75,8 @@ impl Session {
 pub struct Observed {
     /// Supplied native byte resources and exact operand observations.
     pub native_io: super::native_io_host::Bank,
+    /// Supplied HTTP responses and forwarded request operands.
+    pub native_http: super::native_http_host::Bank,
     /// Raw shell byte receiver observations.
     pub shell: super::shell_host::Bank,
     /// Replacement-operation host decisions.

@@ -1,7 +1,12 @@
-//! Native I/O adapters retain process-owned resources on the application's local executor.
+//! Native I/O adapters retain their domain owners on the application's local executor.
 use maestro_extensions::native_io::{
-    ChildProcess, ExitStatus, IoFuture, NativeIo, Readable, SpawnOptions, Stdio, Writable,
+    ChildProcess, ExitStatus, IoFuture, NativeIo, Readable, Request, Response, SpawnOptions, Stdio,
+    Writable,
 };
+/// HTTP response and body resource ownership.
+mod http;
+use http::Http;
+use maestro_models::providers::http::{Raced, race};
 use maestro_process::child_process::{RawChild, RawInput, RawOutput};
 use std::{
     process::Stdio as NativeStdio,
@@ -22,6 +27,31 @@ struct Operations {
     local: Weak<LocalSet>,
 }
 impl NativeIo for Operations {
+    fn fetch(&self, request: Request) -> IoFuture<'_, Rc<dyn Response>> {
+        Box::pin(async move {
+            let signal = request.signal;
+            if signal
+                .as_ref()
+                .is_some_and(maestro_models::Cancellation::is_aborted)
+            {
+                return Err(maestro_models::FetchError::Aborted.to_string());
+            }
+            let response = maestro_models::fetch_optional_body(maestro_models::HttpRequest {
+                url: request.url,
+                method: request.method.unwrap_or_else(|| "GET".into()),
+                headers: request.headers.into_iter().collect(),
+                body: request.body,
+                signal: signal.clone(),
+            });
+            let response = match race(response, None, signal.as_ref()).await {
+                Raced::Done(result) => result.map_err(|e| e.to_string())?,
+                Raced::Cancelled | Raced::TimedOut => {
+                    return Err(maestro_models::FetchError::Aborted.to_string());
+                }
+            };
+            Ok(Rc::new(Http::new(response, signal)) as Rc<dyn Response>)
+        })
+    }
     fn spawn(
         &self,
         command: String,

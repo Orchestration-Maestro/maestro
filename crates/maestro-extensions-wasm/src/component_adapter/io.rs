@@ -12,6 +12,26 @@ use std::time::Duration;
 pub(super) struct Io<I: Imports>(pub(super) I);
 
 impl<I: Imports> NativeIo for Io<I> {
+    fn fetch(
+        &self,
+        request: crate::http::Request,
+    ) -> ExtensionFuture<'_, std::rc::Rc<dyn crate::http::Response>> {
+        Box::pin(async move {
+            let binding = Binding::new(&self.0, request.signal.as_ref())?;
+            let request = crate::bindings::maestro::extension::host::HttpRequest {
+                url: request.url,
+                method: request.method,
+                headers: request.headers,
+                body: request.body,
+            };
+            let handle = self.0.fetch(request, binding.signal()).await?;
+            Ok(std::rc::Rc::new(Response {
+                resource: super::byte_resources::Resource::new(&self.0, handle),
+                binding: std::rc::Rc::new(binding),
+                body: std::cell::OnceCell::new(),
+            }) as std::rc::Rc<dyn crate::http::Response>)
+        })
+    }
     fn spawn(
         &self,
         command: String,
@@ -42,5 +62,64 @@ impl<I: Imports> NativeIo for Io<I> {
                 .await;
             binding.settle(result)
         })
+    }
+}
+
+/// Retains the original response and cancellation binding across callbacks.
+struct Response<I: Imports> {
+    /// Original native response.
+    resource: super::byte_resources::Resource<I, I::Response>,
+    /// A mirrored author signal stays attached until the response is released.
+    binding: std::rc::Rc<Binding<I>>,
+    /// Stable author identity for the same consuming native body.
+    body: std::cell::OnceCell<Option<std::rc::Rc<dyn crate::streams::Readable>>>,
+}
+impl<I: Imports> crate::http::Response for Response<I> {
+    fn status_text(&self) -> String {
+        self.resource
+            .imports
+            .response_status_text(&self.resource.handle)
+    }
+    fn headers(&self) -> Vec<(String, String)> {
+        self.resource
+            .imports
+            .response_headers(&self.resource.handle)
+    }
+    fn body(&self) -> Option<std::rc::Rc<dyn crate::streams::Readable>> {
+        self.body
+            .get_or_init(|| {
+                self.resource
+                    .imports
+                    .response_body(&self.resource.handle)
+                    .map(|handle| {
+                        std::rc::Rc::new(Body {
+                            reader: super::byte_resources::Resource::new(
+                                &self.resource.imports,
+                                handle,
+                            ),
+                            _binding: self.binding.clone(),
+                        }) as std::rc::Rc<dyn crate::streams::Readable>
+                    })
+            })
+            .clone()
+    }
+    fn status(&self) -> u16 {
+        self.resource.imports.response_status(&self.resource.handle)
+    }
+}
+
+/// A body alias keeps authored cancellation forwarding after its response is dropped.
+struct Body<I: Imports> {
+    /// Original consuming native byte resource.
+    reader: super::byte_resources::Resource<I, I::Readable>,
+    /// Shared response-lifetime binding, not a second signal subscription.
+    _binding: std::rc::Rc<Binding<I>>,
+}
+impl<I: Imports> crate::streams::Readable for Body<I> {
+    fn read(&self) -> ExtensionFuture<'_, Option<Vec<u8>>> {
+        self.reader.imports.readable_read(&self.reader.handle)
+    }
+    fn close(&self) -> crate::ExtensionResult<()> {
+        self.reader.imports.readable_close(&self.reader.handle)
     }
 }

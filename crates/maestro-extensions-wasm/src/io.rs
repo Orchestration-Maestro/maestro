@@ -22,6 +22,11 @@ pub trait NativeIo {
     /// # Errors
     /// Returns the native signal failure.
     fn kill(&self, pid: i32, signal: Option<String>) -> crate::ExtensionResult<()>;
+    /// Sends one HTTP attempt without retry or an implicit timeout.
+    fn fetch(
+        &self,
+        request: crate::http::Request,
+    ) -> ExtensionFuture<'_, Rc<dyn crate::http::Response>>;
     /// Waits for the selected duration, failing with `Aborted` if the signal aborts.
     fn sleep(&self, duration: Duration, signal: Option<AbortSignal>) -> ExtensionFuture<'_, ()>;
 }

@@ -12,6 +12,7 @@ pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
+pub(crate) mod http;
 pub(crate) mod model_streams;
 pub(crate) mod native_io;
 pub(crate) mod native_resources;
@@ -145,6 +146,8 @@ pub(crate) enum Message {
     Footer(u64, crate::footer_data::Request),
     /// Typed operations on original application-supplied native resources.
     Native(u64, native_resources::Request),
+    /// HTTP operations retain their native response and signal.
+    Http(u64, http::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -236,6 +239,8 @@ pub(crate) use signals::SignalEndpoint;
 enum Capability {
     /// Original native child, independently retained after its creating callback.
     NativeChild(Rc<dyn maestro_extensions::native_io::ChildProcess>),
+    /// Original native response, never a body snapshot.
+    NativeResponse(Rc<dyn maestro_extensions::native_io::Response>),
     /// Original native consuming output.
     NativeReader(Rc<dyn maestro_extensions::native_io::Readable>),
     /// Original native ordered input.

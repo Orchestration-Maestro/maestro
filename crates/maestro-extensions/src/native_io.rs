@@ -74,8 +74,38 @@ pub trait ChildProcess {
     /// Returns the native signal failure.
     fn kill(&self, signal: Option<String>) -> Result<bool, String>;
 }
+/// One HTTP attempt with the original caller cancellation.
+pub struct Request {
+    /// Supplied destination.
+    pub url: String,
+    /// Omitted selects GET.
+    pub method: Option<String>,
+    /// Header normalization belongs to the native HTTP owner.
+    pub headers: Vec<(String, String)>,
+    /// Omitted and present-empty remain distinct.
+    pub body: Option<Vec<u8>>,
+    /// Original caller signal retained into body consumption.
+    pub signal: Option<crate::Cancellation>,
+}
+/// Independently retained native response.
+pub trait Response {
+    /// Native status, including non-success outcomes.
+    fn status(&self) -> u16;
+    /// Whether the status is within 200 through 299 inclusive.
+    fn ok(&self) -> bool {
+        (200..300).contains(&self.status())
+    }
+    /// Original native reason phrase.
+    fn status_text(&self) -> String;
+    /// Native HTTP owner's normalized response headers.
+    fn headers(&self) -> Vec<(String, String)>;
+    /// An alias of the original body; obtaining it does not consume bytes.
+    fn body(&self) -> Option<std::rc::Rc<dyn Readable>>;
+}
 /// Application-supplied native effects available to component resources.
 pub trait NativeIo {
+    /// Sends one native HTTP attempt without retry or an implicit timeout.
+    fn fetch(&self, request: Request) -> IoFuture<'_, Rc<dyn Response>>;
     /// Launches literal command operands without shell or environment rewriting.
     fn spawn(
         &self,

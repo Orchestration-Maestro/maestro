@@ -27,6 +27,8 @@ pub mod bindings;
 pub mod child_process;
 mod compaction;
 mod exec;
+/// Native HTTP resources.
+pub mod http;
 /// Native operation capability.
 pub mod io;
 /// Raw byte resources.

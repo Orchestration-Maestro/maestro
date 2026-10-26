@@ -20,6 +20,10 @@ type Chunks = VecDeque<Result<Vec<u8>, String>>;
 #[derive(Clone)]
 pub struct Reader(Arc<Mutex<Chunks>>);
 impl Reader {
+    /// Supplies exact chunks through the existing consuming byte resource.
+    pub fn new(chunks: Vec<Vec<u8>>) -> Self {
+        Self(Arc::new(Mutex::new(chunks.into_iter().map(Ok).collect())))
+    }
     /// Consumes the next supplied chunk without decoding it.
     pub fn read(&self) -> Result<Option<Vec<u8>>, String> {
         self.0.lock().unwrap().pop_front().transpose()

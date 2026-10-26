@@ -63,6 +63,38 @@ that consumer's queued bytes without killing the child. Dropping child controls 
 kill it; the process owner continues collection and reaps the child. Spawn, pipe and
 signal failures remain catchable at their original operation without a diagnostic prefix.
 
+## HTTP responses and raw bodies
+
+```rust
+# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+use maestro_extensions_wasm::http::Request;
+# async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
+let response = api.native_io().fetch(Request {
+    url: "http://127.0.0.1:8000/data".into(),
+    method: None,
+    headers: Vec::new(),
+    body: None,
+    signal: None,
+}).await?;
+let _status = response.status();
+if let Some(body) = response.body() {
+    let _first_chunk = body.read().await?;
+}
+# Ok(())
+# }
+```
+
+An omitted method selects GET. Request bodies retain absence, present-empty bytes
+and arbitrary binary bytes. Header normalization, status text and response headers
+come from the shared native HTTP client. `ok()` means status 200 through 299;
+other statuses are responses, not fetch errors. Fetch adds no retry or timeout.
+
+Headers arrive before the body completes. A 204 response has no body; an empty 200
+response has a body that returns EOF. Getting `body()` again aliases the same
+consumer, with no replay. Responses and bodies can outlive their creating callback.
+A retained body also keeps the caller's cancellation forwarding alive. Raw reads
+preserve NUL, malformed UTF-8 and split code points without decoding.
+
 ## Executable example
 
 Build the native-operation witness as a component:
@@ -72,6 +104,6 @@ mise exec -- cargo build -p maestro-extensions-wasm --example native_io_componen
   --target wasm32-wasip2 --release --locked
 ```
 
-The example registers `native-wait`, `native-retained-wait` and `native-child`. Integration tests
-load that artifact through the production host; guest-authoring tests also run the
+The example registers `native-wait`, `native-retained-wait`, `native-child` and
+`native-http`. Integration tests load that artifact through the production host; guest-authoring tests also run the
 same forwarding code against controlled imports.

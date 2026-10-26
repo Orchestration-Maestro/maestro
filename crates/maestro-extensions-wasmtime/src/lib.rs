@@ -26,6 +26,7 @@ mod guest_component;
 mod guest_exports;
 mod history_imports;
 mod history_reads;
+mod http_imports;
 mod import_route;
 mod lifecycle;
 mod local_resources;

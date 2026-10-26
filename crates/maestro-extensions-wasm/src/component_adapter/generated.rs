@@ -28,6 +28,20 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl super::native_imports::NativeImports for Generated {
+    type Response = host::Response;
+    fn response_status_text(&self, response: &Self::Response) -> String {
+        response.status_text()
+    }
+    fn response_headers(&self, response: &Self::Response) -> Vec<(String, String)> {
+        response.headers()
+    }
+    fn response_body(&self, response: &Self::Response) -> Option<Self::Readable> {
+        response.body()
+    }
+    fn response_status(&self, response: &Self::Response) -> u16 {
+        response.status()
+    }
+
     type Child = host::ChildProcess;
     type Readable = host::Readable;
     type Writable = host::Writable;
@@ -81,6 +95,13 @@ impl super::native_imports::NativeImports for Generated {
 }
 
 impl Imports for Generated {
+    fn fetch<'a>(
+        &'a self,
+        request: host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response> {
+        Box::pin(host::fetch(request, signal))
+    }
     fn sleep<'a>(
         &'a self,
         duration: (u64, u32),

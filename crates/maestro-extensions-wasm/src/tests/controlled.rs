@@ -518,6 +518,20 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    type Response = super::native_http_host::Response;
+    fn response_status_text(&self, response: &Self::Response) -> String {
+        response.status_text.clone()
+    }
+    fn response_headers(&self, response: &Self::Response) -> Vec<(String, String)> {
+        response.headers.clone()
+    }
+    fn response_body(&self, response: &Self::Response) -> Option<Self::Readable> {
+        response.body.clone()
+    }
+    fn response_status(&self, response: &Self::Response) -> u16 {
+        response.status
+    }
+
     type Child = super::native_io_host::Child;
     type Readable = super::native_io_host::Reader;
     type Writable = super::native_io_host::Writer;
@@ -561,7 +575,11 @@ impl crate::component_adapter::NativeImports for Controlled {
         &'a self,
         reader: &'a Self::Readable,
     ) -> ExtensionFuture<'a, Option<Vec<u8>>> {
-        Box::pin(std::future::ready(reader.read()))
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            reader.read()
+        })
     }
     fn readable_close(&self, reader: &Self::Readable) -> ExtensionResult<()> {
         reader.close();
@@ -587,6 +605,24 @@ impl crate::component_adapter::NativeImports for Controlled {
 }
 
 impl Imports for Controlled {
+    fn fetch<'a>(
+        &'a self,
+        request: crate::bindings::maestro::extension::host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response> {
+        Box::pin(async move {
+            Ok(self
+                .observe()
+                .native_http
+                .fetch(super::native_http_host::Request {
+                    url: request.url,
+                    method: request.method,
+                    headers: request.headers,
+                    body: request.body,
+                    signal: signal.map(|signal| signal.flag.key()),
+                }))
+        })
+    }
     fn sleep<'a>(
         &'a self,
         duration: (u64, u32),

@@ -96,7 +96,7 @@ impl Registry {
         self.insert(Capability::NativeChild(child)).map(Child)
     }
     /// Gives a byte-consumer alias its own release while preserving shared consumption.
-    fn reader(&self, reader: Rc<dyn native_io::Readable>) -> Result<Reader, String> {
+    pub(super) fn reader(&self, reader: Rc<dyn native_io::Readable>) -> Result<Reader, String> {
         self.insert(Capability::NativeReader(reader)).map(Reader)
     }
     /// Gives an input alias its own release without replacing the native writer.

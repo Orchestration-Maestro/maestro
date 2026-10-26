@@ -58,6 +58,7 @@ mod host_family;
 mod join;
 mod json_payloads;
 mod model_streams;
+pub(crate) mod native_http_host;
 mod native_io;
 pub(crate) mod native_io_host;
 mod observed;
@@ -606,6 +607,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]writable.write",
             "call",
             "event-emit",
+            "fetch",
             "get-all-tools",
             "register-tool",
             "set-model",

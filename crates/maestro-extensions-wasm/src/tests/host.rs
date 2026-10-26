@@ -1453,6 +1453,15 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn fetch(
+        accessor: &Accessor<State, Self>,
+        request: host::HttpRequest,
+        signal: Option<Resource<Flag>>,
+    ) -> impl Future<
+        Output = wasmtime::Result<Result<Resource<super::native_http_host::Response>, String>>,
+    > {
+        std::future::ready(super::native_http_host::fetch(accessor, request, signal))
+    }
     fn spawn(
         accessor: &Accessor<State, Self>,
         command: String,

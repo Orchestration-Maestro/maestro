@@ -43,6 +43,12 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
+    /// Sends supplied operands with an original borrowed host signal.
+    fn fetch<'a>(
+        &'a self,
+        request: crate::bindings::maestro::extension::host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response>;
     /// Waits using the selected native duration and borrowed cancellation.
     fn sleep<'a>(
         &'a self,

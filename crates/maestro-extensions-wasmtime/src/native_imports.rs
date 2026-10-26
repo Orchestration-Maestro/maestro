@@ -85,6 +85,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     add_resource::<T, Child>(host, "child-process")?;
     add_resource::<T, Reader>(host, "readable")?;
     add_resource::<T, Writer>(host, "writable")?;
+    crate::http_imports::add_to_linker(host)?;
     launch(host)?;
     controls(host)?;
     pipes(host)?;

@@ -237,6 +237,7 @@ impl State {
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
+            Message::Http(id, request) => self.http(id, request),
             Message::Release(id) => self.release(id),
         }
     }

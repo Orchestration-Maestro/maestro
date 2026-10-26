@@ -3,6 +3,7 @@
 use crate::support::{Root, rpc::Rpc};
 use serde_json::{Value, json};
 mod faults;
+mod http;
 
 /// Loads the compiled native-operation component through normal startup.
 fn loaded(root: &Root) -> Rpc {
@@ -22,8 +23,13 @@ fn loaded(root: &Root) -> Rpc {
 
 /// Obtains the actual guest operation's reply through the existing RPC UI adapter.
 fn answer(rpc: &mut Rpc, data: &Value) -> Value {
+    command_answer(rpc, "native-child", data)
+}
+
+/// Receives a named component command through the normal RPC UI adapter.
+fn command_answer(rpc: &mut Rpc, command: &str, data: &Value) -> Value {
     let start = rpc.events.len();
-    rpc.request(json!({"type":"prompt", "message":format!("/native-child {data}")}));
+    rpc.request(json!({"type":"prompt", "message":format!("/{command} {data}")}));
     rpc.events[start..]
         .iter()
         .find_map(|event| {

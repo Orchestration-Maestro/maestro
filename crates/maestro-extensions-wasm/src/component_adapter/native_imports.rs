@@ -1,4 +1,4 @@
-//! Typed native byte and child imports used by the component adapter.
+//! Typed native resource imports used by the component adapter.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -8,6 +8,17 @@ use crate::{ExtensionFuture, ExtensionResult};
 
 /// Native resource operations implemented by generated and controlled imports.
 pub trait NativeImports {
+    /// Independently retained native HTTP response.
+    type Response: 'static;
+    /// Reads the native response status.
+    fn response_status(&self, response: &Self::Response) -> u16;
+    /// Reads the original native reason phrase.
+    fn response_status_text(&self, response: &Self::Response) -> String;
+    /// Reads normalized response header pairs.
+    fn response_headers(&self, response: &Self::Response) -> Vec<(String, String)>;
+    /// Aliases the original consuming body without resetting it.
+    fn response_body(&self, response: &Self::Response) -> Option<Self::Readable>;
+
     /// Retained native child identity.
     type Child: 'static;
     /// Retained raw reader identity.

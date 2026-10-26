@@ -2,6 +2,20 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Supplied HTTP operands, normalized only by the native HTTP owner.
+    record http-request {
+        url: string, method: option<string>, headers: list<tuple<string, string>>,
+        body: option<list<u8>>,
+    }
+    /// Independently retained native response.
+    resource response {
+        status: func() -> u16;
+        status-text: func() -> string;
+        headers: func() -> list<tuple<string, string>>;
+        body: func() -> option<readable>;
+    }
+    /// Sends one attempt with the caller's original signal.
+    fetch: async func(request: http-request, signal: option<borrow<abort-signal>>) -> result<response, string>;
     /// One native standard descriptor selection.
     enum stdio { pipe, ignore, inherit }
     /// Literal native child launch selections.
