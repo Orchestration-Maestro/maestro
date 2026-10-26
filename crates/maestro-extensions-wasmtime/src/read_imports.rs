@@ -36,7 +36,7 @@ macro_rules! endpoints {
         }
     )+};
 }
-endpoints! { api_reads => Api, context_reads => Read, history_reads => History,
+endpoints! { builtin_reads => Builtin, api_reads => Api, context_reads => Read, history_reads => History,
 writer_reads => Writer, tree_reads => Node, catalog_reads => Catalog, theme_reads => Theme }
 
 /// Clones an original resource endpoint before invoking its native owner.

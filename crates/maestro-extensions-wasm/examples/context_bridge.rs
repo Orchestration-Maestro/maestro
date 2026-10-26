@@ -16,6 +16,9 @@ use std::rc::Rc;
 #[path = "context_bridge/api.rs"]
 mod api;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin.rs"]
+mod builtin;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
@@ -100,6 +103,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             return Err("guest startup failure".into());
         }
         register_listeners(&api)?;
+        builtin::register(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",

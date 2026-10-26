@@ -193,6 +193,13 @@ impl State {
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.read_api(id, request),
+            Message::CreateRead(cwd, resize, reply) => {
+                let _ = reply.send(self.registry.create_read(cwd, resize));
+            }
+            Message::Builtin(id, request) => self.builtin(id, request),
+            Message::BuiltinExecute(id, execution, reply, admission) => {
+                self.builtin_execute(id, execution, reply, admission);
+            }
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.registration(id, request),
             Message::ApiModel(id, model, reply, admission) => {

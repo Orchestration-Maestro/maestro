@@ -8,6 +8,7 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+mod builtin;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
@@ -43,6 +44,21 @@ pub(crate) enum Message {
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
     Api(u64, crate::api_reads::Request),
+    /// Creates and retains an original native read definition.
+    CreateRead(
+        String,
+        Option<bool>,
+        std::sync::mpsc::Sender<Result<crate::builtin_reads::Endpoint, String>>,
+    ),
+    /// Reads or prepares an original native built-in definition.
+    Builtin(u64, crate::builtin_reads::Request),
+    /// Executes a retained native tool without blocking request consumption.
+    BuiltinExecute(
+        u64,
+        crate::builtin_reads::Execution,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
     /// Registers retained callbacks through the original facade.
     Registration(u64, crate::registration_reads::Request),
     /// Uses the original facade bus for listener registration and emission.
@@ -197,6 +213,8 @@ enum Capability {
     AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.
     Stream(crate::local_resources::stream_reads::Owner),
+    /// Original typed native definition behind the component's tool resource.
+    Builtin(Rc<dyn crate::builtin_tools::Definition>),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.

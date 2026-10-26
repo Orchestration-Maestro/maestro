@@ -132,10 +132,20 @@ pub use maestro_tools::ToolRenderResultOptions;
 /// Native tool framing retained by extension registrations.
 pub use maestro_tools::ToolRenderShell;
 /// Caller-local tool definitions with their original tools-owned types.
-pub use maestro_tools::types::local;
+pub mod local {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::read::local::create_read_tool_definition;
+    pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
+    pub use maestro_tools::types::local::*;
+}
+/// Retained native definitions accepted by the tools-owned execution wrapper.
+pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+/// Native read configuration and the model observation its definition consumes.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{ReadContext, ReadToolOptions};
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,

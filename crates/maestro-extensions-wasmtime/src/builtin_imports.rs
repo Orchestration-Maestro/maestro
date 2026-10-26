@@ -1,0 +1,74 @@
+//! Canonical resources returned by the real native built-in factories.
+use crate::{
+    api_imports::ApiView,
+    builtin_reads::{Endpoint, Execution, Request},
+    local_resources::SignalEndpoint,
+};
+use wasmtime::{
+    StoreContextMut,
+    component::{LinkerInstance, Resource},
+};
+
+/// Installs factory, metadata, preparation and asynchronous execution on one native owner.
+pub(crate) fn add_to_linker<T: ApiView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    crate::context_imports::add_resource::<T, Endpoint>(host, "builtin-tool")?;
+    host.func_wrap(
+        "create-read-tool",
+        |mut store: StoreContextMut<'_, T>, (cwd, resize): (String, Option<bool>)| {
+            let result = store.data().api().create_read(cwd, resize);
+            let result = match result {
+                Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
+        },
+    )?;
+    crate::read_imports::add_read(
+        host,
+        "[method]builtin-tool.metadata",
+        Request::Metadata,
+        crate::read_imports::resource::<T, Endpoint>,
+    )?;
+    crate::read_imports::add_operand(
+        host,
+        "[method]builtin-tool.prepare",
+        Request::Prepare,
+        crate::read_imports::operand::<T, Endpoint, String>,
+    )?;
+    host.func_wrap_concurrent(
+        "[method]builtin-tool.execute",
+        |accessor, (tool, id, args, model, signal): ExecutionArgs| {
+            Box::pin(async move {
+                let (tool, signal) = accessor.with(|mut access| {
+                    let state = access.get();
+                    Ok::<_, wasmtime::Error>((
+                        state.ctx().table.get(&tool)?.clone(),
+                        signal
+                            .as_ref()
+                            .map(|signal| state.ctx().table.get(signal).cloned())
+                            .transpose()?,
+                    ))
+                })?;
+                Ok((tool
+                    .execute(Execution {
+                        id,
+                        args,
+                        model,
+                        signal,
+                    })
+                    .await,))
+            })
+        },
+    )?;
+    Ok(())
+}
+/// Execution keeps its native tool and cancellation as separate typed resources.
+type ExecutionArgs = (
+    Resource<Endpoint>,
+    String,
+    String,
+    Option<String>,
+    Option<Resource<SignalEndpoint>>,
+);

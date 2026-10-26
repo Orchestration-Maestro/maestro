@@ -1,6 +1,9 @@
 //! Native component execution through the local extension registration facade.
 mod api_imports;
 mod api_reads;
+mod builtin_imports;
+mod builtin_reads;
+mod builtin_tools;
 mod callback_imports;
 mod catalog_imports;
 mod catalog_reads;

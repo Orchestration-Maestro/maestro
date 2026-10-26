@@ -2,6 +2,14 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// An original native definition, retained independently of the factory and its callback.
+    resource builtin-tool {
+        metadata: func() -> result<string, string>;
+        prepare: func(args: string) -> result<string, string>;
+        execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>) -> result<string, string>;
+    }
+    /// Constructs the native read definition without performing file work.
+    create-read-tool: func(cwd: string, auto-resize-images: option<bool>) -> result<builtin-tool, string>;
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};
