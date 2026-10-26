@@ -12,6 +12,29 @@ use crate::types::ExtensionResult;
 use std::future::Future;
 
 impl<E: Extension> Guest for Glue<E> {
+    fn invoke_auth_backend(
+        handler: &host::Callback,
+        update: &host::AuthLockUpdate,
+        asynchronous: bool,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        let target = handler.id();
+        async move {
+            if asynchronous {
+                super::super::auth_storage::invoke_backend_async(&Generated, target, update).await
+            } else {
+                super::super::auth_storage::invoke_backend(&Generated, target, update)
+            }
+        }
+    }
+    fn invoke_auth_fallback(
+        handler: &host::Callback,
+        provider: String,
+    ) -> impl Future<Output = ExtensionResult<Option<String>>> {
+        std::future::ready(super::super::auth_storage::invoke_fallback(
+            handler.id(),
+            &provider,
+        ))
+    }
     async fn invoke_model_hook(
         handler: &host::Callback,
         phase: host::ModelHook,

@@ -101,11 +101,10 @@ pub fn configuration(
         base_url: Some("https://example.test".to_owned()),
         api_key: Some(api_key.to_owned()),
         api: Some("openai-completions".to_owned()),
-        stream_simple: None,
         headers: None,
         auth_header: None,
-        oauth: None,
         models: Some(definitions),
+        callbacks: maestro_app::ProviderCallbacks::default(),
     }
 }
 

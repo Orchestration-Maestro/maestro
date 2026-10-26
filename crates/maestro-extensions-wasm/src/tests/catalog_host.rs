@@ -181,6 +181,14 @@ use super::host::{Imports, State};
 use crate::bindings::host_side::maestro::extension::host;
 use wasmtime::component::{Accessor, Resource};
 impl host::HostModelRegistry for State {
+    fn auth_storage(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Resource<Reader>, String>> {
+        let reader = self.table.get(&this)?.clone();
+        Ok(Ok(self.push(reader)?))
+    }
+
     fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self
             .table
@@ -191,12 +199,18 @@ impl host::HostModelRegistry for State {
     fn get_available(
         &mut self,
         this: Resource<Reader>,
-    ) -> wasmtime::Result<Result<String, String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
             .record("getAvailable", &[])
-            .and_then(|v| v.ok_or("missing list".into())))
+            .and_then(|v| v.ok_or("missing list".into()))
+            .map(host::RouteValue::Text);
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
     }
     fn find(
         &mut self,
@@ -209,11 +223,112 @@ impl host::HostModelRegistry for State {
             .get(&this)?
             .record("find", &[json!(provider), json!(model_id)]))
     }
+    fn refresh(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.unit("refresh", &[]);
+        self.routed(result)
+    }
+    fn get_error(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(self.table.get(&this)?.optional("getError", &[]))
+    }
+    fn has_configured_auth(
+        &mut self,
+        this: Resource<Reader>,
+        model: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .flag("hasConfiguredAuth", &[json!(model)])
+            .map(host::RouteValue::Boolean);
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
+    }
+    fn get_provider_auth_status(
+        &mut self,
+        this: Resource<Reader>,
+        provider: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .record("getProviderAuthStatus", &[json!(provider)])
+            .and_then(|v| v.ok_or("missing status".into()))
+            .map(host::RouteValue::Text);
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
+    }
+    fn get_provider_display_name(
+        &mut self,
+        this: Resource<Reader>,
+        provider: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        Ok(self
+            .table
+            .get(&this)?
+            .optional("getProviderDisplayName", &[json!(provider)])
+            .and_then(|v| v.ok_or("missing name".into())))
+    }
+    fn is_using_oauth(
+        &mut self,
+        this: Resource<Reader>,
+        model: String,
+    ) -> wasmtime::Result<Result<bool, String>> {
+        Ok(self.table.get(&this)?.flag("isUsingOAuth", &[json!(model)]))
+    }
+    fn register_provider(
+        &mut self,
+        this: Resource<Reader>,
+        name: String,
+        config: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .unit("registerProvider", &[json!(name), json!(config)]);
+        self.routed(result)
+    }
+    fn unregister_provider(
+        &mut self,
+        this: Resource<Reader>,
+        name: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .unit("unregisterProvider", &[json!(name)]);
+        self.routed(result)
+    }
     fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
         self.release(this)
     }
 }
 impl host::HostModelRegistryWithStore<State> for Imports {
+    async fn get_api_key_for_provider(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        provider: String,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let hold = accessor.with(|mut a| a.get().observed.take_hold());
+        super::observed::pause(hold).await;
+        accessor.with(|mut a| {
+            Ok(a.get()
+                .table
+                .get(&this)?
+                .optional("getApiKeyForProvider", &[json!(provider)]))
+        })
+    }
     async fn get_api_key_and_headers(
         accessor: &Accessor<State, Self>,
         this: Resource<Reader>,

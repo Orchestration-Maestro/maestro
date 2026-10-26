@@ -22,6 +22,14 @@ type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
 /// # Errors
 /// Returns the host operation's own error.
 pub(super) fn drive(route: &host::ImportRoute) -> ExtensionResult<()> {
+    match value(route)? {
+        host::RouteValue::Unit => Ok(()),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Drives the same continuation while preserving a non-unit operation result.
+pub(super) fn value(route: &host::ImportRoute) -> ExtensionResult<host::RouteValue> {
     loop {
         match route.next() {
             host::RouteStep::Done(result) => return result,
@@ -49,6 +57,10 @@ fn start(route: &host::ImportRoute, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
+        host::LocalCall::AuthFallback(call) => host::LocalResult::AuthFallback(
+            super::super::auth_storage::invoke_fallback(call.target, &call.provider),
+        ),
+        host::LocalCall::AuthBackend(call) => return backend(call),
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
                 .invoke_renderer(
@@ -270,4 +282,32 @@ pub(super) fn walk_snapshot(
         }
     }
     Ok(())
+}
+
+/// Runs either authored backend method with its still-borrowed native update.
+fn backend(call: host::LocalAuthBackend) -> Running {
+    Box::pin(async move {
+        let result = if call.asynchronous {
+            super::super::auth_storage::invoke_backend_async(&Generated, call.target, &call.update)
+                .await
+        } else {
+            super::super::auth_storage::invoke_backend(&Generated, call.target, &call.update)
+        };
+        host::LocalResult::Unit(result)
+    })
+}
+
+/// Preserves the original non-unit predicate result.
+pub(super) fn boolean(route: &host::ImportRoute) -> ExtensionResult<bool> {
+    match value(route)? {
+        host::RouteValue::Boolean(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+/// Preserves an encoded record returned by the original native owner.
+pub(super) fn text(route: &host::ImportRoute) -> ExtensionResult<String> {
+    match value(route)? {
+        host::RouteValue::Text(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
 }
