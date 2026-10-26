@@ -73,8 +73,9 @@ The [session fixture](../../crates/maestro-web/tests/fixtures/test_sessions.json
 keeps two complete offline conversations. The
 [replay tests](../../crates/maestro-web/tests/sample_sessions_browser.rs),
 `simple_html_session_replays_existing_browser_owners` and
-`long_session_replays_existing_browser_owners`, render their user and assistant
-rows, inspect tool cards and compare complete reconstructed artifact files.
+`long_session_replays_existing_browser_owners`, mount their user and assistant
+rows as page content, expand every tool card, inspect the card bodies and compare
+complete reconstructed artifact files.
 Missing timestamps become zero and historical tool outputs become text blocks
 only in the tests' owned copies. Recorded browser commands and model requests
 are not executed. HTML is observed through source/diff cards and reconstructed
@@ -116,7 +117,8 @@ page operands once (document, localization, syntax engine, brand pack and mode).
 updates the root in place. Content of another type, or of another key (module
 elements use their tag), mounts a new root in place of the old one and releases
 the old root's owner. A failed mount returns its error and keeps the
-previous root.
+previous root. `show_before` places a first root before a given sibling instead
+of last, and `clear` removes the root and releases its owner.
 
 `ContributionHost::new` defines the built-in `copy-button`, `code-block`,
 `markdown-block`, `thinking-block` and `maestro-slot` elements once per page and

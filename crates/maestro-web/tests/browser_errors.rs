@@ -1,7 +1,6 @@
 //! Typed operation failures through their public owners.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::tool_output::TextOnlyOutput as _;
 use maestro_web::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
@@ -337,56 +336,4 @@ fn console_presentation_failures_keep_the_original_cause() {
         assert_eq!(cause.kind(), std::io::ErrorKind::InvalidData);
         assert_eq!(error.to_string(), cause.to_string());
     });
-}
-
-#[test]
-fn tool_rendering_failures_keep_the_original_reading_cause() {
-    use maestro_web::tools::types::{ToolParams, ToolRenderState, ToolRenderView, ToolUiError};
-    let host: std::rc::Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> =
-        input_support::Host::new(|_, _| {});
-    let params = serde_json::json!({"value": 1});
-    let prepared = maestro_web::render_tool::<serde_json::Value, serde_json::Value>(
-        "unregistered-operation-error",
-        Some(ToolParams::json(&params)),
-        None,
-        false,
-    )
-    .unwrap();
-    let highlighter = text_image_support::Highlighter::default();
-    highlighter.fail.set(true);
-    let mut state = ToolRenderState::default();
-    let mut frame = attachment_support::Frame::default();
-    frame.run(vec![], |ctx, i18n, presentation| {
-        let mut ui = egui::Ui::new(
-            ctx.clone(),
-            egui::Id::new("tool-error"),
-            egui::UiBuilder::new().max_rect(ctx.content_rect()),
-        );
-        let error = prepared
-            .render(
-                &mut ui,
-                ToolRenderView::new(&host, i18n, presentation, &highlighter, None),
-                &mut state,
-            )
-            .assert_no_overlays()
-            .unwrap_err();
-        assert!(matches!(error, ToolUiError::Reading(_)));
-        let reading = error
-            .source()
-            .unwrap()
-            .downcast_ref::<maestro_web::components::code_block::ReadingUiError>()
-            .unwrap();
-        assert!(matches!(
-            reading,
-            maestro_web::components::code_block::ReadingUiError::Highlight(_)
-        ));
-        let cause = reading
-            .source()
-            .unwrap()
-            .downcast_ref::<std::io::Error>()
-            .unwrap();
-        assert_eq!(cause.to_string(), "engine failure");
-        assert_eq!(error.to_string(), cause.to_string());
-    });
-    assert_eq!(highlighter.requests.borrow().len(), 1);
 }

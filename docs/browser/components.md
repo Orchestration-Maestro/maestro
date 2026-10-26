@@ -148,6 +148,12 @@ the buttons keep their native nodes and focus. Disconnecting
 removes the group's handlers, and reconnecting restores them once with the
 selection intact.
 
+The `mode-toggle` element shares the same native button owner. Its `modes`
+property supplies literal labels in order, and fewer than two labels show no
+buttons. `selectedIndex` changes selection silently; `setMode(index)` reports
+only a changed, in-range selection through a bubbling `mode-change` event with
+`{index, mode}` detail. Selection made by a listener remains selected.
+
 ## Tool content
 
 [Tool renderers](tool-renderers.md) provide named dispatch, retained tool headers,

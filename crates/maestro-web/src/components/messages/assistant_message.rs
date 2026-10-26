@@ -1,40 +1,58 @@
 //! Ordered assistant content with emitted-position child ownership.
-use super::{AbortedMessage, ToolMessage, ToolMessageProps, color, reading_view};
-use crate::{
-    browser::attachment_content::AttachmentHost,
-    components::{
-        markdown_block::MarkdownBlock,
-        native_text::{NativeText, TextKind},
-        thinking_block::ThinkingBlock,
-    },
-    tools::types::{ToolContentOutput, ToolRenderView, ToolUiError},
-};
-use maestro_app::{AssistantContent, StopReason, ToolResultMessage};
+#[cfg(any(target_arch = "wasm32", test))]
+use maestro_app::AssistantContent;
+use maestro_app::{SharedAssistantMessage, ToolResultMessage};
 use std::{
     collections::{HashMap, HashSet},
     rc::Rc,
+    sync::{Arc, RwLock},
 };
 
-/// Borrowed rendering policy, independent of the assistant record.
-pub struct AssistantMessageProps<'a, D = serde_json::Value> {
-    /// Available tool names in first-match order.
-    pub tools: Option<&'a [String]>,
-    /// Calls currently awaiting completion.
-    pub pending_tool_calls: Option<&'a HashSet<String>>,
-    /// Hide every tool call.
+/// The actual local collection of executable application tools.
+type Tools = Rc<RwLock<Vec<maestro_app::SharedAgentTool<maestro_app::Local>>>>;
+/// Original mutable standard result envelopes indexed by exact call ID.
+type LiveResults = Rc<HashMap<String, Arc<RwLock<ToolResultMessage>>>>;
+
+/// Original result envelopes, mutable standard records or immutable native details.
+pub enum ToolResults<D = serde_json::Value> {
+    /// A live result index retaining its original application envelopes.
+    Live(LiveResults),
+    /// Standalone envelopes without a cloning or serialization bound on their details.
+    Native(Rc<HashMap<String, Rc<ToolResultMessage<D>>>>),
+}
+#[cfg(any(target_arch = "wasm32", test))]
+impl<D> ToolResults<D> {
+    /// Test presence without reading or copying an envelope.
+    fn contains_key(&self, id: &str) -> bool {
+        match self {
+            Self::Live(results) => results.contains_key(id),
+            Self::Native(results) => results.contains_key(id),
+        }
+    }
+}
+/// Native assistant row retaining its original application owner.
+pub struct AssistantMessage<D = serde_json::Value> {
+    /// Required original model response, unset by default.
+    pub message: Option<SharedAssistantMessage>,
+    /// Available application tools, retained without repeating name lookup.
+    pub tools: Option<Tools>,
+    /// Exact call IDs still pending.
+    pub pending_tool_calls: Option<Rc<HashSet<String>>>,
+    /// Hide all tool calls independently of their pending state.
     pub hide_tool_calls: bool,
-    /// Original result envelopes, including native details.
-    pub tool_results_by_id: Option<&'a HashMap<String, ToolResultMessage<D>>>,
+    /// Result index read only when the selected tool is prepared.
+    pub tool_results_by_id: Option<ToolResults<D>>,
     /// Hide usage and shimmer thinking while streaming.
     pub is_streaming: bool,
-    /// Hide pending calls only when no result exists.
+    /// Hide only pending calls without a paired result.
     pub hide_pending_tool_calls: bool,
     /// Current usage action.
     pub on_cost_click: Option<Rc<dyn Fn()>>,
 }
-impl<D> Default for AssistantMessageProps<'_, D> {
+impl<D> Default for AssistantMessage<D> {
     fn default() -> Self {
         Self {
+            message: None,
             tools: None,
             pending_tool_calls: None,
             hide_tool_calls: false,
@@ -45,267 +63,56 @@ impl<D> Default for AssistantMessageProps<'_, D> {
         }
     }
 }
-/// Typed widget occupying one emitted content position.
-enum Child {
-    /// Native rich text owner.
-    Text(Box<MarkdownBlock>),
-    /// Independent reasoning disclosure.
-    Thinking(Box<ThinkingBlock>),
-    /// Tool recipe state.
-    Tool(Box<ToolMessage>),
-}
-impl Child {
-    /// Match the emitted component kind, not a source index or call identity.
-    fn matches(&self, chunk: &AssistantContent) -> bool {
-        matches!(
-            (self, chunk),
-            (Self::Text(_), AssistantContent::Text(_))
-                | (Self::Thinking(_), AssistantContent::Thinking(_))
-                | (Self::Tool(_), AssistantContent::ToolCall(_))
-        )
-    }
-    /// Construct the component selected by the current content.
-    fn new(chunk: &AssistantContent, host: &Rc<dyn AttachmentHost>) -> Self {
-        match chunk {
-            AssistantContent::Text(_) => Self::Text(Box::new(MarkdownBlock::new(Rc::clone(host)))),
-            AssistantContent::Thinking(_) => {
-                Self::Thinking(Box::new(ThinkingBlock::new(Rc::clone(host))))
-            }
-            AssistantContent::ToolCall(_) => Self::Tool(Box::default()),
-        }
+#[cfg(any(target_arch = "wasm32", test))]
+impl<D> AssistantMessage<D> {
+    /// Admit each source chunk once without changing its displayed source or searching tools.
+    pub(in crate::components::messages) fn parts<'a>(
+        &self,
+        chunks: impl Iterator<Item = &'a AssistantContent>,
+    ) -> impl Iterator<Item = &'a AssistantContent> {
+        chunks.filter(|chunk| {
+            admitted(chunk, |call| Visibility {
+                hide_all: self.hide_tool_calls,
+                hide_pending: self.hide_pending_tool_calls,
+                pending_without_result: self
+                    .pending_tool_calls
+                    .as_ref()
+                    .is_some_and(|ids| ids.contains(&call.id))
+                    && self
+                        .tool_results_by_id
+                        .as_ref()
+                        .is_none_or(|results| !results.contains_key(&call.id)),
+            })
+        })
     }
 }
-/// Retained assistant row with independently revocable child owners.
-pub struct AssistantMessage {
-    /// Platform effects for newly emitted children.
-    host: Rc<dyn AttachmentHost>,
-    /// Visible content positions only.
-    children: Vec<Child>,
-    /// Native usage, absent while streaming.
-    usage: Option<NativeText>,
-    /// Native literal error, absent outside nonempty errors.
-    error: Option<NativeText>,
-    /// Localized abort, absent outside aborted stops.
-    abort: Option<AbortedMessage>,
+/// Selected tool visibility, independent of the content representation.
+#[cfg(any(target_arch = "wasm32", test))]
+struct Visibility {
+    /// Hide every call.
+    hide_all: bool,
+    /// Hide pending calls without results.
+    hide_pending: bool,
+    /// Whether this exact call is pending without a paired result.
+    pending_without_result: bool,
 }
-impl AssistantMessage {
-    /// Bind an empty assistant row to the supplied platform.
-    #[must_use]
-    pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
-        Self {
-            host,
-            children: Vec::new(),
-            usage: None,
-            error: None,
-            abort: None,
-        }
-    }
-    /// Render visible content in one pass, followed by usage and outcome text.
-    /// # Errors
-    /// Returns reached child, localization, dispatch or native publication failures.
-    pub fn render<D: 'static>(
-        &mut self,
-        ui: &mut egui::Ui,
-        message: &maestro_app::AssistantMessage,
-        props: AssistantMessageProps<'_, D>,
-        view: ToolRenderView<'_>,
-    ) -> ToolContentOutput {
-        let mut overlays = Vec::new();
-        let response = self.render_body(ui, message, props, (view, &mut overlays));
-        ToolContentOutput { response, overlays }
-    }
-    /// Draw the row while transferring opened owners before any later error.
-    fn render_body<D: 'static>(
-        &mut self,
-        ui: &mut egui::Ui,
-        message: &maestro_app::AssistantMessage,
-        props: AssistantMessageProps<'_, D>,
-        (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
-    ) -> Result<egui::Response, ToolUiError> {
-        let row = ui.vertical(|ui| -> Result<(), ToolUiError> {
-            egui::Frame::new()
-                .inner_margin(egui::Margin::symmetric(16, 0))
-                .show(ui, |ui| self.content(ui, message, &props, (view, overlays)))
-                .inner?;
-            self.outcome(ui, message, props, view)
-        });
-        row.inner?;
-        Ok(row.response)
-    }
-    /// Reconcile one ordered content pass, publishing replacements before retiring old owners.
-    fn content<D: 'static>(
-        &mut self,
-        ui: &mut egui::Ui,
-        message: &maestro_app::AssistantMessage,
-        props: &AssistantMessageProps<'_, D>,
-        (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
-    ) -> Result<(), ToolUiError> {
-        let mut emitted = 0;
-        ui.spacing_mut().item_spacing.y = 12.;
-        for chunk in &message.content {
-            if !visible(chunk, props) {
-                continue;
-            }
-            let mut candidate = self
-                .children
-                .get(emitted)
-                .is_none_or(|child| !child.matches(chunk))
-                .then(|| Child::new(chunk, &self.host));
-            let child = if let Some(child) = candidate.as_mut() {
-                child
-            } else {
-                &mut self.children[emitted]
-            };
-            draw(
-                child,
-                chunk,
-                (&message.stop_reason, props),
-                ui,
-                (view, overlays),
-            )?;
-            if let Some(child) = candidate {
-                self.publish_child(emitted, child);
-            }
-            emitted += 1;
-        }
-        self.children.truncate(emitted);
-        Ok(())
-    }
-    /// Replace or append one successfully published emitted component.
-    fn publish_child(&mut self, position: usize, child: Child) {
-        if let Some(slot) = self.children.get_mut(position) {
-            *slot = child;
-        } else {
-            self.children.push(child);
-        }
-    }
-    /// Reconcile usage and literal outcome owners independently of content positions.
-    fn outcome<D>(
-        &mut self,
-        ui: &mut egui::Ui,
-        message: &maestro_app::AssistantMessage,
-        props: AssistantMessageProps<'_, D>,
-        view: ToolRenderView<'_>,
-    ) -> Result<(), ToolUiError> {
-        if props.is_streaming {
-            self.usage = None;
-        } else {
-            let text = crate::format_usage(Some(&message.usage));
-            let usage = self
-                .usage
-                .get_or_insert_with(|| NativeText::new(Rc::clone(&self.host)));
-            let clickable = props.on_cost_click.is_some();
-            usage.set_action(props.on_cost_click);
-            egui::Frame::new()
-                .inner_margin(egui::Margin::symmetric(16, 0))
-                .show(ui, |ui| {
-                    ui.add_space(8.);
-                    usage.render(ui, (&text, TextKind::Usage(clickable)), view)
-                })
-                .inner?;
-        }
-        if let Some(error) = message
-            .error_message
-            .as_deref()
-            .filter(|text| message.stop_reason == StopReason::Error && !text.is_empty())
-        {
-            let prefix = view.i18n.text("Error:")?;
-            let text = format!("{prefix} {error}");
-            let native = self
-                .error
-                .get_or_insert_with(|| NativeText::new(Rc::clone(&self.host)));
-            ui.add_space(12.);
-            egui::Frame::new()
-                .fill(color(view, "error")?.gamma_multiply(0.1))
-                .corner_radius(8.)
-                .inner_margin(12)
-                .outer_margin(egui::Margin::symmetric(16, 0))
-                .show(ui, |ui| {
-                    native.render(ui, (&text, TextKind::Error(prefix.len())), view)
-                })
-                .inner?;
-        } else {
-            self.error = None;
-        }
-        if message.stop_reason == StopReason::Aborted {
-            self.abort
-                .get_or_insert_with(|| AbortedMessage::new(Rc::clone(&self.host)))
-                .render(ui, view)?;
-        } else {
-            self.abort = None;
-        }
-        Ok(())
-    }
-}
-/// Apply content visibility without modifying the source selected for display.
-fn visible<D>(chunk: &AssistantContent, props: &AssistantMessageProps<'_, D>) -> bool {
+/// Apply shared admission without modifying the displayed source.
+#[cfg(any(target_arch = "wasm32", test))]
+fn admitted(
+    chunk: &AssistantContent,
+    tool_state: impl FnOnce(&maestro_app::ToolCall) -> Visibility,
+) -> bool {
     match chunk {
         AssistantContent::Text(text) => !text.text.chars().all(maestro_app::is_whitespace_scalar),
         AssistantContent::Thinking(text) => {
             !text.thinking.chars().all(maestro_app::is_whitespace_scalar)
         }
         AssistantContent::ToolCall(call) => {
-            !(props.hide_tool_calls
-                || props.hide_pending_tool_calls
-                    && props
-                        .pending_tool_calls
-                        .is_some_and(|pending| pending.contains(&call.id))
-                    && props
-                        .tool_results_by_id
-                        .is_none_or(|results| !results.contains_key(&call.id)))
+            let state = tool_state(call);
+            !(state.hide_all || state.hide_pending && state.pending_without_result)
         }
     }
 }
-/// Draw one admitted child, keeping native detail types unchanged.
-fn draw<D: 'static>(
-    child: &mut Child,
-    chunk: &AssistantContent,
-    policy: (&StopReason, &AssistantMessageProps<'_, D>),
-    ui: &mut egui::Ui,
-    (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
-) -> Result<(), ToolUiError> {
-    let (stop, props) = policy;
-    match (child, chunk) {
-        (Child::Text(block), AssistantContent::Text(text)) => {
-            block.content.clone_from(&text.text);
-            block
-                .render(ui, reading_view(view))
-                .map_err(ToolUiError::reading)?;
-        }
-        (Child::Thinking(block), AssistantContent::Thinking(text)) => {
-            block.content.clone_from(&text.thinking);
-            block.is_streaming = props.is_streaming;
-            block.render(ui, view)?;
-        }
-        (Child::Tool(block), AssistantContent::ToolCall(call)) => {
-            let result = props
-                .tool_results_by_id
-                .and_then(|results| results.get(&call.id));
-            block
-                .render(
-                    ui,
-                    ToolMessageProps {
-                        tool_call: call,
-                        tool: props
-                            .tools
-                            .and_then(|tools| tools.iter().find(|tool| *tool == &call.name))
-                            .map(String::as_str),
-                        result,
-                        pending: props
-                            .pending_tool_calls
-                            .is_some_and(|pending| pending.contains(&call.id)),
-                        aborted: stop == &StopReason::Aborted && result.is_none(),
-                        is_streaming: props.is_streaming,
-                    },
-                    view,
-                )
-                .collect(overlays)?;
-        }
-        _ => {
-            return Err(ToolUiError::Presentation(
-                "Message component kind does not match its content".into(),
-            ));
-        }
-    }
-    Ok(())
-}
+
+#[cfg(target_arch = "wasm32")]
+mod browser;
