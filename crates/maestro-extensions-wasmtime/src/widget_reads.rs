@@ -112,6 +112,8 @@ pub(crate) enum Request {
 
 /// A message for the widgets of one extension.
 pub(crate) enum WidgetMessage {
+    /// Retains the host's live theme independently of UI availability.
+    GlobalTheme(Reply<crate::theme_reads::Endpoint>),
     /// A request on the widget with this identity.
     Request(u64, Request),
     /// Builds a widget for the extension whose API has this identity.

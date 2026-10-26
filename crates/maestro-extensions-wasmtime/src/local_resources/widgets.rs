@@ -178,6 +178,9 @@ impl State {
     pub(super) fn widgets(&self, message: WidgetMessage) {
         let registry = &self.registry;
         match message {
+            WidgetMessage::GlobalTheme(reply) => {
+                let _ = reply.send(registry.theme(registry.widgets.theme()));
+            }
             WidgetMessage::New(api, build, reply) => {
                 let events = match registry.capability(api).as_deref() {
                     Some(Capability::Api(api)) => Ok(api.events.clone()),

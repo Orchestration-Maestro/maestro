@@ -232,6 +232,8 @@ impl Widget {
 
 /// Builds host widgets.
 pub(crate) trait WidgetHost {
+    /// The host's live theme, independent of UI availability.
+    fn theme(&self) -> ExtensionResult<crate::Theme>;
     /// Wrapped text between padding.
     fn text(
         &self,
@@ -349,7 +351,7 @@ pub(crate) type CustomEditorParts = (
 ///
 /// # Errors
 /// Returns a message when no extension host runs this code.
-pub(super) fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
+pub(crate) fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
     #[cfg(any(test, target_arch = "wasm32"))]
     return crate::component_adapter::widget_host();
     #[cfg(not(any(test, target_arch = "wasm32")))]

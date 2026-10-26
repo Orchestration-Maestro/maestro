@@ -62,6 +62,9 @@ fn markdown_styles(
 }
 
 impl WidgetImports for Generated {
+    fn global_theme(&self) -> ExtensionResult<host::Theme> {
+        host::global_theme()
+    }
     type Widget = host::Widget;
     type Style = host::Style;
     type Highlighter = host::Highlighter;

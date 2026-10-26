@@ -81,6 +81,9 @@ impl Controlled {
 }
 
 impl WidgetImports for Controlled {
+    fn global_theme(&self) -> ExtensionResult<super::controlled::Theme> {
+        Ok(self.theme("dark"))
+    }
     type Widget = Widget;
     type Style = Style;
     type Highlighter = Highlighter;

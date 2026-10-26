@@ -71,6 +71,8 @@ pub(crate) type HostMarkdownTheme<I> = (
 
 /// The widget requests of the host at the wire level.
 pub(crate) trait WidgetImports: Imports {
+    /// Retains the host's live theme without acquiring a UI.
+    fn global_theme(&self) -> ExtensionResult<Self::Theme>;
     /// A host widget.
     type Widget: 'static;
     /// A host styling function.

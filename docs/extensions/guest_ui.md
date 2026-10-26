@@ -135,3 +135,21 @@ this record does not install an overlay or choose its layout.
 
 Disposal, component removal and final callback release remain separate effects.
 Neither calling expansion nor dropping its handle invokes disposal.
+
+## Live themes
+
+`theme()` retains the live theme used by the host's widgets, without acquiring a UI.
+Call it after the extension host starts. Its methods report
+`Theme not initialized. Call initTheme() first.` until the host publishes a palette.
+Retained aliases read later name, path, provenance, palette and color-mode changes.
+Dropping an alias releases that resource, not the host's palette.
+
+`ThemeColor` and `ThemeBg` name borrowed string keys. `fg` and `get_fg_ansi` accept
+foreground keys; `bg` and `get_bg_ansi` accept background keys. Strings cross unchanged.
+Unknown keys return the host's lookup error rather than choosing a fallback color.
+`ExtensionUIContext::theme()` still reads that UI owner's live theme; a renderer keeps
+the independently supplied theme it received.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `global-theme` | `ExtensionWidgets::theme`, `LiveTheme` | Lends the widget host's live slot through the existing retained theme resource. |
