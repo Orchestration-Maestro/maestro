@@ -24,6 +24,8 @@ struct Request {
     chunks: Vec<Vec<u8>>,
     /// Fails the initial, later, or final coalesced observer invocation.
     fail: Option<String>,
+    /// Rejects the supplied operation after all raw chunks have reached the native owner.
+    operation_error: Option<String>,
 }
 
 /// Observes progress at callback time, before native settlement.
@@ -54,9 +56,13 @@ pub(super) async fn execute(
             *calls.borrow_mut() += 1;
             received.borrow_mut().push(options.signal.is_some());
             let chunks = request.chunks.clone();
+            let error = request.operation_error.clone();
             Box::pin(async move {
                 for chunk in chunks {
                     (options.on_data)(&chunk)?;
+                }
+                if let Some(error) = error {
+                    return Err(error);
                 }
                 Ok(BashExecResult {
                     exit_code: Some(0.0),

@@ -72,6 +72,12 @@ pub(super) async fn command(
     }
     args.strip_prefix("builtin-register-renderer ")
         .map(|mode| super::builtin_render::register(api, mode))
+        .or_else(|| {
+            args.strip_prefix("builtin-signals ").map(|action| {
+                Err(super::builtin_signals::command(api, context, action)
+                    .unwrap_or_else(std::convert::identity))
+            })
+        })
 }
 
 /// Retains a four-argument executable independently of every command context.

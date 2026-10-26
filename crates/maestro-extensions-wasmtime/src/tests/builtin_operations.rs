@@ -2549,3 +2549,177 @@ async fn progress_reporting_runner(
     .await
     .0
 }
+
+/// Event-returned execution keeps a live arbitrary signal and explicitly removes its observer.
+#[test]
+fn builtin_signals_cancel_after_the_author_callback_returns() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        let (entered, mut admitted) = tokio::sync::mpsc::unbounded_channel();
+        runner.bind_command_context(Some(
+            maestro_extensions::ExtensionCommandContextActions::new(
+                maestro_extensions::CommandContextOperations {
+                    wait_for_idle: std::rc::Rc::new(move || {
+                        let (resume, done) = tokio::sync::oneshot::channel::<()>();
+                        entered.send(resume).unwrap();
+                        Box::pin(async move { Ok(done.await?) })
+                    }),
+                    ..crate::context_actions::silent_command_operations()
+                },
+            ),
+        ));
+        assert_eq!(
+            retained_signal_command(&runner, "install").await,
+            "retained signal factory installed"
+        );
+        let operations = retained_signal_operations(&runner).await;
+        let signal = maestro_extensions::Cancellation::new();
+        let decoy = maestro_extensions::Cancellation::new();
+        let calls = futures_util::future::join(
+            retained_signal_exec(&*operations, "selected", &signal),
+            retained_signal_exec(&*operations, "decoy", &decoy),
+        );
+        let control = async {
+            let first = admitted.recv().await.unwrap();
+            let second = admitted.recv().await.unwrap();
+            assert_eq!(
+                retained_signal_trace(&runner).await,
+                ["selected:subscribed", "decoy:subscribed"]
+            );
+            signal.abort();
+            assert!(!decoy.is_aborted());
+            first.send(()).unwrap();
+            second.send(()).unwrap();
+        };
+        let ((selected, other), ()) = futures_util::future::join(calls, control).await;
+        assert_eq!(selected, (Err("Operation aborted".into()), Vec::new()));
+        assert_eq!(other, (Ok(Some(0.0)), b"retained bytes".to_vec()));
+        let trace = retained_signal_trace(&runner).await;
+        assert_retained_signal_trace(&trace);
+        decoy.abort();
+        assert_eq!(
+            retained_signal_trace(&runner).await,
+            trace,
+            "no observer remains after settlement"
+        );
+    });
+}
+
+/// Calls the retained native operations after their initiating event has fully returned.
+async fn retained_signal_exec(
+    operations: &dyn maestro_extensions::BashOperations<maestro_extensions::Local>,
+    label: &str,
+    signal: &maestro_extensions::Cancellation,
+) -> (Result<Option<f64>, String>, Vec<u8>) {
+    let mut bytes = Vec::new();
+    let mut sink = |chunk: &[u8]| bytes.extend_from_slice(chunk);
+    let result = operations
+        .exec(
+            label,
+            "/later",
+            maestro_extensions::BashExecOptions {
+                on_data: &mut sink,
+                signal: Some(signal),
+                timeout: None,
+                env: None,
+            },
+        )
+        .await;
+    (
+        result
+            .map(|result| result.exit_code)
+            .map_err(|error| error.to_string()),
+        bytes,
+    )
+}
+
+/// Reads author observations only through its ordinary real command registration.
+async fn retained_signal_command(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    action: &str,
+) -> String {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    (command.handler)(
+        format!("builtin-signals {action}"),
+        runner.create_command_context(),
+    )
+    .await
+    .unwrap_err()
+    .to_string()
+}
+
+/// Captures actual subscription calls rather than inferring removal from ownership release.
+async fn retained_signal_trace(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+) -> Vec<String> {
+    serde_json::from_str(&retained_signal_command(runner, "trace").await).unwrap()
+}
+
+/// Uses the actual event consumer before starting either retained execution.
+async fn retained_signal_operations(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+) -> std::rc::Rc<dyn maestro_extensions::BashOperations<maestro_extensions::Local>> {
+    let mut event = maestro_extensions::UserBashEvent {
+        command: "factory".into(),
+        cwd: "/event".into(),
+        exclude_from_context: false,
+    };
+    let returned = runner.emit_user_bash::<
+        std::rc::Rc<dyn maestro_extensions::BashOperations<maestro_extensions::Local>>,
+        maestro_extensions::BashResult,
+    >(&mut event).await.unwrap().unwrap();
+    returned.operations.unwrap()
+}
+
+/// Compares each independent signal lifecycle without imposing cross-call completion order.
+fn assert_retained_signal_trace(trace: &[String]) {
+    assert_eq!(
+        trace
+            .iter()
+            .filter(|entry| entry.starts_with("selected:"))
+            .cloned()
+            .collect::<Vec<_>>(),
+        [
+            "selected:subscribed",
+            "selected:notified",
+            "selected:removed",
+            "selected:completed"
+        ]
+    );
+    assert_eq!(
+        trace
+            .iter()
+            .filter(|entry| entry.starts_with("decoy:"))
+            .cloned()
+            .collect::<Vec<_>>(),
+        ["decoy:subscribed", "decoy:removed", "decoy:completed"]
+    );
+}
+
+/// String errors returned by a compiled author use the same native status formatter.
+#[test]
+fn builtin_bash_rejections_keep_native_status_and_output() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for executable in [true, false] {
+            for (error, expected) in [
+                ("aborted", "partial é\n\nCommand aborted"),
+                ("timeout:5", "partial é\n\nCommand timed out after 5 seconds"),
+                ("timeout:5:ignored", "partial é\n\nCommand timed out after 5 seconds"),
+                ("timeout:", "partial é\n\nCommand timed out after  seconds"),
+                ("opaque error 雪", "opaque error 雪"),
+            ] {
+                let request = json!({"executable":executable,"cwd":"/virtual","chunks":[b"partial \xc3\xa9".to_vec()],"operation_error":error});
+                let result = observe_progress(&runner, &request).await;
+                assert_eq!(result["result"], json!({"Err":expected}), "{executable}/{error}");
+            }
+        }
+    });
+}

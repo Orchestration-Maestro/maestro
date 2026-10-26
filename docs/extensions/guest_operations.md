@@ -164,6 +164,13 @@ Observer failures use the native event bus's error reporter and do not replace
 the tool's result, including failures on the initial and final notifications.
 Use a spawn hook or tool event to prevent command execution.
 
+Supplied operation failures use the native shell's status formatter. An exact
+`aborted` error appends `Command aborted` to the selected output. A `timeout:`
+prefix appends `Command timed out after <seconds> seconds`, using the first
+colon-delimited value after the prefix without parsing it as a number. These
+failures keep any full-output artifact. Other error messages pass through
+unchanged without adding the accumulated output.
+
 ```rust
 use std::rc::Rc;
 use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionResult};

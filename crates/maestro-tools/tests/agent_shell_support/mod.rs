@@ -138,10 +138,6 @@ impl BashOperations for Script {
                 self.log.lock().unwrap().ops[index]["signalAtEnd"] = json!(signal.is_aborted());
             }
             match self.input.error.as_deref() {
-                Some("aborted") => Err(BashError::Aborted),
-                Some(error) if error.starts_with("timeout:") => {
-                    Err(BashError::Timeout(error[8..].parse().unwrap()))
-                }
                 Some(error) => Err(std::io::Error::other(error).into()),
                 None => Ok(BashExecResult {
                     exit_code: self.input.code.0,
