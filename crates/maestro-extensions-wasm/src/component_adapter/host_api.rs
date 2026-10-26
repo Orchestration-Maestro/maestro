@@ -67,27 +67,31 @@ impl<I: Imports> ExtensionHost for Host<I> {
         let (text, bindings) = self.0.get_all_tools()?;
         let handlers = bindings
             .into_iter()
-            .map(|(index, pointer, handle)| {
+            .map(|(index, pointer, handle, shape, local)| {
                 (
                     index,
                     pointer,
                     super::callbacks::Scoped::from_handle(&self.0, handle),
+                    shape,
+                    local,
                 )
             })
             .collect::<Vec<_>>();
         let tools = super::tools::decode_tools(&text)?;
         let mut codes = std::collections::HashMap::<usize, crate::schema_code::SchemaCode>::new();
-        for (index, pointer, identity) in &handlers {
-            let index = *index as usize;
+        for (index, pointer, identity, shape, local) in handlers {
+            let index = index as usize;
             if index >= tools.len() {
                 return Err("schema binding has no matching tool".into());
             }
-            let id = self.0.callback_id(&identity.handle);
-            let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
-            codes
-                .entry(index)
-                .or_default()
-                .insert(pointer.clone(), super::schema::node(&handler));
+            let node = if local {
+                let id = self.0.callback_id(&identity.handle);
+                let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
+                super::schema::node(&handler)
+            } else {
+                super::schema::foreign(&self.0, identity, shape)
+            };
+            codes.entry(index).or_default().insert(pointer, node);
         }
         Ok(tools
             .into_iter()

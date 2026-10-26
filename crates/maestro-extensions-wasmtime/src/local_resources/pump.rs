@@ -179,7 +179,7 @@ impl State {
     }
 
     /// Answers one request with the native owner it names.
-    fn dispatch(&self, message: Message) {
+    pub(super) fn dispatch(&self, message: Message) {
         match message {
             Message::ModelStart(request) => request.answer(&self.registry),
             Message::ModelStream(id, request) => self.model_stream_request(id, request),

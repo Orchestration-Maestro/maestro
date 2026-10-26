@@ -5,7 +5,8 @@ use crate::{
     schema_wire::{Operation, Shape},
 };
 use maestro_extensions::{
-    Base, DiagnosticErrorInfo, EventBus, Local, Refinement, SchemaCallback, SchemaCode, SchemaNode,
+    Base, DiagnosticErrorInfo, ExtensionAPI, Local, Refinement, SchemaCallback, SchemaCode,
+    SchemaNode,
 };
 use serde_json::Value;
 use std::rc::{Rc, Weak};
@@ -14,7 +15,14 @@ pub(crate) type Check = dyn Fn(&mut Value) -> Result<bool, DiagnosticErrorInfo>;
 /// Weak capture and weak Store ownership for an actual native callable.
 pub(crate) type Identity = (Weak<Check>, crate::guest_calls::WeakHandle);
 /// Live metadata with schema origins selected by callback identity.
-pub(crate) type ToolListing = (String, Vec<(u32, String, Handle)>);
+pub(crate) type ToolListing = (String, Vec<(u32, String, Shape, Origin)>);
+/// Local author identity or a foreign node retained by the existing registry.
+pub(crate) enum Origin {
+    /// This instance can clone its own callbacks locally.
+    Local(Handle),
+    /// Another guest or native author retains its original callbacks.
+    Foreign(crate::local_resources::schema::Endpoint),
+}
 /// The independently optional preparation, execution and schema callbacks.
 pub(crate) type ToolCallbacks = (Option<Handle>, Handle, Schemas);
 /// Described guest callbacks keyed by authored schema pointer.
@@ -23,29 +31,35 @@ pub(crate) type Schemas = Vec<(String, Shape, Handle)>;
 fn callback<R: serde::de::DeserializeOwned + 'static>(
     handle: Handle,
     registry: Registry,
-    events: EventBus<Local>,
+    api: ExtensionAPI<Local>,
     operation: Operation,
 ) -> SchemaCallback<R> {
     SchemaCallback::new(move |value| {
-        handle.schema_call(&registry, &events, operation.clone(), value)
+        api.assert_active()
+            .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
+        handle.schema_call(&registry, &api.events, operation.clone(), value)
     })
 }
 /// Adapt and identify an acceptance callback without a second origin registry.
 fn check(
     handle: &Handle,
     registry: &Registry,
-    events: &EventBus<Local>,
+    api: &ExtensionAPI<Local>,
     operation: Operation,
 ) -> SchemaCallback<bool> {
     let h = handle.clone();
     let r = registry.clone();
-    let e = events.clone();
-    let cb: Rc<Check> = Rc::new(move |value| h.schema_call(&r, &e, operation.clone(), value));
+    let api = api.clone();
+    let cb: Rc<Check> = Rc::new(move |value| {
+        api.assert_active()
+            .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
+        h.schema_call(&r, &api.events, operation.clone(), value)
+    });
     registry.schema_identity(&cb, handle);
     SchemaCallback::from_callback(cb)
 }
 /// Build native schema nodes through their existing callback owner.
-pub(crate) fn code(schemas: Schemas, registry: &Registry, events: &EventBus<Local>) -> SchemaCode {
+pub(crate) fn code(schemas: Schemas, registry: &Registry, api: &ExtensionAPI<Local>) -> SchemaCode {
     schemas
         .into_iter()
         .map(|(pointer, shape, handle)| {
@@ -53,27 +67,34 @@ pub(crate) fn code(schemas: Schemas, registry: &Registry, events: &EventBus<Loca
                 convert: {
                     let h = handle.clone();
                     let r = registry.clone();
-                    let e = events.clone();
+                    let api = api.clone();
                     SchemaCallback::new(move |value| {
-                        h.schema_call::<Option<(Value,)>>(&r, &e, Operation::Convert, value)
-                            .map(|v| v.map(|(v,)| v))
+                        api.assert_active()
+                            .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
+                        h.schema_call::<Option<(Value,)>>(
+                            &r,
+                            &api.events,
+                            Operation::Convert,
+                            value,
+                        )
+                        .map(|v| v.map(|(v,)| v))
                     })
                 },
-                check: check(&handle, registry, events, Operation::Check),
+                check: check(&handle, registry, api, Operation::Check),
                 errors: callback(
                     handle.clone(),
                     registry.clone(),
-                    events.clone(),
+                    api.clone(),
                     Operation::Errors,
                 ),
             });
             let refinements = (0..shape.refinements)
                 .map(|i| Refinement {
-                    check: check(&handle, registry, events, Operation::Refine(i)),
+                    check: check(&handle, registry, api, Operation::Refine(i)),
                     error: callback(
                         handle.clone(),
                         registry.clone(),
-                        events.clone(),
+                        api.clone(),
                         Operation::Message(i),
                     ),
                 })
@@ -117,13 +138,21 @@ impl Registry {
         let metadata = maestro_extensions::schema_transport::encode_tools(&tools)?;
         let mut bindings = Vec::new();
         for (index, tool) in tools.iter().enumerate() {
-            for (pointer, handle) in tool.parameters.code().iter().filter_map(|(pointer, node)| {
-                self.schema_origin(node).map(|handle| (pointer, handle))
-            }) {
+            for (pointer, node) in tool.parameters.code() {
+                let shape = Shape {
+                    base: node.base.is_some(),
+                    refinements: u32::try_from(node.refinements.len())
+                        .map_err(|e| e.to_string())?,
+                };
+                let origin = match self.schema_origin(node) {
+                    Some(handle) => Origin::Local(handle),
+                    None => Origin::Foreign(self.schema(node.clone())?),
+                };
                 bindings.push((
                     u32::try_from(index).map_err(|e| e.to_string())?,
                     pointer.clone(),
-                    handle,
+                    shape,
+                    origin,
                 ));
             }
         }

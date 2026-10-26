@@ -214,6 +214,16 @@ impl State {
 impl session::Host for State {}
 
 impl host::HostCallback for State {
+    fn schema_invoke(
+        &mut self,
+        _: Resource<Identity>,
+        _: host::SchemaOperation,
+        _: Resource<JsonNode>,
+        _: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.routed(Err("foreign schemas use the production runtime".into()))
+    }
+
     fn new(&mut self) -> wasmtime::Result<Resource<Identity>> {
         let identity = self.observed.next_identity();
         Ok(self.table.push(Identity(identity, None))?)
@@ -558,6 +568,18 @@ impl State {
 }
 
 impl host::HostImportRoute for State {
+    fn schema_result(
+        &mut self,
+        _: Resource<Route>,
+    ) -> wasmtime::Result<Result<String, host::DiagnosticErrorInfo>> {
+        Ok(Err(host::DiagnosticErrorInfo {
+            name: None,
+            message: "foreign schemas use the production runtime".into(),
+            stack: None,
+            code: None,
+        }))
+    }
+
     fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
         let route = self.table.get_mut(&this)?;
         if let Some((call, nested)) = route.steps.pop_front() {

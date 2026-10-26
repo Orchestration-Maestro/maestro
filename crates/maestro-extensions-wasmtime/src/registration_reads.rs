@@ -72,7 +72,7 @@ fn tool(
         callbacks,
         renderers,
         registry.clone(),
-        api.events.clone(),
+        api.clone(),
     )?;
     api.register_tool(definition)
         .map_err(|error| error.to_string())
