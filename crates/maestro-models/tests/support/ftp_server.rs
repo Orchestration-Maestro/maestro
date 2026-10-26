@@ -296,7 +296,12 @@ impl Peer {
     pub fn finish(mut self) -> TestResult<Closed> {
         self.stop.store(true, Ordering::SeqCst);
         match TcpStream::connect(self.address) {
-            Err(error) if error.kind() == std::io::ErrorKind::ConnectionRefused => {}
+            // The stopped listener can close before or during the wake-up handshake.
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::ConnectionReset
+                ) => {}
             other => other.map(drop)?,
         }
         let worker = self.worker.take().ok_or("server already finished")?;
@@ -702,4 +707,23 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
         stop,
         worker: Some(worker),
     })
+}
+
+/// Shutdown regressions for the scripted peer.
+#[cfg(test)]
+mod tests {
+    use super::{Scenario, serve};
+
+    /// Finishing without a client session tolerates the listener closing during wake-up.
+    #[test]
+    fn ftp_peer_finish_joins_an_idle_server() {
+        for _ in 0..1_000 {
+            let peer = serve(vec![Scenario::default()]).unwrap();
+            let closed = peer
+                .finish()
+                .expect("the wake-up connection may race shutdown");
+            assert!(!closed.control, "no client session was admitted");
+            assert!(!closed.data, "no data connection was opened");
+        }
+    }
 }
