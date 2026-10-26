@@ -84,6 +84,8 @@ impl Imports for Generated {
         get_commands() -> ExtensionResult<String> => host::get_commands;
         get_thinking_level() -> ExtensionResult<String> => host::get_thinking_level;
         event_on(channel: &str, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::event_on;
+        signal_subscribe(signal: &Self::Signal, listener: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::signal_subscribe;
+        new_signal() -> ExtensionResult<Self::Signal> => host::new_signal;
         start_event_tail(emitter: &Self::Emitter, tail: &Self::Callback) -> ExtensionResult<()> => host::start_event_tail;
         register_message_renderer(custom_type: &str, handler: &host::Callback) -> ExtensionResult<()> => host::register_message_renderer;
         on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
@@ -104,6 +106,7 @@ impl Imports for Generated {
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
         aborted(signal: &host::AbortSignal) -> bool => aborted();
+        signal_abort(signal: &Self::Signal) -> ExtensionResult<()> => abort();
         writer_reader(resource: &Self::Writer) -> Self::Reader => reader();
         writer_set_session_file(resource: &Self::Writer, path: &str) -> ExtensionResult<()> => set_session_file(path);
         writer_new_session(resource: &Self::Writer, options: Option<&str>) -> ExtensionResult<Option<String>> => new_session(options);
@@ -230,6 +233,15 @@ impl Imports for Generated {
     }
 
     type Writer = host::SessionManager;
+
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(host::call(operation.to_owned(), data, signal))
+    }
 
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
         Box::pin(host::set_model(model))
@@ -412,6 +424,13 @@ impl<E: Extension> Guest for Glue<E> {
             error,
             emitter,
         ))
+    }
+
+    fn invoke_abort(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
     }
 
     async fn start() -> ExtensionResult<()> {

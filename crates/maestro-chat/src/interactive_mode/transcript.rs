@@ -14,7 +14,7 @@ use maestro_app::{
 };
 use maestro_theme::{ThemeColor, ThemeError};
 use maestro_tui::{Component, MarkdownTheme, Spacer, TUI, Text};
-use std::{error::Error, rc::Rc, sync::PoisonError};
+use std::{rc::Rc, sync::PoisonError};
 
 impl InteractiveMode {
     /// The text blocks of a user message joined without a separator; other roles have none.
@@ -91,11 +91,10 @@ impl InteractiveMode {
         &self,
         message: &NativeAgentMessage,
         populate_history: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), EventError> {
         match message {
             AgentMessage::User(_) => {
-                self.add_user_message(&Self::get_user_message_text(message), populate_history)
-                    .map_err(|error| -> Box<dyn Error> { error })?;
+                self.add_user_message(&Self::get_user_message_text(message), populate_history)?;
             }
             AgentMessage::Assistant(message) => {
                 let component = self.assistant_component(message.clone());
@@ -183,7 +182,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of a shell row's output cleaning or of the locale's number format.
-    fn add_custom_message(&self, message: CustomAgentMessages) -> Result<(), Box<dyn Error>> {
+    fn add_custom_message(&self, message: CustomAgentMessages) -> Result<(), EventError> {
         let expanded = self.tool_output_expanded.get();
         let theme = self.themes.theme();
         let image = self.tool_environment.terminal_image.clone();
@@ -231,7 +230,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the output's control-sequence cleaning.
-    fn add_bash_execution(&self, message: BashExecutionMessage) -> Result<(), Box<dyn Error>> {
+    fn add_bash_execution(&self, message: BashExecutionMessage) -> Result<(), EventError> {
         let component = BashExecutionComponent::new(
             message.command,
             TUI::clone(&self.ui),

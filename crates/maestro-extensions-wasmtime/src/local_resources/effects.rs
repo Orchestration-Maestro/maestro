@@ -35,7 +35,7 @@ impl ToolUpdate {
 
 /// Independently retained explicit remover; dropping it does not unsubscribe.
 #[derive(Clone)]
-pub(crate) struct SubscriptionEndpoint(Arc<Lease>);
+pub(crate) struct SubscriptionEndpoint(pub(super) Arc<Lease>);
 
 impl SubscriptionEndpoint {
     /// Applies the native owner's idempotent removal policy.
@@ -135,6 +135,10 @@ impl State {
                 let result = match capability.as_deref() {
                     Some(Capability::Subscription(subscription)) => {
                         subscription.unsubscribe();
+                        Ok(())
+                    }
+                    Some(Capability::SignalSubscription(remove)) => {
+                        remove();
                         Ok(())
                     }
                     _ => Err("extension subscription resource ended".to_owned()),

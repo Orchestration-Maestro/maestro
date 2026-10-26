@@ -81,7 +81,7 @@ impl InteractiveMode {
             .session()
             .bind_extensions(maestro_app::ExtensionBindings {
                 ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&host)),
-                command_context_actions: None,
+                command_context_actions: Some(self.command_context_actions()),
                 shutdown_handler: Some(Rc::new(move || {
                     let Some(mode) = requester.upgrade() else {
                         return Ok(());

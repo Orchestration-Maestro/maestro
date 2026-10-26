@@ -36,6 +36,11 @@ impl Flag {
     }
 }
 
+/// The bus channel that keeps the cancellation listeners of `flag`.
+fn abort_channel(flag: &Flag) -> String {
+    format!("abort {}", flag.key())
+}
+
 /// Counts one resource lent to the extension until the extension drops it.
 pub(super) struct Lease(Rc<RefCell<Observed>>);
 
@@ -202,6 +207,27 @@ impl Controlled {
         Reader {
             data: super::setup_host::reader(name),
             _lease: Lease::new(&self.observed),
+        }
+    }
+
+    /// Cancels `flag` and runs each listener subscribed to it once, in registration order,
+    /// each with its own emitter; returns every listener's result.
+    pub fn abort(&self, flag: &Flag) -> Vec<ExtensionResult<()>> {
+        flag.abort();
+        let channel = abort_channel(flag);
+        let mut results = Vec::new();
+        loop {
+            let next = {
+                let mut observed = self.observed.borrow_mut();
+                let listeners = &mut observed.bus.listeners;
+                let index = listeners.iter().position(|(name, _)| *name == channel);
+                index.map(|index| listeners.remove(index).1)
+            };
+            let Some(id) = next else {
+                return results;
+            };
+            let emitter = super::bus_host::Emitter { key: id as usize };
+            results.push(Exports::new(self.clone()).invoke_abort(id, &emitter));
         }
     }
 
@@ -612,6 +638,22 @@ impl Imports for Controlled {
     fn get_thinking_level(&self) -> ExtensionResult<String> {
         self.observed.borrow().actions.record()
     }
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        _signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            let data: serde_json::Value =
+                serde_json::from_str(&data).map_err(|error| error.to_string())?;
+            super::action_host::action(&mut self.observed.borrow_mut(), operation, &data)?;
+            let hold = self.observed.borrow_mut().take_hold();
+            pause(hold).await;
+            self.observed.borrow().actions.record()
+        })
+    }
+
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
         Box::pin(async move {
             self.observed.borrow_mut().log("model selection started");
@@ -1580,8 +1622,27 @@ impl Imports for Controlled {
         Ok(())
     }
 
+    fn new_signal(&self) -> ExtensionResult<Signal> {
+        Ok(self.signal(&Flag::default()))
+    }
+
+    fn signal_abort(&self, signal: &Signal) -> ExtensionResult<()> {
+        self.abort(&signal.flag).into_iter().collect()
+    }
+
     fn aborted(&self, signal: &Signal) -> bool {
         signal.flag.0.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    fn signal_subscribe(
+        &self,
+        signal: &Signal,
+        listener: &Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        self.observed
+            .borrow_mut()
+            .bus
+            .on(&abort_channel(&signal.flag), listener.id)
     }
 
     fn cwd(&self, context: &Context) -> ExtensionResult<String> {

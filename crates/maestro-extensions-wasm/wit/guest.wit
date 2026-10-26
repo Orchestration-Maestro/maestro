@@ -59,4 +59,6 @@ interface guest {
     ) -> result<event-outcome, string>;
     invoke-compaction-complete: async func(handler: borrow<callback>, %result: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     invoke-compaction-error: async func(handler: borrow<callback>, error: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a cancellation listener once with its synchronous emitter.
+    invoke-abort: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
 }

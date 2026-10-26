@@ -4,8 +4,8 @@ use crate::components::tree_selector::{
     FilterMode, TreeSelectorCallbacks, TreeSelectorComponent, TreeSelectorOptions,
 };
 use maestro_app::{
-    DiagnosticErrorInfo, NavigateTreeOptions, NavigateTreeResult, Presence, ReadonlySessionManager,
-    TreeFilterMode, is_whitespace_scalar,
+    DiagnosticErrorInfo, EventError, NavigateTreeOptions, NavigateTreeResult, Presence,
+    ReadonlySessionManager, TreeFilterMode, is_whitespace_scalar,
 };
 use maestro_theme::ThemeColor;
 use maestro_tui::{Loader, Spacer};
@@ -210,26 +210,35 @@ impl InteractiveMode {
                 self.show_tree_selector(Some(id))?;
             }
             Ok(result) if result.cancelled => self.show_status("Navigation cancelled")?,
-            Ok(result) => {
-                self.chat_container.clear();
-                self.render_initial_messages()?;
-                if let Some(text) = result.editor_text.filter(|text| !text.is_empty())
-                    && self
-                        .current_editor()
-                        .try_get_text()
-                        .map_err(|error| -> Box<dyn Error> { error })?
-                        .trim_matches(is_whitespace_scalar)
-                        .is_empty()
-                {
-                    self.current_editor()
-                        .try_set_text(&text)
-                        .map_err(|error| error as Box<dyn Error>)?;
-                }
-                self.show_status("Navigated to selected point")?;
-                self.flush_compaction_queue(false)?;
-            }
+            Ok(result) => self
+                .present_tree_navigation(result)
+                .map_err(|error| -> Box<dyn Error> { error })?,
             Err(error) => self.show_error(&error.message)?,
         }
+        Ok(())
+    }
+
+    /// Replays navigation, fills only a still-blank draft and starts captured input delivery.
+    ///
+    /// # Errors
+    /// Returns the original replay, editor or theme failure.
+    pub(in crate::interactive_mode) fn present_tree_navigation(
+        self: &Rc<Self>,
+        result: NavigateTreeResult,
+    ) -> Result<(), EventError> {
+        self.chat_container.clear();
+        self.render_initial_messages()?;
+        if let Some(text) = result.editor_text.filter(|text| !text.is_empty())
+            && self
+                .current_editor()
+                .try_get_text()?
+                .trim_matches(is_whitespace_scalar)
+                .is_empty()
+        {
+            self.current_editor().try_set_text(&text)?;
+        }
+        self.show_status("Navigated to selected point")?;
+        self.flush_compaction_queue(false)?;
         Ok(())
     }
 }

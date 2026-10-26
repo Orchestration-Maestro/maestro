@@ -32,6 +32,14 @@ type Prefix = TypedFunc<
 >;
 /// Independently owned guest listener continuation.
 type Tail = TypedFunc<(Resource<Callback>,), (Result<(), String>,)>;
+/// Synchronous abort observer with its borrowed invocation frame and no data.
+type Abort = TypedFunc<
+    (
+        Resource<Callback>,
+        Resource<crate::local_resources::effects::EmitterEndpoint>,
+    ),
+    (Result<(), String>,),
+>;
 
 /// Exports resolved from the canonical guest interface, never substitute implementations.
 pub(crate) struct Exports {
@@ -59,6 +67,8 @@ pub(crate) struct Exports {
     compaction_complete: Prefix,
     /// Native compaction failure callback.
     compaction_error: Prefix,
+    /// Native abort observer.
+    abort: Abort,
     /// Independently owned event continuation.
     tail: Tail,
     /// Actual authored table-release operation.
@@ -110,6 +120,7 @@ impl Exports {
             listener: typed(store, instance, &guest, "invoke-listener")?,
             compaction_complete: typed(store, instance, &guest, "invoke-compaction-complete")?,
             compaction_error: typed(store, instance, &guest, "invoke-compaction-error")?,
+            abort: typed(store, instance, &guest, "invoke-abort")?,
             tail: typed(store, instance, &guest, "invoke-tail")?,
         })
     }
@@ -193,11 +204,6 @@ impl Exports {
         accessor: &Accessor<T>,
         call: Synchronous<Callback>,
     ) -> wasmtime::Result<()> {
-        let export = match call.kind {
-            SynchronousKind::Listener => self.listener,
-            SynchronousKind::CompactionComplete => self.compaction_complete,
-            SynchronousKind::CompactionError => self.compaction_error,
-        };
         let (callback, emitter) = accessor.with(|mut access| {
             let table = access.get().ctx().table;
             Ok::<_, wasmtime::Error>((
@@ -207,25 +213,44 @@ impl Exports {
                 table.push(call.emitter)?,
             ))
         })?;
-        let result = export
-            .call_concurrent(
-                accessor,
-                (
-                    Resource::new_borrow(callback.rep()),
-                    call.data,
-                    Resource::new_borrow(emitter.rep()),
-                ),
-            )
+        let (handler, frame) = (
+            Resource::new_borrow(callback.rep()),
+            Resource::new_borrow(emitter.rep()),
+        );
+        let prefix = match call.kind {
+            SynchronousKind::Listener => self.listener,
+            SynchronousKind::CompactionComplete => self.compaction_complete,
+            SynchronousKind::CompactionError => self.compaction_error,
+            SynchronousKind::Abort => {
+                let result = self.abort.call_concurrent(accessor, (handler, frame)).await;
+                return finish(accessor, (callback, emitter), call.completion, result);
+            }
+        };
+        let result = prefix
+            .call_concurrent(accessor, (handler, call.data, frame))
             .await;
-        accessor.with(|mut access| {
-            let table = access.get().ctx().table;
-            table.delete(callback)?;
-            table.delete(emitter)?;
-            Ok::<_, wasmtime::Error>(())
-        })?;
-        let _ = call.completion.send(result?.0);
-        Ok(())
+        finish(accessor, (callback, emitter), call.completion, result)
     }
+}
+
+/// Removes the temporary borrows of one synchronous invocation, then sends its result.
+fn finish<T: WasiView + 'static>(
+    accessor: &Accessor<T>,
+    (callback, emitter): (
+        Resource<Callback>,
+        Resource<crate::local_resources::effects::EmitterEndpoint>,
+    ),
+    completion: crate::lifecycle::replies::Reply<()>,
+    result: wasmtime::Result<(Result<(), String>,)>,
+) -> wasmtime::Result<()> {
+    accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        table.delete(callback)?;
+        table.delete(emitter)?;
+        Ok::<_, wasmtime::Error>(())
+    })?;
+    let _ = completion.send(result?.0);
+    Ok(())
 }
 
 /// Transfers the supplied native capability and removes only the temporary callback borrow.

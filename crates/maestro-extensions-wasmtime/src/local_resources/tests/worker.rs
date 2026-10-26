@@ -119,7 +119,10 @@ fn pump_retirement_disconnects_queued_native_replies_before_joining_the_worker()
         .requests
         .upgrade()
         .unwrap()
-        .send(crate::local_resources::Message::Aborted(0, reply))
+        .send(crate::local_resources::Message::Signal(
+            0,
+            crate::local_resources::signals::Request::Aborted(reply),
+        ))
         .unwrap();
     let finished = own_worker(&pump, move |_shutdown| {
         assert!(response.recv().is_err());

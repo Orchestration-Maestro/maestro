@@ -15,6 +15,9 @@ pub(crate) mod renderers;
 pub(crate) use event_bus::events;
 pub(crate) mod bash;
 mod contexts;
+mod signals;
+#[cfg(test)]
+pub(crate) use signals::signal;
 mod exports;
 #[cfg(target_arch = "wasm32")]
 mod generated;

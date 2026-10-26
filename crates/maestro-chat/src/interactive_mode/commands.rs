@@ -30,7 +30,8 @@ impl InteractiveMode {
         if result.cancelled {
             return Ok(());
         }
-        self.render_current_session_state()?;
+        self.render_current_session_state()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let notice = self.themes.theme().get()?;
         self.add_text(notice.fg(&ThemeColor::Accent, "✓ New session started")?, 1);
         Ok(())

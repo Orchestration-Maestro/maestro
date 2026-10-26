@@ -101,6 +101,7 @@ kinds! {
         Schema(crate::schema_code::Handler),
     }
     once {
+        Abort(crate::AbortListener),
         WithSession(WithSession),
         Setup(crate::SetupSession),
         Tail(crate::ExtensionFuture<'static, ()>),

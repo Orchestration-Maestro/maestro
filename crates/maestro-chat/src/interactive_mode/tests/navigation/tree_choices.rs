@@ -169,8 +169,18 @@ fn tree_cancellation_returns_to_the_same_selection_without_navigating() {
             assert!(seen.borrow().is_empty());
             tree.get_tree_list().on_select().unwrap()(&first);
             assert!(world.runtime.drain_futures().is_empty());
+            world.mode.compaction_queued_messages.borrow_mut().push(
+                super::super::super::queues::CompactionQueuedMessage {
+                    text: "retained on veto".into(),
+                    mode: maestro_app::messages::UserMessageDelivery::Steer,
+                },
+            );
             choose(&world, 1);
             finish(&world).await;
+            assert_eq!(
+                world.mode.compaction_queued_messages.borrow()[0].text,
+                "retained on veto"
+            );
             assert!(shows(&world.mode.chat_container, "Navigation cancelled"));
             assert!(!shows(
                 &world.mode.chat_container,
@@ -215,20 +225,39 @@ fn navigation_selector_lifetime_releases_the_mode_after_completion() {
     isolated(
         "navigation_selector_lifetime_releases_the_mode_after_completion",
         async |directory| {
-            let world = Setup::default().build(directory);
-            start(&world).await;
-            let leaf = append_user(&world, "kept");
-            super::super::actions::run_action(&world, "app.session.tree");
-            let tree = panel::<TreeSelectorComponent>(&world).unwrap();
-            let select = tree.get_tree_list().on_select().unwrap();
-            tree.handle_input("\x1b").unwrap();
-            finish(&world).await;
-            let weak = Rc::downgrade(&world.mode);
-            drop(world.mode);
-            assert!(weak.upgrade().is_none());
-            select(&leaf);
-            tree.handle_input("\x1b").unwrap();
-            assert!(weak.upgrade().is_none());
+            for action in ["app.session.tree", "app.session.resume"] {
+                let world = Setup::default().build(directory);
+                start(&world).await;
+                let leaf = append_user(&world, "kept");
+                super::super::actions::run_action(&world, action);
+                if action == "app.session.resume" {
+                    let sessions = panel::<crate::SessionSelectorComponent>(&world).unwrap();
+                    finish(&world).await;
+                    let select = sessions.get_session_list().on_select().unwrap();
+                    sessions.input_handler().unwrap().handle_input("\x1b");
+                    finish(&world).await;
+                    world.terminal.send_input("restored");
+                    assert_eq!(world.mode.editor.get_text(), "restored");
+                    let weak = Rc::downgrade(&world.mode);
+                    drop(world.mode);
+                    assert!(weak.upgrade().is_none());
+                    select("retired-session");
+                    sessions.input_handler().unwrap().handle_input("\x1b");
+                    assert!(world.runtime.drain_futures().is_empty());
+                    assert!(weak.upgrade().is_none());
+                    continue;
+                }
+                let tree = panel::<TreeSelectorComponent>(&world).unwrap();
+                let select = tree.get_tree_list().on_select().unwrap();
+                tree.handle_input("\x1b").unwrap();
+                finish(&world).await;
+                let weak = Rc::downgrade(&world.mode);
+                drop(world.mode);
+                assert!(weak.upgrade().is_none());
+                select(&leaf);
+                tree.handle_input("\x1b").unwrap();
+                assert!(weak.upgrade().is_none());
+            }
         },
     );
 }

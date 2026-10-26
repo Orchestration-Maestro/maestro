@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Model, ReadonlySessionManager, ResolvedRequestAuth};
+use maestro_extensions::{Cancellation, Model, ReadonlySessionManager, ResolvedRequestAuth};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -194,21 +194,18 @@ impl State {
             Message::ApiModel(id, model, reply, admission) => {
                 self.start_api_model(id, *model, reply, admission);
             }
+            Message::Exec(id, request, reply, admission) => {
+                self.start_exec(id, request, reply, admission);
+            }
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
             Message::Auth(id, model, reply, admission) => {
                 self.start_auth(id, *model, reply, admission);
             }
-            Message::Aborted(id, reply) => {
-                let _ = reply.send(self.aborted(id));
+            Message::NewSignal(reply) => {
+                let _ = reply.send(self.registry.signal(Cancellation::new()));
             }
-            Message::History(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::History(history)) = capability.as_deref() {
-                    request.answer(&*history.borrow(), &self.registry);
-                } else {
-                    request.reject("extension history resource ended");
-                }
-            }
+            Message::Signal(id, request) => self.signal(id, request),
+            Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
             Message::Catalog(id, request) => {
@@ -242,6 +239,16 @@ impl State {
         }
     }
 
+    /// Reads the original live history independently of guarded contexts.
+    fn history(&self, id: u64, request: crate::history_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::History(history)) = capability.as_deref() {
+            request.answer(&*history.borrow(), &self.registry);
+        } else {
+            request.reject("extension history resource ended");
+        }
+    }
+
     /// Answers a request while its native code owns the route into this instance.
     fn routed(
         &self,
@@ -259,15 +266,6 @@ impl State {
         match capability.as_deref() {
             Some(Capability::Api(api)) => self.registry.schema_listing(api),
             _ => Err("extension API resource ended".into()),
-        }
-    }
-
-    /// Observe the original retained cancellation signal.
-    fn aborted(&self, id: u64) -> Result<bool, String> {
-        let capability = self.registry.capability(id);
-        match capability.as_deref() {
-            Some(Capability::Signal(signal)) => Ok(signal.is_aborted()),
-            _ => Err("extension signal resource ended".to_owned()),
         }
     }
 
@@ -330,6 +328,35 @@ impl State {
         }
     }
 
+    /// Selects the original facade and cancellation before starting admitted execution.
+    fn start_exec(
+        &self,
+        id: u64,
+        request: crate::exec::Request,
+        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
+        admission: Admission,
+    ) {
+        let capability = self.registry.capability(id);
+        let Some(Capability::Api(api)) = capability.as_deref() else {
+            let _ = reply.send(Err("extension API resource ended".to_owned()));
+            return;
+        };
+        let signal = request
+            .signal
+            .as_ref()
+            .map(|signal| self.registry.cancellation(signal))
+            .transpose();
+        match signal {
+            Ok(signal) => self.admit(
+                crate::exec::start(request.data, api.clone(), signal, reply),
+                admission,
+            ),
+            Err(error) => {
+                let _ = reply.send(Err(error));
+            }
+        }
+    }
+
     /// Starts the native model operation at consumption and retains its admission.
     fn start_api_model(
         &self,
@@ -374,10 +401,14 @@ impl State {
 
     /// Retains the same admission while an already-selected operation settles.
     fn admit(&self, work: Work, admission: Admission) {
-        let mut work: Work = Box::pin(async move {
+        self.stage(Box::pin(async move {
             work.await;
             drop(admission);
-        });
+        }));
+    }
+
+    /// Polls work once now and keeps it pending without an admission of its own.
+    pub(super) fn stage(&self, mut work: Work) {
         let waker = self.waker.borrow().clone();
         let mut context = Context::from_waker(&waker);
         if work.as_mut().poll(&mut context).is_pending() {

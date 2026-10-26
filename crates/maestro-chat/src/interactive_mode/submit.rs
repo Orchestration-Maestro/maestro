@@ -272,6 +272,7 @@ impl InteractiveMode {
         {
             self.show_warning(message)?;
         }
+        self.check_subscription_warning(None);
         let first = self
             .options
             .initial_message

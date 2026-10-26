@@ -99,7 +99,8 @@ impl InteractiveMode {
             self.ui.request_render(false);
             return Ok(());
         }
-        self.render_current_session_state()?;
+        self.render_current_session_state()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.current_editor()
             .try_set_text("")
             .map_err(|error| -> Box<dyn Error> { error })?;
@@ -188,7 +189,8 @@ fn fork_succeeded(
     done: &Rc<dyn Fn()>,
     selected_text: Option<&str>,
 ) -> Result<(), Box<dyn Error>> {
-    mode.render_current_session_state()?;
+    mode.render_current_session_state()
+        .map_err(|error| -> Box<dyn Error> { error })?;
     mode.current_editor()
         .try_set_text(selected_text.unwrap_or(""))
         .map_err(|error| -> Box<dyn Error> { error })?;

@@ -88,7 +88,7 @@ async fn resumed(
         assert!(shown.contains("Session cwd not found"), "{shown}");
         choose(world, answer);
     }
-    resuming.await
+    resuming.await.map_err(|error| -> Box<dyn Error> { error })
 }
 
 /// One resume case: its setup, prompt answer, expected outcome and status.

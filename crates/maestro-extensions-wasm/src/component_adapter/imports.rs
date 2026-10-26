@@ -170,6 +170,13 @@ pub trait Imports: Clone + 'static {
     fn get_thinking_level(&self) -> ExtensionResult<String>;
     /// Forwards the ordinary action.
     fn set_thinking_level(&self, level: &str) -> ExtensionResult<()>;
+    /// Sends ordinary call data with an optional borrowed signal.
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String>;
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
     /// Starts a compaction on the supplied context.
@@ -363,8 +370,21 @@ pub trait Imports: Clone + 'static {
     /// Returns the host's message when it rejects the entry.
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()>;
 
+    /// Creates one independently owned cancellation for a pending operation.
+    fn new_signal(&self) -> ExtensionResult<Self::Signal>;
+    /// Aborts the supplied native cancellation without selecting a current context.
+    fn signal_abort(&self, signal: &Self::Signal) -> ExtensionResult<()>;
     /// Whether the operation was cancelled.
     fn aborted(&self, signal: &Self::Signal) -> bool;
+    /// Registers a callback the host runs once when `signal` is cancelled.
+    ///
+    /// # Errors
+    /// Returns the host's message when it rejects the registration.
+    fn signal_subscribe(
+        &self,
+        signal: &Self::Signal,
+        listener: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
 
     /// The working directory of the session an ordinary context is bound to.
     ///
