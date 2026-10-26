@@ -36,7 +36,7 @@ impl DomContent for DefaultContent {
             .and_then(|owner| owner.downcast_ref::<Sections>())
             .ok_or_else(|| ToolUiError::Presentation("Missing default tool state".into()))?;
         let node: &Element = root.node.unchecked_ref();
-        let no_output = view.i18n.text("")?;
+        let no_output = view.i18n.text("(no output)")?;
         let prepared = prepare(
             self.params.as_deref(),
             self.output.as_deref(),
