@@ -37,10 +37,12 @@ pub(crate) struct RendererCall<H = Handle> {
     /// Actual optional component identity.
     pub(crate) reply: Reply<Option<Handle>>,
 }
-/// Infallible component methods share one canonical unit-result call shape.
+/// Component mutations share one canonical unit-result call shape.
 pub(crate) enum ComponentMethod {
     /// Literal terminal input.
     Input(String),
+    /// Changes a factory component's expansion.
+    SetExpanded(bool),
     /// Clears authored rendering caches.
     Invalidate,
 }

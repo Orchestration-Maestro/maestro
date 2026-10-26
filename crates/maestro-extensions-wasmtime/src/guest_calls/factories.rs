@@ -1,5 +1,8 @@
 //! Native component factories enter their authored guest factory through the original frame.
-use super::{Call, Handle, SynchronousKind};
+use super::{
+    Call, Handle, SynchronousKind,
+    renderers::{ComponentCall, ComponentMethod},
+};
 use crate::lifecycle::replies::Reply;
 use crate::local_resources::{
     Registry,
@@ -7,12 +10,12 @@ use crate::local_resources::{
 };
 use maestro_extensions::{
     ComponentHandle, EventError, ExtensionAPI, LiveTheme, Local, TUI,
-    types::{ComponentDisposer, ComponentFactory, ExtensionComponent, FooterFactory},
+    types::{ComponentDisposer, ComponentFactory, ExtensionComponent, FooterFactory, UIHostCall},
 };
 use std::rc::Rc;
 use wasmtime::component::{ComponentType, Lift, Resource};
 
-/// The guest component a factory built and its optional disposal, as transferred identities.
+/// A factory component's literal width and transferred callback identities.
 #[derive(ComponentType, Lift)]
 #[component(record)]
 pub(crate) struct Built {
@@ -20,6 +23,23 @@ pub(crate) struct Built {
     pub(crate) component: Resource<super::Callback>,
     /// The component's disposal.
     pub(crate) dispose: Option<Resource<super::Callback>>,
+    /// The component's expansion callback.
+    #[component(name = "set-expanded")]
+    pub(crate) set_expanded: Option<Resource<super::Callback>>,
+    /// The component's implicit overlay width.
+    pub(crate) width: Option<f64>,
+}
+
+/// The native owners and literal width of a built component.
+pub(crate) struct RetainedComponent {
+    /// The component's owner.
+    pub(crate) component: Handle,
+    /// The disposal's owner.
+    pub(crate) dispose: Option<Handle>,
+    /// The expansion callback's owner.
+    pub(crate) set_expanded: Option<Handle>,
+    /// The supplied implicit width.
+    pub(crate) width: Option<f64>,
 }
 
 /// One factory invocation with the terminal and theme the native owner lent.
@@ -35,7 +55,7 @@ pub(crate) struct FactoryCall<H = Handle> {
     /// Original native callback frame.
     pub(crate) emitter: EmitterEndpoint,
     /// The built component and optional disposal identities.
-    pub(crate) reply: Reply<(Handle, Option<Handle>)>,
+    pub(crate) reply: Reply<RetainedComponent>,
 }
 
 impl Handle {
@@ -85,17 +105,39 @@ impl Handle {
                 reply,
             }))
         });
-        let (component, dispose) = built.map_err(EventError::from)?;
+        let built = built.map_err(EventError::from)?;
         let view = crate::guest_component::GuestComponent::new(
-            component,
+            built.component,
             registry.clone(),
             api.events.clone(),
         );
         Ok(ExtensionComponent {
             component: Rc::new(view) as ComponentHandle,
-            dispose: dispose.map(|dispose| dispose.disposer(registry.clone(), api)),
-            set_expanded: None,
-            width: None,
+            dispose: built
+                .dispose
+                .map(|dispose| dispose.disposer(registry.clone(), api)),
+            set_expanded: built
+                .set_expanded
+                .map(|handler| handler.expansion(registry.clone(), api)),
+            width: built.width,
+        })
+    }
+
+    /// A retained expansion callback using each caller's original frame.
+    fn expansion(self, registry: Registry, api: &ExtensionAPI<Local>) -> UIHostCall<bool, ()> {
+        api.ui_callback(move |expanded, emitter| {
+            let frame = registry.emitter(emitter.frame())?;
+            self.0
+                .endpoint
+                .synchronous(&registry, |reply| {
+                    Ok(Call::Component(ComponentCall::Unit(
+                        self.clone(),
+                        ComponentMethod::SetExpanded(expanded),
+                        frame,
+                        reply,
+                    )))
+                })
+                .map_err(EventError::from)
         })
     }
 

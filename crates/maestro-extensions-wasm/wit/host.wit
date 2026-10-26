@@ -166,11 +166,14 @@ interface host {
     record local-bash { target: u32, request: bash-request, resources: bash-capabilities }
     /// One nested same-instance schema method over the operand its native caller lends.
     record local-schema { target: u32, operation: schema-operation, node: json-node, emitter: callback-emitter }
+    /// One nested same-instance expansion callback.
+    record local-expanded { target: u32, expanded: bool, emitter: callback-emitter }
     /// The nested same-instance target and its owned operands.
     variant local-call {
         renderer(local-renderer),
         render(local-render),
         unit(local-unit),
+        expanded(local-expanded),
         key(local-key),
         prepare(local-prepare),
         terminal-input(local-terminal-input),
@@ -542,7 +545,7 @@ interface host {
         on-branch-change: func(listener: borrow<callback>) -> result<subscription, string>;
     }
     /// A component a factory built, with the disposal the host calls when it removes it.
-    record factory-component { component: callback, dispose: option<callback> }
+    record factory-component { component: callback, dispose: option<callback>, set-expanded: option<callback>, width: option<f64> }
     /// One available theme; a theme without a file has no path.
     record theme-info { name: string, path: option<string> }
     /// Whether a theme selection applied, with the host's message when it did not.

@@ -66,6 +66,10 @@ pub struct WidgetSlot {
     pub component: u32,
     /// Identity of the component's disposal, when it has one.
     pub dispose: Option<u32>,
+    /// Identity of the retained expansion handler.
+    pub set_expanded: Option<u32>,
+    /// The supplied implicit width.
+    pub width: Option<f64>,
 }
 
 /// The header container the host keeps once its built-in header exists.
@@ -529,6 +533,10 @@ impl State {
         self.observed.ui.widgets = kept;
         let mut steps = std::collections::VecDeque::new();
         for slot in removed {
+            if let Some(handler) = slot.set_expanded {
+                self.observed
+                    .register(format!("expansion {handler}"), handler);
+            }
             self.observed
                 .register(format!("widget {}", slot.key), slot.component);
             steps.extend(self.dispose_step(slot.dispose)?);
@@ -582,10 +590,33 @@ impl State {
             return Ok(steps);
         };
         let (component, dispose) = (custom.component, custom.dispose);
+        if let Some(handler) = custom.set_expanded {
+            self.observed
+                .register(format!("expansion {handler}"), handler);
+        }
         self.observed
             .register(format!("header {component}"), component);
         steps.extend(self.dispose_step(dispose)?);
         Ok(steps)
+    }
+
+    /// Retains every optional capability of a factory component in its shown slot.
+    fn factory_slot(
+        &self,
+        key: String,
+        built: host::FactoryComponent,
+    ) -> wasmtime::Result<WidgetSlot> {
+        let dispose = built
+            .dispose
+            .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
+            .transpose()?;
+        Ok(WidgetSlot {
+            key,
+            component: built.component.rep(),
+            dispose,
+            set_expanded: built.set_expanded.as_ref().map(Resource::rep),
+            width: built.width,
+        })
     }
 
     /// Shows a built widget, or returns the failure that ends its operation.
@@ -596,40 +627,18 @@ impl State {
     ) -> wasmtime::Result<Option<String>> {
         match (nested, value) {
             (Nested::Footer, host::LocalResult::Factory(Ok(built))) => {
-                let dispose = built
-                    .dispose
-                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
-                    .transpose()?;
-                self.observed.ui.footer.custom = Some(WidgetSlot {
-                    key: "footer".to_owned(),
-                    component: built.component.rep(),
-                    dispose,
-                });
+                let slot = self.factory_slot("footer".to_owned(), built)?;
+                self.observed.ui.footer.custom = Some(slot);
                 Ok(None)
             }
             (Nested::Header, host::LocalResult::Factory(Ok(built))) => {
-                let dispose = built
-                    .dispose
-                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
-                    .transpose()?;
-                let slot = WidgetSlot {
-                    key: "header".to_owned(),
-                    component: built.component.rep(),
-                    dispose,
-                };
+                let slot = self.factory_slot("header".to_owned(), built)?;
                 self.observed.ui.header.install(Some(slot));
                 Ok(None)
             }
             (Nested::Factory(key), host::LocalResult::Factory(Ok(built))) => {
-                let dispose = built
-                    .dispose
-                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
-                    .transpose()?;
-                self.observed.ui.widgets.push(WidgetSlot {
-                    key,
-                    component: built.component.rep(),
-                    dispose,
-                });
+                let slot = self.factory_slot(key, built)?;
+                self.observed.ui.widgets.push(slot);
                 Ok(None)
             }
             (
@@ -799,6 +808,10 @@ impl host::HostExtensionUiContext for State {
         }
         let mut steps = std::collections::VecDeque::new();
         if let Some(old) = self.observed.ui.footer.custom.take() {
+            if let Some(handler) = old.set_expanded {
+                self.observed
+                    .register(format!("expansion {handler}"), handler);
+            }
             self.observed
                 .register(format!("footer {}", old.component), old.component);
             steps.extend(self.dispose_step(old.dispose)?);

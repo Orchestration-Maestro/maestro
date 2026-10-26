@@ -26,6 +26,9 @@ type Input =
     TypedFunc<(Resource<Callback>, String, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component invalidation method.
 type Invalidate = TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+/// Retained expansion callback.
+type SetExpanded =
+    TypedFunc<(Resource<Callback>, bool, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component key-release preference.
 type WantsKeyRelease =
     TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<bool, String>,)>;
@@ -40,6 +43,8 @@ pub(super) struct Exports {
     input: Input,
     /// Actual component cache invalidation method.
     invalidate: Invalidate,
+    /// Actual expansion callback.
+    set_expanded: SetExpanded,
     /// Actual component key-release preference method.
     wants_key_release: WantsKeyRelease,
 }
@@ -55,6 +60,7 @@ impl Exports {
             render: super::typed(store, instance, guest, "component-render")?,
             input: super::typed(store, instance, guest, "component-handle-input")?,
             invalidate: super::typed(store, instance, guest, "component-invalidate")?,
+            set_expanded: super::typed(store, instance, guest, "invoke-set-expanded")?,
             wants_key_release: super::typed(store, instance, guest, "component-wants-key-release")?,
         })
     }
@@ -119,6 +125,11 @@ impl Exports {
                     ComponentMethod::Input(data) => {
                         self.input
                             .call_concurrent(accessor, (view, data, frame))
+                            .await
+                    }
+                    ComponentMethod::SetExpanded(expanded) => {
+                        self.set_expanded
+                            .call_concurrent(accessor, (view, expanded, frame))
                             .await
                     }
                     ComponentMethod::Invalidate => {

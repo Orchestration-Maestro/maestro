@@ -86,6 +86,18 @@ impl<I: Imports> Exports<I> {
         })
     }
 
+    /// Runs the retained expansion callback with this invocation's borrowed emitter.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn invoke_set_expanded(
+        &self,
+        handler: u32,
+        expanded: bool,
+        emitter: &I::Emitter,
+    ) -> ExtensionResult<()> {
+        let handler = callbacks::find::<crate::ComponentExpansionHandler>(handler)?;
+        with_emitter(&self.imports, emitter, |emitter| handler(expanded, emitter))
+    }
+
     /// Runs the disposal under this identity once, with its borrowed emitter; a disposal
     /// shares the one-shot table kind of a cancellation listener, whose type it has.
     #[cfg(target_arch = "wasm32")]
@@ -95,7 +107,7 @@ impl<I: Imports> Exports<I> {
     }
 }
 
-/// Transfers a built component and its disposal to the host as their identities.
+/// Transfers a built component and its callbacks to the host as owned identities.
 #[cfg(target_arch = "wasm32")]
 pub(super) fn transfer<
     I: Imports<Callback = crate::bindings::maestro::extension::host::Callback>,
@@ -104,10 +116,14 @@ pub(super) fn transfer<
     built: ExtensionComponent,
 ) -> crate::bindings::maestro::extension::host::FactoryComponent {
     let component = callbacks::Identity::<I>::new(imports).transfer(built.component);
-    let dispose = built
-        .dispose
-        .map(|dispose| callbacks::Identity::<I>::new(imports).transfer(dispose));
-    crate::bindings::maestro::extension::host::FactoryComponent { component, dispose }
+    let dispose = super::renderers::retain(imports, built.dispose);
+    let set_expanded = super::renderers::retain(imports, built.set_expanded);
+    crate::bindings::maestro::extension::host::FactoryComponent {
+        component,
+        dispose,
+        set_expanded,
+        width: built.width,
+    }
 }
 
 /// Runs the branch change listener under this identity.

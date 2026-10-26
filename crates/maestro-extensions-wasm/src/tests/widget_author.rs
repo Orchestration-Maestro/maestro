@@ -872,6 +872,8 @@ fn loader(name: String, message: String, cancellable: Option<bool>) -> Extension
         Ok(ExtensionComponent {
             component,
             dispose: None,
+            set_expanded: None,
+            width: None,
         })
     });
     ui.set_widget_factory("loader", factory, None)?;
@@ -1095,6 +1097,8 @@ fn editor(
         Ok(ExtensionComponent {
             component,
             dispose: None,
+            set_expanded: None,
+            width: None,
         })
     });
     ui.set_widget_factory("editor", factory, None)?;

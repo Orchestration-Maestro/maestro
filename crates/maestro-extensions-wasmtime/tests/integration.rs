@@ -16,6 +16,7 @@ mod component_loading;
 mod components;
 mod exec_io;
 mod execution_bridge;
+mod factory_capabilities;
 mod factory_shutdown;
 mod lifetimes;
 mod listener_prefixes;

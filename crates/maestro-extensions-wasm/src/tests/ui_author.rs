@@ -203,6 +203,8 @@ fn label_factory(api: &ExtensionAPI, label: String, dispose: bool) -> ComponentF
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: disposal,
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -259,6 +261,8 @@ fn footer_factory(api: &ExtensionAPI, label: String) -> FooterFactory {
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -702,6 +706,13 @@ enum Operation {
     },
     /// Registers the painter tool, whose renderers report what they read.
     Painter,
+    /// Shows a component with optional width and expansion.
+    FactoryCapabilities {
+        /// The supplied width.
+        width: Option<f64>,
+        /// Whether the component accepts expansion.
+        expandable: bool,
+    },
     /// Shows an authored editor through a retained component.
     AuthoredEditorContract,
     /// Calls an authored asynchronous completion provider.
@@ -860,6 +871,9 @@ fn factories(
             let factory = label_factory(api, label, dispose);
             ctx.ui()?.set_widget_factory(&key, factory, options)
         }
+        Operation::FactoryCapabilities { width, expandable } => {
+            super::factory_component_author::install(&ctx.ui()?, width, expandable)
+        }
         Operation::Footer { label } => {
             let factory = label.map(|label| footer_factory(api, label));
             ctx.ui()?.set_footer(factory)
@@ -916,6 +930,7 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             json!("dropped")
         }
         operation @ (Operation::WidgetFactory { .. }
+        | Operation::FactoryCapabilities { .. }
         | Operation::KeptWidget { .. }
         | Operation::Footer { .. }
         | Operation::Unbranch { .. }

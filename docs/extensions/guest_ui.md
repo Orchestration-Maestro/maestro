@@ -47,3 +47,25 @@ default `Ok(None)` leaves the decision to the caller; `Some(false)` and
 A wrapper can retain an `Rc<dyn AutocompleteProvider>` and delegate requests to
 it. UI wrapper stacking, editor factories and their retained host transports are
 not exposed by these interfaces alone.
+
+## Factory component capabilities
+
+`ExtensionComponent` returns the component, optional `dispose` and `set_expanded`
+callbacks, and an optional `width`. Set unused fields to `None`.
+`ComponentExpansionHandler` receives a boolean and a borrowed `CallbackEmitter`.
+It runs synchronously, can run repeatedly after the factory returns, and returns
+its original error to the host. A host can also call it before its UI setter
+returns. Cloned native handles share the callback; removing the shown component
+does not invalidate an independently retained handle.
+
+The width crosses the boundary unchanged, including absent, zero and fractional
+values. It is an implicit overlay width for a host that supports custom overlays;
+this record does not install an overlay or choose its layout.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `factory-component` | `ExtensionComponent` | Transfers the component, optional disposal and expansion callback through the existing callback owner; carries width by value. |
+| `set-expanded` callback | `UIHostCall<bool, ()>` | Retained independently; each call borrows its own emission frame. Its final native handle releases the authored capture. |
+
+Disposal, component removal and final callback release remain separate effects.
+Neither calling expansion nor dropping its handle invokes disposal.

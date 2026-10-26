@@ -155,6 +155,12 @@ pub trait Driver {
     async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String>;
     /// Renders the factory widget the host shows under `key`, or reports that it shows none.
     async fn widget(&mut self, key: &str, width: u32) -> Result<Vec<String>, String>;
+    /// Reads a factory component's width and calls its expansion handler when present.
+    async fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> Result<(Option<f64>, bool), String>;
     /// Delivers one terminal input chunk to every live terminal input listener in
     /// registration order and returns each listener's answer.
     async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String>;

@@ -33,6 +33,12 @@ pub(super) fn observe(
         let steps = serde_json::from_str(steps).map_err(|error| error.to_string())?;
         return Ok(super::widget_author::run(steps, context.ui().ok()).to_string());
     }
+    if let Some(options) = args.strip_prefix("ui capabilities ") {
+        let (width, expandable): (Option<f64>, bool) =
+            serde_json::from_str(options).map_err(|e| e.to_string())?;
+        super::factory_component_author::install(&context.ui()?, width, expandable)?;
+        return Ok("capabilities shown".into());
+    }
     if let Some(label) = args.strip_prefix("ui widget ") {
         return widget(context, api, label);
     }
@@ -133,6 +139,8 @@ fn labelled(api: &ExtensionAPI, label: &str) -> ComponentFactory {
                 _capture: capture,
             }),
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -180,6 +188,8 @@ fn footer(api: &ExtensionAPI, label: &str) -> FooterFactory {
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: None,
+            set_expanded: None,
+            width: None,
         })
     })
 }

@@ -245,6 +245,8 @@ impl Controlled {
         let kept = crate::ExtensionComponent {
             component,
             dispose: None,
+            set_expanded: None,
+            width: None,
         };
         self.widgets.borrow_mut().insert(handle, kept);
         handle
@@ -302,6 +304,19 @@ impl Controlled {
         crate::component_adapter::renderers::with_emitter(self, &emitter, |emitter| {
             dispose(emitter)
         })
+    }
+
+    /// The complete component the factory under `key` built.
+    pub fn widget_built(&self, key: &str) -> Option<crate::ExtensionComponent> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .widgets
+            .iter()
+            .find(|slot| slot.key == key)?
+            .component;
+        self.widgets.borrow().get(&slot).cloned()
     }
 
     /// The component the factory widget under `key` shows.
@@ -1322,6 +1337,8 @@ impl Imports for Controlled {
                 key: key.to_owned(),
                 component: handle,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             });
         Ok(())
     }
@@ -1340,6 +1357,8 @@ impl Imports for Controlled {
                 key: "footer".to_owned(),
                 component,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             });
         }
         Ok(())
@@ -1369,6 +1388,8 @@ impl Imports for Controlled {
                 key: "header".to_owned(),
                 component: self.build(factory, false)?,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             }),
         };
         self.observed.borrow_mut().ui.header.install(slot);

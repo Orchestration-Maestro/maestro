@@ -149,6 +149,8 @@ fn factory(ui: ExtensionUIContext) -> ComponentFactory {
         Ok(ExtensionComponent {
             component: Component::new(View(editor)),
             dispose: None,
+            set_expanded: None,
+            width: None,
         })
     })
 }

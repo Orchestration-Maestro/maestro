@@ -101,6 +101,7 @@ kinds! {
         Schema(crate::schema_code::Handler),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),
+        ComponentExpansion(crate::ComponentExpansionHandler),
         ToolRenderCall(crate::ToolRenderCall),
         ToolRenderResult(crate::ToolRenderResult),
         ToolRow(std::rc::Rc<crate::types::ToolRow>),

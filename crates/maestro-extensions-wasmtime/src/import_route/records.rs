@@ -51,6 +51,18 @@ pub(super) struct LocalUnit {
     pub(super) emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested expansion callback.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalExpanded {
+    /// Authored identity of the expansion handler.
+    pub(super) target: u32,
+    /// The requested expansion.
+    pub(super) expanded: bool,
+    /// Independent native invocation frame.
+    pub(super) emitter: Resource<EmitterEndpoint>,
+}
+
 /// Owned operands of one nested key-release query.
 #[derive(ComponentType, Lower)]
 #[component(record)]

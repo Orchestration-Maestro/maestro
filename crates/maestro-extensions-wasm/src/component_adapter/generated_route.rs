@@ -110,6 +110,11 @@ fn dispatch(call: host::LocalCall) -> Running {
                 None => view.invalidate(emitter),
             },
         )),
+        host::LocalCall::Expanded(call) => host::LocalResult::Unit(exports.invoke_set_expanded(
+            call.target,
+            call.expanded,
+            &call.emitter,
+        )),
         host::LocalCall::Key(call) => host::LocalResult::Key(exports.invoke_component(
             call.target,
             &call.emitter,

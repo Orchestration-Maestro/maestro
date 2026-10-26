@@ -620,6 +620,55 @@ impl Driver for ComponentDriver {
         let rep = slot.ok_or_else(|| format!("no widget {key}"))?;
         self.render_slot(rep, width).await
     }
+    async fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> Result<(Option<f64>, bool), String> {
+        let (width, handler) = self.observed(|observed| {
+            let slot = observed
+                .ui
+                .widgets
+                .iter()
+                .find(|slot| slot.key == key)
+                .unwrap();
+            (slot.width, slot.set_expanded)
+        });
+        let Some(handler) = handler else {
+            return Ok((width, false));
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter { key: 0 })
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let answer = harness
+            .store
+            .run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_set_expanded(
+                        accessor,
+                        borrow(handler),
+                        expanded,
+                        Resource::new_borrow(emitter.rep()),
+                    )
+                    .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        answer?;
+        Ok((width, true))
+    }
     async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String> {
         let listeners = self.observed(super::ui_host::terminal_listeners);
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;

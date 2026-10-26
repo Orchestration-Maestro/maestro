@@ -1,9 +1,9 @@
 //! Typed nested same-instance calls, lowered from native calls and settled from guest results.
 use super::records::{
-    LocalBash, LocalCommand, LocalCompletion, LocalContinuation, LocalEvent, LocalFactory,
-    LocalHighlight, LocalKey, LocalPrepare, LocalRender, LocalRenderer, LocalSchema, LocalSetup,
-    LocalShortcut, LocalStyle, LocalSynchronous, LocalTerminalInput, LocalTool, LocalToolRender,
-    LocalUnit, LocalWidget,
+    LocalBash, LocalCommand, LocalCompletion, LocalContinuation, LocalEvent, LocalExpanded,
+    LocalFactory, LocalHighlight, LocalKey, LocalPrepare, LocalRender, LocalRenderer, LocalSchema,
+    LocalSetup, LocalShortcut, LocalStyle, LocalSynchronous, LocalTerminalInput, LocalTool,
+    LocalToolRender, LocalUnit, LocalWidget,
 };
 use crate::{
     context_imports::{CommandContext, Context},
@@ -36,6 +36,9 @@ pub(super) enum LocalCall {
     /// A retained component input or invalidation.
     #[component(name = "unit")]
     Unit(LocalUnit),
+    /// A retained expansion callback.
+    #[component(name = "expanded")]
+    Expanded(LocalExpanded),
     /// A retained component key-release query.
     #[component(name = "key")]
     Key(LocalKey),
@@ -251,14 +254,27 @@ fn component(
             width: *width,
             emitter: table.push(emitter.clone())?,
         }),
-        ComponentCall::Unit(owner, method, emitter, _) => LocalCall::Unit(LocalUnit {
-            target: owner.id,
-            data: match method {
-                ComponentMethod::Input(data) => Some(data.clone()),
-                ComponentMethod::Invalidate => None,
-            },
-            emitter: table.push(emitter.clone())?,
-        }),
+        ComponentCall::Unit(owner, method, emitter, _) => {
+            let target = owner.id;
+            let emitter = table.push(emitter.clone())?;
+            match method {
+                ComponentMethod::SetExpanded(expanded) => LocalCall::Expanded(LocalExpanded {
+                    target,
+                    expanded: *expanded,
+                    emitter,
+                }),
+                ComponentMethod::Input(data) => LocalCall::Unit(LocalUnit {
+                    target,
+                    data: Some(data.clone()),
+                    emitter,
+                }),
+                ComponentMethod::Invalidate => LocalCall::Unit(LocalUnit {
+                    target,
+                    data: None,
+                    emitter,
+                }),
+            }
+        }
         ComponentCall::WantsKeyRelease(owner, emitter, _) => LocalCall::Key(LocalKey {
             target: owner.id,
             emitter: table.push(emitter.clone())?,

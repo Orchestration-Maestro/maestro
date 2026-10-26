@@ -170,13 +170,21 @@ impl TUI {
 /// Disposal the host runs once when it removes a component, with callback-scoped emission.
 pub type ComponentDisposer = Rc<dyn for<'a> Fn(CallbackEmitter<'a>) -> ExtensionResult<()>>;
 
-/// A component a factory built, with its optional disposal.
+/// Changes a component's expansion synchronously with callback-scoped emission.
+pub type ComponentExpansionHandler =
+    Rc<dyn for<'a> Fn(bool, CallbackEmitter<'a>) -> ExtensionResult<()>>;
+
+/// A component a factory built, with its optional disposal, expansion and width.
 #[derive(Clone)]
 pub struct ExtensionComponent {
     /// The component the host shows.
     pub component: Component,
     /// Runs once when the host removes the component.
     pub dispose: Option<ComponentDisposer>,
+    /// Expands or collapses the component, when supported.
+    pub set_expanded: Option<ComponentExpansionHandler>,
+    /// Width an overlay can use when no explicit width was supplied.
+    pub width: Option<f64>,
 }
 
 /// Builds a component from the terminal and the live theme, synchronously.

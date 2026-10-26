@@ -471,6 +471,26 @@ impl Driver for ControlledDriver {
             _ => Err("expected rendered lines".to_owned()),
         }))
     }
+    fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> impl Future<Output = Result<(Option<f64>, bool), String>> {
+        let answer = (|| {
+            let built = self.host.widget_built(key).ok_or("no factory component")?;
+            let present = built.set_expanded.is_some();
+            if let Some(handler) = built.set_expanded {
+                let emitter = super::bus_host::Emitter { key: 0 };
+                crate::component_adapter::renderers::with_emitter(
+                    &self.host,
+                    &emitter,
+                    |emitter| handler(expanded, emitter),
+                )?;
+            }
+            Ok((built.width, present))
+        })();
+        std::future::ready(answer)
+    }
     fn terminal_input(
         &mut self,
         data: &str,

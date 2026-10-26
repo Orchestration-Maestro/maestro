@@ -68,6 +68,8 @@ interface guest {
     invoke-tool-render: async func(handler: borrow<callback>, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: borrow<callback-emitter>) -> result<tool-rendered, string>;
     /// Runs a branch change listener with its synchronous emitter.
     invoke-branch-change: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Changes a retained factory component's expansion.
+    invoke-set-expanded: async func(handler: borrow<callback>, expanded: bool, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a component's disposal once with its synchronous emitter.
     invoke-dispose: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Styles text with an authored styling function.

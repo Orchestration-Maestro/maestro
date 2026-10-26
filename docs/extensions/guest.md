@@ -421,7 +421,9 @@ independent.
 
 `set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
 factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
-and returns an `ExtensionComponent`: the component and an optional disposal. The host
+and returns an `ExtensionComponent`: the component, optional disposal and expansion
+callbacks, and an optional implicit width. See [factory component capabilities](guest_ui.md#factory-component-capabilities)
+for callback ownership and errors. The host
 runs the disposal of the widget a key already shows before it runs the new factory, and
 both finish before the setter returns. `set_widget` with lines or `None` disposes a
 factory widget under the same key too. The factory's captures stay usable while the

@@ -1,4 +1,4 @@
-//! Editor and theme requests of the retained UI on both adapters.
+//! Retained UI capabilities on both adapters.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -1546,4 +1546,91 @@ async fn result_first(driver: &mut impl Driver) -> Result<(), String> {
 #[test]
 fn tool_renderer_result_first_and_history_keep_current_inputs() -> Result<(), String> {
     on_both_adapters!(result_first)
+}
+
+/// A returned callback remains callable, reports errors and updates the same retained view.
+async fn factory_expanded(driver: &mut impl Driver, width: Option<f64>) -> Result<(), String> {
+    let shown = operate(
+        driver,
+        json!({"op":"factoryCapabilities", "width":width, "expandable":true}),
+    )
+    .await?;
+    assert_eq!(shown, json!({"ok":true}));
+    assert_eq!(
+        driver.widget_capabilities("capabilities", true).await?,
+        (width, true)
+    );
+    assert_eq!(
+        driver.widget("capabilities", 13).await?,
+        ["expanded=true width=13"]
+    );
+    assert_eq!(
+        driver
+            .widget_capabilities("capabilities", false)
+            .await
+            .unwrap_err(),
+        "expansion rejected 雪\n"
+    );
+    assert_eq!(
+        driver.widget("capabilities", 9).await?,
+        ["expanded=false width=9"]
+    );
+    assert_eq!(
+        driver.widget_capabilities("capabilities", true).await?,
+        (width, true)
+    );
+    Ok(())
+}
+
+/// Optional capabilities remain absent rather than becoming zero or no-op callbacks.
+async fn factory_absent(driver: &mut impl Driver) -> Result<(), String> {
+    let shown = operate(
+        driver,
+        json!({"op":"factoryCapabilities", "width":null, "expandable":false}),
+    )
+    .await?;
+    assert_eq!(shown, json!({"ok":true}));
+    assert_eq!(
+        driver.widget_capabilities("capabilities", true).await?,
+        (None, false)
+    );
+    assert_eq!(
+        driver.widget("capabilities", 7).await?,
+        ["expanded=false width=7"]
+    );
+    Ok(())
+}
+
+/// Both adapters preserve literal widths, independent absence and repeated callback effects.
+async fn factory_capabilities(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    for width in [None, Some(0.0), Some(-3.5), Some(37.25)] {
+        factory_expanded(driver, width).await?;
+    }
+    factory_absent(driver).await?;
+    let emissions: Vec<_> = driver
+        .bus_emissions()
+        .into_iter()
+        .filter(|(channel, _)| channel == "factory-expanded")
+        .map(|(_, value)| value)
+        .collect();
+    assert_eq!(
+        emissions,
+        [
+            true, false, true, true, false, true, true, false, true, true, false, true
+        ]
+        .map(|flag| json!(flag))
+    );
+    operate(
+        driver,
+        json!({"op":"acquire", "call":{"op":"setWidget", "key":"capabilities"}}),
+    )
+    .await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn factory_component_preserves_width_and_retained_expansion() -> Result<(), String> {
+    on_both_adapters!(factory_capabilities)
 }

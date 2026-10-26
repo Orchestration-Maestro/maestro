@@ -1085,6 +1085,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-prepare",
             "invoke-renderer",
             "invoke-schema",
+            "invoke-set-expanded",
             "invoke-setup",
             "invoke-shortcut",
             "invoke-style",

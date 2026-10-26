@@ -167,6 +167,18 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(super::super::factories::invoke_branch_change(handler.id()))
     }
 
+    fn invoke_set_expanded(
+        handler: &host::Callback,
+        expanded: bool,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_set_expanded(
+            handler.id(),
+            expanded,
+            emitter,
+        ))
+    }
+
     fn invoke_dispose(
         handler: &host::Callback,
         emitter: &host::CallbackEmitter,
