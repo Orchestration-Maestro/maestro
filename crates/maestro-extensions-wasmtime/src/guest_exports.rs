@@ -256,8 +256,12 @@ impl Exports {
         handler: &Callback,
         reply: crate::lifecycle::replies::Reply<()>,
     ) -> wasmtime::Result<()> {
-        let callback = accessor
-            .with(|mut access| access.get().ctx().table.push(Callback { id: handler.id }))?;
+        let callback = accessor.with(|mut access| {
+            access.get().ctx().table.push(Callback {
+                id: handler.id,
+                schema: None,
+            })
+        })?;
         let result = self
             .tail
             .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
@@ -275,8 +279,8 @@ impl Exports {
     ) -> wasmtime::Result<()> {
         let retired = accessor.with(|mut access| access.get().callbacks().release(&release));
         if let Some(id) = retired {
-            let handler =
-                accessor.with(|mut access| access.get().ctx().table.push(Callback { id }))?;
+            let handler = accessor
+                .with(|mut access| access.get().ctx().table.push(Callback { id, schema: None }))?;
             let result = self
                 .release
                 .call_concurrent(accessor, (Resource::new_borrow(handler.rep()),))
@@ -300,6 +304,7 @@ impl Exports {
             Ok::<_, wasmtime::Error>((
                 table.push(Callback {
                     id: call.handler.id,
+                    schema: None,
                 })?,
                 table.push(call.emitter)?,
             ))
@@ -372,6 +377,12 @@ fn arguments<T: WasiView + 'static, V: Send + 'static>(
 ) -> wasmtime::Result<(Resource<Callback>, Resource<V>)> {
     accessor.with(|mut access| {
         let table = access.get().ctx().table;
-        Ok((table.push(Callback { id: handler.id })?, table.push(value)?))
+        Ok((
+            table.push(Callback {
+                id: handler.id,
+                schema: None,
+            })?,
+            table.push(value)?,
+        ))
     })
 }

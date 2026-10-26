@@ -17,6 +17,10 @@ pub use crate::bindings::maestro::extension::host::JsonKind;
 
 /// The operations on an invocation-local JSON operand.
 pub(crate) trait JsonPort {
+    /// Borrow this runtime's own invocation resource without copying its JSON.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    fn resource(&self) -> &dyn std::any::Any;
+
     /// Inspect a value without copying its contents.
     fn kind(&self, path: &str) -> ExtensionResult<Option<JsonKind>>;
     /// Read one explicitly requested value; absence is distinct from null.
@@ -46,7 +50,7 @@ pub struct JsonView<'a> {
     /// The active invocation's native value capability.
     pub(crate) port: &'a dyn JsonPort,
     /// Author-selected path within this operand, never within the checker root.
-    path: String,
+    pub(crate) path: String,
 }
 #[cfg(any(test, target_arch = "wasm32"))]
 impl<'a> JsonView<'a> {

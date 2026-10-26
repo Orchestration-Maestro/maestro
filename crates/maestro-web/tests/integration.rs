@@ -143,3 +143,5 @@ mod sample_sessions_browser;
 
 mod native_tool_browser;
 mod native_transcript_browser;
+
+mod native_remaining_artifacts_browser;
