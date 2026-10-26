@@ -682,7 +682,7 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
         write(relative, &contents);
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
-            error.contains(expected) && error.contains(relative),
+            error.contains(expected) && error.contains(&support::native_path_text(relative)),
             "{relative}: {error}"
         );
         write(relative, &original);
@@ -693,7 +693,8 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
     write("tests/integration.rs", &format!("{FORBID}mod helper;\n"));
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
-        error.contains("tests/helper.rs") && error.contains("must forbid"),
+        error.contains(&support::native_path_text("tests/helper.rs"))
+            && error.contains("must forbid"),
         "{error}"
     );
     write("tests/helper.rs", FORBID);
@@ -802,7 +803,10 @@ fn associated_test_spans_preserve_production_boundaries() {
         let workspace = Workspace::new();
         workspace.member("tui", "maestro-tui", "");
         workspace.list(&[("maestro-tui", "core")]);
-        let path = workspace.root.path().join("crates/tui/src/lib.rs");
+        let path = workspace
+            .root
+            .path()
+            .join(support::native_path("crates/tui/src/lib.rs"));
         for (lines, expected) in [(500, true), (501, false)] {
             let source = gated_source(prefix, gated, "}\n", lines);
             assert!(syn::parse_file(&source).is_ok(), "{source}");

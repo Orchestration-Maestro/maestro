@@ -471,6 +471,16 @@ paths, which re-export the moved declarations. The keyed live map reuses
 `maestro-listeners::Listeners` for insertion-order traversal. Replacement keeps
 position; removal returns ownership for release outside collection borrows.
 Clones retain one collection, and active walks observe edits until exhaustion.
+
+The replaceable editor contract `EditorComponent` belongs to the toolkit with its
+optional operations and their fallible forms, which delegate to the plain operations
+unless a component-backed editor reports its own failure. The application capability
+of a replacement editor (`CustomEditorComponent`), the editor factory result
+(`EditorFactoryOutcome`) and the shared action map (`ActionHandlers`) belong to
+`maestro-extensions::types::ui`, because extension editor factories return them. The
+application re-exports them; the chat frontend's `CustomEditor` implements the
+capability and keeps the action map alias at its existing path. Extension components
+carry their optional disposal, expansion and overlay width in the same owner.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.

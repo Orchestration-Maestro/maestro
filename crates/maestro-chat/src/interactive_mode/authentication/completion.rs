@@ -146,7 +146,10 @@ impl InteractiveMode {
 
     /// Checks the subscription billing notice for `model`, or the session's model, on the
     /// terminal runtime, so a pending key lookup does not hold up the caller.
-    fn check_subscription_warning(self: &Rc<Self>, model: Option<Arc<RwLock<Model>>>) {
+    pub(in crate::interactive_mode) fn check_subscription_warning(
+        self: &Rc<Self>,
+        model: Option<Arc<RwLock<Model>>>,
+    ) {
         let mode = Rc::clone(self);
         self.tool_environment
             .runtime

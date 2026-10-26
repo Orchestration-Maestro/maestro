@@ -25,10 +25,12 @@ impl InteractiveMode {
                 .set_on_extension_shortcut(Some(shortcut_interceptor(self, selected)));
         }
     }
-    /// Applies the current session's footer, thinking, terminal and editor settings.
+    /// Applies the current session's footer, thinking, terminal and editor settings, the
+    /// editor settings to the default editor first and then to a distinct current editor.
     ///
     /// # Errors
-    /// Returns the cursor-hiding failure; the settings before it stay applied.
+    /// Returns the cursor-hiding failure or the current editor's original failure; the
+    /// settings before it stay applied.
     pub(super) fn apply_runtime_settings(&self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.runtime_host.session();
         self.footer.set_session(Rc::clone(&session));
@@ -42,9 +44,21 @@ impl InteractiveMode {
         self.ui
             .set_show_hardware_cursor(settings.get_show_hardware_cursor())?;
         self.ui.set_clear_on_shrink(settings.get_clear_on_shrink());
-        self.editor.set_padding_x(settings.get_editor_padding_x());
-        self.editor
-            .set_autocomplete_max_visible(settings.get_autocomplete_max_visible());
+        let padding = settings.get_editor_padding_x();
+        let max_visible = settings.get_autocomplete_max_visible();
+        drop(settings);
+        self.editor.set_padding_x(padding);
+        self.editor.set_autocomplete_max_visible(max_visible);
+        if self.custom_editor_current() {
+            self.current_editor()
+                .try_set_padding_x(padding)
+                .map_err(erase)?;
+        }
+        if self.custom_editor_current() {
+            self.current_editor()
+                .try_set_autocomplete_max_visible(max_visible)
+                .map_err(erase)?;
+        }
         Ok(())
     }
     /// Installs this mode as the current session's extension user interface, with its
@@ -67,7 +81,7 @@ impl InteractiveMode {
             .session()
             .bind_extensions(maestro_app::ExtensionBindings {
                 ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&host)),
-                command_context_actions: None,
+                command_context_actions: Some(self.command_context_actions()),
                 shutdown_handler: Some(Rc::new(move || {
                     let Some(mode) = requester.upgrade() else {
                         return Ok(());
@@ -90,8 +104,7 @@ impl InteractiveMode {
         let session = self.runtime_host.session();
         self.themes
             .set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        self.setup_autocomplete_provider()
-            .map_err(|error| -> Box<dyn std::error::Error> { error })?;
+        self.setup_autocomplete_provider().map_err(erase)?;
         self.setup_extension_shortcuts(&session.extension_runner());
         self.show_loaded_resources(super::resources::ShowLoadedResourcesOptions {
             show_diagnostics_when_quiet: true,
@@ -116,7 +129,7 @@ impl InteractiveMode {
         self.subscribe_to_agent();
         self.update_available_provider_count()?;
         self.update_editor_border_color()?;
-        self.update_terminal_title()
+        self.update_terminal_title().map_err(erase)
     }
     /// Appends an extension failure to the transcript in the error colour, then its stack
     /// below without the first line, each frame trimmed, indented and dimmed.
@@ -154,11 +167,29 @@ impl InteractiveMode {
     }
 }
 
+/// The same failure behind the frontend's error type.
+fn erase(error: maestro_app::EventError) -> Box<dyn std::error::Error> {
+    error
+}
+
+/// Installs the extension UI reset that runs before each session invalidation and the
+/// replacement continuation on the runtime, both reaching `mode` weakly, so the runtime
+/// the mode owns does not keep it alive.
+pub(super) fn bind_runtime_hooks(mode: &Rc<InteractiveMode>) {
+    let reset = Rc::downgrade(mode);
+    mode.runtime_host
+        .set_before_session_invalidate(Some(Rc::new(move || {
+            reset
+                .upgrade()
+                .map_or(Ok(()), |mode| mode.reset_extension_ui())
+        })));
+    mode.runtime_host
+        .set_rebind_session(Some(rebind_callback(Rc::downgrade(mode))));
+}
+
 /// The runtime's replacement continuation: rebinds the mode, while it is alive, before
 /// the runtime continues with the replacement session.
-///
-/// The mode is reached weakly, so the runtime that the mode owns does not keep it alive.
-pub(super) fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindSession {
+fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindSession {
     Rc::new(move |_session| {
         let mode = mode.upgrade();
         Box::pin(async move {

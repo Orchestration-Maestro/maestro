@@ -145,7 +145,8 @@ impl InteractiveMode {
         if result.cancelled {
             return Ok(self.show_status("Import cancelled")?);
         }
-        self.render_current_session_state()?;
+        self.render_current_session_state()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         Ok(self.show_status(&format!("Session imported from: {path}"))?)
     }
 }

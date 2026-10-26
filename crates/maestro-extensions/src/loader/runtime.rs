@@ -9,10 +9,7 @@ use crate::{
 };
 use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-};
+use std::{collections::BTreeMap, sync::RwLock};
 
 /// Failure of an action called before a runner binds the runtime.
 pub(crate) const NOT_INITIALIZED: &str =
@@ -69,7 +66,7 @@ impl<E: ExtensionExecution> BoundProviders<E> {
 pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionRuntime<E>> {
     E::share(ExtensionRuntime {
         construction: RwLock::new(None),
-        state: Arc::new(ExtensionRuntimeState::default()),
+        state: ExtensionRuntimeState::default(),
         actions: RwLock::new(E::unbound_actions()),
         pending_provider_registrations: RwLock::new(BTreeMap::new()),
         providers: RwLock::new(ProviderRoute {

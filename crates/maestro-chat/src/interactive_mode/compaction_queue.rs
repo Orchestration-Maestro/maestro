@@ -53,7 +53,7 @@ impl InteractiveMode {
     pub(super) fn flush_compaction_queue(
         self: &Rc<Self>,
         will_retry: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), maestro_theme::ThemeError> {
         if self.compaction_queued_messages.borrow().is_empty() {
             return Ok(());
         }

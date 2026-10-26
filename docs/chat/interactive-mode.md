@@ -10,7 +10,9 @@ expansion and thinking shortcuts, thinking and model cycling, model selection an
 scopes, the editor border, external editing, image paste, compaction and retry
 progress and native shutdown. Installed custom headers and the other integrations
 are still to come.
-[Interactive commands](commands.md) describes the session command methods.
+[Interactive commands](commands.md) describes the session command methods,
+[session-tree navigation](commands.md#session-tree) and
+[resuming a session](commands.md#resuming-a-session).
 
 ## Construction
 
@@ -29,7 +31,9 @@ session's working directory. Last, the themes the session's resource loader has
 loaded are registered and the configured `theme` is selected, so a loaded theme
 wins over a shipped one with the same name. The setting is read after the loader
 answers. A failure to read the bindings, build the footer's collator or load the
-fallback theme is returned.
+fallback theme is returned. The constructed mode installs its rebinding and its
+[extension UI reset](extension-ui.md#session-replacement) on the runtime, both
+holding the mode weakly.
 
 ## Startup
 
@@ -248,8 +252,9 @@ holds keeps the mode alive until it is dropped, and afterwards the session's
 contexts report no UI. Another host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
 lists the operations it answers today, which are dialogs, editor access, theme
-queries and selection, the terminal title, tool expansion, status text and keyed
-widgets above or below the editor. Notifications and terminal input listeners
+queries and selection, the terminal title, tool expansion, status text, keyed
+widgets above or below the editor, extension headers and footers, custom
+editors and custom views. Notifications and terminal input listeners
 keep their own published owners.
 
 ## Typed input
@@ -303,6 +308,10 @@ The synchronous startup warnings come in this order, before any prompt:
 - `model_fallback_message` as a warning, when it is not empty. Text made only of
   white space is still shown.
 
+After the fallback notice and before the first prompt, the mode starts the
+subscription-auth warning check. It uses the same once-only warning owner as model
+selection and sign-in. Prompts do not wait for that asynchronous check to finish.
+
 The first prompt is `initial_message`, sent unless it is absent or empty. Startup
 text is never trimmed. `initial_images` go with that first prompt only, and they are
 not sent when there is no first prompt. Absent and empty image lists stay distinct
@@ -316,9 +325,6 @@ session refuses a prompt, such as one sent without credentials, the mode shows t
 session's message once as an error and goes on to the next prompt. An answer that
 fails after the prompt was accepted stays a session event; the mode adds no notice
 for it.
-
-Still to come: rendering the session's events in the transcript, queued input,
-commands, update notices and the startup check of subscription-based credentials.
 
 ## Session replay
 
@@ -615,11 +621,12 @@ else happens. On Unix the command splits on ASCII spaces only, and the file path
 its last argument; Windows runs it through the configured command interpreter, as
 the extension editor dialog does.
 
-The text written is the expanded text, so a collapsed paste is written in full
-rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
+The text written is the current editor's expanded text, so a collapsed paste is
+written in full rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
 the temporary directory. The mode then stops the terminal and runs the editor on
-the inherited terminal. A zero exit replaces the editor text with the file's text
-less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
+the inherited terminal. A zero exit replaces the text of the editor current at that
+moment with the file's text less one final line feed; a nonzero exit, a signal or a
+failed launch keep the text.
 After every outcome the mode tries to remove the file it created, ignoring a failed
 removal, and restarts the terminal with a full redraw. Other failures are handed
 to the terminal's runtime host.

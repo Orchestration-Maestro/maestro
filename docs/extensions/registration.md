@@ -241,11 +241,13 @@ and empty strings remain present. An owner can read only names it registered;
 the runner can set any name. Value snapshots are independent ordered maps, while
 returned flag records retain their owners.
 
-Invalidation, through `ExtensionRunner::invalidate` or the shared runtime state,
-retains the first message, including an empty string. Registration, facade flag
-reads and every guarded context operation then return that error before effects. Runner
-queries and its flag setter remain available. Omitting the message uses guidance
-about stale contexts after session replacement or reload.
+Invalidation keeps the first message, including an empty string. A stale shared
+runtime state makes registration and facade flag reads return that error before
+effects. `ExtensionRunner::invalidate` also invalidates the runtime, and every
+guarded operation of that runner's contexts then fails with the runner's first
+message. A runner created later over the same runtime keeps its contexts
+active. Runner queries and its flag setter remain available. Omitting the
+message uses guidance about stale contexts after session replacement or reload.
 
 ## Shortcuts and diagnostics
 

@@ -127,7 +127,7 @@ fn tool_declarations_have_one_owner() {
         );
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
-            error.contains("maestro-tui/src/lib.rs:2:")
+            error.contains(&support::native_path_text("maestro-tui/src/lib.rs:2:"))
                 && error.contains(name)
                 && error.contains("maestro-tools"),
             "{error}"
@@ -178,8 +178,9 @@ fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
-        error.contains("maestro-app/src/exports/tools.rs:1:")
-            && error.contains(name)
+        error.contains(&support::native_path_text(
+            "maestro-app/src/exports/tools.rs:1:"
+        )) && error.contains(name)
             && error.contains("maestro-tools"),
         "{error}"
     );
@@ -204,7 +205,8 @@ fn parameter_schema_records_have_one_owner() {
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
-        error.contains("maestro-tui/src/lib.rs:2:") && error.contains("maestro-request"),
+        error.contains(&support::native_path_text("maestro-tui/src/lib.rs:2:"))
+            && error.contains("maestro-request"),
         "{error}"
     );
     source(
@@ -237,7 +239,7 @@ fn parameter_schema_records_have_one_owner() {
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
-        error.contains("maestro-models/src/lib.rs:1:")
+        error.contains(&support::native_path_text("maestro-models/src/lib.rs:1:"))
             && error.contains("ParameterSchema")
             && error.contains("maestro-request"),
         "{error}"
@@ -549,7 +551,7 @@ fn raw_identifier_declarations_keep_their_owners() {
         source(&workspace, "maestro-tui", "src/lib.rs", declaration);
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
-            error.contains("maestro-tui/src/lib.rs:1:")
+            error.contains(&support::native_path_text("maestro-tui/src/lib.rs:1:"))
                 && error.contains(name)
                 && error.contains(&format!("belongs to {owner}")),
             "{error}"
@@ -739,7 +741,7 @@ fn declarations_after_shebang_keep_their_owners() {
             workspace
                 .root
                 .path()
-                .join("crates/maestro-tui/src/lib.rs")
+                .join(support::native_path("crates/maestro-tui/src/lib.rs"))
                 .display()
         ))
     );
@@ -837,7 +839,7 @@ fn assert_tool_declaration_owner(declaration: &str) {
             workspace
                 .root
                 .path()
-                .join("crates/maestro-tui/src/lib.rs")
+                .join(support::native_path("crates/maestro-tui/src/lib.rs"))
                 .display()
         ))
     );
@@ -847,7 +849,10 @@ fn assert_tool_declaration_owner(declaration: &str) {
 }
 
 fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
-    let member = workspace.root.path().join("crates/maestro-extensions-wasm");
+    let member = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/maestro-extensions-wasm"));
     std::fs::create_dir_all(member.join(directory)).unwrap();
     source(
         workspace,
@@ -914,7 +919,7 @@ fn tool_declaration_kinds() {
                     workspace
                         .root
                         .path()
-                        .join("crates/maestro-tui/src/lib.rs")
+                        .join(support::native_path("crates/maestro-tui/src/lib.rs"))
                         .display()
                 ))
             );
@@ -929,12 +934,9 @@ fn tool_declaration_kinds() {
 fn wit_ownership_without_both_sides() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasmtime"]);
-    std::fs::create_dir(
-        workspace
-            .root
-            .path()
-            .join("crates/maestro-extensions-wasmtime/interfaces"),
-    )
+    std::fs::create_dir(workspace.root.path().join(support::native_path(
+        "crates/maestro-extensions-wasmtime/interfaces",
+    )))
     .unwrap();
     source(
         &workspace,
@@ -990,7 +992,7 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
     let host = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasmtime");
+        .join(support::native_path("crates/maestro-extensions-wasmtime"));
     std::os::unix::fs::symlink(guest, host.join("linked")).unwrap();
     source(
         workspace,
@@ -1227,10 +1229,8 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         "pub struct ToolInfo;",
     );
     let error = check_workspace(root).unwrap_err();
-    assert!(
-        error.contains("ToolInfo declaration belongs to maestro-request"),
-        "{error}"
-    );
+    let owner_message = "ToolInfo declaration belongs to maestro-request";
+    assert!(error.contains(owner_message), "{error}");
     source(
         &workspace,
         "maestro-models",
@@ -1270,7 +1270,8 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     );
     let error = check_workspace(root).unwrap_err();
     assert!(
-        error.contains("src/types/actions.rs:1:") && error.contains("belongs to maestro-request"),
+        error.contains(&support::native_path_text("src/types/actions.rs:1:"))
+            && error.contains("belongs to maestro-request"),
         "{error}"
     );
 }
@@ -1291,7 +1292,8 @@ fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
         );
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
-            error.contains("src/lib.rs:3:") && error.contains(&format!("belongs to {owner}")),
+            error.contains(&support::native_path_text("src/lib.rs:3:"))
+                && error.contains(&format!("belongs to {owner}")),
             "{error}"
         );
         source(
@@ -1410,8 +1412,10 @@ fn interactive_session_setup_rejects_bypasses() {
     for relative in [
         "tests/footer_support/mod.rs",
         "tests/footer_support/corpus.rs",
+        "tests/session_picker_support/mod.rs",
         "src/interactive_mode/tests.rs",
         "src/interactive_mode/startup/tests.rs",
+        "src/components/tree_selector/tests.rs",
     ] {
         let path = source(&workspace, "maestro-chat", relative, DUPLICATE_SETUP);
         assert_setup_rejected(&workspace, &path, relative);
@@ -1438,13 +1442,6 @@ fn interactive_session_setup_rejects_bypasses() {
         );
         assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{accepted}");
     }
-    source(
-        &workspace,
-        "maestro-chat",
-        "tests/session_picker_support/mod.rs",
-        DUPLICATE_SETUP,
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// Assert the checker names `path` and the shared owner when it rejects a second setup.

@@ -284,7 +284,15 @@ fn position(world: &World, selected: &str) -> usize {
 /// Moves the picker to `position` with its own key bindings, confirms it and settles the
 /// removal it starts.
 fn select(world: &World, position: usize) {
-    let panel = picker(world).expect("the picker is shown");
+    select_on(
+        world,
+        &picker(world).expect("the picker is shown"),
+        position,
+    );
+}
+
+/// Moves `panel` to `position`, confirms it and settles the removal it starts.
+fn select_on(world: &World, panel: &OAuthSelectorComponent, position: usize) {
     for _ in 0..position {
         panel.handle_input("\x1b[B").unwrap();
     }
@@ -701,7 +709,8 @@ fn logout_selection_uses_current_session_with_captured_choice() {
             let world = replaceable(directory).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
-            open(&world);
+            // The replacement's extension UI reset puts the editor back in the panel's place.
+            let panel = open(&world);
             let captured = world.host.session();
             replace_session(&world);
             for entry in &input.replacement {
@@ -717,7 +726,7 @@ fn logout_selection_uses_current_session_with_captured_choice() {
                     oauth_only: false,
                 },
             );
-            select(&world, chosen);
+            select_on(&world, &panel, chosen);
             removed(&world, &expected);
             let original: Vec<String> = Arc::clone(captured.model_registry().auth_storage()).list();
             assert_eq!(

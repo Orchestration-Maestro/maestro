@@ -108,9 +108,9 @@ impl InteractiveMode {
             on_tree_filter_mode_change: self.save_setting(SettingsManager::set_tree_filter_mode),
             on_show_hardware_cursor_change: self
                 .fallible_setting_callback(Self::settings_hardware_cursor),
-            on_editor_padding_x_change: self.setting_callback(Self::settings_padding),
+            on_editor_padding_x_change: self.fallible_setting_callback(Self::settings_padding),
             on_autocomplete_max_visible_change: self
-                .setting_callback(Self::settings_completion_height),
+                .fallible_setting_callback(Self::settings_completion_height),
             on_quiet_startup_change: self.save_setting(SettingsManager::set_quiet_startup),
             on_clear_on_shrink_change: self.setting_callback(Self::settings_clear_on_shrink),
             on_show_terminal_progress_change: self
@@ -238,7 +238,7 @@ impl InteractiveMode {
     /// Saves skill command admission before rebuilding completion.
     ///
     /// # Errors
-    /// Returns the original wrapper failure after the setting has been saved.
+    /// Returns the original wrapper or current-editor failure after saving the setting.
     fn settings_skill_commands(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()
@@ -246,8 +246,7 @@ impl InteractiveMode {
             .borrow_mut()
             .set_enable_skill_commands(enabled);
         self.setup_autocomplete_provider()
-            .map_err(|error| -> Box<dyn Error> { error })?;
-        Ok(())
+            .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Saves the transport before changing the next request's live preference.
@@ -289,6 +288,7 @@ impl InteractiveMode {
             }
         }
         self.rebuild_chat_from_messages()
+            .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Saves the cursor preference before applying its immediate terminal effect.
@@ -302,24 +302,43 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Saves padding and updates the retained editor.
-    fn settings_padding(&self, padding: f64) {
+    /// Saves padding and updates the default editor, then a distinct current editor.
+    ///
+    /// # Errors
+    /// Returns the current editor's original failure.
+    fn settings_padding(&self, padding: f64) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()
             .settings_manager()
             .borrow_mut()
             .set_editor_padding_x(padding);
         self.editor.set_padding_x(padding);
+        if self.custom_editor_current() {
+            self.current_editor()
+                .try_set_padding_x(padding)
+                .map_err(|error| -> Box<dyn Error> { error })?;
+        }
+        Ok(())
     }
 
-    /// Saves the completion height and updates the retained editor.
-    fn settings_completion_height(&self, height: f64) {
+    /// Saves the completion height and updates the default editor, then a distinct current
+    /// editor.
+    ///
+    /// # Errors
+    /// Returns the current editor's original failure.
+    fn settings_completion_height(&self, height: f64) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()
             .settings_manager()
             .borrow_mut()
             .set_autocomplete_max_visible(height);
         self.editor.set_autocomplete_max_visible(height);
+        if self.custom_editor_current() {
+            self.current_editor()
+                .try_set_autocomplete_max_visible(height)
+                .map_err(|error| -> Box<dyn Error> { error })?;
+        }
+        Ok(())
     }
 
     /// Saves the shrink policy and applies it to the terminal.
