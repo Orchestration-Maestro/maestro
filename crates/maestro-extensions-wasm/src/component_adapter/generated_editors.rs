@@ -249,6 +249,27 @@ pub(super) fn trigger(
 }
 
 impl crate::component_adapter::EditorImports for Generated {
+    type EditorFactory = host::EditorFactory;
+    fn editor_factory_build(
+        &self,
+        factory: &host::EditorFactory,
+        tui: &host::Tui,
+        theme: EditorStyles<'_, Generated>,
+        keybindings: &host::KeybindingsManager,
+    ) -> ExtensionResult<(host::Widget, bool)> {
+        let (styles, _) = wire(&theme, EditorOptions::default())?;
+        match route::value(&factory.build(tui, &styles, keybindings))? {
+            host::RouteValue::Editor(built) => Ok((built.widget, built.custom)),
+            _ => Err("extension route result kind mismatch".into()),
+        }
+    }
+    fn foreign_editor(
+        &self,
+        widget: &host::Widget,
+        request: crate::component_adapter::ForeignRequest<'_, Generated>,
+    ) -> ExtensionResult<crate::component_adapter::ForeignAnswer<Generated>> {
+        foreign(widget, request)
+    }
     fn widget_border_color(&self, widget: &host::Widget) -> ExtensionResult<host::Style> {
         widget.border_color()
     }
@@ -288,4 +309,43 @@ impl crate::component_adapter::EditorImports for Generated {
     ) -> ExtensionResult<Option<bool>> {
         trigger(provider, at)
     }
+}
+
+/// One editor operation on an editor another extension's factory built.
+fn foreign(
+    widget: &host::Widget,
+    request: crate::component_adapter::ForeignRequest<'_, Generated>,
+) -> ExtensionResult<crate::component_adapter::ForeignAnswer<Generated>> {
+    use crate::component_adapter::{ForeignAnswer, ForeignRequest};
+    use host::ForeignEditorRequest as Wire;
+    let wire = match request {
+        ForeignRequest::GetText => Wire::GetText,
+        ForeignRequest::SetText(text) => Wire::SetText(text.to_owned()),
+        ForeignRequest::SetOnSubmit(handler) => Wire::SetOnSubmit(handler),
+        ForeignRequest::OnChange => Wire::OnChange,
+        ForeignRequest::SetOnChange(handler) => Wire::SetOnChange(handler),
+        ForeignRequest::AddToHistory(text) => Wire::AddToHistory(text.to_owned()),
+        ForeignRequest::InsertTextAtCursor(text) => Wire::InsertTextAtCursor(text.to_owned()),
+        ForeignRequest::GetExpandedText => Wire::GetExpandedText,
+        ForeignRequest::BorderColor => Wire::BorderColor,
+        ForeignRequest::SetBorderColor(style) => {
+            Wire::SetBorderColor(super::widgets::style(&style))
+        }
+        ForeignRequest::SetPaddingX(padding) => Wire::SetPaddingX(padding),
+        ForeignRequest::SetAutocompleteMaxVisible(max) => Wire::SetAutocompleteMaxVisible(max),
+        ForeignRequest::SetAutocompleteProvider(provider) => {
+            Wire::SetAutocompleteProvider(provider)
+        }
+    };
+    let host::RouteValue::EditorAnswer(answer) = route::value(&widget.foreign_editor(&wire))?
+    else {
+        return Err("extension route result kind mismatch".into());
+    };
+    Ok(match answer {
+        host::ForeignEditorAnswer::Done => ForeignAnswer::Done,
+        host::ForeignEditorAnswer::Absent => ForeignAnswer::Absent,
+        host::ForeignEditorAnswer::Text(text) => ForeignAnswer::Text(text),
+        host::ForeignEditorAnswer::Handler(handler) => ForeignAnswer::Handler(handler),
+        host::ForeignEditorAnswer::Style(style) => ForeignAnswer::Style(style),
+    })
 }

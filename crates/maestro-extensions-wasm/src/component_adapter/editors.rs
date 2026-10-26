@@ -16,6 +16,38 @@ use crate::{
     KeybindingsManager, Style, TUI, TextHandler, WidgetNotice,
 };
 
+/// Runs `request` with the editor styles of `theme`, staging its authored styles and keeping
+/// them only when the host accepts.
+pub(super) fn with_editor_styles<I: WidgetImports, T>(
+    imports: &I,
+    theme: &EditorTheme,
+    request: impl FnOnce(EditorStyles<'_, I>) -> ExtensionResult<T>,
+) -> ExtensionResult<T> {
+    let list = &theme.select_list;
+    let styles: Vec<_> = [
+        &theme.border_color,
+        &list.selected_prefix,
+        &list.selected_text,
+        &list.description,
+        &list.scroll_info,
+        &list.no_match,
+    ]
+    .into_iter()
+    .map(|style| stage_style(imports, style))
+    .collect();
+    let mut refs = styles.iter().map(style_ref);
+    let border = refs.next().ok_or("an editor needs a border style")?;
+    let result = request(EditorStyles {
+        border,
+        select_list: refs.collect(),
+    });
+    let accepted = result.is_ok();
+    for staged in styles {
+        staged.settle(accepted);
+    }
+    result
+}
+
 impl<I: WidgetImports> Builder<I> {
     /// Builds an editor, or a custom editor with `keybindings`, staging its authored styles.
     pub(super) fn build_editor(
@@ -29,38 +61,17 @@ impl<I: WidgetImports> Builder<I> {
         let tui = tui
             .host::<super::factories::Terminal<I>>()
             .ok_or("an editor needs a terminal the host lent")?;
-        let list = &theme.select_list;
-        let styles: Vec<_> = [
-            &theme.border_color,
-            &list.selected_prefix,
-            &list.selected_text,
-            &list.description,
-            &list.scroll_info,
-            &list.no_match,
-        ]
-        .into_iter()
-        .map(|style| stage_style(imports, style))
-        .collect();
-        let mut refs = styles.iter().map(style_ref);
-        let border = refs.next().ok_or("an editor needs a border style")?;
-        let theme = EditorStyles {
-            border,
-            select_list: refs.collect(),
-        };
-        let result = match keybindings {
-            None => imports.new_editor(&tui.tui, theme, options),
-            Some(keybindings) => {
-                let manager = keybindings
+        let manager = keybindings
+            .map(|keybindings| {
+                keybindings
                     .host::<HostKeybindings<I>>()
-                    .ok_or("a custom editor needs a keybindings manager the host keeps")?;
-                imports.new_custom_editor(&tui.tui, theme, &manager.manager, options)
-            }
-        };
-        let accepted = result.is_ok();
-        for staged in styles {
-            staged.settle(accepted);
-        }
-        result
+                    .ok_or("a custom editor needs a keybindings manager the host keeps")
+            })
+            .transpose()?;
+        with_editor_styles(imports, theme, |theme| match manager {
+            None => imports.new_editor(&tui.tui, theme, options),
+            Some(manager) => imports.new_custom_editor(&tui.tui, theme, &manager.manager, options),
+        })
     }
 }
 

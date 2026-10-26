@@ -294,6 +294,8 @@ enum Capability {
     Text(maestro_extensions::widgets::TextCallback),
     /// A native completion provider lent to the guest.
     Provider(crate::guest_calls::providers::Native),
+    /// An editor factory another extension set.
+    EditorFactory(maestro_extensions::types::EditorFactory),
 }
 
 /// Local entries and their monotonic identities.

@@ -71,9 +71,13 @@ The host's `Editor` and `CustomEditor` install a provider with
 `ExtensionUIContext::set_editor_component(Some(factory))` replaces the host's editor
 with the editor `factory` builds. The host runs the factory before the request
 returns, and its error is the request's error. `None` restores the host's own editor.
-`get_editor_component()` returns the factory that is current, the same `Rc` the
-extension supplied, or `None` while the host's own editor is in use. A factory that
-another extension set is reported as an error.
+`get_editor_component()` returns the factory that is current, or `None` while the
+host's own editor is in use. A factory this extension set comes back as the same `Rc`
+it supplied. A factory another extension set comes back as a factory the host runs:
+calling it, usually from this extension's own factory, builds that extension's
+editor. The result is an `EditorFactoryOutcome` like any other. Its editor reaches
+the other extension's editor through the host and keeps the operations that editor
+lacks absent. A wrapping factory can return the outcome as it is or delegate to it.
 
 An `EditorFactory` receives the terminal, the editor styles, the keybindings manager
 and a borrowed emitter. It returns an `EditorFactoryOutcome`:
@@ -122,6 +126,8 @@ this record does not install an overlay or choose its layout.
 | `invoke-editor` | `EditorComponent` | One request per editor operation, each with its own emission frame. |
 | `text-callback` | `TextCallback` | A host callback lent to the editor; dropping it keeps the host's callback. |
 | `widget.border-color`, `widget.share` | `Editor::border_color`, the widget itself | Lends the host editor's border style; shares the widget handle with the host. |
+| `current-editor-factory`, `editor-factory.build` | `EditorFactory` another extension set | Lends that factory; each build lends the terminal, styles and keybindings and transfers the built editor's widget, and whether it extends the custom editor. |
+| `widget.foreign-editor` | `EditorComponent` of that built editor | One request per editor operation; `absent` answers an optional operation the editor lacks. |
 | `add-autocomplete-provider`, `invoke-provider-factory` | `ExtensionUIContextPort::add_autocomplete_provider`, `AutocompleteProviderFactory` | The host retains the factory for later rebuilds; each call lends the current provider and transfers the returned provider's identity. |
 | `invoke-provider` | `AutocompleteProvider` | One request per provider operation; a suggestion request owns its lent signal. |
 | `completion-provider` | `AutocompleteProvider` | A host provider lent to a factory or editor; dropping it keeps the host's provider. |

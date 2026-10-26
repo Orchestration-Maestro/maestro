@@ -32,6 +32,9 @@ pub struct Style(pub String);
 /// A text callback lent to an authored editor, by name.
 pub struct TextCallback(pub String);
 
+/// An editor factory another extension set, with whether it builds a custom editor.
+pub struct ForeignFactory(pub bool);
+
 /// The host's code highlighting, by name.
 pub struct Highlighter(pub String);
 
@@ -764,6 +767,44 @@ impl Controlled {
     }
 }
 
+impl Controlled {
+    /// The owned form of a request on an editor another extension's factory built.
+    fn foreign_op(
+        &self,
+        request: crate::component_adapter::ForeignRequest<'_, Self>,
+    ) -> super::foreign_host::Op {
+        use super::foreign_host::Op;
+        use crate::component_adapter::{ForeignRequest as Foreign, HandlerSlot};
+        let handler = |slot, handler: Option<&super::controlled::Callback>| {
+            let slot = widget_editors::slot_name(slot);
+            Op::SetHandler(slot, handler.map(|handler| self.callback_id(handler)))
+        };
+        match request {
+            Foreign::GetText => Op::GetText,
+            Foreign::SetText(text) => Op::Edit(text.to_owned(), false),
+            Foreign::InsertTextAtCursor(text) => Op::Edit(text.to_owned(), true),
+            Foreign::SetOnSubmit(callback) => handler(HandlerSlot::Submit, callback),
+            Foreign::SetOnChange(callback) => handler(HandlerSlot::Change, callback),
+            Foreign::OnChange => Op::OnChange,
+            Foreign::AddToHistory(text) => {
+                Op::Plain(widget_editors::Request::AddToHistory(text.to_owned()))
+            }
+            Foreign::GetExpandedText => Op::Plain(widget_editors::Request::GetExpandedText),
+            Foreign::BorderColor => Op::BorderColor,
+            Foreign::SetBorderColor(style) => Op::SetBorderColor(self.paint(&style)),
+            Foreign::SetPaddingX(padding) => {
+                Op::Plain(widget_editors::Request::SetPaddingX(padding))
+            }
+            Foreign::SetAutocompleteMaxVisible(max) => {
+                Op::Plain(widget_editors::Request::SetAutocompleteMaxVisible(max))
+            }
+            Foreign::SetAutocompleteProvider(provider) => {
+                Op::SetAutocompleteProvider(self.callback_id(provider))
+            }
+        }
+    }
+}
+
 /// The adapter form of an editor answer.
 fn editor_answer(answer: widget_editors::Answer) -> EditorAnswer {
     use widget_editors::Answer;
@@ -924,6 +965,43 @@ impl Controlled {
 }
 
 impl crate::component_adapter::EditorImports for Controlled {
+    type EditorFactory = ForeignFactory;
+    fn editor_factory_build(
+        &self,
+        factory: &ForeignFactory,
+        _: &super::controlled::Tui,
+        theme: EditorStyles<'_, Self>,
+        keybindings: &Keybindings,
+    ) -> ExtensionResult<(Widget, bool)> {
+        let custom = factory.0;
+        let keys = custom.then_some(keybindings.0);
+        let widget = self.build_editor(&theme, keys, crate::EditorOptions::default());
+        super::foreign_host::built(&mut self.observe(), widget.0, custom);
+        Ok((widget, custom))
+    }
+    fn foreign_editor(
+        &self,
+        widget: &Widget,
+        request: crate::component_adapter::ForeignRequest<'_, Self>,
+    ) -> ExtensionResult<crate::component_adapter::ForeignAnswer<Self>> {
+        use super::foreign_host::{self as foreign, Answer};
+        use crate::component_adapter::ForeignAnswer;
+        let op = self.foreign_op(request);
+        let answer = foreign::request(&mut self.observe(), widget.0, op)?;
+        Ok(match answer {
+            Answer::Done => ForeignAnswer::Done,
+            Answer::Absent => ForeignAnswer::Absent,
+            Answer::Text(text) => ForeignAnswer::Text(text),
+            Answer::Handler(lent) => {
+                ForeignAnswer::Handler(lent.then(|| TextCallback(foreign::LENT.to_owned())))
+            }
+            Answer::Style(role) => ForeignAnswer::Style(Style(role)),
+            Answer::Calls(calls) => {
+                self.calls(widget.0, calls)?;
+                ForeignAnswer::Done
+            }
+        })
+    }
     fn widget_border_color(&self, widget: &Widget) -> ExtensionResult<Style> {
         widget_editors::border_color(&mut self.observe(), widget.0).map(Style)
     }

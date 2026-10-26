@@ -114,7 +114,7 @@ impl Registry {
     pub(crate) fn custom_editor(
         &self,
         widget: &WidgetEndpoint,
-    ) -> Result<Rc<dyn maestro_extensions::widgets::ExtensionEditor>, String> {
+    ) -> Result<Rc<dyn maestro_extensions::types::CustomEditorComponent>, String> {
         self.widget(widget)?
             .custom_editor()
             .ok_or_else(|| "the widget is no custom editor".to_owned())
@@ -141,12 +141,12 @@ impl Registry {
             .map_err(|error| error.to_string())
     }
 
-    /// The identity of the original UI's current editor factory, absent while its own editor
-    /// is in use.
+    /// The original UI's current editor factory: one this extension set, by identity, or
+    /// another's, lent; absent while its own editor is in use.
     pub(crate) fn editor_component(
         &self,
         ui: &maestro_extensions::ExtensionUIContext,
-    ) -> Result<Option<u32>, String> {
+    ) -> Result<Option<Result<u32, crate::widget_foreign::FactoryEndpoint>>, String> {
         let Some(factory) = ui
             .get_editor_component()
             .map_err(|error| error.to_string())?
@@ -154,10 +154,14 @@ impl Registry {
             return Ok(None);
         };
         let key = factory.downgrade().addr();
-        match self.resources.borrow().identities.get(&key) {
-            Some(super::Identity::EditorFactory(weak, id)) if weak.alive() => Ok(Some(*id)),
-            _ => Err("the editor factory belongs to another extension".to_owned()),
+        if let Some(super::Identity::EditorFactory(weak, id)) =
+            self.resources.borrow().identities.get(&key)
+            && weak.alive()
+        {
+            return Ok(Some(Ok(*id)));
         }
+        let lent = self.insert(Capability::EditorFactory(factory))?;
+        Ok(Some(Err(crate::widget_foreign::FactoryEndpoint(lent))))
     }
 
     /// The widget behind a widget resource.
@@ -223,6 +227,10 @@ impl State {
                 self.suggestions(id, request, admission);
             }
             WidgetMessage::Provider(id, request) => self.provider(id, request),
+            WidgetMessage::Foreign(id, build) => {
+                let reply = build.reply.clone();
+                let _ = reply.send(self.foreign(id, build));
+            }
         }
     }
 
@@ -291,5 +299,41 @@ impl State {
             .insert(Capability::Highlighter(highlighting(&theme)))
             .map(HighlighterEndpoint)?;
         Ok((styles, highlighter))
+    }
+}
+
+impl State {
+    /// Builds an editor with a lent editor factory for the extension whose API is `api`.
+    fn foreign(
+        &self,
+        api: u64,
+        build: crate::widget_foreign::ForeignBuild,
+    ) -> Result<(WidgetEndpoint, bool), String> {
+        let registry = &self.registry;
+        let factory = match registry.capability(build.factory.0.id).as_deref() {
+            Some(Capability::EditorFactory(factory)) => factory.clone(),
+            _ => return Err("extension editor factory resource ended".to_owned()),
+        };
+        let events = match registry.capability(api).as_deref() {
+            Some(Capability::Api(api)) => api.events.clone(),
+            _ => return Err("extension API resource ended".to_owned()),
+        };
+        let failure = Failure::default();
+        let binding = crate::widget_lists::Binding {
+            registry,
+            events: &events,
+            failure: &failure,
+        };
+        let (tui, theme, _, keybindings) =
+            crate::widget_editors::EditorKind::parts(build.editor, &binding)?;
+        let keybindings = keybindings.ok_or("an editor factory needs keybindings")?;
+        let outcome = factory
+            .call((tui, theme, keybindings))
+            .map_err(|error| error.to_string())?;
+        let custom = outcome.as_custom().is_some();
+        let editor = crate::widget_editors::EditorKind::Foreign(outcome);
+        let widget = Widget::editor(editor, failure, events);
+        let widget = registry.insert(Capability::Widget(Rc::new(widget)))?;
+        Ok((WidgetEndpoint(widget), custom))
     }
 }

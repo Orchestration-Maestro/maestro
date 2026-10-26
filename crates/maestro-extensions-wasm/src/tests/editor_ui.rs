@@ -629,6 +629,128 @@ fn editor_factory_retains_callbacks_text_and_appearance() -> Result<(), String> 
     on_both_adapters!(editor_factories)
 }
 
+/// The requests an editor another extension's factory built receives through a wrapping
+/// factory.
+fn foreign_requests() -> Value {
+    json!([
+        { "op": "setOnChange", "callback": "change" },
+        { "op": "setText", "text": "a" },
+        { "op": "insertTextAtCursor", "text": "!" },
+        { "op": "getText" },
+        { "op": "getExpandedText" },
+        { "op": "borderColor" },
+        { "op": "setBorderColor", "role": "borderAccent" },
+        { "op": "borderColor" },
+        { "op": "setPaddingX", "padding": 2.0 },
+        { "op": "addToHistory", "text": "past" },
+        { "op": "setAutocompleteMaxVisible", "max": 4.0 },
+        { "op": "onChange" },
+        { "op": "setAutocompleteProvider" },
+        { "op": "setOnSubmit", "callback": "submit" },
+    ])
+}
+
+/// What an editor another extension's factory built answers to [`foreign_requests`]; a plain
+/// one lacks every optional operation.
+fn foreign_answers(custom: bool) -> Vec<Value> {
+    let optional = |answer: Value| if custom { answer } else { json!("absent") };
+    vec![
+        json!("done"),
+        json!("done"),
+        optional(json!("done")),
+        json!({ "text": if custom { "a!" } else { "a" } }),
+        optional(json!({ "text": "a!" })),
+        optional(json!({ "style": "<borderMuted>border" })),
+        optional(json!("done")),
+        optional(json!({ "style": "<borderAccent>border" })),
+        optional(json!("done")),
+        optional(json!("done")),
+        optional(json!("done")),
+        json!({ "handler": true }),
+        optional(json!("done")),
+        json!("done"),
+    ]
+}
+
+/// The editor and text callback lines of [`foreign_editor`], given the text typed.
+fn foreign_lines(custom: bool, typed: &str) -> Vec<String> {
+    let shown = if custom { "[]" } else { "null" };
+    let mut lines = vec![
+        format!("editor built custom={shown}"),
+        r#"text change "a""#.to_owned(),
+    ];
+    lines.extend(custom.then(|| r#"text change "a!""#.to_owned()));
+    lines.push(r#"text foreign "probe""#.to_owned());
+    lines.push(format!("text change {}", json!(typed)));
+    lines
+}
+
+/// Types into the editor another extension's factory built, checks its rendering and returns
+/// its text.
+async fn foreign_input(driver: &mut impl Driver, custom: bool) -> Result<&'static str, String> {
+    use super::renderer_host::{Call, Reply};
+    assert_eq!(
+        driver.editor_component(Call::Input("q")).await?,
+        Reply::Done
+    );
+    let (typed, border) = if custom {
+        ("a!q", "borderAccent")
+    } else {
+        ("aq", "borderMuted")
+    };
+    assert_eq!(
+        driver.editor_component(Call::Render(6)).await?,
+        Reply::Lines(vec![format!("<{border}>edit|6"), typed.into()])
+    );
+    Ok(typed)
+}
+
+/// Wraps the editor factory of `kind` another extension set and checks what the editor it
+/// builds answers, renders and calls back.
+async fn foreign_editor(driver: &mut impl Driver, kind: &str) -> Result<(), String> {
+    let control = json!({ "op": "control", "foreign": kind });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    let from = driver.transcript().len();
+    assert_eq!(
+        install_editor(driver, "wrap").await?,
+        json!({ "same": true })
+    );
+    let custom = kind == "custom";
+    assert_eq!(
+        requests(driver, foreign_requests()).await?,
+        foreign_answers(custom)
+    );
+    let typed = foreign_input(driver, custom).await?;
+    let built = driver.transcript()[from..]
+        .iter()
+        .filter(|line| line.starts_with("foreign built"))
+        .count();
+    assert_eq!(built, 1);
+    assert_eq!(editor_lines(driver, from), foreign_lines(custom, typed));
+    assert_eq!(
+        install_editor(driver, "none").await?,
+        json!({ "current": false })
+    );
+    Ok(())
+}
+
+/// Another extension's editor factory is current, builds through the host and keeps its
+/// absent optional operations; without one there is none to wrap.
+async fn foreign_editor_factories(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let missing = operate(driver, json!({ "op": "editorFactory", "kind": "wrap" })).await?;
+    assert_eq!(missing, json!({ "error": "no editor factory to wrap" }));
+    foreign_editor(driver, "custom").await?;
+    foreign_editor(driver, "plain").await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn foreign_editor_factory_builds_through_the_host() -> Result<(), String> {
+    on_both_adapters!(foreign_editor_factories)
+}
+
 /// Runs provider requests in order and returns each described answer.
 async fn provided(driver: &mut impl Driver, requests: Value) -> Result<Vec<Value>, String> {
     let mut answers = Vec::new();

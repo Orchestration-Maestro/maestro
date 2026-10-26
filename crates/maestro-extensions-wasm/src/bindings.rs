@@ -56,6 +56,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.submenu-done": crate::tests::widget_component::SubmenuDoneResource,
             "maestro:extension/host.keybindings-manager": crate::tests::widget_component::KeybindingsResource,
             "maestro:extension/host.text-callback": crate::tests::widget_component::TextCallbackResource,
+            "maestro:extension/host.editor-factory": crate::tests::editor_component::ForeignFactory,
             "maestro:extension/host.completion-provider": crate::tests::provider_host::Lent,
             "maestro:extension/host.local-settlement": crate::tests::host::Settlement,
             "maestro:extension/host.callback": crate::tests::host::Identity,

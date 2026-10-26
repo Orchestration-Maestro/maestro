@@ -19,6 +19,24 @@ use crate::{
 
 /// The authored editor and completion provider requests of the host at the wire level.
 pub(crate) trait EditorImports: WidgetImports {
+    /// An editor factory another extension set.
+    type EditorFactory: 'static;
+    /// Builds an editor with another extension's factory, answering its widget and whether it
+    /// extends the custom editor; the factory may call back into this instance first.
+    fn editor_factory_build(
+        &self,
+        factory: &Self::EditorFactory,
+        tui: &Self::Tui,
+        theme: super::widget_imports::EditorStyles<'_, Self>,
+        keybindings: &Self::Keybindings,
+    ) -> ExtensionResult<(Self::Widget, bool)>;
+    /// One editor operation on an editor another extension's factory built, running the
+    /// nested calls the host makes first.
+    fn foreign_editor(
+        &self,
+        widget: &Self::Widget,
+        request: super::foreign_editors::ForeignRequest<'_, Self>,
+    ) -> ExtensionResult<super::foreign_editors::ForeignAnswer<Self>>;
     /// Lends an editor's border style.
     fn widget_border_color(&self, widget: &Self::Widget) -> ExtensionResult<Self::Style>;
     /// A text callback the host lent to an authored editor.

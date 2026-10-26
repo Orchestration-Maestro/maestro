@@ -487,6 +487,15 @@ impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
         let widget = HostWidget::shared(&self.0, built);
         Ok((Widget::new(widget.clone()), widget.clone(), widget))
     }
+    fn foreign_editor(
+        &self,
+        factory: &dyn std::any::Any,
+        tui: &crate::TUI,
+        theme: &crate::EditorTheme,
+        keybindings: &crate::KeybindingsManager,
+    ) -> ExtensionResult<crate::EditorFactoryOutcome> {
+        self.build_foreign(factory, tui, theme, keybindings)
+    }
 }
 
 /// Styles text with the authored style under `handler`.

@@ -327,6 +327,15 @@ pub(crate) trait WidgetHost {
         keybindings: &super::KeybindingsManager,
         options: super::EditorOptions,
     ) -> ExtensionResult<CustomEditorParts>;
+    /// Builds an editor with an editor factory another extension set, kept as `factory`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    fn foreign_editor(
+        &self,
+        factory: &dyn std::any::Any,
+        tui: &super::TUI,
+        theme: &super::EditorTheme,
+        keybindings: &super::KeybindingsManager,
+    ) -> ExtensionResult<crate::EditorFactoryOutcome>;
 }
 
 /// A custom editor's widget, editor requests and custom editor requests.
