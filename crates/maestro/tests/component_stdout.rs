@@ -63,8 +63,12 @@ fn compose_frames() {
         until(|| terminal.pending_output_bytes() < first.len()).await;
         assert!(terminal.pending_output_bytes() > 0);
         let path = std::env::var("MAESTRO_WASI_COMPONENT").unwrap();
-        let factory =
-            artifact_factory_with_stdout(path, Box::new(terminal.output_writer().unwrap()), true);
+        let factory = artifact_factory_with_stdout(
+            path,
+            maestro_app::configuration::config::VERSION.into(),
+            Box::new(terminal.output_writer().unwrap()),
+            true,
+        );
         let bus = create_event_bus_for::<Local>(
             Rc::new(|_| panic!("no tails")),
             Rc::new(|_| panic!("no errors")),

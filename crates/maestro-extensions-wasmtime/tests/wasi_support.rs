@@ -33,7 +33,11 @@ pub struct Harness {
 impl Harness {
     /// Loads the actual artifact without substituting a host or a recorder for standard I/O.
     pub async fn load(path: &Path) -> Self {
-        Self::factory(artifact_factory(path.to_str().unwrap().into())).await
+        Self::factory(artifact_factory(
+            path.to_str().unwrap().into(),
+            "installed-component-host".into(),
+        ))
+        .await
     }
 
     /// Uses the same real host with a caller-selected standard output route.

@@ -14,11 +14,12 @@ use wasmtime::{
 
 /// Creates a local factory for one authored extension component at the supplied path.
 ///
+/// The application supplies its installation version; components do not choose it.
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
-pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
-    factory(path, None)
+pub fn artifact_factory(path: String, installation_version: String) -> ExtensionFactory<Local> {
+    factory(path, installation_version, None)
 }
 
 /// Creates an artifact factory whose standard output uses the supplied byte writer.
@@ -29,17 +30,27 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
 #[must_use]
 pub fn artifact_factory_with_stdout(
     path: String,
+    installation_version: String,
     stdout: Box<dyn std::io::Write + Send>,
     terminal: bool,
 ) -> ExtensionFactory<Local> {
-    factory(path, Some(crate::wasi::Output::new(stdout, terminal)))
+    factory(
+        path,
+        installation_version,
+        Some(crate::wasi::Output::new(stdout, terminal)),
+    )
 }
 
 /// Retains artifact operands across each invocation of the existing factory lifecycle.
-fn factory(path: String, output: Option<crate::wasi::Output>) -> ExtensionFactory<Local> {
+fn factory(
+    path: String,
+    installation_version: String,
+    output: Option<crate::wasi::Output>,
+) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
         let output = output.clone();
+        let installation_version = installation_version.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api)?;
@@ -51,8 +62,9 @@ fn factory(path: String, output: Option<crate::wasi::Output>) -> ExtensionFactor
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path, output)
-                .map_err(|error| error.to_string())?;
+            let state =
+                lifecycle::State::new(endpoint, callbacks, &path, installation_version, output)
+                    .map_err(|error| error.to_string())?;
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {

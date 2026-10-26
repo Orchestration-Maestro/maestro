@@ -627,6 +627,35 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn native_format_size(&mut self, _bytes: f64) -> wasmtime::Result<Result<String, String>> {
+        Ok(self
+            .observed
+            .actions
+            .record_for("format_size")
+            .and_then(|value| serde_json::from_str(&value).map_err(|error| error.to_string())))
+    }
+    fn native_frontmatter(
+        &mut self,
+        content: String,
+    ) -> wasmtime::Result<Result<host::FrontmatterDocument, String>> {
+        if content != "---\nx: .nan\n---\nbody" {
+            return Ok(Err("unknown controlled metadata fixture".into()));
+        }
+        Ok(Ok(host::FrontmatterDocument {
+            values: vec![
+                host::FrontmatterToken::Mapping(vec!["x".into()]),
+                host::FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
+        }))
+    }
+    fn native_helper(
+        &mut self,
+        operation: String,
+        _data: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.observed.actions.record_for(&operation))
+    }
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,

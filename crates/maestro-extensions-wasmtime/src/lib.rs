@@ -24,6 +24,7 @@ pub use factory::{artifact_factory, artifact_factory_with_stdout};
 mod guest_calls;
 mod guest_component;
 mod guest_exports;
+mod helper_imports;
 mod history_imports;
 mod history_reads;
 mod import_route;

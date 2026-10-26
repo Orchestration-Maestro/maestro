@@ -77,6 +77,8 @@ pub(crate) struct State {
     table: ResourceTable,
     /// The original registration facade's endpoint, not a reconstructed API.
     api: Endpoint,
+    /// Application installation identity supplied at factory composition.
+    pub(crate) installation_version: String,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
     /// The original retained pub.
@@ -90,9 +92,11 @@ impl State {
         api: Endpoint,
         callbacks: Callbacks,
         path: &str,
+        installation_version: String,
         output: Option<crate::wasi::Output>,
     ) -> wasmtime::Result<Self> {
         Ok(Self {
+            installation_version,
             wasi: crate::wasi::build(path, output)?,
             table: ResourceTable::new(),
             api,
@@ -131,6 +135,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p3::add_to_linker(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
+    crate::helper_imports::add_to_linker(&mut host)?;
     crate::exec_imports::add_to_linker(&mut host)?;
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
