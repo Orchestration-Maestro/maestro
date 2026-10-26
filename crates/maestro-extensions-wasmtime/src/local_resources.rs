@@ -557,7 +557,7 @@ pub(crate) enum Identity {
             (
                 maestro_extensions::TUI,
                 maestro_extensions::widgets::EditorTheme,
-                maestro_extensions::KeybindingsManager,
+                maestro_extensions::widgets::ExtensionKeybindings,
             ),
             maestro_extensions::types::EditorFactoryOutcome,
         >,

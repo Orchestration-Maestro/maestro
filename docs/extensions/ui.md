@@ -170,6 +170,10 @@ disposal the host calls when it removes the component, `set_expanded` for a head
 that follows tool expansion, and `width`, which an overlay uses when no overlay
 options are supplied. A plain component leaves them `None`.
 
+Editor and custom-component factories receive `ExtensionKeybindings`, retaining the
+application manager and its reload after the factory returns. Pass its `manager`
+field only when constructing a toolkit `CustomEditor`.
+
 An editor factory returns an `EditorFactoryOutcome`: `Editor` for a plain
 `EditorComponent`, or `CustomEditor` for an editor that also implements
 `CustomEditorComponent`. That capability exposes the live `ActionHandlers` map and

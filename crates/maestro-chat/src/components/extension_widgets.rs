@@ -117,7 +117,7 @@ impl ExtensionWidgets for ExtensionWidgetHost {
 }
 
 /// The application manager's shared bindings and its reload.
-fn keybindings(manager: KeybindingsManager) -> ExtensionKeybindings {
+pub(crate) fn keybindings(manager: KeybindingsManager) -> ExtensionKeybindings {
     let shared = (*manager).clone();
     ExtensionKeybindings {
         manager: shared,

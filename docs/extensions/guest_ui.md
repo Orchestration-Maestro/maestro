@@ -80,7 +80,10 @@ the other extension's editor through the host and keeps the operations that edit
 lacks absent. A wrapping factory can return the outcome as it is or delegate to it.
 
 An `EditorFactory` receives the terminal, the editor styles, the keybindings manager
-and a borrowed emitter. It returns an `EditorFactoryOutcome`:
+and a borrowed emitter. The manager keeps the supplied application reload even after
+the factory returns or the editor is replaced; clones observe the same bindings.
+Its effective configuration is an owned snapshot of resolved actions.
+It returns an `EditorFactoryOutcome`:
 
 - `Editor` holds an editor with only the editor operations.
 - `CustomEditor` holds a `CustomEditorComponent`, an editor built on the application's

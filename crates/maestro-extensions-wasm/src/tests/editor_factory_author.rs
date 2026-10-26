@@ -148,6 +148,15 @@ fn factory(ui: &ExtensionUIContext, kind: &str) -> ExtensionResult<EditorFactory
                 current(tui, theme, keybindings, emitter)
             })
         }
+        "keys" => Rc::new(|_, _, keys, _| {
+            let editor = Plain::default();
+            editor.submit.replace(Some(Rc::new(move |_, emitter| {
+                let before = keys.get_keys("app.demo")?;
+                keys.reload()?;
+                emitter.emit("factory-keys", json!([before, keys.get_keys("app.demo")?]))
+            })));
+            Ok(EditorFactoryOutcome::Editor(Rc::new(editor)))
+        }),
         "plain" => {
             Rc::new(|_, _, _, _| Ok(EditorFactoryOutcome::Editor(Rc::new(Plain::default()))))
         }

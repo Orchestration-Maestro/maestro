@@ -5,13 +5,12 @@ use super::extension_widgets::with_factories;
 use super::{World, isolated};
 use maestro_app::{
     CustomFactoryOutcome, CustomUIOptions, EditorFactory, EventError, ExtensionAPI,
-    ExtensionComponent, Local, OverlayOptionsSource, UIHostCall,
+    ExtensionComponent, ExtensionKeybindings, Local, OverlayOptionsSource, UIHostCall,
 };
 use maestro_theme::LiveTheme;
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{
-    Component, EditorComponent, FocusFlag, Focusable, KeybindingsManager, OverlayHandle,
-    OverlayOptions, SizeValue, TUI,
+    Component, EditorComponent, FocusFlag, Focusable, OverlayHandle, OverlayOptions, SizeValue, TUI,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -25,7 +24,7 @@ pub(super) type Done = Rc<dyn Fn(String) -> Result<(), EventError>>;
 
 /// The typed custom-view factory the witnesses build.
 pub(super) type ViewFactory =
-    UIHostCall<(TUI, LiveTheme, KeybindingsManager, Done), CustomFactoryOutcome>;
+    UIHostCall<(TUI, LiveTheme, ExtensionKeybindings, Done), CustomFactoryOutcome>;
 
 /// The overlay handle an extension receives.
 pub(super) type Handle = Rc<RefCell<Box<dyn OverlayHandle>>>;
@@ -232,7 +231,7 @@ impl Views {
     ) -> ViewFactory {
         let (views, api) = (self.clone(), api.clone());
         api.clone().ui_callback(
-            move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, Done), _| {
+            move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, Done), _| {
                 views.done.borrow_mut().push(done.clone());
                 match build.flow {
                     Flow::DoneFirst => done("first".into())?,
@@ -870,7 +869,7 @@ fn custom_overlay_visibility_completion_removes_only_its_own_view() {
 fn admission_failure_factory(views: &Rc<Views>, api: &ExtensionAPI<Local>) -> ViewFactory {
     let (building, api) = (views.clone(), api.clone());
     api.clone().ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, Done), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, Done), _| {
             let mut component = building.component(&api, "CUSTOM", plain(Flow::Ready));
             let disposing = building.clone();
             component.dispose = Some(api.ui_callback(move |(), _| {

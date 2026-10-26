@@ -4,7 +4,7 @@
 use maestro_extensions::{
     EventBusController, EventError, ExtensionRunner, ExtensionUIContext, Local,
     create_event_bus_for,
-    types::{EditorFactory, EditorFactoryOutcome, ExtensionUIContextPort},
+    types::{EditorFactory, EditorFactoryOutcome, ExtensionKeybindings, ExtensionUIContextPort},
 };
 use maestro_tui::{EditorComponent, KeybindingDefinition, KeybindingKeys, KeybindingsManager};
 use serde_json::{Value, json};
@@ -17,7 +17,7 @@ struct Ui {
     /// The published live theme.
     theme: maestro_theme::LiveTheme,
     /// Keybindings that bind the actions an editor can run.
-    keybindings: KeybindingsManager,
+    keybindings: ExtensionKeybindings,
     /// The current factory.
     factory: RefCell<Option<EditorFactory>>,
     /// The editor the current factory built.
@@ -64,7 +64,7 @@ impl Fixture {
             Rc::new(|_| panic!("no diagnostics")),
         );
         let calls = Rc::new(RefCell::new(Vec::new()));
-        for channel in ["custom-action", "modal-kept"] {
+        for channel in ["custom-action", "modal-kept", "factory-keys"] {
             let calls = calls.clone();
             bus.on(
                 channel,
@@ -90,7 +90,15 @@ impl Fixture {
         let ui = Rc::new(Ui {
             tui,
             theme: published(),
-            keybindings,
+            keybindings: ExtensionKeybindings {
+                manager: keybindings.clone(),
+                reload: Some(Rc::new(move || {
+                    keybindings.set_user_bindings(vec![(
+                        "app.demo".into(),
+                        Some(KeybindingKeys::Single("f9".into())),
+                    )]);
+                })),
+            },
             factory: RefCell::default(),
             built: RefCell::default(),
         });
@@ -357,19 +365,23 @@ async fn native_factory(fixture: &Fixture, custom: bool) -> EditorFactory {
     let made = Rc::new(RefCell::new(None));
     let slot = made.clone();
     let factory: maestro_extensions::ExtensionFactory<Local> = Rc::new(move |api| {
-        let factory: EditorFactory = api.ui_callback(move |(tui, theme, keys), _| {
-            let options = maestro_tui::EditorOptions::default();
-            Ok(if custom {
-                let widgets = super::support::widgets();
-                EditorFactoryOutcome::CustomEditor(
-                    widgets.custom_editor(&tui, theme, keys, options),
-                )
-            } else {
-                EditorFactoryOutcome::Editor(Rc::new(maestro_tui::Editor::new(
-                    &tui, theme, options,
-                )))
-            })
-        });
+        let factory: EditorFactory =
+            api.ui_callback(move |(tui, theme, keys): (_, _, ExtensionKeybindings), _| {
+                let options = maestro_tui::EditorOptions::default();
+                Ok(if custom {
+                    let widgets = super::support::widgets();
+                    EditorFactoryOutcome::CustomEditor(widgets.custom_editor(
+                        &tui,
+                        theme,
+                        keys.manager,
+                        options,
+                    ))
+                } else {
+                    EditorFactoryOutcome::Editor(Rc::new(maestro_tui::Editor::new(
+                        &tui, theme, options,
+                    )))
+                })
+            });
         slot.replace(Some(factory));
         Box::pin(async { Ok(()) })
     });
@@ -454,5 +466,33 @@ fn canonical_editor_factories_wrap_another_extensions_factory() {
         foreign(&fixture, true).await;
         drop(fixture.runner);
         fixture.bus.clear();
+    });
+}
+
+/// A manager captured by an authored factory still reloads its supplied application owner.
+#[test]
+fn canonical_editor_factory_retains_application_keybindings_reload() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let fixture = Fixture::new().await;
+        fixture.ui.keybindings.set_user_bindings(vec![(
+            "app.demo".into(),
+            Some(KeybindingKeys::Single("f3".into())),
+        )]);
+        let independent = Fixture::new().await;
+        assert_eq!(
+            fixture.install("keys").await,
+            json!({ "same": true }).to_string()
+        );
+        input(fixture.built().editor().as_ref(), "enter");
+        assert_eq!(fixture.take(), [r#"factory-keys [["f3"],["f9"]]"#]);
+        assert_eq!(fixture.ui.keybindings.get_keys("app.demo"), ["f9"]);
+        assert_eq!(independent.ui.keybindings.get_keys("app.demo"), ["ctrl+x"]);
+        drop(fixture.runner);
+        fixture.bus.clear();
+        drop(independent.runner);
+        independent.bus.clear();
     });
 }
