@@ -15,6 +15,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Endpoint>(host, "builtin-tool")?;
     super::mutation_imports::add_to_linker(host)?;
+    add_bash_factory(host)?;
     add_factories(host)?;
     crate::read_imports::add_read(
         host,
@@ -147,3 +148,41 @@ type MutationFactory = fn(
     String,
     Option<crate::guest_calls::Handle>,
 ) -> Result<Endpoint, String>;
+
+/// Admits both optional shell callbacks without invoking them during construction.
+fn add_bash_factory<T: CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "create-bash-tool",
+        |mut store: StoreContextMut<'_, T>, (cwd, controls, operations, hook): BashFactoryArgs| {
+            let mut retain = |callback: Option<Resource<crate::guest_calls::Callback>>| {
+                callback
+                    .as_ref()
+                    .map(|callback| {
+                        crate::callback_imports::borrowed_object(store.data_mut(), callback)
+                    })
+                    .transpose()
+            };
+            let options = crate::local_resources::builtin_bash::Options {
+                controls,
+                operations: retain(operations)?,
+                hook: retain(hook)?,
+            };
+            let result = store.data().api().create_bash(cwd, options);
+            let result = match result {
+                Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
+        },
+    )
+}
+
+/// Shell controls travel beside independently typed callback capabilities.
+type BashFactoryArgs = (
+    String,
+    crate::local_resources::builtin_bash::Controls,
+    Option<Resource<crate::guest_calls::Callback>>,
+    Option<Resource<crate::guest_calls::Callback>>,
+);

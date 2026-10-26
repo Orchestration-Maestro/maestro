@@ -3,6 +3,22 @@
 /// Declares native factories without creating a second adapter trait.
 macro_rules! builtin_tool_imports {
     () => {
+        /// Constructs the original context-free shell executable.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_bash_tool(
+            &self,
+            cwd: String,
+            options: crate::BashToolOptions,
+        ) -> ExtensionResult<crate::Tool>;
+        /// Constructs the original shell definition with retained interception.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_bash_tool_definition(
+            &self,
+            cwd: String,
+            options: crate::BashToolOptions,
+        ) -> ExtensionResult<crate::ToolDefinition>;
         /// Runs a guest-local callback while retaining the native queue turn.
         fn with_file_mutation_queue(
             &self,

@@ -152,6 +152,10 @@ pub mod local {
     #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::edit::local::create_edit_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::bash::local::{
+        BashSpawnHook, BashToolOptions, create_bash_tool_definition,
+    };
+    #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::read::local::create_read_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::search::find::local::create_find_tool_definition;
@@ -171,7 +175,9 @@ pub use maestro_tools::search::find::FindGlobOptions;
 pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+pub use maestro_tools::{
+    BashError, BashExecOptions, BashExecResult, BashOperations, BashResult, BashSpawnContext,
+};
 /// Native file configuration and the model observation a read definition consumes.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{

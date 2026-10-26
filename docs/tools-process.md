@@ -68,6 +68,10 @@ replaces inheritance; omission reads fresh native entries and prepends the calle
 binary directory when absent from the first case-insensitive PATH entry. On
 Windows, native insertion selects the first UTF-16-sorted spelling of each
 Unicode-uppercase key identity; the supplied environment map stays unchanged.
+`ShellEnv` keeps optional native values: `Some(value)` sets a value, including an
+empty string, while `None` leaves the key observable to hooks and supplied
+operations but omits it from process creation. Key selection precedes omission,
+so an unset Windows key does not expose another spelling of that same key.
 
 `signal` is optional; `timeout` is optional positive seconds, with no default.
 Zero, negative and unrepresentable durations arm no timer. Abort and timeout request

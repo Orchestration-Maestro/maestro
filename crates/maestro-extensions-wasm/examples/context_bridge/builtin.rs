@@ -31,6 +31,10 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(request) = args.strip_prefix("builtin-custom-bash ") {
+        let result = super::builtin_bash::execute(api, context.clone(), request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(request) = args.strip_prefix("builtin-queue ") {
         let result = super::builtin_queue::command(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));

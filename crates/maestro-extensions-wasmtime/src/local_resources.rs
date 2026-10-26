@@ -9,6 +9,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
 pub(crate) mod builtin;
+pub(crate) mod builtin_bash;
 pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;

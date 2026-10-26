@@ -32,6 +32,10 @@ struct Generated;
 
 impl Imports for Generated {
     forward_resources! { functions {
+        create_read_tool(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_read[&cwd, options];
+        create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::read[&cwd, options];
+        create_bash_tool(cwd: String, options: crate::BashToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_bash[&cwd, options];
+        create_bash_tool_definition(cwd: String, options: crate::BashToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::bash[&cwd, options];
         with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ExtensionFuture<'static, ()> => builtin::with_file_mutation_queue[&file_path, operation];
     } }
 
@@ -110,20 +114,6 @@ impl Imports for Generated {
         options: crate::WriteToolOptions,
     ) -> ExtensionResult<crate::ToolDefinition> {
         builtin::write(&cwd, options)
-    }
-    fn create_read_tool(
-        &self,
-        cwd: String,
-        options: crate::ReadToolOptions,
-    ) -> ExtensionResult<crate::Tool> {
-        builtin::executable_read(&cwd, options)
-    }
-    fn create_read_tool_definition(
-        &self,
-        cwd: String,
-        options: crate::ReadToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition> {
-        builtin::read(&cwd, options)
     }
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();

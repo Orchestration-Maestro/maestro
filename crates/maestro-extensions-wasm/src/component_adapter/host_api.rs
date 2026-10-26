@@ -13,6 +13,20 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_bash_tool(
+        &self,
+        cwd: String,
+        options: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_bash_tool(cwd, options)
+    }
+    fn create_bash_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_bash_tool_definition(cwd, options)
+    }
     fn with_file_mutation_queue(
         &self,
         file_path: String,

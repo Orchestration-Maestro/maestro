@@ -2066,3 +2066,249 @@ async fn observe_queue_tool_release(
     .unwrap();
     assert_eq!(actual, serde_json::to_value(expected).unwrap());
 }
+
+/// Shell selection reaches the actual local backend; replacement effects bypass it.
+#[test]
+fn builtin_bash_options_reach_the_nested_local_backend() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let cwd = scratch.path().to_str().unwrap();
+        let runner = super::builtin_author::loaded().await;
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        for executable in [false, true] {
+            check_builtin_bash_controls(&runner, &command, cwd, executable).await;
+        }
+    });
+}
+
+/// Exercises independent local and supplied controls for one public factory form.
+async fn check_builtin_bash_controls(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    command: &maestro_extensions::types::RegisteredCommand<maestro_extensions::Local>,
+    cwd: &str,
+    executable: bool,
+) {
+    for prefix in [None, Some(""), Some("printf 'prefix\\n'")] {
+        let request = json!({"cwd":cwd,"shell":null,"prefix":prefix,
+            "supplied":false,"executable":executable,"command":"printf 'command\\n'"});
+        let observed = observe_builtin_bash(runner, command, &request).await;
+        let text = if prefix.is_some_and(|prefix| !prefix.is_empty()) {
+            "prefix\ncommand\n"
+        } else {
+            "command\n"
+        };
+        assert_eq!(
+            observed,
+            json!({"calls":[],"result":{"Ok":{"content":[{"type":"text","text":text}]}}})
+        );
+    }
+    let shell = std::env::split_paths(&std::env::var_os("PATH").unwrap())
+        .map(|directory| directory.join(format!("bash{}", std::env::consts::EXE_SUFFIX)))
+        .find(|path| path.is_file())
+        .expect("native shell tests require bash on PATH");
+    let explicit = json!({"cwd":cwd,"shell":shell,"prefix":null,
+        "supplied":false,"executable":executable,"command":"printf explicit-shell"});
+    assert_eq!(
+        observe_builtin_bash(runner, command, &explicit).await,
+        json!({"calls":[],"result":{"Ok":{"content":[{"type":"text","text":"explicit-shell"}]}}})
+    );
+    let request = json!({"cwd":cwd,"shell":"/missing-explicit-shell","prefix":null,
+        "supplied":false,"executable":executable,"command":"printf unreachable"});
+    let observed = observe_builtin_bash(runner, command, &request).await;
+    assert_eq!(
+        observed,
+        json!({"calls":[],"result":{"Err":native_shell_error(cwd, Some("/missing-explicit-shell".into()), None, "printf unreachable").await}})
+    );
+    for prefix in [None, Some(""), Some("setup")] {
+        let mut supplied = request.clone();
+        supplied["supplied"] = json!(true);
+        supplied["prefix"] = json!(prefix);
+        supplied["cwd"] = json!("relative/雪");
+        let observed = observe_builtin_bash(runner, command, &supplied).await;
+        let command = if prefix.is_some_and(|prefix| !prefix.is_empty()) {
+            "setup\nprintf unreachable"
+        } else {
+            "printf unreachable"
+        };
+        assert_eq!(
+            observed,
+            json!({"calls":[{"command":command,"cwd":"relative/雪","timeout":null,"bin":true,"home":std::env::var_os("HOME").is_some(),"hookValue":null,"unset":null,"unsetPresent":false,"aborted":false}],
+            "result":{"Ok":{"content":[{"type":"text","text":"supplied\0é😀"}]}}})
+        );
+    }
+}
+
+/// Runs the compiled author through its retained command and complete result document.
+async fn observe_builtin_bash(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    command: &maestro_extensions::types::RegisteredCommand<maestro_extensions::Local>,
+    request: &serde_json::Value,
+) -> serde_json::Value {
+    serde_json::from_str(
+        &(command.handler)(
+            format!("builtin-custom-bash {request}"),
+            runner.create_command_context(),
+        )
+        .await
+        .unwrap_err()
+        .to_string(),
+    )
+    .unwrap()
+}
+
+/// Hooks consume prefixed operands synchronously and replace the native exec inputs.
+#[test]
+fn builtin_spawn_hook_changes_are_used_after_prefixing() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let cwd = scratch.path().to_str().unwrap();
+        let (runner, events) = super::builtin_author::loaded_with_events().await;
+        let emitted = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let transcript = emitted.clone();
+        let subscription = events.on("builtin-bash-spawn", std::rc::Rc::new(move |value, _| {
+            transcript.borrow_mut().push((*value).clone());
+            Ok(None)
+        }));
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        for (executable, supplied) in [(false, false), (false, true), (true, false), (true, true)] {
+            for (mode, prefix) in [
+                ("edit", None), ("edit", Some("prefix")),
+                ("replace", None), ("replace", Some("prefix")),
+                ("error", None), ("error", Some("prefix")),
+            ] {
+                let request = json!({"cwd":"unobserved/factory","shell":null,"prefix":prefix,
+                    "supplied":supplied,"executable":executable,"command":"original", "hook":mode,"hook_cwd":cwd});
+                check_builtin_spawn(&runner, &command, &request).await;
+            }
+        }
+        let repeated = json!({"cwd":"unobserved/factory","shell":null,"prefix":"prefix",
+            "supplied":true,"executable":true,"command":"original","hook":"edit","hook_cwd":cwd,"repeat":true});
+        check_builtin_spawn(&runner, &command, &repeated).await;
+        check_builtin_spawn_abort(&runner, &command, cwd).await;
+        assert_eq!(*emitted.borrow(), vec![json!("hook"); 28]);
+        subscription.unsubscribe();
+    });
+}
+
+/// Checks every final operand, unset-key presence and the actual local child output.
+async fn check_builtin_spawn(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    command: &maestro_extensions::types::RegisteredCommand<maestro_extensions::Local>,
+    request: &serde_json::Value,
+) {
+    let observed = observe_builtin_bash(runner, command, request).await;
+    if request["repeat"] == true {
+        assert_eq!(observed["calls"][0], observed["calls"][2]);
+        assert_eq!(observed["calls"][1], observed["calls"][3]);
+        assert_eq!(observed["calls"].as_array().unwrap().len(), 4);
+    }
+    let prefixed = if request["prefix"].is_null() {
+        "original"
+    } else {
+        "prefix\noriginal"
+    };
+    assert_eq!(
+        observed["calls"][0],
+        json!({"hook":prefixed,"cwd":"unobserved/factory",
+        "fresh":true,"home":std::env::var_os("HOME").is_some()})
+    );
+    assert_builtin_spawn_outcome(&observed, request);
+}
+
+/// Checks the selected exec operands or exact hook failure without narrowing its result.
+fn assert_builtin_spawn_outcome(observed: &serde_json::Value, request: &serde_json::Value) {
+    let mode = request["hook"].as_str().unwrap();
+    if mode == "error" {
+        assert_eq!(observed["calls"].as_array().unwrap().len(), 1);
+        assert_eq!(observed["result"], json!({"Err":"hook rejected é"}));
+    } else if request["supplied"] == true {
+        let (command, value) = if mode == "edit" {
+            (
+                "printf '%s:%s' \"$MAESTRO_BUILTIN_HOOK\" \"${UNSET_BY_HOOK-unset}\"",
+                "edited",
+            )
+        } else {
+            ("printf replacement", "replacement")
+        };
+        assert_eq!(
+            observed["calls"][1],
+            json!({"command":command,"cwd":request["hook_cwd"],"timeout":null,
+            "bin":mode=="edit","home":false,"hookValue":value,"unset":null,"unsetPresent":mode=="edit","aborted":false})
+        );
+        assert_eq!(
+            observed["result"],
+            json!({"Ok":{"content":[{"type":"text","text":"supplied\0é😀"}]}})
+        );
+    } else {
+        assert_eq!(observed["calls"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            observed["result"],
+            json!({"Ok":{"content":[{"type":"text","text":if mode=="edit" {"edited:unset"} else {"replacement"}}]}})
+        );
+    }
+}
+
+/// Aborting inside a synchronous hook reaches an arbitrary relayed signal before exec.
+async fn check_builtin_spawn_abort(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    command: &maestro_extensions::types::RegisteredCommand<maestro_extensions::Local>,
+    cwd: &str,
+) {
+    for supplied in [false, true] {
+        let signal = maestro_extensions::Cancellation::new();
+        let selected = signal.clone();
+        let aborted = signal.clone();
+        runner.bind_core(<maestro_extensions::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            maestro_extensions::ExtensionContextActions {
+                get_signal: std::rc::Rc::new(move || Ok(Some(selected.clone()))),
+                abort: std::rc::Rc::new(move || { aborted.abort(); Ok(()) }),
+                ..Default::default()
+            }, maestro_extensions::types::ProviderActions::default()).unwrap();
+        let request = json!({"cwd":cwd,"shell":null,"prefix":null,"supplied":supplied,
+            "executable":true,"command":"while :; do :; done","hook":"abort"});
+        let observed = observe_builtin_bash(runner, command, &request).await;
+        assert!(signal.is_aborted());
+        if supplied {
+            assert_eq!(observed["calls"][1]["aborted"], true);
+            assert_eq!(
+                observed["result"],
+                json!({"Ok":{"content":[{"type":"text","text":"supplied\0é😀"}]}})
+            );
+        } else {
+            let expected = native_shell_error(cwd, None, Some(signal), "while :; do :; done").await;
+            assert_eq!(observed["result"], json!({"Err":expected}));
+        }
+    }
+}
+
+/// Reads the native diagnostic instead of copying its authored shell error template.
+async fn native_shell_error(
+    cwd: &str,
+    shell_path: Option<String>,
+    signal: Option<maestro_extensions::Cancellation>,
+    command: &str,
+) -> String {
+    let native = maestro_extensions::local::wrap_tool_definition(
+        maestro_extensions::local::create_bash_tool_definition::<()>(
+            cwd.into(),
+            "/unused-builtin-bin".into(),
+            maestro_extensions::local::BashToolOptions {
+                shell_path,
+                ..Default::default()
+            },
+        ),
+        None,
+    );
+    (native.execute)("bash".into(), json!({"command":command}), signal, None)
+        .await
+        .unwrap_err()
+        .to_string()
+}

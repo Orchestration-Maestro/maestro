@@ -78,6 +78,10 @@ port! {
         fn register_flag(name: &str, options: FlagOptions) -> ();
         /// Reads the host-resolved value of a flag.
         fn get_flag(name: &str) -> Option<FlagValue>;
+        /// Constructs a context-free executable from the original native shell factory.
+        fn create_bash_tool(cwd: String, options: crate::BashToolOptions) -> crate::Tool;
+        /// Constructs a native shell definition with owned operations and interception.
+        fn create_bash_tool_definition(cwd: String, options: crate::BashToolOptions) -> ToolDefinition;
         /// Constructs a retained native read executable that needs no extension context.
         fn create_read_tool(cwd: String, options: crate::ReadToolOptions) -> crate::Tool;
         /// Constructs a retained native read definition without performing file work.

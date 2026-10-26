@@ -135,6 +135,41 @@ that have already started. Do not call a queued edit or write from inside a
 queue operation for the same file: that nested call would wait for its own
 predecessor to finish.
 
+## Intercept native shell execution
+
+`create_bash_tool` and `create_bash_tool_definition` return the native shell's
+executable and registerable forms. See [shell tools](../tools-process.md) for
+output selection, cancellation, timeouts and process cleanup.
+
+`BashToolOptions` keeps four independent controls. `operations` supplies the
+existing `BashOperations`; otherwise the native local backend uses `shell_path`.
+A supplied operation bypasses local shell selection. A nonempty `command_prefix`
+is inserted before the command, separated by one newline. `spawn_hook` then
+receives that command, cwd and a fresh environment, before progress or execution.
+It may replace all three fields, emit synchronous events through its borrowed
+emitter, or return an error that prevents execution.
+
+Environment entries retain insertion order and `None` values through hooks and
+supplied operations. Native process creation omits unset values; an unset key is
+not the same as an empty string. The emitter cannot escape the hook. Callback
+captures stay owned by the returned tool rather than the factory call.
+
+```rust
+use std::rc::Rc;
+use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionResult};
+
+fn register_shell(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
+    let options = BashToolOptions {
+        spawn_hook: Some(Rc::new(|mut spawn, _| {
+            spawn.env.insert("UNSET_IN_CHILD".into(), None);
+            Ok(spawn)
+        })),
+        ..BashToolOptions::default()
+    };
+    api.register_tool(api.create_bash_tool_definition(cwd, options)?)
+}
+```
+
 ## Replace search observations
 
 `create_find_tool` / `create_find_tool_definition` and `create_grep_tool` /

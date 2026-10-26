@@ -18,6 +18,10 @@ interface host {
         render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>) -> result<string, string>;
     }
+    /// Independent controls of the original local shell factory.
+    record bash-tool-controls { command-prefix: option<string>, shell-path: option<string> }
+    /// Retains the native shell definition and independently optional replacement callbacks.
+    create-bash-tool: func(cwd: string, controls: bash-tool-controls, operations: option<borrow<callback>>, spawn-hook: option<borrow<callback>>) -> result<builtin-tool, string>;
     /// Constructs the native read definition without performing file work.
     create-read-tool: func(cwd: string, auto-resize-images: option<bool>, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
     /// Constructs the native write definition over independently retained effects.

@@ -106,16 +106,21 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
         );
         assert_eq!(
             context.env.get(std::ffi::OsStr::new("MAESTRO_HOOK_ONLY")),
-            initial_hook_value.as_ref()
+            initial_hook_value.as_ref().map(|_| &initial_hook_value)
         );
         assert_eq!(
-            context.env.get(std::ffi::OsStr::new("PATH")).unwrap(),
+            context
+                .env
+                .get(std::ffi::OsStr::new("PATH"))
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             std::ffi::OsStr::new(&expected_path)
         );
         context.env.clear();
         context
             .env
-            .insert("MAESTRO_HOOK_ONLY".into(), "hook env".into());
+            .insert("MAESTRO_HOOK_ONLY".into(), Some("hook env".into()));
         context.cwd.clone_from(&cwd);
         context.command = "printf '%s' \"$MAESTRO_HOOK_ONLY\"".into();
         Ok(context)

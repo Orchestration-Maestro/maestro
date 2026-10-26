@@ -19,6 +19,9 @@ mod api;
 #[path = "context_bridge/builtin.rs"]
 mod builtin;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_bash.rs"]
+mod builtin_bash;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_edit.rs"]
 mod builtin_edit;
 #[cfg(target_arch = "wasm32")]

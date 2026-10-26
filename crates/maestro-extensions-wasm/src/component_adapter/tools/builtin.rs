@@ -8,6 +8,11 @@ use crate::{
 };
 use std::rc::Rc;
 
+/// Shell constructors retain the existing synchronous and returned-operation transports.
+#[path = "bash.rs"]
+mod bash;
+pub(super) use bash::{bash, executable_bash};
+
 /// Retains the original native queue future until the guest callback settles or is dropped.
 pub(super) fn with_file_mutation_queue(
     file_path: &str,
@@ -35,7 +40,7 @@ pub(super) fn executable_read(cwd: &str, options: ReadToolOptions) -> ExtensionR
 }
 
 /// Projects a context-free invocation from an original retained definition.
-fn executable(tool: Rc<host::BuiltinTool>) -> ExtensionResult<crate::Tool> {
+pub(super) fn executable(tool: Rc<host::BuiltinTool>) -> ExtensionResult<crate::Tool> {
     let metadata = metadata(&tool)?;
     Ok(crate::Tool {
         name: metadata.name,
@@ -239,7 +244,10 @@ fn metadata(tool: &host::BuiltinTool) -> ExtensionResult<crate::ToolMetadata> {
 }
 
 /// Projects original metadata and callbacks from a retained native definition.
-fn definition(tool: Rc<host::BuiltinTool>, reads_model: bool) -> ExtensionResult<ToolDefinition> {
+pub(super) fn definition(
+    tool: Rc<host::BuiltinTool>,
+    reads_model: bool,
+) -> ExtensionResult<ToolDefinition> {
     let metadata = metadata(&tool)?;
     Ok(ToolDefinition {
         metadata,

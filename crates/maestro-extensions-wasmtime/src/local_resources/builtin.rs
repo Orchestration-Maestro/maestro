@@ -9,6 +9,8 @@ use std::{
 
 /// Constructor operands of native definitions, without executing their callbacks.
 pub(crate) enum Factory {
+    /// Native shell construction on the original facade's supplied binary directory.
+    Bash(u64, String, super::builtin_bash::Options),
     /// Read with its independently selected image policy.
     Read(String, Option<bool>, Option<crate::guest_calls::Handle>),
     /// Content search using the application search services.
@@ -26,6 +28,7 @@ impl Registry {
     /// Constructs the original typed definition and gives it an independent resource lease.
     pub(super) fn create_builtin(&self, factory: Factory) -> Result<Endpoint, String> {
         let definition: Rc<dyn crate::builtin_tools::Definition> = match factory {
+            Factory::Bash(api, cwd, options) => self.bash(api, cwd, options)?,
             Factory::Ls(cwd, operations) => Self::ls(cwd, operations),
             Factory::Grep(api, cwd, operations) => self.grep(api, cwd, operations)?,
             Factory::Find(api, cwd, operations) => self.find(api, cwd, operations)?,
@@ -134,7 +137,10 @@ impl Registry {
         )))
     }
     /// Reads application-supplied factory services outside the capability-table borrow.
-    fn tool_construction(&self, api: u64) -> Result<maestro_extensions::ToolConstruction, String> {
+    pub(super) fn tool_construction(
+        &self,
+        api: u64,
+    ) -> Result<maestro_extensions::ToolConstruction, String> {
         match self.capability(api).as_deref() {
             Some(Capability::Api(api)) => api.tool_construction(),
             _ => Err("extension API resource ended".into()),
