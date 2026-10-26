@@ -11,6 +11,7 @@ mod canonical_schema;
 mod canonical_theme;
 mod canonical_ui;
 mod canonical_widgets;
+mod completion_providers;
 mod component_events;
 mod component_loading;
 mod components;

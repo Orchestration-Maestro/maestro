@@ -158,8 +158,53 @@ fn input(editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>, data:
     editor.try_handle_input(data).unwrap();
 }
 
+/// A completion provider with no suggestions.
+struct Silent;
+
+/// The suggestion future of a native provider.
+type Pending<'a> = std::pin::Pin<
+    Box<
+        dyn std::future::Future<
+                Output = Result<
+                    Option<maestro_tui::AutocompleteSuggestions>,
+                    maestro_tui::autocomplete::CompletionError,
+                >,
+            > + 'a,
+    >,
+>;
+
+impl maestro_tui::AutocompleteProvider for Silent {
+    type Signal = maestro_tui::Cancellation;
+    fn get_suggestions<'a>(
+        &'a self,
+        _: &'a [String],
+        _: maestro_tui::autocomplete::CursorPosition,
+        _: maestro_tui::autocomplete::CompletionOptions<'a, maestro_tui::Cancellation>,
+    ) -> Pending<'a> {
+        Box::pin(std::future::ready(Ok(None)))
+    }
+    fn apply_completion(
+        &self,
+        lines: &[String],
+        cursor: maestro_tui::autocomplete::CursorPosition,
+        _: &maestro_tui::AutocompleteItem,
+        _: &str,
+    ) -> maestro_tui::autocomplete::CompletionResult {
+        maestro_tui::autocomplete::CompletionResult {
+            lines: lines.to_vec(),
+            cursor_line: cursor.line,
+            cursor_col: cursor.col,
+        }
+    }
+}
+
 /// Each optional operation of a plain authored editor is absent, not a no-op.
 fn absent(editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>) {
+    let provider = Rc::new(Silent);
+    assert_eq!(
+        editor.try_set_autocomplete_provider(provider).unwrap(),
+        None
+    );
     assert_eq!(editor.try_get_expanded_text().unwrap(), None);
     assert!(editor.border_color().is_none());
     assert_eq!(editor.set_border_color(Rc::new(str::to_owned)), None);
@@ -227,6 +272,11 @@ async fn host(fixture: &Fixture) {
     assert_eq!(editor.try_insert_text_at_cursor("!").unwrap(), Some(()));
     assert_eq!(
         editor.try_set_autocomplete_max_visible(4.0).unwrap(),
+        Some(())
+    );
+    let provider = Rc::new(Silent);
+    assert_eq!(
+        editor.try_set_autocomplete_provider(provider).unwrap(),
         Some(())
     );
     assert_eq!(editor.try_get_text().unwrap(), "a!");

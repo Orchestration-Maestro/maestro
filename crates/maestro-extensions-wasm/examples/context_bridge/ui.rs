@@ -33,6 +33,10 @@ pub(super) fn observe(
         let steps = serde_json::from_str(steps).map_err(|error| error.to_string())?;
         return Ok(super::widget_author::run(steps, context.ui().ok()).to_string());
     }
+    if let Some(name) = args.strip_prefix("ui provider ") {
+        super::stacked_provider_author::install(&context.ui()?, name)?;
+        return Ok("provider stacked".into());
+    }
     if let Some(kind) = args.strip_prefix("ui editor ") {
         return Ok(super::editor_factory_author::install(&context.ui()?, kind)?.to_string());
     }

@@ -100,7 +100,8 @@ fn dispatch(call: host::LocalCall) -> Running {
         | host::LocalCall::Highlight(_)
         | host::LocalCall::Widget(_)
         | host::LocalCall::EditorFactory(_)
-        | host::LocalCall::Editor(_)) => ui(call),
+        | host::LocalCall::Editor(_)
+        | host::LocalCall::ProviderFactory(_)) => ui(call),
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))
@@ -174,6 +175,9 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
             call.request,
             &call.emitter,
         )),
+        host::LocalCall::ProviderFactory(call) => host::LocalResult::ProviderFactory(
+            super::editors::provider_factory(call.target, call.current, &call.emitter),
+        ),
         host::LocalCall::Style(call) => {
             host::LocalResult::Style(super::super::invoke_style(call.target, &call.text))
         }
@@ -262,6 +266,9 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }
+            host::LocalCall::Provider(call) => host::LocalResult::Provider(
+                super::editors::provider(call.target, call.request, call.signal).await,
+            ),
             _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),
         }
     })

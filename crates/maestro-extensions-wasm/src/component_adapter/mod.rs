@@ -34,6 +34,7 @@ mod imports;
 mod keys;
 mod lists;
 mod model_registry;
+mod providers;
 mod schema;
 mod session;
 mod setup;
@@ -47,6 +48,9 @@ mod widgets;
 pub(crate) use editor_factories::keep_editor;
 pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, LentEditor};
 pub(crate) use lists::invoke_widget;
+#[cfg(test)]
+pub(crate) use providers::keep_provider;
+pub(crate) use providers::{EditorImports, ProviderAnswer, ProviderRequest};
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
 pub(crate) use widget_imports::{

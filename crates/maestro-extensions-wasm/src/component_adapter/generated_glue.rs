@@ -236,6 +236,26 @@ impl<E: Extension> Guest for Glue<E> {
         ))
     }
 
+    async fn invoke_provider(
+        handler: &host::Callback,
+        request: host::ProviderRequest,
+        signal: Option<host::AbortSignal>,
+    ) -> ExtensionResult<host::ProviderAnswer> {
+        super::editors::provider(handler.id(), request, signal).await
+    }
+
+    fn invoke_provider_factory(
+        handler: &host::Callback,
+        current: host::CompletionProvider,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::Callback>> {
+        std::future::ready(super::editors::provider_factory(
+            handler.id(),
+            current,
+            emitter,
+        ))
+    }
+
     fn invoke_editor(
         handler: &host::Callback,
         request: host::AuthoredEditorRequest,

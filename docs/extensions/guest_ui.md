@@ -2,8 +2,9 @@
 
 The guest library defines `EditorComponent` and `AutocompleteProvider` for authored
 editors and completion providers. An editor factory installs an authored editor in
-place of the host's editor; completion providers cannot be installed yet. The
-host-backed `Editor` and `CustomEditor` facades implement the editor traits.
+place of the host's editor, and a provider factory stacks an authored provider on the
+host's provider. The host-backed `Editor` and `CustomEditor` facades implement the editor
+traits.
 
 ## Editors
 
@@ -45,7 +46,25 @@ default `Ok(None)` leaves the decision to the caller; `Some(false)` and
 `Some(true)` are explicit decisions. Provider errors remain errors.
 
 A wrapper can retain an `Rc<dyn AutocompleteProvider>` and delegate requests to
-it. Stacking a provider on the host's provider is not exposed yet.
+it.
+
+`ExtensionUIContext::add_autocomplete_provider(factory)` stacks an
+`AutocompleteProviderFactory` on the host's current provider. The factory receives that
+provider and returns the provider the host uses from then on. The host keeps the factory
+and runs it again whenever it rebuilds its provider stack, so each factory receives the
+provider the factories before it returned. The host runs the factory before the request
+returns, and the factory's error is the request's error.
+
+A provider the host lends to a factory or to an editor forwards each request to the
+host. A suggestion request keeps the caller's own signal when the host lent that signal,
+so a provider that keeps the signal sees a later cancellation. Applying a completion and
+the file-completion decision are synchronous, and the host provider may call back into
+the extension before it answers. An authored provider's failure in an operation whose
+native signature cannot return an error is reported by the provider's next suggestion
+request.
+
+The host's `Editor` and `CustomEditor` install a provider with
+`set_autocomplete_provider`; an authored editor without the operation answers `None`.
 
 ## Editor factories
 
@@ -103,6 +122,10 @@ this record does not install an overlay or choose its layout.
 | `invoke-editor` | `EditorComponent` | One request per editor operation, each with its own emission frame. |
 | `text-callback` | `TextCallback` | A host callback lent to the editor; dropping it keeps the host's callback. |
 | `widget.border-color`, `widget.share` | `Editor::border_color`, the widget itself | Lends the host editor's border style; shares the widget handle with the host. |
+| `add-autocomplete-provider`, `invoke-provider-factory` | `ExtensionUIContextPort::add_autocomplete_provider`, `AutocompleteProviderFactory` | The host retains the factory for later rebuilds; each call lends the current provider and transfers the returned provider's identity. |
+| `invoke-provider` | `AutocompleteProvider` | One request per provider operation; a suggestion request owns its lent signal. |
+| `completion-provider` | `AutocompleteProvider` | A host provider lent to a factory or editor; dropping it keeps the host's provider. |
+| `widget.set-autocomplete-provider` | `Editor::set_autocomplete_provider` | Transfers an authored provider to the host editor. |
 
 Disposal, component removal and final callback release remain separate effects.
 Neither calling expansion nor dropping its handle invokes disposal.

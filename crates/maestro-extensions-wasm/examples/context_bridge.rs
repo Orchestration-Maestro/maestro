@@ -56,6 +56,10 @@ mod signals;
 mod editor_factory_author;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "../src/tests/stacked_provider_author.rs"]
+mod stacked_provider_author;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "../src/tests/factory_component_author.rs"]
 mod factory_component_author;
 

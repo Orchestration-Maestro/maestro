@@ -8,6 +8,7 @@
 use serde_json::json;
 
 use super::controlled::Controlled;
+use super::provider_host;
 use super::widget_editors;
 use super::widget_host::{self, Build, CODE, Change, Child, Paint, Part, ROLES};
 use super::widget_keys::{self, Answer as KeysAnswer, Request as KeysRequest};
@@ -358,15 +359,6 @@ impl WidgetImports for Controlled {
     ) -> ExtensionResult<()> {
         let handler = self.callback_id(handler);
         widget_editors::on_action(&mut self.observe(), widget.0, action, handler)
-    }
-    fn widget_border_color(&self, widget: &Widget) -> ExtensionResult<Style> {
-        widget_editors::border_color(&mut self.observe(), widget.0).map(Style)
-    }
-    type TextCallback = TextCallback;
-    fn text_callback(&self, callback: &TextCallback, text: &str) -> ExtensionResult<()> {
-        self.observe()
-            .log(format!("text {} {}", callback.0, json!(text)));
-        Ok(())
     }
     fn widget_update_value(&self, widget: &Widget, id: &str, value: &str) -> ExtensionResult<()> {
         let mut observed = self.observe();
@@ -816,6 +808,9 @@ impl Controlled {
             EditorOp::SetAutocompleteMaxVisible { max } => {
                 AuthoredRequest::SetAutocompleteMaxVisible(max)
             }
+            EditorOp::SetAutocompleteProvider => {
+                AuthoredRequest::SetAutocompleteProvider(provider_host::Lent::Base)
+            }
         };
         let (_, editor) = self.shown_editor()?;
         let emitter = super::bus_host::Emitter { key: 0 };
@@ -840,5 +835,159 @@ impl Controlled {
     ) -> Result<super::renderer_host::Reply, String> {
         let (component, _) = self.shown_editor()?;
         super::renderer_host::invoke(&authored_component(component)?, call, self, 0)
+    }
+}
+
+/// Accepts the host's own provider; the test host never calls an authored provider it lent.
+fn own(provider: provider_host::Lent) -> ExtensionResult<()> {
+    match provider {
+        provider_host::Lent::Base => Ok(()),
+        provider_host::Lent::Authored(id) => Err(format!("the test host lent provider {id}")),
+    }
+}
+
+/// The authored form of the host's suggestions.
+fn suggestions((items, prefix): provider_host::Found) -> crate::AutocompleteSuggestions {
+    crate::AutocompleteSuggestions {
+        items: items
+            .into_iter()
+            .map(|(value, label, description)| crate::AutocompleteItem {
+                value,
+                label,
+                description,
+            })
+            .collect(),
+        prefix,
+    }
+}
+
+impl Controlled {
+    /// Runs one host request on the authored provider on top of the stack, with a signal the
+    /// driver lent.
+    pub async fn provider_request(
+        &self,
+        request: serde_json::Value,
+        flags: &[super::controlled::Flag],
+    ) -> Result<serde_json::Value, String> {
+        use crate::component_adapter::{ProviderAnswer, ProviderRequest};
+        use provider_host::ProviderOp;
+        let at = |(line, col): (u32, u32)| crate::CursorPosition { line, col };
+        let (request, signal) = match provider_host::op(request)? {
+            ProviderOp::Suggestions {
+                lines,
+                cursor,
+                force,
+                signal,
+            } => {
+                let flag = flags.get(signal).ok_or("no such signal")?;
+                (
+                    ProviderRequest::Suggestions(lines, at(cursor), force),
+                    Some(self.signal(flag)),
+                )
+            }
+            ProviderOp::Apply {
+                lines,
+                cursor,
+                item: (value, label, description),
+                prefix,
+            } => {
+                let item = crate::AutocompleteItem {
+                    value,
+                    label,
+                    description,
+                };
+                (
+                    ProviderRequest::Apply(lines, at(cursor), item, prefix),
+                    None,
+                )
+            }
+            ProviderOp::Trigger { lines, cursor } => {
+                (ProviderRequest::Trigger(lines, at(cursor)), None)
+            }
+        };
+        let top = provider_host::top(&self.observe())?;
+        let exports = crate::component_adapter::Exports::new(self.clone());
+        Ok(match exports.invoke_provider(top, request, signal).await? {
+            ProviderAnswer::Suggestions(found) => provider_host::described(found.map(|found| {
+                let items = found
+                    .items
+                    .into_iter()
+                    .map(|item| (item.value, item.label, item.description));
+                (items.collect(), found.prefix)
+            })),
+            ProviderAnswer::Applied(result) => {
+                provider_host::applied(&result.lines, result.cursor_line, result.cursor_col)
+            }
+            ProviderAnswer::Trigger(decision) => provider_host::decided(decision),
+        })
+    }
+}
+
+impl crate::component_adapter::EditorImports for Controlled {
+    fn widget_border_color(&self, widget: &Widget) -> ExtensionResult<Style> {
+        widget_editors::border_color(&mut self.observe(), widget.0).map(Style)
+    }
+    type TextCallback = TextCallback;
+    fn text_callback(&self, callback: &TextCallback, text: &str) -> ExtensionResult<()> {
+        self.observe()
+            .log(format!("text {} {}", callback.0, json!(text)));
+        Ok(())
+    }
+    fn widget_set_autocomplete_provider(
+        &self,
+        widget: &Widget,
+        provider: &super::controlled::Callback,
+    ) -> ExtensionResult<()> {
+        let provider = self.callback_id(provider);
+        let line = format!(
+            "widget {} setAutocompleteProvider {}",
+            widget.0,
+            json!([provider])
+        );
+        self.observe().log(line);
+        Ok(())
+    }
+    type Provider = provider_host::Lent;
+    fn provider_suggestions<'a>(
+        &'a self,
+        provider: &'a provider_host::Lent,
+        (lines, cursor, force): (&'a [String], crate::CursorPosition, Option<bool>),
+        signal: &'a super::controlled::Signal,
+    ) -> crate::ExtensionFuture<'a, Option<crate::AutocompleteSuggestions>> {
+        let found = own(*provider).map(|()| {
+            let aborted = self.aborted(signal);
+            let at = (cursor.line, cursor.col);
+            provider_host::suggestions(&mut self.observe(), lines, at, (force, aborted))
+        });
+        Box::pin(std::future::ready(
+            found.map(|found| found.map(suggestions)),
+        ))
+    }
+    fn provider_apply(
+        &self,
+        provider: &provider_host::Lent,
+        (lines, cursor): (&[String], crate::CursorPosition),
+        item: &crate::AutocompleteItem,
+        prefix: &str,
+    ) -> ExtensionResult<crate::CompletionResult> {
+        own(*provider)?;
+        let at = (cursor.line, cursor.col);
+        let operands = (item.value.as_str(), prefix);
+        let (lines, cursor_line, cursor_col) =
+            provider_host::apply(&mut self.observe(), lines, at, operands);
+        Ok(crate::CompletionResult {
+            lines,
+            cursor_line,
+            cursor_col,
+        })
+    }
+    fn provider_trigger(
+        &self,
+        provider: &provider_host::Lent,
+        (lines, cursor): (&[String], crate::CursorPosition),
+    ) -> ExtensionResult<Option<bool>> {
+        own(*provider)?;
+        let at = (cursor.line, cursor.col);
+        Ok(provider_host::trigger(&mut self.observe(), lines, at))
     }
 }

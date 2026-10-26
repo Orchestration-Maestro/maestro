@@ -9,11 +9,11 @@ use crate::types::{AbortListener, AbortSignal, ExtensionResult, SignalPort};
 use crate::{CallbackEmitter, Subscription};
 
 /// Host signal behind the facade.
-struct Signal<I: Imports> {
+pub(super) struct Signal<I: Imports> {
     /// The host the signal belongs to.
     imports: I,
     /// The host's cancellation flag.
-    signal: I::Signal,
+    pub(super) signal: I::Signal,
 }
 
 impl<I: Imports> SignalPort for Signal<I> {
@@ -97,7 +97,7 @@ impl<I: Imports> Mirror<I> {
 
 /// Wraps a host signal.
 pub(crate) fn signal<I: Imports>(imports: &I, signal: I::Signal) -> AbortSignal {
-    AbortSignal::new(Rc::new(Signal {
+    AbortSignal::lent(Rc::new(Signal {
         imports: imports.clone(),
         signal,
     }))

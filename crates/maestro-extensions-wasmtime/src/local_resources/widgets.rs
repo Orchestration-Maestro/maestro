@@ -219,6 +219,10 @@ impl State {
             WidgetMessage::LendEditor(reply) => {
                 let _ = reply.send(self.lend_editor());
             }
+            WidgetMessage::Suggestions(id, request, admission) => {
+                self.suggestions(id, request, admission);
+            }
+            WidgetMessage::Provider(id, request) => self.provider(id, request),
         }
     }
 

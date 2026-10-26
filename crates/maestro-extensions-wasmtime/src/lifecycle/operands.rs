@@ -46,18 +46,15 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
-            Self::Factory(call) => Call::Factory(factory(call, completion)),
-            Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
-            Self::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
-            Self::Widget(call) => Call::Widget(widget(call, completion)),
-            Self::EditorFactory(call) => Call::EditorFactory(editor_factory(call, completion)),
-            Self::Editor(call) => Call::Editor(crate::guest_calls::editors::EditorCall {
-                handler: completion.callback(call.handler),
-                request: call.request,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
-            Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
+            call @ (Self::Factory(_)
+            | Self::ToolRender(_)
+            | Self::Paint(_)
+            | Self::Widget(_)
+            | Self::EditorFactory(_)
+            | Self::ProviderFactory(_)
+            | Self::Provider(_)
+            | Self::Editor(_)
+            | Self::TerminalInput(_)) => ui(call, completion),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
                 kind: call.kind,
@@ -66,6 +63,39 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the admission of a UI callback beside its operands.
+fn ui(call: Call, completion: &Completion) -> Call<Callback> {
+    match call {
+        Call::Factory(call) => Call::Factory(factory(call, completion)),
+        Call::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
+        Call::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
+        Call::Widget(call) => Call::Widget(widget(call, completion)),
+        Call::EditorFactory(call) => Call::EditorFactory(editor_factory(call, completion)),
+        Call::ProviderFactory(call) => {
+            Call::ProviderFactory(crate::guest_calls::providers::FactoryCall {
+                handler: completion.callback(call.handler),
+                current: call.current,
+                emitter: call.emitter,
+                reply: call.reply,
+            })
+        }
+        Call::Provider(call) => Call::Provider(crate::guest_calls::providers::ProviderCall {
+            handler: completion.callback(call.handler),
+            request: call.request,
+            signal: call.signal,
+            reply: call.reply,
+        }),
+        Call::Editor(call) => Call::Editor(crate::guest_calls::editors::EditorCall {
+            handler: completion.callback(call.handler),
+            request: call.request,
+            emitter: call.emitter,
+            reply: call.reply,
+        }),
+        Call::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
+        call => call.admitted(completion),
     }
 }
 

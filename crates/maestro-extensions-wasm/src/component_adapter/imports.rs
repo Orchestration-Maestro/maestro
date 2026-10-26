@@ -623,6 +623,12 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionResult<()>;
     /// Reads the identity of the current editor factory.
     fn ui_get_editor_component(&self, resource: &Self::Ui) -> ExtensionResult<Option<u32>>;
+    /// Forwards a provider factory, which the host runs before answering.
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Self::Ui,
+        factory: &Self::Callback,
+    ) -> ExtensionResult<()>;
     /// Reads the UI's live theme.
     fn ui_theme(&self, resource: &Self::Ui) -> ExtensionResult<Self::Theme>;
     /// Lists every available theme.

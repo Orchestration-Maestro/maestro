@@ -2,10 +2,8 @@
 use crate::{
     context_imports::{CommandContext, Context},
     guest_calls::{
-        BashRequest, Call, Callback, RegisteredCall, SynchronousKind,
-        events::Returned,
-        renderers::{ComponentCall, ComponentMethod},
-        tools::ToolCall,
+        BashRequest, Call, Callback, RegisteredCall, SynchronousKind, events::Returned,
+        renderers::ComponentCall, tools::ToolCall,
     },
     guest_exports::{
         bash::Capabilities as BashResources,
@@ -17,7 +15,10 @@ use crate::{
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
+mod component;
+use component::{LocalKey, LocalRender, LocalUnit};
 mod credentials;
+mod editors;
 mod ui;
 use ui::{
     LocalExpanded, LocalFactory, LocalHighlight, LocalStyle, LocalTerminalInput, LocalToolRender,
@@ -37,40 +38,6 @@ pub(super) struct LocalRenderer {
     expanded: bool,
     /// Transferred theme capability.
     theme: Resource<ThemeEndpoint>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested component render.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalRender {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Actual caller viewport width.
-    width: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested input or invalidation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalUnit {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Literal input, or absence for invalidation.
-    data: Option<String>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested key-release query.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalKey {
-    /// Authored identity of the retained component.
-    target: u32,
     /// Independent native invocation frame.
     emitter: Resource<EmitterEndpoint>,
 }
@@ -307,10 +274,16 @@ pub(super) enum LocalCall {
     Widget(LocalWidget),
     /// An editor factory.
     #[component(name = "editor-factory")]
-    EditorFactory(ui::LocalEditorFactory),
+    EditorFactory(editors::LocalEditorFactory),
     /// A request on an authored editor.
     #[component(name = "editor")]
-    Editor(ui::LocalEditor),
+    Editor(editors::LocalEditor),
+    /// A request on an authored completion provider.
+    #[component(name = "provider")]
+    Provider(editors::LocalProvider),
+    /// A completion provider factory.
+    #[component(name = "provider-factory")]
+    ProviderFactory(editors::LocalProviderFactory),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -380,6 +353,12 @@ pub(super) enum LocalResult {
     /// The authored editor's answer, or its error.
     #[component(name = "editor")]
     Editor(Result<crate::guest_calls::editors::Answer, String>),
+    /// The authored provider's answer, or its error.
+    #[component(name = "provider")]
+    Provider(Result<crate::guest_calls::providers::Answer, String>),
+    /// The returned provider's identity, or the authored error.
+    #[component(name = "provider-factory")]
+    ProviderFactory(Result<Resource<Callback>, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -396,7 +375,7 @@ pub(super) fn lower(
             theme: table.push(call.theme.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        Call::Component(call) => component(table, call)?,
+        Call::Component(call) => component::lower(table, call)?,
         Call::Tool(ToolCall::Prepare {
             handler,
             args,
@@ -418,9 +397,11 @@ pub(super) fn lower(
         | Call::Factory(_)
         | Call::TerminalInput(_)
         | Call::Paint(_)
-        | Call::Widget(_)
-        | Call::EditorFactory(_)
-        | Call::Editor(_)) => ui::lower(table, call)?,
+        | Call::Widget(_)) => ui::lower(table, call)?,
+        call @ (Call::EditorFactory(_)
+        | Call::Editor(_)
+        | Call::Provider(_)
+        | Call::ProviderFactory(_)) => editors::lower(table, call)?,
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -429,39 +410,6 @@ pub(super) fn lower(
         }),
         Call::Registered(call) => registered(table, call)?,
         call => asynchronous(table, call)?,
-    })
-}
-
-/// Marshals one retained component method.
-fn component(
-    table: &mut ResourceTable,
-    call: &ComponentCall<Callback>,
-) -> wasmtime::Result<LocalCall> {
-    Ok(match call {
-        ComponentCall::Render(owner, width, emitter, _) => LocalCall::Render(LocalRender {
-            target: owner.id,
-            width: *width,
-            emitter: table.push(emitter.clone())?,
-        }),
-        ComponentCall::Unit(owner, ComponentMethod::SetExpanded(expanded), emitter, _) => {
-            LocalCall::Expanded(LocalExpanded {
-                target: owner.id,
-                expanded: *expanded,
-                emitter: table.push(emitter.clone())?,
-            })
-        }
-        ComponentCall::Unit(owner, method, emitter, _) => LocalCall::Unit(LocalUnit {
-            target: owner.id,
-            data: match method {
-                ComponentMethod::Input(data) => Some(data.clone()),
-                ComponentMethod::Invalidate | ComponentMethod::SetExpanded(_) => None,
-            },
-            emitter: table.push(emitter.clone())?,
-        }),
-        ComponentCall::WantsKeyRelease(owner, emitter, _) => LocalCall::Key(LocalKey {
-            target: owner.id,
-            emitter: table.push(emitter.clone())?,
-        }),
     })
 }
 
@@ -575,11 +523,16 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             | Call::ToolRender(_)
             | Call::Factory(_)
             | Call::Paint(_)
-            | Call::Widget(_)
-            | Call::EditorFactory(_)
-            | Call::Editor(_)),
+            | Call::Widget(_)),
             value,
         ) => ui::settle(store, call, value)?,
+        (
+            call @ (Call::EditorFactory(_)
+            | Call::Editor(_)
+            | Call::Provider(_)
+            | Call::ProviderFactory(_)),
+            value,
+        ) => editors::settle(store, call, value)?,
         (call, value) => settle_asynchronous(store, call, value)?,
     }
     Ok(())

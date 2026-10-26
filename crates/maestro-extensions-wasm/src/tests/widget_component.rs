@@ -294,6 +294,17 @@ impl host::HostWidget for State {
             Err(error) => Ok(Err(error)),
         }
     }
+    fn set_autocomplete_provider(
+        &mut self,
+        this: Resource<WidgetResource>,
+        provider: Resource<Identity>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        let provider = self.table.get(&provider)?.0;
+        let line = format!("widget {key} setAutocompleteProvider {}", json!([provider]));
+        self.observed.log(line);
+        Ok(Ok(()))
+    }
     fn share(
         &mut self,
         this: Resource<WidgetResource>,

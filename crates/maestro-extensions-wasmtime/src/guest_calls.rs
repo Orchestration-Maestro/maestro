@@ -19,6 +19,7 @@ pub(crate) mod editors;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) mod paints;
+pub(crate) mod providers;
 pub(crate) mod widget_calls;
 pub(crate) use events::EventCall;
 pub(crate) mod credentials;
@@ -78,6 +79,10 @@ pub(crate) enum Call<H = Handle> {
     EditorFactory(editors::FactoryCall<H>),
     /// Runs one native request on an authored editor.
     Editor(editors::EditorCall<H>),
+    /// Runs a provider factory on the lent current provider.
+    ProviderFactory(providers::FactoryCall<H>),
+    /// Runs one native request on an authored completion provider.
+    Provider(providers::ProviderCall<H>),
     /// Awaits an authored hook on the original pending native model invocation.
     ModelHook(crate::model_calls::Invocation<H>),
     /// Invokes an authored stream callback on the retained local event.

@@ -135,6 +135,14 @@ pub(crate) enum WidgetMessage {
     Hint(crate::keys_reads::Hint, Reply<String>),
     /// Lends the live theme's editor border and selection list styles in field order.
     LendEditor(Reply<(StyleEndpoint, Vec<StyleEndpoint>)>),
+    /// Admits one suggestion request on a lent completion provider.
+    Suggestions(
+        u64,
+        crate::guest_calls::providers::SuggestionRequest,
+        crate::local_resources::Admission,
+    ),
+    /// One request on a lent completion provider.
+    Provider(u64, crate::guest_calls::providers::Lent),
 }
 
 /// The lent settings list styles: label and value row styles, description, cursor and hint.

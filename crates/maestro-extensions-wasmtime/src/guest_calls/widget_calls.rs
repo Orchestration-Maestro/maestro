@@ -18,6 +18,17 @@ pub(crate) struct Item {
     pub(crate) description: Option<String>,
 }
 
+impl Item {
+    /// A choice from its value, label and description.
+    pub(crate) fn new(value: &str, label: &str, description: Option<&String>) -> Self {
+        Self {
+            value: value.to_owned(),
+            label: label.to_owned(),
+            description: description.cloned(),
+        }
+    }
+}
+
 /// What an authored primary-column truncation receives.
 #[derive(Clone, ComponentType, Lower)]
 #[component(record)]

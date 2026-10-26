@@ -132,6 +132,18 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
         identity.settle(result.is_ok());
         result
     }
+    fn add_autocomplete_provider(
+        &self,
+        factory: crate::AutocompleteProviderFactory,
+    ) -> ExtensionResult<()> {
+        let identity = Identity::new(&self.imports);
+        identity.stage(factory);
+        let result = self
+            .imports
+            .ui_add_autocomplete_provider(&self.resource, &identity.handle);
+        identity.settle(result.is_ok());
+        result
+    }
     fn get_editor_component(&self) -> ExtensionResult<Option<crate::EditorFactory>> {
         let current = self.imports.ui_get_editor_component(&self.resource)?;
         current.map(super::callbacks::find).transpose()

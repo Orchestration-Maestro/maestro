@@ -628,3 +628,119 @@ async fn editor_factories(driver: &mut impl Driver) -> Result<(), String> {
 fn editor_factory_retains_callbacks_text_and_appearance() -> Result<(), String> {
     on_both_adapters!(editor_factories)
 }
+
+/// Runs provider requests in order and returns each described answer.
+async fn provided(driver: &mut impl Driver, requests: Value) -> Result<Vec<Value>, String> {
+    let mut answers = Vec::new();
+    for request in requests.as_array().cloned().ok_or("expected requests")? {
+        answers.push(driver.provider_request(request).await?);
+    }
+    Ok(answers)
+}
+
+/// A stacked provider's suggestions keep absence and force, and it keeps the signal after
+/// the request returns.
+async fn stacked_suggestions(driver: &mut impl Driver) -> Result<(), String> {
+    let mut suggestions = |force: Value, aborted: bool, line: &str| {
+        let signal = driver.lend_signal(aborted)?;
+        let request = json!({ "op": "suggestions", "lines": [line], "cursor": [0, 4],
+            "force": force, "signal": signal });
+        Ok::<_, String>((request, signal))
+    };
+    let requests = [
+        suggestions(json!(null), false, "src/")?,
+        suggestions(json!(false), false, "src/")?,
+        suggestions(json!(true), true, "src/")?,
+        suggestions(json!(null), false, "mine")?,
+    ];
+    let kept = requests[3].1;
+    let mut answers = Vec::new();
+    for (request, _) in requests {
+        answers.push(driver.provider_request(request).await?);
+    }
+    let first = json!(["first", "FIRST", null]);
+    let base = json!(["base", "Base", "host"]);
+    let expected = [
+        json!({ "suggestions": [[base, first], "src/"] }),
+        json!({ "suggestions": null }),
+        json!({ "suggestions": [[base, first], "src/"] }),
+        json!({ "suggestions": [[first], "mine"] }),
+    ];
+    assert_eq!(answers, expected);
+    let trigger = json!({ "op": "trigger", "lines": ["kept"], "cursor": [0, 0] });
+    assert_eq!(
+        driver.provider_request(trigger.clone()).await?,
+        json!({ "trigger": false })
+    );
+    driver.abort_signal(kept)?;
+    assert_eq!(
+        driver.provider_request(trigger).await?,
+        json!({ "trigger": true })
+    );
+    Ok(())
+}
+
+/// A stacked provider receives the current provider, applies its own candidates, passes
+/// others and file-completion decisions on, and editors keep or lack provider installation.
+async fn stacked_provider(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let from = driver.transcript().len();
+    let stacked = operate(driver, json!({ "op": "stackProvider", "name": "first" })).await?;
+    assert_eq!(stacked, json!({ "ok": true }));
+    stacked_suggestions(driver).await?;
+    let answers = provided(
+        driver,
+        json!([
+            { "op": "apply", "lines": ["src/"], "cursor": [0, 4],
+              "item": ["base", "Base", "host"], "prefix": "src/" },
+            { "op": "apply", "lines": ["x"], "cursor": [0, 1],
+              "item": ["first", "FIRST", null], "prefix": "x" },
+            { "op": "trigger", "lines": ["@x"], "cursor": [0, 2] },
+            { "op": "trigger", "lines": ["x"], "cursor": [0, 1] },
+        ]),
+    )
+    .await?;
+    let expected = [
+        json!({ "applied": [["base"], 0, 4] }),
+        json!({ "applied": [["x->first"], 0, 2] }),
+        json!({ "trigger": true }),
+        json!({ "trigger": null }),
+    ];
+    assert_eq!(answers, expected);
+    let host: Vec<_> = driver.transcript()[from..]
+        .iter()
+        .filter(|line| line.starts_with("provider ") || line.contains("addAutocompleteProvider"))
+        .cloned()
+        .collect();
+    assert_eq!(
+        host,
+        [
+            "ui 0 addAutocompleteProvider []",
+            "provider stacked",
+            r#"provider suggestions [["src/"],[0,4],null,false]"#,
+            r#"provider suggestions [["src/"],[0,4],false,false]"#,
+            r#"provider suggestions [["src/"],[0,4],true,true]"#,
+            r#"provider apply [["src/"],[0,4],"base","src/"]"#,
+            r#"provider trigger [["@x"],[0,2]]"#,
+            r#"provider trigger [["x"],[0,1]]"#,
+        ]
+    );
+    for (kind, answer) in [("plain", "absent"), ("host", "done")] {
+        assert_eq!(install_editor(driver, kind).await?, json!({ "same": true }));
+        let installed = json!({ "op": "setAutocompleteProvider" });
+        assert_eq!(driver.editor_request(installed).await?, json!(answer));
+    }
+    let factories: Vec<_> = driver
+        .bus_emissions()
+        .into_iter()
+        .filter(|(channel, _)| channel == "provider-factory")
+        .collect();
+    assert_eq!(factories, [("provider-factory".to_owned(), json!("first"))]);
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn autocomplete_keeps_async_signal_and_wrapper_stack() -> Result<(), String> {
+    on_both_adapters!(stacked_provider)
+}

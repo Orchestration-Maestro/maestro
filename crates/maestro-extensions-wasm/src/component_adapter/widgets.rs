@@ -313,7 +313,7 @@ pub(super) fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Styl
     ))
 }
 
-impl<I: WidgetImports> WidgetHost for Builder<I> {
+impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
     fn text(
         &self,
         text: &str,

@@ -128,6 +128,9 @@ pub(super) fn authored(
         Wire::SetBorderColor(style) => AuthoredRequest::SetBorderColor(style),
         Wire::SetPaddingX(padding) => AuthoredRequest::SetPaddingX(padding),
         Wire::SetAutocompleteMaxVisible(max) => AuthoredRequest::SetAutocompleteMaxVisible(max),
+        Wire::SetAutocompleteProvider(provider) => {
+            AuthoredRequest::SetAutocompleteProvider(provider)
+        }
     };
     let identity = || callbacks::Identity::<Generated>::new(&Generated);
     Ok(
@@ -145,4 +148,144 @@ pub(super) fn authored(
             }
         },
     )
+}
+
+/// Runs one host request on an authored completion provider.
+pub(super) async fn provider(
+    handler: u32,
+    request: host::ProviderRequest,
+    signal: Option<host::AbortSignal>,
+) -> ExtensionResult<host::ProviderAnswer> {
+    use crate::component_adapter::{ProviderAnswer, ProviderRequest};
+    let at = |(line, col): (u32, u32)| crate::CursorPosition { line, col };
+    let request = match request {
+        host::ProviderRequest::Suggestions((lines, cursor, force)) => {
+            ProviderRequest::Suggestions(lines, at(cursor), force)
+        }
+        host::ProviderRequest::Apply((lines, cursor, item, prefix)) => {
+            ProviderRequest::Apply(lines, at(cursor), item, prefix)
+        }
+        host::ProviderRequest::Trigger((lines, cursor)) => {
+            ProviderRequest::Trigger(lines, at(cursor))
+        }
+    };
+    let answer = Exports::new(Generated)
+        .invoke_provider(handler, request, signal)
+        .await?;
+    Ok(match answer {
+        ProviderAnswer::Suggestions(suggestions) => {
+            host::ProviderAnswer::Suggestions(suggestions.map(|suggestions| {
+                host::AutocompleteSuggestions {
+                    items: suggestions.items,
+                    prefix: suggestions.prefix,
+                }
+            }))
+        }
+        ProviderAnswer::Applied(result) => host::ProviderAnswer::Applied(host::CompletionResult {
+            lines: result.lines,
+            cursor_line: result.cursor_line,
+            cursor_col: result.cursor_col,
+        }),
+        ProviderAnswer::Trigger(decision) => host::ProviderAnswer::Trigger(decision),
+    })
+}
+
+/// Runs a provider factory on the lent current provider and transfers what it returned.
+pub(super) fn provider_factory(
+    handler: u32,
+    current: host::CompletionProvider,
+    emitter: &host::CallbackEmitter,
+) -> ExtensionResult<host::Callback> {
+    let provider = Exports::new(Generated).invoke_provider_factory(handler, current, emitter)?;
+    Ok(callbacks::Identity::<Generated>::new(&Generated).transfer(provider))
+}
+
+/// Requests suggestions from a lent provider with a host signal.
+pub(super) async fn suggestions(
+    provider: &host::CompletionProvider,
+    (lines, cursor, force): (&[String], crate::CursorPosition, Option<bool>),
+    signal: &host::AbortSignal,
+) -> ExtensionResult<Option<crate::AutocompleteSuggestions>> {
+    let at = (cursor.line, cursor.col);
+    let suggestions = provider
+        .get_suggestions(lines.to_vec(), at, signal, force)
+        .await?;
+    Ok(
+        suggestions.map(|suggestions| crate::AutocompleteSuggestions {
+            items: suggestions.items,
+            prefix: suggestions.prefix,
+        }),
+    )
+}
+
+/// Applies a completion through a lent provider, running the nested calls it makes first.
+pub(super) fn apply(
+    provider: &host::CompletionProvider,
+    (lines, cursor): (&[String], crate::CursorPosition),
+    item: &crate::AutocompleteItem,
+    prefix: &str,
+) -> ExtensionResult<crate::CompletionResult> {
+    let route = provider.apply_completion(lines, (cursor.line, cursor.col), item, prefix);
+    match route::value(&route)? {
+        host::RouteValue::Completion(result) => Ok(crate::CompletionResult {
+            lines: result.lines,
+            cursor_line: result.cursor_line,
+            cursor_col: result.cursor_col,
+        }),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Reads a lent provider's file-completion decision, running the nested calls it makes first.
+pub(super) fn trigger(
+    provider: &host::CompletionProvider,
+    (lines, cursor): (&[String], crate::CursorPosition),
+) -> ExtensionResult<Option<bool>> {
+    let route = provider.should_trigger_file_completion(lines, (cursor.line, cursor.col));
+    match route::value(&route)? {
+        host::RouteValue::Trigger(decision) => Ok(decision),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+impl crate::component_adapter::EditorImports for Generated {
+    fn widget_border_color(&self, widget: &host::Widget) -> ExtensionResult<host::Style> {
+        widget.border_color()
+    }
+    type TextCallback = host::TextCallback;
+    fn text_callback(&self, callback: &host::TextCallback, text: &str) -> ExtensionResult<()> {
+        route::drive(&callback.call(text))
+    }
+    fn widget_set_autocomplete_provider(
+        &self,
+        widget: &host::Widget,
+        provider: &host::Callback,
+    ) -> ExtensionResult<()> {
+        widget.set_autocomplete_provider(provider)
+    }
+    type Provider = host::CompletionProvider;
+    fn provider_suggestions<'a>(
+        &'a self,
+        provider: &'a host::CompletionProvider,
+        request: (&'a [String], crate::CursorPosition, Option<bool>),
+        signal: &'a host::AbortSignal,
+    ) -> crate::ExtensionFuture<'a, Option<crate::AutocompleteSuggestions>> {
+        Box::pin(suggestions(provider, request, signal))
+    }
+    fn provider_apply(
+        &self,
+        provider: &host::CompletionProvider,
+        at: (&[String], crate::CursorPosition),
+        item: &crate::AutocompleteItem,
+        prefix: &str,
+    ) -> ExtensionResult<crate::CompletionResult> {
+        apply(provider, at, item, prefix)
+    }
+    fn provider_trigger(
+        &self,
+        provider: &host::CompletionProvider,
+        at: (&[String], crate::CursorPosition),
+    ) -> ExtensionResult<Option<bool>> {
+        trigger(provider, at)
+    }
 }

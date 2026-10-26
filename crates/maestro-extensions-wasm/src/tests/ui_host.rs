@@ -131,6 +131,8 @@ pub enum Nested {
     Shortcut(u32, String),
     /// An editor factory with this identity, whose editor replaces the current one.
     Editor(u32),
+    /// A provider factory, whose provider the host stacks.
+    Provider,
 }
 
 /// Host state the UI requests are served from.
@@ -168,6 +170,8 @@ pub struct Bank {
     pub widget_editors: super::widget_editors::Editors,
     /// The authored editor shown in place of the host's own, when there is one.
     pub editor: Option<EditorSlot>,
+    /// The authored completion providers stacked on the host's own.
+    pub providers: super::provider_host::Stack,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -709,7 +713,12 @@ impl State {
                 show_editor(&mut self.observed, slot);
                 Ok(None)
             }
-            (Nested::Editor(_), host::LocalResult::EditorFactory(Err(error))) => Ok(Some(error)),
+            (Nested::Editor(_), host::LocalResult::EditorFactory(Err(error)))
+            | (Nested::Provider, host::LocalResult::ProviderFactory(Err(error))) => Ok(Some(error)),
+            (Nested::Provider, host::LocalResult::ProviderFactory(Ok(provider))) => {
+                self.stack_provider(&provider);
+                Ok(None)
+            }
             (
                 _,
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
@@ -1102,6 +1111,14 @@ impl host::HostExtensionUiContext for State {
             rows: None,
             result: Some(Ok(host::RouteValue::Unit)),
         })
+    }
+
+    fn add_autocomplete_provider(
+        &mut self,
+        this: Resource<Ui>,
+        factory: Resource<super::host::Identity>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        self.add_provider(&this, &factory)
     }
 
     fn get_editor_component(

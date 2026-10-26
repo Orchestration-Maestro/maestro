@@ -47,6 +47,8 @@ mod renderer_author;
 mod replacement_author;
 #[path = "setup_author.rs"]
 mod setup_author;
+#[path = "stacked_provider_author.rs"]
+mod stacked_provider_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
 #[path = "nested_schema_fixture.rs"]

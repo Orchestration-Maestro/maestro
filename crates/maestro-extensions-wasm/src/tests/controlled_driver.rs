@@ -477,6 +477,12 @@ impl Driver for ControlledDriver {
     ) -> impl Future<Output = Result<serde_json::Value, String>> {
         std::future::ready(self.host.authored_editor(request))
     }
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        self.host.provider_request(request, &self.flags).await
+    }
     fn editor_component(
         &mut self,
         call: super::renderer_host::Call<'_>,

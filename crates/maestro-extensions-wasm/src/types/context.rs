@@ -99,6 +99,9 @@ port! {
         fn set_editor_component(factory: Option<crate::EditorFactory>) -> ();
         /// The current editor factory, or `None` while the host's own editor is in use.
         fn get_editor_component() -> Option<crate::EditorFactory>;
+        /// Stacks `factory` on the current completion provider; the host keeps it for later
+        /// rebuilds and runs it before the request returns.
+        fn add_autocomplete_provider(factory: crate::AutocompleteProviderFactory) -> ();
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
         /// The UI's live theme; it observes later selections.
@@ -179,19 +182,44 @@ pub trait SignalPort {
 /// Cancellation flag of an operation. Clones share the host flag and may outlive the
 /// callback that received them.
 #[derive(Clone)]
-pub struct AbortSignal(Rc<dyn SignalPort>);
+pub struct AbortSignal {
+    /// The flag's requests.
+    port: Rc<dyn SignalPort>,
+    /// The host resource behind a flag the host lent, which goes back to the host unchanged.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    host: Option<Rc<dyn std::any::Any>>,
+}
 
 impl AbortSignal {
     /// Wraps the host's flag.
     #[must_use]
     pub fn new(port: Rc<dyn SignalPort>) -> Self {
-        Self(port)
+        Self {
+            port,
+            #[cfg(any(test, target_arch = "wasm32"))]
+            host: None,
+        }
+    }
+
+    /// Wraps a flag the host lent as a `P`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn lent<P: SignalPort + 'static>(port: Rc<P>) -> Self {
+        Self {
+            port: port.clone(),
+            host: Some(port),
+        }
+    }
+
+    /// The host flag behind this signal, when the host lent it as a `P`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
+        self.host.clone()?.downcast().ok()
     }
 
     /// Whether the operation was cancelled when this is called.
     #[must_use]
     pub fn aborted(&self) -> bool {
-        self.0.aborted()
+        self.port.aborted()
     }
 
     /// Registers `listener` to run once when the operation is cancelled.
@@ -204,7 +232,7 @@ impl AbortSignal {
     /// # Errors
     /// Returns the host rejection; a rejected listener is not retained.
     pub fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription> {
-        self.0.subscribe(listener)
+        self.port.subscribe(listener)
     }
 }
 

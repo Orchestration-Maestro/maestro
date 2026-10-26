@@ -715,6 +715,11 @@ enum Operation {
     },
     /// Shows an authored editor through a retained component.
     AuthoredEditorContract,
+    /// Stacks a completion provider named `name` on the current provider.
+    StackProvider {
+        /// The candidate the provider adds.
+        name: String,
+    },
     /// Replaces the host editor with the editor `kind` names, or restores it for `none`.
     EditorFactory {
         /// `plain`, `host`, `custom`, `failing` or `none`.
@@ -918,9 +923,9 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 .and_then(|tool| api.register_tool(tool))
                 .map(|()| None),
         ),
-        operation @ (Operation::AuthoredEditorContract | Operation::EditorFactory { .. }) => {
-            caught(editors(ctx, operation))
-        }
+        operation @ (Operation::AuthoredEditorContract
+        | Operation::EditorFactory { .. }
+        | Operation::StackProvider { .. }) => caught(editors(ctx, operation)),
         Operation::CompletionContract { force } => {
             let signal = AbortSignal::new(Rc::new(Caller(Rc::default())));
             caught(
@@ -966,11 +971,15 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
     api.append_entry("ui-done", None)
 }
 
-/// Shows an authored editor through a component, or installs an editor factory.
+/// Shows an authored editor through a component, installs an editor factory or stacks a
+/// completion provider.
 fn editors(ctx: &ExtensionContext, operation: Operation) -> ExtensionResult<Option<Value>> {
     match operation {
         Operation::EditorFactory { kind } => {
             super::editor_factory_author::install(&ctx.ui()?, &kind).map(Some)
+        }
+        Operation::StackProvider { name } => {
+            super::stacked_provider_author::install(&ctx.ui()?, &name).map(|()| None)
         }
         _ => super::authored_editor_author::install(&ctx.ui()?).map(|()| None),
     }

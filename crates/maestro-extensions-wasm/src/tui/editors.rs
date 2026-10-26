@@ -7,7 +7,9 @@
 
 use super::widgets::{Hosted, Widget, host};
 use super::{Component, ComponentView, EditorTheme, KeybindingsManager, Style, TUI, WidgetNotice};
-use crate::{CallbackEmitter, CustomEditorComponent, EditorComponent, ExtensionResult};
+use crate::{
+    AutocompleteProvider, CallbackEmitter, CustomEditorComponent, EditorComponent, ExtensionResult,
+};
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -72,6 +74,8 @@ port! {
         fn set_on_change(handler: Option<TextHandler>) -> ();
         /// Delivers input; the editor's handlers may run first.
         fn handle_input(data: &str) -> ();
+        /// Replaces the completion provider.
+        fn set_autocomplete_provider(provider: Rc<dyn AutocompleteProvider>) -> ();
     }
 }
 
@@ -186,6 +190,13 @@ impl EditorComponent for Editor {
     }
     fn get_expanded_text(&self, _: CallbackEmitter<'_>) -> ExtensionResult<Option<String>> {
         Editor::get_expanded_text(self).map(Some)
+    }
+    fn set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider>,
+        _: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        Editor::set_autocomplete_provider(self, provider).map(Some)
     }
     fn border_color(&self, _: CallbackEmitter<'_>) -> ExtensionResult<Option<Style>> {
         Editor::border_color(self).map(Some)
@@ -331,6 +342,13 @@ impl EditorComponent for CustomEditor {
     }
     fn get_expanded_text(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<Option<String>> {
         EditorComponent::get_expanded_text(&self.editor, emitter)
+    }
+    fn set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider>,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        EditorComponent::set_autocomplete_provider(&self.editor, provider, emitter)
     }
     fn border_color(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<Option<Style>> {
         EditorComponent::border_color(&self.editor, emitter)

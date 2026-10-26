@@ -95,6 +95,8 @@ pub(crate) enum EditorRequest {
     OnAction(String, Handle, Reply<()>),
     /// Lends the border style.
     BorderColor(Reply<crate::widget_reads::StyleEndpoint>),
+    /// Replaces the completion provider with an authored one.
+    Provider(Handle, Reply<()>),
 }
 
 impl EditorRequest {
@@ -103,7 +105,9 @@ impl EditorRequest {
         let error = error.to_owned();
         match self {
             Self::Read(_, reply) => drop(reply.send(Err(error))),
-            Self::Edit(_, _, reply) | Self::OnAction(_, _, reply) => drop(reply.send(Err(error))),
+            Self::Edit(_, _, reply) | Self::OnAction(_, _, reply) | Self::Provider(_, reply) => {
+                drop(reply.send(Err(error)));
+            }
             Self::BorderColor(reply) => drop(reply.send(Err(error))),
         }
     }
@@ -195,6 +199,12 @@ impl EditorKind {
                     editor.set_text(&text);
                 }
                 let _ = reply.send(binding.failure.borrow_mut().take().map_or(Ok(()), Err));
+            }
+            EditorRequest::Provider(handle, reply) => {
+                let provider =
+                    crate::guest_provider::GuestProvider::new(handle, binding.registry.clone());
+                self.editor().set_autocomplete_provider(Rc::new(provider));
+                let _ = reply.send(Ok(()));
             }
             EditorRequest::BorderColor(reply) => {
                 let style = binding.registry.lend_style(self.editor().border_color());

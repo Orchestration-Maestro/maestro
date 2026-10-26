@@ -98,6 +98,8 @@ pub(crate) enum Request {
     SetPaddingX(f64),
     /// Replaces the completion row count.
     SetAutocompleteMaxVisible(f64),
+    /// Replaces the completion provider with a lent one.
+    SetAutocompleteProvider(crate::guest_calls::providers::ProviderEndpoint),
 }
 
 /// The wire form of a request, with its lent callbacks and styles transferred.
@@ -140,6 +142,9 @@ pub(crate) enum WireRequest {
     /// Replaces the completion row count.
     #[component(name = "set-autocomplete-max-visible")]
     SetAutocompleteMaxVisible(f64),
+    /// Replaces the completion provider with a lent one.
+    #[component(name = "set-autocomplete-provider")]
+    SetAutocompleteProvider(Resource<crate::guest_calls::providers::ProviderEndpoint>),
 }
 
 impl Request {
@@ -164,6 +169,9 @@ impl Request {
             Self::SetBorderColor(style) => WireRequest::SetBorderColor(table.push(style.clone())?),
             Self::SetPaddingX(padding) => WireRequest::SetPaddingX(*padding),
             Self::SetAutocompleteMaxVisible(max) => WireRequest::SetAutocompleteMaxVisible(*max),
+            Self::SetAutocompleteProvider(provider) => {
+                WireRequest::SetAutocompleteProvider(table.push(provider.clone())?)
+            }
         })
     }
 }

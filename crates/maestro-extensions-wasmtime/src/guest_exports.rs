@@ -16,6 +16,7 @@ pub(crate) mod events;
 mod factories;
 mod model_hooks;
 mod paints;
+mod providers;
 mod widget_calls;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
@@ -80,6 +81,8 @@ pub(crate) struct Exports {
     widgets: widget_calls::Exports,
     /// Editor factory and authored editor exports.
     editors: editors::Exports,
+    /// Completion provider and provider factory exports.
+    providers: providers::Exports,
     /// Native component disposal.
     dispose: Abort,
     /// Native branch change listener.
@@ -137,6 +140,7 @@ impl Exports {
         let paints = paints::Exports::new(store, instance, &guest)?;
         let widgets = widget_calls::Exports::new(store, instance, &guest)?;
         let editors = editors::Exports::new(store, instance, &guest)?;
+        let providers = providers::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
@@ -155,6 +159,7 @@ impl Exports {
             paints,
             widgets,
             editors,
+            providers,
             dispose: typed(store, instance, &guest, "invoke-dispose")?,
             branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
@@ -196,7 +201,9 @@ impl Exports {
             | Call::Paint(_)
             | Call::Widget(_)
             | Call::EditorFactory(_)
-            | Call::Editor(_)) => {
+            | Call::Editor(_)
+            | Call::ProviderFactory(_)
+            | Call::Provider(_)) => {
                 self.ui(accessor, call).await?;
             }
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -255,6 +262,8 @@ impl Exports {
             Call::Widget(call) => self.widgets.invoke(accessor, call).await,
             Call::EditorFactory(call) => self.editors.factory(accessor, call).await,
             Call::Editor(call) => self.editors.request(accessor, call).await,
+            Call::ProviderFactory(call) => self.providers.factory(accessor, call).await,
+            Call::Provider(call) => self.providers.request(accessor, call).await,
             _ => Err(wasmtime::format_err!("expected a UI callback")),
         }
     }

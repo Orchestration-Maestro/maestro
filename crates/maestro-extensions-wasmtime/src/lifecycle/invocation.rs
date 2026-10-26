@@ -48,6 +48,8 @@ impl Call {
             Self::Widget(call) => attach(&call.reply, completion),
             Self::EditorFactory(call) => attach(&call.reply, completion),
             Self::Editor(call) => attach(&call.reply, completion),
+            Self::ProviderFactory(call) => attach(&call.reply, completion),
+            Self::Provider(call) => attach(&call.reply, completion),
             Self::Paint(crate::guest_calls::paints::PaintCall::Highlight(_, _, _, reply)) => {
                 attach(reply, completion);
             }

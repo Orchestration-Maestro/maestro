@@ -11,6 +11,10 @@ pub(crate) enum Value {
     Text(String),
     /// Rendered rows.
     Lines(Vec<String>),
+    /// The lines and cursor after a completion was applied.
+    Completion(crate::guest_calls::providers::Completed),
+    /// A file-completion decision, absent without one.
+    Trigger(Option<bool>),
     /// Independently retained credentials.
     Credentials(crate::credential_reads::Endpoint),
     /// Independently retained catalog.
@@ -32,6 +36,12 @@ pub(super) enum Transferred {
     /// Rendered rows.
     #[component(name = "lines")]
     Lines(Vec<String>),
+    /// The lines and cursor after a completion was applied.
+    #[component(name = "completion")]
+    Completion(crate::guest_calls::providers::Completed),
+    /// A file-completion decision, absent without one.
+    #[component(name = "trigger")]
+    Trigger(Option<bool>),
     /// Independently retained credentials.
     #[component(name = "credentials")]
     Credentials(Resource<crate::credential_reads::Endpoint>),
@@ -47,6 +57,8 @@ impl Value {
             Self::Boolean(value) => Transferred::Boolean(value),
             Self::Text(value) => Transferred::Text(value),
             Self::Lines(value) => Transferred::Lines(value),
+            Self::Completion(value) => Transferred::Completion(value),
+            Self::Trigger(value) => Transferred::Trigger(value),
             Self::Credentials(value) => Transferred::Credentials(table.push(value)?),
             Self::Catalog(value) => Transferred::Catalog(table.push(value)?),
         })
@@ -60,7 +72,7 @@ macro_rules! returns {
         }
     )*};
 }
-returns! { bool => Boolean, String => Text, Vec<String> => Lines, crate::credential_reads::Endpoint => Credentials, crate::catalog_reads::Endpoint => Catalog }
+returns! { bool => Boolean, String => Text, Vec<String> => Lines, crate::guest_calls::providers::Completed => Completion, Option<bool> => Trigger, crate::credential_reads::Endpoint => Credentials, crate::catalog_reads::Endpoint => Catalog }
 impl From<()> for Value {
     fn from((): ()) -> Self {
         Self::Unit

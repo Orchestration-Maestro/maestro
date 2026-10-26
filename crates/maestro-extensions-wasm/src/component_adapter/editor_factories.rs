@@ -18,7 +18,7 @@ use crate::{
 
 /// What an editor factory's host lends it: the terminal, the editor styles and the
 /// keybindings.
-pub(crate) struct LentEditor<I: WidgetImports> {
+pub(crate) struct LentEditor<I: super::providers::EditorImports> {
     /// The lent terminal.
     pub(crate) tui: I::Tui,
     /// The border style, then the completion list styles in field order.
@@ -28,7 +28,7 @@ pub(crate) struct LentEditor<I: WidgetImports> {
 }
 
 /// One request the host makes on an authored editor.
-pub(crate) enum AuthoredRequest<I: WidgetImports> {
+pub(crate) enum AuthoredRequest<I: super::providers::EditorImports> {
     /// The text.
     GetText,
     /// Replaces the text.
@@ -53,6 +53,8 @@ pub(crate) enum AuthoredRequest<I: WidgetImports> {
     SetPaddingX(f64),
     /// Replaces the completion row count.
     SetAutocompleteMaxVisible(f64),
+    /// Replaces the completion provider with a lent one.
+    SetAutocompleteProvider(I::Provider),
 }
 
 /// What an authored editor answered.
@@ -95,12 +97,15 @@ impl ComponentView for EditorView {
 }
 
 /// A text callback the host lent, as an author's handler; it runs under the host's own frame.
-fn lent_text<I: WidgetImports>(imports: &I, callback: I::TextCallback) -> TextHandler {
+fn lent_text<I: super::providers::EditorImports>(
+    imports: &I,
+    callback: I::TextCallback,
+) -> TextHandler {
     let (imports, callback) = (imports.clone(), Rc::new(callback));
     Rc::new(move |text, _| imports.text_callback(&callback, text))
 }
 
-impl<I: WidgetImports> Exports<I> {
+impl<I: super::providers::EditorImports> Exports<I> {
     /// Runs the editor factory under this identity with the lent terminal, styles and
     /// keybindings.
     pub(crate) fn invoke_editor_factory(
@@ -152,7 +157,7 @@ impl<I: WidgetImports> Exports<I> {
 }
 
 /// Runs one optional operation, answering `Absent` when the editor lacks it.
-fn optional<I: WidgetImports>(
+fn optional<I: super::providers::EditorImports>(
     imports: &I,
     editor: &dyn EditorComponent,
     request: AuthoredRequest<I>,
@@ -180,6 +185,10 @@ fn optional<I: WidgetImports>(
         }
         AuthoredRequest::SetAutocompleteMaxVisible(max_visible) => {
             AuthoredAnswer::ran(editor.set_autocomplete_max_visible(max_visible, emitter)?)
+        }
+        AuthoredRequest::SetAutocompleteProvider(provider) => {
+            let provider = super::providers::lend(imports, provider);
+            AuthoredAnswer::ran(editor.set_autocomplete_provider(provider, emitter)?)
         }
         _ => return Err("expected an optional editor request".to_owned()),
     })
@@ -242,7 +251,7 @@ pub(crate) fn keep_editor<I: WidgetImports, W>(
 
 /// Keeps `object` under a fresh identity whose owner the table holds.
 #[cfg(test)]
-fn keep<I: WidgetImports>(imports: &I, object: impl callbacks::Stored) -> u32 {
+pub(super) fn keep<I: WidgetImports>(imports: &I, object: impl callbacks::Stored) -> u32 {
     let identity = callbacks::Identity::new(imports);
     let id = identity.id();
     identity.keep(object);

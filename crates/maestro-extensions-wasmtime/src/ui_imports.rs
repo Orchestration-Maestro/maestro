@@ -198,40 +198,54 @@ fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
+    for (name, request) in [
+        ("footer", FactoryRequest::Footer as OptionalFactory),
+        ("header", FactoryRequest::Header),
+        ("editor-component", FactoryRequest::EditorComponent),
+    ] {
+        optional_factory(
+            host,
+            &format!("[method]extension-ui-context.set-{name}"),
+            request,
+        )?;
+    }
     host.func_wrap(
-        "[method]extension-ui-context.set-footer",
+        "[method]extension-ui-context.add-autocomplete-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
-            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
-            let api = store.data().api().clone();
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint
-                .route(|reply| Request::Factory(FactoryRequest::Footer(factory, api, reply)));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]extension-ui-context.set-editor-component",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
-            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
+         (resource, factory): (Resource<Endpoint>, Resource<Callback>)| {
+            let factory = crate::callback_imports::retain(store.data_mut(), &factory)?;
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
             let route = endpoint.route(|reply| {
-                Request::Factory(FactoryRequest::EditorComponent(factory, api, reply))
+                Request::Factory(FactoryRequest::AutocompleteProvider(factory, api, reply))
             });
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
-    )?;
+    )
+}
+
+/// The request of a setter that installs or removes an authored factory.
+type OptionalFactory = fn(
+    Option<crate::guest_calls::Handle>,
+    crate::api_reads::Endpoint,
+    std::sync::mpsc::Sender<Result<(), String>>,
+) -> FactoryRequest;
+
+/// Installs one setter of an optional authored factory, which the native owner may run before
+/// the import returns.
+fn optional_factory<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+    name: &str,
+    request: OptionalFactory,
+) -> wasmtime::Result<()> {
     host.func_wrap(
-        "[method]extension-ui-context.set-header",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
+        name,
+        move |mut store: StoreContextMut<'_, T>,
+              (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
             let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint
-                .route(|reply| Request::Factory(FactoryRequest::Header(factory, api, reply)));
+            let route = endpoint.route(|reply| Request::Factory(request(factory, api, reply)));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )

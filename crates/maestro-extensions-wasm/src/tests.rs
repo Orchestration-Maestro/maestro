@@ -71,6 +71,8 @@ mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
 mod provider_catalog;
+mod provider_component;
+pub(crate) mod provider_host;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
@@ -603,6 +605,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]command-context.reload",
             "[method]command-context.switch-session",
             "[method]command-context.wait-for-idle",
+            "[method]completion-provider.get-suggestions",
             "[method]extension-ui-context.confirm",
             "[method]extension-ui-context.editor",
             "[method]extension-ui-context.input",
@@ -1115,6 +1118,8 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-listener",
             "invoke-model-hook",
             "invoke-prepare",
+            "invoke-provider",
+            "invoke-provider-factory",
             "invoke-renderer",
             "invoke-schema",
             "invoke-set-expanded",

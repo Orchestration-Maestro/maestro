@@ -149,6 +149,12 @@ pub(crate) enum FactoryRequest {
     ),
     /// Reads the identity of the current authored editor factory.
     GetEditorComponent(Sender<Result<Option<u32>, String>>),
+    /// Stacks an authored provider factory on the completion provider.
+    AutocompleteProvider(
+        crate::guest_calls::Handle,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
 }
 
 impl FactoryRequest {
@@ -160,6 +166,9 @@ impl FactoryRequest {
             }
             Self::GetEditorComponent(reply) => {
                 let _ = reply.send(registry.editor_component(ui));
+            }
+            Self::AutocompleteProvider(factory, api, reply) => {
+                let _ = reply.send(registry.add_autocomplete_provider(ui, factory, &api));
             }
             Self::Footer(factory, api, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
@@ -197,7 +206,8 @@ impl FactoryRequest {
             Self::WidgetFactory(.., reply)
             | Self::Header(_, _, reply)
             | Self::Footer(_, _, reply)
-            | Self::EditorComponent(_, _, reply) => drop(reply.send(Err(error))),
+            | Self::EditorComponent(_, _, reply)
+            | Self::AutocompleteProvider(_, _, reply) => drop(reply.send(Err(error))),
         }
     }
 }

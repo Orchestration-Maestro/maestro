@@ -8,7 +8,8 @@ use crate::guest_component::GuestComponent;
 use crate::local_resources::Registry;
 use maestro_extensions::types::{ActionHandlers, CustomEditorComponent, ExtensionShortcutCallback};
 use maestro_extensions::widgets::{
-    BorderColor, EditorComponent, EditorError, ExtensionEditor, Focusable, TextCallback,
+    AutocompleteProvider, BorderColor, EditorComponent, EditorError, ExtensionEditor, Focusable,
+    TextCallback,
 };
 use maestro_extensions::{Cancellation, Component, EventBus, EventError, InputHandler, Local};
 use std::{cell::RefCell, rc::Rc};
@@ -236,6 +237,19 @@ impl EditorComponent for GuestEditor {
             Answered::Absent => Ok(None),
             _ => Err("the editor answered no text".into()),
         }
+    }
+    fn set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
+    ) -> Option<()> {
+        self.keep(self.try_set_autocomplete_provider(provider))
+    }
+    fn try_set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
+    ) -> Result<Option<()>, EditorError> {
+        let provider = self.registry.lend_provider(provider)?;
+        self.optional(Request::SetAutocompleteProvider(provider))
     }
     fn try_set_padding_x(&self, padding: f64) -> Result<Option<()>, EditorError> {
         self.optional(Request::SetPaddingX(padding))

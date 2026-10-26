@@ -219,6 +219,15 @@ fn authored<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasm
         },
     )?;
     host.func_wrap(
+        "[method]widget.set-autocomplete-provider",
+        |mut store: StoreContextMut<'_, T>,
+         (this, provider): (Resource<WidgetEndpoint>, Resource<Callback>)| {
+            let provider = retain(store.data_mut(), &provider)?;
+            let request = |reply| Request::Editor(EditorRequest::Provider(provider, reply));
+            Ok((widget(store.data_mut(), &this)?.read(request),))
+        },
+    )?;
+    host.func_wrap(
         "[method]widget.share",
         |mut store: StoreContextMut<'_, T>, (this,): (Resource<WidgetEndpoint>,)| {
             let shared = widget(store.data_mut(), &this)?;

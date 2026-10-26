@@ -157,6 +157,10 @@ pub mod widgets {
     };
     pub use maestro_tools::key_text;
     pub use maestro_tui::{
+        AutocompleteProvider, AutocompleteSuggestions,
+        autocomplete::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
+    };
+    pub use maestro_tui::{
         Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
         SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
         SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,

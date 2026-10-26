@@ -100,7 +100,7 @@ impl<I: WidgetImports> HostWidget<I> {
     }
 }
 
-impl<I: WidgetImports> EditorPort for HostWidget<I> {
+impl<I: super::providers::EditorImports> EditorPort for HostWidget<I> {
     fn get_text(&self) -> ExtensionResult<String> {
         self.text(EditorRequest::GetText)
     }
@@ -181,6 +181,17 @@ impl<I: WidgetImports> EditorPort for HostWidget<I> {
     }
     fn handle_input(&self, data: &str) -> ExtensionResult<()> {
         self.imports.widget_handle_input(&self.widget, data)
+    }
+    fn set_autocomplete_provider(
+        &self,
+        provider: std::rc::Rc<dyn crate::AutocompleteProvider>,
+    ) -> ExtensionResult<()> {
+        let identity = super::providers::stage(&self.imports, provider);
+        let result = self
+            .imports
+            .widget_set_autocomplete_provider(&self.widget, &identity.handle);
+        identity.settle(result.is_ok());
+        result
     }
 }
 

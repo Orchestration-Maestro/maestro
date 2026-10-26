@@ -632,6 +632,24 @@ impl Driver for ComponentDriver {
             .await
             .map_err(|e| e.to_string())?
     }
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let op = super::provider_host::op(request)?;
+        let top = self.observed(|observed| super::provider_host::top(observed).ok());
+        let top = top.ok_or("no authored provider")?;
+        let signal = match &op {
+            super::provider_host::ProviderOp::Suggestions { signal, .. } => {
+                Some(self.key(*signal).map_err(|e| e.to_string())?)
+            }
+            _ => None,
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        super::editor_driver::provider(harness, top, op, signal)
+            .await
+            .map_err(|e| e.to_string())?
+    }
     async fn editor_component(
         &mut self,
         call: super::renderer_host::Call<'_>,

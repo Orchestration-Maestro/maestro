@@ -350,13 +350,6 @@ impl WidgetImports for Generated {
     ) -> ExtensionResult<()> {
         widget.on_action(action, handler)
     }
-    fn widget_border_color(&self, widget: &host::Widget) -> ExtensionResult<host::Style> {
-        widget.border_color()
-    }
-    type TextCallback = host::TextCallback;
-    fn text_callback(&self, callback: &host::TextCallback, text: &str) -> ExtensionResult<()> {
-        route::drive(&callback.call(text))
-    }
     fn widget_update_value(
         &self,
         widget: &host::Widget,

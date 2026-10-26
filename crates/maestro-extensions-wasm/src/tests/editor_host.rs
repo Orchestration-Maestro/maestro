@@ -61,6 +61,8 @@ pub enum EditorOp {
         /// The row count.
         max: f64,
     },
+    /// Replaces the completion provider with the host's own.
+    SetAutocompleteProvider,
 }
 
 /// Reads one request.

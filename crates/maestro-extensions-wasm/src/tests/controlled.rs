@@ -1654,6 +1654,19 @@ impl Imports for Controlled {
         }
         target.map_or(Ok(()), |factory| self.build_editor_component(factory))
     }
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Ui,
+        factory: &Callback,
+    ) -> ExtensionResult<()> {
+        let current = super::provider_host::add(&mut self.observed.borrow_mut(), resource.key)?;
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let exports = Exports::new(self.clone());
+        let provider = exports.invoke_provider_factory(factory.id, current, &emitter)?;
+        let id = crate::component_adapter::keep_provider(self, provider);
+        super::provider_host::push(&mut self.observed.borrow_mut(), id);
+        Ok(())
+    }
     fn ui_get_editor_component(&self, resource: &Ui) -> ExtensionResult<Option<u32>> {
         super::ui_host::get_editor_component(&mut self.observed.borrow_mut(), resource.key)
     }

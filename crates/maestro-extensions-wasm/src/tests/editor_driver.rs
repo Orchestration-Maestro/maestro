@@ -36,6 +36,10 @@ fn wire(harness: &mut Harness, op: EditorOp) -> wasmtime::Result<host::AuthoredE
         }
         EditorOp::SetPaddingX { padding } => Wire::SetPaddingX(padding),
         EditorOp::SetAutocompleteMaxVisible { max } => Wire::SetAutocompleteMaxVisible(max),
+        EditorOp::SetAutocompleteProvider => {
+            let base = super::provider_host::Lent::Base;
+            Wire::SetAutocompleteProvider(harness.store.data_mut().push(base)?)
+        }
     })
 }
 
@@ -101,4 +105,58 @@ pub async fn request(
         .await??;
     harness.store.data_mut().table.delete(emitter)?;
     Ok(described)
+}
+
+/// Runs one request on the authored provider `provider`, transferring the lent flag `signal`
+/// to a suggestion request.
+pub async fn provider(
+    harness: &mut Harness,
+    provider: u32,
+    op: super::provider_host::ProviderOp,
+    signal: Option<u32>,
+) -> wasmtime::Result<Result<Value, String>> {
+    use super::provider_host::{self as hosted, ProviderOp};
+    let request = match op {
+        ProviderOp::Suggestions {
+            lines,
+            cursor,
+            force,
+            ..
+        } => host::ProviderRequest::Suggestions((lines, cursor, force)),
+        ProviderOp::Apply {
+            lines,
+            cursor,
+            item: (value, label, description),
+            prefix,
+        } => {
+            let item = host::AutocompleteItem {
+                value,
+                label,
+                description,
+            };
+            host::ProviderRequest::Apply((lines, cursor, item, prefix))
+        }
+        ProviderOp::Trigger { lines, cursor } => host::ProviderRequest::Trigger((lines, cursor)),
+    };
+    let exports = harness.exports.clone();
+    let signal = signal.map(Resource::new_own);
+    let answer = harness
+        .store
+        .run_concurrent(async |accessor| {
+            exports
+                .call_invoke_provider(accessor, borrow(provider), request, signal)
+                .await
+        })
+        .await??;
+    Ok(answer.map(|answer| match answer {
+        host::ProviderAnswer::Suggestions(found) => hosted::described(found.map(|found| {
+            let items = found.items.into_iter();
+            let items = items.map(|item| (item.value, item.label, item.description));
+            (items.collect(), found.prefix)
+        })),
+        host::ProviderAnswer::Applied(result) => {
+            hosted::applied(&result.lines, result.cursor_line, result.cursor_col)
+        }
+        host::ProviderAnswer::Trigger(decision) => hosted::decided(decision),
+    }))
 }

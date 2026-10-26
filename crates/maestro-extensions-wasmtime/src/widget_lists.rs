@@ -240,11 +240,7 @@ impl Binding<'_> {
 
 /// The wire form of a toolkit choice.
 fn wire_item(item: &SelectItem) -> Item {
-    Item {
-        value: item.value.clone(),
-        label: item.label.clone(),
-        description: item.description.clone(),
-    }
+    Item::new(&item.value, &item.label, item.description.as_ref())
 }
 
 /// A toolkit choice from its wire form.

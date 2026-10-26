@@ -5,7 +5,8 @@
     clippy::excessive_nesting
 )]
 pub use crate::bindings::maestro::extension::host::AutocompleteItem;
-use crate::{AbortSignal, ExtensionFuture, ExtensionResult};
+use crate::{AbortSignal, CallbackEmitter, ExtensionFuture, ExtensionResult};
+use std::rc::Rc;
 
 /// A cursor position in the edited lines.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -84,3 +85,11 @@ pub trait AutocompleteProvider {
         Ok(None)
     }
 }
+
+/// Wraps the current completion provider with additional behavior, synchronously.
+pub type AutocompleteProviderFactory = Rc<
+    dyn for<'a> Fn(
+        Rc<dyn AutocompleteProvider>,
+        CallbackEmitter<'a>,
+    ) -> ExtensionResult<Rc<dyn AutocompleteProvider>>,
+>;

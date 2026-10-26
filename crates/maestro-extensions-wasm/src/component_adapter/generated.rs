@@ -173,6 +173,7 @@ impl Imports for Generated {
         ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
         ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
         ui_set_editor_component(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_editor_component(factory);
+        ui_add_autocomplete_provider(resource: &Self::Ui, factory: &Self::Callback) => add_autocomplete_provider(factory);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();

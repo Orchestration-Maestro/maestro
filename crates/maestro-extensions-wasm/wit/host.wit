@@ -175,6 +175,10 @@ interface host {
     record local-editor-factory { target: u32, tui: tui, theme: editor-theme, keybindings: keybindings-manager, emitter: callback-emitter }
     /// One nested same-instance request on an authored editor.
     record local-editor { target: u32, request: authored-editor-request, emitter: callback-emitter }
+    /// One nested same-instance request on an authored completion provider.
+    record local-provider { target: u32, request: provider-request, signal: option<abort-signal> }
+    /// One nested same-instance completion provider factory.
+    record local-provider-factory { target: u32, current: completion-provider, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
     enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
@@ -251,6 +255,8 @@ interface host {
         widget(local-widget),
         editor-factory(local-editor-factory),
         editor(local-editor),
+        provider(local-provider),
+        provider-factory(local-provider-factory),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -275,9 +281,14 @@ interface host {
         widget(result<widget-answer, string>),
         editor-factory(result<editor-built, string>),
         editor(result<authored-editor-answer, string>),
+        provider(result<provider-answer, string>),
+        provider-factory(result<callback, string>),
     }
     /// One step of a native operation that may call back into this same instance.
-    variant route-value { unit, boolean(bool), text(string), lines(list<string>), credentials(auth-storage), catalog(model-registry) }
+    variant route-value {
+        unit, boolean(bool), text(string), lines(list<string>), completion(completion-result),
+        trigger(option<bool>), credentials(auth-storage), catalog(model-registry),
+    }
     variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
     resource import-route {
@@ -509,6 +520,8 @@ interface host {
         border-color: func() -> result<style, string>;
         /// Another handle to the same widget.
         share: func() -> widget;
+        /// Replaces an editor's completion provider with an authored one.
+        set-autocomplete-provider: func(provider: borrow<callback>) -> result<_, string>;
     }
     /// The toolkit editor on a lent terminal.
     new-editor: func(tui: borrow<tui>, theme: editor-styles, options: editor-options) -> result<widget, string>;
@@ -583,12 +596,40 @@ interface host {
         on-change, set-on-change(option<text-callback>), add-to-history(string),
         insert-text-at-cursor(string), get-expanded-text, border-color, set-border-color(style),
         set-padding-x(f64), set-autocomplete-max-visible(f64),
+        set-autocomplete-provider(completion-provider),
     }
     /// What an authored editor answered; `absent` means it lacks the operation.
     variant authored-editor-answer { done, absent, text(string), handler(option<callback>), style(callback) }
     /// An editor a factory built: its component, its editor operations and, for an editor on the
     /// application's custom editor, that custom editor.
     record editor-built { component: callback, editor: callback, custom: option<widget> }
+    /// Candidates together with the text they replace.
+    record autocomplete-suggestions { items: list<autocomplete-item>, prefix: string }
+    /// A line index and a UTF-8 byte offset within that line.
+    type cursor-position = tuple<u32, u32>;
+    /// The lines and cursor after a completion was applied.
+    record completion-result { lines: list<string>, cursor-line: u32, cursor-col: u32 }
+    /// One request on an authored completion provider.
+    variant provider-request {
+        /// Suggestions for the lines and cursor, and whether completion was forced.
+        suggestions(tuple<list<string>, cursor-position, option<bool>>),
+        /// Applies a chosen item in place of its prefix.
+        apply(tuple<list<string>, cursor-position, autocomplete-item, string>),
+        /// Whether explicit completion should offer files.
+        trigger(tuple<list<string>, cursor-position>),
+    }
+    /// What an authored completion provider answered.
+    variant provider-answer {
+        suggestions(option<autocomplete-suggestions>), applied(completion-result), trigger(option<bool>),
+    }
+    /// A completion provider the host lent; suggestions may suspend.
+    resource completion-provider {
+        get-suggestions: async func(lines: list<string>, cursor: cursor-position, signal: borrow<abort-signal>, force: option<bool>) -> result<option<autocomplete-suggestions>, string>;
+        /// Answers the edited lines and cursor; the provider may call back into this instance.
+        apply-completion: func(lines: list<string>, cursor: cursor-position, item: autocomplete-item, prefix: string) -> import-route;
+        /// Answers the provider's decision, absent without one.
+        should-trigger-file-completion: func(lines: list<string>, cursor: cursor-position) -> import-route;
+    }
     /// The live theme's editor styles.
     get-editor-theme: func() -> result<editor-theme, string>;
     /// Which renderer a tool rendering enters.
@@ -646,6 +687,8 @@ interface host {
         set-editor-component: func(factory: option<borrow<callback>>) -> import-route;
         /// The identity of the current editor factory, absent while the host editor is in use.
         get-editor-component: func() -> result<option<u32>, string>;
+        /// Stacks an authored provider factory on the current completion provider.
+        add-autocomplete-provider: func(factory: borrow<callback>) -> import-route;
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         on-terminal-input: func(handler: borrow<callback>) -> result<subscription, string>;
         /// The live theme of this UI.

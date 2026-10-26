@@ -13,6 +13,7 @@ mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod model_streams;
+mod providers;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
@@ -291,6 +292,8 @@ enum Capability {
     Keybindings(maestro_extensions::widgets::ExtensionKeybindings),
     /// A native text callback lent to an authored editor.
     Text(maestro_extensions::widgets::TextCallback),
+    /// A native completion provider lent to the guest.
+    Provider(crate::guest_calls::providers::Native),
 }
 
 /// Local entries and their monotonic identities.

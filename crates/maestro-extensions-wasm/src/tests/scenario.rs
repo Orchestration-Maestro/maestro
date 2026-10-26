@@ -167,6 +167,12 @@ pub trait Driver {
         &mut self,
         request: serde_json::Value,
     ) -> Result<serde_json::Value, String>;
+    /// Runs one host request on the authored completion provider on top of the host's stack,
+    /// describing the answer as [`super::provider_host`] does.
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String>;
     /// Calls one method of the component of the authored editor the host shows.
     async fn editor_component(
         &mut self,
