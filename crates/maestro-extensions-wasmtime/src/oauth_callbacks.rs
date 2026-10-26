@@ -124,6 +124,9 @@ impl Callbacks {
     }
 }
 impl OAuthLoginCallbacks for Callbacks {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        self.options
+    }
     fn on_auth(&self, info: OAuthAuthInfo) -> Result<(), OAuthError> {
         self.synchronous(
             Phase::Auth,

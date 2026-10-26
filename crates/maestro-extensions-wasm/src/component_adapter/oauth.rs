@@ -108,11 +108,7 @@ impl<I: Imports> Login<I> {
             imports,
             callbacks.signal.as_ref(),
         )?);
-        let options = (
-            callbacks.on_progress.is_some(),
-            callbacks.on_manual_code_input.is_some(),
-            callbacks.on_select.is_some(),
-        );
+        let options = callbacks.callback_presence();
         let handler = super::callbacks::Identity::new(imports);
         handler.stage(Rc::new(Interaction {
             callbacks,

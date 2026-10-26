@@ -84,3 +84,15 @@ pub struct OAuthLoginCallbacks {
     /// Caller cancellation, absent unless supplied.
     pub signal: Option<AbortSignal>,
 }
+
+impl OAuthLoginCallbacks {
+    /// Reports whether progress, manual-code and selection callbacks are supplied, in that order.
+    #[must_use]
+    pub fn callback_presence(&self) -> (bool, bool, bool) {
+        (
+            self.on_progress.is_some(),
+            self.on_manual_code_input.is_some(),
+            self.on_select.is_some(),
+        )
+    }
+}

@@ -248,6 +248,9 @@ struct Interaction {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl OAuthLoginCallbacks for Interaction {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, false, false)
+    }
     fn on_prompt(&self, prompt: OAuthPrompt) -> BoxFuture<Result<String, OAuthError>> {
         self.events.lock().unwrap().push(format!(
             "prompt:{}:{}:{:?}",

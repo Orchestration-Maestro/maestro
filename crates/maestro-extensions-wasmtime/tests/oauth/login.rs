@@ -31,9 +31,15 @@ impl OAuthProviderInterface for Provider {
                 })
                 .await?;
             callbacks.on_progress(" Literal progress ")?;
-            let manual = match callbacks.on_manual_code_input() {
-                Some(value) => Some(value.await?),
-                None => None,
+            let manual = if callbacks.callback_presence().1 {
+                Some(
+                    callbacks
+                        .on_manual_code_input()
+                        .expect("declared manual callback must exist")
+                        .await?,
+                )
+            } else {
+                None
             };
             let select = match callbacks.on_select(maestro_models::OAuthSelectPrompt {
                 message: " Literal selection ".into(),
@@ -267,6 +273,25 @@ fn oauth_credential_login_persists_through_the_native_owner() {
         assert_eq!(write["storage"]["raw"], json!({"neighbor":[null,false]}));
         assert_eq!(write["storage"]["errors"], json!(["write-login"]));
         assert_eq!(write["storage"]["reloaded"], json!(null));
+        maestro_models::unregister_oauth_provider("component-login");
+    });
+}
+
+#[test]
+fn oauth_login_provider_branches_on_manual_callback_presence() {
+    super::super::components::local(async {
+        maestro_models::register_oauth_provider(std::sync::Arc::new(Provider));
+        let bus = super::super::components::TracedBus::new();
+        let (_owner, runner, _) =
+            super::super::retained_components::loaded_on(bus.controller.for_extension()).await;
+        let supplied = super::call(&runner, "login all").await;
+        assert_eq!(supplied["credentials"]["manual"], "manual-code");
+        assert_eq!(supplied["credentials"]["selectionPresent"], true);
+        assert_eq!(supplied["credentials"]["selection"], json!(null));
+        let absent = super::call(&runner, "login absent").await;
+        assert_eq!(absent["credentials"]["manual"], json!(null));
+        assert_eq!(absent["credentials"]["selectionPresent"], false);
+        assert_eq!(absent["events"].as_array().unwrap().len(), 2);
         maestro_models::unregister_oauth_provider("component-login");
     });
 }

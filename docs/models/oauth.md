@@ -39,6 +39,12 @@ must resolve before the page's colors, fonts and mark; failures return diagnosti
 messages rather than a fallback palette. Replacing these assets changes the identity
 at build time; there is no runtime asset loader or network font acquisition.
 
+Native `OAuthLoginCallbacks::callback_presence()` reports progress, manual-code
+and selection presence in that order, without starting callbacks or futures.
+Its default declares all three absent. Implementers that supply optional methods
+also override this query. The guest callback record derives the same flags from
+its optional fields. A supplied selector returning `None` is still present.
+
 ## Provider registry
 
 The registry starts with `anthropic`, `github-copilot` and `openai-codex`, in that

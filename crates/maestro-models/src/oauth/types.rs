@@ -116,6 +116,13 @@ pub trait OAuthLoginCallbacks {
     fn on_auth(&self, info: OAuthAuthInfo) -> Result<(), OAuthError>;
     /// Request pasted authorization text.
     fn on_prompt(&self, prompt: OAuthPrompt) -> crate::BoxFuture<Result<String, OAuthError>>;
+    /// Reports whether progress, manual-code and selection callbacks are supplied, in that order.
+    ///
+    /// Override this alongside optional callback methods; the default declares all three absent.
+    /// Reading presence does not start any callback or future.
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (false, false, false)
+    }
     /// Publish progress; the default does nothing.
     ///
     /// # Errors
