@@ -55,6 +55,8 @@ fn windows_direct_kill_helper() {
         assert_eq!(command[0], 1);
         stream.write_all(b"A").unwrap();
     }
+    // Exit skips destructors; close the control socket first.
+    drop(stream);
     std::process::exit(0);
 }
 
