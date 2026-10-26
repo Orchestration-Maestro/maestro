@@ -657,11 +657,12 @@ fn exec_failures_preserve_messages_and_resource_phase() {
         let mut stale = acquire;
         stale["idle"] = true.into();
         let context = runner.create_command_context();
-        let (rejected, ()) = futures_util::join!(outcome(&runner, context, stale), async {
+        let (rejected, ()) = futures_util::future::join(outcome(&runner, context, stale), async {
             let resume = admitted.recv().await.unwrap();
             runner.invalidate(None);
             resume.send(()).unwrap();
-        });
+        })
+        .await;
         assert_eq!(rejected, super::retained_contexts::STALE);
         assert!(!marker.exists(), "rejected before the process started");
         signal.abort();
