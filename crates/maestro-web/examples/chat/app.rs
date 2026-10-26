@@ -7,8 +7,7 @@ use super::custom_messages::{
 use maestro_app::{
     AgentEvent, AgentInitialState, AgentMessage, AgentOptions, AppStorage, CustomProvidersStore,
     IndexedDBConfig, Local, ProviderKeysStore, SessionData, SessionMetadata, SessionsStore,
-    SettingsStore, StorageBackend, Subscription, ThinkingLevel, UserBlock, UserContent, get_model,
-    set_app_storage,
+    SettingsStore, StorageBackend, Subscription, ThinkingLevel, get_model, set_app_storage,
 };
 use maestro_web::{
     ApiKeyPromptDialog, BrowserSandboxHost, BrowserSession, ChatPanel, ChatPanelConfig,
@@ -30,6 +29,7 @@ use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::{Element, Event};
 
 mod title;
+pub use title::{generate_title, should_save_session};
 
 /// The example's sessions.
 pub type Session = BrowserSession<SystemNotificationMessage>;
@@ -45,7 +45,8 @@ Feel free to use these tools when needed to provide accurate and helpful respons
 /// The header text before a session has a title.
 const NAME: &str = "Maestro Web UI Example";
 /// The demonstration notification's text.
-const NOTICE: &str = "This is a custom message! It appears in the UI but is never sent to the LLM.";
+const NOTICE: &str =
+    "This is a custom message! It appears in the UI and is included in the model context.";
 
 /// Application storage over the browser database `name`, published as the current storage.
 #[must_use]
@@ -84,66 +85,6 @@ pub fn storage(name: &str) -> Rc<AppStorage> {
     storage
 }
 
-/// The text of the first user message: its text, or its text blocks joined by spaces.
-fn first_user_text(messages: &[AgentMessage<ExampleMessages>]) -> Option<String> {
-    let text = |content: &UserContent| match content {
-        UserContent::Text(text) => text.clone(),
-        UserContent::Blocks(blocks) => blocks
-            .iter()
-            .filter_map(|block| match block {
-                UserBlock::Text(text) => Some(text.text.as_str()),
-                UserBlock::Image(_) => None,
-            })
-            .collect::<Vec<_>>()
-            .join(" "),
-    };
-    messages.iter().find_map(|message| match message {
-        AgentMessage::User(user) => Some(text(
-            &user.read().unwrap_or_else(PoisonError::into_inner).content,
-        )),
-        AgentMessage::Custom(custom) => {
-            match &*custom.read().unwrap_or_else(PoisonError::into_inner) {
-                ExampleMessages::UserWithAttachments(user) => Some(text(&user.content)),
-                _ => None,
-            }
-        }
-        _ => None,
-    })
-}
-/// A title from the first user message: its first sentence when that ends within 50
-/// characters, else the text itself up to 50 characters, else its first 47 and an ellipsis.
-#[must_use]
-pub fn generate_title(messages: &[AgentMessage<ExampleMessages>]) -> String {
-    let Some(text) = first_user_text(messages) else {
-        return String::new();
-    };
-    let text = text.trim();
-    let end = text.chars().position(|c| matches!(c, '.' | '!' | '?'));
-    if let Some(end) = end.filter(|end| (1..=50).contains(end)) {
-        return text.chars().take(end + 1).collect();
-    }
-    if text.chars().count() <= 50 {
-        return text.into();
-    }
-    let mut title: String = text.chars().take(47).collect();
-    title.push_str("...");
-    title
-}
-/// Whether the history holds a user message and an assistant response.
-#[must_use]
-pub fn should_save_session(messages: &[AgentMessage<ExampleMessages>]) -> bool {
-    let user = messages.iter().any(|message| match message {
-        AgentMessage::User(_) => true,
-        AgentMessage::Custom(custom) => matches!(
-            &*custom.read().unwrap_or_else(PoisonError::into_inner),
-            ExampleMessages::UserWithAttachments(_)
-        ),
-        _ => false,
-    });
-    user && messages
-        .iter()
-        .any(|message| matches!(message, AgentMessage::Assistant(_)))
-}
 /// Show `session_id` in the address without a navigation; `None` clears the query.
 fn update_url(session_id: Option<&str>) -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("missing window")?;

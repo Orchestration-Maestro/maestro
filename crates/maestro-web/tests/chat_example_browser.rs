@@ -359,7 +359,9 @@ pub async fn chat_example_prompts_notifies_and_opens_settings(import: js_sys::Fu
         root.query_selector("[role=alert]").unwrap().is_some() && rows(&root) >= 3
     })
     .await;
-    assert!(text(&select(&root, "[role=alert]")).contains("This is a custom message!"));
+    let notice = text(&select(&root, "[role=alert]"));
+    assert!(notice.contains("This is a custom message!"));
+    assert!(notice.contains("included in the model context"), "{notice}");
     let body = fetch.requests()[0].body.clone();
     assert!(body.contains("<system>This is a custom message!"));
     assert!(body.contains("\"javascript_repl\"") && body.contains("\"artifacts\""));
