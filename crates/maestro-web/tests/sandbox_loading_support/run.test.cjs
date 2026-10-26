@@ -392,7 +392,7 @@ test('packaging_keeps_linked_modules_and_locked_sources', t => {
   for (const family of ['execution', 'loading']) {
     const source = fs.readFileSync(path.join(__dirname, `../sandbox_${family}_browser.rs`), 'utf8');
     const names = [...source.matchAll(/pub async fn (\w+)\(\)/g)].map(match => match[1]);
-    if (family === 'loading') names.push(...sourceExports('native_document_artifacts_browser.rs'), ...sourceExports('native_html_artifact_browser.rs'), ...sourceExports('sample_sessions_browser.rs'), ...documentOverlay);
+    if (family === 'loading') names.push(...sourceExports('native_document_artifacts_browser.rs'), ...sourceExports('native_html_artifact_browser.rs'), ...sourceExports('sample_sessions_browser.rs'), ...documentOverlay, ...sourceExports('native_remaining_artifacts_browser.rs'));
     assert.deepEqual(inventory[family], names);
   }
   const contributions = ["dom_content_browser.rs", "contributions_browser.rs", "native_markdown_browser.rs", "native_thinking_browser.rs", "native_artifact_controls_browser.rs", "native_attachment_browser.rs", "native_messages_browser.rs", "native_tool_browser.rs", "native_simple_artifacts_browser.rs", "native_console_browser.rs", "custom_provider_card_browser.rs", "native_artifact_console_browser.rs", "document_tool_cards_browser.rs", "native_transcript_browser.rs", "message_tool_arguments.rs"]

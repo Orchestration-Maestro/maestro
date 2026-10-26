@@ -574,6 +574,16 @@ pub async fn artifacts_panel_dom_retains_views_through_application_commands(
         Some("second <literal>")
     );
     assert_panel_close_and_reconnect(&panel, &root, &text);
+    assert_panel_removal_and_root_release(&panel, root, &caller, &view).await;
+}
+
+/// Deleted files and released roots stay absent after later commands or native reconnection.
+async fn assert_panel_removal_and_root_release(
+    panel: &maestro_web::ArtifactsPanel,
+    root: DomRoot,
+    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    view: &DomView,
+) {
     (caller.tool().execute)(
         "delete".into(),
         serde_json::json!({"command":"delete", "filename":"literal\"[x].txt"}),
@@ -590,16 +600,6 @@ pub async fn artifacts_panel_dom_retains_views_through_application_commands(
             .is_none()
     );
     assert_eq!(caller.active_filename().as_deref(), Some("notes.md"));
-    assert_panel_root_release(&panel, root, &caller, &view).await;
-}
-
-/// Released roots cannot be revived by later application commands or native reconnection.
-async fn assert_panel_root_release(
-    panel: &maestro_web::ArtifactsPanel,
-    root: DomRoot,
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
-    view: &DomView,
-) {
     let released: web_sys::Element = root.node.clone().unchecked_into();
     drop(root);
     assert_eq!(released.child_element_count(), 0);
