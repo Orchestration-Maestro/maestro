@@ -7,6 +7,8 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+use super::tools::ToolListing;
+
 /// Credential and constructor declarations on the same canonical import trait.
 #[macro_use]
 mod credentials;
@@ -14,9 +16,6 @@ mod credentials;
 /// Catalog declarations on the same canonical import trait.
 #[macro_use]
 mod catalog;
-
-/// Per-tool executable annotations returned beside the metadata document.
-pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 
 /// The callbacks one tool registers beside its metadata.
 pub struct ToolCallbacks<'a, C> {
@@ -43,6 +42,15 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Formats all floating-point byte counts directly.
+    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String>;
+    /// Reads metadata numbers without passing them through JSON.
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument>;
+    /// Forwards ordinary helper operands synchronously.
+    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String>;
     credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
@@ -189,6 +197,14 @@ pub trait Imports: Clone + 'static {
     fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()>;
     /// Forwards the ordinary action.
     fn get_active_tools(&self) -> ExtensionResult<Vec<String>>;
+    /// Invoke one foreign method while driving synchronous same-instance reentry.
+    fn schema_invoke(
+        &self,
+        callback: &Self::Callback,
+        operation: crate::bindings::maestro::extension::host::SchemaOperation,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> crate::schema_code::SchemaResult<String>;
     /// Forwards the ordinary action.
     fn get_all_tools(&self) -> ExtensionResult<ToolListing<Self::Callback>>;
     /// Forwards the ordinary action.

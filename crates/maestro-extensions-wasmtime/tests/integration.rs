@@ -10,6 +10,7 @@ mod canonical_json;
 mod canonical_schema;
 mod canonical_theme;
 mod canonical_ui;
+mod compilation_cache;
 mod component_events;
 mod component_loading;
 mod components;
@@ -19,6 +20,7 @@ mod factory_shutdown;
 mod lifetimes;
 mod listener_prefixes;
 mod module_location;
+mod native_helpers;
 mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
@@ -55,3 +57,5 @@ mod model_finite;
 
 mod model_hook_gates;
 mod model_signal_selection;
+
+mod foreign_schema;

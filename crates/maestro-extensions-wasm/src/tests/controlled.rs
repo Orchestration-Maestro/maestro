@@ -518,6 +518,29 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
+        serde_json::from_str(&self.observe().actions.record_for("format_size")?)
+            .map_err(|error| error.to_string())
+    }
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
+        use crate::bindings::maestro::extension::host::{FrontmatterDocument, FrontmatterToken};
+        if content != "---\nx: .nan\n---\nbody" {
+            return Err("unknown controlled metadata fixture".into());
+        }
+        Ok(FrontmatterDocument {
+            values: vec![
+                FrontmatterToken::Mapping(vec!["x".into()]),
+                FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
+        })
+    }
+    fn native_helper(&self, operation: &str, _data: &str) -> ExtensionResult<String> {
+        self.observe().actions.record_for(operation)
+    }
     type LockUpdate = Reader;
     fn lock_update(
         &self,
@@ -981,6 +1004,17 @@ impl Imports for Controlled {
         o.actions.check()?;
         serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
     }
+    fn schema_invoke(
+        &self,
+        _: &Self::Callback,
+        _: crate::bindings::maestro::extension::host::SchemaOperation,
+        _: &Self::JsonNode,
+        _: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        Err(crate::schema_code::DiagnosticErrorInfo::error(
+            "foreign schemas use the production runtime",
+        ))
+    }
     fn get_all_tools(
         &self,
     ) -> ExtensionResult<crate::component_adapter::ToolListing<Self::Callback>> {
@@ -997,7 +1031,8 @@ impl Imports for Controlled {
                     },
                 )
                 .map_err(|error| error.message)?;
-            retained.push((tool, pointer, handle));
+            let shape = Exports::<Self>::describe_schema(id).map_err(|error| error.message)?;
+            retained.push((tool, pointer, handle, shape, true));
         }
         Ok((metadata, retained))
     }

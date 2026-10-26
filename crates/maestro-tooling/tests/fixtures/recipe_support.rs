@@ -106,10 +106,18 @@ impl Workspace {
         self.name = path.as_os_str().to_owned();
     }
 
-    pub fn command(&self, recipe: &str) -> Command {
-        let mut command = super::toolchain_support::command("just");
+    /// Keeps build output inside the fixture's configured target directory.
+    pub fn toolchain_command(&self, program: impl AsRef<OsStr>) -> Command {
+        let mut command = super::toolchain_support::command(program);
         command
             .current_dir(self.path())
+            .env_remove("CARGO_TARGET_DIR");
+        command
+    }
+
+    pub fn command(&self, recipe: &str) -> Command {
+        let mut command = self.toolchain_command("just");
+        command
             .arg(recipe)
             .env("MAESTRO_LOG", self.path().join("log"))
             .env("MAESTRO_CWD", self.path().join("cwd"))
