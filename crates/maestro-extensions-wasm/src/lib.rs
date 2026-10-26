@@ -80,3 +80,9 @@ pub mod schema_code;
 
 #[cfg(any(test, target_arch = "wasm32"))]
 mod schema_error;
+
+/// Immediate model invocation and eager completion.
+#[cfg(target_arch = "wasm32")]
+pub mod stream;
+#[cfg(target_arch = "wasm32")]
+pub use stream::{complete, complete_simple, stream, stream_simple};

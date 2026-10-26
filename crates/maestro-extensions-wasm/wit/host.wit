@@ -91,6 +91,21 @@ interface host {
         constructor(value: callback);
         id: func() -> u32;
     }
+    /// Original model invocation buffer, without a second event queue.
+    resource assistant-stream {
+        push: func(event: string) -> result<_, string>;
+        end: func(value: option<string>) -> result<_, string>;
+        next: async func() -> result<option<string>, string>;
+        %result: async func() -> result<string, string>;
+    }
+    /// Non-data invocation operands retained independently of the initiating callback.
+    record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
+    /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
+    model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Native phase calling an awaited authored hook.
+    enum model-hook { payload, response }
+    /// Selected payload and optional original or replacement cancellation.
+    record payload-selection { data: string, signal: option<abort-signal>, owner: option<callback> }
     /// Host-buffered generic authored events and their independent final result.
     resource event-stream {
         push: func(value: stream-value) -> import-route;
@@ -242,6 +257,7 @@ interface host {
 
     /// Host-owned cancellation flag.
     resource abort-signal {
+        retain: func() -> abort-signal;
         aborted: func() -> bool;
         abort: func() -> result<_, string>;
     }

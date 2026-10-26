@@ -84,6 +84,16 @@ pub struct AssistantMessageEventStream {
     inner: EventStream<AssistantMessageEvent, SharedAssistantMessage>,
 }
 impl AssistantMessageEventStream {
+    /// Wrap an adapter over the native assistant buffer.
+    #[must_use]
+    pub fn from_port(
+        port: Rc<dyn EventStreamPort<AssistantMessageEvent, SharedAssistantMessage>>,
+    ) -> Self {
+        Self {
+            inner: EventStream::from_port(port),
+        }
+    }
+
     /// Create a component stream using the shared assistant terminal projection.
     ///
     /// # Errors

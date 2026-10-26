@@ -55,3 +55,39 @@ impl host::HostEventStreamWithStore<State> for Imports {
         std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
     }
 }
+
+/// Model invocation is exercised only by the real native adapter.
+pub enum Assistant {}
+impl host::HostAssistantStream for State {
+    fn push(
+        &mut self,
+        stream: Resource<Assistant>,
+        _: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        match *self.table.get(&stream)? {}
+    }
+    fn end(
+        &mut self,
+        stream: Resource<Assistant>,
+        _: Option<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        match *self.table.get(&stream)? {}
+    }
+    fn drop(&mut self, stream: Resource<Assistant>) -> wasmtime::Result<()> {
+        match self.table.delete(stream)? {}
+    }
+}
+impl host::HostAssistantStreamWithStore<State> for Imports {
+    fn next(
+        a: &Accessor<State, Self>,
+        stream: Resource<Assistant>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<Option<String>, String>>> {
+        std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
+    }
+    fn result(
+        a: &Accessor<State, Self>,
+        stream: Resource<Assistant>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
+    }
+}

@@ -107,6 +107,8 @@ kinds! {
         FooterFactory(crate::FooterFactory),
         BranchChange(crate::BranchChangeListener),
         StreamValue(super::streams::Value),
+        ModelPayload(crate::OnPayload),
+        ModelResponse(crate::OnResponse),
         StreamClassifier(super::streams::Classifier),
         StreamExtractor(super::streams::Extractor),
     }

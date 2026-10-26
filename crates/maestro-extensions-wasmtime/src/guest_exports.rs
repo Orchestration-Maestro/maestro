@@ -12,6 +12,7 @@ use wasmtime_wasi::WasiView;
 pub(crate) mod bash;
 pub(crate) mod events;
 mod factories;
+mod model_hooks;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -51,6 +52,8 @@ pub(crate) struct Exports {
     start: TypedFunc<(), (Result<(), String>,)>,
     /// The original retained pub.
     pub(crate) schema: schema::Exports,
+    /// Awaited hooks on the native invocation.
+    model_hooks: model_hooks::Exports,
     /// Actual synchronous authored-stream callbacks.
     streams: streams::Exports,
     /// Actual renderer and retained component methods.
@@ -125,6 +128,7 @@ impl Exports {
         Ok(Self {
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
+            model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -161,8 +165,9 @@ impl Exports {
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
-            Call::Stream(call) => self.streams.invoke(accessor, call).await?,
-            Call::Schema(call) => self.schema.invoke(accessor, call).await?,
+            call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
+                self.invoke_value_callback(accessor, call).await?;
+            }
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
             call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
@@ -182,6 +187,19 @@ impl Exports {
             Call::Release(release) => self.release(accessor, release).await?,
         }
         Ok(())
+    }
+    /// Invoke a value callback through its original typed export.
+    async fn invoke_value_callback<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::Stream(call) => self.streams.invoke(accessor, call).await,
+            Call::ModelHook(call) => self.model_hooks.invoke(accessor, call).await,
+            Call::Schema(call) => self.schema.invoke(accessor, call).await,
+            _ => Err(wasmtime::format_err!("extension call cannot run nested")),
+        }
     }
     /// Enters one terminal input listener or component factory export.
     async fn ui<T: crate::callback_imports::CallbackView + 'static>(

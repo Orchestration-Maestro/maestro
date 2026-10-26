@@ -43,3 +43,11 @@ mod manual_runtime;
 mod recording_terminal;
 mod authored_stream_lifetimes;
 mod authored_streams;
+
+mod model_streams;
+
+mod model_completions;
+
+mod model_hooks;
+
+mod model_finite;

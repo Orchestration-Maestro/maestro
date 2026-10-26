@@ -20,6 +20,8 @@ pub(crate) use streams::new_event_stream;
 
 #[path = "generated_glue.rs"]
 mod glue;
+#[path = "generated_model_streams.rs"]
+pub(crate) mod model_streams;
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]

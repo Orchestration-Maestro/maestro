@@ -18,6 +18,8 @@ mod contexts;
 mod signals;
 pub(crate) mod streams;
 #[cfg(target_arch = "wasm32")]
+pub(crate) use generated::model_streams;
+#[cfg(target_arch = "wasm32")]
 pub(crate) use generated::new_event_stream;
 #[cfg(test)]
 pub(crate) use signals::signal;
