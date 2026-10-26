@@ -1,5 +1,5 @@
 //! Binding the current session's extensions, settings and errors to the retained mode.
-use super::{Setup, World, cases, isolated, roles, started};
+use super::{Setup, World, admitted, cases, isolated, roles, started};
 use crate::interactive_mode::InteractiveMode;
 use maestro_app::{
     DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
@@ -367,14 +367,9 @@ async fn command_rows(world: &World) -> Vec<String> {
     let editor = &world.mode.editor;
     editor.set_text("");
     editor.handle_input("/");
-    for _ in 0..10_000 {
-        world.runtime.settle().unwrap();
-        assert!(world.runtime.drain_futures().is_empty());
-        if editor.is_showing_autocomplete() {
-            break;
-        }
-        tokio::task::yield_now().await;
-    }
+    world.runtime.settle().unwrap();
+    assert!(admitted(&world.runtime).await.is_empty());
+    assert!(world.runtime.drain_futures().is_empty());
     assert!(editor.is_showing_autocomplete(), "the command list opens");
     let rows = editor
         .render(80)
@@ -682,11 +677,7 @@ type Gate = Rc<RefCell<Option<tokio::sync::oneshot::Receiver<()>>>>;
 /// An extension that asks through the started UI on session start, records each phase
 /// in `log`, waits at discovery while `gate` holds a receiver, then fails discovery when
 /// `refuse` is set.
-fn asking(
-    log: &Rc<RefCell<Vec<String>>>,
-    gate: &Gate,
-    refuse: &Rc<Cell<bool>>,
-) -> ExtensionFactory<Local> {
+fn asking(log: &Rc<Log>, gate: &Gate, refuse: &Rc<Cell<bool>>) -> ExtensionFactory<Local> {
     let (log, gate, refuse) = (Rc::clone(log), Rc::clone(gate), Rc::clone(refuse));
     Rc::new(move |api| {
         let started = Rc::clone(&log);
@@ -711,29 +702,29 @@ fn asking(
 
 /// Records whether the started UI is `present`, then asks through `ui`.
 async fn ask(
-    log: Rc<RefCell<Vec<String>>>,
+    log: Rc<Log>,
     ui: maestro_app::ExtensionUIContext,
     present: bool,
 ) -> Result<Option<()>, maestro_app::EventError> {
-    log.borrow_mut().push(format!("bind ui={present}"));
+    log.push(format!("bind ui={present}"));
     let chosen = ui
         .select("Choose".to_owned(), vec!["answer".to_owned()], None)
         .await?;
-    log.borrow_mut().push(format!("chose {chosen:?}"));
+    log.push(format!("chose {chosen:?}"));
     Ok(None)
 }
 
 /// Records discovery, waits for `gate` when one is armed, then fails when `refuse` is set.
 async fn discover(
-    log: Rc<RefCell<Vec<String>>>,
+    log: Rc<Log>,
     gate: Option<tokio::sync::oneshot::Receiver<()>>,
     refuse: Rc<Cell<bool>>,
 ) -> Result<Option<ResourcesDiscoverResult>, maestro_app::EventError> {
-    log.borrow_mut().push("discover".to_owned());
+    log.push("discover".to_owned());
     if let Some(gate) = gate {
         gate.await.unwrap();
     }
-    log.borrow_mut().push("discovered".to_owned());
+    log.push("discovered".to_owned());
     if refuse.get() {
         return Err(Box::new(DiagnosticErrorInfo::new(None, "refused")));
     }
@@ -767,15 +758,28 @@ fn ctrl_q(
     }
 }
 
-/// Yields until `log` holds `entry`.
-async fn until_logged(log: &Rc<RefCell<Vec<String>>>, entry: &str) {
-    for _ in 0..10_000 {
-        if log.borrow().iter().any(|seen| seen == entry) {
-            return;
-        }
-        tokio::task::yield_now().await;
+/// The extension's phase records, each announced to a waiting test.
+#[derive(Default)]
+struct Log {
+    /// The records, in order.
+    entries: RefCell<Vec<String>>,
+    /// Signalled after each record.
+    pushed: tokio::sync::Notify,
+}
+
+impl Log {
+    /// Records `entry` and wakes the waiting test.
+    fn push(&self, entry: String) {
+        self.entries.borrow_mut().push(entry);
+        self.pushed.notify_one();
     }
-    panic!("{entry} in {:?}", log.borrow());
+
+    /// Waits until the records hold `entry`.
+    async fn until(&self, entry: &str) {
+        while !self.entries.borrow().iter().any(|seen| seen == entry) {
+            self.pushed.notified().await;
+        }
+    }
 }
 
 /// The transcript's plain rows.
@@ -808,7 +812,7 @@ struct Paused {
     /// The mode and its effects.
     world: World,
     /// The extension's phase records.
-    log: Rc<RefCell<Vec<String>>>,
+    log: Rc<Log>,
     /// Lets discovery continue.
     release: tokio::sync::oneshot::Sender<()>,
     /// Makes the waiting discovery fail.
@@ -820,7 +824,7 @@ struct Paused {
 /// Starts a mode, quiet as selected, with one context file and one shortcut, answers its
 /// session start's question and checks that nothing after binding has run at discovery.
 async fn paused(directory: &Path, quiet: bool) -> Paused {
-    let log = Rc::new(RefCell::new(Vec::new()));
+    let log = Rc::new(Log::default());
     let (release, receiver) = tokio::sync::oneshot::channel();
     let gate: Gate = Rc::new(RefCell::new(Some(receiver)));
     let refuse = Rc::new(Cell::new(false));
@@ -845,10 +849,10 @@ async fn paused(directory: &Path, quiet: bool) -> Paused {
     );
     let mode = Rc::clone(&world.mode);
     let started = tokio::task::spawn_local(async move { mode.init().await.err() });
-    until_logged(&log, "bind ui=true").await;
+    log.until("bind ui=true").await;
     world.runtime.settle().unwrap();
     world.terminal.send_input("\r");
-    until_logged(&log, "discover").await;
+    log.until("discover").await;
     world.loader.calls.borrow_mut().clear();
     assert!(world.mode.editor.on_extension_shortcut().is_none());
     assert!(
@@ -902,7 +906,7 @@ async fn binding_case(directory: &Path, fail: Option<&str>, expected: &Phases) {
         "discover",
         "discovered",
     ];
-    assert_eq!(*paused.log.borrow(), asked);
+    assert_eq!(*paused.log.entries.borrow(), asked);
     assert_eq!(
         error.is_some(),
         expected.error.is_some(),
@@ -1285,12 +1289,7 @@ fn shortcut_context_exposes_current_runner_capabilities() {
             world.runtime.settle().unwrap();
             world.mode.editor.handle_input("\x11");
             world.runtime.settle().unwrap();
-            for _ in 0..10_000 {
-                if log.borrow().len() == 2 {
-                    break;
-                }
-                tokio::task::yield_now().await;
-            }
+            assert!(admitted(&world.runtime).await.is_empty());
             assert!(world.runtime.drain_futures().is_empty());
             let cwd = session.session_manager().borrow().get_cwd().to_owned();
             let usage = session.get_context_usage().unwrap().is_some();
