@@ -225,3 +225,42 @@ fn oauth_login_pending_prompt_keeps_the_host_available() {
         assert_eq!(super::call(&runner, "login counts").await, 1);
     });
 }
+
+#[test]
+fn oauth_credential_login_persists_through_the_native_owner() {
+    super::super::components::local(async {
+        maestro_models::register_oauth_provider(std::sync::Arc::new(Provider));
+        let bus = super::super::components::TracedBus::new();
+        let (_owner, runner, _) =
+            super::super::retained_components::loaded_on(bus.controller.for_extension()).await;
+        let result = super::call(&runner, "storage all").await;
+        let expected = json!({"type":"oauth","refresh":"controlled-refresh","access":" Literal answer ","expires":42.5,"manual":"manual-code","selectionPresent":true,"selection":null,"aborted":null,"open":[null,false,-0.0]});
+        assert_eq!(result["storage"]["result"], json!({"ok":true}));
+        assert_eq!(result["storage"]["accepted"], expected);
+        assert_eq!(result["storage"]["raw"]["component-login"], expected);
+        assert_eq!(result["storage"]["reloaded"], expected);
+        assert_eq!(result["storage"]["raw"]["neighbor"], json!([null, false]));
+        assert_eq!(result["storage"]["errors"], json!([]));
+        assert_eq!(result["events"].as_array().unwrap().len(), 5);
+        let failed = super::call(&runner, "storage prompt-error").await;
+        assert_eq!(
+            failed["storage"]["result"]["error"],
+            "literal prompt failure"
+        );
+        assert_eq!(failed["storage"]["accepted"], json!(null));
+        assert_eq!(failed["storage"]["raw"], json!({"neighbor":[null,false]}));
+        let unknown = super::call(&runner, "storage unknown").await;
+        assert_eq!(
+            unknown["storage"]["result"]["error"],
+            "Unknown OAuth provider: missing-component-login"
+        );
+        assert_eq!(unknown["events"], json!([]));
+        let write = super::call(&runner, "storage write-failure").await;
+        assert_eq!(write["storage"]["result"], json!({"ok":true}));
+        assert_eq!(write["storage"]["accepted"], expected);
+        assert_eq!(write["storage"]["raw"], json!({"neighbor":[null,false]}));
+        assert_eq!(write["storage"]["errors"], json!(["write-login"]));
+        assert_eq!(write["storage"]["reloaded"], json!(null));
+        maestro_models::unregister_oauth_provider("component-login");
+    });
+}

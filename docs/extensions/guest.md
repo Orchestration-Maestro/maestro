@@ -485,8 +485,16 @@ The optional caller signal follows live cancellation, including a prior abort.
 Native callback aliases retain the interaction and its signal binding after the
 initiating login future ends; the final native release drops their captures.
 Pending input does not block other host requests. These methods reuse the native
-OAuth implementations; they do not store login credentials. OAuth-bearing guest
-provider registration is not yet exposed.
+OAuth implementations; provider methods do not store login credentials.
+
+`AuthStorage::login(provider_id, callbacks)` instead delegates authorization and
+persistence to the retained native credential owner. It returns an owned future,
+so dropping the initiating facade does not end the operation. Successful login
+accepts the complete OAuth record and persists it through the original backend;
+other provider records stay unchanged. Unknown providers and interaction failures
+return their original messages. As with `AuthStorage::set`, persistence failures
+leave accepted state available and are reported by `drain_errors`, not as a failed
+login. OAuth-bearing guest provider registration is not yet exposed.
 
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied

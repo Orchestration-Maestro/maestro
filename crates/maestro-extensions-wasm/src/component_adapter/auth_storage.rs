@@ -29,6 +29,30 @@ pub(super) fn storage<I: Imports>(imports: I, resource: I::Credentials) -> AuthS
     storage
 }
 impl<I: Imports> AuthStoragePort for Owner<I> {
+    fn login(
+        &self,
+        provider: &str,
+        callbacks: Rc<crate::OAuthLoginCallbacks>,
+    ) -> ExtensionFuture<'static, ()> {
+        let (imports, resource, provider) = (
+            self.imports.clone(),
+            self.resource.clone(),
+            provider.to_owned(),
+        );
+        Box::pin(async move {
+            let login = super::oauth::Login::new(&imports, callbacks)?;
+            let result = imports
+                .credentials_login(
+                    &resource,
+                    provider,
+                    &login.handler.handle,
+                    (login.options, login.signal.signal()),
+                )
+                .await;
+            login.handler.settle(true);
+            result
+        })
+    }
     fn set_fallback_resolver(&self, resolver: crate::FallbackResolver) -> ExtensionResult<()> {
         let identity = super::callbacks::Identity::new(&self.imports);
         identity.stage(resolver);

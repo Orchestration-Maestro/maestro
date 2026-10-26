@@ -223,14 +223,15 @@ impl State {
             }
             Message::OAuthProvider(id, request) => self.oauth_provider(id, request),
             Message::Credentials(id, request) => self.credentials(id, request),
+            Message::CredentialLogin(id, provider, controls, reply, admission) => {
+                self.start_credential_login(id, (provider, controls), reply, admission);
+            }
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
             Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => self.node(id, request),
-            Message::Replaced(id, request, admission) => {
-                self.start_replaced(id, request, admission);
-            }
+            Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),

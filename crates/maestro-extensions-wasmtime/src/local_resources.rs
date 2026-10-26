@@ -106,6 +106,14 @@ pub(crate) enum Message {
     OAuthProvider(u64, crate::oauth_reads::Request),
     /// Uses independently retained accepted credentials.
     Credentials(u64, crate::credential_reads::Request),
+    /// Authorizes and persists through the retained credential owner.
+    CredentialLogin(
+        u64,
+        String,
+        crate::oauth_callbacks::Controls,
+        tokio::sync::oneshot::Sender<Result<(), String>>,
+        Admission,
+    ),
     /// Resolves a key while retaining the original owner through settlement.
     CredentialKey(
         u64,

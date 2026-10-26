@@ -170,3 +170,15 @@ async fn wait(bus: &maestro_extensions_wasm::EventBus) -> ExtensionResult<()> {
     .await;
     Ok(())
 }
+
+/// Uses the credential owner for persistence rather than accepting a provider result locally.
+pub async fn storage(
+    api: &ExtensionAPI,
+    context: &ExtensionContext,
+    mode: &str,
+) -> ExtensionResult<Value> {
+    let events = Events::default();
+    let callbacks = Rc::new(callbacks(api, context, events.clone(), mode)?);
+    let storage = super::super::credentials::login(api, mode, callbacks).await?;
+    Ok(json!({"storage":storage,"events":*events.borrow()}))
+}

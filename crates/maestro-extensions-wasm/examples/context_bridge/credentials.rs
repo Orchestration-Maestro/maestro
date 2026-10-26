@@ -242,3 +242,12 @@ fn retain_pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
     RAW.with(|slot| slot.replace(Some(raw)));
     Ok(json!("retained"))
 }
+
+/// Runs native credential login over the controlled raw backend.
+pub(super) async fn login(
+    api: &ExtensionAPI,
+    mode: &str,
+    callbacks: Rc<maestro_extensions_wasm::OAuthLoginCallbacks>,
+) -> ExtensionResult<Value> {
+    state::login(api, mode, callbacks).await
+}

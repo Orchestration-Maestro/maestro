@@ -552,6 +552,15 @@ impl Imports for Controlled {
                 .ok_or_else(|| "missing OAuth login result".into())
         })
     }
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Reader,
+        provider: String,
+        _handler: &'a Self::Callback,
+        _controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move { owner.data.unit("login", &[json!(provider)]) })
+    }
     fn oauth_refresh<'a>(
         &'a self,
         provider: &'a Reader,

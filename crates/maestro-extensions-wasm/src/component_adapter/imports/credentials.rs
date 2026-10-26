@@ -19,6 +19,14 @@ macro_rules! credential_imports {
             handler: &'a Self::Callback,
             controls: ((bool, bool, bool), Option<&'a Self::Signal>),
         ) -> ExtensionFuture<'a, String>;
+        /// Delegates login and persistence to the retained credential owner.
+        fn credentials_login<'a>(
+            &'a self,
+            owner: &'a Self::Credentials,
+            provider: String,
+            handler: &'a Self::Callback,
+            controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+        ) -> ExtensionFuture<'a, ()>;
         /// Awaits the original provider's refresh operation.
         fn oauth_refresh<'a>(
             &'a self,

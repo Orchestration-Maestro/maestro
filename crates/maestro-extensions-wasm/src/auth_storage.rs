@@ -78,6 +78,10 @@ port! {
         /// Resolves a key using the owner's retained effects and source precedence.
         fn get_api_key<'a>(provider: &'a str, options: Option<GetApiKeyOptions>) -> Option<String>;
     }
+    owned {
+        /// Logs in through the native credential owner, which accepts and persists the result.
+        fn login(provider: &str, callbacks: Rc<crate::OAuthLoginCallbacks>) -> ();
+    }
 }
 
 /// Clones retain the same live credential owner.

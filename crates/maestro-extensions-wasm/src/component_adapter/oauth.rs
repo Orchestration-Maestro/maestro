@@ -51,24 +51,15 @@ impl<I: Imports> OAuthProviderInterface for Provider<I> {
     ) -> ExtensionFuture<'static, OAuthCredentials> {
         let (imports, resource) = (self.imports.clone(), self.resource.clone());
         Box::pin(async move {
-            let mirror = Rc::new(super::signals::Mirror::new(
-                &imports,
-                callbacks.signal.as_ref(),
-            )?);
-            let options = (
-                callbacks.on_progress.is_some(),
-                callbacks.on_manual_code_input.is_some(),
-                callbacks.on_select.is_some(),
-            );
-            let scope = super::callbacks::Identity::new(&imports);
-            scope.stage(Rc::new(Interaction {
-                callbacks,
-                _signal: Box::new(mirror.clone()),
-            }));
+            let login = Login::new(&imports, callbacks)?;
             let result = imports
-                .oauth_login(&resource, &scope.handle, (options, mirror.signal()))
+                .oauth_login(
+                    &resource,
+                    &login.handler.handle,
+                    (login.options, login.signal.signal()),
+                )
                 .await;
-            scope.settle(true);
+            login.handler.settle(true);
             decode(&result?)
         })
     }
@@ -95,6 +86,43 @@ impl<I: Imports> OAuthProviderInterface for Provider<I> {
             &self.resource,
             &crate::types::finite::encode_value(credentials)?,
         )
+    }
+}
+
+/// Stages one interaction using the same identity and signal lifetime for both login entry points.
+pub(super) struct Login<I: Imports> {
+    /// Native final release removes the interaction's guest captures.
+    pub(super) handler: super::callbacks::Identity<I>,
+    /// The supplied signal follows live caller cancellation.
+    pub(super) signal: Rc<super::signals::Mirror<I>>,
+    /// Presence of progress, manual-code and selection callbacks.
+    pub(super) options: (bool, bool, bool),
+}
+impl<I: Imports> Login<I> {
+    /// Retains the callbacks and signal mirror under the native final-release identity.
+    pub(super) fn new(
+        imports: &I,
+        callbacks: Rc<crate::OAuthLoginCallbacks>,
+    ) -> ExtensionResult<Self> {
+        let signal = Rc::new(super::signals::Mirror::new(
+            imports,
+            callbacks.signal.as_ref(),
+        )?);
+        let options = (
+            callbacks.on_progress.is_some(),
+            callbacks.on_manual_code_input.is_some(),
+            callbacks.on_select.is_some(),
+        );
+        let handler = super::callbacks::Identity::new(imports);
+        handler.stage(Rc::new(Interaction {
+            callbacks,
+            _signal: Box::new(signal.clone()),
+        }));
+        Ok(Self {
+            handler,
+            signal,
+            options,
+        })
     }
 }
 

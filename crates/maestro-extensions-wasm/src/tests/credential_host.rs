@@ -160,6 +160,22 @@ impl host::HostAuthStorage for State {
     }
 }
 impl host::HostAuthStorageWithStore<State> for Imports {
+    fn login(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        provider: String,
+        _callbacks: Resource<super::host::Identity>,
+        _options: (bool, bool, bool),
+        _signal: Option<Resource<super::host::Flag>>,
+    ) -> impl Future<Output = wasmtime::Result<Result<(), String>>> {
+        std::future::ready(accessor.with(|mut access| {
+            Ok(access
+                .get()
+                .table
+                .get(&this)?
+                .unit("login", &[json!(provider)]))
+        }))
+    }
     fn get_api_key(
         accessor: &Accessor<State, Self>,
         this: Resource<Reader>,

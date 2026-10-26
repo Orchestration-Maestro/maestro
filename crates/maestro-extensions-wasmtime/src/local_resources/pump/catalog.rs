@@ -168,3 +168,35 @@ impl State {
         );
     }
 }
+
+impl State {
+    /// Native credentials own provider lookup, accepted state and persistence after authorization.
+    pub(super) fn start_credential_login(
+        &self,
+        id: u64,
+        (provider, controls): (String, crate::oauth_callbacks::Controls),
+        reply: tokio::sync::oneshot::Sender<Result<(), String>>,
+        admission: Admission,
+    ) {
+        let capability = self.registry.capability(id);
+        let result = match capability.as_deref() {
+            Some(Capability::Credentials(owner, _)) => controls
+                .callbacks(&self.registry)
+                .map(|callbacks| (owner.clone(), callbacks)),
+            _ => Err("extension credential resource ended".into()),
+        };
+        self.admit(
+            Box::pin(async move {
+                let result = match result {
+                    Ok((owner, callbacks)) => owner
+                        .login(&provider, callbacks)
+                        .await
+                        .map_err(|error| error.to_string()),
+                    Err(error) => Err(error),
+                };
+                let _ = reply.send(result);
+            }),
+            admission,
+        );
+    }
+}

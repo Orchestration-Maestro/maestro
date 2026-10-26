@@ -462,6 +462,9 @@ async fn credential_command(
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }
+    if let Some(mode) = request.strip_prefix("credential oauth storage ") {
+        return oauth::storage(api, context, mode).await;
+    }
     match request {
         request if request.starts_with("credential oauth login ") => {
             oauth::login(

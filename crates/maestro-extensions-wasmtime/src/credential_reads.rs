@@ -152,6 +152,18 @@ fn send<T, E: std::fmt::Display>(reply: &Reply<T>, result: Result<T, E>) {
 #[derive(Clone)]
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
+    /// Leaves provider selection, login and persistence with the retained credential owner.
+    pub(crate) async fn login(
+        &self,
+        provider: String,
+        controls: crate::oauth_callbacks::Controls,
+    ) -> Result<(), String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                Message::CredentialLogin(id, provider, controls, reply, admission)
+            })
+            .await
+    }
     /// Resolves through the same credential effects that the creating catalog retained.
     pub(crate) async fn key(
         &self,

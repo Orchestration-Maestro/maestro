@@ -584,6 +584,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         [
             "[method]auth-lock-update.update-async",
             "[method]auth-storage.get-api-key",
+            "[method]auth-storage.login",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",

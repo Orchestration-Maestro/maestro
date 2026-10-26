@@ -437,6 +437,7 @@ interface host {
         modify-models: func(data: string) -> import-route;
     }
     resource auth-storage {
+        login: async func(provider: string, callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<_, string>;
         get-oauth-providers: func() -> result<list<oauth-provider>, string>;
         set-fallback-resolver: func(resolver: borrow<callback>) -> import-route;
         set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;

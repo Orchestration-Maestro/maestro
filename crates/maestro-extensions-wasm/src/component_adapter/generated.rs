@@ -46,6 +46,15 @@ impl Imports for Generated {
     ) -> ExtensionFuture<'a, String> {
         Box::pin(provider.login(handler, options, signal))
     }
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Self::Credentials,
+        provider: String,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(owner.login(provider, handler, options, signal))
+    }
     fn oauth_refresh<'a>(
         &'a self,
         provider: &'a Self::OAuthProvider,
