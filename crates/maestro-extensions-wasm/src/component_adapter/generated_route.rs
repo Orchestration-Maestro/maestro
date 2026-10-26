@@ -10,7 +10,9 @@ use std::{
 use super::{Generated, host};
 use crate::ExtensionResult;
 use crate::component_adapter::tools::ToolCapabilities;
-use crate::component_adapter::{Exports, bash::BashCapabilities, callbacks, renderers};
+use crate::component_adapter::{
+    Capabilities, Exports, bash::BashCapabilities, callbacks, renderers,
+};
 
 /// One nested call's result, ready at once or after its later continuation.
 type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
@@ -20,6 +22,14 @@ type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
 /// # Errors
 /// Returns the host operation's own error.
 pub(super) fn drive(route: &host::ImportRoute) -> ExtensionResult<()> {
+    match value(route)? {
+        host::RouteValue::Unit => Ok(()),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Drives the same continuation while preserving a non-unit operation result.
+pub(super) fn value(route: &host::ImportRoute) -> ExtensionResult<host::RouteValue> {
     loop {
         match route.next() {
             host::RouteStep::Done(result) => return result,
@@ -32,42 +42,16 @@ pub(super) fn drive(route: &host::ImportRoute) -> ExtensionResult<()> {
 ///
 /// # Errors
 /// Returns the rendering's own error.
-pub(super) fn drive_render(route: &host::RenderRoute) -> ExtensionResult<Vec<String>> {
-    loop {
-        match route.next() {
-            host::RenderStep::Done(result) => return result,
-            host::RenderStep::Invoke(call) => start(route, dispatch(call)),
-        }
-    }
-}
-
-/// A host operation in progress that hands this instance its nested calls.
-trait Progress {
-    /// Returns a nested call's result.
-    fn resume(&self, value: host::LocalResult);
-    /// Releases the host caller now; the nested call's result follows through the settlement.
-    fn defer(&self) -> host::LocalSettlement;
-}
-impl Progress for host::ImportRoute {
-    fn resume(&self, value: host::LocalResult) {
-        host::ImportRoute::resume(self, value);
-    }
-    fn defer(&self) -> host::LocalSettlement {
-        host::ImportRoute::defer(self)
-    }
-}
-impl Progress for host::RenderRoute {
-    fn resume(&self, value: host::LocalResult) {
-        host::RenderRoute::resume(self, value);
-    }
-    fn defer(&self) -> host::LocalSettlement {
-        host::RenderRoute::defer(self)
+pub(super) fn drive_render(route: &host::ImportRoute) -> ExtensionResult<Vec<String>> {
+    match value(route)? {
+        host::RouteValue::Lines(lines) => Ok(lines),
+        _ => Err("extension route result kind mismatch".into()),
     }
 }
 
 /// Runs a nested call's prefix now; a call still pending continues in this guest's task and
 /// delivers its result through its settlement, so the host caller is released at once.
-fn start(route: &impl Progress, mut running: Running) {
+fn start(route: &host::ImportRoute, mut running: Running) {
     match running
         .as_mut()
         .poll(&mut Context::from_waker(Waker::noop()))
@@ -84,6 +68,10 @@ fn start(route: &impl Progress, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
+        host::LocalCall::AuthFallback(call) => host::LocalResult::AuthFallback(
+            super::super::auth_storage::invoke_fallback(call.target, &call.provider),
+        ),
+        host::LocalCall::AuthBackend(call) => return backend(call),
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
                 .invoke_renderer(
@@ -135,6 +123,11 @@ fn dispatch(call: host::LocalCall) -> Running {
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
+        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+            call.target,
+            call.value,
+            call.operation,
+        )),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call @ (host::LocalCall::Style(_)
         | host::LocalCall::Highlight(_)
@@ -268,7 +261,7 @@ pub(super) async fn event(
 ) -> Result<host::EventOutcome, String> {
     let host::Capabilities { ctx, signal } = resources;
     let outcome = Exports::new(Generated)
-        .invoke_event(target, event, super::Capabilities { ctx, signal })
+        .invoke_event(target, event, Capabilities { ctx, signal })
         .await?;
     Ok(host::EventOutcome {
         event: outcome.event,
@@ -326,4 +319,32 @@ pub(super) fn walk_snapshot(
         }
     }
     Ok(())
+}
+
+/// Runs either authored backend method with its still-borrowed native update.
+fn backend(call: host::LocalAuthBackend) -> Running {
+    Box::pin(async move {
+        let result = if call.asynchronous {
+            super::super::auth_storage::invoke_backend_async(&Generated, call.target, &call.update)
+                .await
+        } else {
+            super::super::auth_storage::invoke_backend(&Generated, call.target, &call.update)
+        };
+        host::LocalResult::Unit(result)
+    })
+}
+
+/// Preserves the original non-unit predicate result.
+pub(super) fn boolean(route: &host::ImportRoute) -> ExtensionResult<bool> {
+    match value(route)? {
+        host::RouteValue::Boolean(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+/// Preserves an encoded record returned by the original native owner.
+pub(super) fn text(route: &host::ImportRoute) -> ExtensionResult<String> {
+    match value(route)? {
+        host::RouteValue::Text(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
 }

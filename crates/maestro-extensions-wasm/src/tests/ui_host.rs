@@ -792,7 +792,8 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
-            result: Some(Ok(())),
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
         })
     }
 
@@ -823,7 +824,8 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
-            result: Some(Ok(())),
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
         })
     }
 
@@ -851,7 +853,8 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
-            result: Some(Ok(())),
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
         })
     }
 
@@ -876,7 +879,8 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
-            result: Some(Ok(())),
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
         })
     }
 

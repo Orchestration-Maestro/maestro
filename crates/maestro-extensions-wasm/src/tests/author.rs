@@ -30,6 +30,8 @@ mod compaction_author;
 mod completion_author;
 #[path = "factory_component_author.rs"]
 mod factory_component_author;
+#[path = "provider_author.rs"]
+mod provider_author;
 #[path = "reader_author.rs"]
 mod reader_author;
 #[path = "registration_author.rs"]
@@ -912,7 +914,7 @@ fn register_helpers(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<()
     match args {
         "setup-register" => Some(setup_author::register(api)),
         "replacement-register" => Some(replacement_author::register(api)),
-        _ => None,
+        _ => provider_author::dispatch(api, args),
     }
 }
 

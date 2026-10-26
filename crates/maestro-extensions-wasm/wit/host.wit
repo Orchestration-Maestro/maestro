@@ -2,6 +2,17 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// A native update borrowed only while the author's backend is running.
+    resource auth-lock-update {
+        update: func(current: option<string>) -> result<option<string>, string>;
+        update-async: async func(current: option<string>) -> result<option<string>, string>;
+    }
+    auth-storage-from-backend: func(backend: borrow<callback>) -> import-route;
+    /// File constructors resolve absent paths through application-supplied defaults.
+    create-auth-storage: func(path: option<string>) -> result<auth-storage, string>;
+    auth-storage-in-memory: func(data: string) -> result<auth-storage, string>;
+    create-model-registry: func(auth: borrow<auth-storage>, path: option<string>) -> result<model-registry, string>;
+    in-memory-model-registry: func(auth: borrow<auth-storage>) -> result<model-registry, string>;
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};
@@ -86,6 +97,42 @@ interface host {
 
     }
 
+    /// Independently retained author value, never encoded as JSON.
+    resource stream-value {
+        constructor(value: callback);
+        id: func() -> u32;
+    }
+    /// Original model invocation buffer, without a second event queue.
+    resource assistant-stream {
+        push: func(event: string) -> result<_, string>;
+        end: func(value: option<string>) -> result<_, string>;
+        next: async func() -> result<option<string>, string>;
+        %result: async func() -> result<string, string>;
+    }
+    /// Non-data invocation operands retained independently of the initiating callback.
+    record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
+    /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
+    model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Native phase calling an awaited authored hook.
+    enum model-hook { payload, response }
+    /// Selected payload and optional original or replacement cancellation.
+    record payload-selection { data: string, signal: option<abort-signal>, owner: option<callback> }
+    /// Host-buffered generic authored events and their independent final result.
+    resource event-stream {
+        push: func(value: stream-value) -> import-route;
+        end: func(value: option<stream-value>) -> import-route;
+        next: async func() -> result<option<stream-value>, string>;
+        %result: async func() -> result<stream-value, string>;
+    }
+    /// Create the native buffer with synchronous author callbacks.
+    new-event-stream: func(classifier: borrow<callback>, extractor: borrow<callback>) -> result<event-stream, string>;
+    /// Which synchronous author callback native admission requests.
+    enum stream-operation { classify, extract }
+    /// Typed result of one author callback.
+    variant stream-selection { complete(bool), extracted(stream-value) }
+    /// One synchronous callback on the original retained event.
+    record local-stream { target: u32, value: u32, operation: stream-operation }
+
     /// Explicit subscription remover.
     resource subscription { unsubscribe: func() -> result<_, string>; }
     /// Emission capability lent to a synchronous invocation.
@@ -168,8 +215,12 @@ interface host {
     record local-schema { target: u32, operation: schema-operation, node: json-node, emitter: callback-emitter }
     /// One nested same-instance expansion callback.
     record local-expanded { target: u32, expanded: bool, emitter: callback-emitter }
+    record local-auth-backend { target: u32, update: auth-lock-update, asynchronous: bool }
+    record local-auth-fallback { target: u32, provider: string }
     /// The nested same-instance target and its owned operands.
     variant local-call {
+        auth-backend(local-auth-backend),
+        auth-fallback(local-auth-fallback),
         renderer(local-renderer),
         render(local-render),
         unit(local-unit),
@@ -179,6 +230,7 @@ interface host {
         terminal-input(local-terminal-input),
         synchronous(local-synchronous),
         schema(local-schema),
+        %stream(local-stream),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -196,6 +248,7 @@ interface host {
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
+        auth-fallback(result<option<string>, string>),
         renderer(result<option<callback>, string>),
         render(result<list<string>, string>),
         unit(result<_, string>),
@@ -204,6 +257,7 @@ interface host {
         terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
+        %stream(result<stream-selection, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
@@ -215,19 +269,11 @@ interface host {
         widget(result<widget-answer, string>),
     }
     /// One step of a native operation that may call back into this same instance.
-    variant route-step { invoke(local-call), done(result<_, string>) }
+    variant route-value { unit, boolean(bool), text(string), lines(list<string>), credentials(auth-storage), catalog(model-registry) }
+    variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
     resource import-route {
         next: func() -> route-step;
-        resume: func(value: local-result);
-        /// Releases the native caller once the nested call's prefix ran; its result follows.
-        defer: func() -> local-settlement;
-    }
-    /// One step of a host rendering that may call back into this same instance.
-    variant render-step { invoke(local-call), done(result<list<string>, string>) }
-    /// A host rendering in progress on this instance, advanced by the guest.
-    resource render-route {
-        next: func() -> render-step;
         resume: func(value: local-result);
         /// Releases the native caller once the nested call's prefix ran; its result follows.
         defer: func() -> local-settlement;
@@ -243,8 +289,9 @@ interface host {
 
     /// Host-owned cancellation flag.
     resource abort-signal {
+        retain: func() -> abort-signal;
         aborted: func() -> bool;
-        abort: func() -> result<_, string>;
+        abort: func() -> import-route;
     }
     /// Creates an independently owned cancellation signal.
     new-signal: func() -> result<abort-signal, string>;
@@ -411,7 +458,7 @@ interface host {
     /// A toolkit or application widget the host built for this extension.
     resource widget {
         /// Renders rows at a width; the host may call back into this instance first.
-        render: func(width: u32) -> render-route;
+        render: func(width: u32) -> import-route;
         /// Drops cached rows, the children's included.
         invalidate: func() -> import-route;
         /// Replaces the text of a text or Markdown widget.
@@ -599,12 +646,43 @@ interface host {
     }
     /// Resolution outcome, separate from an import failure.
     variant resolved-request-auth { ok(request-auth), error(string) }
+    /// Independently retained accepted credentials and their original backend.
+    resource auth-storage {
+        set-fallback-resolver: func(resolver: borrow<callback>) -> import-route;
+        set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;
+        remove-runtime-api-key: func(provider: string) -> result<_, string>;
+        reload: func() -> import-route;
+        get: func(provider: string) -> result<option<string>, string>;
+        set: func(provider: string, credential: string) -> import-route;
+        remove: func(provider: string) -> import-route;
+        %list: func() -> result<list<string>, string>;
+        has: func(provider: string) -> result<bool, string>;
+        has-auth: func(provider: string) -> import-route;
+        get-auth-status: func(provider: string) -> import-route;
+        get-all: func() -> result<string, string>;
+        drain-errors: func() -> result<string, string>;
+        logout: func(provider: string) -> import-route;
+        get-api-key: async func(provider: string, include-fallback: option<bool>) -> result<option<string>, string>;
+    }
+
     /// Independently retained host catalog.
     resource model-registry {
+        auth-storage: func() -> result<auth-storage, string>;
         get-all: func() -> result<string, string>;
-        get-available: func() -> result<string, string>;
+        get-available: func() -> import-route;
         find: func(provider: string, model-id: string) -> result<option<string>, string>;
         get-api-key-and-headers: async func(model: string) -> result<resolved-request-auth, string>;
+        refresh: func() -> import-route;
+        get-error: func() -> result<option<string>, string>;
+        has-configured-auth: func(model: string) -> import-route;
+        /// The provider's authentication status as JSON.
+        get-provider-auth-status: func(provider: string) -> import-route;
+        get-provider-display-name: func(provider: string) -> result<string, string>;
+        is-using-oauth: func(model: string) -> result<bool, string>;
+        /// Registers JSON provider data directly in this catalog.
+        register-provider: func(name: string, config: string) -> import-route;
+        unregister-provider: func(name: string) -> import-route;
+        get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
 
     /// Plain compaction options, separate from their retained callbacks.
@@ -705,6 +783,10 @@ interface host {
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
     register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
+    /// Registers JSON provider data, queued until the host binds.
+    register-provider: func(name: string, config: string) -> import-route;
+    /// Unregisters a provider, including its queued registrations.
+    unregister-provider: func(name: string) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> import-route;
 

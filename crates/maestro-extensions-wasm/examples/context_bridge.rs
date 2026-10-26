@@ -19,6 +19,9 @@ mod api;
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/credentials.rs"]
+mod credentials;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/exec.rs"]
 mod exec;
 #[cfg(target_arch = "wasm32")]
@@ -27,6 +30,13 @@ mod json_boundary;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/prefixes.rs"]
 mod prefixes;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/provider_controls.rs"]
+mod provider_controls;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/providers.rs"]
+mod providers;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
@@ -61,24 +71,40 @@ mod widget_author;
 #[path = "context_bridge/schema.rs"]
 mod schema;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/streams.rs"]
+mod streams;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/stream_lifetimes.rs"]
+mod stream_lifetimes;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_streams.rs"]
+mod model_streams;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_completions.rs"]
+mod model_completions;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_hooks.rs"]
+mod model_hooks;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_hook_gates.rs"]
+mod model_hook_gates;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_finite.rs"]
+mod model_finite;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        api.register_flag(
-            "fail-start",
-            maestro_extensions_wasm::FlagOptions {
-                description: None,
-                type_: maestro_extensions_wasm::FlagType::Boolean,
-                default: None,
-            },
-        )?;
-        if matches!(
-            api.get_flag("fail-start")?,
-            Some(maestro_extensions_wasm::FlagValue::Boolean(true))
-        ) {
-            return Err("guest startup failure".into());
-        }
+        check_start(&api)?;
+        providers::factory(&api)?;
         register_listeners(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
@@ -172,7 +198,57 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(request) = args.strip_prefix("model-selected-signal ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(model_hook_gates::signals(&request, context).await?) });
+    }
+    if let Some(request) = args.strip_prefix("model-hook-gates ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(model_hook_gates::command(&request, context).await?) });
+    }
+    if args == "model-finite" {
+        return Box::pin(async { Err(model_finite::command()?) });
+    }
+    if args == "model-signals" {
+        return Box::pin(async { Err(model_hooks::signals().await?) });
+    }
+    if args == "model-hooks" {
+        return Box::pin(async { Err(model_hooks::command().await?) });
+    }
+    if let Some(action) = args.strip_prefix("model-completions ") {
+        let action = action.to_owned();
+        return Box::pin(async move { Err(model_completions::command(&action).await?) });
+    }
+    if args == "model-errors" {
+        return Box::pin(async { Err(model_streams::errors().await?) });
+    }
+    if args == "model-streams" {
+        return Box::pin(async { Err(model_streams::command().await?) });
+    }
+    if let Some(action) = args.strip_prefix("stream-lifetime ") {
+        let action = action.to_owned();
+        return Box::pin(
+            async move { Err(stream_lifetimes::command(&api, &context, &action).await?) },
+        );
+    }
+    if let Some(request) = args.strip_prefix("stream ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(streams::command(&request).await?) });
+    }
+    context_command(args, context, api)
+}
+
+/// Dispatch context and registration observations unrelated to stream ownership.
+#[cfg(target_arch = "wasm32")]
+fn context_command(
+    args: String,
+    context: maestro_extensions_wasm::ExtensionCommandContext,
+    api: ExtensionAPI,
+) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if args.starts_with("credential ") || args.starts_with("provider ") {
+            return Err(credential_command(&api, &context, &args).await?.to_string());
+        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
@@ -364,4 +440,48 @@ impl Drop for ReleaseTrap {
             std::arch::wasm32::unreachable();
         }
     }
+}
+
+/// Selects credential and provider observations without changing the ordinary command routes.
+#[cfg(target_arch = "wasm32")]
+async fn credential_command(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionContext,
+    request: &str,
+) -> Result<serde_json::Value, String> {
+    if let Some(text) = request.strip_prefix("provider control ") {
+        return provider_controls::control(api, context, text).await;
+    }
+    if let Some(request) = request.strip_prefix("credential lifetime ") {
+        return credentials::lifetime(api, context, request);
+    }
+    if let Some(request) = request.strip_prefix("credential pending ") {
+        return credentials::pending(api, request).await;
+    }
+    match request {
+        "credential fallback" => credentials::fallback(api).await,
+        "credential backend" => credentials::backend(api),
+        "credential state" => credentials::state(api).await,
+        _ => providers::command(api, context, request).await,
+    }
+}
+
+/// Preserves the caller-controlled startup failure before any callback registration.
+#[cfg(target_arch = "wasm32")]
+fn check_start(api: &ExtensionAPI) -> Result<(), String> {
+    api.register_flag(
+        "fail-start",
+        maestro_extensions_wasm::FlagOptions {
+            description: None,
+            type_: maestro_extensions_wasm::FlagType::Boolean,
+            default: None,
+        },
+    )?;
+    if matches!(
+        api.get_flag("fail-start")?,
+        Some(maestro_extensions_wasm::FlagValue::Boolean(true))
+    ) {
+        return Err("guest startup failure".into());
+    }
+    Ok(())
 }

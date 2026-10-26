@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 use serde_json::json;
 use wasmtime::component::Resource;
 
-use super::host::{Identity, Route, Settlement, State};
+use super::host::{Identity, Route, State};
 use super::ui_host::Nested;
 use super::widget_host::{self, Build, CODE, Change, Child, Paint, Part, ROLES};
 use super::widget_lists::{self, Call, Event, List, Setting};
@@ -26,21 +26,19 @@ pub struct StyleResource(pub String);
 /// Host type of the host's code highlighting.
 pub struct HighlighterResource;
 
-/// A rendering's nested calls, in order, before its rows.
-pub struct RenderRoute {
-    /// Nested calls not handed out yet.
-    steps: VecDeque<host::LocalCall>,
+/// A rendering's pieces and the results of its nested calls, in order, before its rows.
+pub struct Rows {
     /// The rendering's pieces.
     parts: Vec<Part>,
     /// Results of the nested calls, in order.
-    results: VecDeque<host::LocalResult>,
+    pub(super) results: VecDeque<host::LocalResult>,
     /// A failure found before the first nested call.
     failure: Option<String>,
 }
 
-impl RenderRoute {
+impl Rows {
     /// The rows of the rendering, from its pieces and nested results.
-    fn rows(&mut self) -> Result<Vec<String>, String> {
+    pub(super) fn rows(&mut self) -> Result<Vec<String>, String> {
         if let Some(error) = self.failure.take() {
             return Err(error);
         }
@@ -412,7 +410,7 @@ impl host::HostWidget for State {
         &mut self,
         this: Resource<WidgetResource>,
         width: u32,
-    ) -> wasmtime::Result<Resource<RenderRoute>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let key = self.table.get(&this)?.0;
         let (parts, failure) = match widget_host::render(&mut self.observed, key, width) {
             Ok(parts) => (parts, None),
@@ -420,13 +418,18 @@ impl host::HostWidget for State {
         };
         let mut steps = VecDeque::new();
         for part in &parts {
-            steps.extend(self.nested(part, width)?);
+            let calls = self.nested(part, width)?;
+            steps.extend(calls.into_iter().map(|call| (call, Nested::Invalidate)));
         }
-        self.push(RenderRoute {
+        self.push(Route {
             steps,
-            parts,
-            results: VecDeque::new(),
-            failure,
+            running: None,
+            result: None,
+            rows: Some(Rows {
+                parts,
+                results: VecDeque::new(),
+                failure,
+            }),
         })
     }
     fn invalidate(&mut self, this: Resource<WidgetResource>) -> wasmtime::Result<Resource<Route>> {
@@ -447,7 +450,8 @@ impl host::HostWidget for State {
         self.push(Route {
             steps,
             running: None,
-            result: Some(Ok(())),
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
         })
     }
     fn set_text(
@@ -538,30 +542,6 @@ impl host::HostHighlighter for State {
     }
 }
 
-impl host::HostRenderRoute for State {
-    fn next(&mut self, this: Resource<RenderRoute>) -> wasmtime::Result<host::RenderStep> {
-        let route = self.table.get_mut(&this)?;
-        if let Some(call) = route.steps.pop_front() {
-            return Ok(host::RenderStep::Invoke(call));
-        }
-        Ok(host::RenderStep::Done(route.rows()))
-    }
-    fn resume(
-        &mut self,
-        this: Resource<RenderRoute>,
-        value: host::LocalResult,
-    ) -> wasmtime::Result<()> {
-        self.table.get_mut(&this)?.results.push_back(value);
-        Ok(())
-    }
-    fn defer(&mut self, _: Resource<RenderRoute>) -> wasmtime::Result<Resource<Settlement>> {
-        self.push(Settlement)
-    }
-    fn drop(&mut self, this: Resource<RenderRoute>) -> wasmtime::Result<()> {
-        self.release(this)
-    }
-}
-
 /// Host type of one host settings row style, by role.
 pub struct RowStyleResource(pub String);
 
@@ -634,7 +614,8 @@ impl State {
         self.push(Route {
             steps,
             running: None,
-            result: Some(Ok(())),
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
         })
     }
 

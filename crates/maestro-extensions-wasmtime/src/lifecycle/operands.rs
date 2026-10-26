@@ -22,6 +22,8 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
+            Self::Stream(call) => Call::Stream(stream(call, completion)),
             Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
                 handler: completion.callback(call.handler),
                 operation: call.operation,
@@ -29,26 +31,14 @@ impl Call {
                 emitter: call.emitter,
                 reply: call.reply,
             }),
+            Self::Credential(call) => Call::Credential(credential(call, completion)),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
                 completion.retain(release.calls.take());
                 Call::Release(release)
             }
-            Self::Renderer(call) => Call::Renderer(RendererCall {
-                handler: completion.callback(call.handler),
-                message: call.message,
-                expanded: call.expanded,
-                theme: call.theme,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
-            Self::Event(call) => Call::Event(crate::guest_calls::EventCall {
-                handler: completion.callback(call.handler),
-                event: call.event,
-                context: call.context,
-                signal: call.signal,
-                reply: call.reply,
-            }),
+            Self::Renderer(call) => Call::Renderer(renderer(call, completion)),
+            Self::Event(call) => Call::Event(event(call, completion)),
             Self::Bash(call) => Call::Bash(crate::guest_calls::BashCall {
                 owner: completion.callback(call.owner),
                 request: call.request,
@@ -69,6 +59,32 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the renderer admission beside its message operands.
+fn renderer(call: RendererCall, completion: &Completion) -> RendererCall<Callback> {
+    RendererCall {
+        handler: completion.callback(call.handler),
+        message: call.message,
+        expanded: call.expanded,
+        theme: call.theme,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the event handler admission beside its context and signal.
+fn event(
+    call: crate::guest_calls::EventCall,
+    completion: &Completion,
+) -> crate::guest_calls::EventCall<Callback> {
+    crate::guest_calls::EventCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        context: call.context,
+        signal: call.signal,
+        reply: call.reply,
     }
 }
 
@@ -189,5 +205,54 @@ fn tool(call: ToolCall, completion: &Completion) -> ToolCall<Callback> {
             update,
             reply,
         },
+    }
+}
+
+/// Transfers credential admissions without extending the native operand borrow.
+fn credential(
+    call: crate::guest_calls::credentials::CredentialCall,
+    completion: &Completion,
+) -> crate::guest_calls::credentials::CredentialCall<Callback> {
+    use crate::guest_calls::credentials::{BackendCall, CredentialCall, FallbackCall};
+    match call {
+        CredentialCall::Backend(call) => CredentialCall::Backend(BackendCall {
+            handler: completion.callback(call.handler),
+            update: call.update,
+            asynchronous: call.asynchronous,
+            reply: call.reply,
+        }),
+        CredentialCall::Fallback(call) => CredentialCall::Fallback(FallbackCall {
+            handler: completion.callback(call.handler),
+            provider: call.provider,
+            reply: call.reply,
+        }),
+    }
+}
+
+/// Retain the hook's original callback independently of its owned data operands.
+fn model_hook(
+    call: crate::model_calls::Invocation,
+    completion: &Completion,
+) -> crate::model_calls::Invocation<Callback> {
+    crate::model_calls::Invocation {
+        handler: completion.callback(call.handler),
+        phase: call.phase,
+        data: call.data,
+        model: call.model,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Retain both synchronous stream callback operands until the original invocation completes.
+fn stream(
+    call: crate::stream_calls::Invocation,
+    completion: &Completion,
+) -> crate::stream_calls::Invocation<Callback> {
+    crate::stream_calls::Invocation {
+        handler: completion.callback(call.handler),
+        value: completion.callback(call.value),
+        operation: call.operation,
+        reply: call.reply,
     }
 }

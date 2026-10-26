@@ -70,6 +70,41 @@ pub(super) async fn loaded_at(
     EventBus<Local>,
 ) {
     let runtime = create_extension_runtime::<Local>();
+    runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
+        auth_path: std::sync::Arc::new(|| Err("unexpected default auth path".into())),
+        models_path: std::sync::Arc::new(|| Err("unexpected default model path".into())),
+        config_values: session.model_registry.config_values().clone(),
+    });
+    loaded_with_runtime(events, session, cwd, runtime).await
+}
+
+/// Loads the real artifact after the caller installed factory-time defaults and flags.
+pub(super) async fn loaded_with_runtime(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
+    let result = unbound_with_runtime(events, session, cwd, runtime).await;
+    support::bind_prompt(&result.1, "renderer barrier");
+    result
+}
+
+/// Loads factories without binding so callers can observe individual flush diagnostics.
+pub(super) async fn unbound_with_runtime(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
         artifact_factory(path.clone(), crate::support::widgets()),
@@ -87,7 +122,6 @@ pub(super) async fn loaded_at(
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
-    support::bind_prompt(&runner, "renderer barrier");
     (owner, runner, events)
 }
 

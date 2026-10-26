@@ -492,10 +492,10 @@ impl WidgetEndpoint {
     }
 
     /// Sends one request whose native code may call back into this instance.
-    pub(crate) fn route<T: Send + 'static>(
+    pub(crate) fn route<T: Into<crate::import_route::Value> + Send + 'static>(
         &self,
         request: impl FnOnce(Reply<T>) -> Request,
-    ) -> crate::import_route::Route<T> {
+    ) -> crate::import_route::Route {
         self.0
             .route(|id, reply| Message::Widgets(WidgetMessage::Request(id, request(reply))))
     }

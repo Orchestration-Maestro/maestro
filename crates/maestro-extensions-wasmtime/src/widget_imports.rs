@@ -415,7 +415,7 @@ fn methods<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmt
     host.func_wrap(
         "[method]widget.render",
         |mut store: StoreContextMut<'_, T>, (this, width): (Resource<WidgetEndpoint>, u32)| {
-            let route: Route<Vec<String>> =
+            let route: Route =
                 widget(store.data_mut(), &this)?.route(|reply| Request::Render(width, reply));
             Ok((push(store.data_mut(), route)?,))
         },

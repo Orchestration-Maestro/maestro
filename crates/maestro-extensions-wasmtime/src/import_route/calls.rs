@@ -1,16 +1,9 @@
 //! Typed nested same-instance calls, lowered from native calls and settled from guest results.
-use super::records::{
-    LocalBash, LocalCommand, LocalCompletion, LocalContinuation, LocalEvent, LocalExpanded,
-    LocalFactory, LocalHighlight, LocalKey, LocalPrepare, LocalRender, LocalRenderer, LocalSchema,
-    LocalSetup, LocalShortcut, LocalStyle, LocalSynchronous, LocalTerminalInput, LocalTool,
-    LocalToolRender, LocalUnit, LocalWidget,
-};
 use crate::{
     context_imports::{CommandContext, Context},
     guest_calls::{
-        Call, Callback, RegisteredCall,
+        BashRequest, Call, Callback, RegisteredCall, SynchronousKind,
         events::Returned,
-        paints::PaintCall,
         renderers::{ComponentCall, ComponentMethod},
         tools::ToolCall,
     },
@@ -20,13 +13,226 @@ use crate::{
         registrations::Item,
         tools::{Capabilities as ToolResources, Invocation as ToolInvocation},
     },
+    local_resources::effects::{EmitterEndpoint, ThemeEndpoint},
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
+mod credentials;
+mod ui;
+use ui::{
+    LocalExpanded, LocalFactory, LocalHighlight, LocalStyle, LocalTerminalInput, LocalToolRender,
+    LocalWidget,
+};
+mod tool;
+
+/// Owned operands of one nested renderer call.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalRenderer {
+    /// Authored identity in the shared callback inventory.
+    target: u32,
+    /// Complete custom-message document.
+    message: String,
+    /// Actual caller expansion choice.
+    expanded: bool,
+    /// Transferred theme capability.
+    theme: Resource<ThemeEndpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested component render.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalRender {
+    /// Authored identity of the retained component.
+    target: u32,
+    /// Actual caller viewport width.
+    width: u32,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested input or invalidation.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalUnit {
+    /// Authored identity of the retained component.
+    target: u32,
+    /// Literal input, or absence for invalidation.
+    data: Option<String>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested key-release query.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalKey {
+    /// Authored identity of the retained component.
+    target: u32,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested argument preparation.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalPrepare {
+    /// Authored identity of the tool preparation callback.
+    target: u32,
+    /// Complete argument document.
+    args: String,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested schema method on the still-borrowed native operand.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalSchema {
+    /// Authored identity of the retained schema node.
+    target: u32,
+    /// Exact author method requested by the checker.
+    operation: crate::schema_wire::Operation,
+    /// Invocation-local borrowed operand capability.
+    node: Resource<crate::schema_reads::Endpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested synchronous callback prefix.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalSynchronous {
+    /// Authored identity of the callback.
+    target: u32,
+    /// Authored callback export.
+    kind: SynchronousKind,
+    /// Exact data document.
+    data: String,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested event callback.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalEvent {
+    /// Authored identity of the event handler.
+    target: u32,
+    /// Complete tagged event document.
+    event: String,
+    /// Original invocation context and optional cancellation.
+    resources: EventResources,
+}
+
+/// Owned operands of one nested command.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalCommand {
+    /// Authored identity of the command handler.
+    target: u32,
+    /// Exact command arguments.
+    args: String,
+    /// Original command context.
+    ctx: Resource<CommandContext>,
+}
+
+/// Owned operands of one nested argument completion.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalCompletion {
+    /// Authored identity of the completion callback.
+    target: u32,
+    /// Exact argument prefix.
+    prefix: String,
+}
+
+/// Owned operands of one nested shortcut.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalShortcut {
+    /// Authored identity of the shortcut handler.
+    target: u32,
+    /// Original ordinary context.
+    ctx: Resource<Context>,
+}
+
+/// Owned operands of one nested tool execution.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalTool {
+    /// Authored identity of the tool execution callback.
+    target: u32,
+    /// Exact invocation identity and arguments.
+    invocation: ToolInvocation,
+    /// Original per-call context, cancellation and progress observer.
+    resources: ToolResources,
+}
+
+/// Owned operands of one nested session setup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalSetup {
+    /// Authored identity of the setup callback.
+    target: u32,
+    /// Original writable session.
+    writer: Resource<crate::writer_reads::Endpoint>,
+}
+
+/// Owned operands of one nested session continuation.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalContinuation {
+    /// Authored identity of the continuation.
+    target: u32,
+    /// Original replacement context.
+    ctx: Resource<crate::replaced_reads::Endpoint>,
+}
+
+/// Owned operands of one nested execution of returned shell operations.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalBash {
+    /// Authored identity of the returned operations.
+    target: u32,
+    /// Exact execution operands.
+    request: BashRequest,
+    /// Original output frame and optional cancellation.
+    resources: BashResources,
+}
+
+/// Owned operands of one nested credential backend method.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalBackend {
+    /// Authored backend identity.
+    target: u32,
+    /// Invocation-local native update.
+    update: Resource<crate::local_resources::credential_scope::Endpoint>,
+    /// Whether the author must await its update.
+    asynchronous: bool,
+}
+/// Owned operands of one nested fallback lookup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalFallback {
+    /// Authored resolver identity.
+    target: u32,
+    /// Literal provider.
+    provider: String,
+}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Authored backend and still-borrowed native update.
+    #[component(name = "auth-backend")]
+    AuthBackend(LocalBackend),
+    /// Authored fallback with its original optional result.
+    #[component(name = "auth-fallback")]
+    AuthFallback(LocalFallback),
     /// A message renderer.
     #[component(name = "renderer")]
     Renderer(LocalRenderer),
@@ -54,6 +260,9 @@ pub(super) enum LocalCall {
     /// A schema method against the original borrowed operand.
     #[component(name = "schema")]
     Schema(LocalSchema),
+    /// A synchronous authored-stream classifier or extractor.
+    #[component(name = "stream")]
+    Stream(crate::stream_calls::Local),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -102,6 +311,9 @@ pub(super) enum LocalCall {
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Exact optional fallback value or authored error.
+    #[component(name = "auth-fallback")]
+    AuthFallback(Result<Option<String>, String>),
     /// Optional retained component identity, or the authored error.
     #[component(name = "renderer")]
     Renderer(Result<Option<Resource<Callback>>, String>),
@@ -126,6 +338,9 @@ pub(super) enum LocalResult {
     /// The schema result with every authored diagnostic field.
     #[component(name = "schema")]
     Schema(Result<String, crate::schema_wire::Error>),
+    /// Selected terminal classification or retained result.
+    #[component(name = "stream")]
+    Stream(Result<crate::stream_calls::WireSelection, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -161,6 +376,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
             message: call.message.clone(),
@@ -179,35 +395,18 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
+        Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        Call::ToolRender(call) => LocalCall::ToolRender(LocalToolRender {
-            target: call.handler.id,
-            render: call.render.clone(),
-            theme: table.push(call.theme.clone())?,
-            invalidator: table.push(call.invalidator.clone())?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
-        Call::Factory(call) => LocalCall::Factory(LocalFactory {
-            target: call.handler.id,
-            tui: table.push(call.tui.clone())?,
-            theme: table.push(call.theme.clone())?,
-            footer: call
-                .footer
-                .clone()
-                .map(|footer| table.push(footer))
-                .transpose()?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
-        Call::TerminalInput(call) => LocalCall::TerminalInput(LocalTerminalInput {
-            target: call.handler.id,
-            data: call.data.clone(),
-            emitter: table.push(call.emitter.clone())?,
-        }),
+        call @ (Call::ToolRender(_)
+        | Call::Factory(_)
+        | Call::TerminalInput(_)
+        | Call::Paint(_)
+        | Call::Widget(_)) => ui::lower(table, call)?,
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -215,31 +414,7 @@ pub(super) fn lower(
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Registered(call) => registered(table, call)?,
-        call @ (Call::Paint(_) | Call::Widget(_)) => paint(table, call)?,
         call => asynchronous(table, call)?,
-    })
-}
-
-/// Marshals one authored styling, highlighting or widget callback.
-fn paint(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
-    Ok(match call {
-        Call::Paint(PaintCall::Style(handler, text, _)) => LocalCall::Style(LocalStyle {
-            target: handler.id,
-            text: text.clone(),
-        }),
-        Call::Paint(PaintCall::Highlight(handler, code, lang, _)) => {
-            LocalCall::Highlight(LocalHighlight {
-                target: handler.id,
-                code: code.clone(),
-                lang: lang.clone(),
-            })
-        }
-        Call::Widget(call) => LocalCall::Widget(LocalWidget {
-            target: call.handler.id,
-            event: call.event.lower(table)?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
-        _ => return Err(wasmtime::format_err!("expected a widget call")),
     })
 }
 
@@ -254,27 +429,21 @@ fn component(
             width: *width,
             emitter: table.push(emitter.clone())?,
         }),
-        ComponentCall::Unit(owner, method, emitter, _) => {
-            let target = owner.id;
-            let emitter = table.push(emitter.clone())?;
-            match method {
-                ComponentMethod::SetExpanded(expanded) => LocalCall::Expanded(LocalExpanded {
-                    target,
-                    expanded: *expanded,
-                    emitter,
-                }),
-                ComponentMethod::Input(data) => LocalCall::Unit(LocalUnit {
-                    target,
-                    data: Some(data.clone()),
-                    emitter,
-                }),
-                ComponentMethod::Invalidate => LocalCall::Unit(LocalUnit {
-                    target,
-                    data: None,
-                    emitter,
-                }),
-            }
+        ComponentCall::Unit(owner, ComponentMethod::SetExpanded(expanded), emitter, _) => {
+            LocalCall::Expanded(LocalExpanded {
+                target: owner.id,
+                expanded: *expanded,
+                emitter: table.push(emitter.clone())?,
+            })
         }
+        ComponentCall::Unit(owner, method, emitter, _) => LocalCall::Unit(LocalUnit {
+            target: owner.id,
+            data: match method {
+                ComponentMethod::Input(data) => Some(data.clone()),
+                ComponentMethod::Invalidate | ComponentMethod::SetExpanded(_) => None,
+            },
+            emitter: table.push(emitter.clone())?,
+        }),
         ComponentCall::WantsKeyRelease(owner, emitter, _) => LocalCall::Key(LocalKey {
             target: owner.id,
             emitter: table.push(emitter.clone())?,
@@ -319,7 +488,7 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
                     .transpose()?,
             },
         }),
-        Call::Tool(call) => tool(table, call)?,
+        Call::Tool(call) => tool::lower(table, call)?,
         Call::Setup(handler, writer, _) => LocalCall::Setup(LocalSetup {
             target: handler.id,
             writer: table.push(writer.clone())?,
@@ -345,42 +514,6 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
     })
 }
 
-/// Marshals one tool execution with its per-call capabilities.
-fn tool(table: &mut ResourceTable, call: &ToolCall<Callback>) -> wasmtime::Result<LocalCall> {
-    let ToolCall::Execute {
-        handler,
-        id,
-        params,
-        context,
-        signal,
-        update,
-        ..
-    } = call
-    else {
-        return Err(wasmtime::format_err!(
-            "extension preparation is synchronous"
-        ));
-    };
-    Ok(LocalCall::Tool(LocalTool {
-        target: handler.id,
-        invocation: ToolInvocation {
-            tool_call_id: id.clone(),
-            params: params.clone(),
-        },
-        resources: ToolResources {
-            ctx: table.push(Context(context.clone()))?,
-            signal: signal
-                .clone()
-                .map(|signal| table.push(signal))
-                .transpose()?,
-            update: update
-                .clone()
-                .map(|update| table.push(update))
-                .transpose()?,
-        },
-    }))
-}
-
 /// Delivers a nested call's own result to the native caller that asked for it.
 pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     store: &mut T,
@@ -388,6 +521,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::Credential(call), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component
@@ -397,8 +531,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             };
             let _ = call.reply.send(value);
         }
-        (Call::Component(ComponentCall::Render(_, _, _, reply)), LocalResult::Render(value))
-        | (Call::Paint(PaintCall::Highlight(_, _, _, reply)), LocalResult::Highlight(value)) => {
+        (Call::Component(ComponentCall::Render(_, _, _, reply)), LocalResult::Render(value)) => {
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
@@ -407,9 +540,15 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {
             let _ = reply.send(value);
         }
-        (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value))
-        | (Call::Paint(PaintCall::Style(_, _, reply)), LocalResult::Style(value)) => {
+        (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
             let _ = reply.send(value);
+        }
+        (Call::Stream(call), LocalResult::Stream(value)) => {
+            let value = match value {
+                Ok(value) => Ok(value.retained(store)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
@@ -434,14 +573,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);
         }
-        (Call::Widget(call), LocalResult::Widget(value)) => {
-            let value = match value {
-                Ok(answer) => Ok(crate::guest_calls::widget_calls::answered(store, answer)?),
-                Err(error) => Err(error),
-            };
-            let _ = call.reply.send(value);
-        }
-
+        (call @ (Call::Paint(_) | Call::Widget(_)), value) => ui::settle(store, call, value)?,
         (call, value) => settle_asynchronous(store, call, value)?,
     }
     Ok(())

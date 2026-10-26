@@ -202,15 +202,23 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
   `SlashCommandSource`, re-exported by resources, application presentation data and
   guest authoring rather than redeclared.
+  Shared invocation options (`ThinkingBudgets`, `CacheRetention`, `Transport`,
+  `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`)
+  and the data-only `StreamOptionSlots` family belong here; executable operations
+  remain with their native or guest owners.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper, plus the
   renderer option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and guest
   authoring rather than redeclared.
   It also owns `model_registry::ResolvedRequestAuth`, re-exported by the native
-  catalog and guest authoring library, default zero usage, message-only diagnostic
+  catalog and guest authoring library, the plain credential records
+  `oauth::OAuthCredentials` and `auth_storage::{ApiKeyCredential, AuthCredential,
+  AuthStorageData, AuthSource, AuthStatus}`, re-exported by models and credentials,
+  and the provider registration records `provider_config::{ProviderConfig<C>,
+  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
-  (models, resources, theme, catalog, session, entry, tool and guest authoring)
+  (models, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced

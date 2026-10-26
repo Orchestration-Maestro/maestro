@@ -262,8 +262,14 @@ impl host::HostToolUpdate for State {
 }
 
 impl host::HostAbortSignal for State {
-    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Result<(), String>> {
-        Ok(self.abort(this.rep()).map_err(|error| error.to_string()))
+    fn retain(&mut self, this: Resource<Flag>) -> wasmtime::Result<Resource<Flag>> {
+        let signal = self.table.get(&this)?.0.clone();
+        self.push(Flag(signal))
+    }
+
+    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Resource<Route>> {
+        let result = self.abort(this.rep()).map_err(|error| error.to_string());
+        self.routed(result)
     }
 
     fn aborted(&mut self, this: Resource<Flag>) -> wasmtime::Result<bool> {
@@ -522,7 +528,9 @@ pub struct Route {
     /// What the nested call the guest is running settles.
     pub(super) running: Option<super::ui_host::Nested>,
     /// The operation's own result.
-    pub(super) result: Option<Result<(), String>>,
+    pub(super) result: Option<Result<host::RouteValue, String>>,
+    /// A rendering's pieces, which its nested results complete into its rows.
+    pub(super) rows: Option<super::widget_component::Rows>,
 }
 
 /// A deferred nested call; the test host never makes one.
@@ -546,7 +554,8 @@ impl State {
         self.push(Route {
             steps: std::collections::VecDeque::new(),
             running: None,
-            result: Some(result),
+            rows: None,
+            result: Some(result.map(|()| host::RouteValue::Unit)),
         })
     }
 }
@@ -558,10 +567,22 @@ impl host::HostImportRoute for State {
             route.running = Some(nested);
             return Ok(host::RouteStep::Invoke(call));
         }
-        Ok(host::RouteStep::Done(route.result.take().unwrap_or(Ok(()))))
+        if let Some(rows) = route.rows.as_mut() {
+            return Ok(host::RouteStep::Done(
+                rows.rows().map(host::RouteValue::Lines),
+            ));
+        }
+        Ok(host::RouteStep::Done(
+            route.result.take().unwrap_or(Ok(host::RouteValue::Unit)),
+        ))
     }
     fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
-        let nested = self.table.get_mut(&this)?.running.take();
+        let route = self.table.get_mut(&this)?;
+        let nested = route.running.take();
+        if let Some(rows) = route.rows.as_mut() {
+            rows.results.push_back(value);
+            return Ok(());
+        }
         if let Some(super::ui_host::Nested::Shortcut(key, data)) = &nested
             && let host::LocalResult::Widget(Ok(host::WidgetAnswer::Consumed(false))) = &value
         {
@@ -814,6 +835,24 @@ impl host::Host for State {
             hint: self.push(super::widget_component::StyleResource("hint".to_owned()))?,
         }))
     }
+
+    fn model_stream(
+        &mut self,
+        _: bool,
+        _: String,
+        _: host::ModelControls,
+    ) -> wasmtime::Result<Result<Resource<super::stream_host::Assistant>, String>> {
+        Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
+    }
+
+    fn new_event_stream(
+        &mut self,
+        _: Resource<Identity>,
+        _: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::stream_host::Stream>, String>> {
+        Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
+    }
+
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,
@@ -1098,6 +1137,78 @@ impl host::Host for State {
                 crate::FlagValue::String(v) => host::FlagValue::String(v),
             })
         }))
+    }
+
+    fn auth_storage_from_backend(
+        &mut self,
+        _backend: Resource<Identity>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_from_backend", &[])?;
+            self.table
+                .push(reader)
+                .map(host::RouteValue::Credentials)
+                .map_err(|error| error.to_string())
+        });
+        self.push(Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            rows: None,
+            result: Some(result),
+        })
+    }
+    fn create_auth_storage(
+        &mut self,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn auth_storage_in_memory(
+        &mut self,
+        data: String,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn create_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("create_model_registry", &[serde_json::json!(path)])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn in_memory_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("in_memory_model_registry", &[])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn register_provider(
+        &mut self,
+        name: String,
+        config: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.observed
+            .log(format!("provider register {name} {config}"));
+        self.routed(Ok(()))
+    }
+
+    fn unregister_provider(&mut self, name: String) -> wasmtime::Result<Resource<Route>> {
+        self.observed.log(format!("provider unregister {name}"));
+        self.routed(Ok(()))
     }
 
     fn append_entry(
