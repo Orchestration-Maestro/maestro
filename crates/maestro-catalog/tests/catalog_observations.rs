@@ -194,7 +194,10 @@ impl OAuthProviderInterface for Modifier {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(async { panic!("unexpected refresh") })
     }
-    fn get_api_key<'a>(&self, _: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        _: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         panic!("unexpected key resolution")
     }
     fn modify_models<'m>(

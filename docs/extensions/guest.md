@@ -464,6 +464,45 @@ host, including from synchronous credential and catalog metadata reads. Callback
 resources stay typed; their identities are never placed in JSON. Callable provider
 stream and OAuth fields remain separate from the provider data record.
 
+### Native OAuth providers
+
+`AuthStorage::get_oauth_providers()` returns callable native implementations in
+registration order. Each retained `OAuthProviderInterface` exposes its literal
+`id`, login `name` and optional `uses_callback_server` value. An absent value is
+not changed to false. Removing a provider from the native registry does not
+replace an already retained implementation; its final guest alias releases it.
+
+`get_api_key` and `modify_models` are synchronous. `refresh_token` awaits the
+native token exchange without adding an expiry decision or persisting the
+returned credentials. Its future retains the provider after the initiating
+handler and facade are released. `modify_models` returns `None` when the provider has no
+modifier. The guest forwards complete credentials and model descriptors,
+including open credential fields, and rejects authored nonfinite numbers before
+encoding them. Provider failures retain their messages.
+
+`login` returns an owned future over the same native provider. Supply
+`Rc<OAuthLoginCallbacks>` with synchronous `on_auth` and optional `on_progress`
+notifications, an awaited `on_prompt`, and optional awaited manual-code and
+selection callbacks. An absent selection callback differs from a supplied
+callback returning `None` on cancel. Prompt records keep supplied text, optional
+fields and choice order. Callback failures retain their messages, and synchronous
+notifications may call back into the host before returning.
+
+The optional caller signal follows live cancellation, including a prior abort.
+Native callback aliases retain the interaction and its signal binding after the
+initiating login future ends; the final native release drops their captures.
+Pending input does not block other host requests. These methods reuse the native
+OAuth implementations; provider methods do not store login credentials.
+
+`AuthStorage::login(provider_id, callbacks)` instead delegates authorization and
+persistence to the retained native credential owner. It returns an owned future,
+so dropping the initiating facade does not end the operation. Successful login
+accepts the complete OAuth record and persists it through the original backend;
+other provider records stay unchanged. Unknown providers and interaction failures
+return their original messages. As with `AuthStorage::set`, persistence failures
+leave accepted state available and are reported by `drain_errors`, not as a failed
+login.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
@@ -500,8 +539,21 @@ schema and details text with semantic JSON serialization.
 
 `ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
 host, and `unregister_provider` sends a name. `ProviderConfig` and
-`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
-carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`ProviderModelConfig` use the [shared provider records](../records.md#provider-registration-records).
+`ProviderConfig` specializes its callback slot with the guest's `ProviderCallbacks`.
+Serialized metadata carries data only. Set `callbacks.oauth` to `Some(Rc<dyn OAuthProviderInterface>)` to register
+an authored OAuth implementation through the same API or catalog operation. The
+registration name supplies its installed identifier; its login label and optional
+callback-server value remain as authored. The native catalog retains the actual
+guest implementation, including independently owned login and refresh futures,
+synchronous computed keys and optional model transformation. Login receives the
+original native interaction through retained capabilities, preserving callback
+presence, synchronous notifications, awaited input and live cancellation. The guest
+may keep the callback record or an input future after login ends; its last alias
+releases the original native captures. Pending input leaves the host available,
+and synchronous native notifications may reenter the same guest implementation.
+
+Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
 sees the call. Queuing during loading, validation and replacement stay host policy.

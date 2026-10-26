@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Model, ReadonlySessionManager, ResolvedRequestAuth};
+use maestro_extensions::{Cancellation, Model, ReadonlySessionManager, ResolvedRequestAuth};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -189,45 +189,46 @@ impl State {
             Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
-            Message::LockUpdate(_, _, reply) => {
-                let _ = reply.send(Err("extension lock update ended".into()));
-            }
+            Message::LockUpdate(_, _, reply) => Self::reject_lock_update(&reply),
             Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
             Message::EndLockUpdate(id) => self.end_lock_update(id),
-            Message::SchemaListing(id, reply) => self.schema_listing(id, &reply),
+            Message::SchemaListing(id, reply) => self.reply_schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.api_request(id, request),
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.api_request(id, request),
-            Message::ApiModel(id, model, reply, admission) => {
-                self.start_api_model(id, *model, reply, admission);
-            }
-            Message::Exec(id, request, reply, admission) => {
-                self.start_exec(id, request, reply, admission);
-            }
+            Message::ApiModel(id, model, tx, scope) => self.start_api_model(id, *model, tx, scope),
+            Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
-            Message::Auth(id, model, reply, admission) => {
-                self.start_auth(id, *model, reply, admission);
-            }
+            Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
-            Message::NewSignal(signal, reply) => {
-                let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
-            }
+            Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
+            Message::OAuthLogin(id, controls, reply, admission) => {
+                self.start_oauth_login(id, controls, reply, admission);
+            }
+            Message::OAuthRefresh(id, data, reply, admission) => {
+                self.start_oauth_refresh(id, data, reply, admission);
+            }
+            Message::OAuthProvider(id, request) => self.oauth_provider(id, request),
+            Message::OAuthInteraction(request) => self.oauth_interaction(request),
             Message::Credentials(id, request) => self.credentials(id, request),
+            Message::CredentialLogin(id, provider, controls, reply, admission) => {
+                self.start_credential_login(id, (provider, controls), reply, admission);
+            }
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
             Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => self.node(id, request),
-            Message::Replaced(id, send, admission) => self.start_replaced(id, send, admission),
+            Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
@@ -240,6 +241,20 @@ impl State {
             Message::Watch(id, request) => self.watch(id, request),
             Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Rejects a synchronous credential update whose native frame has ended.
+    fn reject_lock_update(reply: &std::sync::mpsc::Sender<Result<Option<String>, String>>) {
+        let _ = reply.send(Err("extension lock update ended".into()));
+    }
+
+    /// Creates the supplied cancellation binding on its original local owner.
+    fn new_signal(
+        &self,
+        signal: Option<Cancellation>,
+        reply: &std::sync::mpsc::Sender<Result<super::SignalEndpoint, String>>,
+    ) {
+        let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
     }
 
     /// Releases an ended lock update outside its frame-table borrow.
@@ -275,19 +290,22 @@ impl State {
         self.routes.borrow_mut().pop();
     }
 
-    /// Answers live metadata requests through their original API capability.
-    fn schema_listing(
+    /// Sends the original live schema listing to its waiting reader.
+    fn reply_schema_listing(
         &self,
         id: u64,
         reply: &std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
     ) {
+        let _ = reply.send(self.schema_listing(id));
+    }
+
+    /// Observe live metadata through its original API capability.
+    fn schema_listing(&self, id: u64) -> Result<crate::schema_registration::ToolListing, String> {
         let capability = self.registry.capability(id);
-        let result = match capability.as_deref() {
+        match capability.as_deref() {
             Some(Capability::Api(api)) => self.registry.schema_listing(api),
             _ => Err("extension API resource ended".into()),
-        };
-        drop(capability);
-        let _ = reply.send(result);
+        }
     }
 
     /// Starts the original creating session's operation outside the registry borrow.

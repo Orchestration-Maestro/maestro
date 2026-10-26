@@ -104,8 +104,34 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
     ),
+    /// Runs the retained provider's native authorization with original interaction.
+    OAuthLogin(
+        u64,
+        crate::oauth_callbacks::Controls,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Awaits token rotation while retaining the originally selected provider.
+    OAuthRefresh(
+        u64,
+        String,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Uses native interaction callbacks on this same local owner.
+    OAuthInteraction(crate::oauth_interaction::Request),
+    /// Calls an independently retained OAuth implementation.
+    OAuthProvider(u64, crate::oauth_reads::Request),
     /// Uses independently retained accepted credentials.
     Credentials(u64, crate::credential_reads::Request),
+    /// Authorizes and persists through the retained credential owner.
+    CredentialLogin(
+        u64,
+        String,
+        crate::oauth_callbacks::Controls,
+        tokio::sync::oneshot::Sender<Result<(), String>>,
+        Admission,
+    ),
     /// Resolves a key while retaining the original owner through settlement.
     CredentialKey(
         u64,
@@ -247,6 +273,8 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Independently retained OAuth implementation.
+    OAuthProvider(maestro_extensions::OAuthProviderHandle),
     /// Original native options and arbitrary selected author signal bindings.
     ProviderControls(Box<provider_controls::Owner>, crate::model_calls::Scopes),
     /// Original native notification registration, closed on its final release.
@@ -344,6 +372,15 @@ pub(crate) struct Registry {
 }
 
 impl Registry {
+    /// Retains the actual implementation selected by native provider enumeration.
+    pub(crate) fn oauth_provider(
+        &self,
+        provider: maestro_extensions::OAuthProviderHandle,
+    ) -> Result<crate::oauth_reads::Endpoint, String> {
+        self.insert(Capability::OAuthProvider(provider))
+            .map(crate::oauth_reads::Endpoint)
+    }
+
     /// Selects the retained credentials only when the supplied lease belongs to this pump.
     pub(crate) fn credential_owner(
         &self,

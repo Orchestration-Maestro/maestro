@@ -123,7 +123,7 @@ impl AuthStorage {
                     return Selection::Done(
                         provider
                             .get_api_key(&stored)
-                            .map(|key| Some(key.to_owned())),
+                            .map(|key| Some(key.into_owned())),
                     );
                 }
                 Selection::Refresh(provider)
@@ -168,7 +168,7 @@ impl AuthStorage {
                 let record = self.state().data.get(provider_id).and_then(decode);
                 match record {
                     Some(AuthCredential::OAuth(stored)) if (self.clock)() < stored.expires => {
-                        Ok(Some(provider.get_api_key(&stored)?.to_owned()))
+                        Ok(Some(provider.get_api_key(&stored)?.into_owned()))
                     }
                     _ => Ok(None),
                 }
