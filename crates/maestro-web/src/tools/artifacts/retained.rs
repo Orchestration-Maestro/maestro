@@ -31,10 +31,37 @@ macro_rules! artifact_header_buttons {
                     .render(ui, view.i18n, view.presentation)
                     .map_err(ArtifactUiError::localized_control)?;
                 self.reconcile()?;
-                self.source.get_header_buttons(ui, view)
+                ArtifactElement::get_header_buttons(&mut self.source, ui, view)
             })
             .inner
         }
     };
 }
-pub(super) use {artifact_header_buttons, artifact_reading};
+/// Publish retained visibility and update stored visibility only after the host accepts it.
+macro_rules! artifact_visibility {
+    ($($field:ident)?) => {
+        fn set_visibility(
+            &mut self,
+            visible: bool,
+            modal: Option<egui::Id>,
+        ) -> Result<(), ArtifactUiError> {
+            super::retained::host(self.host.as_ref())?
+                .set_retained_visibility(self.id, visible, modal)?;
+            $(self.$field = visible;)?
+            Ok(())
+        }
+    };
+}
+pub(super) use {artifact_header_buttons, artifact_reading, artifact_visibility};
+
+/// Require the effects of a retained caller, never constructing a surface for page content.
+pub(super) fn host(
+    host: Option<&std::rc::Rc<dyn crate::browser::attachment_content::AttachmentHost>>,
+) -> Result<
+    &std::rc::Rc<dyn crate::browser::attachment_content::AttachmentHost>,
+    super::ArtifactUiError,
+> {
+    host.ok_or_else(|| {
+        super::ArtifactUiError::Presentation("Artifact has no retained host".to_owned().into())
+    })
+}

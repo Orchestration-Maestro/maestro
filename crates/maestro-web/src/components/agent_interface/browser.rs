@@ -1,12 +1,15 @@
 //! Native session view nodes, rendering and reader-follow.
-use super::{AgentInterfaceProps, BrowserSession, Follow, connection, usage_totals};
+use super::{AgentInterfaceProps, BrowserSession, Follow, usage_totals};
 use crate::{
     MessageList, SharedAttachment, StreamingMessageContainer,
     browser::{
         attachment_content::browser::{append, element, host_error, set_text_if_changed},
         event_subscription::EventSubscription,
     },
-    components::message_editor::{MessageEditor, MessageEditorProps},
+    components::{
+        connection,
+        message_editor::{MessageEditor, MessageEditorProps},
+    },
     dom::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
     utils::format::format_usage,
@@ -169,7 +172,12 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         connection: &connection::Connection,
     ) -> Result<Self, ToolUiError> {
         let document = &view.document;
-        let root = connection::root(document, connection)?;
+        let root = connection::root(
+            document,
+            "maestro-agent-interface",
+            "maestro-agent",
+            connection,
+        )?;
         let empty = element(document, "div", "maestro-agent-empty")?;
         let layout = element(document, "div", "maestro-agent-layout")?;
         let scroll = element(document, "div", "maestro-agent-scroll")?;

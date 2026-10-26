@@ -30,6 +30,7 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.provider-controls": crate::tests::stream_host::Controls,
             "maestro:extension/host.fs-watcher": crate::tests::native_watch_host::Watcher,
             "maestro:extension/host.response": crate::tests::native_http_host::Response,
             "maestro:extension/host.child-process": crate::tests::native_io_host::Child,

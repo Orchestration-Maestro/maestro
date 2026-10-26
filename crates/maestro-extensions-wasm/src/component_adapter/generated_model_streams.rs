@@ -157,7 +157,9 @@ pub(super) async fn hook(
     selected_signal(&selected)
 }
 /// Transfer selected cancellation together with its existing callback-table owner.
-fn selected_signal(selected: &PayloadHookInput) -> ExtensionResult<host::PayloadSelection> {
+pub(super) fn selected_signal(
+    selected: &PayloadHookInput,
+) -> ExtensionResult<host::PayloadSelection> {
     let data = encode_value(&selected.payload)?;
     let binding = selected
         .signal

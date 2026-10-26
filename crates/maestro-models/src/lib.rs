@@ -69,8 +69,8 @@ pub use records::diagnostics::{
     append_assistant_message_diagnostic, create_assistant_message_diagnostic,
     extract_diagnostic_error, format_thrown_value, timestamp_now,
 };
-pub use records::event_stream::EventStream;
 pub use records::event_stream::create_assistant_message_event_stream;
+pub use records::event_stream::{AssistantMessageEventStreamPort, EventStream};
 pub use records::hash::short_hash;
 pub use records::headers::headers_to_record;
 pub use records::session_resources::{

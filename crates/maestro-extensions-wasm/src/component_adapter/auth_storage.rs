@@ -133,7 +133,7 @@ pub(super) async fn invoke_backend_async<I: Imports>(
         .await
 }
 /// Delivers the exact authored fallback result, including absent and empty values.
-pub(super) fn invoke_fallback(target: u32, provider: &str) -> ExtensionResult<Option<String>> {
+pub(crate) fn invoke_fallback(target: u32, provider: &str) -> ExtensionResult<Option<String>> {
     super::callbacks::find::<crate::FallbackResolver>(target)?(provider)
 }
 

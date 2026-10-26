@@ -242,3 +242,8 @@ fn retain_pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
     RAW.with(|slot| slot.replace(Some(raw)));
     Ok(json!("retained"))
 }
+
+/// Runs the shared retained-owner composition through either host transport.
+pub(super) async fn composition(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
+    state::composition(api, request).await
+}

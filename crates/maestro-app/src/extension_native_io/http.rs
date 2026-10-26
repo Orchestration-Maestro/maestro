@@ -12,6 +12,9 @@ use std::{
 };
 use tokio::sync::Notify;
 
+#[cfg(test)]
+mod tests;
+
 /// One original response with independently retained consuming body state.
 pub(super) struct Http {
     /// Native status.

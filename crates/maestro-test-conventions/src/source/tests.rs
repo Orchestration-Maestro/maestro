@@ -121,9 +121,11 @@ fn documentation_scan_bytes(comments: usize) -> usize {
 
 #[test]
 fn documentation_newline_scans_grow_linearly() {
+    crate::repetition::MARKDOWN_PARSES.set(0);
     let small = documentation_scan_bytes(128);
     let large = documentation_scan_bytes(256);
     println!("newline scan bytes: N={small}, 2N={large}");
     assert!(small > 0, "newline traversal must be observed");
+    assert_eq!(crate::repetition::MARKDOWN_PARSES.get(), 0);
     assert_eq!(large, 2 * small, "doubling documentation doubles scan work");
 }

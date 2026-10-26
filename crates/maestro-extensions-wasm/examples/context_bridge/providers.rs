@@ -33,6 +33,7 @@ pub(super) async fn observe(
     context: &ExtensionContext,
 ) -> Result<Value, String> {
     let catalog = context.model_registry()?;
+    let queued = ids(&catalog)?;
     api.register_provider("author-provider", config("first")?)?;
     let before = ids(&catalog)?;
     let model = catalog
@@ -60,7 +61,7 @@ pub(super) async fn observe(
     let removed = ids(&catalog)?.is_empty();
     Ok(
         json!({"label":label,"key":key,"configured":configured,"status":status,"oauth":oauth,
-        "before":before,"replaced":replaced,"refreshed":refreshed,"removed":removed,
+        "queued":queued,"before":before,"replaced":replaced,"refreshed":refreshed,"removed":removed,
         "error":error,"auth":auth}),
     )
 }
@@ -132,11 +133,18 @@ pub(super) async fn command(
         request if request.starts_with("credential files ") => {
             file_constructors(api, &request[17..]).await
         }
+        #[cfg(target_arch = "wasm32")]
+        "provider boundary" => boundary(api, context).await,
+        "provider stale" => stale(api).await,
         "credential factory" => factory_result().await,
         "credential constructors" => constructors(api).await,
         "provider catalog" => observe(api, context).await,
         "credential owner" => credentials(context, false).await,
         "credential retained" => credentials(context, true).await,
+        "credential release" => {
+            CREDENTIALS.with(std::cell::RefCell::take);
+            Ok(json!("released"))
+        }
         _ => Err("unknown provider fixture request".into()),
     }
 }
@@ -264,4 +272,50 @@ fn factory_operations(api: &ExtensionAPI) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// Rejects malformed imports without modifying an independently retained valid owner.
+#[cfg(target_arch = "wasm32")]
+async fn boundary(api: &ExtensionAPI, context: &ExtensionContext) -> Result<Value, String> {
+    use maestro_extensions_wasm::{AuthStorage, bindings::maestro::extension::host};
+    let owner = AuthStorage::in_memory(api, maestro_extensions_wasm::AuthStorageData::default())?;
+    owner.set_runtime_api_key("boundary-valid", "surviving-key")?;
+    let catalog = ModelRegistry::in_memory(api, owner.clone())?;
+    let json_error = host::auth_storage_in_memory("{")
+        .err()
+        .ok_or("invalid JSON admitted")?;
+    let route = host::register_provider("boundary-invalid", "{", None);
+    let host::RouteStep::Done(Err(provider_json)) = route.next() else {
+        return Err("invalid provider JSON admitted".into());
+    };
+    let mut invalid = config("nonfinite")?;
+    invalid.models.as_mut().ok_or("missing models")?[0]
+        .cost
+        .input = f64::NAN;
+    let nonfinite = api.register_provider("boundary-invalid", invalid).err();
+    let models = context
+        .model_registry()?
+        .get_all()?
+        .into_iter()
+        .filter(|model| model.provider == "boundary-invalid")
+        .map(|model| model.id)
+        .collect::<Vec<_>>();
+    drop(catalog);
+    let key = owner.get_api_key("boundary-valid", None).await?;
+    let errors = owner.drain_errors()?;
+    CREDENTIALS.with(|slot| slot.replace(Some(owner)));
+    Ok(
+        json!({"json":json_error,"providerJson":provider_json,"nonfinite":nonfinite,"models":models,"key":key,"errors":errors}),
+    )
+}
+
+/// A stale facade cannot mutate providers while a previously acquired credential still works.
+async fn stale(api: &ExtensionAPI) -> Result<Value, String> {
+    let error = api
+        .register_provider("boundary-stale", config("rejected")?)
+        .err();
+    let owner = CREDENTIALS
+        .with(|slot| slot.borrow().clone())
+        .ok_or("missing boundary owner")?;
+    Ok(json!({"error":error,"key":owner.get_api_key("boundary-valid",None).await?}))
 }

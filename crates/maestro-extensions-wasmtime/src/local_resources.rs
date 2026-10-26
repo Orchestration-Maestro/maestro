@@ -16,6 +16,7 @@ pub(crate) mod http;
 pub(crate) mod model_streams;
 pub(crate) mod native_io;
 pub(crate) mod native_resources;
+pub(crate) mod provider_controls;
 pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
@@ -49,6 +50,8 @@ pub(crate) enum Message {
     ),
     /// Immediately resolve and invoke the registered native model adapter.
     ModelStart(model_streams::Creation),
+    /// Routes registered-provider setup and native hook calls.
+    Provider(provider_controls::Command),
     /// Operate on its original assistant FIFO and independent result.
     ModelStream(u64, model_streams::Request),
     /// Construct the models-owned buffer with retained local callbacks.
@@ -86,7 +89,10 @@ pub(crate) enum Message {
     /// Starts an admitted command operation without blocking request consumption.
     Command(u64, crate::command_reads::Request, Admission),
     /// Creates one independently owned cancellation on this local owner.
-    NewSignal(std::sync::mpsc::Sender<Result<SignalEndpoint, String>>),
+    NewSignal(
+        Option<Cancellation>,
+        std::sync::mpsc::Sender<Result<SignalEndpoint, String>>,
+    ),
     /// Uses the original retained cancellation, not the current context signal.
     Signal(u64, signals::Request),
     /// Reads the original live history independently of guarded contexts.
@@ -241,6 +247,8 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Original native options and arbitrary selected author signal bindings.
+    ProviderControls(Box<provider_controls::Owner>, crate::model_calls::Scopes),
     /// Original native notification registration, closed on its final release.
     NativeWatcher(Rc<dyn maestro_extensions::native_io::FsWatcher>),
     /// Original native child, independently retained after its creating callback.
@@ -509,7 +517,7 @@ impl Registry {
     }
 
     /// The pump's request sender while an existing admission keeps it live.
-    fn requests(&self) -> Result<UnboundedSender<Message>, String> {
+    pub(crate) fn requests(&self) -> Result<UnboundedSender<Message>, String> {
         self.requests
             .upgrade()
             .filter(|requests| !requests.is_closed())

@@ -7,7 +7,11 @@ use maestro_app::browser::tools::artifacts::{
 };
 use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO;
 use serde_json::{Value, json};
-use std::sync::{Arc, Mutex};
+#[cfg(target_arch = "wasm32")]
+use std::rc::Rc as LogReader;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Arc as LogReader;
+use std::sync::Mutex;
 
 /// Recorded panel effects, provider observations and clock.
 #[derive(Default)]
@@ -80,7 +84,7 @@ impl ArtifactPresentation for Recorder {
     }
     fn get_logs(&self, filename: &str) -> Result<ArtifactLogReader, ArtifactLogError> {
         if get_file_type(filename) == FileType::Html {
-            return Ok(Arc::new(|| "[log] view".into()));
+            return Ok(LogReader::new(|| "[log] view".into()));
         }
         Err(ArtifactLogError::Missing)
     }

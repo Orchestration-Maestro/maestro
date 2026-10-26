@@ -1,0 +1,92 @@
+name: Native I/O review red evidence
+"on":
+  push:
+    branches: [ci/659-fix-r1-red]
+permissions:
+  contents: read
+jobs:
+  body:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Command boundary
+        run: |
+          mkdir -p ~/.local/bin proof-logs
+          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
+          chmod +x ~/.local/bin/capped
+      - name: Pending read fails before restoration
+        shell: bash
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > proof-logs/source.log
+          set +e
+          ~/.local/bin/capped cargo test --locked -p maestro-app --lib cancelled_pending_body_read_retains_the_stream -- --nocapture 2>&1 | tee proof-logs/cancelled_pending_body_read_retains_the_stream-red.log
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -eq 101
+          grep -F 'body already in use' proof-logs/cancelled_pending_body_read_retains_the_stream-red.log
+          grep -F '1 failed' proof-logs/cancelled_pending_body_read_retains_the_stream-red.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: review-red-body
+          path: proof-logs/
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Command boundary
+        run: |
+          mkdir -p ~/.local/bin proof-logs
+          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
+          chmod +x ~/.local/bin/capped
+      - name: Unknown signal fails before validation
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > proof-logs/source.log
+          set +e
+          ~/.local/bin/capped cargo test --locked -p maestro-process --test integration windows_invalid_signal_leaves_the_child_running -- --nocapture 2>&1 | tee proof-logs/windows_invalid_signal_leaves_the_child_running-red.log
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -eq 101
+          grep -F 'unwrap_err()' proof-logs/windows_invalid_signal_leaves_the_child_running-red.log
+          grep -F '1 failed' proof-logs/windows_invalid_signal_leaves_the_child_running-red.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: review-red-windows
+          path: proof-logs/
+  historical:
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [guest, process, integration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target-historical
+      CARGO_BUILD_JOBS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Command boundary and nextest
+        run: |
+          mkdir -p ~/.local/bin proof-logs
+          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
+          chmod +x ~/.local/bin/capped
+          curl -fLsS https://get.nexte.st/0.9.148/linux | tar xz -C ~/.cargo/bin
+      - name: Genuine historical receipts
+        run: python3 .github/review-historical.py ${{ matrix.kind }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: review-red-${{ matrix.kind }}
+          path: proof-logs/
