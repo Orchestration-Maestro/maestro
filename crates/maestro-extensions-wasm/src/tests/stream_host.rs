@@ -91,3 +91,25 @@ impl host::HostAssistantStreamWithStore<State> for Imports {
         std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
     }
 }
+
+/// Native hooks cannot be constructed by the author-only harness.
+pub enum Controls {}
+impl host::HostProviderControls for State {
+    fn drop(&mut self, controls: Resource<Controls>) -> wasmtime::Result<()> {
+        match self.table.delete(controls)? {}
+    }
+}
+impl host::HostProviderControlsWithStore<State> for Imports {
+    fn invoke(
+        a: &Accessor<State, Self>,
+        controls: Resource<Controls>,
+        _: host::ModelHook,
+        _: String,
+        _: String,
+        _: Option<Resource<super::host::Flag>>,
+        _: Option<Resource<Identity>>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<host::PayloadSelection, String>>>
+    {
+        std::future::ready(a.with(|mut access| match *access.get().table.get(&controls)? {}))
+    }
+}
