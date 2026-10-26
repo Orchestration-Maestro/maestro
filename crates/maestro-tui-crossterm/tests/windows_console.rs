@@ -154,11 +154,16 @@ fn started(local: &Rc<LocalSet>) -> (ProcessTerminal, Rc<Cell<usize>>, Rc<Cell<u
 /// Both console modes of the scenario, after escape-sequence output is turned off so the
 /// terminal has to turn it on.
 fn fresh_modes() -> (u32, u32) {
+    (mode(HandleType::InputHandle), fresh_output())
+}
+
+/// Turns escape-sequence output off and returns the output console mode.
+fn fresh_output() -> u32 {
     let output = ConsoleMode::from(Handle::new(HandleType::OutputHandle).unwrap());
     output
         .set_mode(output.mode().unwrap() & !VT_PROCESSING)
         .unwrap();
-    modes()
+    output.mode().unwrap()
 }
 
 /// The console modes of standard input and standard output.
@@ -295,7 +300,7 @@ fn standard_input_that_is_not_a_console_ends_input_and_stops_cleanly() {
 
 /// Starts and stops with the null device as standard input.
 fn null_input() {
-    let original = fresh_modes();
+    let original = fresh_output();
     drive(|local| async move {
         let (mut terminal, inputs, _) = started(&local);
         assert_ne!(mode(HandleType::OutputHandle) & VT_PROCESSING, 0);
@@ -303,7 +308,7 @@ fn null_input() {
         terminal.stop().unwrap();
         assert_eq!(inputs.get(), 0);
     });
-    assert_eq!(mode(HandleType::OutputHandle), original.1);
+    assert_eq!(mode(HandleType::OutputHandle), original);
 }
 
 #[test]
