@@ -333,35 +333,52 @@ pub fn tool_rows_keep_root_specific_default_input_sections() {
         is_error: false,
         ..message(None)
     };
-    let ok = "{\n  \"ok\": true\n}";
+    let ok = "json {\n  \"ok\": true\n}";
+    let (heading, preparing) = ("caption Tool Call", "caption Preparing tool...");
+    let parameters = "caption Preparing tool parameters...";
     let cases: [(
         Value,
         Option<&maestro_app::ToolResultMessage>,
         bool,
         Vec<&str>,
     ); 17] = [
-        (json!(null), None, false, vec![]),
-        (json!(false), None, false, vec![]),
-        (json!(0), None, false, vec![]),
-        (json!(""), None, false, vec![]),
-        (json!(true), None, false, vec!["true"]),
-        (json!([]), None, true, vec!["[]"]),
-        (json!([5]), None, false, vec!["[\n  5\n]"]),
-        (json!([null]), None, false, vec!["[\n  null\n]"]),
+        (json!(null), None, false, vec![preparing]),
+        (json!(false), None, false, vec![preparing]),
+        (json!(0), None, false, vec![preparing]),
+        (json!(""), None, false, vec![preparing]),
+        (json!(true), None, false, vec![heading, "json true"]),
+        (json!([]), None, true, vec![heading, "json []"]),
+        (json!([5]), None, false, vec![heading, "json [\n  5\n]"]),
+        (
+            json!([null]),
+            None,
+            false,
+            vec![heading, "json [\n  null\n]"],
+        ),
         (
             json!(r#"{"b":1,"a":[2]}"#),
             None,
             false,
-            vec!["{\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}"],
+            vec![heading, "json {\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}"],
         ),
-        (json!(r#""quoted""#), None, false, vec!["\"quoted\""]),
-        (json!("plain"), None, false, vec!["\"plain\""]),
-        (json!("null"), None, true, vec![]),
-        (json!({}), None, true, vec![]),
-        (json!({}), None, false, vec!["{}"]),
-        (json!(null), Some(&output), false, vec![ok]),
-        (json!({}), Some(&output), true, vec!["{}", ok]),
-        (json!({}), Some(&empty), false, vec!["{}"]),
+        (
+            json!(r#""quoted""#),
+            None,
+            false,
+            vec![heading, "json \"quoted\""],
+        ),
+        (json!("plain"), None, false, vec![heading, "json \"plain\""]),
+        (json!("null"), None, true, vec![parameters]),
+        (json!({}), None, true, vec![parameters]),
+        (json!({}), None, false, vec![heading, "json {}"]),
+        (json!(null), Some(&output), false, vec![heading, ok]),
+        (json!({}), Some(&output), true, vec![heading, "json {}", ok]),
+        (
+            json!({}),
+            Some(&empty),
+            false,
+            vec![heading, "json {}", "text (no output)"],
+        ),
     ];
     for custom in [false, true] {
         if custom {
@@ -420,6 +437,8 @@ fn register_root_observer(
         None => std::ptr::from_ref(&call.arguments) as usize,
     };
     let expected = call.arguments.clone();
+    let name = call.name.clone();
+    let original = message::<()>(None);
     let (count, native) = (calls.clone(), native.clone());
     let check = move |address_seen: usize,
                       seen: Value,
@@ -430,6 +449,22 @@ fn register_root_observer(
         assert_eq!(flag, streaming);
         let result = result.unwrap();
         assert_eq!(result.tool_call_id(), id);
+        assert_eq!(result.role(), "toolResult");
+        assert!(result.is_error());
+        if id == "root-call" {
+            // The synthetic abort names the call and carries no output.
+            assert_eq!(result.tool_name(), name);
+            assert!(result.content().is_empty());
+            assert!(result.details().is_none());
+            assert!(result.timestamp() > original.timestamp);
+        } else {
+            assert_eq!(result.tool_name(), original.tool_name);
+            assert_eq!(result.timestamp().to_bits(), original.timestamp.to_bits());
+            assert_eq!(
+                serde_json::to_value(result.content()).unwrap(),
+                serde_json::to_value(&original.content).unwrap()
+            );
+        }
         if let Some(details) = result.details() {
             assert!(Rc::ptr_eq(details, &native));
             native.set(native.get() + 1);
@@ -465,7 +500,7 @@ fn register_root_observer(
     register_tool_renderer(&call.name, binding);
 }
 
-/// Mount one tool row and read its JSON listings in order.
+/// Mount one tool row and read its host caption, then each listing as `language text`.
 #[cfg(target_arch = "wasm32")]
 fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Vec<String> {
     use crate::contributions_support::{body, text, view};
@@ -475,14 +510,20 @@ fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Vec<String> {
     let root = props.mount(&view).unwrap();
     body().append_child(&root.node).unwrap();
     let element = root.node.unchecked_ref::<web_sys::Element>();
-    let blocks = element
-        .query_selector_all(".maestro-code[language='json'] pre code")
-        .unwrap();
-    let listings = (0..blocks.length())
-        .map(|index| text(&blocks.item(index).unwrap()))
+    let caption = element.query_selector(".maestro-tool-caption").unwrap();
+    let mut seen: Vec<String> = caption
+        .iter()
+        .map(|caption| format!("caption {}", text(caption)))
         .collect();
+    let blocks = element.query_selector_all(".maestro-code").unwrap();
+    for index in 0..blocks.length() {
+        let block: web_sys::Element = blocks.item(index).unwrap().unchecked_into();
+        let code = block.query_selector("pre code").unwrap().unwrap();
+        let language = block.get_attribute("language").unwrap();
+        seen.push(format!("{language} {}", text(&code)));
+    }
     element.remove();
-    listings
+    seen
 }
 
 /// Register the typed callback with the original envelope addresses.

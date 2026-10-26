@@ -67,7 +67,7 @@ fn prepare(
     } else if params.is_none() {
         "Preparing tool..."
     } else if state == ToolHeaderState::Inprogress && matches!(params, Some("" | "{}" | "null")) {
-        "Preparing tool parameters..."
+        "Tool Call"
     } else {
         "Tool Call"
     };
@@ -79,7 +79,7 @@ fn prepare(
         });
     let output = output
         .map(|raw| {
-            let selected = if raw.is_empty() { no_output } else { raw };
+            let selected = if raw.is_empty() { "" } else { raw };
             match serde_json::from_str::<Value>(selected) {
                 Ok(value) => pretty(&value).map(|code| Listing {
                     code,

@@ -1,0 +1,59 @@
+# Push-only evidence; never merge this branch.
+name: Cleanup 17 browser proof
+on:
+  push:
+    branches: [ci/cleanup17-proof-1]
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: Browser tests and wasm Clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_BUILD_JOBS: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pinned toolchain
+        run: rustup show
+      - name: Browser runtime tools
+        run: |
+          tools=$(mktemp -d "$RUNNER_TEMP/browser-runtime.XXXXXX")
+          cd "$tools"
+          curl --fail --retry 3 --silent --show-error --location https://cdn.playwright.dev/builds/cft/156.0.8078.4/linux64/chrome-linux64.zip -o chromium.zip
+          echo '43fd31766c7533a02dda2ded5ad50c2f861cd5400be7509c0abad71129f79d79  chromium.zip' | sha256sum --check --status
+          unzip -q chromium.zip
+          curl --fail --retry 3 --silent --show-error --location https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz -o bindgen.tar.gz
+          echo '82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e  bindgen.tar.gz' | sha256sum --check --status
+          tar -xzf bindgen.tar.gz
+          curl --fail --retry 3 --silent --show-error --location https://registry.npmjs.org/playwright/-/playwright-1.64.1.tgz -o playwright.tgz
+          curl --fail --retry 3 --silent --show-error --location https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz -o playwright-core.tgz
+          python3 - <<'PYTHON'
+          import base64
+          import hashlib
+          import pathlib
+          for name, digest in [
+              ('playwright', 'HCrVhHr5QQuwYoswEUGTb7gGp522yflbv/ST8nF4sFWGuLjQCt17Q/EubpGGSNKYn1tsTCPZxqHhHCfVURu7UA=='),
+              ('playwright-core', 'BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ=='),
+          ]:
+              if hashlib.sha512(pathlib.Path(name + '.tgz').read_bytes()).digest() != base64.b64decode(digest):
+                  raise SystemExit(name + ': archive checksum mismatch')
+          PYTHON
+          mkdir -p node_modules/playwright node_modules/playwright-core
+          tar -xzf playwright.tgz --strip-components=1 -C node_modules/playwright
+          tar -xzf playwright-core.tgz --strip-components=1 -C node_modules/playwright-core
+          node node_modules/playwright/cli.js install-deps chromium
+          "$tools/chrome-linux64/chrome" --version
+          echo "$tools/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
+          echo "PLAYWRIGHT_MODULE=$tools/node_modules/playwright" >> "$GITHUB_ENV"
+          echo "CHROMIUM_PATH=$tools/chrome-linux64/chrome" >> "$GITHUB_ENV"
+      - name: Browser tests
+        run: node crates/maestro-web/tests/sandbox_loading_support/run.cjs
+      - name: Wasm Clippy
+        if: always()
+        run: cargo clippy --locked -p maestro-web --target wasm32-unknown-unknown --all-targets -- -D warnings
