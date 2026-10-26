@@ -151,16 +151,33 @@ fn started(local: &Rc<LocalSet>) -> (ProcessTerminal, Rc<Cell<usize>>, Rc<Cell<u
     (terminal, inputs, resizes)
 }
 
+/// Both console modes of the scenario, after escape-sequence output is turned off so the
+/// terminal has to turn it on.
+fn fresh_modes() -> (u32, u32) {
+    let output = ConsoleMode::from(Handle::new(HandleType::OutputHandle).unwrap());
+    output
+        .set_mode(output.mode().unwrap() & !VT_PROCESSING)
+        .unwrap();
+    modes()
+}
+
+/// The console modes of standard input and standard output.
+fn modes() -> (u32, u32) {
+    (
+        mode(HandleType::InputHandle),
+        mode(HandleType::OutputHandle),
+    )
+}
+
 /// Checks that standard input is in raw mode with window-size records and escape-sequence
-/// input, and that standard output processes escape sequences.
+/// input, that its other flags are as they were in `original`, and that standard output
+/// processes escape sequences.
 fn assert_acquired(original: u32) {
     let input = mode(HandleType::InputHandle);
+    let changed = COOKED | WINDOW_INPUT | VT_INPUT;
     assert_eq!(input & COOKED, 0, "raw input: {input:#x}");
     assert_eq!(input & (WINDOW_INPUT | VT_INPUT), WINDOW_INPUT | VT_INPUT);
-    assert_eq!(
-        input & !(COOKED | WINDOW_INPUT | VT_INPUT),
-        original & !(COOKED | WINDOW_INPUT | VT_INPUT)
-    );
+    assert_eq!(input & !changed, original & !changed);
     assert_ne!(mode(HandleType::OutputHandle) & VT_PROCESSING, 0);
 }
 
@@ -169,26 +186,20 @@ fn start_applies_raw_escape_sequence_input_and_stop_restores_both_modes() {
     on_console(
         "start_applies_raw_escape_sequence_input_and_stop_restores_both_modes",
         false,
-        || {
-            let original = (
-                mode(HandleType::InputHandle),
-                mode(HandleType::OutputHandle),
-            );
-            drive(|local| async move {
-                let (mut terminal, inputs, _) = started(&local);
-                assert_acquired(original.0);
-                terminal.stop().unwrap();
-                assert_eq!(inputs.get(), 0);
-            });
-            assert_eq!(
-                (
-                    mode(HandleType::InputHandle),
-                    mode(HandleType::OutputHandle)
-                ),
-                original
-            );
-        },
+        acquire_and_restore,
     );
+}
+
+/// Starts and stops once, checking the modes in between and after.
+fn acquire_and_restore() {
+    let original = fresh_modes();
+    drive(|local| async move {
+        let (mut terminal, inputs, _) = started(&local);
+        assert_acquired(original.0);
+        terminal.stop().unwrap();
+        assert_eq!(inputs.get(), 0);
+    });
+    assert_eq!(modes(), original);
 }
 
 #[test]
@@ -196,29 +207,24 @@ fn repeated_and_replacing_starts_restore_the_modes_saved_first() {
     on_console(
         "repeated_and_replacing_starts_restore_the_modes_saved_first",
         false,
-        || {
-            let original = (
-                mode(HandleType::InputHandle),
-                mode(HandleType::OutputHandle),
-            );
-            drive(|local| async move {
-                for _ in 0..3 {
-                    let (mut terminal, _, _) = started(&local);
-                    terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
-                    assert_acquired(original.0);
-                    terminal.stop().unwrap();
-                    assert_eq!(
-                        (
-                            mode(HandleType::InputHandle),
-                            mode(HandleType::OutputHandle)
-                        ),
-                        original
-                    );
-                    terminal.stop().unwrap();
-                }
-            });
-        },
+        repeat_starts,
     );
+}
+
+/// Starts, replaces and stops three times, checking the modes each time.
+fn repeat_starts() {
+    let original = fresh_modes();
+    drive(|local| async move {
+        for _ in 0..3 {
+            let (mut terminal, _, _) = started(&local);
+            let replaced = terminal.start(Box::new(|_: &str| ()), Box::new(|| ()));
+            replaced.unwrap();
+            assert_acquired(original.0);
+            terminal.stop().unwrap();
+            assert_eq!(modes(), original);
+            terminal.stop().unwrap();
+        }
+    });
 }
 
 #[test]
@@ -226,20 +232,23 @@ fn a_drain_with_no_input_ends_after_the_idle_time_and_delivers_nothing() {
     on_console(
         "a_drain_with_no_input_ends_after_the_idle_time_and_delivers_nothing",
         false,
-        || {
-            drive(|local| async move {
-                let (mut terminal, inputs, _) = started(&local);
-                let drain = terminal.drain_input(
-                    Some(Duration::from_secs(5)),
-                    Some(Duration::from_millis(20)),
-                );
-                drain.await.unwrap();
-                assert!(!terminal.kitty_protocol_active());
-                terminal.stop().unwrap();
-                assert_eq!(inputs.get(), 0);
-            });
-        },
+        drain_idle,
     );
+}
+
+/// Drains a started terminal that receives no input.
+fn drain_idle() {
+    drive(|local| async move {
+        let (mut terminal, inputs, _) = started(&local);
+        let drain = terminal.drain_input(
+            Some(Duration::from_secs(5)),
+            Some(Duration::from_millis(20)),
+        );
+        drain.await.unwrap();
+        assert!(!terminal.kitty_protocol_active());
+        terminal.stop().unwrap();
+        assert_eq!(inputs.get(), 0);
+    });
 }
 
 #[test]
@@ -247,29 +256,32 @@ fn a_console_resize_reaches_the_resize_callback_with_the_new_size() {
     on_console(
         "a_console_resize_reaches_the_resize_callback_with_the_new_size",
         false,
-        || {
-            drive(|local| async move {
-                let (mut terminal, _, resizes) = started(&local);
-                tokio::task::yield_now().await;
-                let before = resizes.get();
-                let window = WindowPositions {
-                    left: 0,
-                    right: 39,
-                    top: 0,
-                    bottom: 9,
-                };
-                Console::from(Handle::new(HandleType::OutputHandle).unwrap())
-                    .set_console_info(true, window)
-                    .unwrap();
-                ScreenBuffer::new(Handle::new(HandleType::OutputHandle).unwrap())
-                    .set_size(40, 10)
-                    .unwrap();
-                until(|| resizes.get() > before).await;
-                assert_eq!((terminal.columns(), terminal.rows()), (40, 10));
-                terminal.stop().unwrap();
-            });
-        },
+        resize,
     );
+}
+
+/// Shrinks the console window and buffer of a started terminal.
+fn resize() {
+    drive(|local| async move {
+        let (mut terminal, _, resizes) = started(&local);
+        tokio::task::yield_now().await;
+        let before = resizes.get();
+        let window = WindowPositions {
+            left: 0,
+            right: 39,
+            top: 0,
+            bottom: 9,
+        };
+        Console::from(Handle::new(HandleType::OutputHandle).unwrap())
+            .set_console_info(true, window)
+            .unwrap();
+        ScreenBuffer::new(Handle::new(HandleType::OutputHandle).unwrap())
+            .set_size(40, 10)
+            .unwrap();
+        until(|| resizes.get() > before).await;
+        assert_eq!((terminal.columns(), terminal.rows()), (40, 10));
+        terminal.stop().unwrap();
+    });
 }
 
 #[test]
@@ -277,18 +289,21 @@ fn standard_input_that_is_not_a_console_ends_input_and_stops_cleanly() {
     on_console(
         "standard_input_that_is_not_a_console_ends_input_and_stops_cleanly",
         true,
-        || {
-            let output = mode(HandleType::OutputHandle);
-            drive(|local| async move {
-                let (mut terminal, inputs, _) = started(&local);
-                assert_ne!(mode(HandleType::OutputHandle) & VT_PROCESSING, 0);
-                tokio::time::sleep(Duration::from_millis(50)).await;
-                terminal.stop().unwrap();
-                assert_eq!(inputs.get(), 0);
-            });
-            assert_eq!(mode(HandleType::OutputHandle), output);
-        },
+        null_input,
     );
+}
+
+/// Starts and stops with the null device as standard input.
+fn null_input() {
+    let original = fresh_modes();
+    drive(|local| async move {
+        let (mut terminal, inputs, _) = started(&local);
+        assert_ne!(mode(HandleType::OutputHandle) & VT_PROCESSING, 0);
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        terminal.stop().unwrap();
+        assert_eq!(inputs.get(), 0);
+    });
+    assert_eq!(mode(HandleType::OutputHandle), original.1);
 }
 
 #[test]
@@ -296,27 +311,21 @@ fn the_one_input_wait_acquires_raw_input_and_restores_it_when_dropped() {
     on_console(
         "the_one_input_wait_acquires_raw_input_and_restores_it_when_dropped",
         false,
-        || {
-            let original = (
-                mode(HandleType::InputHandle),
-                mode(HandleType::OutputHandle),
-            );
-            drive(|_| async move {
-                let mut wait = pin!(wait_for_input());
-                let mut context = Context::from_waker(Waker::noop());
-                assert!(wait.as_mut().poll(&mut context).is_pending());
-                let input = mode(HandleType::InputHandle);
-                assert_eq!(input & COOKED, 0);
-                assert_ne!(input & VT_INPUT, 0);
-                assert_eq!(mode(HandleType::OutputHandle), original.1);
-            });
-            assert_eq!(
-                (
-                    mode(HandleType::InputHandle),
-                    mode(HandleType::OutputHandle)
-                ),
-                original
-            );
-        },
+        dropped_wait,
     );
+}
+
+/// Polls the one-input wait once, then drops it.
+fn dropped_wait() {
+    let original = fresh_modes();
+    drive(|_| async move {
+        let mut wait = pin!(wait_for_input());
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(wait.as_mut().poll(&mut context).is_pending());
+        let input = mode(HandleType::InputHandle);
+        assert_eq!(input & COOKED, 0);
+        assert_ne!(input & VT_INPUT, 0);
+        assert_eq!(mode(HandleType::OutputHandle), original.1);
+    });
+    assert_eq!(modes(), original);
 }
