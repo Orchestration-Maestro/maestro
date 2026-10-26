@@ -66,6 +66,7 @@ async fn session(
         .extension_factories
         .push(maestro_extensions_wasmtime::artifact_factory(
             std::env::var("MAESTRO_CONTEXT_COMPONENT").expect("nextest author-component setup"),
+            env!("CARGO_PKG_VERSION").into(),
         ));
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());

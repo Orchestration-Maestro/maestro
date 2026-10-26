@@ -42,6 +42,15 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Formats all floating-point byte counts directly.
+    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String>;
+    /// Reads metadata numbers without passing them through JSON.
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument>;
+    /// Forwards ordinary helper operands synchronously.
+    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String>;
     credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
@@ -215,15 +224,6 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionFuture<'a, String>;
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
-    /// Registers JSON provider data.
-    fn register_provider(
-        &self,
-        name: &str,
-        config: &str,
-        stream: Option<&Self::Callback>,
-    ) -> ExtensionResult<()>;
-    /// Unregisters a provider.
-    fn unregister_provider(&self, name: &str) -> ExtensionResult<()>;
     /// Starts a compaction on the supplied context.
     fn compact(
         &self,
