@@ -8,8 +8,12 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+mod dialogs;
 pub(crate) mod effects;
+mod footer;
+pub(crate) mod model_streams;
 mod signals;
+pub(crate) mod stream_reads;
 mod synchronous;
 pub(crate) use synchronous::Completion;
 
@@ -27,6 +31,14 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
     ),
+    /// Immediately resolve and invoke the registered native model adapter.
+    ModelStart(model_streams::Creation),
+    /// Operate on its original assistant FIFO and independent result.
+    ModelStream(u64, model_streams::Request),
+    /// Construct the models-owned buffer with retained local callbacks.
+    NewStream(stream_reads::Creation),
+    /// Operate on the original native event buffer.
+    Stream(u64, crate::local_resources::stream_reads::Request),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
@@ -90,8 +102,12 @@ pub(crate) enum Message {
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
+    /// Admits one dialog on the originally acquired UI.
+    Dialog(u64, crate::ui_reads::DialogRequest, Admission),
     /// Reads or edits the independently retained live renderer theme.
     Theme(u64, crate::theme_reads::Request),
+    /// Reads or subscribes to the footer metadata lent to a footer factory.
+    Footer(u64, crate::footer_data::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -177,6 +193,10 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Original native model invocation buffer.
+    AssistantStream(maestro_extensions::AssistantMessageEventStream),
+    /// Native event buffer with caller-local completion callbacks.
+    Stream(crate::local_resources::stream_reads::Owner),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.
@@ -207,8 +227,20 @@ enum Capability {
     SignalSubscription(Rc<dyn Fn()>),
     /// Original live theme supplied by native rendering.
     Theme(maestro_extensions::LiveTheme),
+    /// Removes a terminal input listener from the UI it was added to; dropping it keeps the
+    /// listener.
+    UiSubscription(Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
+    /// Original footer metadata lent to a footer factory.
+    Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
+    /// Original redraw capability of one tool row.
+    Invalidate(Rc<dyn Fn()>),
+    /// Original terminal lent to a component factory.
+    Tui {
+        /// Ownership alone crosses the opaque canonical terminal resource.
+        _owner: maestro_extensions::TUI,
+    },
 }
 
 /// Local entries and their monotonic identities.
@@ -256,9 +288,17 @@ impl Registry {
         &self,
         api: &crate::api_reads::Endpoint,
     ) -> Result<maestro_extensions::EventBus<maestro_extensions::Local>, String> {
+        self.facade(api).map(|api| api.events)
+    }
+
+    /// The original extension facade behind an API resource.
+    pub(crate) fn facade(
+        &self,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<maestro_extensions::ExtensionAPI<maestro_extensions::Local>, String> {
         let capability = self.capability(api.0.id);
         match capability.as_deref() {
-            Some(Capability::Api(api)) => Ok(api.events.clone()),
+            Some(Capability::Api(api)) => Ok(api.clone()),
             _ => Err("extension API resource ended".to_owned()),
         }
     }

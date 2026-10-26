@@ -78,7 +78,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
 /// Describes guest schema callbacks before routing the native tool refresh.
 async fn register_tool<T: CallbackView + 'static>(
     accessor: &Accessor<T>,
-    (metadata, prepare, execute, schemas): Registration,
+    (metadata, prepare, execute, schemas, render_call, render_result): Registration,
 ) -> wasmtime::Result<(Resource<crate::import_route::Route>,)> {
     let exports = accessor
         .with(|mut access| access.get().exports())
@@ -105,11 +105,16 @@ async fn register_tool<T: CallbackView + 'static>(
         let store = access.get();
         let prepare = callback_imports::optional(store, prepare.as_ref())?;
         let execute = callback_imports::retain(store, &execute)?;
+        let renderers = (
+            callback_imports::optional(store, render_call.as_ref())?,
+            callback_imports::optional(store, render_result.as_ref())?,
+        );
         let route = store.api().routed_registration(|reply| Request::Tool {
             metadata,
             prepare,
             execute,
             schemas: described,
+            renderers,
             reply,
         });
         Ok((crate::import_route::push(store, route)?,))
@@ -122,4 +127,6 @@ type Registration = (
     Option<Resource<Callback>>,
     Resource<Callback>,
     Vec<(String, Resource<Callback>)>,
+    Option<Resource<Callback>>,
+    Option<Resource<Callback>>,
 );

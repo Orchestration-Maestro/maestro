@@ -22,7 +22,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
         "[method]abort-signal.abort",
         |mut store: StoreContextMut<'_, T>, (signal,): (Resource<SignalEndpoint>,)| {
             let signal = store.data_mut().ctx().table.get(&signal)?.clone();
-            Ok((signal.abort(),))
+            Ok((crate::import_route::push(store.data_mut(), signal.abort())?,))
         },
     )?;
     host.func_wrap(

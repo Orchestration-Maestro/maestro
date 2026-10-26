@@ -202,6 +202,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
   `SlashCommandSource`, re-exported by resources, application presentation data and
   guest authoring rather than redeclared.
+  Shared invocation options (`ThinkingBudgets`, `CacheRetention`, `Transport`,
+  `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`)
+  and the data-only `StreamOptionSlots` family belong here; executable operations
+  remain with their native or guest owners.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper, plus the
   renderer option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
@@ -313,9 +317,10 @@ conventions check rejects `tracing`'s scoped subscriber functions and the
 its `Output` sink. See the
 [tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
 
-The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
-its domain owner. Native extensions may specialize it with the alias in
-`src/types/registration.rs`; renderer declarations retain their domain ownership.
+The guest may declare `ToolDefinition`, `ToolRenderContext` and `ToolRenderResultOptions`
+only in `src/types/tools.rs`, in addition to their domain owner. Native extensions may
+specialize `ToolDefinition` with the alias in `src/types/registration.rs`; elsewhere the
+renderer declarations retain their domain ownership.
 
 Bounded source/build checks enforce tool/selector ownership, direct runtime-engine
 and toolkit library placement, canonical guest-owned WIT inputs and planning-comment

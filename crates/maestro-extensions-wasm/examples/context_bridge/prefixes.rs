@@ -80,6 +80,8 @@ pub(super) fn register(api: &ExtensionAPI, wait: ExtensionCommandContext) -> Ext
 fn tool(api: &ExtensionAPI, wait: ExtensionCommandContext) -> ExtensionResult<()> {
     let tool = api.clone();
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: serde_json::from_value(json!({"name": "prefix-tool", "label": "Prefix tool", "description": "Prefix tool", "parameters": {"type": "object"}})).map_err(|error| error.to_string())?,
         prepare_arguments: None,
         execute: Rc::new(move |_, _, _, _, _| {

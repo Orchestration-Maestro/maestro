@@ -117,6 +117,8 @@ pub struct Observed {
     pub ui: super::ui_host::Bank,
     /// Themes the host publishes under each handed-out key.
     pub themes: super::theme_host::Bank,
+    /// The guest state identity of each tool row, by tool call id.
+    pub tool_rows: HashMap<String, u32>,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -197,8 +199,8 @@ impl Observed {
     pub fn register_tool(
         &mut self,
         metadata: &str,
-        prepare: Option<u32>,
-        execute: u32,
+        (prepare, execute): (Option<u32>, u32),
+        (render_call, render_result): (Option<u32>, Option<u32>),
     ) -> Result<(), String> {
         #[derive(serde::Deserialize)]
         struct Named {
@@ -215,6 +217,12 @@ impl Observed {
         self.tools.push(metadata.into());
         if let Some(prepare) = prepare {
             self.register(format!("prepare {name}"), prepare);
+        }
+        if let Some(render) = render_call {
+            self.register(format!("render-call {name}"), render);
+        }
+        if let Some(render) = render_result {
+            self.register(format!("render-result {name}"), render);
         }
         self.register(format!("tool {name}"), execute);
         Ok(())

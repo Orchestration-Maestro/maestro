@@ -101,6 +101,8 @@ pub use tools::artifacts::artifact_element::ArtifactElement;
 pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
 /// Retained tabbed artifact views using the application-selected filename.
 pub use tools::artifacts::ArtifactsPanel;
+#[cfg(target_arch = "wasm32")]
+pub use tools::artifacts::html_artifact::HtmlArtifact;
 
 pub use maestro_app::{
     SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,

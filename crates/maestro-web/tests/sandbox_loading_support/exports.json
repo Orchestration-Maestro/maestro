@@ -51,6 +51,13 @@
     "docx_artifact_dom_styles_and_safe_targets",
     "docx_artifact_dom_errors_retry_and_keep_download",
     "docx_artifact_dom_retains_and_releases_resources",
+    "html_artifact_dom_source_is_literal_before_connection",
+    "html_artifact_dom_executes_once_per_source_or_reload",
+    "html_artifact_dom_forwards_current_providers_and_url",
+    "html_artifact_dom_routes_logs_and_releases_its_frame",
+    "html_artifact_dom_nested_creation_keeps_controllers",
+    "html_artifact_dom_keeps_frame_across_mode_changes",
+    "html_artifact_dom_source_copy_and_standalone_download",
     "simple_html_session_replays_existing_browser_owners",
     "long_session_replays_existing_browser_owners",
     "overlay_dom_documents_keep_resources_and_sheet_state"

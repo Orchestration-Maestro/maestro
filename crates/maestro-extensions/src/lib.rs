@@ -50,7 +50,10 @@ mod loader;
 pub mod types;
 pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
 pub use maestro_models::{
-    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
+    AssistantMessageEventStream, Base, Context, EventStream, ParameterSchema, PayloadHookInput,
+    ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement, SchemaCallback,
+    SchemaCode, SchemaNode, SimpleStreamOptions, StreamOptions, schema_transport, stream_for,
+    stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
@@ -68,6 +71,8 @@ pub use maestro_theme::Theme;
 pub use maestro_theme::ThemeBg;
 /// Foreground color key, including authored names.
 pub use maestro_theme::ThemeColor;
+/// What a terminal input listener decided about one chunk of input.
+pub use maestro_tui::tui::InputListenerResult;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
@@ -131,5 +136,10 @@ pub use maestro_tools::types::local;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+/// Native tool renderers, the row context they read and the result they render.
+pub use maestro_tools::{
+    ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
+    ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
+};
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
-pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager};
+pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

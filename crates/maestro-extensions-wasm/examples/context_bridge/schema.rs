@@ -33,6 +33,8 @@ pub(super) fn observe(api: &ExtensionAPI) -> ExtensionResult<Value> {
         ],
     );
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, _, _, _, _| {
@@ -78,6 +80,8 @@ pub(super) fn executable(api: &ExtensionAPI) -> ExtensionResult<Value> {
         .collect(),
     );
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, args, _, _, _| {
@@ -104,6 +108,8 @@ pub(super) fn relay(api: &ExtensionAPI) -> ExtensionResult<Value> {
     .map_err(|e| e.to_string())?;
     metadata.parameters = tool.parameters;
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, args, _, _, _| {
@@ -141,6 +147,8 @@ pub(super) fn growth(api: &ExtensionAPI, count: usize) -> ExtensionResult<Value>
             .collect(),
     );
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, _, _, _, _| Box::pin(async { Err("not executed".into()) })),

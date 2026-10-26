@@ -4122,6 +4122,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-theme",
+ "maestro-tui",
  "serde",
  "serde_json",
  "tokio",

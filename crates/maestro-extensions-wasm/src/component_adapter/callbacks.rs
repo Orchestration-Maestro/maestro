@@ -99,6 +99,18 @@ kinds! {
         Component(crate::Component),
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
+        TerminalInput(crate::TerminalInputHandler),
+        ComponentFactory(crate::ComponentFactory),
+        ToolRenderCall(crate::ToolRenderCall),
+        ToolRenderResult(crate::ToolRenderResult),
+        ToolRow(std::rc::Rc<crate::types::ToolRow>),
+        FooterFactory(crate::FooterFactory),
+        BranchChange(crate::BranchChangeListener),
+        StreamValue(super::streams::Value),
+        ModelPayload(crate::OnPayload),
+        ModelResponse(crate::OnResponse),
+        StreamClassifier(super::streams::Classifier),
+        StreamExtractor(super::streams::Extractor),
     }
     once {
         Abort(crate::AbortListener),
@@ -139,7 +151,6 @@ impl<I: Imports> Identity<I> {
     }
 
     /// Hands the identity handle to the host while the object stays in this table.
-    #[cfg(target_arch = "wasm32")]
     pub(super) fn transfer(self, object: impl Stored) -> I::Callback {
         let Self { handle, id } = self;
         insert(

@@ -22,6 +22,8 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
+            Self::Stream(call) => Call::Stream(stream(call, completion)),
             Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
                 handler: completion.callback(call.handler),
                 operation: call.operation,
@@ -56,6 +58,9 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
+            Self::Factory(call) => Call::Factory(factory(call, completion)),
+            Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
+            Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
                 kind: call.kind,
@@ -64,6 +69,49 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the factory admission beside its lent terminal and theme.
+fn factory(
+    call: crate::guest_calls::factories::FactoryCall,
+    completion: &Completion,
+) -> crate::guest_calls::factories::FactoryCall<Callback> {
+    crate::guest_calls::factories::FactoryCall {
+        handler: completion.callback(call.handler),
+        tui: call.tui,
+        theme: call.theme,
+        footer: call.footer,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the renderer admission beside its row operands.
+fn tool_render(
+    call: crate::guest_calls::tool_renders::ToolRenderCall,
+    completion: &Completion,
+) -> crate::guest_calls::tool_renders::ToolRenderCall<Callback> {
+    crate::guest_calls::tool_renders::ToolRenderCall {
+        handler: completion.callback(call.handler),
+        render: call.render,
+        theme: call.theme,
+        invalidator: call.invalidator,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the terminal input listener admission beside its chunk.
+fn terminal_input(
+    call: crate::guest_calls::terminal::Input,
+    completion: &Completion,
+) -> crate::guest_calls::terminal::Input<Callback> {
+    crate::guest_calls::terminal::Input {
+        handler: completion.callback(call.handler),
+        data: call.data,
+        emitter: call.emitter,
+        reply: call.reply,
     }
 }
 
@@ -128,5 +176,33 @@ fn tool(call: ToolCall, completion: &Completion) -> ToolCall<Callback> {
             update,
             reply,
         },
+    }
+}
+
+/// Retain the hook's original callback independently of its owned data operands.
+fn model_hook(
+    call: crate::model_calls::Invocation,
+    completion: &Completion,
+) -> crate::model_calls::Invocation<Callback> {
+    crate::model_calls::Invocation {
+        handler: completion.callback(call.handler),
+        phase: call.phase,
+        data: call.data,
+        model: call.model,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Retain both synchronous stream callback operands until the original invocation completes.
+fn stream(
+    call: crate::stream_calls::Invocation,
+    completion: &Completion,
+) -> crate::stream_calls::Invocation<Callback> {
+    crate::stream_calls::Invocation {
+        handler: completion.callback(call.handler),
+        value: completion.callback(call.value),
+        operation: call.operation,
+        reply: call.reply,
     }
 }

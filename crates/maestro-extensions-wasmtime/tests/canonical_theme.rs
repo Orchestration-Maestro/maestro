@@ -146,3 +146,43 @@ fn theme(method: &str, expected: &Value) {
         bus.clear();
     });
 }
+
+/// A theme with a distinct foreground for each thinking level and the shell mode.
+fn bordered() -> Rc<Theme> {
+    let keys = [
+        ThemeColor::ThinkingOff,
+        ThemeColor::ThinkingMinimal,
+        ThemeColor::ThinkingLow,
+        ThemeColor::ThinkingMedium,
+        ThemeColor::ThinkingHigh,
+        ThemeColor::ThinkingXhigh,
+        ThemeColor::BashMode,
+    ];
+    let colors = keys
+        .into_iter()
+        .zip(1u8..)
+        .map(|(key, index)| (key, ColorValue::Index(index)));
+    Rc::new(Theme::new(colors, [], ColorMode::Color256, ThemeOptions::default()).unwrap())
+}
+
+#[test]
+fn canonical_theme_borders_follow_each_level() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = create_event_bus_for::<Local>(Rc::new(|_| panic!("no tails")), Rc::new(|_| panic!("no diagnostics")));
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let state = ThemeState::new(ThemeDirectories { themes_dir: String::new(), custom_themes_dir: String::new() });
+        state.set_theme_instance(bordered()).unwrap();
+        let renderer = runner.get_message_renderer::<Value>("bridge-view").unwrap();
+        let methods = ["off", "minimal", "low", "medium", "high", "xhigh"].map(|level| format!("thinking-border:{level}"));
+        for (index, method) in methods.iter().map(String::as_str).chain(["bash-mode-border"]).enumerate() {
+            let message = serde_json::from_value(json!({"role":"custom", "customType":format!("theme {method}"), "content":"", "display":true, "timestamp":0})).unwrap();
+            let component = bus.invoke_callback(|emitter| renderer(Rc::new(message), MessageRenderOptions { expanded: false }, state.theme(), emitter)).unwrap().unwrap();
+            let expected = format!("\u{1b}[38;5;{}m literal text\r\n雪 \u{1b}[39m", index + 1);
+            assert_eq!(component.try_render(80).unwrap(), [json!(expected).to_string()], "{method}");
+        }
+        bus.clear();
+    });
+}

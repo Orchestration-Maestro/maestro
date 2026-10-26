@@ -10,7 +10,9 @@ use std::{
 use super::{Generated, host};
 use crate::ExtensionResult;
 use crate::component_adapter::tools::ToolCapabilities;
-use crate::component_adapter::{Exports, bash::BashCapabilities, callbacks, renderers};
+use crate::component_adapter::{
+    Capabilities, Exports, bash::BashCapabilities, callbacks, renderers,
+};
 
 /// One nested call's result, ready at once or after its later continuation.
 type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
@@ -88,6 +90,16 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
                 .map_err(crate::schema_error::to_wire),
         ),
+        host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
+        host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
+        host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
+            exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
+        ),
+        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+            call.target,
+            call.value,
+            call.operation,
+        )),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call => return asynchronous(call),
     };
@@ -108,7 +120,31 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
             exports.invoke_compaction_error(call.target, call.data.clone(), &call.emitter)
         }
         host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
+        host::LocalKind::Dispose => exports.invoke_dispose(call.target, &call.emitter),
+        host::LocalKind::BranchChange => {
+            crate::component_adapter::factories::invoke_branch_change(call.target)
+        }
     }
+}
+
+/// Runs one nested tool rendering and transfers what it returned.
+fn tool_render(call: host::LocalToolRender) -> ExtensionResult<host::ToolRendered> {
+    let lent = (call.theme, call.invalidator);
+    Exports::new(Generated)
+        .invoke_tool_render(call.target, &call.render, lent, &call.emitter)
+        .map(super::rendered_row)
+}
+
+/// Runs one nested component factory and transfers what it built.
+fn factory(call: host::LocalFactory) -> ExtensionResult<host::FactoryComponent> {
+    let lent = crate::component_adapter::factories::Lent {
+        tui: call.tui,
+        theme: call.theme,
+        footer: call.footer,
+    };
+    Exports::new(Generated)
+        .invoke_component_factory(call.target, lent, &call.emitter)
+        .map(|built| crate::component_adapter::factories::transfer(&Generated, built))
 }
 
 /// Starts one nested asynchronous callback with its original capabilities.
@@ -176,7 +212,7 @@ pub(super) async fn event(
 ) -> Result<host::EventOutcome, String> {
     let host::Capabilities { ctx, signal } = resources;
     let outcome = Exports::new(Generated)
-        .invoke_event(target, event, super::Capabilities { ctx, signal })
+        .invoke_event(target, event, Capabilities { ctx, signal })
         .await?;
     Ok(host::EventOutcome {
         event: outcome.event,

@@ -230,6 +230,7 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("tools/artifacts/artifact_element.css"));
     css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
     css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/html_artifact.css"));
     css.push_str(include_str!("tools/artifacts/console.css"));
     css.push_str(include_str!("components/diff.css"));
     css.push_str(include_str!("dom.css"));
@@ -238,6 +239,40 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("components/agent_interface.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))
+}
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    /// Operands of the built-in element under construction, which its constructor takes.
+    static CREATING: std::cell::RefCell<Option<Box<dyn Any>>> = const { std::cell::RefCell::new(None) };
+}
+/// Create a `tag` element whose constructor can take `inputs` through [`take_creating`].
+///
+/// The constructor has no argument channel. Operands it leaves untaken are dropped, and a
+/// creation nested inside another restores the outer operands before returning.
+/// # Errors
+/// Returns the browser's creation failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn create_with<T: 'static>(
+    document: &Document,
+    tag: &str,
+    inputs: T,
+) -> Result<web_sys::Element, wasm_bindgen::JsValue> {
+    let outer = CREATING.replace(Some(Box::new(inputs)));
+    let created = document.create_element(tag);
+    let untaken = CREATING.replace(outer);
+    drop(untaken);
+    created
+}
+/// Take the operands of the element under construction when they have type `T`.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn take_creating<T: 'static>() -> Option<T> {
+    CREATING.with_borrow_mut(|slot| match slot.take()?.downcast::<T>() {
+        Ok(inputs) => Some(*inputs),
+        Err(other) => {
+            *slot = Some(other);
+            None
+        }
+    })
 }
 /// Define an autonomous element whose constructor callback lives as long as the page.
 ///

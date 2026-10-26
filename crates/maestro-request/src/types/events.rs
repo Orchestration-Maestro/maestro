@@ -138,6 +138,33 @@ pub enum AssistantMessageEvent {
     },
 }
 
+impl AssistantMessageEvent {
+    /// Whether this event closes assistant-message admission and publishes a result.
+    #[must_use]
+    pub fn is_terminal(&self) -> bool {
+        matches!(self, Self::Done { .. } | Self::Error { .. })
+    }
+
+    /// Borrow the original live message, including a terminal event's selected result.
+    #[must_use]
+    pub fn message(&self) -> &SharedAssistantMessage {
+        match self {
+            Self::Start { partial }
+            | Self::TextStart { partial, .. }
+            | Self::TextDelta { partial, .. }
+            | Self::TextEnd { partial, .. }
+            | Self::ThinkingStart { partial, .. }
+            | Self::ThinkingDelta { partial, .. }
+            | Self::ThinkingEnd { partial, .. }
+            | Self::ToolcallStart { partial, .. }
+            | Self::ToolcallDelta { partial, .. }
+            | Self::ToolcallEnd { partial, .. } => partial,
+            Self::Done { message, .. } => message,
+            Self::Error { error, .. } => error,
+        }
+    }
+}
+
 /// Serialize the assistant message behind its shared handle.
 fn serialize_shared_message<S: serde::Serializer>(
     message: &SharedAssistantMessage,

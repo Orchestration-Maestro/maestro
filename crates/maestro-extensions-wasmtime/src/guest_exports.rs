@@ -11,9 +11,14 @@ use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
 pub(crate) mod events;
+mod factories;
+mod model_hooks;
+pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
 pub(crate) mod schema;
+mod streams;
+mod terminal;
 pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.
@@ -47,6 +52,10 @@ pub(crate) struct Exports {
     start: TypedFunc<(), (Result<(), String>,)>,
     /// The original retained pub.
     pub(crate) schema: schema::Exports,
+    /// Awaited hooks on the native invocation.
+    model_hooks: model_hooks::Exports,
+    /// Actual synchronous authored-stream callbacks.
+    streams: streams::Exports,
     /// Actual renderer and retained component methods.
     renderers: renderers::Exports,
     /// Actual returned shell operation method.
@@ -55,6 +64,14 @@ pub(crate) struct Exports {
     events: events::Exports,
     /// Actual preparation and execution exports.
     tools: tools::Exports,
+    /// Actual terminal input export.
+    terminal: terminal::Exports,
+    /// Actual component factory export.
+    factories: factories::Exports,
+    /// Native component disposal.
+    dispose: Abort,
+    /// Native branch change listener.
+    branch_change: Abort,
     /// Actual command, completion and shortcut exports.
     registered: registrations::Exports,
     /// Actual authored setup entry point.
@@ -103,16 +120,24 @@ impl Exports {
             .ok_or_else(|| wasmtime::format_err!("missing extension guest interface"))?;
         let registered = registrations::Exports::new(store, instance, &guest)?;
         let tools = tools::Exports::new(store, instance, &guest)?;
+        let terminal = terminal::Exports::new(store, instance, &guest)?;
+        let factories = factories::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
             renderers,
+            streams: streams::Exports::new(store, instance, &guest)?,
+            model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
             bash,
             tools,
+            terminal,
+            factories,
+            dispose: typed(store, instance, &guest, "invoke-dispose")?,
+            branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
             setup: typed(store, instance, &guest, "invoke-setup")?,
             with_session: typed(store, instance, &guest, "invoke-with-session")?,
@@ -132,15 +157,7 @@ impl Exports {
         call: Call<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
-            Call::Start(reply) => {
-                let result = self.start.call_concurrent(accessor, ()).await?.0;
-                // The authored message answers the load before the failed Store is torn down.
-                if let Err(message) = result {
-                    let _ = reply.send(Err(message.clone()));
-                    return Err(wasmtime::Error::msg(message));
-                }
-                let _ = reply.send(Ok(()));
-            }
+            Call::Start(reply) => self.start(accessor, reply).await?,
             Call::Finished => {
                 return Err(wasmtime::format_err!("completion is not a guest export"));
             }
@@ -148,21 +165,16 @@ impl Exports {
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
-            Call::Schema(call) => self.schema.invoke(accessor, call).await?,
+            call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
+                self.invoke_value_callback(accessor, call).await?;
+            }
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
-            Call::Synchronous(call) => self.prefix(accessor, call).await?,
-            Call::Tail(handler, reply) => {
-                let callback = accessor.with(|mut access| {
-                    access.get().ctx().table.push(Callback { id: handler.id })
-                })?;
-                let result = self
-                    .tail
-                    .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
-                    .await;
-                accessor.with(|mut access| access.get().ctx().table.delete(callback))?;
-                let _ = reply.send(result?.0);
+            call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
+                self.ui(accessor, call).await?;
             }
+            Call::Synchronous(call) => self.prefix(accessor, call).await?,
+            Call::Tail(handler, reply) => self.tail(accessor, &handler, reply).await?,
 
             Call::Setup(handler, writer, reply) => {
                 let result = session(accessor, self.setup, handler, writer).await?;
@@ -176,6 +188,66 @@ impl Exports {
         }
         Ok(())
     }
+    /// Invoke a value callback through its original typed export.
+    async fn invoke_value_callback<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::Stream(call) => self.streams.invoke(accessor, call).await,
+            Call::ModelHook(call) => self.model_hooks.invoke(accessor, call).await,
+            Call::Schema(call) => self.schema.invoke(accessor, call).await,
+            _ => Err(wasmtime::format_err!("extension call cannot run nested")),
+        }
+    }
+    /// Enters one terminal input listener or component factory export.
+    async fn ui<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
+            Call::Factory(call) => self.factories.invoke(accessor, call).await,
+            Call::ToolRender(call) => self.factories.render(accessor, call).await,
+            _ => Err(wasmtime::format_err!("expected a UI callback")),
+        }
+    }
+
+    /// Enters the authored factory; its failure answers the load before the Store is torn down.
+    async fn start<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        reply: crate::lifecycle::replies::Reply<()>,
+    ) -> wasmtime::Result<()> {
+        let result = self.start.call_concurrent(accessor, ()).await?.0;
+        if let Err(message) = result {
+            let _ = reply.send(Err(message.clone()));
+            return Err(wasmtime::Error::msg(message));
+        }
+        let _ = reply.send(Ok(()));
+        Ok(())
+    }
+
+    /// Awaits an independently owned listener tail and sends its result.
+    async fn tail<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        handler: &Callback,
+        reply: crate::lifecycle::replies::Reply<()>,
+    ) -> wasmtime::Result<()> {
+        let callback = accessor
+            .with(|mut access| access.get().ctx().table.push(Callback { id: handler.id }))?;
+        let result = self
+            .tail
+            .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
+            .await;
+        accessor.with(|mut access| access.get().ctx().table.delete(callback))?;
+        let _ = reply.send(result?.0);
+        Ok(())
+    }
+
     /// Retires a callback identity, entering the guest's release export once it is unused.
     async fn release<T: crate::callback_imports::CallbackView + 'static>(
         &self,
@@ -221,8 +293,13 @@ impl Exports {
             SynchronousKind::Listener => self.listener,
             SynchronousKind::CompactionComplete => self.compaction_complete,
             SynchronousKind::CompactionError => self.compaction_error,
-            SynchronousKind::Abort => {
-                let result = self.abort.call_concurrent(accessor, (handler, frame)).await;
+            SynchronousKind::Abort | SynchronousKind::Dispose | SynchronousKind::BranchChange => {
+                let export = match call.kind {
+                    SynchronousKind::Abort => self.abort,
+                    SynchronousKind::Dispose => self.dispose,
+                    _ => self.branch_change,
+                };
+                let result = export.call_concurrent(accessor, (handler, frame)).await;
                 return finish(accessor, (callback, emitter), call.completion, result);
             }
         };
