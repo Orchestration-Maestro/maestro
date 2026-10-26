@@ -5,7 +5,7 @@ use crate::read_imports::{add_read, add_routed_operand};
 use maestro_extensions::types;
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Lower, Resource},
+    component::{ComponentType, Lift, LinkerInstance, Lower},
 };
 use wasmtime_wasi::WasiView;
 
@@ -194,18 +194,13 @@ fn add_providers<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (name, config, stream): (
-            String,
-            String,
-            Option<Resource<crate::guest_calls::Callback>>,
-        )| {
-            let stream = stream
-                .map(|stream| crate::callback_imports::retain(store.data_mut(), &stream))
-                .transpose()?;
+         (name, config, callbacks): (String, String, crate::provider_registration::Wire)| {
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
             let route = store
                 .data()
                 .api()
-                .route(|reply| Request::RegisterProvider(name, config, stream, reply));
+                .route(|reply| Request::RegisterProvider(name, config, callbacks, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;

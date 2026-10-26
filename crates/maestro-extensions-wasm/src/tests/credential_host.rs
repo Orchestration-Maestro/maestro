@@ -7,6 +7,22 @@ use crate::bindings::host_side::maestro::extension::host;
 use serde_json::json;
 use wasmtime::component::{Accessor, Resource};
 impl host::HostAuthStorage for State {
+    fn get_oauth_providers(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Vec<Resource<Reader>>, String>> {
+        let result = self
+            .table
+            .get(&this)?
+            .oauth_providers()
+            .and_then(|providers| {
+                providers
+                    .into_iter()
+                    .map(|provider| self.push(provider).map_err(|error| error.to_string()))
+                    .collect()
+            });
+        Ok(result)
+    }
     fn set_fallback_resolver(
         &mut self,
         this: Resource<Reader>,
@@ -142,6 +158,22 @@ impl host::HostAuthStorage for State {
     }
 }
 impl host::HostAuthStorageWithStore<State> for Imports {
+    fn login(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        provider: String,
+        _callbacks: Resource<super::host::Identity>,
+        _options: (bool, bool, bool),
+        _signal: Option<Resource<super::host::Flag>>,
+    ) -> impl Future<Output = wasmtime::Result<Result<(), String>>> {
+        std::future::ready(accessor.with(|mut access| {
+            Ok(access
+                .get()
+                .table
+                .get(&this)?
+                .unit("login", &[json!(provider)]))
+        }))
+    }
     async fn get_api_key(
         accessor: &Accessor<State, Self>,
         this: Resource<Reader>,
@@ -200,6 +232,114 @@ impl host::HostAuthLockUpdateWithStore<State> for Imports {
                 .get(&this)?
                 .optional("lock_update_async", &[json!(current)]))
         }))
+    }
+}
+
+impl host::HostOauthProvider for State {
+    fn modify_models(
+        &mut self,
+        this: Resource<Reader>,
+        data: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .optional("oauth_models", &[json!(data)])
+            .and_then(|value| value.ok_or_else(|| "missing OAuth model result".into()));
+        self.routed_value(result.map(host::RouteValue::Text))
+    }
+
+    fn info(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.table.get(&this)?.string("oauth_info"))
+    }
+    fn get_api_key(
+        &mut self,
+        this: Resource<Reader>,
+        credentials: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .optional("oauth_key", &[json!(credentials)])
+            .and_then(|value| value.ok_or_else(|| "missing OAuth key".into()));
+        self.routed_value(result.map(host::RouteValue::Text))
+    }
+    fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl host::HostOauthProviderWithStore<State> for Imports {
+    fn login(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        _callbacks: Resource<super::host::Identity>,
+        _options: (bool, bool, bool),
+        _signal: Option<Resource<super::host::Flag>>,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(accessor.with(|mut access| {
+            Ok(access
+                .get()
+                .table
+                .get(&this)?
+                .optional("oauth_login", &[])
+                .and_then(|value| value.ok_or_else(|| "missing OAuth login result".into())))
+        }))
+    }
+    fn refresh_token(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        credentials: String,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(accessor.with(|mut access| {
+            Ok(access
+                .get()
+                .table
+                .get(&this)?
+                .optional("oauth_refresh", &[json!(credentials)])
+                .and_then(|value| value.ok_or_else(|| "missing OAuth refresh result".into())))
+        }))
+    }
+}
+
+impl host::HostOauthInteraction for State {
+    fn options(&mut self, _this: Resource<Reader>) -> wasmtime::Result<(bool, bool, bool)> {
+        Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        ))
+    }
+    fn signal(
+        &mut self,
+        _this: Resource<Reader>,
+    ) -> wasmtime::Result<Option<Resource<super::host::Flag>>> {
+        Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        ))
+    }
+    fn notify(
+        &mut self,
+        _this: Resource<Reader>,
+        _phase: host::OauthCallback,
+        _data: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        ))
+    }
+    fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+impl host::HostOauthInteractionWithStore<State> for Imports {
+    fn input(
+        _accessor: &Accessor<State, Self>,
+        _this: Resource<Reader>,
+        _phase: host::OauthCallback,
+        _data: String,
+    ) -> impl Future<Output = wasmtime::Result<Result<Option<String>, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        )))
     }
 }
 

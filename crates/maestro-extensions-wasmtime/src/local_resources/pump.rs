@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Model, ReadonlySessionManager, ResolvedRequestAuth};
+use maestro_extensions::{Cancellation, Model, ReadonlySessionManager, ResolvedRequestAuth};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -195,9 +195,7 @@ impl State {
             }
             Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
             Message::EndLockUpdate(id) => self.end_lock_update(id),
-            Message::SchemaListing(id, reply) => {
-                let _ = reply.send(self.schema_listing(id));
-            }
+            Message::SchemaListing(id, reply) => self.reply_schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.api_request(id, request),
@@ -206,32 +204,31 @@ impl State {
             Message::ApiModel(id, model, reply, admission) => {
                 self.start_api_model(id, *model, reply, admission);
             }
-            Message::Exec(id, request, reply, admission) => {
-                self.start_exec(id, request, reply, admission);
-            }
+            Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
-            Message::Auth(id, model, reply, admission) => {
-                self.start_auth(id, *model, reply, admission);
-            }
+            Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
-            Message::NewSignal(signal, reply) => {
-                let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
-            }
+            Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
+            message @ (Message::OAuthLogin(..)
+            | Message::OAuthRefresh(..)
+            | Message::OAuthProvider(..)
+            | Message::OAuthInteraction(..)) => self.oauth(message),
             Message::Credentials(id, request) => self.credentials(id, request),
+            Message::CredentialLogin(id, provider, controls, reply, admission) => {
+                self.start_credential_login(id, (provider, controls), reply, admission);
+            }
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
             Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => self.node(id, request),
-            Message::Replaced(id, request, admission) => {
-                self.start_replaced(id, request, admission);
-            }
+            Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
@@ -242,6 +239,15 @@ impl State {
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Creates the supplied cancellation binding on its original local owner.
+    fn new_signal(
+        &self,
+        signal: Option<Cancellation>,
+        reply: &std::sync::mpsc::Sender<Result<super::SignalEndpoint, String>>,
+    ) {
+        let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
     }
 
     /// Releases an ended lock update outside its frame-table borrow.
@@ -275,6 +281,15 @@ impl State {
         self.routes.borrow_mut().push(route);
         self.dispatch(message);
         self.routes.borrow_mut().pop();
+    }
+
+    /// Sends the original live schema listing to its waiting reader.
+    fn reply_schema_listing(
+        &self,
+        id: u64,
+        reply: &std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
+    ) {
+        let _ = reply.send(self.schema_listing(id));
     }
 
     /// Observe live metadata through its original API capability.

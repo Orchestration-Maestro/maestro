@@ -1,11 +1,16 @@
 //! Browser-facing attachments, offline session documents, localization and SVG glyphs.
 
 pub mod browser;
+/// The chat screen composing the session view and the artifacts panel.
+#[cfg(target_arch = "wasm32")]
+pub mod chat_panel;
 pub mod components;
 pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
 pub mod dom;
+#[cfg(target_arch = "wasm32")]
+pub use chat_panel::{ChatPanel, ChatPanelConfig, ToolsFactory};
 #[cfg(target_arch = "wasm32")]
 pub use components::agent_interface::AgentInterface;
 pub use components::agent_interface::{

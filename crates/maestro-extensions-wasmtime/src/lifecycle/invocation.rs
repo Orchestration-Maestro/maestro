@@ -56,6 +56,7 @@ impl Call {
                 attach(reply, completion);
             }
             Self::Stream(call) => attach(&call.reply, completion),
+            Self::OAuth(call) => attach(&call.reply, completion),
             Self::Provider(call) => attach(&call.reply, completion),
             Self::Assistant(call) => attach(&call.reply, completion),
             Self::ModelHook(call) => attach(&call.reply, completion),

@@ -19,7 +19,7 @@ mod contexts;
 mod editor_factories;
 mod editors;
 mod foreign_editors;
-mod provider_streams;
+mod provider_registration;
 mod signals;
 pub(crate) mod streams;
 #[cfg(target_arch = "wasm32")]
@@ -37,6 +37,7 @@ mod imports;
 mod keys;
 mod lists;
 mod model_registry;
+pub(crate) mod oauth;
 pub(crate) mod overlays;
 mod providers;
 mod schema;
@@ -79,6 +80,8 @@ pub use generated::Glue;
 #[cfg(test)]
 pub(crate) use imports::Dialog;
 pub(crate) use imports::Imports;
+#[cfg(test)]
+pub(crate) use imports::ProviderRegistration;
 #[cfg(test)]
 pub(crate) use imports::ToolCallbacks;
 

@@ -27,7 +27,7 @@ pub(crate) enum Request {
     Register(
         String,
         String,
-        Option<crate::guest_calls::Handle>,
+        crate::provider_registration::Callbacks,
         Reply<()>,
     ),
     /// Removes directly through native replay policy.
@@ -104,8 +104,8 @@ impl Request {
             Self::Display(provider, reply) => {
                 let _ = reply.send(Ok(catalog.get_provider_display_name(&provider)));
             }
-            Self::Register(name, config, stream, reply) => {
-                let result = crate::provider_registration::config(&config, stream, registry)
+            Self::Register(name, config, callbacks, reply) => {
+                let result = crate::provider_registration::config(&config, callbacks, registry)
                     .and_then(|config| {
                         catalog
                             .register_provider(&name, config)

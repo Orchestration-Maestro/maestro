@@ -104,6 +104,9 @@ fn register(
         _ => Rc::new(|model, context, options| setup(model, &context, options))
             as StreamFunction<StreamOptionsInput>,
     });
+    config.callbacks.oauth = mode.ends_with("-oauth").then(|| {
+        Rc::new(super::oauth::Provider) as Rc<dyn maestro_extensions_wasm::OAuthProviderInterface>
+    });
     if let Some(catalog) = catalog {
         catalog.register_provider("compiled-stream", config)
     } else {
@@ -185,8 +188,9 @@ pub async fn command(
     request: &str,
 ) -> Result<String, String> {
     match request {
-        "create" | "catalog" | "agent" | "http" => {
-            let catalog = (request == "catalog")
+        "create" | "catalog" | "create-oauth" | "catalog-oauth" | "agent" | "http" => {
+            let catalog = request
+                .starts_with("catalog")
                 .then(|| context.model_registry())
                 .transpose()?;
             register(api, catalog, request)?;

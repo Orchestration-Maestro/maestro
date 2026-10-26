@@ -49,9 +49,12 @@ impl OAuthProviderInterface for Account {
         credentials.access = "refreshed".into();
         Box::pin(async move { Ok(credentials) })
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
         self.events.lock().unwrap().push("key");
-        Ok(&credentials.access)
+        Ok(Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,
@@ -333,7 +336,7 @@ async fn exercise_account(account: &OAuthProviderHandle) {
     let credentials = account.login(Arc::new(NoInteraction), None).await.unwrap();
     let credentials = account.refresh_token(credentials, None).await.unwrap();
     assert!(matches!(
-        account.get_api_key(&credentials).unwrap(),
+        account.get_api_key(&credentials).unwrap().as_ref(),
         "refreshed"
     ));
 }

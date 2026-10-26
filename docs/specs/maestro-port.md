@@ -452,7 +452,9 @@ option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and the guest. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared
 optional-field helper; `Presence<T>` stays single-source here. Its `oauth` module owns
-`OAuthCredentials` and its `auth_storage` module owns `ApiKeyCredential`,
+`OAuthCredentials`, `OAuthPrompt`, `OAuthAuthInfo`, `OAuthSelectOption` and
+`OAuthSelectPrompt`, re-exported by models and the guest. Its `auth_storage`
+module owns `ApiKeyCredential`,
 `AuthCredential`, `AuthStorageData`, `AuthSource` and `AuthStatus` with their
 serialization; models and credentials re-export them, and parsing, stored-record
 construction, locking, key selection and persistence stay with credentials. Its

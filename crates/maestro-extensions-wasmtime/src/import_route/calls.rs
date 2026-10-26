@@ -20,6 +20,7 @@ use component::{LocalFocus, LocalKey, LocalRender, LocalUnit};
 mod credentials;
 mod custom;
 mod editors;
+mod provider;
 mod ui;
 use ui::{
     LocalExpanded, LocalFactory, LocalHighlight, LocalStyle, LocalTerminalInput, LocalToolRender,
@@ -175,6 +176,9 @@ pub(super) struct LocalBash {
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Original OAuth interaction.
+    #[component(name = "oauth")]
+    OAuth(credentials::LocalOAuth),
     /// Authored backend and still-borrowed native update.
     #[component(name = "auth-backend")]
     AuthBackend(credentials::LocalBackend),
@@ -289,6 +293,9 @@ pub(super) enum LocalCall {
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Original OAuth interaction result.
+    #[component(name = "oauth")]
+    OAuth(Result<Option<String>, String>),
     /// Exact optional fallback value or authored error.
     #[component(name = "auth-fallback")]
     AuthFallback(Result<Option<String>, String>),
@@ -378,6 +385,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::OAuth(call) => credentials::oauth(table, call)?,
         Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
@@ -397,7 +405,7 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
-        call @ (Call::Provider(_) | Call::Assistant(_)) => provider(table, call)?,
+        call @ (Call::Provider(_) | Call::Assistant(_)) => provider::lower(table, call)?,
         Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
         Call::Custom(call) => custom::lower(table, call)?,
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
@@ -423,28 +431,6 @@ pub(super) fn lower(
         }),
         Call::Registered(call) => registered(table, call)?,
         call => asynchronous(table, call)?,
-    })
-}
-
-/// Marshals one registered provider setup or returned-stream operation.
-fn provider(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
-    Ok(match call {
-        Call::Provider(call) => LocalCall::Provider(crate::provider_calls::LocalProvider {
-            target: call.handler.id,
-            data: call.data.clone(),
-            input: call.input.lower(table)?,
-        }),
-        Call::Assistant(call) => LocalCall::Assistant(crate::provider_calls::LocalAssistant {
-            target: call.handler.id,
-            operation: call.operation,
-            data: call.data.clone(),
-            signal: call
-                .signal
-                .clone()
-                .map(|signal| table.push(signal))
-                .transpose()?,
-        }),
-        _ => return Err(wasmtime::format_err!("expected a provider call")),
     })
 }
 
@@ -519,7 +505,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
 ) -> wasmtime::Result<()> {
     match (call, value) {
         (Call::Custom(call), value) => custom::settle(store, call, value)?,
-        (Call::Credential(call), value) => credentials::settle(call, value)?,
+        (call @ (Call::Credential(_) | Call::OAuth(_)), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component

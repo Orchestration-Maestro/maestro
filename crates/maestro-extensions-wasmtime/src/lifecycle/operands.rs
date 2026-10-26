@@ -22,6 +22,7 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::OAuth(call) => Call::OAuth(oauth(call, completion)),
             Self::Provider(call) => Call::Provider(provider(call, completion)),
             Self::Assistant(call) => Call::Assistant(assistant(call, completion)),
             Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
@@ -348,6 +349,20 @@ fn schema(
         operation: call.operation,
         node: call.node,
         emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original provider or interaction callback with its native capability.
+fn oauth(
+    call: crate::oauth_callbacks::Invocation,
+    completion: &Completion,
+) -> crate::oauth_callbacks::Invocation<Callback> {
+    crate::oauth_callbacks::Invocation {
+        handler: completion.callback(call.handler),
+        phase: call.phase,
+        data: call.data,
+        interaction: call.interaction,
         reply: call.reply,
     }
 }

@@ -1,0 +1,66 @@
+.maestro-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--maestro-color-background);
+  color: var(--maestro-color-text);
+}
+.maestro-chat-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--maestro-color-muted);
+}
+.maestro-chat-layout {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.maestro-chat-main, .maestro-chat-side {
+  height: 100%;
+}
+.maestro-chat-side[hidden], .maestro-chat-pill[hidden] {
+  display: none;
+}
+.maestro-chat-side.maestro-dialog-backdrop {
+  height: auto;
+}
+.maestro-chat-side.maestro-dialog-backdrop > .maestro-artifacts-panel {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  overflow: hidden;
+  border: 0;
+}
+.maestro-chat-pill {
+  position: absolute;
+  z-index: 30;
+  top: 1rem;
+  left: 50%;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+.maestro-chat-pill:focus-visible {
+  outline: 2px solid var(--maestro-color-accent);
+  outline-offset: 2px;
+}
+.maestro-chat-pill .maestro-badge {
+  gap: 0.25rem;
+}
+.maestro-chat-pill-count {
+  padding: 0 0.25rem;
+  border-radius: var(--maestro-radii-control);
+  background: color-mix(in srgb, var(--maestro-color-on-accent) 20%, transparent);
+  font-family: var(--maestro-type-mono-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}

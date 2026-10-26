@@ -39,6 +39,12 @@ must resolve before the page's colors, fonts and mark; failures return diagnosti
 messages rather than a fallback palette. Replacing these assets changes the identity
 at build time; there is no runtime asset loader or network font acquisition.
 
+Native `OAuthLoginCallbacks::callback_presence()` reports progress, manual-code
+and selection presence in that order, without starting callbacks or futures.
+Its default declares all three absent. Implementers that supply optional methods
+also override this query. The guest callback record derives the same flags from
+its optional fields. A supplied selector returning `None` is still present.
+
 ## Provider registry
 
 The registry starts with `anthropic`, `github-copilot` and `openai-codex`, in that
@@ -48,6 +54,11 @@ built-in implementation or removes a custom entry; unknown IDs are ignored.
 `reset_oauth_providers` restores the original roster and order.
 `get_oauth_provider` looks up an exact ID; `get_oauth_providers` returns an ordered
 membership snapshot whose handles share provider state.
+
+`OAuthProviderInterface::get_api_key` returns `Cow<'a, str>`. Built-in providers
+borrow the access field; custom providers may return a computed, owned key that
+is not present in their credentials. Callers that retain the key use
+`into_owned()`, so an already owned result is not copied.
 
 `refresh_oauth_token` delegates one refresh without checking expiry or extracting
 a key. `get_oauth_api_key` selects a provider, returns `None` for missing supplied

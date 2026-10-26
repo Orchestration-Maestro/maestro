@@ -45,13 +45,13 @@ pub(super) fn lower(
     })
 }
 
-/// Delivers a nested credential callback's original result.
-pub(super) fn settle(
-    call: crate::guest_calls::credentials::CredentialCall<Callback>,
-    value: super::LocalResult,
-) -> wasmtime::Result<()> {
+/// Delivers a nested credential or OAuth callback's original result.
+pub(super) fn settle(call: Call<Callback>, value: super::LocalResult) -> wasmtime::Result<()> {
     use super::LocalResult;
-    match (Call::Credential(call), value) {
+    match (call, value) {
+        (Call::OAuth(call), LocalResult::OAuth(value)) => {
+            let _ = call.reply.send(value);
+        }
         (
             Call::Credential(crate::guest_calls::credentials::CredentialCall::Backend(call)),
             LocalResult::Unit(value),
@@ -71,4 +71,35 @@ pub(super) fn settle(
         }
     }
     Ok(())
+}
+
+/// Owned input for a nested synchronous OAuth notification.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalOAuth {
+    /// Original authored identity.
+    target: u32,
+    /// Native-selected interaction form.
+    phase: crate::oauth_callbacks::Phase,
+    /// Exact supplied record or progress text.
+    data: String,
+    /// Original native interaction for an authored provider login.
+    interaction: Option<Resource<crate::oauth_interaction::Interaction>>,
+}
+
+/// Marshals the original OAuth identity and optional native interaction.
+pub(super) fn oauth(
+    table: &mut ResourceTable,
+    call: &crate::oauth_callbacks::Invocation<Callback>,
+) -> wasmtime::Result<LocalCall> {
+    Ok(LocalCall::OAuth(LocalOAuth {
+        target: call.handler.id,
+        phase: call.phase,
+        data: call.data.clone(),
+        interaction: call
+            .interaction
+            .clone()
+            .map(|interaction| table.push(interaction))
+            .transpose()?,
+    }))
 }

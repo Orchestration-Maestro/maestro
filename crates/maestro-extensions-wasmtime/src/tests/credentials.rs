@@ -126,7 +126,7 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
     );
     assert!(!path.exists());
     assert!(accepted.has_auth("valid").unwrap());
-    rejected_json_keeps_credentials(&accepted);
+    rejected_json_keeps_credentials(&accepted, &first.registry());
     rejected_catalog_keeps_paths_lazy(
         &api,
         &other.registry(),
@@ -137,9 +137,13 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
 }
 
 /// Malformed transport text is rejected before accepting any credential mutation.
-fn rejected_json_keeps_credentials(owner: &maestro_extensions::AuthStorage) {
+fn rejected_json_keeps_credentials(
+    owner: &maestro_extensions::AuthStorage,
+    registry: &crate::local_resources::Registry,
+) {
     let (reply, result) = std::sync::mpsc::channel();
-    crate::credential_reads::Request::Set("valid".into(), "{".into(), reply).answer(owner);
+    crate::credential_reads::Request::Set("valid".into(), "{".into(), reply)
+        .answer(owner, registry);
     assert_eq!(
         result.recv().unwrap(),
         Err("EOF while parsing an object at line 1 column 1".into())

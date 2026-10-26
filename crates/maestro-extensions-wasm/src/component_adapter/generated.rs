@@ -12,6 +12,8 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+#[path = "generated_oauth.rs"]
+mod oauth;
 #[path = "generated_route.rs"]
 mod route;
 #[path = "generated_streams.rs"]
@@ -27,6 +29,7 @@ pub(crate) mod model_streams;
 mod widgets;
 
 #[path = "generated_overlays.rs"]
+#[macro_use]
 mod overlays;
 
 #[path = "generated_widget_events.rs"]
@@ -48,13 +51,58 @@ pub(crate) mod provider_streams;
 struct Generated;
 
 impl Imports for Generated {
+    type OAuthProvider = host::OauthProvider;
+    fn credentials_oauth_providers(
+        &self,
+        owner: &Self::Credentials,
+    ) -> ExtensionResult<Vec<Self::OAuthProvider>> {
+        owner.get_oauth_providers()
+    }
+    fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String> {
+        provider.info()
+    }
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.login(handler, options, signal))
+    }
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Self::Credentials,
+        provider: String,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(owner.login(provider, handler, options, signal))
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.refresh_token(credentials))
+    }
+    fn oauth_models(&self, provider: &Self::OAuthProvider, data: &str) -> ExtensionResult<String> {
+        route::text(&provider.modify_models(data))
+    }
+    fn oauth_key(
+        &self,
+        provider: &Self::OAuthProvider,
+        credentials: &str,
+    ) -> ExtensionResult<String> {
+        route::text(&provider.get_api_key(credentials))
+    }
+
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
-        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, stream: Option<&Self::Callback>) => register_provider(name, config, stream);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => register_provider(name, config, callbacks);
         registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
     } }
     forward_resources! { routed functions {
-        register_provider(name: &str, config: &str, stream: Option<&Self::Callback>) => host::register_provider;
+        register_provider(name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => host::register_provider;
         unregister_provider(name: &str) => host::unregister_provider;
     } }
     fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {
@@ -361,36 +409,7 @@ impl Imports for Generated {
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
-    type CustomClose = host::CustomClose;
-    fn custom_close(&self, close: &host::CustomClose) -> ExtensionResult<bool> {
-        overlays::close(close)
-    }
-    fn ui_custom<'a>(
-        &'a self,
-        resource: &'a host::ExtensionUiContext,
-        factory: &'a host::Callback,
-        options: Option<super::custom::CustomOptionsRef<'a, Self>>,
-    ) -> ExtensionFuture<'a, ()> {
-        overlays::custom(resource, factory, options)
-    }
-    type OverlayOptions = host::OverlayOptions;
-    forward_resources! { functions {
-        new_overlay_options(encoded: &str) -> ExtensionResult<host::OverlayOptions> => host::new_overlay_options;
-    } }
-    forward_resources! {
-        overlay_options_get(options: &host::OverlayOptions) -> ExtensionResult<String> => get();
-        overlay_options_set(options: &host::OverlayOptions, encoded: &str) -> ExtensionResult<()> => set(encoded);
-        overlay_options_share(options: &host::OverlayOptions) -> host::OverlayOptions => share();
-        overlay_options_set_visible(options: &host::OverlayOptions, visible: Option<&host::Callback>) -> ExtensionResult<()> => set_visible(visible);
-    }
-    type OverlayHandle = host::OverlayHandle;
-    fn overlay_handle_request(
-        &self,
-        handle: &host::OverlayHandle,
-        request: super::overlays::OverlayRequest,
-    ) -> ExtensionResult<Option<bool>> {
-        overlays::request(handle, request)
-    }
+    overlay_forwarding!();
     type Tui = host::Tui;
     fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {
         tui.full_redraws()
