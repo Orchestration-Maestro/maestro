@@ -1134,3 +1134,5 @@ and the style algorithms, so every call reads its current state:
 The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
 owner's message. A theme kept past its renderer call observes later theme changes and provenance
 edits made through any of its clones. Widget composition is not exposed here.
+
+See [native helpers](guest_operations.md) for synchronous terminal operations.

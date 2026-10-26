@@ -234,6 +234,9 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("tools/artifacts/console.css"));
     css.push_str(include_str!("components/diff.css"));
     css.push_str(include_str!("dom.css"));
+    css.push_str(include_str!("dialogs/dialogs.css"));
+    css.push_str(include_str!("components/message_editor.css"));
+    css.push_str(include_str!("components/agent_interface.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))
 }
@@ -302,4 +305,69 @@ pub(crate) fn define_element<E: custom_element::CustomElement + 'static>(
     window.custom_elements().define(name, &constructor)?;
     CONSTRUCTORS.with(|all| all.borrow_mut().push(closure));
     Ok(())
+}
+/// One small catalog icon inside a span carrying `class`.
+/// # Errors
+/// Returns a missing icon or native creation failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn icon(
+    document: &Document,
+    name: &str,
+    class: &str,
+) -> Result<web_sys::Element, ToolUiError> {
+    use crate::browser::attachment_content::browser::{element, host_error};
+    let node = crate::tools::renderer_registry::header::dom::glyph(name)?;
+    let span = element(document, "span", class)?;
+    let svg = crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)
+        .map_err(|error| host_error(&error))?;
+    span.append_child(&svg)
+        .map_err(|error| host_error(&error))?;
+    Ok(span)
+}
+/// Parts of an outline glyph: element names with their attributes.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type GlyphParts<'a> = &'a [(&'a str, &'a [(&'a str, &'a str)])];
+/// A decorative stroked glyph of `size` pixels drawn from `parts` in a 24-unit box.
+/// # Errors
+/// Returns a native failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn outline_glyph(
+    document: &Document,
+    size: &str,
+    parts: GlyphParts<'_>,
+) -> Result<web_sys::Element, ToolUiError> {
+    use crate::browser::attachment_content::browser::host_error;
+    const SVG: &str = "http://www.w3.org/2000/svg";
+    let svg = document
+        .create_element_ns(Some(SVG), "svg")
+        .map_err(|e| host_error(&e))?;
+    for (name, value) in [
+        ("width", size),
+        ("height", size),
+        ("viewBox", "0 0 24 24"),
+        ("fill", "none"),
+        ("stroke", "currentColor"),
+        ("stroke-width", "2"),
+        ("aria-hidden", "true"),
+    ] {
+        svg.set_attribute(name, value).map_err(|e| host_error(&e))?;
+    }
+    for (tag, attributes) in parts {
+        let node = document
+            .create_element_ns(Some(SVG), tag)
+            .map_err(|e| host_error(&e))?;
+        for (name, value) in *attributes {
+            node.set_attribute(name, value)
+                .map_err(|e| host_error(&e))?;
+        }
+        svg.append_child(&node).map_err(|e| host_error(&e))?;
+    }
+    Ok(svg)
+}
+/// Log a failure of an update that has no visible outcome of its own.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn report(result: Result<(), ToolUiError>) {
+    if let Err(error) = result {
+        web_sys::console::error_1(&error.to_string().into());
+    }
 }
