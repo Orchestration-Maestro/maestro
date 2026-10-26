@@ -98,9 +98,9 @@ impl ReadEndpoint for Endpoint {
         self.0
             .request(|id, reply| Message::Footer(id, request(reply)))
     }
-    fn route(
+    fn route<T: Into<crate::import_route::Value> + Send + 'static>(
         &self,
-        request: impl FnOnce(Sender<Result<(), String>>) -> Request,
+        request: impl FnOnce(Sender<Result<T, String>>) -> Request,
     ) -> crate::import_route::Route {
         self.0
             .route(|id, reply| Message::Footer(id, request(reply)))

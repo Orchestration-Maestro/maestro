@@ -14,7 +14,9 @@ use wasmtime::{
 };
 
 mod calls;
+mod values;
 use calls::LocalResult;
+pub(crate) use values::Value;
 
 /// A nested same-instance call; its strong ownership travels in its completion.
 pub(crate) struct Nested {
@@ -73,19 +75,26 @@ pub(crate) struct Route {
     /// Nested calls of the operation, closed when the operation returns.
     nested: Receiver<Nested>,
     /// The operation's own result, sent before its nested calls close.
-    result: Receiver<Result<(), String>>,
+    result: Box<dyn FnOnce() -> Result<Value, String> + Send>,
     /// Outstanding nested call, settled exactly once by the guest.
     pending: Option<Nested>,
 }
 
 impl Route {
     /// Opens the nested-call channel beside the operation's own reply.
-    pub(crate) fn new(result: Receiver<Result<(), String>>) -> (Sender<Nested>, Self) {
+    pub(crate) fn new<T: Into<Value> + Send + 'static>(
+        result: Receiver<Result<T, String>>,
+    ) -> (Sender<Nested>, Self) {
         let (send, nested) = std::sync::mpsc::channel();
         let route = Self {
             schema: None,
             nested,
-            result,
+            result: Box::new(move || {
+                result
+                    .recv()
+                    .unwrap_or_else(|_| Err("extension resource reply ended".into()))
+                    .map(Into::into)
+            }),
             pending: None,
         };
         (send, route)
@@ -94,17 +103,19 @@ impl Route {
     /// Returns a catchable failure discovered before native admission.
     pub(crate) fn failed(error: String) -> Self {
         let (send, result) = std::sync::mpsc::channel();
-        let (_, route) = Self::new(result);
+        let (_, route) = Self::new::<()>(result);
         let _ = send.send(Err(error));
         route
     }
 
     /// Waits for the next nested call, or for the operation's own result once it returned.
-    pub(crate) fn next(&mut self) -> Result<Nested, Result<(), String>> {
+    pub(crate) fn next(&mut self) -> Result<Nested, Result<Value, String>> {
         self.nested.recv().map_err(|_| {
-            self.result
-                .recv()
-                .unwrap_or_else(|_| Err("extension resource reply ended".to_owned()))
+            let result = std::mem::replace(
+                &mut self.result,
+                Box::new(|| Err("extension route already completed".into())),
+            );
+            result()
         })
     }
 
@@ -122,7 +133,10 @@ impl Route {
     pub(crate) fn result(mut self) -> Result<(), String> {
         match self.next() {
             Ok(_) => Err("unexpected nested call".to_owned()),
-            Err(result) => result,
+            Err(result) => result.and_then(|value| match value {
+                Value::Unit => Ok(()),
+                _ => Err("unexpected non-unit result".into()),
+            }),
         }
     }
 }
@@ -139,7 +153,7 @@ enum RouteStep {
     Invoke(calls::LocalCall),
     /// The operation's own final result.
     #[component(name = "done")]
-    Done(Result<(), String>),
+    Done(Result<values::Transferred, String>),
 }
 
 /// Installs the progress ticket and the later settlement on the original host interface.
@@ -160,7 +174,10 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
                     table.get_mut(&resource)?.pending = Some(nested);
                     RouteStep::Invoke(local)
                 }
-                Err(result) => RouteStep::Done(result),
+                Err(result) => RouteStep::Done(match result {
+                    Ok(value) => Ok(value.transfer(store.data_mut().ctx().table)?),
+                    Err(error) => Err(error),
+                }),
             };
             Ok((step,))
         },

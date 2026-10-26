@@ -18,6 +18,7 @@ pub(crate) mod bash;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) use events::EventCall;
+pub(crate) mod credentials;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod schema;
@@ -58,6 +59,8 @@ pub(crate) enum Call<H = Handle> {
     Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
     Tool(ToolCall<H>),
+    /// Calls an authored credential backend with its native scoped update.
+    Credential(credentials::CredentialCall<H>),
     /// The original weak schema allocation and guest callback admission.
     Schema(schema::Invocation<H>),
     /// Delivers one chunk of terminal input to an authored listener.

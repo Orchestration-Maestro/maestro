@@ -99,6 +99,8 @@ kinds! {
         Component(crate::Component),
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
+        CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
+        CredentialFallback(crate::FallbackResolver),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),
         ToolRenderCall(crate::ToolRenderCall),

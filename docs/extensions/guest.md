@@ -423,6 +423,40 @@ operation for the supplied descriptor, without checking catalog membership.
 present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
+`ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
+`get_provider_auth_status`, `get_provider_display_name`, `is_using_oauth`,
+`register_provider`, `unregister_provider` and `get_api_key_for_provider` to the
+same host catalog. Models and provider data are checked for nonfinite numbers
+before the call; `AuthStatus` and `AuthSource` are the
+[shared credential records](../records.md#credential-records).
+
+`ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
+copied credentials. Its `AuthStorage` handle can outlive the creating callback.
+Reads, runtime key overrides, stored credential changes, reload, logout and error
+draining reach that same owner. `get_api_key` uses its original credential-command
+effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
+remain in `drain_errors` rather than rolling back accepted state.
+
+The guest currently acquires credentials from a catalog or wraps a supplied
+`AuthStoragePort`. `AuthStorage::create(&api, path)` and
+`ModelRegistry::create(&api, auth_storage, path)` accept independent optional file
+paths. Omitted paths use lazy defaults supplied by the application before factory
+loading. Both `in_memory` constructors avoid file access; catalogs retain the
+supplied credential owner rather than copying its current records.
+
+`AuthStorage::from_storage(&api, backend)` retains an authored `AuthStorageBackend`.
+Its synchronous and awaited methods receive a borrowed native update. `None`
+leaves stored text unchanged; `Some("")` writes empty text. The awaited update can
+remain pending without blocking the host's local executor. Backend failures keep
+the native accepted-state and drainable-error behavior.
+
+`set_fallback_resolver` retains the supplied callback until replacement or final
+release. It returns absent, empty and nonempty keys distinctly and preserves the
+callback's error text. Backend and fallback callbacks may call back into the same
+host, including from synchronous credential and catalog metadata reads. Callback
+resources stay typed; their identities are never placed in JSON. Callable provider
+stream and OAuth fields remain separate from the provider data record.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
@@ -559,6 +593,16 @@ names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) a
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
 schema and details text with semantic JSON serialization.
+
+## Provider registration
+
+`ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
+host, and `unregister_provider` sends a name. `ProviderConfig` and
+`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
+carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`false` are sent as written, header, model and input order is kept, and signed zero
+survives. A nonfinite number fails with the finite-number error before the host
+sees the call. Queuing during loading, validation and replacement stay host policy.
 
 ## Model selection and action errors
 

@@ -31,6 +31,7 @@ impl Call {
                 emitter: call.emitter,
                 reply: call.reply,
             }),
+            Self::Credential(call) => Call::Credential(credential(call, completion)),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
                 completion.retain(release.calls.take());
@@ -176,6 +177,27 @@ fn tool(call: ToolCall, completion: &Completion) -> ToolCall<Callback> {
             update,
             reply,
         },
+    }
+}
+
+/// Transfers credential admissions without extending the native operand borrow.
+fn credential(
+    call: crate::guest_calls::credentials::CredentialCall,
+    completion: &Completion,
+) -> crate::guest_calls::credentials::CredentialCall<Callback> {
+    use crate::guest_calls::credentials::{BackendCall, CredentialCall, FallbackCall};
+    match call {
+        CredentialCall::Backend(call) => CredentialCall::Backend(BackendCall {
+            handler: completion.callback(call.handler),
+            update: call.update,
+            asynchronous: call.asynchronous,
+            reply: call.reply,
+        }),
+        CredentialCall::Fallback(call) => CredentialCall::Fallback(FallbackCall {
+            handler: completion.callback(call.handler),
+            provider: call.provider,
+            reply: call.reply,
+        }),
     }
 }
 

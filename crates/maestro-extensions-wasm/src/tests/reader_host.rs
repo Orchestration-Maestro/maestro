@@ -120,6 +120,17 @@ impl Reader {
         let reply = self.reply(method, args)?;
         Ok(reply.value.as_str().map(str::to_owned))
     }
+    /// Read a boolean reply.
+    pub fn flag(&self, method: &str, args: &[Value]) -> Result<bool, String> {
+        self.reply(method, args)?
+            .value
+            .as_bool()
+            .ok_or_else(|| "missing boolean".into())
+    }
+    /// Acknowledge a selected action.
+    pub fn unit(&self, method: &str, args: &[Value]) -> Result<(), String> {
+        self.reply(method, args).map(drop)
+    }
     /// Encode a selected record, or supply deliberately malformed wire text.
     pub fn record(&self, method: &str, args: &[Value]) -> Result<Option<String>, String> {
         let reply = self.reply(method, args)?;
