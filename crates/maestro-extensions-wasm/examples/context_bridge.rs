@@ -57,6 +57,10 @@ mod schema;
 #[path = "context_bridge/streams.rs"]
 mod streams;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/stream_lifetimes.rs"]
+mod stream_lifetimes;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -168,6 +172,12 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(action) = args.strip_prefix("stream-lifetime ") {
+        let action = action.to_owned();
+        return Box::pin(
+            async move { Err(stream_lifetimes::command(&api, &context, &action).await?) },
+        );
+    }
     if let Some(request) = args.strip_prefix("stream ") {
         let request = request.to_owned();
         return Box::pin(async move { Err(streams::command(&request).await?) });

@@ -41,4 +41,5 @@ mod manual_runtime;
 #[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
 #[allow(dead_code, reason = "Shared terminal fixture.")]
 mod recording_terminal;
+mod authored_stream_lifetimes;
 mod authored_streams;

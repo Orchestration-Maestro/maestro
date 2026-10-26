@@ -10,7 +10,9 @@
 mod port;
 mod agent;
 pub mod utils;
-pub use utils::event_stream::{EventStream, EventStreamPort};
+#[cfg(target_arch = "wasm32")]
+pub use utils::event_stream::create_assistant_message_event_stream;
+pub use utils::event_stream::{AssistantMessageEventStream, EventStream, EventStreamPort};
 mod autocomplete;
 pub use autocomplete::*;
 mod event_bus;

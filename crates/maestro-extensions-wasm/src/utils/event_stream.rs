@@ -4,8 +4,8 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::{ExtensionFuture, ExtensionResult};
-use std::rc::Rc;
+use crate::{AssistantMessageEvent, ExtensionFuture, ExtensionResult, SharedAssistantMessage};
+use std::{rc::Rc, sync::Arc};
 
 /// Operations supplied by an event-stream adapter.
 pub trait EventStreamPort<T, R> {
@@ -75,4 +75,60 @@ impl<T: 'static, R: 'static> EventStream<T, R> {
     pub fn result(&self) -> ExtensionFuture<'static, Rc<R>> {
         self.0.result()
     }
+}
+
+/// A host-buffered assistant stream retaining original partial and final message owners.
+#[derive(Clone)]
+pub struct AssistantMessageEventStream {
+    /// Typed resource forwarding over the original FIFO and result owner.
+    inner: EventStream<AssistantMessageEvent, SharedAssistantMessage>,
+}
+impl AssistantMessageEventStream {
+    /// Create a component stream using the shared assistant terminal projection.
+    ///
+    /// # Errors
+    /// Returns the host's creation failure.
+    #[cfg(target_arch = "wasm32")]
+    pub fn new() -> ExtensionResult<Self> {
+        Ok(Self {
+            inner: EventStream::new(AssistantMessageEvent::is_terminal, |event| {
+                Arc::clone(event.message())
+            })?,
+        })
+    }
+
+    /// Admit an update or the first terminal event without rebuilding message content.
+    ///
+    /// # Errors
+    /// Returns the host's admission failure.
+    pub fn push(&self, event: AssistantMessageEvent) -> ExtensionResult<()> {
+        self.inner.push(event)
+    }
+    /// Stop iteration and optionally publish the first shared result.
+    ///
+    /// # Errors
+    /// Returns the host's failure.
+    pub fn end(&self, result: Option<SharedAssistantMessage>) -> ExtensionResult<()> {
+        self.inner.end(result)
+    }
+    /// Observe one original event, competing with other readers.
+    #[must_use]
+    pub fn next(&self) -> ExtensionFuture<'static, Option<Rc<AssistantMessageEvent>>> {
+        self.inner.next()
+    }
+    /// Observe the original shared result independently of event consumption.
+    #[must_use]
+    pub fn result(&self) -> ExtensionFuture<'static, SharedAssistantMessage> {
+        let result = self.inner.result();
+        Box::pin(async move { Ok(Arc::clone(result.await?.as_ref())) })
+    }
+}
+
+/// Create a component assistant stream with independently observable results.
+///
+/// # Errors
+/// Returns the host's creation failure.
+#[cfg(target_arch = "wasm32")]
+pub fn create_assistant_message_event_stream() -> ExtensionResult<AssistantMessageEventStream> {
+    AssistantMessageEventStream::new()
 }
