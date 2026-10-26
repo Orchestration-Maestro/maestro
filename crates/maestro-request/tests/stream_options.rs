@@ -1,7 +1,8 @@
 //! Shared invocation options retain data without requiring executable defaults.
 use maestro_request::types::{
     CacheRetention, ProviderResponse, ProviderStreamOptions, SimpleStreamOptions,
-    StreamOptionSlots, StreamOptions, ThinkingBudgets, ThinkingLevel, Transport,
+    StreamOptionSlots, StreamOptions, StreamOptionsInput, ThinkingBudgets, ThinkingLevel,
+    Transport,
 };
 use serde_json::json;
 use std::rc::Rc;
@@ -129,11 +130,20 @@ fn thinking_budgets(number: Option<f64>) {
 fn option_forms(common: StreamOptions<Slots>, callback: &Rc<dyn Fn()>, number: Option<f64>) {
     let mut raw = ProviderStreamOptions::<_, Option<Rc<dyn Fn()>>> {
         common,
+        objects: Some(callback.clone()),
         ..Default::default()
     };
     raw.extra.insert("open".into(), json!([false, 0, null]));
-    let copied = raw.clone();
+    let copied: StreamOptionsInput<_, _, Rc<dyn Fn()>> = raw.clone().into();
+    assert!(Rc::ptr_eq(
+        copied.common().on_payload.as_ref().unwrap(),
+        callback
+    ));
+    let StreamOptionsInput::Raw(copied) = copied.clone() else {
+        panic!("raw options changed variant");
+    };
     assert_eq!(copied.extra["open"], json!([false, 0, null]));
+    assert!(Rc::ptr_eq(copied.objects.as_ref().unwrap(), callback));
     let budgets = ThinkingBudgets {
         minimal: number,
         low: number,
@@ -146,7 +156,14 @@ fn option_forms(common: StreamOptions<Slots>, callback: &Rc<dyn Fn()>, number: O
         thinking_budgets: Some(budgets.clone()),
         tool_choice: Some(callback.clone()),
     };
-    let copied = simple.clone();
+    let copied: StreamOptionsInput<_, Option<Rc<dyn Fn()>>, _> = simple.clone().into();
+    assert!(Rc::ptr_eq(
+        copied.common().on_response.as_ref().unwrap(),
+        callback
+    ));
+    let StreamOptionsInput::Simple(copied) = copied.clone() else {
+        panic!("simple options changed variant");
+    };
     assert_eq!(copied.reasoning, Some(ThinkingLevel::High));
     assert_eq!(copied.thinking_budgets, Some(budgets));
     assert!(Rc::ptr_eq(simple.tool_choice.as_ref().unwrap(), callback));

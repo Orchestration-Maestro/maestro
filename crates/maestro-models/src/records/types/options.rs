@@ -1,5 +1,5 @@
 //! Invocation settings with retained adapter hooks.
-use super::{ProviderExecution, Threaded};
+use super::Threaded;
 use crate::providers::http::Fetch;
 use serde::de::IntoDeserializer;
 use serde::ser::SerializeStruct;
@@ -76,34 +76,9 @@ pub type ProviderStreamOptions<E = Threaded> =
 pub type SimpleStreamOptions<E = Threaded> =
     maestro_request::types::SimpleStreamOptions<StreamOptions<E>, ToolChoice>;
 
-/// Original options supplied to a dynamic callback, without conversion between forms.
-#[derive(Clone)]
-pub enum StreamOptionsInput<E: ProviderExecution = Threaded> {
-    /// Open provider-specific options.
-    Raw(ProviderStreamOptions<E>),
-    /// Typed simple invocation options.
-    Simple(SimpleStreamOptions<E>),
-}
-
-impl<E: ProviderExecution> StreamOptionsInput<E> {
-    /// Borrow the common settings without reconstructing the original variant.
-    pub(crate) fn common(&self) -> &StreamOptions<E> {
-        match self {
-            Self::Raw(value) => &value.common,
-            Self::Simple(value) => &value.common,
-        }
-    }
-}
-impl<E: ProviderExecution> From<ProviderStreamOptions<E>> for StreamOptionsInput<E> {
-    fn from(options: ProviderStreamOptions<E>) -> Self {
-        Self::Raw(options)
-    }
-}
-impl<E: ProviderExecution> From<SimpleStreamOptions<E>> for StreamOptionsInput<E> {
-    fn from(options: SimpleStreamOptions<E>) -> Self {
-        Self::Simple(options)
-    }
-}
+/// Original callback options with native execution-family defaults and opaque controls.
+pub type StreamOptionsInput<E = Threaded> =
+    maestro_request::types::StreamOptionsInput<StreamOptions<E>, ProviderObjects, ToolChoice>;
 
 /// Select whether and which tool the model must call.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]

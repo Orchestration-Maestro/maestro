@@ -7,7 +7,7 @@ use crate::{
         sandbox_value::BrowserSandboxValue,
     },
     components::{preview_code_toggle::ViewMode, sandbox::runtime_message_router::MessageConsumer},
-    dom::{DomContent as _, DomRoot, DomView, Link, Property, Reflected},
+    dom::{DomContent as _, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
     tools::{
         artifacts::{
             console::{Console, LogEntry, LogType},
@@ -217,6 +217,22 @@ impl Body {
         }
         binding.execute(&binding.content)
     }
+    /// Assign source written through the native element property.
+    fn set_source(&self, content: &str) -> Result<(), ToolUiError> {
+        if self.binding.borrow().content == content {
+            return Ok(());
+        }
+        content.clone_into(&mut self.binding.borrow_mut().content);
+        self.binding.borrow().logs.borrow_mut().clear();
+        let view = self.view.borrow().clone();
+        self.list(content, &view);
+        self.paint_logs(false)?;
+        if !content.is_empty() {
+            let binding = self.binding.borrow().clone();
+            binding.execute(content)?;
+        }
+        Ok(())
+    }
     /// Withdraw the adapter from the bound artifact and remove its frame and route, keeping the
     /// adapter for a later connection.
     fn disconnect(&self) {
@@ -258,6 +274,7 @@ pub(super) fn mount(artifact: &HtmlArtifact, view: &DomView) -> Result<DomRoot, 
     let body = Body::new(artifact, view)?;
     let node = crate::dom::create_with(&view.document, TAG, Rc::downgrade(&body))
         .map_err(|error| ToolUiError::native(&error))?;
+    crate::tools::artifacts::artifact_element::filename(&node, &artifact.filename)?;
     body.attach(&node)?;
     Ok(DomRoot {
         node: node.into(),
@@ -314,7 +331,11 @@ struct ArtifactElement {
     /// Page operands for an element created without a body.
     view: Rc<DomView>,
     /// Body retained by the mounted root, never by its element backedge.
-    body: Weak<Body>,
+    body: Rc<RefCell<Weak<Body>>>,
+    /// Unreflected source retained before connection.
+    source: Rc<RefCell<String>>,
+    /// Native source property callables.
+    _source: (Getter, Setter),
     /// Body of a default element, owned only while connected.
     default_body: Option<Rc<Body>>,
     /// Accessors of the filename property.
@@ -323,19 +344,20 @@ struct ArtifactElement {
 impl ArtifactElement {
     /// The element's body, building an empty one named by its attribute on first use.
     fn body(&mut self) -> Result<Rc<Body>, ToolUiError> {
-        if let Some(body) = self.body.upgrade() {
+        if let Some(body) = self.body.borrow().upgrade() {
             return Ok(body);
         }
         let root = crate::dom::live(&self.root)
             .ok_or_else(|| ToolUiError::Presentation("HTML element was released".to_owned()))?;
-        let artifact = HtmlArtifact {
+        let mut artifact = HtmlArtifact {
             filename: root.get_attribute("filename").unwrap_or_default(),
             ..HtmlArtifact::default()
         };
+        artifact.set_content(self.source.borrow().clone())?;
         let body = Body::new(&artifact, &self.view)?;
         root.replace_children_with_node_0();
         body.attach(&root)?;
-        self.body = Rc::downgrade(&body);
+        *self.body.borrow_mut() = Rc::downgrade(&body);
         Ok(Rc::clone(self.default_body.insert(body)))
     }
 }
@@ -345,7 +367,10 @@ impl custom_element::CustomElement for ArtifactElement {
         let _ = self.body().and_then(|body| body.connect());
     }
     fn disconnected_callback(&mut self) {
-        if let Some(body) = self.body.upgrade() {
+        if let Some(body) = self.body.borrow().upgrade() {
+            self.source
+                .borrow_mut()
+                .clone_from(&body.binding.borrow().content);
             body.disconnect();
         }
         if let Some(body) = self.default_body.take() {
@@ -353,7 +378,7 @@ impl custom_element::CustomElement for ArtifactElement {
         }
     }
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, new: JsValue) {
-        if let Some(body) = self.body.upgrade() {
+        if let Some(body) = self.body.borrow().upgrade() {
             body.binding.borrow_mut().filename = new.as_string().unwrap_or_default();
         }
     }
@@ -365,10 +390,45 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
     let view = Rc::clone(view);
     let observed = vec!["filename".to_owned()];
     crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
+        let body = Rc::new(RefCell::new(
+            crate::dom::take_creating::<Weak<Body>>().unwrap_or_default(),
+        ));
+        let initial = body
+            .borrow()
+            .upgrade()
+            .map_or_else(String::new, |body| body.binding.borrow().content.clone());
+        let source = Rc::new(RefCell::new(initial));
+        let (read, write) = (Rc::clone(&source), Rc::clone(&source));
+        let (reading, writing) = (Rc::clone(&body), Rc::clone(&body));
+        let get = Getter::new(move || {
+            reading
+                .borrow()
+                .upgrade()
+                .map_or_else(
+                    || read.borrow().clone(),
+                    |body| body.binding.borrow().content.clone(),
+                )
+                .into()
+        });
+        let set = Setter::new(move |value: JsValue| {
+            let Some(value) = value.as_string() else {
+                wasm_bindgen::throw_str("HTML content must be a string")
+            };
+            write.borrow_mut().clone_from(&value);
+            let body = writing.borrow().upgrade();
+            if let Some(body) = body
+                && let Err(error) = body.set_source(&value)
+            {
+                wasm_bindgen::throw_str(&error.to_string());
+            }
+        });
+        let _ = crate::dom::install(&root, "content", &get, &set);
         ArtifactElement {
             root: Link::new(&root),
             view: Rc::clone(&view),
-            body: crate::dom::take_creating::<Weak<Body>>().unwrap_or_default(),
+            body,
+            source,
+            _source: (get, set),
             default_body: None,
             _properties: properties,
         }

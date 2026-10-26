@@ -4,6 +4,9 @@ The guest library re-exports `ThinkingBudgets`, `CacheRetention`, `Transport` an
 `ProviderResponse` from the shared request owner. `StreamOptions`,
 `ProviderStreamOptions` and `SimpleStreamOptions` specialize the same shared
 records with guest-local capabilities; they do not copy native option definitions.
+`StreamOptionsInput` specializes the shared raw/simple enum with those same
+capabilities. Its variants preserve the supplied option form, and `common()`
+borrows common controls without converting the raw fields or simple policies.
 
 Common options include temperature, token limits, ordered headers, request metadata,
 authentication, session identity, transport, cache policy and retry settings.
@@ -128,5 +131,56 @@ is an observation, not a live cross-component object reference; later native
 partial-message edits do not modify an earlier decoded event. Authored streams
 created inside the component still retain their original local message handles.
 
-Registering a guest provider for native callers is a separate capability. These
-invocation functions do not add a second provider registry or transport client.
+## Providers called by native code
+
+Set `ProviderConfig.callbacks.stream_simple` to a local `StreamFunction<StreamOptionsInput>`
+and register it through the extension API or a retained model registry. Native raw
+and simple calls retain their original option variants. Native hooks stay callable
+and awaited in the guest, including their selected payload and supplied failures.
+Native opaque controls stay retained; they do not become guest HTTP clients.
+
+A registered guest provider can forward those original native hooks to a bundled
+protocol. The selected request reaches the actual HTTP peer, with payload selection
+before dispatch and response completion before the first body poll. Hook failures
+retain the same terminal protocol in both callback directions.
+
+The SDK agent loop consumes the registered guest stream through its normal stream
+function. Start, delta and completion observations keep their original order.
+Completed agent messages share the native final-message owner with independent,
+repeated result observations.
+
+The native consumer fronts the original authored stream. There is no forwarding
+queue or task that drains its events. Repeated final observations share one decoded
+native message, also used by the terminal event. Dropping an unassigned pending read
+removes only that waiter, as on a native stream; it does not stop the producer.
+
+A Store or codec failure yields one native terminal error with the original error
+text, the same final message and EOF. A final message already decoded by the native
+consumer wins over a later failure. Unread values in a crashed Store are lost.
+
+Local native hooks require the extension's original pump thread. Calls from another
+thread must use the Threaded family; an off-thread Local call returns an affinity
+error. These routes use the existing provider registry, not a second registry.
+
+Returned model streams retain their original hooks and arbitrary caller signal
+storage after the initiating command and registration are released. Cancellation
+subscriptions keep that caller storage alive until they are removed, including
+for caller-defined signal ports. Producer completion releases its own captures;
+final stream aliases do not cancel the producer. Capture destructors may reenter
+stream creation outside callback-storage borrows, and final containing-owner
+release still shuts down the component normally.
+
+Overlapping invocations keep separate hook and signal scopes. Dropping every
+observer and stream alias leaves the native producer running; finishing one
+producer cannot release another invocation's uncalled hooks. Explicit `push`
+and `end` on a returned stream use its original native buffer. Ending that
+buffer does not cancel its independently owned producer.
+
+Hook phases remain protocol-owned. Public and cloud content generation do not
+invoke a response hook. Response-session retries invoke the original response
+callback on each native attempt. If that callback rejects, its attempt releases
+the body without polling it; a later native retry consumes a new response.
+
+Opaque author values can hold non-Clone closures. Cloned raw options share their
+original owner; its destructor runs once when the invocation releases its final
+retained value. Ordinary JSON still omits that value.

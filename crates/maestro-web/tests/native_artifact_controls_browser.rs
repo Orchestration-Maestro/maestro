@@ -313,11 +313,8 @@ fn assert_tooltip_without_localization(view: &DomView) {
     let host = crate::support::Host::default();
     host.fail.replace("get".into());
     let refusing = DomView {
-        document: view.document.clone(),
         i18n: Rc::new(maestro_web::I18n::new(Rc::new(host)).unwrap()),
-        highlighter: Rc::clone(&view.highlighter),
-        pack: Rc::clone(&view.pack),
-        mode: view.mode,
+        ..view.clone()
     };
     let props = shaped(
         ButtonSize::Sm,

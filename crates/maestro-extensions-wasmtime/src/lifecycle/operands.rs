@@ -22,15 +22,11 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::Provider(call) => Call::Provider(provider(call, completion)),
+            Self::Assistant(call) => Call::Assistant(assistant(call, completion)),
             Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
             Self::Stream(call) => Call::Stream(stream(call, completion)),
-            Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
-                handler: completion.callback(call.handler),
-                operation: call.operation,
-                node: call.node,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
+            Self::Schema(call) => Call::Schema(schema(call, completion)),
             Self::Credential(call) => Call::Credential(credential(call, completion)),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
@@ -225,6 +221,46 @@ fn stream(
         handler: completion.callback(call.handler),
         value: completion.callback(call.value),
         operation: call.operation,
+        reply: call.reply,
+    }
+}
+
+/// Transfer setup admission beside its original native capability operands.
+fn provider(
+    call: crate::provider_calls::Invocation,
+    completion: &Completion,
+) -> crate::provider_calls::Invocation<Callback> {
+    crate::provider_calls::Invocation {
+        handler: completion.callback(call.handler),
+        data: call.data,
+        input: call.input,
+        reply: call.reply,
+    }
+}
+/// Transfer returned-stream admission beside only its observation's cancellation.
+fn assistant(
+    call: crate::provider_calls::Assistant,
+    completion: &Completion,
+) -> crate::provider_calls::Assistant<Callback> {
+    crate::provider_calls::Assistant {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        data: call.data,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Transfer schema admission without extending its invocation-local operand borrow.
+fn schema(
+    call: crate::guest_calls::schema::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::schema::Invocation<Callback> {
+    crate::guest_calls::schema::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        node: call.node,
+        emitter: call.emitter,
         reply: call.reply,
     }
 }

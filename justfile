@@ -253,6 +253,13 @@ _browser-build output pack mode *args:
 _browser-watch command pack mode *args:
     shift 3; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{command}} {{quote(pack)}} {{quote(mode)}} "$@"
 
+# Build the runnable browser chat example, then serve it on loopback.
+browser-chat-example *args:
+    cargo build --locked -p maestro-web --example chat --target wasm32-unknown-unknown --release
+    wasm-bindgen {{quote(justfile_directory() / "target/wasm32-unknown-unknown/release/examples/chat.wasm")}} --target web --out-dir {{quote(justfile_directory() / "target/maestro-browser/chat")}} --out-name chat
+    cp {{quote(justfile_directory() / "crates/maestro-web/examples/chat/index.html")}} {{quote(justfile_directory() / "target/maestro-browser/chat/index.html")}}
+    miniserve {{quote(justfile_directory() / "target/maestro-browser/chat")}} --interfaces 127.0.0.1 --index index.html "$@"
+
 # Build and execute the retained sandbox exports with supplied browser tools.
 browser-test:
     node crates/maestro-web/tests/sandbox_loading_support/run.cjs
