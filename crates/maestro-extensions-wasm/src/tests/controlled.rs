@@ -544,6 +544,7 @@ impl Imports for Controlled {
                 handler.id,
                 crate::bindings::maestro::extension::host::OauthCallback::Progress,
                 "controlled login",
+                None,
             )
             .await?;
             provider
@@ -2112,6 +2113,7 @@ impl Imports for Controlled {
         resource: &Reader,
         name: &str,
         config: &str,
+        _oauth: Option<(&Self::Callback, &str, Option<bool>)>,
     ) -> ExtensionResult<()> {
         resource.data.unit(
             "registerProvider",
@@ -2383,7 +2385,12 @@ impl Imports for Controlled {
         Ok(())
     }
 
-    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()> {
+    fn register_provider(
+        &self,
+        name: &str,
+        config: &str,
+        _oauth: Option<(&Self::Callback, &str, Option<bool>)>,
+    ) -> ExtensionResult<()> {
         self.observed
             .borrow_mut()
             .log(format!("provider register {name} {config}"));

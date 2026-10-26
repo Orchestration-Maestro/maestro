@@ -147,3 +147,7 @@ pub async fn pending_complete() -> ExtensionResult<Value> {
 mod login;
 pub use login::run as login;
 pub use login::storage;
+
+#[path = "oauth/registration.rs"]
+mod registration;
+pub(super) use registration::run as registration;

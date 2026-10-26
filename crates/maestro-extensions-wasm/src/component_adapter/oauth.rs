@@ -134,8 +134,17 @@ pub(crate) async fn invoke(
     handler: u32,
     phase: crate::bindings::maestro::extension::host::OauthCallback,
     data: &str,
+    interaction: Option<Rc<crate::OAuthLoginCallbacks>>,
 ) -> ExtensionResult<Option<String>> {
     use crate::bindings::maestro::extension::host::OauthCallback;
+    if matches!(
+        phase,
+        OauthCallback::Key | OauthCallback::Models | OauthCallback::Refresh | OauthCallback::Login
+    ) {
+        return invoke_provider(handler, phase, data, interaction)
+            .await
+            .map(Some);
+    }
     let interaction = super::callbacks::find::<Rc<Interaction>>(handler)?;
     let callbacks = &interaction.callbacks;
     match phase {
@@ -156,6 +165,10 @@ pub(crate) async fn invoke(
             .ok_or("missing manual code callback")?()
         .await
         .map(Some),
+        OauthCallback::Key
+        | OauthCallback::Models
+        | OauthCallback::Refresh
+        | OauthCallback::Login => Err("invalid OAuth interaction phase".into()),
         OauthCallback::Select => {
             callbacks
                 .on_select
@@ -163,5 +176,55 @@ pub(crate) async fn invoke(
                 .ok_or("missing selection callback")?(decode(data)?)
             .await
         }
+    }
+}
+
+/// Announces callable OAuth beside the one ordinary registration operation.
+pub(super) fn register<I: Imports>(
+    imports: &I,
+    config: crate::ProviderConfig,
+    register: impl FnOnce(&str, super::imports::ProviderOAuth<'_, I::Callback>) -> ExtensionResult<()>,
+) -> ExtensionResult<()> {
+    let text = crate::types::finite::encode_value(&config)?;
+    let Some(provider) = config.callbacks.oauth else {
+        return register(&text, None);
+    };
+    let handler = super::callbacks::Identity::new(imports);
+    handler.stage(provider.clone());
+    let result = register(
+        &text,
+        Some((
+            &handler.handle,
+            provider.name(),
+            provider.uses_callback_server(),
+        )),
+    );
+    handler.settle(result.is_ok());
+    result
+}
+
+/// Invokes the original author implementation without holding its callback-table borrow.
+async fn invoke_provider(
+    handler: u32,
+    phase: crate::bindings::maestro::extension::host::OauthCallback,
+    data: &str,
+    interaction: Option<Rc<crate::OAuthLoginCallbacks>>,
+) -> ExtensionResult<String> {
+    use crate::bindings::maestro::extension::host::OauthCallback;
+    use crate::types::finite::encode_value;
+    let provider = super::callbacks::find::<Rc<dyn crate::OAuthProviderInterface>>(handler)?;
+    match phase {
+        OauthCallback::Key => provider.get_api_key(&decode(data)?),
+        OauthCallback::Models => {
+            let (models, credentials): (Vec<Model>, _) = decode(data)?;
+            encode_value(&provider.modify_models(&models, &credentials)?)
+        }
+        OauthCallback::Refresh => encode_value(&provider.refresh_token(decode(data)?).await?),
+        OauthCallback::Login => encode_value(
+            &provider
+                .login(interaction.ok_or("missing OAuth interaction")?)
+                .await?,
+        ),
+        _ => Err("invalid OAuth provider operation".into()),
     }
 }

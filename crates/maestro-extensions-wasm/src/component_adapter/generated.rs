@@ -12,6 +12,8 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+#[path = "generated_oauth.rs"]
+mod oauth;
 #[path = "generated_route.rs"]
 mod route;
 #[path = "generated_streams.rs"]
@@ -75,11 +77,11 @@ impl Imports for Generated {
 
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
-        registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, oauth: super::imports::ProviderOAuth<'_, Self::Callback>) => register_provider(name, config, oauth);
         registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
     } }
     forward_resources! { routed functions {
-        register_provider(name: &str, config: &str) => host::register_provider;
+        register_provider(name: &str, config: &str, oauth: super::imports::ProviderOAuth<'_, Self::Callback>) => host::register_provider;
         unregister_provider(name: &str) => host::unregister_provider;
     } }
     fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {

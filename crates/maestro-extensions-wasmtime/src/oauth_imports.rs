@@ -46,6 +46,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
+    crate::oauth_interaction::add_to_linker(host)?;
     login(host)?;
     credential_login(host)?;
     enumeration(host)

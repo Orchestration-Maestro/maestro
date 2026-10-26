@@ -12,10 +12,15 @@ use std::sync::{Arc, mpsc};
 /// A catchable result after native registration or action dispatch.
 type Reply<T> = mpsc::Sender<Result<T, String>>;
 
-/// Callback-independent operations on the original extension API.
+/// Operations on the original extension API and its retained registrations.
 pub(crate) enum Request {
     /// Registers a provider through the facade's loading or bound action route.
-    RegisterProvider(String, String, Reply<()>),
+    RegisterProvider(
+        String,
+        String,
+        Option<maestro_extensions::OAuthProviderHandle>,
+        Reply<()>,
+    ),
     /// Removes every queued occurrence or the bound provider.
     UnregisterProvider(String, Reply<()>),
     /// Registers metadata and seeds only the native owner's missing flag value.
@@ -50,11 +55,12 @@ impl Request {
     /// Calls the real API after the pump releases its capability-table borrow.
     pub(crate) fn answer(self, api: &ExtensionAPI<Local>) {
         match self {
-            Self::RegisterProvider(name, config, reply) => {
-                let result = crate::catalog_reads::provider_config(&config).and_then(|config| {
-                    api.register_provider(name, config)
-                        .map_err(|e| e.to_string())
-                });
+            Self::RegisterProvider(name, config, oauth, reply) => {
+                let result =
+                    crate::catalog_reads::provider_config(&config, oauth).and_then(|config| {
+                        api.register_provider(name, config)
+                            .map_err(|e| e.to_string())
+                    });
                 let _ = reply.send(result);
             }
             Self::UnregisterProvider(name, reply) => send(&reply, api.unregister_provider(&name)),
@@ -101,7 +107,7 @@ impl Request {
     /// Settles missing API resources without stranding the waiting Store caller.
     pub(crate) fn reject(self, error: &str) {
         match self {
-            Self::RegisterProvider(_, _, reply)
+            Self::RegisterProvider(_, _, _, reply)
             | Self::UnregisterProvider(_, reply)
             | Self::RegisterFlag(_, _, reply)
             | Self::Append(_, _, reply)

@@ -146,3 +146,23 @@ fn oauth_refresh_outlives_its_initiating_guest_handle() {
 }
 
 mod login;
+
+#[test]
+fn oauth_guest_registration_computes_owned_keys_and_refreshes() {
+    super::components::local(async {
+        let bus = super::components::TracedBus::new();
+        let (_owner, runner, _) =
+            super::retained_components::loaded_on(bus.controller.for_extension()).await;
+        assert_eq!(
+            call(&runner, "registration").await,
+            json!({
+                "id":"guest-computed", "name":" Guest account ", "server":false,
+                "key":"guest-computed:a:r", "rotatedKey":"guest-computed:a-rotated:r",
+                "loggedIn":{"type":"oauth","refresh":"r","access":"code","expires":0.0,
+                    "open":{"nested":[null,false,-0.0]}},
+                "credentials":{"refresh":"r","access":"a-rotated","expires":4_102_444_500_000_f64,
+                    "open":{"nested":[null,false,-0.0]}}
+            })
+        );
+    });
+}

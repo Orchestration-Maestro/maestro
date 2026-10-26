@@ -31,8 +31,20 @@ pub(crate) enum Phase {
     /// Interactive selection, including cancellation.
     #[component(name = "select")]
     Select,
+    /// Synchronous authored key conversion.
+    #[component(name = "key")]
+    Key,
+    /// Synchronous authored model transformation.
+    #[component(name = "models")]
+    Models,
+    /// Awaited authored token refresh.
+    #[component(name = "refresh")]
+    Refresh,
+    /// Awaited authored authorization flow.
+    #[component(name = "login")]
+    Login,
 }
-/// Owned operands of one actual authored interaction callback.
+/// Owned operands for an authored OAuth operation or interaction callback.
 pub(crate) struct Invocation<H = Handle> {
     /// Independently retained originating callbacks.
     pub(crate) handler: H,
@@ -40,6 +52,8 @@ pub(crate) struct Invocation<H = Handle> {
     pub(crate) phase: Phase,
     /// Supplied JSON record or literal progress text.
     pub(crate) data: String,
+    /// Native interaction lent only to an authored provider login.
+    pub(crate) interaction: Option<crate::oauth_interaction::Interaction>,
     /// Original typed lifecycle completion.
     pub(crate) reply: Reply<Option<String>>,
 }
@@ -91,6 +105,7 @@ impl Callbacks {
                     handler: self.handler.clone(),
                     phase,
                     data,
+                    interaction: None,
                     reply,
                 }))
             })
@@ -115,6 +130,7 @@ impl Callbacks {
                         handler: handler.clone(),
                         phase,
                         data,
+                        interaction: None,
                         reply,
                     })
                 })

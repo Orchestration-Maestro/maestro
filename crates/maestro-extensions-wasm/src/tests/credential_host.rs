@@ -289,3 +289,44 @@ impl host::HostOauthProviderWithStore<State> for Imports {
         }))
     }
 }
+
+impl host::HostOauthInteraction for State {
+    fn options(&mut self, _this: Resource<Reader>) -> wasmtime::Result<(bool, bool, bool)> {
+        Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        ))
+    }
+    fn signal(
+        &mut self,
+        _this: Resource<Reader>,
+    ) -> wasmtime::Result<Option<Resource<super::host::Flag>>> {
+        Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        ))
+    }
+    fn notify(
+        &mut self,
+        _this: Resource<Reader>,
+        _phase: host::OauthCallback,
+        _data: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        ))
+    }
+    fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+impl host::HostOauthInteractionWithStore<State> for Imports {
+    fn input(
+        _accessor: &Accessor<State, Self>,
+        _this: Resource<Reader>,
+        _phase: host::OauthCallback,
+        _data: String,
+    ) -> impl Future<Output = wasmtime::Result<Result<Option<String>, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "unexpected controlled OAuth interaction"
+        )))
+    }
+}

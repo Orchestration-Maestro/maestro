@@ -24,7 +24,12 @@ pub(crate) enum Request {
     /// Checks the stored credential kind independently of key selection.
     IsUsingOAuth(String, Reply<bool>),
     /// Registers directly without the extension loading queue.
-    Register(String, String, Reply<()>),
+    Register(
+        String,
+        String,
+        Option<maestro_extensions::OAuthProviderHandle>,
+        Reply<()>,
+    ),
     /// Removes directly through native replay policy.
     Unregister(String, Reply<()>),
     /// Reads the current full descriptor list.
@@ -48,7 +53,7 @@ impl Request {
             | Self::Display(_, reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
-            Self::Refresh(reply) | Self::Register(_, _, reply) | Self::Unregister(_, reply) => {
+            Self::Refresh(reply) | Self::Register(_, _, _, reply) | Self::Unregister(_, reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
             Self::HasConfiguredAuth(_, reply) | Self::IsUsingOAuth(_, reply) => {
@@ -99,8 +104,8 @@ impl Request {
             Self::Display(provider, reply) => {
                 let _ = reply.send(Ok(catalog.get_provider_display_name(&provider)));
             }
-            Self::Register(name, config, reply) => {
-                let result = provider_config(&config).and_then(|config| {
+            Self::Register(name, config, oauth, reply) => {
+                let result = provider_config(&config, oauth).and_then(|config| {
                     catalog
                         .register_provider(&name, config)
                         .map_err(|error| error.to_string())
@@ -162,9 +167,11 @@ impl Endpoint {
 /// Decodes the native registration record once, retaining the original field domains.
 pub(crate) fn provider_config(
     text: &str,
+    oauth: Option<maestro_extensions::OAuthProviderHandle>,
 ) -> Result<maestro_extensions::SharedHandle<RwLock<maestro_extensions::ProviderConfig>>, String> {
-    crate::writer_reads::decode(text)
-        .map(|config| maestro_extensions::SharedHandle::new(RwLock::new(config)))
+    let mut config: maestro_extensions::ProviderConfig = crate::writer_reads::decode(text)?;
+    config.callbacks.oauth = oauth;
+    Ok(maestro_extensions::SharedHandle::new(RwLock::new(config)))
 }
 /// Decodes an independently supplied model without requiring catalog admission.
 fn model_record(text: &str) -> Result<Arc<RwLock<Model>>, String> {

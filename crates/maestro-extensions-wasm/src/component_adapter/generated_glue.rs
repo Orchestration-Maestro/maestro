@@ -16,8 +16,10 @@ impl<E: Extension> Guest for Glue<E> {
         handler: &host::Callback,
         phase: host::OauthCallback,
         data: String,
+        interaction: Option<host::OauthInteraction>,
     ) -> ExtensionResult<Option<String>> {
-        super::super::oauth::invoke(handler.id(), phase, &data).await
+        let interaction = interaction.map(super::oauth::interaction);
+        super::super::oauth::invoke(handler.id(), phase, &data, interaction).await
     }
     fn invoke_auth_backend(
         handler: &host::Callback,

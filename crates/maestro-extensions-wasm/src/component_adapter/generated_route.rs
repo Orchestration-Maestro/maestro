@@ -171,7 +171,13 @@ fn asynchronous(call: host::LocalCall) -> Running {
     Box::pin(async move {
         match call {
             host::LocalCall::Oauth(call) => host::LocalResult::Oauth(
-                super::super::oauth::invoke(call.target, call.phase, &call.data).await,
+                super::super::oauth::invoke(
+                    call.target,
+                    call.phase,
+                    &call.data,
+                    call.interaction.map(super::oauth::interaction),
+                )
+                .await,
             ),
             host::LocalCall::Event(call) => {
                 host::LocalResult::Event(event(call.target, call.event, call.resources).await)

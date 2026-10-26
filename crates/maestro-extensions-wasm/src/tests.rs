@@ -597,6 +597,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]extension-ui-context.select",
             "[method]model-registry.get-api-key-and-headers",
             "[method]model-registry.get-api-key-for-provider",
+            "[method]oauth-interaction.input",
             "[method]oauth-provider.login",
             "[method]oauth-provider.refresh-token",
             "[method]replaced-session-context.send-message",

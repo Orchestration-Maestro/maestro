@@ -37,6 +37,9 @@ pub struct Dialog<'a, S> {
     pub timeout: Option<f64>,
 }
 
+/// Optional retained OAuth implementation with its label and callback-server metadata.
+pub type ProviderOAuth<'a, C> = Option<(&'a C, &'a str, Option<bool>)>;
+
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
 ///
@@ -216,7 +219,12 @@ pub trait Imports: Clone + 'static {
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
     /// Registers JSON provider data.
-    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()>;
+    fn register_provider(
+        &self,
+        name: &str,
+        config: &str,
+        oauth: ProviderOAuth<'_, Self::Callback>,
+    ) -> ExtensionResult<()>;
     /// Unregisters a provider.
     fn unregister_provider(&self, name: &str) -> ExtensionResult<()>;
     /// Starts a compaction on the supplied context.

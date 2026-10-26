@@ -427,8 +427,14 @@ interface host {
     variant resolved-request-auth { ok(request-auth), error(string) }
     /// Independently retained accepted credentials and their original backend.
     /// Independently retained native OAuth implementation.
-    enum oauth-callback { auth, prompt, progress, manual, select }
-    record local-oauth-callback { target: u32, phase: oauth-callback, data: string }
+    enum oauth-callback { auth, prompt, progress, manual, select, key, models, refresh, login }
+    resource oauth-interaction {
+        options: func() -> tuple<bool, bool, bool>;
+        signal: func() -> option<abort-signal>;
+        notify: func(phase: oauth-callback, data: string) -> import-route;
+        input: async func(phase: oauth-callback, data: string) -> result<option<string>, string>;
+    }
+    record local-oauth-callback { target: u32, phase: oauth-callback, data: string, interaction: option<oauth-interaction> }
     resource oauth-provider {
         login: async func(callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<string, string>;
         info: func() -> result<string, string>;
@@ -471,7 +477,7 @@ interface host {
         get-provider-display-name: func(provider: string) -> result<string, string>;
         is-using-oauth: func(model: string) -> result<bool, string>;
         /// Registers JSON provider data directly in this catalog.
-        register-provider: func(name: string, config: string) -> import-route;
+        register-provider: func(name: string, config: string, oauth: option<tuple<borrow<callback>, string, option<bool>>>) -> import-route;
         unregister-provider: func(name: string) -> import-route;
         get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
@@ -575,7 +581,7 @@ interface host {
     /// Registers authored tool data and callbacks.
     register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
     /// Registers JSON provider data, queued until the host binds.
-    register-provider: func(name: string, config: string) -> import-route;
+    register-provider: func(name: string, config: string, oauth: option<tuple<borrow<callback>, string, option<bool>>>) -> import-route;
     /// Unregisters a provider, including its queued registrations.
     unregister-provider: func(name: string) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.

@@ -54,6 +54,7 @@ macro_rules! catalog_imports {
             resource: &Self::Registry,
             name: &str,
             config: &str,
+            oauth: ProviderOAuth<'_, Self::Callback>,
         ) -> ExtensionResult<()>;
         /// Forwards the corresponding host capability call.
         fn registry_unregister_provider(

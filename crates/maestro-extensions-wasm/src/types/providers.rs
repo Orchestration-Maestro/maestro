@@ -8,4 +8,11 @@
 pub use maestro_request::provider_config::ProviderModelConfig;
 
 /// Provider registration data; absent fields keep the host's earlier values.
-pub type ProviderConfig = maestro_request::provider_config::ProviderConfig;
+pub type ProviderConfig = maestro_request::provider_config::ProviderConfig<ProviderCallbacks>;
+
+/// Callable provider operations, omitted from serialized registration metadata.
+#[derive(Clone, Default)]
+pub struct ProviderCallbacks {
+    /// OAuth implementation whose installed identifier is the registration name.
+    pub oauth: Option<std::rc::Rc<dyn crate::OAuthProviderInterface>>,
+}

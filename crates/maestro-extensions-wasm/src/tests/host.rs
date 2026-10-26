@@ -980,6 +980,7 @@ impl host::Host for State {
         &mut self,
         name: String,
         config: String,
+        _oauth: Option<(Resource<super::host::Identity>, String, Option<bool>)>,
     ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));

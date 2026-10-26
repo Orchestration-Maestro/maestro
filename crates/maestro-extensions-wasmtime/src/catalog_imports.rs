@@ -13,7 +13,7 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 /// Defines catalog reads and credential resolution through the original local owner.
-pub(crate) fn add_to_linker<T: WasiView + 'static>(
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_resource::<T, Endpoint>(host, "model-registry")?;
@@ -130,7 +130,9 @@ fn add_metadata<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasm
     Ok(())
 }
 /// Mutates this catalog directly, never the extension's registration queue.
-fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+fn add_mutations<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     add_routed(
         host,
         "[method]model-registry.refresh",
@@ -146,9 +148,15 @@ fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> was
     host.func_wrap(
         "[method]model-registry.register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, name, config): (Resource<Endpoint>, String, String)| {
+         (resource, name, config, oauth): (
+            Resource<Endpoint>,
+            String,
+            String,
+            crate::oauth_registration::Wire,
+        )| {
+            let oauth = crate::oauth_registration::retain(store.data_mut(), &name, oauth)?;
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Register(name, config, reply));
+            let route = endpoint.route(|reply| Request::Register(name, config, oauth, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )

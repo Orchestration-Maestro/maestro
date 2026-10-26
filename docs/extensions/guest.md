@@ -494,7 +494,7 @@ accepts the complete OAuth record and persists it through the original backend;
 other provider records stay unchanged. Unknown providers and interaction failures
 return their original messages. As with `AuthStorage::set`, persistence failures
 leave accepted state available and are reported by `drain_errors`, not as a failed
-login. OAuth-bearing guest provider registration is not yet exposed.
+login.
 
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
@@ -637,8 +637,18 @@ schema and details text with semantic JSON serialization.
 
 `ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
 host, and `unregister_provider` sends a name. `ProviderConfig` and
-`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
-carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`ProviderModelConfig` use the [shared provider records](../records.md#provider-registration-records).
+`ProviderConfig` specializes its callback slot with the guest's `ProviderCallbacks`.
+Serialized metadata carries data only. Set `callbacks.oauth` to `Some(Rc<dyn OAuthProviderInterface>)` to register
+an authored OAuth implementation through the same API or catalog operation. The
+registration name supplies its installed identifier; its login label and optional
+callback-server value remain as authored. The native catalog retains the actual
+guest implementation, including independently owned login and refresh futures,
+synchronous computed keys and optional model transformation. Login receives the
+original native interaction through retained capabilities, preserving callback
+presence, synchronous notifications, awaited input and live cancellation.
+
+Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
 sees the call. Queuing during loading, validation and replacement stay host policy.

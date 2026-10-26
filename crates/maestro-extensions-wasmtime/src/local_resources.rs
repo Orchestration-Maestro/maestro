@@ -102,6 +102,8 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<String, String>>,
         Admission,
     ),
+    /// Uses native interaction callbacks on this same local owner.
+    OAuthInteraction(crate::oauth_interaction::Request),
     /// Calls an independently retained OAuth implementation.
     OAuthProvider(u64, crate::oauth_reads::Request),
     /// Uses independently retained accepted credentials.

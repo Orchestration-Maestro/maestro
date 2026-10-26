@@ -230,6 +230,8 @@ pub(super) struct LocalOAuth {
     phase: crate::oauth_callbacks::Phase,
     /// Exact supplied record or progress text.
     data: String,
+    /// Original native interaction for an authored provider login.
+    interaction: Option<Resource<crate::oauth_interaction::Interaction>>,
 }
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
@@ -373,6 +375,11 @@ pub(super) fn lower(
             target: call.handler.id,
             phase: call.phase,
             data: call.data.clone(),
+            interaction: call
+                .interaction
+                .clone()
+                .map(|interaction| table.push(interaction))
+                .transpose()?,
         }),
         Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {

@@ -9,7 +9,15 @@ use wasmtime::{
 };
 
 /// Exact callback input and optional text response.
-type Invoke = TypedFunc<(Resource<Callback>, Phase, String), (Result<Option<String>, String>,)>;
+type Invoke = TypedFunc<
+    (
+        Resource<Callback>,
+        Phase,
+        String,
+        Option<Resource<crate::oauth_interaction::Interaction>>,
+    ),
+    (Result<Option<String>, String>,),
+>;
 /// Actual authored interaction export.
 pub(crate) struct Exports(Invoke);
 impl Exports {
@@ -33,11 +41,22 @@ impl Exports {
         call: Invocation<Callback>,
     ) -> wasmtime::Result<()> {
         let handler = accessor.with(|mut access| access.get().ctx().table.push(call.handler))?;
+        let interaction = call
+            .interaction
+            .map(|interaction| {
+                accessor.with(|mut access| access.get().ctx().table.push(interaction))
+            })
+            .transpose()?;
         let result = self
             .0
             .call_concurrent(
                 accessor,
-                (Resource::new_borrow(handler.rep()), call.phase, call.data),
+                (
+                    Resource::new_borrow(handler.rep()),
+                    call.phase,
+                    call.data,
+                    interaction,
+                ),
             )
             .await;
         accessor.with(|mut access| access.get().ctx().table.delete(handler))?;

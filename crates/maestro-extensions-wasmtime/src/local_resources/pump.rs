@@ -193,9 +193,7 @@ impl State {
             }
             Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
             Message::EndLockUpdate(id) => self.end_lock_update(id),
-            Message::SchemaListing(id, reply) => {
-                let _ = reply.send(self.schema_listing(id));
-            }
+            Message::SchemaListing(id, reply) => self.reply_schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.read_api(id, request),
@@ -222,6 +220,7 @@ impl State {
                 self.start_oauth_refresh(id, data, reply, admission);
             }
             Message::OAuthProvider(id, request) => self.oauth_provider(id, request),
+            Message::OAuthInteraction(request) => self.oauth_interaction(request),
             Message::Credentials(id, request) => self.credentials(id, request),
             Message::CredentialLogin(id, provider, controls, reply, admission) => {
                 self.start_credential_login(id, (provider, controls), reply, admission);
@@ -279,6 +278,15 @@ impl State {
         self.routes.borrow_mut().push(route);
         self.dispatch(message);
         self.routes.borrow_mut().pop();
+    }
+
+    /// Sends the original live schema listing to its waiting reader.
+    fn reply_schema_listing(
+        &self,
+        id: u64,
+        reply: &std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
+    ) {
+        let _ = reply.send(self.schema_listing(id));
     }
 
     /// Observe live metadata through its original API capability.

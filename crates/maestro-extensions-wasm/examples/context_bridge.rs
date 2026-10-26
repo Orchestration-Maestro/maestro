@@ -477,6 +477,7 @@ async fn credential_command(
         "credential oauth pending create" => oauth::pending_create(context),
         "credential oauth pending complete" => oauth::pending_complete().await,
         "credential oauth providers" => oauth::providers(context),
+        "credential oauth registration" => oauth::registration(api).await,
         "credential oauth operations" => oauth::operations(context).await,
         "credential oauth retain" | "credential oauth key" | "credential oauth release" => {
             oauth::retained(context, request.trim_start_matches("credential oauth "))
