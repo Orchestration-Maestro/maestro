@@ -294,10 +294,12 @@ interface host {
     /// Execution progress of a tool row.
     record tool-render-phase { execution-started: bool, args-complete: bool, is-partial: bool }
     /// One tool rendering: the renderer slot, the identity of the row's guest state once it
-    /// has one, what the renderer reads and, for a result, the result document.
-    record tool-render { slot: tool-render-slot, row: option<u32>, info: tool-render-info, %result: option<string> }
-    /// A tool rendering's component, and the row's guest state identity when the row had none.
-    record tool-rendered { component: callback, row: option<callback> }
+    /// has one, the row context and the independently supplied callback operands.
+    record tool-render { slot: tool-render-slot, row: option<u32>, info: tool-render-info, args: option<string>, %result: option<string>, options: option<tool-render-result-options> }
+    /// Options supplied to the result callback independently of the row context.
+    record tool-render-result-options { expanded: bool, is-partial: bool }
+    /// A tool rendering's component or error, with new row state retained in either case.
+    record tool-rendered { component: result<callback, string>, row: option<callback> }
     /// Redraws one tool row.
     resource tool-invalidator { invalidate: func() -> result<_, string>; }
     /// The footer metadata a footer factory may read; each read is current.

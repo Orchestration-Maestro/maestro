@@ -23,14 +23,14 @@ pub(crate) fn keep_row<I: Imports>(imports: &I, row: Rc<ToolRow>) -> u32 {
 
 impl<I: Imports> Exports<I> {
     /// Runs the renderer under this identity for one row with the lent theme and redraw
-    /// capability, returning the component and the row's state when the row had none.
+    /// capability, returning the component or error with any new row state.
     pub(crate) fn invoke_tool_render(
         &self,
         handler: u32,
         render: &ToolRender,
         (theme, invalidator): (I::Theme, I::Invalidator),
         emitter: &I::Emitter,
-    ) -> ExtensionResult<(Component, Option<Rc<ToolRow>>)> {
+    ) -> ExtensionResult<(ExtensionResult<Component>, Option<Rc<ToolRow>>)> {
         let (row, created) = match render.row {
             Some(row) => (callbacks::find::<Rc<ToolRow>>(row)?, false),
             None => (Rc::new(ToolRow::default()), true),
@@ -41,17 +41,19 @@ impl<I: Imports> Exports<I> {
         let component = with_emitter(&self.imports, emitter, |emitter| {
             if slot == 0 {
                 let renderer = callbacks::find::<ToolRenderCall>(handler)?;
-                return renderer(context.args.clone(), theme, &context, emitter);
+                let args = render.args.as_deref().map(decode).transpose()?;
+                return renderer(args, theme, &context, emitter);
             }
             let renderer = callbacks::find::<ToolRenderResult>(handler)?;
             let result = decode(render.result.as_deref().unwrap_or("null"))?;
+            let options = render.options.as_ref().ok_or("missing result options")?;
             let options = ToolRenderResultOptions {
-                expanded: context.expanded,
-                is_partial: context.phase.is_partial,
+                expanded: options.expanded,
+                is_partial: options.is_partial,
             };
             renderer(result, options, theme, &context, emitter)
-        })?;
-        row.last.borrow_mut()[slot] = Some(component.clone());
+        });
+        row.last.borrow_mut()[slot] = component.as_ref().ok().cloned();
         Ok((component, created.then_some(row)))
     }
 

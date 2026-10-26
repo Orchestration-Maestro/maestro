@@ -74,16 +74,31 @@ pub(crate) struct Render {
     pub(crate) row: Option<u32>,
     /// What the renderer reads.
     pub(crate) info: Info,
+    /// Arguments supplied to the call callback, independently of the row context.
+    pub(crate) args: Option<String>,
     /// The result document of a result rendering.
     pub(crate) result: Option<String>,
+    /// Options supplied to the result callback.
+    pub(crate) options: Option<Options>,
 }
 
-/// A rendering's component and the row's new guest state identity.
+/// Options supplied to a result callback independently of the row context.
+#[derive(ComponentType, Lower, Clone)]
+#[component(record)]
+pub(crate) struct Options {
+    /// Whether the result view is expanded.
+    expanded: bool,
+    /// Whether this result is still streaming.
+    #[component(name = "is-partial")]
+    is_partial: bool,
+}
+
+/// A rendering's component or error and the row's new guest state identity.
 #[derive(ComponentType, Lift)]
 #[component(record)]
 pub(crate) struct Rendered {
-    /// The returned component.
-    pub(crate) component: Resource<super::Callback>,
+    /// The returned component or renderer error.
+    pub(crate) component: Result<Resource<super::Callback>, String>,
     /// The row's state when the row had none.
     pub(crate) row: Option<Resource<super::Callback>>,
 }
@@ -101,7 +116,7 @@ pub(crate) struct ToolRenderCall<H = Handle> {
     /// Original native callback frame.
     pub(crate) emitter: EmitterEndpoint,
     /// The component and the row's new state identity.
-    pub(crate) reply: Reply<(Handle, Option<Handle>)>,
+    pub(crate) reply: Reply<(Result<Handle, String>, Option<Handle>)>,
 }
 
 /// The guest state of one native row, released with the row.
@@ -115,8 +130,16 @@ impl Handle {
         registry: Registry,
         events: EventBus<Local>,
     ) -> maestro_extensions::ToolRenderCall<Value, Local> {
-        Rc::new(move |_args, theme, context| {
-            self.rendered(&registry, &events, (Slot::Call, None, theme), context)
+        Rc::new(move |args, theme, context| {
+            let render = Render {
+                slot: Slot::Call,
+                row: None,
+                info: info(context),
+                args: args.map(Value::to_string),
+                result: None,
+                options: None,
+            };
+            self.rendered(&registry, &events, (render, theme), context)
         })
     }
 
@@ -127,13 +150,21 @@ impl Handle {
         events: EventBus<Local>,
     ) -> maestro_extensions::ToolRenderResult<Value, Value, Local> {
         let render = move |result: &ToolRenderResultLike<'_, Value>,
-                           _options: maestro_extensions::ToolRenderResultOptions,
+                           options: maestro_extensions::ToolRenderResultOptions,
                            theme: &LiveTheme,
                            context: &ToolRenderContext<'_, Value>| {
-            let result = serde_json::json!({ "content": result.content, "details": result.details,
-                "terminate": result.terminate, "isError": result.is_error });
-            let result = Some(result.to_string());
-            self.rendered(&registry, &events, (Slot::Result, result, theme), context)
+            let render = Render {
+                slot: Slot::Result,
+                row: None,
+                info: info(context),
+                args: None,
+                result: Some(result_document(result)?),
+                options: Some(Options {
+                    expanded: options.expanded,
+                    is_partial: options.is_partial,
+                }),
+            };
+            self.rendered(&registry, &events, (render, theme), context)
         };
         let render: maestro_extensions::ToolRenderResultCallback<Value, Value, Local> =
             Rc::new(render);
@@ -145,21 +176,15 @@ impl Handle {
         &self,
         registry: &Registry,
         events: &EventBus<Local>,
-        (slot, result, theme): (Slot, Option<String>, &LiveTheme),
+        (mut render, theme): (Render, &LiveTheme),
         context: &ToolRenderContext<'_, Value>,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
         let state = context
             .renderer_state()
             .map(maestro_extensions::ToolRendererState::state::<GuestRow>);
-        let row = state
+        render.row = state
             .as_ref()
             .and_then(|state| state.borrow().0.as_ref().map(Handle::id));
-        let render = Render {
-            slot,
-            row,
-            info: info(context),
-            result,
-        };
         let built = events.invoke_callback(|emitter| {
             self.0.endpoint.synchronous(registry, |reply| {
                 Ok(Call::ToolRender(ToolRenderCall {
@@ -176,6 +201,7 @@ impl Handle {
         if let (Some(state), Some(row)) = (state, row) {
             state.borrow_mut().0 = Some(row);
         }
+        let component = component.map_err(DiagnosticErrorInfo::error)?;
         let view = crate::guest_component::GuestComponent::new(
             component,
             registry.clone(),
@@ -200,4 +226,21 @@ fn info(context: &ToolRenderContext<'_, Value>) -> Info {
         show_images: context.show_images,
         is_error: context.is_error,
     }
+}
+
+/// Serializes optional fields through the shared tool result's omission rules.
+fn result_document(
+    result: &ToolRenderResultLike<'_, Value>,
+) -> Result<String, DiagnosticErrorInfo> {
+    let record = maestro_extensions::AgentToolResult {
+        content: result.content.to_vec(),
+        details: result.details,
+        terminate: result.terminate,
+    };
+    let mut document = serde_json::to_value(record)
+        .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
+    if let Some(is_error) = result.is_error {
+        document["isError"] = Value::Bool(is_error);
+    }
+    Ok(document.to_string())
 }
