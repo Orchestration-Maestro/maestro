@@ -62,8 +62,8 @@ pub trait RpcProcessPort {
 
 /// What a connection works with besides its session runtime.
 pub struct RpcModeOptions {
-    /// The workspace command operations.
-    pub workspace: Rc<dyn WorkspaceOperations>,
+    /// Workspace command operations, absent for a session-only connection.
+    pub workspace: Option<Rc<dyn WorkspaceOperations>>,
     /// Session facilities, absent for a workspace-only connection.
     pub session: Option<RpcSessionOptions>,
 }

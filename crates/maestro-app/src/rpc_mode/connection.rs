@@ -110,7 +110,7 @@ pub(super) struct Connection {
     /// The output, which only [`Connection::write`] reaches.
     output: RpcOutput,
     /// The caller's workspace operations.
-    pub(super) workspace: Rc<dyn WorkspaceOperations>,
+    pub(super) workspace: Option<Rc<dyn WorkspaceOperations>>,
     /// Records admitted during the initial binding, in arrival order; `None` once bound.
     pub(super) early: RefCell<Option<Vec<Record>>>,
     /// Notifies every waiter once the initial binding has handled the records that arrived

@@ -288,9 +288,9 @@ The caller's working directory and literal arguments reach the application.
 The launcher uses the checkout manifest and pinned Cargo, not a global installed
 application. `--no-env` removes provider credentials for that child only; it does
 not move authentication files. The Windows form compares the switch without ASCII
-case sensitivity. The executable is not delivered yet; its implementation is
-tracked in [#249](https://github.com/Orchestration-Maestro/maestro/issues/249).
-Until then the source commands report Cargo's missing-package failure.
+case sensitivity. The source executable now delegates startup to the command-line
+library and wires the concrete chat, RPC, selector and native component adapters.
+The separate `maestro-model-account` binary runs the standalone account command.
 
 ## Compile watches
 
@@ -382,7 +382,7 @@ Those configuration and central asset-path functions are owned by
 [#216](https://github.com/Orchestration-Maestro/maestro/issues/216); no substitute
 configuration schema or asset lookup is provided by the development commands.
 Use the owner's central asset paths, not the location of the current source file.
-Installed and standalone application execution is not delivered yet.
+The source executable is delivered. Installed distributions still require their prepared assets.
 
 The copy recipes default to `maestro-app-assets` and `maestro-binary-assets`
 under Cargo's configured target directory. `app-clean` removes both asset trees;

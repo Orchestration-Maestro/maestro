@@ -381,7 +381,7 @@ from the optional foundation utility described below.
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
-| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
+| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
 `maestro-cli` is a command-line frontend, not an interactive view. Its `config_selector`
 module is only the wrapper that runs a chat-owned configuration view through a
@@ -837,10 +837,10 @@ cycle rules apply, and the required-toolkit rule keeps `maestro-text` out of it.
 
 ### Workspace daemon
 
-The workspace daemon is core design. The executable always wires the daemon,
-and the multiplexer: it requires direct application and multiplexer dependencies,
-with daemon operations reached through
-`maestro-app`. There is no Cargo feature, optional dependency or separate install.
+The workspace daemon is core design. The executable requires a direct application
+dependency, with daemon operations reached through `maestro-app`. A direct
+multiplexer dependency is permitted when its launcher is wired, not required for
+command-line startup. There is no Cargo feature, optional dependency or separate install.
 Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
 builds already exclude native process crates. Every frontend calls `maestro-app`.
 
