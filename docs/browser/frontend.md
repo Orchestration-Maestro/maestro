@@ -152,9 +152,9 @@ maestro-button-<variant> maestro-button-<size>` classes followed by the
 caller's `class_name`, an optional title and a spinning loader while loading.
 Disabled and loading buttons refuse activation. Each variant paints from the
 pack: `default` on the accent color, `destructive` on the error color,
-`outline` with a border, `secondary` on the panel color, `ghost` without a
-background and `link` in the accent color. Only `outline` carries a border
-width, so every other variant measures its padding and glyph alone.
+`outline` with a border, `secondary` on the panel color inside a border-colored
+ring, `ghost` without a background and `link` in the accent color. Only `outline`
+carries a border width, so every other variant measures its padding and glyph alone.
 
 ## Contributions
 

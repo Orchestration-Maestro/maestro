@@ -129,10 +129,11 @@ field commits it.
 [`SessionListDialog::open`](../../crates/maestro-web/src/dialogs/session_list_dialog.rs)
 shows the stored sessions in storage order with title, date, message count and
 usage. Dates read Today, Yesterday, a number of days ago within a week, or the
-browser's local date; a time later than now reads Today. Choosing a session passes
-its identifier to `on_select` and closes. The delete control never chooses its row:
-after confirmation it deletes the history and metadata together and reloads the
-list. Closing without a choice passes each deleted identifier to `on_delete`.
+browser's local date; a time later than now reads Today. Each row's details are a
+button, so Tab reaches a session before its delete control and Enter chooses it.
+Choosing a session passes its identifier to `on_select` and closes. The delete
+control never chooses its row: after confirmation it deletes the history and
+metadata together and reloads the list. Closing without a choice passes each deleted identifier to `on_delete`.
 A deletion still in progress reports after closing if its write succeeds.
 
 [`PersistentStorageDialog::request`](../../crates/maestro-web/src/dialogs/persistent_storage_dialog.rs)
@@ -146,7 +147,12 @@ and a failure each return `false` with their own console message.
 
 The page installs the dialog stylesheet with the other built-in element styles
 when its `ContributionHost` is created. Every colour, font and radius comes from
-the selected brand pack's custom properties.
+the selected brand pack's custom properties. Both light modes paint the panel and
+the canvas with one swatch, so a panel fill never marks a state alone: the
+highlighted model and the active settings tab carry an accent edge, an idle
+filter a border ring, and the proxy switch and its thumb a border edge. The
+storage notice is a panel framed in the warning colour. The Close control stays
+fully opaque in the muted colour.
 
 ## Markdown and reasoning
 

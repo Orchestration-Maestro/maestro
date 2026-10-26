@@ -176,16 +176,20 @@ impl Listing {
         let document = &self.view.document;
         let i18n = &self.view.i18n;
         let row = element(document, "div", "maestro-session-row")?;
-        let details = element(document, "div", "maestro-session-details")?;
-        let title = element(document, "div", "maestro-session-title")?;
+        // The details are a native button, so the keyboard reaches each row before its delete control.
+        let details = element(document, "button", "maestro-session-details")?;
+        details
+            .set_attribute("type", "button")
+            .map_err(|e| host_error(&e))?;
+        let title = element(document, "span", "maestro-session-title")?;
         title.set_text_content(Some(&session.title));
-        let date = element(document, "div", "maestro-session-meta")?;
+        let date = element(document, "span", "maestro-session-meta")?;
         date.set_text_content(Some(&format_date(
             &self.view,
             &session.last_modified,
             js_sys::Date::now(),
         )?));
-        let counts = element(document, "div", "maestro-session-meta")?;
+        let counts = element(document, "span", "maestro-session-meta")?;
         let count = ryu_js::Buffer::new()
             .format(session.message_count)
             .to_owned();

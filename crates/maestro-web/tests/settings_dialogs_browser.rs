@@ -300,7 +300,22 @@ pub async fn session_list_orders_dates_and_selects_sessions(import: js_sys::Func
         .map(|title| text(title))
         .collect();
     assert_eq!(titles, expected, "rows keep the stored order");
-    let dates: Vec<String> = all(&shown, ".maestro-session-meta")
+    dated(&shown, &titles);
+    assert!(text(&all(&shown, ".maestro-session-meta")[1]).starts_with("4 messages · "));
+    keyboard_choice(&view, &all(&shown, ".maestro-session-row")[0]).await;
+    assert_eq!(
+        *calls.borrow(),
+        [format!(
+            "select:{}",
+            expected[0].trim_start_matches("Title ")
+        )]
+    );
+    assert!(!list.is_open() && panels().is_empty());
+}
+
+/// Each row titled after its age reads Today, Yesterday, a number of days or the local date.
+fn dated(shown: &Element, titles: &[String]) {
+    let dates: Vec<String> = all(shown, ".maestro-session-meta")
         .iter()
         .step_by(2)
         .map(|date| text(date))
@@ -318,18 +333,21 @@ pub async fn session_list_orders_dates_and_selects_sessions(import: js_sys::Func
         };
         assert_eq!(date, want, "{title}");
     }
-    assert!(text(&all(&shown, ".maestro-session-meta")[1]).starts_with("4 messages · "));
-    click(&all(&shown, ".maestro-session-row")[0]);
-    assert_eq!(
-        *calls.borrow(),
-        [format!(
-            "select:{}",
-            expected[0].trim_start_matches("Title ")
-        )]
-    );
-    assert!(!list.is_open() && panels().is_empty());
 }
-
+/// Tab reaches the first row's own control before its delete control, and Enter chooses it.
+async fn keyboard_choice(view: &DomView, row: &Element) {
+    let focused = || view.document.active_element();
+    while !focused().is_some_and(|node| row.contains(Some(&node))) {
+        press("Tab").await;
+    }
+    let control = focused().unwrap();
+    assert_eq!(
+        (control.tag_name(), control.class_name()),
+        ("BUTTON".into(), "maestro-session-details".into()),
+        "the row opens from the keyboard"
+    );
+    press("Enter").await;
+}
 /// Confirmed deletion removes the session, and only a close without a choice reports it.
 #[wasm_bindgen]
 pub async fn session_list_deletes_after_confirmation_and_reports_on_close(
@@ -556,6 +574,7 @@ pub async fn settings_dialogs_follow_both_brand_packs(import: js_sys::Function) 
             assert_eq!(computed(&active, "color"), rgb(presentation.colors["text"]));
             let idle = all(&shown, ".maestro-settings-item")[1].clone();
             assert_eq!(computed(&idle, "color"), rgb(presentation.colors["muted"]));
+            cues(&shown, &active, &presentation).await;
             dialog.close();
             let list = open_list(&view, &Rc::default());
             let shown = panel();
@@ -575,8 +594,67 @@ pub async fn settings_dialogs_follow_both_brand_packs(import: js_sys::Function) 
                 rgb(presentation.colors["error"])
             );
             list.close();
+            notice(&view, &presentation).await;
         }
     }
+}
+/// The active tab, the Close control and the idle proxy switch stay visible where panel and
+/// canvas share a swatch, without dimming muted text.
+async fn cues(
+    shown: &Element,
+    active: &Element,
+    presentation: &maestro_theme::BrandPresentation<'_>,
+) {
+    let [accent, border, muted] =
+        ["accent", "border", "muted"].map(|role| rgb(presentation.colors[role]));
+    assert!(
+        computed(active, "box-shadow").contains(&accent),
+        "the active tab keeps an accent cue"
+    );
+    let close = find(shown, ".maestro-dialog-close");
+    assert_eq!(
+        (computed(&close, "color"), computed(&close, "opacity")),
+        (muted, "1".into())
+    );
+    click(&all(shown, ".maestro-settings-item")[1]);
+    settled().await;
+    let switch = find(shown, ".maestro-switch");
+    assert_eq!(
+        switch.get_attribute("aria-checked").as_deref(),
+        Some("false")
+    );
+    assert_eq!(computed(&switch, "border-top-color"), border);
+    assert!(
+        computed(&find(&switch, ".maestro-switch-thumb"), "box-shadow").contains(&border),
+        "the idle thumb keeps a border cue"
+    );
+}
+/// The permission notice is a panel bounded by the warning role.
+async fn notice(view: &Rc<DomView>, presentation: &maestro_theme::BrandPresentation<'_>) {
+    let _persisted = Platform::install("persisted", Some(Ok(false)));
+    let asking = Rc::clone(view);
+    let pending = wasm_bindgen_futures::future_to_promise(async move {
+        Ok(PersistentStorageDialog::request(&asking)
+            .await
+            .unwrap()
+            .into())
+    });
+    settled().await;
+    let shown = panel();
+    apply(&shown, presentation);
+    let framed = find(&shown, ".maestro-storage-notice");
+    assert_eq!(
+        (
+            computed(&framed, "background-color"),
+            computed(&framed, "border-top-color")
+        ),
+        (
+            rgb(presentation.colors["panel"]),
+            rgb(presentation.colors["warning"])
+        )
+    );
+    press("Escape").await;
+    wasm_bindgen_futures::JsFuture::from(pending).await.unwrap();
 }
 /// Apply a pack's properties to an open dialog's backdrop.
 fn apply(panel: &Element, presentation: &maestro_theme::BrandPresentation<'_>) {

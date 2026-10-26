@@ -1,7 +1,7 @@
 //! Key entry, the model picker and the provider dialogs against controlled storage and network.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{
-    contributions_support::{container, host, page_module, text, view},
+    contributions_support::{computed, container, host, page_module, rgb, text, view},
     dialog_support::{
         Fetch, Prompts, completed_reply, panel, panels, press, settled, storage, type_text, until,
     },
@@ -335,6 +335,7 @@ pub async fn model_selector_searches_filters_and_selects_by_keyboard(import: js_
         "the current model leads without search"
     );
     assert!(highlighted(&shown, 0));
+    separated(&view, &shown);
     searched(&shown, &search).await;
     no_results(&shown, &chosen).await;
     let thinking = all(&shown, ".maestro-model-filters button").remove(0);
@@ -355,6 +356,21 @@ pub async fn model_selector_searches_filters_and_selects_by_keyboard(import: js_
         (vec!["local-thinker".to_owned()], false, 0)
     );
     restricted(&view, &page).await;
+}
+/// The highlighted row carries an accent cue and an idle filter a border, since a panel fill alone
+/// disappears where panel and canvas share a swatch.
+fn separated(view: &DomView, shown: &Element) {
+    let presentation = view.pack.presentation(view.mode).unwrap();
+    let [accent, border] = ["accent", "border"].map(|role| rgb(presentation.colors[role]));
+    assert!(
+        computed(&rows(shown)[0], "box-shadow").contains(&accent),
+        "the highlighted row keeps an accent cue"
+    );
+    let filter = all(shown, ".maestro-model-filters button").remove(0);
+    assert!(
+        computed(&filter, "box-shadow").contains(&border),
+        "the idle filter keeps a border ring"
+    );
 }
 /// Typed search ranks the tight match first, and the arrows stop at the first and last rows.
 async fn searched(shown: &Element, search: &HtmlInputElement) {

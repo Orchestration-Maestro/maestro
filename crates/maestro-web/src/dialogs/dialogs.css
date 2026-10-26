@@ -35,12 +35,10 @@
   border-radius: calc(var(--maestro-radii-control) / 2);
   background: transparent;
   color: var(--maestro-color-muted);
-  opacity: 0.7;
   cursor: pointer;
-  transition: opacity 150ms, color 150ms;
+  transition: color 150ms;
 }
 .maestro-dialog-close:hover {
-  opacity: 1;
   color: var(--maestro-color-text);
 }
 .maestro-dialog-close:focus-visible {
@@ -246,6 +244,9 @@
 .maestro-model-pointer .maestro-model-row:hover, .maestro-model-row.maestro-model-selected {
   background: var(--maestro-color-panel);
 }
+.maestro-model-row.maestro-model-selected {
+  box-shadow: inset 3px 0 0 var(--maestro-color-accent);
+}
 .maestro-model-top, .maestro-model-meta {
   display: flex;
   align-items: center;
@@ -446,10 +447,11 @@
 }
 .maestro-settings-item.maestro-settings-active {
   background: var(--maestro-color-panel);
+  box-shadow: inset 3px 0 0 var(--maestro-color-accent);
   color: var(--maestro-color-text);
   font-weight: 500;
 }
-.maestro-settings-tab:focus-visible, .maestro-settings-item:focus-visible, .maestro-switch:focus-visible, .maestro-session-delete:focus-visible {
+.maestro-settings-tab:focus-visible, .maestro-settings-item:focus-visible, .maestro-switch:focus-visible, .maestro-session-details:focus-visible, .maestro-session-delete:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--maestro-color-accent);
 }
@@ -486,13 +488,14 @@
   width: 2.75rem;
   height: 1.5rem;
   padding: 0;
-  border: 2px solid transparent;
+  border: 2px solid var(--maestro-color-border);
   border-radius: 9999px;
   background: var(--maestro-color-panel);
   cursor: pointer;
-  transition: background-color 150ms;
+  transition: background-color 150ms, border-color 150ms;
 }
 .maestro-switch[aria-checked="true"] {
+  border-color: var(--maestro-color-accent);
   background: var(--maestro-color-accent);
 }
 .maestro-switch-thumb {
@@ -501,7 +504,7 @@
   height: 1.25rem;
   border-radius: 9999px;
   background: var(--maestro-color-background);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  box-shadow: 0 0 0 1px var(--maestro-color-border);
   pointer-events: none;
   transition: transform 150ms;
 }
@@ -541,6 +544,17 @@
 .maestro-session-details {
   flex: 1 1 0%;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--maestro-radii-control) / 2);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.maestro-session-title, .maestro-session-meta {
+  display: block;
 }
 .maestro-session-title {
   overflow: hidden;
@@ -582,9 +596,9 @@
   display: flex;
   gap: 0.75rem;
   padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--maestro-color-warning) 20%, transparent);
+  border: 1px solid var(--maestro-color-warning);
   border-radius: var(--maestro-radii-panel);
-  background: color-mix(in srgb, var(--maestro-color-warning) 10%, transparent);
+  background: var(--maestro-color-panel);
   font-size: 0.875rem;
 }
 .maestro-storage-sign {
