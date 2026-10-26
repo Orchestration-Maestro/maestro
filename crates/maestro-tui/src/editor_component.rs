@@ -14,6 +14,9 @@ pub type TextCallback = Rc<dyn Fn(&str)>;
 /// Paints text with the border colour.
 pub type BorderColor = Rc<dyn Fn(&str) -> String>;
 
+/// The original failure of an editor operation that a component-backed editor reports.
+pub type EditorError = Box<dyn std::error::Error + Send + Sync>;
+
 /// A text editor that extensions can substitute for the built-in one.
 ///
 /// Optional operations return `None` when the editor does not support them. Those that
@@ -88,6 +91,80 @@ pub trait EditorComponent: Component + InputHandler {
     /// Sets how many completion items are visible at once.
     fn set_autocomplete_max_visible(&self, _max_visible: f64) -> Option<()> {
         None
+    }
+
+    /// [`get_text`](EditorComponent::get_text), or the failure of a component-backed editor.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_get_text(&self) -> Result<String, EditorError> {
+        Ok(self.get_text())
+    }
+
+    /// [`set_text`](EditorComponent::set_text), or the failure of a component-backed editor.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_set_text(&self, text: &str) -> Result<(), EditorError> {
+        self.set_text(text);
+        Ok(())
+    }
+
+    /// [`add_to_history`](EditorComponent::add_to_history), or the editor's failure.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_add_to_history(&self, text: &str) -> Result<Option<()>, EditorError> {
+        Ok(self.add_to_history(text))
+    }
+
+    /// [`insert_text_at_cursor`](EditorComponent::insert_text_at_cursor), or the editor's
+    /// failure.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_insert_text_at_cursor(&self, text: &str) -> Result<Option<()>, EditorError> {
+        Ok(self.insert_text_at_cursor(text))
+    }
+
+    /// [`get_expanded_text`](EditorComponent::get_expanded_text), or the editor's failure.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_get_expanded_text(&self) -> Result<Option<String>, EditorError> {
+        Ok(self.get_expanded_text())
+    }
+
+    /// [`set_autocomplete_provider`](EditorComponent::set_autocomplete_provider), or the
+    /// editor's failure.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider<Signal = Self::Signal>>,
+    ) -> Result<Option<()>, EditorError> {
+        Ok(self.set_autocomplete_provider(provider))
+    }
+
+    /// [`set_padding_x`](EditorComponent::set_padding_x), or the editor's failure.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_set_padding_x(&self, padding: f64) -> Result<Option<()>, EditorError> {
+        Ok(self.set_padding_x(padding))
+    }
+
+    /// [`set_autocomplete_max_visible`](EditorComponent::set_autocomplete_max_visible), or
+    /// the editor's failure.
+    ///
+    /// # Errors
+    /// Returns the editor's original failure; the default delegates and cannot fail.
+    fn try_set_autocomplete_max_visible(
+        &self,
+        max_visible: f64,
+    ) -> Result<Option<()>, EditorError> {
+        Ok(self.set_autocomplete_max_visible(max_visible))
     }
 }
 

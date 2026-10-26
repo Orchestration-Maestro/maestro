@@ -1665,7 +1665,7 @@ impl Interrupt {
 const HELD_RELEASE: &str = "held-release";
 
 /// A started mode whose shell waits for the release file.
-async fn held_shell(directory: &Path) -> World {
+pub(super) async fn held_shell(directory: &Path) -> World {
     let release = directory.join(HELD_RELEASE);
     let _ = std::fs::remove_file(&release);
     let script = scripted(
@@ -1681,7 +1681,7 @@ async fn held_shell(directory: &Path) -> World {
 
 /// Submits the held shell command and returns the command it admitted once the session
 /// runs it.
-fn start_held(world: &World) -> LocalFuture {
+pub(super) fn start_held(world: &World) -> LocalFuture {
     submit(&world.mode, HELD);
     let mut admitted = world.runtime.take_futures();
     assert_eq!(admitted.len(), 1, "the submission admits one command");
@@ -1699,7 +1699,7 @@ fn start_held(world: &World) -> LocalFuture {
 
 /// Waits for the held shell's own command to finish, which its release or its cancellation
 /// settles.
-async fn until_settled(command: LocalFuture) {
+pub(super) async fn until_settled(command: LocalFuture) {
     command.await.expect("the held shell settles");
 }
 

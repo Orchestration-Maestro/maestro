@@ -72,6 +72,25 @@ impl Browser {
         browser
     }
 
+    /// Recreate inputs at a locked cache path so Cargo retains workspace package identities.
+    pub fn cached() -> Self {
+        let mut browser = Self::new();
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../target/Maestro's browser 東京 checkout");
+        browser.workspace.cache_at(&path);
+        // Restored mutable sources must be newer than any compiled edited version.
+        for source in [
+            browser.fixture("src/main.rs"),
+            browser.path("crates/maestro-web/src/lib.rs"),
+        ] {
+            fs::File::open(source)
+                .unwrap()
+                .set_modified(std::time::SystemTime::now())
+                .unwrap();
+        }
+        browser
+    }
+
     pub fn generate_lockfile(&self) {
         record("phase: cargo generate-lockfile");
         let status = super::recipe_support::setup_status(

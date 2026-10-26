@@ -5,14 +5,14 @@ use crate::types::{ExtensionActions, ProviderActions, write};
 use crate::{
     EventError, ExtensionExecution,
     types::{
-        ExtensionCommandContextActions, ExtensionContextActions, ExtensionRuntimeState,
-        ExtensionUIContext, ExtensionUIContextBinding,
+        ActivityGuard, ExtensionCommandContextActions, ExtensionContextActions, ExtensionUIContext,
+        ExtensionUIContextBinding,
     },
 };
 use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
 use maestro_session::session_manager::ReadonlySessionManager;
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 
 /// The session a runner serves, fixed when the runner is created.
 pub struct ExtensionRunnerSession {
@@ -26,8 +26,8 @@ pub struct ExtensionRunnerSession {
 
 /// Runner state that its contexts read when used.
 pub(crate) struct ContextBinding {
-    /// Shared flag values and activity guard.
-    pub(super) runtime: Arc<ExtensionRuntimeState>,
+    /// This runner's own activity; a later runner over the same runtime keeps its own.
+    pub(super) activity: ActivityGuard,
     /// The served session.
     pub(super) session: ExtensionRunnerSession,
     /// Currently bound application operations.
@@ -84,11 +84,13 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         }
         Ok(())
     }
-    /// Invalidates this runner's contexts and registration, keeping the first message.
+    /// Invalidates this runner's contexts and its runtime's registration, each keeping its
+    /// first message.
     ///
     /// `None` uses the stale-context guidance.
     pub fn invalidate(&self, message: Option<String>) {
-        self.binding.runtime.invalidate(message);
+        self.binding.activity.invalidate(message.clone());
+        self.runtime.invalidate(message);
     }
     /// Requests a graceful shutdown through the bound operation, even when stale.
     ///

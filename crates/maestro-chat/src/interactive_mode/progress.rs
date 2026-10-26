@@ -259,7 +259,11 @@ impl InteractiveMode {
 
     /// Builds a loader in the status container's own colours and sizes; an absent message
     /// is the loader's own, which a countdown replaces on its first tick.
-    fn progress_loader(&self, message: Option<String>, spinner: ThemeColor) -> Loader {
+    pub(in crate::interactive_mode) fn progress_loader(
+        &self,
+        message: Option<String>,
+        spinner: ThemeColor,
+    ) -> Loader {
         let theme = self.themes.theme();
         Loader::new(
             self.ui.as_ref().clone(),
