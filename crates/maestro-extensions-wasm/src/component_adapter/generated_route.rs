@@ -75,7 +75,9 @@ fn dispatch(call: host::LocalCall) -> Running {
         call @ (host::LocalCall::Renderer(_)
         | host::LocalCall::Render(_)
         | host::LocalCall::Unit(_)
-        | host::LocalCall::Key(_)) => component(call),
+        | host::LocalCall::Key(_)
+        | host::LocalCall::Focused(_)
+        | host::LocalCall::SetFocused(_)) => component(call),
         host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
             call.target,
             &call.args,
@@ -136,6 +138,16 @@ fn component(call: host::LocalCall) -> host::LocalResult {
                 Some(data) => view.handle_input(data, emitter),
                 None => view.invalidate(emitter),
             },
+        )),
+        host::LocalCall::Focused(call) => host::LocalResult::Focused(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            crate::Component::focused,
+        )),
+        host::LocalCall::SetFocused(call) => host::LocalResult::Unit(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            |view, emitter| view.set_focused(call.focused, emitter),
         )),
         host::LocalCall::Key(call) => host::LocalResult::Key(exports.invoke_component(
             call.target,

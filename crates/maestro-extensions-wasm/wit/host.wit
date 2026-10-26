@@ -155,6 +155,8 @@ interface host {
     record local-unit { target: u32, data: option<string>, emitter: callback-emitter }
     /// One nested same-instance key-release query.
     record local-key { target: u32, emitter: callback-emitter }
+    /// Assigns focus to a retained authored component.
+    record local-focus { target: u32, focused: bool, emitter: callback-emitter }
     /// One nested same-instance argument preparation.
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
     /// What a terminal input listener decided; absent members leave the input as it is.
@@ -233,7 +235,7 @@ interface host {
         render(local-render),
         unit(local-unit),
         expanded(local-expanded),
-        key(local-key),
+        key(local-key), focused(local-key), set-focused(local-focus),
         prepare(local-prepare),
         terminal-input(local-terminal-input),
         synchronous(local-synchronous),
@@ -264,7 +266,7 @@ interface host {
         renderer(result<option<callback>, string>),
         render(result<list<string>, string>),
         unit(result<_, string>),
-        key(result<bool, string>),
+        key(result<bool, string>), focused(result<option<bool>, string>),
         prepared(result<string, string>),
         terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),

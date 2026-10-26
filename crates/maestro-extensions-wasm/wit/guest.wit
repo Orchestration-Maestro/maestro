@@ -24,6 +24,10 @@ interface guest {
     component-handle-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Reads the key-release preference of one retained authored component.
     component-wants-key-release: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<bool, string>;
+    /// Reads focus state, absent when the authored component cannot focus.
+    component-focused: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<option<bool>, string>;
+    /// Assigns focus synchronously to an authored component.
+    component-set-focused: async func(handler: borrow<callback>, focused: bool, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Invalidates one retained authored component.
     component-invalidate: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a synchronous renderer and transfers the identity of its returned component.

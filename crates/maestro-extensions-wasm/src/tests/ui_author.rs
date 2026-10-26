@@ -14,9 +14,9 @@ use maestro_extensions_wasm::{
     CompactOptions, Component, ComponentDisposer, ComponentFactory, ComponentView, ExtensionAPI,
     ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterData, FooterFactory, NotificationType,
-    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Theme, ThemeSelection,
+    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Text, Theme, ThemeSelection,
     ThemeSetResult, ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderResult,
-    WidgetPlacement, WorkingIndicatorOptions,
+    WidgetPlacement, WorkingIndicatorOptions, is_focusable,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -732,6 +732,8 @@ enum Operation {
     },
     /// Installs a retained terminal view.
     TuiFactory,
+    /// Checks the authored component focus contract.
+    FocusContract,
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -839,6 +841,26 @@ fn caught(result: ExtensionResult<Option<Value>>) -> Value {
     }
 }
 
+/// Checks authored focus without assuming every component has that capability.
+fn focus_probe(ctx: &ExtensionContext) -> ExtensionResult<Option<Value>> {
+    super::focus_author::install(&ctx.ui()?)?;
+    let emitter = CallbackEmitter::new(&Silent);
+    let field = super::focus_author::component();
+    let plain = Component::from(&Text::new("plain", 0, 0, None)?);
+    assert!(!is_focusable(Some(&plain)));
+    assert_eq!(plain.focused(emitter)?, None);
+    plain.set_focused(true, emitter)?;
+    assert_eq!(plain.focused(emitter)?, None);
+    assert!(!is_focusable(None));
+    assert!(is_focusable(Some(&field)));
+    assert_eq!(field.focused(emitter)?, Some(false));
+    field.set_focused(true, emitter)?;
+    assert_eq!(field.focused(emitter)?, Some(true));
+    field.set_focused(false, emitter)?;
+    field.set_focused(true, emitter)?;
+    Ok(Some(json!(field.render(10, emitter)?)))
+}
+
 /// Drops the author's retained aliases without removing the host's components.
 fn drop_kept() -> Value {
     drop(ALIASES.take());
@@ -928,6 +950,7 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                     .map(Some),
             )
         }
+        Operation::FocusContract => caught(focus_probe(ctx)),
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
         Operation::DropKept => drop_kept(),
         operation @ (Operation::TuiFactory

@@ -141,3 +141,20 @@ Neither calling expansion nor dropping its handle invokes disposal.
 A factory's `TUI::full_redraws` reads the original host frame writer's count on
 every call. Clones retain the same host capability after the factory returns;
 releasing the last clone releases that capability, not the host terminal.
+
+### Authored focus
+
+A `ComponentView` can return `Some(self)` from `focusable` when it implements
+`Focusable`. Its getter and setter run synchronously with a borrowed
+`CallbackEmitter`. `is_focusable` tests whether the capability exists, not whether
+its flag is currently true. The host calls the setter on focus and blur, including
+repeated assignments. Ordinary callback failures surface on the next fallible
+render, as they do for input and invalidation.
+
+Emit `CURSOR_MARKER` at the text cursor only while focused. The host removes the
+zero-width marker and positions its hardware cursor there. This does not install
+an overlay or make a nonfocusable view focusable.
+
+| Protocol operation | Native counterpart | Ownership |
+| --- | --- | --- |
+| `component-focused`, `component-set-focused` | `Component::focusable`, `Focusable::set_focused` | Borrows the retained component and the current emission frame; focus state stays with the author. |

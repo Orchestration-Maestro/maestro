@@ -27,3 +27,20 @@ async fn redraws(driver: &mut impl Driver) -> Result<(), String> {
 fn retained_tui_reads_the_host_full_redraw_count() -> Result<(), String> {
     on_both_adapters!(redraws)
 }
+
+/// The focus flag exists while false, changes synchronously and emits a zero-width marker.
+async fn focus(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    assert_eq!(
+        operate(driver, json!({"op":"focusContract"})).await?,
+        json!({"ok":["field\u{1b}_maestro:c\u{7} [true, false, true]"]})
+    );
+    assert_eq!(driver.widget("focus", 10).await?, ["field []"]);
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn authored_focus_keeps_setter_order_and_cursor_marker() -> Result<(), String> {
+    on_both_adapters!(focus)
+}

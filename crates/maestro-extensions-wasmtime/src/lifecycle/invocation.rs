@@ -40,6 +40,7 @@ impl Call {
                 ComponentCall::Render(_, _, _, reply) => attach(reply, completion),
                 ComponentCall::Unit(_, _, _, reply) => attach(reply, completion),
                 ComponentCall::WantsKeyRelease(_, _, reply) => attach(reply, completion),
+                ComponentCall::Focused(_, _, reply) => attach(reply, completion),
             },
             Self::Synchronous(call) => attach(&call.completion, completion),
             Self::TerminalInput(call) => attach(&call.reply, completion),

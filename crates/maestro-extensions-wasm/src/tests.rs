@@ -1099,9 +1099,11 @@ fn assert_async_exports(contract: &Contract) {
         names(&contract.exports, true),
         [
             "bash-exec",
+            "component-focused",
             "component-handle-input",
             "component-invalidate",
             "component-render",
+            "component-set-focused",
             "component-wants-key-release",
             "invoke-abort",
             "invoke-auth-backend",

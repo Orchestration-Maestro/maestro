@@ -127,6 +127,27 @@ impl<E: Extension> Guest for Glue<E> {
             crate::Component::wants_key_release,
         ))
     }
+    fn component_focused(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<Option<bool>>> {
+        std::future::ready(Exports::new(Generated).invoke_component(
+            handler.id(),
+            emitter,
+            crate::Component::focused,
+        ))
+    }
+    fn component_set_focused(
+        handler: &host::Callback,
+        focused: bool,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_component(
+            handler.id(),
+            emitter,
+            |view, emitter| view.set_focused(focused, emitter),
+        ))
+    }
     fn component_invalidate(
         handler: &host::Callback,
         emitter: &host::CallbackEmitter,

@@ -26,6 +26,10 @@ pub trait ComponentView {
     fn wants_key_release(&self, _emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
         Ok(false)
     }
+    /// The focus capability, absent for components without one.
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        None
+    }
     /// Invalidates retained rendering state.
     /// # Errors
     /// Returns the author's failure.
@@ -35,6 +39,8 @@ pub trait ComponentView {
 #[macro_use]
 mod widgets;
 mod editors;
+mod focus;
+pub use focus::{CURSOR_MARKER, Focusable, is_focusable};
 mod keys;
 mod lists;
 pub use editors::{

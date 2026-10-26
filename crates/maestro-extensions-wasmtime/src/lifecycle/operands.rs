@@ -220,6 +220,9 @@ fn component(call: ComponentCall, completion: &Completion) -> ComponentCall<Call
         ComponentCall::Unit(owner, method, emitter, reply) => {
             ComponentCall::Unit(completion.callback(owner), method, emitter, reply)
         }
+        ComponentCall::Focused(owner, emitter, reply) => {
+            ComponentCall::Focused(completion.callback(owner), emitter, reply)
+        }
         ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
             ComponentCall::WantsKeyRelease(completion.callback(owner), emitter, reply)
         }

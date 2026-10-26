@@ -16,7 +16,7 @@ use crate::{
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
 mod component;
-use component::{LocalKey, LocalRender, LocalUnit};
+use component::{LocalFocus, LocalKey, LocalRender, LocalUnit};
 mod credentials;
 mod editors;
 mod ui;
@@ -215,6 +215,12 @@ pub(super) enum LocalCall {
     /// A retained component key-release query.
     #[component(name = "key")]
     Key(LocalKey),
+    /// A retained component's optional focus state.
+    #[component(name = "focused")]
+    Focused(LocalKey),
+    /// A retained component's synchronous focus assignment.
+    #[component(name = "set-focused")]
+    SetFocused(LocalFocus),
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
@@ -305,6 +311,9 @@ pub(super) enum LocalResult {
     /// Key-release preference or the authored error.
     #[component(name = "key")]
     Key(Result<bool, String>),
+    /// Optional focus state or an ordinary error.
+    #[component(name = "focused")]
+    Focused(Result<Option<bool>, String>),
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
@@ -497,6 +506,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
+            let _ = reply.send(value);
+        }
+        (Call::Component(ComponentCall::Focused(_, _, reply)), LocalResult::Focused(value)) => {
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {

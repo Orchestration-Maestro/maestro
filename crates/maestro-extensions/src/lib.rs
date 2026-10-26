@@ -168,8 +168,9 @@ pub mod widgets {
         editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
     };
     pub use maestro_tui::{
-        Editor, EditorOptions, EditorTheme, Focusable, KeybindingConflict, KeybindingDefinition,
-        KeybindingDefinitions, KeybindingKeys, KeybindingsConfig, get_keybindings,
+        Editor, EditorOptions, EditorTheme, FocusFlag, Focusable, KeybindingConflict,
+        KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, KeybindingsConfig,
+        get_keybindings,
     };
 }
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};
