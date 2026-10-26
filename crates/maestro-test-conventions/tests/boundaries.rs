@@ -1069,6 +1069,17 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
         "pub struct ToolDefinition;",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/tools.rs",
+        "pub struct ToolDefinition; pub struct ToolRenderContext; pub struct ToolRenderResultOptions;",
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Ok(()),
+        "the guest declares its renderer records beside its tool definition"
+    );
     guest_tool_declaration_decoys(&workspace);
     source(
         &workspace,
@@ -1104,13 +1115,9 @@ fn guest_tool_declaration_decoys(workspace: &Workspace) {
     for (owner, path, name) in [
         ("maestro-extensions-wasm", "src/lib.rs", "ToolDefinition"),
         ("maestro-tui", "src/types/tools.rs", "ToolDefinition"),
+        ("maestro-extensions-wasm", "src/lib.rs", "ToolRenderContext"),
         (
-            "maestro-extensions-wasm",
-            "src/types/tools.rs",
-            "ToolRenderContext",
-        ),
-        (
-            "maestro-extensions-wasm",
+            "maestro-tui",
             "src/types/tools.rs",
             "ToolRenderResultOptions",
         ),

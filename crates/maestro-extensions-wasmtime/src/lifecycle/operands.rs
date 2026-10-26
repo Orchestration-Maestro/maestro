@@ -56,6 +56,9 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
+            Self::Factory(call) => Call::Factory(factory(call, completion)),
+            Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
+            Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
                 kind: call.kind,
@@ -64,6 +67,49 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the factory admission beside its lent terminal and theme.
+fn factory(
+    call: crate::guest_calls::factories::FactoryCall,
+    completion: &Completion,
+) -> crate::guest_calls::factories::FactoryCall<Callback> {
+    crate::guest_calls::factories::FactoryCall {
+        handler: completion.callback(call.handler),
+        tui: call.tui,
+        theme: call.theme,
+        footer: call.footer,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the renderer admission beside its row operands.
+fn tool_render(
+    call: crate::guest_calls::tool_renders::ToolRenderCall,
+    completion: &Completion,
+) -> crate::guest_calls::tool_renders::ToolRenderCall<Callback> {
+    crate::guest_calls::tool_renders::ToolRenderCall {
+        handler: completion.callback(call.handler),
+        render: call.render,
+        theme: call.theme,
+        invalidator: call.invalidator,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the terminal input listener admission beside its chunk.
+fn terminal_input(
+    call: crate::guest_calls::terminal::Input,
+    completion: &Completion,
+) -> crate::guest_calls::terminal::Input<Callback> {
+    crate::guest_calls::terminal::Input {
+        handler: completion.callback(call.handler),
+        data: call.data,
+        emitter: call.emitter,
+        reply: call.reply,
     }
 }
 

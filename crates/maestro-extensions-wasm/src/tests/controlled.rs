@@ -14,8 +14,9 @@ use super::observed::{Observed, Session, pause};
 use super::setup_host::document;
 use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
-use crate::component_adapter::{Exports, Imports};
+use crate::component_adapter::{Dialog, Exports, Imports};
 use crate::types::{ExtensionFuture, ExtensionResult};
+use serde_json::json;
 
 /// A cancellation flag the test controls.
 #[derive(Clone, Default)]
@@ -173,6 +174,134 @@ impl Drop for Theme {
 pub struct Controlled {
     /// What the host observed.
     observed: Rc<RefCell<Observed>>,
+    /// Components factory widgets built, by the handle their slots name.
+    widgets: Rc<RefCell<std::collections::HashMap<u32, crate::ExtensionComponent>>>,
+}
+
+/// Terminal lent to a component factory, with a counted lifetime.
+pub struct Tui {
+    /// Counted owner.
+    _lease: Lease,
+}
+
+/// Redraw capability of one tool row, with a counted lifetime.
+pub struct Invalidator {
+    /// The row it redraws.
+    pub row: String,
+    /// Counted owner.
+    _lease: Lease,
+}
+
+/// Footer metadata lent to a footer factory, with a counted lifetime.
+pub struct FooterData {
+    /// Counted owner.
+    _lease: Lease,
+}
+
+impl Controlled {
+    /// Removes every widget under `key` from both placements, running each disposal before
+    /// the component is released.
+    fn take_widgets(&self, key: &str) -> ExtensionResult<()> {
+        let removed: Vec<_> = {
+            let mut observed = self.observed.borrow_mut();
+            let (removed, kept) = std::mem::take(&mut observed.ui.widgets)
+                .into_iter()
+                .partition(|slot| slot.key == key);
+            observed.ui.widgets = kept;
+            removed
+        };
+        for slot in removed {
+            let built = self.widgets.borrow_mut().remove(&slot.component);
+            let dispose = built.as_ref().and_then(|built| built.dispose.clone());
+            dispose.map_or(Ok(()), |dispose| self.dispose(&dispose))?;
+            drop(built);
+        }
+        Ok(())
+    }
+
+    /// Builds the component a factory under `factory` makes with a lent terminal and theme,
+    /// and keeps it under a fresh handle.
+    fn build(&self, factory: &Callback, footer: bool) -> ExtensionResult<u32> {
+        let lent = crate::component_adapter::factories::Lent {
+            tui: Tui {
+                _lease: Lease::new(&self.observed),
+            },
+            theme: self.theme("dark"),
+            footer: footer.then(|| FooterData {
+                _lease: Lease::new(&self.observed),
+            }),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let built =
+            Exports::new(self.clone()).invoke_component_factory(factory.id, lent, &emitter)?;
+        let handle = self.observed.borrow_mut().next_identity();
+        self.widgets.borrow_mut().insert(handle, built);
+        Ok(handle)
+    }
+
+    /// The redraw capability of the tool row `row`.
+    pub fn invalidator(&self, row: &str) -> Invalidator {
+        Invalidator {
+            row: row.to_owned(),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+
+    /// The component the custom footer shows.
+    pub fn footer(&self) -> Option<crate::Component> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .footer
+            .custom
+            .as_ref()
+            .map(|slot| slot.component)?;
+        self.widgets
+            .borrow()
+            .get(&slot)
+            .map(|built| built.component.clone())
+    }
+
+    /// The component the custom header shows.
+    pub fn header(&self) -> Option<crate::Component> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .header
+            .custom
+            .as_ref()
+            .map(|slot| slot.component)?;
+        self.widgets
+            .borrow()
+            .get(&slot)
+            .map(|built| built.component.clone())
+    }
+
+    /// Runs one widget disposal with a lent emitter.
+    fn dispose(&self, dispose: &crate::ComponentDisposer) -> ExtensionResult<()> {
+        let emitter = super::bus_host::Emitter { key: 0 };
+        crate::component_adapter::renderers::with_emitter(self, &emitter, |emitter| {
+            dispose(emitter)
+        })
+    }
+
+    /// The component the factory widget under `key` shows.
+    pub fn widget(&self, key: &str) -> Option<crate::Component> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .widgets
+            .iter()
+            .find(|slot| slot.key == key)
+            .map(|slot| slot.component)?;
+        self.widgets
+            .borrow()
+            .get(&slot)
+            .map(|built| built.component.clone())
+    }
 }
 
 impl Controlled {
@@ -315,6 +444,63 @@ fn ui_call(
 ) -> ExtensionResult<()> {
     super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)
 }
+/// A selection result as success and its optional message.
+fn theme_set_result(result: &serde_json::Value) -> crate::ThemeSetResult {
+    crate::ThemeSetResult {
+        success: result[0] == true,
+        error: result[1].as_str().map(str::to_owned),
+    }
+}
+
+impl Controlled {
+    /// Records one theme request on `resource` and answers it from the controlled host.
+    fn ui_themed(
+        &self,
+        resource: &Ui,
+        method: &str,
+        operand: &serde_json::Value,
+    ) -> ExtensionResult<serde_json::Value> {
+        super::ui_host::themed(
+            &mut self.observed.borrow_mut(),
+            resource.key,
+            method,
+            operand,
+        )
+    }
+}
+
+/// Records one dialog through the controlled host, waits while it is held pending, records
+/// whether its signal is aborted by then and answers its supplied decision.
+async fn ui_dialog(
+    observed: &Rc<RefCell<Observed>>,
+    key: usize,
+    method: &str,
+    operands: &serde_json::Value,
+    signal: Option<&Signal>,
+) -> ExtensionResult<serde_json::Value> {
+    super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)?;
+    let hold = observed.borrow_mut().take_hold();
+    pause(hold).await;
+    let mut observed = observed.borrow_mut();
+    if let Some(signal) = signal {
+        let aborted = signal.flag.0.load(std::sync::atomic::Ordering::SeqCst);
+        super::ui_host::settle(&mut observed, key, &json!(aborted));
+    }
+    Ok(super::ui_host::decision(&mut observed))
+}
+
+/// Dialog operands followed by whether the lent signal is aborted, or null, and the timeout.
+fn dialog_operands(leading: serde_json::Value, dialog: &Dialog<'_, Signal>) -> serde_json::Value {
+    let mut operands = leading;
+    if let Some(operands) = operands.as_array_mut() {
+        let aborted = dialog
+            .signal
+            .map(|signal| signal.flag.0.load(std::sync::atomic::Ordering::SeqCst));
+        operands.extend([json!(aborted), json!(dialog.timeout)]);
+    }
+    operands
+}
+
 impl Controlled {
     /// Probe the consumed slot while its owning command still retains the identity.
     async fn repeat_continuation(&self, id: u32) {
@@ -973,6 +1159,46 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    type Tui = Tui;
+    type Invalidator = Invalidator;
+    fn invalidate(&self, invalidator: &Invalidator) -> ExtensionResult<()> {
+        let mut observed = self.observed.borrow_mut();
+        observed.log(format!("invalidate {}", invalidator.row));
+        Ok(())
+    }
+    type FooterData = FooterData;
+    fn footer_get_git_branch(&self, _: &FooterData) -> ExtensionResult<Option<String>> {
+        let branch = self.observed.borrow().ui.footer.read("getGitBranch");
+        Ok(branch.as_str().map(str::to_owned))
+    }
+    fn footer_get_extension_statuses(
+        &self,
+        _: &FooterData,
+    ) -> ExtensionResult<Vec<(String, String)>> {
+        let statuses = self
+            .observed
+            .borrow()
+            .ui
+            .footer
+            .read("getExtensionStatuses");
+        serde_json::from_value(statuses).map_err(|error| error.to_string())
+    }
+    fn footer_get_available_provider_count(&self, _: &FooterData) -> ExtensionResult<f64> {
+        let count = self
+            .observed
+            .borrow()
+            .ui
+            .footer
+            .read("getAvailableProviderCount");
+        Ok(count.as_f64().unwrap_or_default())
+    }
+    fn footer_on_branch_change(
+        &self,
+        _: &FooterData,
+        listener: &Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        self.observed.borrow_mut().bus.on("branch", listener.id)
+    }
     fn ui_notify(
         &self,
         resource: &Ui,
@@ -1054,7 +1280,82 @@ impl Imports for Controlled {
             resource.key,
             "setWidget",
             &super::ui_host::widget(key, content, options),
-        )
+        )?;
+        self.take_widgets(key)
+    }
+    fn ui_set_widget_factory(
+        &self,
+        resource: &Ui,
+        key: &str,
+        factory: &Callback,
+        options: Option<crate::ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()> {
+        let placement = options
+            .and_then(|options| options.placement)
+            .map_or_else(|| "AboveEditor".to_owned(), super::ui_host::variant);
+        let operands = json!([key, placement]);
+        ui_call(&self.observed, resource.key, "setWidgetFactory", &operands)?;
+        self.take_widgets(key)?;
+        let handle = self.build(factory, false)?;
+        self.observed
+            .borrow_mut()
+            .ui
+            .widgets
+            .push(super::ui_host::WidgetSlot {
+                key: key.to_owned(),
+                component: handle,
+                dispose: None,
+            });
+        Ok(())
+    }
+    fn ui_set_footer(&self, resource: &Ui, factory: Option<&Callback>) -> ExtensionResult<()> {
+        let operands = json!([factory.is_some()]);
+        ui_call(&self.observed, resource.key, "setFooter", &operands)?;
+        let old = self.observed.borrow_mut().ui.footer.custom.take();
+        let old = old.and_then(|old| self.widgets.borrow_mut().remove(&old.component));
+        if let Some(dispose) = old.as_ref().and_then(|old| old.dispose.clone()) {
+            self.dispose(&dispose)?;
+        }
+        drop(old);
+        if let Some(factory) = factory {
+            let component = self.build(factory, true)?;
+            self.observed.borrow_mut().ui.footer.custom = Some(super::ui_host::WidgetSlot {
+                key: "footer".to_owned(),
+                component,
+                dispose: None,
+            });
+        }
+        Ok(())
+    }
+    fn ui_set_header(&self, resource: &Ui, factory: Option<&Callback>) -> ExtensionResult<()> {
+        let operands = json!([factory.is_some()]);
+        ui_call(&self.observed, resource.key, "setHeader", &operands)?;
+        if !self.observed.borrow().ui.header.ready {
+            return Ok(());
+        }
+        let old = self
+            .observed
+            .borrow()
+            .ui
+            .header
+            .custom
+            .as_ref()
+            .map(|slot| slot.component);
+        let old = old.and_then(|old| self.widgets.borrow_mut().remove(&old));
+        if let Some(dispose) = old.as_ref().and_then(|old| old.dispose.clone()) {
+            self.dispose(&dispose)?;
+        }
+        drop(old);
+        let slot = match factory {
+            None => None,
+            Some(factory) => Some(super::ui_host::WidgetSlot {
+                key: "header".to_owned(),
+                component: self.build(factory, false)?,
+                dispose: None,
+            }),
+        };
+        self.observed.borrow_mut().ui.header.install(slot);
+        Ok(())
     }
     fn ui_set_title(&self, resource: &Ui, title: &str) -> ExtensionResult<()> {
         ui_call(
@@ -1077,6 +1378,124 @@ impl Imports for Controlled {
     }
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
+    fn ui_theme(&self, resource: &Ui) -> ExtensionResult<Theme> {
+        let key = self.ui_themed(resource, "theme", &serde_json::Value::Null)?;
+        Ok(self.theme(key.as_str().unwrap_or_default()))
+    }
+    fn ui_get_all_themes(&self, resource: &Ui) -> ExtensionResult<Vec<crate::ThemeInfo>> {
+        self.ui_themed(resource, "getAllThemes", &serde_json::Value::Null)?;
+        Ok(super::ui_host::THEMES
+            .iter()
+            .map(|(name, path)| crate::ThemeInfo {
+                name: (*name).to_owned(),
+                path: path.map(str::to_owned),
+            })
+            .collect())
+    }
+    fn ui_get_theme(&self, resource: &Ui, name: &str) -> ExtensionResult<Option<Theme>> {
+        let loaded = self.ui_themed(resource, "getTheme", &json!(name))?;
+        Ok(loaded.as_str().map(|key| self.theme(key)))
+    }
+    fn ui_set_theme_name(
+        &self,
+        resource: &Ui,
+        name: &str,
+    ) -> ExtensionResult<crate::ThemeSetResult> {
+        let result = self.ui_themed(resource, "setThemeName", &json!(name))?;
+        Ok(theme_set_result(&result))
+    }
+    fn ui_set_theme(&self, resource: &Ui, theme: &Theme) -> ExtensionResult<crate::ThemeSetResult> {
+        let result = self.ui_themed(resource, "setTheme", &json!(theme.key))?;
+        Ok(theme_set_result(&result))
+    }
+    fn ui_get_tools_expanded(&self, resource: &Ui) -> ExtensionResult<bool> {
+        let expanded = self.ui_themed(resource, "getToolsExpanded", &serde_json::Value::Null)?;
+        Ok(expanded == true)
+    }
+    fn ui_set_tools_expanded(&self, resource: &Ui, expanded: bool) -> ExtensionResult<()> {
+        self.ui_themed(resource, "setToolsExpanded", &json!(expanded))
+            .map(drop)
+    }
+    fn ui_on_terminal_input(
+        &self,
+        resource: &Ui,
+        handler: &Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        super::ui_host::on_terminal_input(&mut self.observed.borrow_mut(), resource.key, handler.id)
+    }
+    fn ui_select<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        options: Vec<String>,
+        dialog: Dialog<'a, Signal>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        let operands = dialog_operands(json!([title, options]), &dialog);
+        Box::pin(async move {
+            let decision = ui_dialog(
+                &self.observed,
+                resource.key,
+                "select",
+                &operands,
+                dialog.signal,
+            )
+            .await?;
+            Ok(super::ui_host::chosen(&decision))
+        })
+    }
+    fn ui_confirm<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        message: String,
+        dialog: Dialog<'a, Signal>,
+    ) -> ExtensionFuture<'a, bool> {
+        let operands = dialog_operands(json!([title, message]), &dialog);
+        Box::pin(async move {
+            let decision = ui_dialog(
+                &self.observed,
+                resource.key,
+                "confirm",
+                &operands,
+                dialog.signal,
+            )
+            .await?;
+            Ok(super::ui_host::confirmed(&decision))
+        })
+    }
+    fn ui_input<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        placeholder: Option<String>,
+        dialog: Dialog<'a, Signal>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        let operands = dialog_operands(json!([title, placeholder]), &dialog);
+        Box::pin(async move {
+            let decision = ui_dialog(
+                &self.observed,
+                resource.key,
+                "input",
+                &operands,
+                dialog.signal,
+            )
+            .await?;
+            Ok(super::ui_host::chosen(&decision))
+        })
+    }
+    fn ui_editor<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        prefill: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        let operands = json!([title, prefill]);
+        Box::pin(async move {
+            let decision =
+                ui_dialog(&self.observed, resource.key, "editor", &operands, None).await?;
+            Ok(super::ui_host::chosen(&decision))
+        })
     }
     type Registry = Reader;
     type Reader = Reader;
@@ -1420,6 +1839,22 @@ impl Imports for Controlled {
     }
 
     type Theme = Theme;
+    fn theme_thinking_border(
+        &self,
+        theme: &Theme,
+        level: &str,
+        text: &str,
+    ) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "thinkingBorder",
+            &json!([level, text]),
+        )
+    }
+    fn theme_bash_mode_border(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "bashModeBorder", &json!([text]))
+    }
     fn theme_name(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
         super::theme_host::optional(&mut self.observed.borrow_mut(), &theme.key, "name")
     }
@@ -1583,8 +2018,7 @@ impl Imports for Controlled {
     fn register_tool(
         &self,
         metadata: &str,
-        prepare: Option<&Callback>,
-        execute: &Callback,
+        callbacks: crate::component_adapter::ToolCallbacks<'_, Callback>,
         schemas: &[(String, &Callback)],
     ) -> ExtensionResult<()> {
         let name = super::schema_host::tool_name(metadata).map_err(|error| error.to_string())?;
@@ -1597,9 +2031,12 @@ impl Imports for Controlled {
                     .map(|(pointer, callback)| (name.clone(), pointer.clone(), callback.id)),
             );
         }
-        self.observed
-            .borrow_mut()
-            .register_tool(metadata, prepare.map(|p| p.id), execute.id)
+        let id = |callback: Option<&Callback>| callback.map(|callback| callback.id);
+        self.observed.borrow_mut().register_tool(
+            metadata,
+            (id(callbacks.prepare), callbacks.execute.id),
+            (id(callbacks.render_call), id(callbacks.render_result)),
+        )
     }
 
     fn tool_update(&self, update: &Update, partial: &str) -> ExtensionResult<()> {

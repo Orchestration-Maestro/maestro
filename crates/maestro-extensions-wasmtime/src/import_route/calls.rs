@@ -67,6 +67,50 @@ pub(super) struct LocalKey {
     emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested tool rendering.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalToolRender {
+    /// Authored identity of the renderer.
+    target: u32,
+    /// The rendering operands.
+    render: crate::guest_calls::tool_renders::Render,
+    /// Original live theme, transferred.
+    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
+    /// The row's redraw capability, transferred.
+    invalidator: Resource<crate::local_resources::effects::InvalidatorEndpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested component factory.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalFactory {
+    /// Authored identity of the factory.
+    target: u32,
+    /// Original terminal, transferred.
+    tui: Resource<crate::local_resources::effects::TuiEndpoint>,
+    /// Original live theme, transferred.
+    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
+    /// Original footer metadata of a footer factory, transferred.
+    footer: Option<Resource<crate::footer_data::Endpoint>>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested terminal input chunk.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalTerminalInput {
+    /// Authored identity of the terminal input listener.
+    target: u32,
+    /// The literal chunk.
+    data: String,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
 /// Owned operands of one nested argument preparation.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -214,6 +258,9 @@ pub(super) enum LocalCall {
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
+    /// A terminal input listener.
+    #[component(name = "terminal-input")]
+    TerminalInput(LocalTerminalInput),
     /// A synchronous callback prefix.
     #[component(name = "synchronous")]
     Synchronous(LocalSynchronous),
@@ -247,6 +294,12 @@ pub(super) enum LocalCall {
     /// An execution of returned shell operations.
     #[component(name = "bash")]
     Bash(LocalBash),
+    /// A component factory.
+    #[component(name = "factory")]
+    Factory(LocalFactory),
+    /// A tool rendering.
+    #[component(name = "tool-render")]
+    ToolRender(LocalToolRender),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -268,6 +321,9 @@ pub(super) enum LocalResult {
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
+    /// The terminal input listener's decision or its error.
+    #[component(name = "terminal-input")]
+    TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),
     /// Unit result of a synchronous prefix, or the authored error.
     #[component(name = "synchronous")]
     Synchronous(Result<(), String>),
@@ -286,6 +342,12 @@ pub(super) enum LocalResult {
     /// Optional exit status, or the authored error.
     #[component(name = "bash")]
     Bash(Result<Option<f64>, String>),
+    /// The built component identities, or the authored error.
+    #[component(name = "factory")]
+    Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// The rendered component and new row state identities, or the authored error.
+    #[component(name = "tool-render")]
+    ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -316,6 +378,29 @@ pub(super) fn lower(
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::ToolRender(call) => LocalCall::ToolRender(LocalToolRender {
+            target: call.handler.id,
+            render: call.render.clone(),
+            theme: table.push(call.theme.clone())?,
+            invalidator: table.push(call.invalidator.clone())?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::Factory(call) => LocalCall::Factory(LocalFactory {
+            target: call.handler.id,
+            tui: table.push(call.tui.clone())?,
+            theme: table.push(call.theme.clone())?,
+            footer: call
+                .footer
+                .clone()
+                .map(|footer| table.push(footer))
+                .transpose()?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::TerminalInput(call) => LocalCall::TerminalInput(LocalTerminalInput {
+            target: call.handler.id,
+            data: call.data.clone(),
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
@@ -484,6 +569,23 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
+        }
+        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
+            let value = match value {
+                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Factory(call), LocalResult::Factory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);

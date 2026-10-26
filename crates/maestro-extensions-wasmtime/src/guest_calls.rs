@@ -16,10 +16,13 @@ use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
 pub(crate) mod events;
+pub(crate) mod factories;
 pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod schema;
+pub(crate) mod terminal;
+pub(crate) mod tool_renders;
 pub(crate) mod tools;
 pub(crate) use bash::{BashCall, BashRequest};
 pub(crate) use registrations::RegisteredCall;
@@ -55,6 +58,12 @@ pub(crate) enum Call<H = Handle> {
     Tool(ToolCall<H>),
     /// The original weak schema allocation and guest callback admission.
     Schema(schema::Invocation<H>),
+    /// Delivers one chunk of terminal input to an authored listener.
+    TerminalInput(terminal::Input<H>),
+    /// Builds one component with the terminal and theme the native owner lent.
+    Factory(factories::FactoryCall<H>),
+    /// Renders one tool row through its authored renderer.
+    ToolRender(tool_renders::ToolRenderCall<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.
@@ -358,6 +367,12 @@ pub(crate) enum SynchronousKind {
     /// Native abort observer; its export takes no data.
     #[component(name = "abort")]
     Abort,
+    /// Native component disposal; its export takes no data.
+    #[component(name = "dispose")]
+    Dispose,
+    /// Native branch change of a footer's metadata; its export takes no data.
+    #[component(name = "branch-change")]
+    BranchChange,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.

@@ -23,6 +23,8 @@ pub fn factory(api: ExtensionAPI, version: &'static str) -> ExtensionFuture<'sta
             },
         )?;
         api.register_tool(ToolDefinition {
+            render_call: None,
+            render_result: None,
             metadata: serde_json::from_value(json!({"name":format!("resource-{version}"),"label":"Resource","description":"Read the resource version","parameters":{"type":"object"}})).map_err(|error| error.to_string())?,
             prepare_arguments: None,
             execute: Rc::new(move |_, _, _, _, _| Box::pin(async move {

@@ -19,6 +19,7 @@ mod signals;
 #[cfg(test)]
 pub(crate) use signals::signal;
 mod exports;
+pub(crate) mod factories;
 #[cfg(target_arch = "wasm32")]
 mod generated;
 mod host_api;
@@ -28,7 +29,9 @@ mod schema;
 mod session;
 mod setup;
 mod theme;
+pub(crate) mod tool_renders;
 mod tools;
+mod ui;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
 
@@ -38,7 +41,11 @@ pub(crate) use exports::{Capabilities, Exports};
 pub(crate) use exports::{EventOutcome, outcome};
 #[cfg(target_arch = "wasm32")]
 pub use generated::Glue;
+#[cfg(test)]
+pub(crate) use imports::Dialog;
 pub(crate) use imports::Imports;
+#[cfg(test)]
+pub(crate) use imports::ToolCallbacks;
 
 pub(crate) use imports::ToolListing;
 

@@ -8,7 +8,9 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+mod dialogs;
 pub(crate) mod effects;
+mod footer;
 mod signals;
 mod synchronous;
 pub(crate) use synchronous::Completion;
@@ -90,8 +92,12 @@ pub(crate) enum Message {
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
+    /// Admits one dialog on the originally acquired UI.
+    Dialog(u64, crate::ui_reads::DialogRequest, Admission),
     /// Reads or edits the independently retained live renderer theme.
     Theme(u64, crate::theme_reads::Request),
+    /// Reads or subscribes to the footer metadata lent to a footer factory.
+    Footer(u64, crate::footer_data::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -207,8 +213,20 @@ enum Capability {
     SignalSubscription(Rc<dyn Fn()>),
     /// Original live theme supplied by native rendering.
     Theme(maestro_extensions::LiveTheme),
+    /// Removes a terminal input listener from the UI it was added to; dropping it keeps the
+    /// listener.
+    UiSubscription(Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
+    /// Original footer metadata lent to a footer factory.
+    Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
+    /// Original redraw capability of one tool row.
+    Invalidate(Rc<dyn Fn()>),
+    /// Original terminal lent to a component factory.
+    Tui {
+        /// Ownership alone crosses the opaque canonical terminal resource.
+        _owner: maestro_extensions::TUI,
+    },
 }
 
 /// Local entries and their monotonic identities.
@@ -256,9 +274,17 @@ impl Registry {
         &self,
         api: &crate::api_reads::Endpoint,
     ) -> Result<maestro_extensions::EventBus<maestro_extensions::Local>, String> {
+        self.facade(api).map(|api| api.events)
+    }
+
+    /// The original extension facade behind an API resource.
+    pub(crate) fn facade(
+        &self,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<maestro_extensions::ExtensionAPI<maestro_extensions::Local>, String> {
         let capability = self.capability(api.0.id);
         match capability.as_deref() {
-            Some(Capability::Api(api)) => Ok(api.events.clone()),
+            Some(Capability::Api(api)) => Ok(api.clone()),
             _ => Err("extension API resource ended".to_owned()),
         }
     }

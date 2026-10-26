@@ -33,7 +33,7 @@ pub struct CompactOptions {
     pub on_error: Option<CompactionError>,
 }
 pub use crate::bindings::maestro::extension::host::{
-    ContextUsage, ExtensionWidgetOptions, NotificationType, WidgetPlacement,
+    ContextUsage, ExtensionWidgetOptions, NotificationType, TerminalInputResult, WidgetPlacement,
     WorkingIndicatorOptions,
 };
 use crate::{Model, ModelRegistry, ReadonlySessionManager};
@@ -73,6 +73,19 @@ port! {
             content: Option<&[String]>,
             options: Option<ExtensionWidgetOptions>,
         ) -> ();
+        /// Shows the component `factory` builds under one key; the host disposes the widget it
+        /// replaces first, and removing the key goes through `set_widget`.
+        fn set_widget_factory(
+            key: &str,
+            factory: crate::ComponentFactory,
+            options: Option<ExtensionWidgetOptions>,
+        ) -> ();
+        /// Replaces the footer with the component `factory` builds, or restores the host's
+        /// footer; the host disposes the footer it replaces first.
+        fn set_footer(factory: Option<crate::FooterFactory>) -> ();
+        /// Replaces the header with the component `factory` builds, or restores the host's
+        /// header; the host disposes the header it replaces first.
+        fn set_header(factory: Option<crate::ComponentFactory>) -> ();
         /// Sets the terminal title.
         fn set_title(title: &str) -> ();
         /// Pastes literal text into the host editor through its paste handling.
@@ -81,7 +94,61 @@ port! {
         fn set_editor_text(text: &str) -> ();
         /// Reads the host editor's current text.
         fn get_editor_text() -> String;
+        /// Adds a raw terminal input listener; dropping the subscription keeps it.
+        fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
+        /// The UI's live theme; it observes later selections.
+        fn theme() -> crate::Theme;
+        /// Every available theme, in the host's order.
+        fn get_all_themes() -> Vec<crate::ThemeInfo>;
+        /// Loads a theme by name without selecting it.
+        fn get_theme(name: &str) -> Option<crate::Theme>;
+        /// Selects a theme by name or a retained host theme.
+        fn set_theme(theme: crate::ThemeSelection) -> crate::ThemeSetResult;
+        /// Reads whether tool output is expanded.
+        fn get_tools_expanded() -> bool;
+        /// Expands or collapses tool output.
+        fn set_tools_expanded(expanded: bool) -> ();
     }
+    owned {
+        /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.
+        fn select(
+            title: String,
+            options: Vec<String>,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> Option<String>;
+        /// Asks for confirmation and resolves to `false` on dismissal.
+        fn confirm(
+            title: String,
+            message: String,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> bool;
+        /// Reads one line and resolves to `None` on dismissal.
+        fn input(
+            title: String,
+            placeholder: Option<String>,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> Option<String>;
+        /// Reads several lines and resolves to `None` on dismissal.
+        fn editor(title: String, prefill: Option<String>) -> Option<String>;
+    }
+}
+
+/// A raw terminal input listener with callback-scoped emission; `None` leaves the input as it
+/// is.
+pub type TerminalInputHandler = Rc<
+    dyn for<'a> Fn(
+        &str,
+        crate::CallbackEmitter<'a>,
+    ) -> ExtensionResult<Option<TerminalInputResult>>,
+>;
+
+/// Options of a dialog, forwarded without choosing host defaults.
+#[derive(Clone, Default)]
+pub struct ExtensionUIDialogOptions {
+    /// Dismisses the dialog when aborted; it stays retained after the dialog returns.
+    pub signal: Option<AbortSignal>,
+    /// Milliseconds before the host dismisses the dialog, passed to it unchanged.
+    pub timeout: Option<f64>,
 }
 use std::fmt;
 use std::ops::Deref;

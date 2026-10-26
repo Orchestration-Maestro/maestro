@@ -99,6 +99,13 @@ kinds! {
         Component(crate::Component),
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
+        TerminalInput(crate::TerminalInputHandler),
+        ComponentFactory(crate::ComponentFactory),
+        ToolRenderCall(crate::ToolRenderCall),
+        ToolRenderResult(crate::ToolRenderResult),
+        ToolRow(std::rc::Rc<crate::types::ToolRow>),
+        FooterFactory(crate::FooterFactory),
+        BranchChange(crate::BranchChangeListener),
     }
     once {
         Abort(crate::AbortListener),

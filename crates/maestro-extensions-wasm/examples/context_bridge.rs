@@ -181,8 +181,8 @@ fn command(
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);
         }
-        if args == "register-tool" {
-            return registrations::tool(&api);
+        if args == "register-tool" || args == "register-painter" {
+            return registrations::register_tool(&api, &args);
         }
         if args == "register-prefixes" {
             return prefixes::register(&api, context);
@@ -202,8 +202,11 @@ fn command(
         if let Some(answer) = schema::command(&api, &args) {
             return Err(answer?.to_string());
         }
-        if args == "ui imports" || args == "ui clear" || args.starts_with("editor ") {
-            return Err(ui::observe(&context, &args)?);
+        if let Some(request) = args.strip_prefix("dialog ") {
+            return Err(ui::dialog(&context, request).await?);
+        }
+        if args.starts_with("ui ") || args.starts_with("editor ") {
+            return Err(ui::observe(&context, &api, &args)?);
         }
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());

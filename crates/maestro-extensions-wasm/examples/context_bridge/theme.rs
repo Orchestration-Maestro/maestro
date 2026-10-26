@@ -63,6 +63,12 @@ fn observe(theme: &Theme, method: &str, missing: bool) -> ExtensionResult<Value>
             maestro_extensions_wasm::ColorMode::Truecolor => "truecolor",
             maestro_extensions_wasm::ColorMode::Color256 => "color256",
         }),
-        _ => return Err("unknown theme operation".into()),
+        "bash-mode-border" => json!(theme.get_bash_mode_border_color()(text)?),
+        _ => {
+            let level = method.strip_prefix("thinking-border:");
+            let level = level.ok_or("unknown theme operation")?;
+            let level = level.parse().map_err(|_| "unknown thinking level")?;
+            json!(theme.get_thinking_border_color(level)(text)?)
+        }
     })
 }
