@@ -59,6 +59,8 @@ port! {
         fn register_flag(name: &str, options: FlagOptions) -> ();
         /// Reads the host-resolved value of a flag.
         fn get_flag(name: &str) -> Option<FlagValue>;
+        /// Constructs a retained native read definition without performing file work.
+        fn create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ToolDefinition;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.

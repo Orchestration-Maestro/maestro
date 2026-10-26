@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 /// Constructs once in the author factory, then invokes that same native owner later.
 pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
-    let tool = Rc::new(host::create_read_tool("/", None)?);
+    let tool = Rc::new(host::create_read_tool("/", None, None)?);
     api.register_command(
         "builtin-read",
         CommandOptions {
@@ -41,4 +41,18 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
             }),
         },
     )
+}
+
+/// Uses native tools from later command callbacks, independently of the factory return.
+pub(super) async fn command(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+    args: &str,
+) -> Option<ExtensionResult<()>> {
+    if let Some(request) = args.strip_prefix("builtin-custom-read ") {
+        let result = super::builtin_read::execute(api, (**context).clone(), request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    args.strip_prefix("builtin-register-renderer ")
+        .map(|mode| super::builtin_render::register(api, mode))
 }

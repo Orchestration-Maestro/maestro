@@ -518,6 +518,13 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn create_read_tool_definition(
+        &self,
+        _: String,
+        _: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
     type BashOutput = super::shell_host::NativeReceiver;
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
         self.observe().shell.outputs[output.id].data(bytes)

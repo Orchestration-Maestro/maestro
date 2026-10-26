@@ -18,6 +18,9 @@ mod route;
 mod streams;
 pub(crate) use streams::new_event_stream;
 
+#[path = "tools/builtin.rs"]
+mod builtin;
+
 #[path = "generated_glue.rs"]
 mod glue;
 #[path = "generated_model_streams.rs"]
@@ -28,6 +31,13 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl Imports for Generated {
+    fn create_read_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::read(&cwd, options)
+    }
     type JsonNode = host::JsonNode;
     fn get_all_tools(&self) -> ExtensionResult<super::ToolListing<Self::Callback>> {
         let listing = host::get_all_tools()?;

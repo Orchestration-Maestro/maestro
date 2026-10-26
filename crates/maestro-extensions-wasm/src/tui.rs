@@ -10,6 +10,10 @@ use std::rc::Rc;
 
 /// An author's synchronous component operations.
 pub trait ComponentView {
+    /// Original native identity, only when this view directly retains a native component.
+    fn native_component(&self) -> Option<NativeComponent> {
+        None
+    }
     /// Renders lines at the supplied viewport width.
     /// # Errors
     /// Returns the author's failure.
@@ -36,6 +40,11 @@ pub trait ComponentView {
 #[derive(Clone)]
 pub struct Component(Rc<dyn ComponentView>);
 impl Component {
+    /// Reads the original identity without unwrapping an author-supplied replacement.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn native_component(&self) -> Option<NativeComponent> {
+        self.0.native_component()
+    }
     /// Retains the supplied author view.
     #[must_use]
     pub fn new(view: impl ComponentView + 'static) -> Self {
@@ -144,3 +153,18 @@ pub type FooterFactory = Rc<
         CallbackEmitter<'a>,
     ) -> ExtensionResult<ExtensionComponent>,
 >;
+
+/// Opaque original row retained by the active adapter, never reconstructed by an author.
+#[derive(Clone)]
+pub struct NativeRow {
+    /// Component adapter's independently retained original row.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) handle: Rc<crate::bindings::maestro::extension::host::NativeRow>,
+}
+/// Opaque original component identity retained by the active adapter.
+#[derive(Clone)]
+pub struct NativeComponent {
+    /// Component adapter's independently retained original view.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) handle: Rc<crate::bindings::maestro::extension::host::NativeComponent>,
+}

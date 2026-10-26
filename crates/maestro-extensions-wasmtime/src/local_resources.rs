@@ -13,6 +13,7 @@ mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod model_streams;
+mod rendering;
 mod signals;
 pub(crate) mod stream_reads;
 mod synchronous;
@@ -57,6 +58,18 @@ pub(crate) enum Message {
         crate::builtin_reads::Execution,
         tokio::sync::oneshot::Sender<Result<String, String>>,
         Admission,
+    ),
+    /// Renders through an original typed native definition and lent native row.
+    BuiltinRender(
+        u64,
+        crate::native_renders::Render,
+        std::sync::mpsc::Sender<Result<crate::import_route::Outcome, String>>,
+    ),
+    /// Uses one original retained native component.
+    NativeComponent(
+        u64,
+        crate::native_renders::ComponentRequest,
+        std::sync::mpsc::Sender<Result<crate::import_route::Outcome, String>>,
     ),
     /// Registers retained callbacks through the original facade.
     Registration(u64, crate::registration_reads::Request),
@@ -196,6 +209,24 @@ impl Lease {
     }
 }
 
+impl Lease {
+    /// Sends a native value operation through the same nested-call route.
+    pub(crate) fn route_value(
+        &self,
+        request: impl FnOnce(
+            u64,
+            std::sync::mpsc::Sender<Result<crate::import_route::Outcome, String>>,
+        ) -> Message,
+    ) -> crate::import_route::Route {
+        let (reply, response) = std::sync::mpsc::channel();
+        let (nested, route) = crate::import_route::Route::value(response);
+        let _ = self
+            .requests
+            .send(Message::Routed(Box::new(request(self.id, reply)), nested));
+        route
+    }
+}
+
 impl Drop for Lease {
     fn drop(&mut self) {
         let _ = self.requests.send(Message::Release(self.id));
@@ -214,6 +245,10 @@ enum Capability {
     Stream(crate::local_resources::stream_reads::Owner),
     /// Original typed native definition behind the component's tool resource.
     Builtin(Rc<dyn crate::builtin_tools::Definition>),
+    /// Original row context, including its environment and shared state.
+    NativeRow(crate::native_renders::Row),
+    /// Original native component, not a guest proxy.
+    NativeComponent(maestro_extensions::ComponentHandle),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.

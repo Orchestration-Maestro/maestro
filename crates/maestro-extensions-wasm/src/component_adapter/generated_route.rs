@@ -22,6 +22,14 @@ type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
 /// # Errors
 /// Returns the host operation's own error.
 pub(super) fn drive(route: &host::ImportRoute) -> ExtensionResult<()> {
+    match value(route)? {
+        host::RouteValue::Unit => Ok(()),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Completes a native operation while preserving its typed result.
+pub(super) fn value(route: &host::ImportRoute) -> ExtensionResult<host::RouteValue> {
     loop {
         match route.next() {
             host::RouteStep::Done(result) => return result,
@@ -129,7 +137,13 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
 
 /// Runs one nested tool rendering and transfers what it returned.
 fn tool_render(call: host::LocalToolRender) -> ExtensionResult<host::ToolRendered> {
-    let lent = (call.theme, call.invalidator);
+    let lent = (
+        call.theme,
+        call.invalidator,
+        call.native_row.map(|row| crate::NativeRow {
+            handle: std::rc::Rc::new(row),
+        }),
+    );
     Exports::new(Generated)
         .invoke_tool_render(call.target, &call.render, lent, &call.emitter)
         .map(super::rendered_row)
@@ -176,6 +190,9 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
+            host::LocalCall::Read(call) => host::LocalResult::Read(
+                super::super::tools::read::invoke(call.target, call.operation, call.path).await,
+            ),
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }

@@ -35,6 +35,14 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Constructs the original native read definition with owned replacement observations.
+    /// # Errors
+    /// Returns native construction or resource admission failures.
+    fn create_read_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition>;
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
         &'a self,

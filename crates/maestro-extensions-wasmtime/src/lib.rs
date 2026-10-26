@@ -31,6 +31,8 @@ mod lifecycle;
 mod local_resources;
 mod model_calls;
 mod model_imports;
+mod native_render_imports;
+mod native_renders;
 mod read_imports;
 mod registration_imports;
 mod registration_reads;

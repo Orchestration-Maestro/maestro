@@ -526,6 +526,7 @@ impl Driver for ComponentDriver {
             render,
             theme,
             invalidator,
+            None,
             Resource::new_borrow(emitter.rep()),
         );
         let rendered = harness

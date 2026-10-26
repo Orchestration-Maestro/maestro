@@ -200,6 +200,12 @@ impl State {
             Message::BuiltinExecute(id, execution, reply, admission) => {
                 self.builtin_execute(id, execution, reply, admission);
             }
+            Message::BuiltinRender(id, render, reply) => {
+                let _ = reply.send(self.builtin_render(id, render));
+            }
+            Message::NativeComponent(id, request, reply) => {
+                let _ = reply.send(self.native_component(id, request));
+            }
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.registration(id, request),
             Message::ApiModel(id, model, reply, admission) => {
@@ -220,14 +226,7 @@ impl State {
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
             Message::Catalog(id, request) => self.catalog(id, request),
-            Message::Node(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::Node(node)) = capability.as_deref() {
-                    node.answer(request, &self.registry);
-                } else {
-                    request.reject("extension tree node resource ended");
-                }
-            }
+            Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, admission) => {
                 self.start_replaced(id, request, admission);
             }
@@ -238,14 +237,27 @@ impl State {
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
-            Message::Release(id) => {
-                let removed = self.registry.resources.borrow_mut().entries.remove(&id);
-                drop(removed);
-            }
+            Message::Release(id) => self.release(id),
         }
     }
 
-    /// Read the original catalog outside its capability-table borrow.
+    /// Drops retired capabilities after releasing their table borrow.
+    fn release(&self, id: u64) {
+        let removed = self.registry.resources.borrow_mut().entries.remove(&id);
+        drop(removed);
+    }
+
+    /// Reads the original captured node after releasing the capability-table borrow.
+    fn node(&self, id: u64, request: crate::tree_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::Node(node)) = capability.as_deref() {
+            node.answer(request, &self.registry);
+        } else {
+            request.reject("extension tree node resource ended");
+        }
+    }
+
+    /// Reads the independently retained catalog outside the capability-table borrow.
     fn catalog(&self, id: u64, request: crate::catalog_reads::Request) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Catalog(catalog)) = capability.as_deref() {

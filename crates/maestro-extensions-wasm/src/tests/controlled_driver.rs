@@ -164,7 +164,7 @@ impl ControlledDriver {
             info,
             result: run.result.map(ToString::to_string),
         };
-        let lent = (self.host.theme("dark"), self.host.invalidator(&id));
+        let lent = (self.host.theme("dark"), self.host.invalidator(&id), None);
         let emitter = super::bus_host::Emitter { key: 0 };
         let (component, row) = self
             .exports()

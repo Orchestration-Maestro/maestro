@@ -155,7 +155,9 @@ not apply to these author-supplied declarations.
 `render_call` and `render_result` are optional and independent. Each returns a `Component`
 that the host shows in the tool's row. A call renderer gets the arguments as they stand,
 the live theme, a `ToolRenderContext` and a `CallbackEmitter`. A result renderer also gets
-the `AgentToolResult` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+a `ToolRenderResultLike` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+The rendering result contains the existing `AgentToolResult` in `result` and the independent
+`is_error` observation. Execution results are unchanged.
 
 `ToolRenderContext` holds the row's `tool_call_id`, arguments, working directory,
 `ToolRenderPhase`, expansion, image visibility and error flag. `last_component` is the
@@ -164,6 +166,11 @@ host to redraw the row. `state::<S>()` returns the row's state of type `S`. It i
 with its default the first time it is read and shared by both renderers of the row on
 every rendering, so a value set by the call renderer is visible to the result renderer.
 The row keeps its state and previous components until the host releases the row.
+
+A native factory also lends an opaque `native_row`. Delegating to its renderer preserves
+the native environment and state while forwarding the wrapper's public row observations,
+ordinary operands and exact previous component. See [native tool operations](guest_operations.md)
+for read construction, replacement file callbacks and renderer delegation.
 
 ### Executable schema nodes
 

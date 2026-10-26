@@ -27,41 +27,41 @@ pub(crate) enum Slot {
 }
 
 /// What a tool renderer reads about its row at this rendering.
-#[derive(ComponentType, Lower, Clone)]
+#[derive(ComponentType, Lower, Lift, Clone)]
 #[component(record)]
 pub(crate) struct Info {
     /// Stable id of the tool call.
     #[component(name = "tool-call-id")]
-    tool_call_id: String,
+    pub(crate) tool_call_id: String,
     /// Arguments so far, as JSON.
-    args: Option<String>,
+    pub(crate) args: Option<String>,
     /// Working directory of the session.
-    cwd: String,
+    pub(crate) cwd: String,
     /// Execution progress of the row.
-    phase: Phase,
+    pub(crate) phase: Phase,
     /// Whether the row is expanded.
-    expanded: bool,
+    pub(crate) expanded: bool,
     /// Whether images are shown.
     #[component(name = "show-images")]
-    show_images: bool,
+    pub(crate) show_images: bool,
     /// Whether the result is an error.
     #[component(name = "is-error")]
-    is_error: bool,
+    pub(crate) is_error: bool,
 }
 
 /// Execution progress of a tool row on the canonical boundary.
-#[derive(ComponentType, Lower, Clone)]
+#[derive(ComponentType, Lower, Lift, Clone)]
 #[component(record)]
 pub(crate) struct Phase {
     /// Whether execution has started.
     #[component(name = "execution-started")]
-    execution_started: bool,
+    pub(crate) execution_started: bool,
     /// Whether the arguments are complete.
     #[component(name = "args-complete")]
-    args_complete: bool,
+    pub(crate) args_complete: bool,
     /// Whether the result is still streaming.
     #[component(name = "is-partial")]
-    is_partial: bool,
+    pub(crate) is_partial: bool,
 }
 
 /// One tool rendering on the canonical boundary.
@@ -83,14 +83,14 @@ pub(crate) struct Render {
 }
 
 /// Options supplied to a result callback independently of the row context.
-#[derive(ComponentType, Lower, Clone)]
+#[derive(ComponentType, Lower, Lift, Clone)]
 #[component(record)]
 pub(crate) struct Options {
     /// Whether the result view is expanded.
-    expanded: bool,
+    pub(crate) expanded: bool,
     /// Whether this result is still streaming.
     #[component(name = "is-partial")]
-    is_partial: bool,
+    pub(crate) is_partial: bool,
 }
 
 /// A rendering's component or error and the row's new guest state identity.
@@ -113,6 +113,8 @@ pub(crate) struct ToolRenderCall<H = Handle> {
     pub(crate) theme: ThemeEndpoint,
     /// The row's redraw capability.
     pub(crate) invalidator: InvalidatorEndpoint,
+    /// Opaque original row, retained independently of the callback.
+    pub(crate) native_row: Option<crate::native_renders::RowEndpoint>,
     /// Original native callback frame.
     pub(crate) emitter: EmitterEndpoint,
     /// The component and the row's new state identity.
@@ -192,6 +194,7 @@ impl Handle {
                     render,
                     theme: registry.theme(theme.clone())?,
                     invalidator: registry.invalidator(Rc::clone(&context.invalidate))?,
+                    native_row: Some(registry.native_row(context, events.clone())?),
                     emitter: registry.emitter(emitter.frame())?,
                     reply,
                 }))

@@ -58,6 +58,7 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
+            Self::Read(call) => Call::Read(read(call, completion)),
             Self::Factory(call) => Call::Factory(factory(call, completion)),
             Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
             Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
@@ -97,6 +98,7 @@ fn tool_render(
         render: call.render,
         theme: call.theme,
         invalidator: call.invalidator,
+        native_row: call.native_row,
         emitter: call.emitter,
         reply: call.reply,
     }
@@ -203,6 +205,19 @@ fn stream(
         handler: completion.callback(call.handler),
         value: completion.callback(call.value),
         operation: call.operation,
+        reply: call.reply,
+    }
+}
+
+/// Transfers a reverse read's original callback admission beside its operands.
+fn read(
+    call: crate::guest_calls::read::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::read::Invocation<Callback> {
+    crate::guest_calls::read::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
         reply: call.reply,
     }
 }

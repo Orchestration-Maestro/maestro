@@ -24,6 +24,8 @@ pub(crate) trait Definition {
     fn metadata(&self) -> Result<String, String>;
     /// Invokes native argument preparation before any execution.
     fn prepare(&self, args: Value) -> Result<Value, String>;
+    /// Projects the original callbacks without retaining a second executable record.
+    fn renderers(&self) -> Result<maestro_extensions::ToolRendererBinding, String>;
     /// Executes through the existing typed wrapper, retaining this definition for the call.
     fn execute(self: Rc<Self>, invocation: Invocation, model: Option<Arc<Model>>) -> Work;
 }
@@ -50,8 +52,15 @@ impl<P, D, S> Definition for RwLock<ToolDefinition<Context, P, D, S>>
 where
     P: DeserializeOwned + 'static,
     D: Serialize + 'static,
-    S: 'static,
+    S: Default + 'static,
 {
+    fn renderers(&self) -> Result<maestro_extensions::ToolRendererBinding, String> {
+        let definition = self
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        maestro_extensions::ToolRendererBinding::from_raw(&*definition)
+            .map_err(|error| error.to_string())
+    }
     fn metadata(&self) -> Result<String, String> {
         let definition = self
             .read()

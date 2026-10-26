@@ -28,7 +28,7 @@ impl<I: Imports> Exports<I> {
         &self,
         handler: u32,
         render: &ToolRender,
-        (theme, invalidator): (I::Theme, I::Invalidator),
+        (theme, invalidator, native_row): (I::Theme, I::Invalidator, Option<crate::NativeRow>),
         emitter: &I::Emitter,
     ) -> ExtensionResult<(ExtensionResult<Component>, Option<Rc<ToolRow>>)> {
         let (row, created) = match render.row {
@@ -36,7 +36,8 @@ impl<I: Imports> Exports<I> {
             None => (Rc::new(ToolRow::default()), true),
         };
         let slot = usize::from(matches!(render.slot, ToolRenderSlot::Result));
-        let context = self.context(render, &row, slot, invalidator)?;
+        let mut context = self.context(render, &row, slot, invalidator)?;
+        context.native_row = native_row;
         let theme = super::theme::theme(self.imports.clone(), theme);
         let component = with_emitter(&self.imports, emitter, |emitter| {
             if slot == 0 {
@@ -82,6 +83,7 @@ impl<I: Imports> Exports<I> {
             last_component: row.last.borrow()[slot].clone(),
             invalidate: Rc::new(move || imports.invalidate(&invalidator)),
             row: Rc::clone(row),
+            native_row: None,
         })
     }
 }

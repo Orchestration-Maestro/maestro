@@ -105,6 +105,7 @@ pub struct ToolRenderPhase {
 }
 
 /// What a tool renderer reads about its row at one rendering.
+#[derive(Clone)]
 pub struct ToolRenderContext {
     /// Arguments as the model supplied them so far.
     pub args: Option<Value>,
@@ -124,6 +125,8 @@ pub struct ToolRenderContext {
     pub last_component: Option<crate::Component>,
     /// Redraws this row.
     pub invalidate: Rc<dyn Fn() -> ExtensionResult<()>>,
+    /// Opaque original native row, lent only by a native rendering invocation.
+    pub native_row: Option<crate::NativeRow>,
     /// The row's state and previous components.
     pub(crate) row: Rc<ToolRow>,
 }
@@ -156,10 +159,22 @@ pub type ToolRenderCall = Rc<
     ) -> ExtensionResult<crate::Component>,
 >;
 
+/// Owned rendering-result observation; execution results keep their existing record.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolRenderResultLike {
+    /// Original content, details and termination fields with their existing omission rules.
+    #[serde(flatten)]
+    pub result: AgentToolResult,
+    /// Independent error observation supplied by the rendering caller.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub is_error: Presence<bool>,
+}
+
 /// Renders a tool result row, synchronously.
 pub type ToolRenderResult = Rc<
     dyn for<'a> Fn(
-        AgentToolResult,
+        ToolRenderResultLike,
         ToolRenderResultOptions,
         crate::Theme,
         &ToolRenderContext,

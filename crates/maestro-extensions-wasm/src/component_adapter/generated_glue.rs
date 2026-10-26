@@ -170,12 +170,31 @@ impl<E: Extension> Guest for Glue<E> {
         render: host::ToolRender,
         theme: host::Theme,
         invalidator: host::ToolInvalidator,
+        native_row: Option<host::NativeRow>,
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<host::ToolRendered>> {
         let exports = Exports::new(Generated);
-        let rendered =
-            exports.invoke_tool_render(handler.id(), &render, (theme, invalidator), emitter);
+        let rendered = exports.invoke_tool_render(
+            handler.id(),
+            &render,
+            (
+                theme,
+                invalidator,
+                native_row.map(|row| crate::NativeRow {
+                    handle: std::rc::Rc::new(row),
+                }),
+            ),
+            emitter,
+        );
         std::future::ready(rendered.map(super::rendered_row))
+    }
+
+    fn invoke_read(
+        handler: &host::Callback,
+        operation: host::ReadOperation,
+        path: String,
+    ) -> impl Future<Output = Result<host::ReadOutput, host::DiagnosticErrorInfo>> {
+        super::super::tools::read::invoke(handler.id(), operation, path)
     }
 
     fn invoke_branch_change(

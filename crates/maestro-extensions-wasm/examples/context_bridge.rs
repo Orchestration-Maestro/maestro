@@ -19,6 +19,12 @@ mod api;
 #[path = "context_bridge/builtin.rs"]
 mod builtin;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_read.rs"]
+mod builtin_read;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_render.rs"]
+mod builtin_render;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
@@ -102,8 +108,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         ) {
             return Err("guest startup failure".into());
         }
-        register_listeners(&api)?;
-        builtin::register(&api)?;
+        register_callbacks(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",
@@ -244,6 +249,9 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Some(result) = builtin::command(&api, &context, &args).await {
+            return result;
+        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
@@ -260,11 +268,8 @@ fn context_command(
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);
         }
-        if args == "register-tool" || args == "register-painter" {
-            return registrations::register_tool(&api, &args);
-        }
-        if args == "register-prefixes" {
-            return prefixes::register(&api, context);
+        if let Some(result) = registrations::command(&api, &context, &args) {
+            return result;
         }
         if args == "compact" {
             return compact(&context);
@@ -435,4 +440,11 @@ impl Drop for ReleaseTrap {
             std::arch::wasm32::unreachable();
         }
     }
+}
+
+/// Registers independently retained listener and native tool callbacks.
+#[cfg(target_arch = "wasm32")]
+fn register_callbacks(api: &ExtensionAPI) -> maestro_extensions_wasm::ExtensionResult<()> {
+    register_listeners(api)?;
+    builtin::register(api)
 }

@@ -6,12 +6,30 @@ interface host {
     resource builtin-tool {
         metadata: func() -> result<string, string>;
         prepare: func(args: string) -> result<string, string>;
+        render-call: func(args: option<string>, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
+        render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>) -> result<string, string>;
     }
     /// Constructs the native read definition without performing file work.
-    create-read-tool: func(cwd: string, auto-resize-images: option<bool>) -> result<builtin-tool, string>;
+    create-read-tool: func(cwd: string, auto-resize-images: option<bool>, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
     /// Constructs the native edit definition without performing file work.
     create-edit-tool: func(cwd: string) -> result<builtin-tool, string>;
+    /// Original native row context, including its rendering environment and typed state.
+    resource native-row;
+    /// Independently retained native component returned by a delegated renderer.
+    resource native-component {
+        render: func(width: u32) -> import-route;
+        handle-input: func(data: string) -> import-route;
+        invalidate: func() -> import-route;
+        wants-key-release: func() -> import-route;
+    }
+    /// Native results use the same route as nested callbacks.
+    variant route-value { unit, component(native-component), lines(list<string>), key(bool) }
+    /// Supplied read operations retain one authored owner.
+    enum read-operation { read-file, access, detect-image-mime-type }
+    /// Byte-oriented read callback result; failures preserve their diagnostic fields.
+    variant read-output { bytes(list<u8>), unit, mime(option<string>) }
+    record local-read { target: u32, operation: read-operation, path: string }
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};
@@ -159,7 +177,7 @@ interface host {
     /// What a terminal input listener decided; absent members leave the input as it is.
     record terminal-input-result { consume: option<bool>, data: option<string> }
     /// One nested same-instance tool rendering.
-    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
+    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, native-row: option<native-row>, emitter: callback-emitter }
     /// One nested same-instance component factory.
     record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
@@ -228,6 +246,7 @@ interface host {
         bash(local-bash),
         factory(local-factory),
         tool-render(local-tool-render),
+        read(local-read),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -246,9 +265,10 @@ interface host {
         bash(result<option<f64>, string>),
         factory(result<factory-component, string>),
         tool-render(result<tool-rendered, string>),
+        read(result<read-output, diagnostic-error-info>),
     }
     /// One step of a native operation that may call back into this same instance.
-    variant route-step { invoke(local-call), done(result<_, string>) }
+    variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
     resource import-route {
         next: func() -> route-step;

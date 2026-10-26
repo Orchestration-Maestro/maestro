@@ -71,7 +71,7 @@ pub(crate) struct Route {
     /// Nested calls of the operation, closed when the operation returns.
     nested: Receiver<Nested>,
     /// The operation's own result, sent before its nested calls close.
-    result: Receiver<Result<(), String>>,
+    result: Returns,
     /// Outstanding nested call, settled exactly once by the guest.
     pending: Option<Nested>,
 }
@@ -82,10 +82,23 @@ impl Route {
         let (send, nested) = std::sync::mpsc::channel();
         let route = Self {
             nested,
-            result,
+            result: Returns::Unit(result),
             pending: None,
         };
         (send, route)
+    }
+
+    /// Opens the same nested-call route for a native value result.
+    pub(crate) fn value(result: Receiver<Result<Outcome, String>>) -> (Sender<Nested>, Self) {
+        let (send, nested) = std::sync::mpsc::channel();
+        (
+            send,
+            Self {
+                nested,
+                result: Returns::Value(result),
+                pending: None,
+            },
+        )
     }
 
     /// Returns a catchable failure discovered before native admission.
@@ -97,12 +110,8 @@ impl Route {
     }
 
     /// Waits for the next nested call, or for the operation's own result once it returned.
-    pub(crate) fn next(&mut self) -> Result<Nested, Result<(), String>> {
-        self.nested.recv().map_err(|_| {
-            self.result
-                .recv()
-                .unwrap_or_else(|_| Err("extension resource reply ended".to_owned()))
-        })
+    pub(crate) fn next(&mut self) -> Result<Nested, Result<Outcome, String>> {
+        self.nested.recv().map_err(|_| self.result.receive())
     }
 
     /// Takes the nested call the guest is running.
@@ -119,7 +128,10 @@ impl Route {
     pub(crate) fn result(mut self) -> Result<(), String> {
         match self.next() {
             Ok(_) => Err("unexpected nested call".to_owned()),
-            Err(result) => result,
+            Err(result) => result.and_then(|value| match value {
+                Outcome::Unit => Ok(()),
+                _ => Err("extension route result kind mismatch".into()),
+            }),
         }
     }
 }
@@ -136,7 +148,7 @@ enum RouteStep {
     Invoke(calls::LocalCall),
     /// The operation's own final result.
     #[component(name = "done")]
-    Done(Result<(), String>),
+    Done(Result<Value, String>),
 }
 
 /// Installs the progress ticket and the later settlement on the original host interface.
@@ -156,7 +168,10 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
                     table.get_mut(&resource)?.pending = Some(nested);
                     RouteStep::Invoke(local)
                 }
-                Err(result) => RouteStep::Done(result),
+                Err(result) => RouteStep::Done(match result {
+                    Ok(value) => Ok(value.lower(store.data_mut().ctx().table)?),
+                    Err(error) => Err(error),
+                }),
             };
             Ok((step,))
         },
@@ -199,4 +214,61 @@ pub(crate) fn push<T: wasmtime_wasi::WasiView>(
     route: Route,
 ) -> wasmtime::Result<Resource<Route>> {
     Ok(store.ctx().table.push(route)?)
+}
+
+/// Native result ownership shares the original route, never a second dispatcher.
+pub(crate) enum Outcome {
+    /// An operation with no value.
+    Unit,
+    /// Original independently retained component.
+    Component(crate::native_renders::ComponentEndpoint),
+    /// Exact component output lines.
+    Lines(Vec<String>),
+    /// Native key-release preference.
+    Key(bool),
+}
+/// Result channels keep existing unit callers unchanged.
+enum Returns {
+    /// Existing native unit operation.
+    Unit(Receiver<Result<(), String>>),
+    /// Native rendering or component operation.
+    Value(Receiver<Result<Outcome, String>>),
+}
+impl Returns {
+    /// Reads exactly one result after the nested sender closes.
+    fn receive(&self) -> Result<Outcome, String> {
+        match self {
+            Self::Unit(result) => result.recv().map(|value| value.map(|()| Outcome::Unit)),
+            Self::Value(result) => result.recv(),
+        }
+        .unwrap_or_else(|_| Err("extension resource reply ended".into()))
+    }
+}
+/// Canonical result values transfer their original resource ownership.
+#[derive(ComponentType, Lower)]
+#[component(variant)]
+enum Value {
+    /// No value.
+    #[component(name = "unit")]
+    Unit,
+    /// Original native component.
+    #[component(name = "component")]
+    Component(Resource<crate::native_renders::ComponentEndpoint>),
+    /// Component painting.
+    #[component(name = "lines")]
+    Lines(Vec<String>),
+    /// Key-release preference.
+    #[component(name = "key")]
+    Key(bool),
+}
+impl Outcome {
+    /// Transfers original resources only at the canonical return boundary.
+    fn lower(self, table: &mut wasmtime::component::ResourceTable) -> wasmtime::Result<Value> {
+        Ok(match self {
+            Self::Unit => Value::Unit,
+            Self::Component(component) => Value::Component(table.push(component)?),
+            Self::Lines(lines) => Value::Lines(lines),
+            Self::Key(key) => Value::Key(key),
+        })
+    }
 }

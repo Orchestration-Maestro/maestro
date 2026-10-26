@@ -36,7 +36,70 @@ pub struct Update;
 /// Native tool resources are created only by the production runtime, not this fixture.
 pub enum BuiltinTool {}
 
+/// Native row resources are lent only by the production host.
+pub enum NativeRow {}
+/// Native component resources are returned only by the production host.
+pub enum NativeComponent {}
+impl host::HostNativeRow for State {
+    fn drop(&mut self, _: Resource<NativeRow>) -> wasmtime::Result<()> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+}
+impl host::HostNativeComponent for State {
+    fn render(
+        &mut self,
+        _: Resource<NativeComponent>,
+        _: u32,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn handle_input(
+        &mut self,
+        _: Resource<NativeComponent>,
+        _: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn invalidate(&mut self, _: Resource<NativeComponent>) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn wants_key_release(
+        &mut self,
+        _: Resource<NativeComponent>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn drop(&mut self, _: Resource<NativeComponent>) -> wasmtime::Result<()> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+}
 impl host::HostBuiltinTool for State {
+    fn render_call(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: Option<String>,
+        _: host::ToolRenderInfo,
+        _: Resource<super::renderer_host::Theme>,
+        _: Option<Resource<NativeRow>>,
+        _: Option<Resource<NativeComponent>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn render_result(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: String,
+        _: host::ToolRenderResultOptions,
+        _: host::ToolRenderInfo,
+        _: Resource<super::renderer_host::Theme>,
+        _: Option<Resource<NativeRow>>,
+        _: Option<Resource<NativeComponent>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+
     fn metadata(&mut self, _: Resource<BuiltinTool>) -> wasmtime::Result<Result<String, String>> {
         wasmtime::bail!("built-in tools require the production host")
     }
@@ -597,7 +660,13 @@ impl host::HostImportRoute for State {
             route.running = Some(nested);
             return Ok(host::RouteStep::Invoke(call));
         }
-        Ok(host::RouteStep::Done(route.result.take().unwrap_or(Ok(()))))
+        Ok(host::RouteStep::Done(
+            route
+                .result
+                .take()
+                .unwrap_or(Ok(()))
+                .map(|()| host::RouteValue::Unit),
+        ))
     }
     fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
         let nested = self.table.get_mut(&this)?.running.take();
@@ -646,6 +715,7 @@ impl host::Host for State {
         &mut self,
         _: String,
         _: Option<bool>,
+        _: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
         wasmtime::bail!("built-in tools require the production host")
     }

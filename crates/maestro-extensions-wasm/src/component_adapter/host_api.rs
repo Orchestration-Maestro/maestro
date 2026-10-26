@@ -11,6 +11,13 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_read_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_read_tool_definition(cwd, options)
+    }
     fn exec<'a>(
         &'a self,
         command: &'a str,

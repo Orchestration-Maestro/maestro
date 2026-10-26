@@ -13,6 +13,7 @@ pub(crate) mod bash;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
+mod read;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -60,6 +61,8 @@ pub(crate) struct Exports {
     renderers: renderers::Exports,
     /// Actual returned shell operation method.
     bash: bash::Exports,
+    /// Actual reverse read operation export.
+    read: read::Exports,
     /// Actual concrete event export.
     events: events::Exports,
     /// Actual preparation and execution exports.
@@ -129,6 +132,7 @@ impl Exports {
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
             model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
+            read: read::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -164,7 +168,7 @@ impl Exports {
             Call::Renderer(call) => self.renderers.create(accessor, call).await?,
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
-            Call::Bash(call) => self.bash.invoke(accessor, call).await?,
+            call @ (Call::Bash(_) | Call::Read(_)) => self.io(accessor, call).await?,
             call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
                 self.invoke_value_callback(accessor, call).await?;
             }
@@ -355,4 +359,19 @@ fn arguments<T: WasiView + 'static, V: Send + 'static>(
         let table = access.get().ctx().table;
         Ok((table.push(Callback { id: handler.id })?, table.push(value)?))
     })
+}
+
+impl Exports {
+    /// Enters retained asynchronous operations through their original guest exports.
+    async fn io<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::Bash(call) => self.bash.invoke(accessor, call).await,
+            Call::Read(call) => self.read.invoke(accessor, call).await,
+            _ => Err(wasmtime::format_err!("extension operation has no export")),
+        }
+    }
 }

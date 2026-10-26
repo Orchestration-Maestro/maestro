@@ -18,6 +18,8 @@ use crate::{
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
 mod tool;
+mod tool_renders;
+use tool_renders::LocalToolRender;
 
 /// Owned operands of one nested renderer call.
 #[derive(ComponentType, Lower)]
@@ -65,22 +67,6 @@ pub(super) struct LocalUnit {
 pub(super) struct LocalKey {
     /// Authored identity of the retained component.
     target: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested tool rendering.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalToolRender {
-    /// Authored identity of the renderer.
-    target: u32,
-    /// The rendering operands.
-    render: crate::guest_calls::tool_renders::Render,
-    /// Original live theme, transferred.
-    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
-    /// The row's redraw capability, transferred.
-    invalidator: Resource<crate::local_resources::effects::InvalidatorEndpoint>,
     /// Independent native invocation frame.
     emitter: Resource<EmitterEndpoint>,
 }
@@ -305,6 +291,9 @@ pub(super) enum LocalCall {
     /// A tool rendering.
     #[component(name = "tool-render")]
     ToolRender(LocalToolRender),
+    /// A reverse read operation.
+    #[component(name = "read")]
+    Read(LocalRead),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -356,6 +345,9 @@ pub(super) enum LocalResult {
     /// The rendered component and new row state identities, or the authored error.
     #[component(name = "tool-render")]
     ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
+    /// Original read observation or structured diagnostic.
+    #[component(name = "read")]
+    Read(Result<crate::guest_calls::read::Output, crate::schema_wire::Error>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -389,13 +381,7 @@ pub(super) fn lower(
             node: table.push(call.node.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        Call::ToolRender(call) => LocalCall::ToolRender(LocalToolRender {
-            target: call.handler.id,
-            render: call.render.clone(),
-            theme: table.push(call.theme.clone())?,
-            invalidator: table.push(call.invalidator.clone())?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
+        Call::ToolRender(call) => LocalCall::ToolRender(tool_renders::lower(table, call)?),
         Call::Factory(call) => LocalCall::Factory(LocalFactory {
             target: call.handler.id,
             tui: table.push(call.tui.clone())?,
@@ -474,6 +460,11 @@ fn registered(
 /// Marshals the remaining asynchronous callbacks with their original capabilities.
 fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::Read(call) => LocalCall::Read(LocalRead {
+            target: call.handler.id,
+            operation: call.operation,
+            path: call.path.clone(),
+        }),
         Call::Event(call) => LocalCall::Event(LocalEvent {
             target: call.handler.id,
             event: call.event.clone(),
@@ -611,6 +602,9 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
         (Call::Tool(ToolCall::Execute { reply, .. }), LocalResult::Tool(value)) => {
             let _ = reply.send(value);
         }
+        (Call::Read(call), LocalResult::Read(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
         (Call::Bash(call), LocalResult::Bash(value)) => {
             let _ = call.reply.send(value);
         }
@@ -621,4 +615,16 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
         }
     }
     Ok(())
+}
+
+/// Original operation operands of a nested file observation.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalRead {
+    /// Original guest operations identity.
+    target: u32,
+    /// The requested observation.
+    operation: crate::guest_calls::read::Operation,
+    /// Exact absolute authored path.
+    path: String,
 }

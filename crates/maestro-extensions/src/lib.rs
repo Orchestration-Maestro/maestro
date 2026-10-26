@@ -147,7 +147,9 @@ pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
 /// Native file configuration and the model observation a read definition consumes.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::{EditToolOptions, ReadContext, ReadToolOptions};
+pub use maestro_tools::{
+    EditToolOptions, ReadContext, ReadOperations, ReadToolOptions, ToolRendererBinding,
+};
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,

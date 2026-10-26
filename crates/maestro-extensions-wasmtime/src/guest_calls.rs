@@ -17,6 +17,7 @@ use wasmtime::component::{ComponentType, Lower};
 pub(crate) mod bash;
 pub(crate) mod events;
 pub(crate) mod factories;
+pub(crate) mod read;
 pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
@@ -48,6 +49,8 @@ pub(crate) enum Call<H = Handle> {
     Event(EventCall<H>),
     /// Executes one independently retained guest shell operation.
     Bash(BashCall<H>),
+    /// Invokes one retained guest file observation.
+    Read(read::Invocation<H>),
     /// Invokes setup with the original writable session.
     Setup(H, writer_reads::Endpoint, Reply<()>),
     /// Invokes a continuation with the actual replacement context.

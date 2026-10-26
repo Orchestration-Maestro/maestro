@@ -1,7 +1,7 @@
 //! Canonical resources returned by the real native built-in factories.
 use crate::{
-    api_imports::ApiView,
     builtin_reads::{Endpoint, Execution, Request},
+    callback_imports::CallbackView,
     local_resources::SignalEndpoint,
 };
 use wasmtime::{
@@ -10,7 +10,7 @@ use wasmtime::{
 };
 
 /// Installs factory, metadata, preparation and asynchronous execution on one native owner.
-pub(crate) fn add_to_linker<T: ApiView + 'static>(
+pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Endpoint>(host, "builtin-tool")?;
@@ -55,11 +55,24 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     Ok(())
 }
 /// Installs native factory returns without copying their typed definitions.
-fn add_factories<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+fn add_factories<T: CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     host.func_wrap(
         "create-read-tool",
-        |mut store: StoreContextMut<'_, T>, (cwd, resize): (String, Option<bool>)| {
-            let result = store.data().api().create_read(cwd, resize);
+        |mut store: StoreContextMut<'_, T>,
+         (cwd, resize, operations): (
+            String,
+            Option<bool>,
+            Option<Resource<crate::guest_calls::Callback>>,
+        )| {
+            let operations = operations
+                .as_ref()
+                .map(|operations| {
+                    crate::callback_imports::borrowed_object(store.data_mut(), operations)
+                })
+                .transpose()?;
+            let result = store.data().api().create_read(cwd, resize, operations);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
                 Err(error) => Err(error),

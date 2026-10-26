@@ -10,7 +10,7 @@ use std::{
 /// Constructor operands of native definitions, without executing their callbacks.
 pub(crate) enum Factory {
     /// Read with its independently selected image policy.
-    Read(String, Option<bool>),
+    Read(String, Option<bool>, Option<crate::guest_calls::Handle>),
     /// Edit with native argument preparation and file operations.
     Edit(String),
 }
@@ -18,14 +18,17 @@ impl Registry {
     /// Constructs the original typed definition and gives it an independent resource lease.
     pub(super) fn create_builtin(&self, factory: Factory) -> Result<Endpoint, String> {
         let definition: Rc<dyn crate::builtin_tools::Definition> = match factory {
-            Factory::Read(cwd, auto_resize_images) => Rc::new(RwLock::new(
+            Factory::Read(cwd, auto_resize_images, operations) => Rc::new(RwLock::new(
                 maestro_extensions::local::create_read_tool_definition::<
                     crate::builtin_tools::Context,
                 >(
                     cwd,
                     ReadToolOptions {
                         auto_resize_images,
-                        operations: None,
+                        operations: operations.map(|owner| {
+                            Arc::new(crate::guest_calls::read::Operations(owner))
+                                as Arc<dyn maestro_extensions::ReadOperations>
+                        }),
                     },
                 ),
             )),
@@ -44,9 +47,11 @@ impl crate::api_reads::Endpoint {
         &self,
         cwd: String,
         resize: Option<bool>,
+        operations: Option<crate::guest_calls::Handle>,
     ) -> Result<Endpoint, String> {
-        self.0
-            .request(|_, reply| Message::CreateBuiltin(Factory::Read(cwd, resize), reply))
+        self.0.request(|_, reply| {
+            Message::CreateBuiltin(Factory::Read(cwd, resize, operations), reply)
+        })
     }
     /// Retains native edit preparation without requiring a context or accessing a file.
     pub(crate) fn create_edit(&self, cwd: String) -> Result<Endpoint, String> {

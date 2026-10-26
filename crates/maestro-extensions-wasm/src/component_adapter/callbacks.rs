@@ -98,6 +98,7 @@ kinds! {
         Tool(crate::ToolExecute),
         Component(crate::Component),
         Bash(crate::BashOperations),
+        Read(crate::ReadOperations),
         Schema(crate::schema_code::Handler),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),

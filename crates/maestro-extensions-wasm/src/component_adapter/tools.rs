@@ -5,6 +5,9 @@ use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExecute};
 use std::rc::Rc;
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod read;
+
 /// Restore the shared schema owner with the guest callback representation.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
     maestro_request::parameter_schema::transport::decode_tools(text)

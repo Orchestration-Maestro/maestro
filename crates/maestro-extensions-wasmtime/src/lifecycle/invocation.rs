@@ -50,6 +50,7 @@ impl Call {
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),
+            Self::Read(call) => attach(&call.reply, completion),
             Self::Registered(call) => match call {
                 RegisteredCall::Command(_, _, _, reply) | RegisteredCall::Shortcut(_, _, reply) => {
                     attach(reply, completion);
