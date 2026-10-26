@@ -603,6 +603,188 @@ impl Imports for Controlled {
             }
         })
     }
+    type LockUpdate = Reader;
+    fn lock_update(
+        &self,
+        update: &Reader,
+        current: Option<&str>,
+    ) -> ExtensionResult<Option<String>> {
+        update
+            .data
+            .optional("lock_update", &[serde_json::json!(current)])
+    }
+    fn lock_update_async<'a>(
+        &'a self,
+        update: &'a Reader,
+        current: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move {
+            update
+                .data
+                .optional("lock_update_async", &[serde_json::json!(current)])
+        })
+    }
+    fn auth_storage_from_backend(&self, backend: &Self::Callback) -> ExtensionResult<Reader> {
+        let data = self.observed.borrow().readers.acquire()?;
+        data.unit("auth_storage_from_backend", &[])?;
+        let resource = Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        };
+        crate::component_adapter::auth_storage::invoke_backend(
+            self,
+            self.callback_id(backend),
+            &resource,
+        )?;
+        Ok(resource)
+    }
+    fn credentials_set_fallback(
+        &self,
+        owner: &Reader,
+        _resolver: &Self::Callback,
+    ) -> ExtensionResult<()> {
+        owner.data.unit("set_fallback_resolver", &[])
+    }
+    type Credentials = Reader;
+    fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<Reader> {
+        let data = self.observed.borrow().readers.acquire()?;
+        data.unit("create_auth_storage", &[serde_json::json!(path)])?;
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn auth_storage_in_memory(&self, data: &str) -> ExtensionResult<Reader> {
+        let reader = self.observed.borrow().readers.acquire()?;
+        reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+        Ok(Reader {
+            data: reader,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn create_model_registry(&self, auth: &Reader, path: Option<&str>) -> ExtensionResult<Reader> {
+        auth.data
+            .unit("create_model_registry", &[serde_json::json!(path)])?;
+        Ok(Reader {
+            data: auth.data.clone(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn in_memory_model_registry(&self, auth: &Reader) -> ExtensionResult<Reader> {
+        auth.data.unit("in_memory_model_registry", &[])?;
+        Ok(Reader {
+            data: auth.data.clone(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn registry_auth_storage(&self, resource: &Reader) -> ExtensionResult<Reader> {
+        Ok(Reader {
+            data: resource.data.clone(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn credentials_set_runtime_api_key(
+        &self,
+        resource: &Reader,
+        provider: &str,
+        key: &str,
+    ) -> ExtensionResult<()> {
+        resource.data.unit(
+            "set_runtime_api_key",
+            &[serde_json::json!(provider), serde_json::json!(key)],
+        )
+    }
+    fn credentials_remove_runtime_api_key(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<()> {
+        resource
+            .data
+            .unit("remove_runtime_api_key", &[serde_json::json!(provider)])
+    }
+    fn credentials_reload(&self, resource: &Reader) -> ExtensionResult<()> {
+        resource.data.unit("reload", &[])
+    }
+    fn credentials_get(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<Option<String>> {
+        resource.data.record("get", &[serde_json::json!(provider)])
+    }
+    fn credentials_set(
+        &self,
+        resource: &Reader,
+        provider: &str,
+        credential: &str,
+    ) -> ExtensionResult<()> {
+        resource.data.unit(
+            "set",
+            &[serde_json::json!(provider), serde_json::json!(credential)],
+        )
+    }
+    fn credentials_remove(&self, resource: &Reader, provider: &str) -> ExtensionResult<()> {
+        resource.data.unit("remove", &[serde_json::json!(provider)])
+    }
+    fn credentials_list(&self, resource: &Reader) -> ExtensionResult<Vec<String>> {
+        serde_json::from_str(
+            &resource
+                .data
+                .record("list", &[])?
+                .ok_or("missing credential list")?,
+        )
+        .map_err(|error| error.to_string())
+    }
+    fn credentials_has(&self, resource: &Reader, provider: &str) -> ExtensionResult<bool> {
+        resource.data.flag("has", &[serde_json::json!(provider)])
+    }
+    fn credentials_has_auth(&self, resource: &Reader, provider: &str) -> ExtensionResult<bool> {
+        resource
+            .data
+            .flag("has_auth", &[serde_json::json!(provider)])
+    }
+    fn credentials_get_auth_status(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("get_auth_status", &[serde_json::json!(provider)])?
+            .ok_or("missing credential record".into())
+    }
+    fn credentials_get_all(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("get_all", &[])?
+            .ok_or("missing credential record".into())
+    }
+    fn credentials_drain_errors(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("drain_errors", &[])?
+            .ok_or("missing credential record".into())
+    }
+    fn credentials_logout(&self, resource: &Reader, provider: &str) -> ExtensionResult<()> {
+        resource.data.unit("logout", &[serde_json::json!(provider)])
+    }
+    fn credentials_get_api_key<'a>(
+        &'a self,
+        resource: &'a Reader,
+        provider: String,
+        include_fallback: Option<bool>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move {
+            resource.data.optional(
+                "get_api_key",
+                &[
+                    serde_json::json!(provider),
+                    serde_json::json!(include_fallback),
+                ],
+            )
+        })
+    }
 
     type BashOutput = super::shell_host::NativeReceiver;
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
@@ -1890,6 +2072,75 @@ impl Imports for Controlled {
             &[serde_json::json!(provider), serde_json::json!(model_id)],
         )
     }
+    fn registry_refresh(&self, resource: &Reader) -> ExtensionResult<()> {
+        resource.data.unit("refresh", &[])
+    }
+    fn registry_get_error(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.optional("getError", &[])
+    }
+    fn registry_has_configured_auth(
+        &self,
+        resource: &Reader,
+        model: &str,
+    ) -> ExtensionResult<bool> {
+        resource
+            .data
+            .flag("hasConfiguredAuth", &[serde_json::json!(model)])
+    }
+    fn registry_get_provider_auth_status(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("getProviderAuthStatus", &[serde_json::json!(provider)])?
+            .ok_or("missing status".into())
+    }
+    fn registry_get_provider_display_name(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .optional("getProviderDisplayName", &[serde_json::json!(provider)])?
+            .ok_or("missing name".into())
+    }
+    fn registry_is_using_oauth(&self, resource: &Reader, model: &str) -> ExtensionResult<bool> {
+        resource
+            .data
+            .flag("isUsingOAuth", &[serde_json::json!(model)])
+    }
+    fn registry_register_provider(
+        &self,
+        resource: &Reader,
+        name: &str,
+        config: &str,
+    ) -> ExtensionResult<()> {
+        resource.data.unit(
+            "registerProvider",
+            &[serde_json::json!(name), serde_json::json!(config)],
+        )
+    }
+    fn registry_unregister_provider(&self, resource: &Reader, name: &str) -> ExtensionResult<()> {
+        resource
+            .data
+            .unit("unregisterProvider", &[serde_json::json!(name)])
+    }
+    fn registry_get_api_key_for_provider<'a>(
+        &'a self,
+        resource: &'a Reader,
+        provider: String,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move {
+            let hold = self.observed.borrow_mut().take_hold();
+            pause(hold).await;
+            resource
+                .data
+                .optional("getApiKeyForProvider", &[serde_json::json!(provider)])
+        })
+    }
     fn registry_get_api_key_and_headers<'a>(
         &'a self,
         resource: &'a Reader,
@@ -2134,6 +2385,20 @@ impl Imports for Controlled {
         if let Some(flag) = &update.cancel_on_first {
             flag.abort();
         }
+        Ok(())
+    }
+
+    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("provider register {name} {config}"));
+        Ok(())
+    }
+
+    fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("provider unregister {name}"));
         Ok(())
     }
 

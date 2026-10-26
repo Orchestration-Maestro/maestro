@@ -82,6 +82,14 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
             Ok((signal.aborted().map_err(wasmtime::Error::msg)?,))
         },
     )?;
+    host.func_wrap(
+        "[method]abort-signal.retain",
+        |mut store: StoreContextMut<'_, T>, (signal,): (Resource<SignalEndpoint>,)| {
+            let table = store.data_mut().ctx().table;
+            let signal = table.get(&signal)?.clone();
+            Ok((table.push(signal)?,))
+        },
+    )?;
     add_context::<T, Context>(host, "context")?;
     add_context::<T, CommandContext>(host, "command-context")?;
     Ok(())

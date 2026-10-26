@@ -7,6 +7,14 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+/// Credential and constructor declarations on the same canonical import trait.
+#[macro_use]
+mod credentials;
+
+/// Catalog declarations on the same canonical import trait.
+#[macro_use]
+mod catalog;
+
 /// Per-tool executable annotations returned beside the metadata document.
 pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 
@@ -41,6 +49,7 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
         duration: (u64, u32),
         signal: Option<&'a Self::Signal>,
     ) -> ExtensionFuture<'a, ()>;
+    credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
         &'a self,
@@ -205,6 +214,10 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
     ) -> ExtensionFuture<'a, String>;
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
+    /// Registers JSON provider data.
+    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()>;
+    /// Unregisters a provider.
+    fn unregister_provider(&self, name: &str) -> ExtensionResult<()>;
     /// Starts a compaction on the supplied context.
     fn compact(
         &self,
@@ -535,23 +548,7 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
     type Ui: 'static;
     /// Independently owned host capability.
     type Registry: 'static;
-    /// Forwards the corresponding host capability call.
-    fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String>;
-    /// Forwards the corresponding host capability call.
-    fn registry_get_available(&self, resource: &Self::Registry) -> ExtensionResult<String>;
-    /// Forwards the corresponding host capability call.
-    fn registry_find(
-        &self,
-        resource: &Self::Registry,
-        provider: &str,
-        model_id: &str,
-    ) -> ExtensionResult<Option<String>>;
-    /// Forwards the corresponding host capability call.
-    fn registry_get_api_key_and_headers<'a>(
-        &'a self,
-        resource: &'a Self::Registry,
-        model: String,
-    ) -> ExtensionFuture<'a, crate::ResolvedRequestAuth>;
+    catalog_imports!();
     /// Forwards the corresponding host capability call.
     fn ui(&self, context: &Self::Context) -> ExtensionResult<Self::Ui>;
     /// Forwards one notification with its optional severity.

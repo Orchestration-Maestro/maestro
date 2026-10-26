@@ -11,6 +11,7 @@ mod callbacks;
 mod catalog;
 mod commands;
 mod compaction;
+mod credentials;
 mod effects;
 mod event_handlers;
 mod events;

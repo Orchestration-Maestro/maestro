@@ -1,21 +1,8 @@
 //! Shared OAuth credential and prompt records.
-use crate::JsonObject;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-/// Token data with provider-specific extension fields.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthCredentials {
-    /// Refresh token text.
-    pub refresh: String,
-    /// Access token text.
-    pub access: String,
-    /// Expiry in Unix epoch milliseconds; carried without expiry policy.
-    pub expires: f64,
-    /// Provider fields other than refresh, access and expires.
-    #[serde(flatten)]
-    pub extra: JsonObject,
-}
+pub use maestro_request::oauth::OAuthCredentials;
 
 /// Text requested during authorization.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

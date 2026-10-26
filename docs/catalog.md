@@ -102,6 +102,11 @@ a nonempty model list requires a provider endpoint, key or OAuth, and an API on
 each model or its provider. Validation failure changes nothing. Dynamic
 `ProviderModelInput` values do not use the file loader's defaults or limit checks.
 
+`ProviderConfigInput` is the [shared provider record](records.md#provider-registration-records)
+with `ProviderCallbacks` beside its data: `stream_simple` and `oauth` live in its
+`callbacks` field. Its JSON form deserializes straight into `ProviderConfigInput`
+with no operations, so an extension's registration data needs no second record.
+
 Nonempty model lists replace this provider's descriptors and append definitions
 in supplied order, including duplicates. Missing or empty lists do not replace
 immediately. Endpoint/header-only updates publish replacement matching descriptors
@@ -188,3 +193,25 @@ after the preceding callback. See [credential resolution](credentials.md#stored-
 OAuth metadata, the shared mutable
 `BUILT_IN_PROVIDER_DISPLAY_NAMES` table, then the provider ID. Empty names are
 present values.
+
+## Extension catalogs
+
+The native component host forwards provider registration and removal through the
+extension's existing runtime. Registration before binding uses its queue; direct
+mutations through a retained `ModelRegistry` use that catalog instead. Catalog
+refresh, authentication metadata, display names and request authentication reach
+the original native owner.
+
+`ModelRegistry::auth_storage` in the guest returns the same credentials the
+catalog uses. Its retained handle also keeps the catalog's credential-command
+effects, available to native adapters through `config_values()`. A key changed
+through that handle is visible to later catalog requests.
+
+Guest catalogs can also be constructed over a retained credential handle from the
+same host. `create(&api, auth_storage, path)` uses the supplied model path or the
+application's lazy default; `in_memory(&api, auth_storage)` performs no model-file
+I/O. Credential and model paths are independent. The application installs
+`CatalogConstruction` on the extension runtime before loading factories, using
+its configuration-path owner and credential-command effects. Catalog metadata
+queries support authored credential fallback callbacks, including same-instance
+synchronous reentry.

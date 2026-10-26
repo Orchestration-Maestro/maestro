@@ -89,6 +89,7 @@ impl Pump {
             routes: RefCell::default(),
             worker: RefCell::default(),
         });
+        super::credential_scope::register(Rc::downgrade(&state));
         (
             Self { state },
             Admission {
@@ -181,11 +182,18 @@ impl State {
     /// Answers one request with the native owner it names.
     fn dispatch(&self, message: Message) {
         match message {
+            Message::ModelStart(request) => request.answer(&self.registry),
+            Message::ModelStream(id, request) => self.model_stream_request(id, request),
+            Message::NewStream(request) => request.answer(&self.registry),
+            Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
-            Message::SchemaListing(id, reply) => {
-                let _ = reply.send(self.schema_listing(id));
+            Message::LockUpdate(_, _, reply) => {
+                let _ = reply.send(Err("extension lock update ended".into()));
             }
+            Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
+            Message::EndLockUpdate(id) => self.end_lock_update(id),
+            Message::SchemaListing(id, reply) => self.schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.read_api(id, request),
@@ -202,6 +210,9 @@ impl State {
             Message::Auth(id, model, reply, admission) => {
                 self.start_auth(id, *model, reply, admission);
             }
+            Message::ProviderKey(id, provider, reply, admission) => {
+                self.start_provider_key(id, provider, reply, admission);
+            }
             Message::NewSignal(reply) => {
                 let _ = reply.send(self.registry.signal(Cancellation::new()));
             }
@@ -209,15 +220,12 @@ impl State {
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
-            Message::Catalog(id, request) => self.catalog(id, request),
-            Message::Node(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::Node(node)) = capability.as_deref() {
-                    node.answer(request, &self.registry);
-                } else {
-                    request.reject("extension tree node resource ended");
-                }
+            Message::Credentials(id, request) => self.credentials(id, request),
+            Message::CredentialKey(id, request, reply, admission) => {
+                self.start_credential_key(id, request, reply, admission);
             }
+            Message::Catalog(id, request) => self.catalog(id, request),
+            Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, admission) => {
                 self.start_replaced(id, request, admission);
             }
@@ -229,21 +237,20 @@ impl State {
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
-            Message::Release(id) => {
-                let removed = self.registry.resources.borrow_mut().entries.remove(&id);
-                drop(removed);
-            }
+            Message::Release(id) => self.release(id),
         }
     }
 
-    /// Answers catalog requests outside the resource-table borrow.
-    fn catalog(&self, id: u64, request: crate::catalog_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
-            request.answer(catalog);
-        } else {
-            request.reject("extension catalog resource ended");
-        }
+    /// Releases an ended lock update outside its frame-table borrow.
+    fn end_lock_update(&self, id: u64) {
+        let frame = self.synchronous.async_frames.borrow_mut().remove(&id);
+        drop(frame);
+    }
+
+    /// Releases a resource outside its capability-table borrow.
+    fn release(&self, id: u64) {
+        let removed = self.registry.resources.borrow_mut().entries.remove(&id);
+        drop(removed);
     }
 
     /// Reads the original live history independently of guarded contexts.
@@ -267,13 +274,19 @@ impl State {
         self.routes.borrow_mut().pop();
     }
 
-    /// Observe live metadata through its original API capability.
-    fn schema_listing(&self, id: u64) -> Result<crate::schema_registration::ToolListing, String> {
+    /// Answers live metadata requests through their original API capability.
+    fn schema_listing(
+        &self,
+        id: u64,
+        reply: &std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
+    ) {
         let capability = self.registry.capability(id);
-        match capability.as_deref() {
+        let result = match capability.as_deref() {
             Some(Capability::Api(api)) => self.registry.schema_listing(api),
             _ => Err("extension API resource ended".into()),
-        }
+        };
+        drop(capability);
+        let _ = reply.send(result);
     }
 
     /// Starts the original creating session's operation outside the registry borrow.
@@ -502,3 +515,5 @@ impl Drop for State {
         drop(entries);
     }
 }
+
+mod catalog;

@@ -18,6 +18,7 @@ pub(crate) mod bash;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) use events::EventCall;
+pub(crate) mod credentials;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod schema;
@@ -56,6 +57,8 @@ pub(crate) enum Call<H = Handle> {
     Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
     Tool(ToolCall<H>),
+    /// Calls an authored credential backend with its native scoped update.
+    Credential(credentials::CredentialCall<H>),
     /// The original weak schema allocation and guest callback admission.
     Schema(schema::Invocation<H>),
     /// Delivers one chunk of terminal input to an authored listener.
@@ -64,6 +67,10 @@ pub(crate) enum Call<H = Handle> {
     Factory(factories::FactoryCall<H>),
     /// Renders one tool row through its authored renderer.
     ToolRender(tool_renders::ToolRenderCall<H>),
+    /// Awaits an authored hook on the original pending native model invocation.
+    ModelHook(crate::model_calls::Invocation<H>),
+    /// Invokes an authored stream callback on the retained local event.
+    Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.
