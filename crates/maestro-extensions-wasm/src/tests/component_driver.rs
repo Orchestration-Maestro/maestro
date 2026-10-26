@@ -485,6 +485,51 @@ impl Driver for ComponentDriver {
         &mut self.previous
     }
 
+    async fn footer(&mut self, width: u32) -> Result<Option<Vec<String>>, String> {
+        let custom = self.observed(|observed| {
+            observed
+                .ui
+                .footer
+                .custom
+                .as_ref()
+                .map(|slot| slot.component)
+        });
+        match custom {
+            Some(rep) => self.render_slot(rep, width).await.map(Some),
+            None => Ok(None),
+        }
+    }
+
+    async fn branch_change(&mut self) -> Result<Vec<serde_json::Value>, String> {
+        let listeners = self.observed(|observed| super::ui_host::listeners_on(observed, "branch"));
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let mut answers = Vec::new();
+        for id in listeners {
+            let emitter = harness
+                .store
+                .data_mut()
+                .table
+                .push(super::bus_host::Emitter { key: 0 })
+                .map_err(|e| e.to_string())?;
+            let operands = (borrow(id), Resource::new_borrow(emitter.rep()));
+            let answer = harness
+                .exports
+                .func_invoke_branch_change()
+                .call_async(&mut harness.store, operands)
+                .await
+                .map_err(|e| e.to_string())?
+                .0;
+            harness
+                .store
+                .data_mut()
+                .table
+                .delete(emitter)
+                .map_err(|e| e.to_string())?;
+            answers.push(super::ui_host::unit_answer(answer));
+        }
+        Ok(answers)
+    }
+
     async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String> {
         let (children, custom) = self.observed(|observed| {
             let header = &observed.ui.header;

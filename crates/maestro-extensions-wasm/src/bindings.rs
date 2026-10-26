@@ -35,6 +35,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.extension-ui-context": crate::tests::ui_host::Ui,
             "maestro:extension/host.tui": crate::tests::ui_host::Tui,
+            "maestro:extension/host.footer-data": crate::tests::ui_host::FooterResource,
             "maestro:extension/host.model-registry": crate::tests::reader_host::Reader,
             "maestro:extension/host.readonly-session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.session-tree-node": crate::tests::reader_host::Node,

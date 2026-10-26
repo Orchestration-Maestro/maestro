@@ -13,9 +13,9 @@ use maestro_extensions_wasm::{
     AbortListener, AbortSignal, CallbackEmitter, CallbackEmitterPort, CommandOptions,
     CompactOptions, Component, ComponentDisposer, ComponentFactory, ComponentView, ExtensionAPI,
     ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult, ExtensionUIContext,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, NotificationType, SignalPort, Subscription,
-    SubscriptionPort, TerminalInputResult, Theme, ThemeSelection, ThemeSetResult, WidgetPlacement,
-    WorkingIndicatorOptions,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterData, FooterFactory, NotificationType,
+    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Theme, ThemeSelection,
+    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -202,6 +202,60 @@ fn label_factory(api: &ExtensionAPI, label: String, dispose: bool) -> ComponentF
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: disposal,
+        })
+    })
+}
+
+/// A footer that renders its label and the footer metadata it reads on every render.
+struct FooterView {
+    /// Footer label.
+    label: String,
+    /// The footer metadata the factory received.
+    footer: FooterData,
+    /// Released with the view.
+    _capture: Capture,
+}
+
+impl ComponentView for FooterView {
+    fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        let branch = self.footer.get_git_branch()?;
+        let statuses = self.footer.get_extension_statuses()?;
+        let providers = self.footer.get_available_provider_count()?;
+        Ok(vec![
+            json!([self.label, branch, statuses, providers]).to_string(),
+        ])
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+thread_local! {
+    /// Branch change subscriptions by footer label.
+    static BRANCHES: RefCell<HashMap<String, Subscription>> = RefCell::default();
+}
+
+/// A footer factory that subscribes to branch changes and logs each build and disposal.
+fn footer_factory(api: &ExtensionAPI, label: String) -> FooterFactory {
+    let log = api.clone();
+    Rc::new(move |_tui, _theme, footer, _emitter| {
+        log.append_entry("widget-factory", Some(json!(label)))?;
+        let (changed, named) = (log.clone(), label.clone());
+        let subscription = footer.on_branch_change(Rc::new(move || {
+            changed.append_entry("branch-changed", Some(json!(named)))
+        }))?;
+        BRANCHES.with_borrow_mut(|branches| branches.insert(label.clone(), subscription));
+        let (disposed, named) = (log.clone(), label.clone());
+        let dispose: ComponentDisposer =
+            Rc::new(move |_| disposed.append_entry("widget-dispose", Some(json!(named))));
+        let view = FooterView {
+            label: label.clone(),
+            footer,
+            _capture: Capture(log.clone(), label.clone()),
+        };
+        Ok(ExtensionComponent {
+            component: Component::new(view),
+            dispose: Some(dispose),
         })
     })
 }
@@ -579,6 +633,17 @@ enum Operation {
         #[serde(default)]
         dispose: bool,
     },
+    /// Replaces the footer with a labelled factory component, or restores the host's footer.
+    Footer {
+        /// Label the footer renders; absent restores the host's footer.
+        #[serde(default)]
+        label: Option<String>,
+    },
+    /// Unsubscribes the branch change listener of a footer.
+    Unbranch {
+        /// Footer label.
+        label: String,
+    },
     /// Replaces the header with a labelled factory component, or restores the host's header.
     Header {
         /// Label the header renders; absent restores the host's header.
@@ -631,6 +696,9 @@ enum Operation {
         /// How the host builds its built-in header.
         #[serde(default)]
         header: Option<String>,
+        /// Footer metadata the host now reports.
+        #[serde(default)]
+        footer: Option<Value>,
     },
 }
 
@@ -675,14 +743,13 @@ fn caught(result: ExtensionResult<Option<Value>>) -> Value {
     }
 }
 
-/// Runs one operation and reports its outcome.
-async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> ExtensionResult<()> {
-    let operation: Operation = serde_json::from_str(text).map_err(|error| error.to_string())?;
-    let answer = match operation {
-        Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
-        Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
-        Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
-        Operation::Theme { call } => caught(themes(&ctx.ui()?, call).map(Some)),
+/// Shows a factory widget, header or footer, or unsubscribes a footer's branch listener.
+fn factories(
+    api: &ExtensionAPI,
+    ctx: &ExtensionContext,
+    operation: Operation,
+) -> ExtensionResult<()> {
+    match operation {
         Operation::WidgetFactory {
             key,
             label,
@@ -693,16 +760,36 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 placement: Some(placement.into()),
             });
             let factory = label_factory(api, label, dispose);
-            caught(
-                ctx.ui()?
-                    .set_widget_factory(&key, factory, options)
-                    .map(|()| None),
-            )
+            ctx.ui()?.set_widget_factory(&key, factory, options)
+        }
+        Operation::Footer { label } => {
+            let factory = label.map(|label| footer_factory(api, label));
+            ctx.ui()?.set_footer(factory)
+        }
+        Operation::Unbranch { label } => {
+            let subscription = BRANCHES.with_borrow_mut(|branches| branches.remove(&label));
+            subscription.map_or(Ok(()), |subscription| subscription.unsubscribe())
         }
         Operation::Header { label } => {
             let factory = label.map(|label| label_factory(api, label, true));
-            caught(ctx.ui()?.set_header(factory).map(|()| None))
+            ctx.ui()?.set_header(factory)
         }
+        _ => Err("expected a factory operation".into()),
+    }
+}
+
+/// Runs one operation and reports its outcome.
+async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> ExtensionResult<()> {
+    let operation: Operation = serde_json::from_str(text).map_err(|error| error.to_string())?;
+    let answer = match operation {
+        Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
+        Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
+        Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
+        Operation::Theme { call } => caught(themes(&ctx.ui()?, call).map(Some)),
+        operation @ (Operation::WidgetFactory { .. }
+        | Operation::Footer { .. }
+        | Operation::Unbranch { .. }
+        | Operation::Header { .. }) => caught(factories(api, ctx, operation).map(|()| None)),
         Operation::Listen { label } => caught(listen(ctx, label).map(Some)),
         Operation::Unlisten { label } => caught(stop_listening(&label, true).map(Some)),
         Operation::Forget { label } => caught(stop_listening(&label, false).map(Some)),
@@ -717,9 +804,10 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             binding,
             answer,
             header,
+            footer,
         } => {
             let control = json!({ "error": error, "binding": binding, "answer": answer,
-                "header": header });
+                "header": header, "footer": footer });
             api.append_entry("ui-control", Some(control))?;
             json!("controlled")
         }

@@ -75,6 +75,7 @@ impl Imports for Generated {
         ui_set_title(resource: &Self::Ui, title: &str) => set_title(title);
         ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
         ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
+        ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
@@ -156,6 +157,10 @@ impl Imports for Generated {
         ui_set_theme_name(resource: &Self::Ui, name: &str) -> ExtensionResult<crate::ThemeSetResult> => set_theme_name(name);
         ui_set_theme(resource: &Self::Ui, theme: &Self::Theme) -> ExtensionResult<crate::ThemeSetResult> => set_theme(theme);
         ui_get_tools_expanded(resource: &Self::Ui) -> ExtensionResult<bool> => get_tools_expanded();
+        footer_get_git_branch(footer: &Self::FooterData) -> ExtensionResult<Option<String>> => get_git_branch();
+        footer_get_extension_statuses(footer: &Self::FooterData) -> ExtensionResult<Vec<(String, String)>> => get_extension_statuses();
+        footer_get_available_provider_count(footer: &Self::FooterData) -> ExtensionResult<f64> => get_available_provider_count();
+        footer_on_branch_change(footer: &Self::FooterData, listener: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_branch_change(listener);
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();
@@ -198,26 +203,17 @@ impl Imports for Generated {
     }
     type Writer = host::SessionManager;
 
-    fn call<'a>(
-        &'a self,
-        operation: &'a str,
-        data: String,
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, String> {
-        Box::pin(host::call(operation.to_owned(), data, signal))
-    }
-
-    fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
-        Box::pin(host::set_model(model))
-    }
+    forward_resources! { asynchronous functions {
+        call<'a>(operation: &'a str, data: String, signal: Option<&'a Self::Signal>) -> String => host::call[operation.to_owned(), data, signal];
+        set_model<'a>(model: String) -> bool => host::set_model[model];
+        event_emit<'a>(channel: String, data: String) -> () => host::event_emit[channel, data];
+    } }
 
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
-    fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
-        Box::pin(host::event_emit(channel, data))
-    }
     type Ui = host::ExtensionUiContext;
     type Tui = host::Tui;
+    type FooterData = host::FooterData;
 
     forward_resources! { asynchronous {
         ui_select<'a>(resource: Self::Ui, title: String, options: Vec<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => select(title, options, dialog.signal, dialog.timeout);
@@ -403,14 +399,19 @@ impl<E: Extension> Guest for Glue<E> {
         handler: &host::Callback,
         tui: host::Tui,
         theme: host::Theme,
+        footer: Option<host::FooterData>,
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<host::FactoryComponent>> {
-        let exports = Exports::new(Generated);
-        std::future::ready(
-            exports
-                .invoke_component_factory(handler.id(), tui, theme, emitter)
-                .map(|built| super::factories::transfer(&Generated, built)),
-        )
+        let lent = super::factories::Lent { tui, theme, footer };
+        let built = Exports::new(Generated).invoke_component_factory(handler.id(), lent, emitter);
+        std::future::ready(built.map(|built| super::factories::transfer(&Generated, built)))
+    }
+
+    fn invoke_branch_change(
+        handler: &host::Callback,
+        _: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(super::factories::invoke_branch_change(handler.id()))
     }
 
     fn invoke_dispose(

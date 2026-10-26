@@ -349,6 +349,28 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn footer(&mut self, width: u32) -> impl Future<Output = Result<Option<Vec<String>>, String>> {
+        let rendered = self.host.footer().map(|component| {
+            let call = super::renderer_host::Call::Render(width);
+            match super::renderer_host::invoke(&component, call, &self.host, 0)? {
+                super::renderer_host::Reply::Lines(lines) => Ok(lines),
+                _ => Err("expected rendered lines".to_owned()),
+            }
+        });
+        std::future::ready(rendered.transpose())
+    }
+    fn branch_change(&mut self) -> impl Future<Output = Result<Vec<serde_json::Value>, String>> {
+        let listeners = super::ui_host::listeners_on(&self.host.observed(), "branch");
+        let answers = listeners
+            .into_iter()
+            .map(|id| {
+                super::ui_host::unit_answer(
+                    crate::component_adapter::factories::invoke_branch_change(id),
+                )
+            })
+            .collect();
+        std::future::ready(Ok(answers))
+    }
     fn header(
         &mut self,
         width: u32,

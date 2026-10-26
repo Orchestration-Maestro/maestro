@@ -367,6 +367,9 @@ pub(crate) enum SynchronousKind {
     /// Native component disposal; its export takes no data.
     #[component(name = "dispose")]
     Dispose,
+    /// Native branch change of a footer's metadata; its export takes no data.
+    #[component(name = "branch-change")]
+    BranchChange,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.

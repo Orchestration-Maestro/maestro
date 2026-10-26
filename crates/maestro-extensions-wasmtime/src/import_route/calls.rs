@@ -77,6 +77,8 @@ pub(super) struct LocalFactory {
     tui: Resource<crate::local_resources::effects::TuiEndpoint>,
     /// Original live theme, transferred.
     theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
+    /// Original footer metadata of a footer factory, transferred.
+    footer: Option<Resource<crate::footer_data::Endpoint>>,
     /// Independent native invocation frame.
     emitter: Resource<EmitterEndpoint>,
 }
@@ -360,6 +362,11 @@ pub(super) fn lower(
             target: call.handler.id,
             tui: table.push(call.tui.clone())?,
             theme: table.push(call.theme.clone())?,
+            footer: call
+                .footer
+                .clone()
+                .map(|footer| table.push(footer))
+                .transpose()?,
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::TerminalInput(call) => LocalCall::TerminalInput(LocalTerminalInput {

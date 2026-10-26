@@ -102,3 +102,45 @@ pub struct ExtensionComponent {
 pub type ComponentFactory = Rc<
     dyn for<'a> Fn(TUI, crate::Theme, CallbackEmitter<'a>) -> ExtensionResult<ExtensionComponent>,
 >;
+
+/// Runs when the footer's branch may have changed.
+pub type BranchChangeListener = Rc<dyn Fn() -> ExtensionResult<()>>;
+
+port! {
+    /// Reads of the footer metadata a footer factory received; each read is current.
+    FooterDataPort for FooterData via port {
+        /// The current branch: `None` outside a repository, `detached` for a detached head.
+        fn get_git_branch() -> Option<String>;
+        /// The extension status texts by key, in insertion order.
+        fn get_extension_statuses() -> Vec<(String, String)>;
+        /// The count of providers with available models.
+        fn get_available_provider_count() -> f64;
+        /// Calls `listener` when the branch may have changed; dropping the subscription keeps
+        /// the listener.
+        fn on_branch_change(listener: BranchChangeListener) -> crate::Subscription;
+    }
+}
+
+/// The footer metadata a footer factory received; clones share its host owner.
+#[derive(Clone)]
+pub struct FooterData {
+    /// The owner of this capability.
+    port: Rc<dyn FooterDataPort>,
+}
+impl FooterData {
+    /// Retains the supplied host capability.
+    #[must_use]
+    pub fn new(port: Rc<dyn FooterDataPort>) -> Self {
+        Self { port }
+    }
+}
+
+/// Builds a footer from the terminal, the live theme and the footer metadata, synchronously.
+pub type FooterFactory = Rc<
+    dyn for<'a> Fn(
+        TUI,
+        crate::Theme,
+        FooterData,
+        CallbackEmitter<'a>,
+    ) -> ExtensionResult<ExtensionComponent>,
+>;

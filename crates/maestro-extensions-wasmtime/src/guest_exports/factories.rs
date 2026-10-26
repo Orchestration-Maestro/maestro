@@ -16,6 +16,7 @@ type Factory = TypedFunc<
         Resource<Callback>,
         Resource<TuiEndpoint>,
         Resource<ThemeEndpoint>,
+        Option<Resource<crate::footer_data::Endpoint>>,
         Resource<EmitterEndpoint>,
     ),
     (Result<Built, String>,),
@@ -42,14 +43,16 @@ impl Exports {
         call: FactoryCall<Callback>,
     ) -> wasmtime::Result<()> {
         let (callback, tui) = arguments(accessor, &call.handler, call.tui)?;
-        let (theme, emitter) = accessor.with(|mut access| {
+        let (theme, footer, emitter) = accessor.with(|mut access| {
             let table = access.get().ctx().table;
-            Ok::<_, wasmtime::Error>((table.push(call.theme)?, table.push(call.emitter)?))
+            let footer = call.footer.map(|footer| table.push(footer)).transpose()?;
+            Ok::<_, wasmtime::Error>((table.push(call.theme)?, footer, table.push(call.emitter)?))
         })?;
         let operands = (
             Resource::new_borrow(callback.rep()),
             tui,
             theme,
+            footer,
             Resource::new_borrow(emitter.rep()),
         );
         let result = self.0.call_concurrent(accessor, operands).await;

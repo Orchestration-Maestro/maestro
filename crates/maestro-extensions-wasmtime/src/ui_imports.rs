@@ -190,6 +190,17 @@ fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
         },
     )?;
     host.func_wrap(
+        "[method]extension-ui-context.set-footer",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
+            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let route = endpoint.route(|reply| Request::Footer(factory, api, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
+    )?;
+    host.func_wrap(
         "[method]extension-ui-context.set-header",
         |mut store: StoreContextMut<'_, T>,
          (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {

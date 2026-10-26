@@ -413,6 +413,14 @@ factory widget under the same key too. The factory's captures stay usable while 
 host shows the component and are released after the host removes it. A factory error
 is the setter's error.
 
+`set_footer` replaces the footer with the component a `FooterFactory` builds from the
+terminal, the theme and the `FooterData` the host lends, or restores the host's footer
+with `None`; the host disposes the custom footer it replaces first. `FooterData` reads
+the current branch, extension statuses in insertion order and provider count on every
+call, so a retained footer sees later changes. `on_branch_change` keeps its
+`BranchChangeListener` until the returned subscription is unsubscribed; dropping the
+subscription keeps it.
+
 `set_header` replaces the header with the component a factory builds, or restores the
 host's header with `None`. The host disposes the custom header it replaces first, and a
 host that has not built its own header yet runs no factory.

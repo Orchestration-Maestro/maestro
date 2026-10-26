@@ -140,6 +140,10 @@ pub trait Driver {
     fn previous_signal(&mut self) -> &mut Option<usize>;
     /// Repeats release through a fresh borrow of an existing identity.
     async fn repeat_release(&mut self, handler: u32) -> Result<(), String>;
+    /// Renders the custom footer, if the host shows one.
+    async fn footer(&mut self, width: u32) -> Result<Option<Vec<String>>, String>;
+    /// Runs every live branch change listener in registration order and returns each answer.
+    async fn branch_change(&mut self) -> Result<Vec<serde_json::Value>, String>;
     /// The header container's children and the rendering of its custom header, if any.
     async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String>;
     /// Renders the factory widget the host shows under `key`, or reports that it shows none.

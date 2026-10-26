@@ -40,6 +40,12 @@ pub(crate) enum Request {
     GetEditorText(Sender<Result<String, String>>),
     /// Looks up, selects or reports themes and tool expansion on the original UI.
     Theme(crate::ui_themes::ThemeRequest),
+    /// Replaces the footer with the component an authored factory builds, or restores it.
+    Footer(
+        Option<crate::guest_calls::Handle>,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
     /// Replaces the header with the component an authored factory builds, or restores it.
     Header(
         Option<crate::guest_calls::Handle>,
@@ -76,6 +82,15 @@ impl Request {
             }
             Self::Theme(request) => {
                 request.answer(ui, registry);
+                return;
+            }
+            Self::Footer(factory, api, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory =
+                        factory.map(|factory| factory.footer_factory(registry.clone(), &api));
+                    ui.set_footer(factory).map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
                 return;
             }
             Self::Header(factory, api, reply) => {
@@ -130,6 +145,7 @@ impl Request {
             Self::Theme(request) => request.reject(error),
             Self::WidgetFactory(.., reply)
             | Self::Header(_, _, reply)
+            | Self::Footer(_, _, reply)
             | Self::Notify(_, _, reply)
             | Self::Status(_, _, reply)
             | Self::WorkingMessage(_, reply)

@@ -30,6 +30,7 @@ mod session;
 mod setup;
 mod theme;
 mod tools;
+mod ui;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
 

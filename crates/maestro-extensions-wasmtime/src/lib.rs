@@ -16,6 +16,7 @@ mod event_registration;
 mod exec;
 mod exec_imports;
 mod factory;
+mod footer_data;
 pub use factory::artifact_factory;
 mod guest_calls;
 mod guest_component;

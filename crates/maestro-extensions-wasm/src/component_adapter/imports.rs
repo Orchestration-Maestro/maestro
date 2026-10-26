@@ -490,6 +490,26 @@ pub trait Imports: Clone + 'static {
 
     /// Terminal handle lent to a component factory.
     type Tui: 'static;
+    /// Footer metadata lent to a footer factory.
+    type FooterData: 'static;
+    /// Reads the current branch.
+    fn footer_get_git_branch(&self, footer: &Self::FooterData) -> ExtensionResult<Option<String>>;
+    /// Reads the extension statuses in insertion order.
+    fn footer_get_extension_statuses(
+        &self,
+        footer: &Self::FooterData,
+    ) -> ExtensionResult<Vec<(String, String)>>;
+    /// Reads the count of providers with available models.
+    fn footer_get_available_provider_count(
+        &self,
+        footer: &Self::FooterData,
+    ) -> ExtensionResult<f64>;
+    /// Adds the branch change listener under `listener`, returning its host remover.
+    fn footer_on_branch_change(
+        &self,
+        footer: &Self::FooterData,
+        listener: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
     /// Independently owned host capability.
     type Ui: 'static;
     /// Independently owned host capability.
@@ -554,6 +574,12 @@ pub trait Imports: Clone + 'static {
         key: &str,
         content: Option<&[String]>,
         options: Option<ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the footer factory, which the host may run before answering, or its removal.
+    fn ui_set_footer(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
     /// Forwards the header factory, which the host may run before answering, or its removal.
     fn ui_set_header(

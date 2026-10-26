@@ -1250,3 +1250,104 @@ async fn header_slots(driver: &mut impl Driver) -> Result<(), String> {
 fn header_factory_preserves_early_and_retained_states() -> Result<(), String> {
     on_both_adapters!(header_slots)
 }
+
+/// Sets the footer to a labelled factory component, or restores it, and returns the
+/// receipts, factory and disposal effects it caused.
+async fn set_footer(driver: &mut impl Driver, label: Option<&str>) -> Result<Vec<String>, String> {
+    let from = driver.transcript().len();
+    operate(driver, json!({ "op": "footer", "label": label })).await?;
+    Ok(widget_events(driver, from))
+}
+
+/// The receipt, disposal, factory and answer lines of one footer change.
+fn footer_change(factory: bool, disposed: Option<&str>, built: Option<&str>) -> Vec<String> {
+    let lines = header_change(factory, disposed, built);
+    lines
+        .iter()
+        .map(|line| line.replace("setHeader", "setFooter"))
+        .collect()
+}
+
+/// Supplies the footer metadata the host reports from now on.
+async fn footer_metadata(driver: &mut impl Driver, metadata: Value) -> Result<(), String> {
+    let control = json!({ "op": "control", "footer": metadata });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    Ok(())
+}
+
+/// The labels of the footers whose branch listeners ran since `from`.
+fn branch_changes(driver: &impl Driver, from: usize) -> Vec<String> {
+    driver.transcript()[from..]
+        .iter()
+        .filter_map(|line| line.strip_prefix("entry branch-changed "))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// A footer reads the current metadata on every render.
+async fn live_footer(driver: &mut impl Driver) -> Result<(), String> {
+    let first = json!({ "branch": "main", "statuses": [["a", "1"]], "providers": 2.0 });
+    footer_metadata(driver, first).await?;
+    assert_eq!(
+        set_footer(driver, Some("F1")).await?,
+        footer_change(true, None, Some("F1"))
+    );
+    let rendered = driver.footer(20).await?;
+    assert_eq!(
+        rendered,
+        Some(vec![json!(["F1", "main", [["a", "1"]], 2.0]).to_string()])
+    );
+    let next = json!({ "branch": null, "statuses": [["a", "1"], ["b", ""]], "providers": 0.0 });
+    footer_metadata(driver, next).await?;
+    let current = json!(["F1", null, [["a", "1"], ["b", ""]], 0.0]).to_string();
+    let rendered = driver.footer(20).await?;
+    assert_eq!(
+        rendered,
+        Some(vec![current]),
+        "the retained footer reads the new metadata"
+    );
+    Ok(())
+}
+
+/// Branch listeners stay live until unsubscribed, and replacing or restoring the footer
+/// disposes the old one first.
+async fn footer_replacement(driver: &mut impl Driver) -> Result<(), String> {
+    let from = driver.transcript().len();
+    assert_eq!(driver.branch_change().await?, [json!({ "ok": null })]);
+    assert_eq!(branch_changes(driver, from), ["\"F1\""]);
+    let replaced = set_footer(driver, Some("F2")).await?;
+    let expected = footer_change(true, Some("F1"), Some("F2"));
+    assert_eq!(
+        replaced, expected,
+        "the old footer is disposed before the new factory runs"
+    );
+    let unbranch = json!({ "op": "unbranch", "label": "F1" });
+    assert_eq!(operate(driver, unbranch).await?, json!({ "ok": true }));
+    let from = driver.transcript().len();
+    driver.branch_change().await?;
+    assert_eq!(
+        branch_changes(driver, from),
+        ["\"F2\""],
+        "only the subscribed listener runs"
+    );
+    assert_eq!(
+        set_footer(driver, None).await?,
+        footer_change(false, Some("F2"), None)
+    );
+    assert_eq!(driver.footer(20).await?, None, "the host footer is back");
+    Ok(())
+}
+
+/// Footer factories keep live read-only metadata and replacement order on both adapters.
+async fn footer_factories(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    live_footer(driver).await?;
+    footer_replacement(driver).await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn footer_factory_keeps_live_readonly_metadata() -> Result<(), String> {
+    on_both_adapters!(footer_factories)
+}

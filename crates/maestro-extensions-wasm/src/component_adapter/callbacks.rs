@@ -101,6 +101,8 @@ kinds! {
         Schema(crate::schema_code::Handler),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),
+        FooterFactory(crate::FooterFactory),
+        BranchChange(crate::BranchChangeListener),
     }
     once {
         Abort(crate::AbortListener),

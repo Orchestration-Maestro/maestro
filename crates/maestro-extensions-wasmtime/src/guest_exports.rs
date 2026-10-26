@@ -64,6 +64,8 @@ pub(crate) struct Exports {
     factories: factories::Exports,
     /// Native component disposal.
     dispose: Abort,
+    /// Native branch change listener.
+    branch_change: Abort,
     /// Actual command, completion and shortcut exports.
     registered: registrations::Exports,
     /// Actual authored setup entry point.
@@ -127,6 +129,7 @@ impl Exports {
             terminal,
             factories,
             dispose: typed(store, instance, &guest, "invoke-dispose")?,
+            branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
             setup: typed(store, instance, &guest, "invoke-setup")?,
             with_session: typed(store, instance, &guest, "invoke-with-session")?,
@@ -264,10 +267,11 @@ impl Exports {
             SynchronousKind::Listener => self.listener,
             SynchronousKind::CompactionComplete => self.compaction_complete,
             SynchronousKind::CompactionError => self.compaction_error,
-            SynchronousKind::Abort | SynchronousKind::Dispose => {
+            SynchronousKind::Abort | SynchronousKind::Dispose | SynchronousKind::BranchChange => {
                 let export = match call.kind {
                     SynchronousKind::Abort => self.abort,
-                    _ => self.dispose,
+                    SynchronousKind::Dispose => self.dispose,
+                    _ => self.branch_change,
                 };
                 let result = export.call_concurrent(accessor, (handler, frame)).await;
                 return finish(accessor, (callback, emitter), call.completion, result);

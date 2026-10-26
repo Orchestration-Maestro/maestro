@@ -10,6 +10,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 pub(crate) mod bash_output;
 mod dialogs;
 pub(crate) mod effects;
+mod footer;
 mod signals;
 mod synchronous;
 pub(crate) use synchronous::Completion;
@@ -95,6 +96,8 @@ pub(crate) enum Message {
     Dialog(u64, crate::ui_reads::DialogRequest, Admission),
     /// Reads or edits the independently retained live renderer theme.
     Theme(u64, crate::theme_reads::Request),
+    /// Reads or subscribes to the footer metadata lent to a footer factory.
+    Footer(u64, crate::footer_data::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -215,6 +218,8 @@ enum Capability {
     UiSubscription(Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
+    /// Original footer metadata lent to a footer factory.
+    Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
     /// Original terminal lent to a component factory.
     Tui {
         /// Ownership alone crosses the opaque canonical terminal resource.

@@ -78,6 +78,7 @@ fn factory(
         handler: completion.callback(call.handler),
         tui: call.tui,
         theme: call.theme,
+        footer: call.footer,
         emitter: call.emitter,
         reply: call.reply,
     }

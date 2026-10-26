@@ -670,13 +670,7 @@ fn canonical_widget_factories_build_render_and_dispose_through_the_component() {
             Rc::new(|_| panic!("no diagnostics")),
         );
         let (owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
-        let terminal = super::recording_terminal::RecordingTerminal::new(40, 12);
-        let tui = maestro_tui::TUI::new(
-            terminal.handle(),
-            super::manual_runtime::ManualRuntime::new().handle(),
-            maestro_tui::TerminalImage::default(),
-            Some(false),
-        );
+        let (tui, _terminal) = screen();
         let ui = Rc::new(Widgets {
             tui,
             theme: maestro_theme::LiveTheme::default(),
@@ -729,13 +723,7 @@ fn canonical_header_factories_replace_dispose_and_restore() {
             Rc::new(|_| panic!("no diagnostics")),
         );
         let (owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
-        let terminal = super::recording_terminal::RecordingTerminal::new(40, 12);
-        let tui = maestro_tui::TUI::new(
-            terminal.handle(),
-            super::manual_runtime::ManualRuntime::new().handle(),
-            maestro_tui::TerminalImage::default(),
-            Some(false),
-        );
+        let (tui, _terminal) = screen();
         let ui = Rc::new(Widgets {
             tui,
             theme: maestro_theme::LiveTheme::default(),
@@ -778,4 +766,141 @@ fn canonical_header_factories_replace_dispose_and_restore() {
         );
         bus.clear();
     });
+}
+
+/// Footer metadata whose branch listeners the test runs.
+#[derive(Default)]
+struct Metadata {
+    /// Current branch.
+    branch: RefCell<Option<String>>,
+    /// Live extension statuses.
+    statuses: maestro_extensions::footer_data_provider::ExtensionStatuses,
+    /// Branch listeners in registration order.
+    listeners: RefCell<Vec<Rc<dyn Fn()>>>,
+}
+impl maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider for Metadata {
+    fn get_git_branch(&self) -> Option<String> {
+        self.branch.borrow().clone()
+    }
+    fn get_extension_statuses(
+        &self,
+    ) -> maestro_extensions::footer_data_provider::ExtensionStatuses {
+        self.statuses.clone()
+    }
+    fn get_available_provider_count(&self) -> f64 {
+        3.0
+    }
+    fn on_branch_change(&self, callback: Rc<dyn Fn()>) -> Box<dyn Fn()> {
+        self.listeners.borrow_mut().push(callback);
+        Box::new(|| {})
+    }
+}
+
+/// An application footer that builds each footer factory as soon as it is set.
+struct Footers {
+    /// The terminal factories receive.
+    tui: maestro_tui::TUI,
+    /// The metadata factories receive.
+    metadata: Rc<Metadata>,
+    /// The custom footer.
+    shown: RefCell<Option<maestro_extensions::types::ExtensionComponent>>,
+}
+impl Footers {
+    /// The custom footer's one rendered line, as the JSON it holds.
+    fn render(&self) -> Value {
+        let lines = self
+            .shown
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .component
+            .try_render(10)
+            .unwrap();
+        serde_json::from_str(&lines[0]).unwrap()
+    }
+}
+impl ExtensionUIContextPort for Footers {
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        maestro_theme::LiveTheme::default()
+    }
+    fn set_footer(
+        &self,
+        factory: Option<maestro_extensions::types::FooterFactory>,
+    ) -> Result<(), EventError> {
+        let footer = factory
+            .map(|factory| {
+                factory.call((self.tui.clone(), self.theme(), self.metadata.clone() as _))
+            })
+            .transpose()?;
+        *self.shown.borrow_mut() = footer;
+        Ok(())
+    }
+}
+
+#[test]
+fn canonical_footer_factories_read_live_metadata_and_branch_changes() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let (tui, _terminal) = screen();
+        let metadata = Rc::new(Metadata::default());
+        *metadata.branch.borrow_mut() = Some("main".into());
+        metadata.statuses.insert("a".into(), "1".into());
+        let ui = Rc::new(Footers {
+            tui,
+            metadata: metadata.clone(),
+            shown: RefCell::default(),
+        });
+        runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        let shown = handler("ui widget footer F".into(), runner.create_command_context())
+            .await
+            .unwrap_err()
+            .to_string();
+        assert_eq!(shown, "widget shown");
+        assert_eq!(ui.render(), json!(["F", "main", [["a", "1"]], 3.0]));
+        *metadata.branch.borrow_mut() = None;
+        metadata.statuses.insert("b".into(), String::new());
+        let current = json!(["F", null, [["a", "1"], ["b", ""]], 3.0]);
+        assert_eq!(ui.render(), current, "reads stay live");
+        let listeners = metadata.listeners.borrow().clone();
+        assert_eq!(listeners.len(), 1);
+        listeners[0]();
+        assert!(
+            owner.read().unwrap().flags.contains_key("branch-F"),
+            "the branch listener ran"
+        );
+        let restored = handler("ui widget footer".into(), runner.create_command_context())
+            .await
+            .unwrap_err()
+            .to_string();
+        assert_eq!(restored, "widget shown");
+        assert!(ui.shown.borrow().is_none());
+        bus.clear();
+    });
+}
+
+/// A terminal writer over a recording terminal and a manual runtime.
+fn screen() -> (
+    maestro_tui::TUI,
+    super::recording_terminal::RecordingTerminal,
+) {
+    let terminal = super::recording_terminal::RecordingTerminal::new(40, 12);
+    let tui = maestro_tui::TUI::new(
+        terminal.handle(),
+        super::manual_runtime::ManualRuntime::new().handle(),
+        maestro_tui::TerminalImage::default(),
+        Some(false),
+    );
+    (tui, terminal)
 }

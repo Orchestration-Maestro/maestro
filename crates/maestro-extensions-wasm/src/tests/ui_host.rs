@@ -23,6 +23,38 @@ pub struct Ui(pub(super) usize);
 /// Host type of the terminal lent to a component factory.
 pub struct Tui;
 
+/// Host type of the footer metadata lent to a footer factory.
+pub struct FooterResource;
+
+/// The footer the host keeps and the metadata a footer reads.
+#[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Footer {
+    /// The custom footer the host shows, when there is one.
+    #[serde(skip)]
+    pub custom: Option<WidgetSlot>,
+    /// Current branch.
+    #[serde(default)]
+    branch: Option<String>,
+    /// Extension statuses in insertion order.
+    #[serde(default)]
+    statuses: Vec<(String, String)>,
+    /// Providers with available models.
+    #[serde(default)]
+    providers: f64,
+}
+
+impl Footer {
+    /// Answers one footer metadata read from the current metadata.
+    pub fn read(&self, method: &str) -> Value {
+        match method {
+            "getGitBranch" => json!(self.branch),
+            "getExtensionStatuses" => json!(self.statuses),
+            _ => json!(self.providers),
+        }
+    }
+}
+
 /// One factory widget the host shows.
 pub struct WidgetSlot {
     /// Widget key.
@@ -62,6 +94,8 @@ impl Header {
 
 /// What the result of a nested call the host made settles.
 pub enum Nested {
+    /// A footer factory, whose component replaces the current footer.
+    Footer,
     /// A header factory, whose component replaces the current header.
     Header,
     /// A widget's disposal.
@@ -91,6 +125,8 @@ pub struct Bank {
     pub widgets: Vec<WidgetSlot>,
     /// The header container.
     pub header: Header,
+    /// The footer and its metadata.
+    pub footer: Footer,
     /// Whether tool output is expanded.
     tools: bool,
 }
@@ -159,6 +195,8 @@ struct Control {
     /// Builds the built-in header: `ready` adds it after a banner, `detached` keeps only the
     /// banner.
     header: Option<String>,
+    /// Replaces the footer metadata.
+    footer: Option<Footer>,
 }
 
 impl Bank {
@@ -169,6 +207,10 @@ impl Bank {
             self.binding = binding;
         }
         self.answer = control.answer;
+        if let Some(footer) = control.footer {
+            let custom = self.footer.custom.take();
+            self.footer = Footer { custom, ..footer };
+        }
         if let Some(header) = control.header {
             let mut children = vec!["banner".to_owned()];
             children.extend((header == "ready").then(|| "built-in".to_owned()));
@@ -255,6 +297,25 @@ pub fn on_terminal_input(
 ) -> Result<super::bus_host::Subscription, String> {
     call(observed, key, "onTerminalInput", &json!([]))?;
     observed.bus.on(&terminal_channel(key), handler)
+}
+
+/// The listeners registered on `channel`, in registration order.
+pub fn listeners_on(observed: &Observed, channel: &str) -> Vec<u32> {
+    observed
+        .bus
+        .listeners
+        .iter()
+        .filter(|(it, _)| it == channel)
+        .map(|(_, id)| *id)
+        .collect()
+}
+
+/// One listener's unit answer, or its failure.
+pub fn unit_answer(answer: Result<(), String>) -> Value {
+    match answer {
+        Ok(()) => json!({ "ok": null }),
+        Err(error) => json!({ "error": error }),
+    }
 }
 
 /// The terminal input listeners in registration order, across acquisitions.
@@ -428,16 +489,45 @@ impl State {
         for slot in removed {
             let name = format!("widget {} {}", slot.key, slot.component);
             self.observed.register(name, slot.component);
-            let Some(target) = slot.dispose else { continue };
-            let dispose = host::LocalSynchronous {
-                target,
-                kind: host::LocalKind::Dispose,
-                data: String::new(),
-                emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
-            };
-            steps.push_back((host::LocalCall::Synchronous(dispose), Nested::Dispose));
+            steps.extend(self.dispose_step(slot.dispose)?);
         }
         Ok(steps)
+    }
+
+    /// The nested call of the factory under `factory`, with a fresh terminal, the dark theme and,
+    /// for a footer, the footer metadata.
+    fn local_factory(
+        &mut self,
+        factory: &Resource<super::host::Identity>,
+        footer: bool,
+    ) -> wasmtime::Result<host::LocalFactory> {
+        Ok(host::LocalFactory {
+            target: self.table.get(factory)?.0,
+            tui: self.push(Tui)?,
+            theme: self.push(Theme("dark".to_owned()))?,
+            footer: footer.then(|| self.push(FooterResource)).transpose()?,
+            emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+        })
+    }
+
+    /// The nested disposal call of `dispose`, when the component has one.
+    fn dispose_step(
+        &mut self,
+        dispose: Option<u32>,
+    ) -> wasmtime::Result<Option<(host::LocalCall, Nested)>> {
+        let Some(target) = dispose else {
+            return Ok(None);
+        };
+        let dispose = host::LocalSynchronous {
+            target,
+            kind: host::LocalKind::Dispose,
+            data: String::new(),
+            emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+        };
+        Ok(Some((
+            host::LocalCall::Synchronous(dispose),
+            Nested::Dispose,
+        )))
     }
 
     /// Queues the custom header for release and returns its disposal, which the guest runs
@@ -452,15 +542,7 @@ impl State {
         let (component, dispose) = (custom.component, custom.dispose);
         self.observed
             .register(format!("header {component}"), component);
-        if let Some(target) = dispose {
-            let dispose = host::LocalSynchronous {
-                target,
-                kind: host::LocalKind::Dispose,
-                data: String::new(),
-                emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
-            };
-            steps.push_back((host::LocalCall::Synchronous(dispose), Nested::Dispose));
-        }
+        steps.extend(self.dispose_step(dispose)?);
         Ok(steps)
     }
 
@@ -471,6 +553,18 @@ impl State {
         value: host::LocalResult,
     ) -> wasmtime::Result<Option<String>> {
         match (nested, value) {
+            (Nested::Footer, host::LocalResult::Factory(Ok(built))) => {
+                let dispose = built
+                    .dispose
+                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
+                    .transpose()?;
+                self.observed.ui.footer.custom = Some(WidgetSlot {
+                    key: "footer".to_owned(),
+                    component: built.component.rep(),
+                    dispose,
+                });
+                Ok(None)
+            }
             (Nested::Header, host::LocalResult::Factory(Ok(built))) => {
                 let dispose = built
                     .dispose
@@ -639,6 +733,33 @@ impl host::HostExtensionUiContext for State {
         })
     }
 
+    fn set_footer(
+        &mut self,
+        this: Resource<Ui>,
+        factory: Option<Resource<super::host::Identity>>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let ukey = self.table.get(&this)?.0;
+        let operands = json!([factory.is_some()]);
+        if let Err(error) = call(&mut self.observed, ukey, "setFooter", &operands) {
+            return self.routed(Err(error));
+        }
+        let mut steps = std::collections::VecDeque::new();
+        if let Some(old) = self.observed.ui.footer.custom.take() {
+            self.observed
+                .register(format!("footer {}", old.component), old.component);
+            steps.extend(self.dispose_step(old.dispose)?);
+        }
+        if let Some(factory) = factory {
+            let factory = self.local_factory(&factory, true)?;
+            steps.push_back((host::LocalCall::Factory(factory), Nested::Footer));
+        }
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            result: Some(Ok(())),
+        })
+    }
+
     fn set_header(
         &mut self,
         this: Resource<Ui>,
@@ -656,12 +777,7 @@ impl host::HostExtensionUiContext for State {
         match factory {
             None => self.observed.ui.header.install(None),
             Some(factory) => {
-                let factory = host::LocalFactory {
-                    target: self.table.get(&factory)?.0,
-                    tui: self.push(Tui)?,
-                    theme: self.push(Theme("dark".to_owned()))?,
-                    emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
-                };
+                let factory = self.local_factory(&factory, false)?;
                 steps.push_back((host::LocalCall::Factory(factory), Nested::Header));
             }
         }
@@ -688,12 +804,7 @@ impl host::HostExtensionUiContext for State {
             return self.routed(Err(error));
         }
         let mut steps = self.take_widgets(&key)?;
-        let factory = host::LocalFactory {
-            target: self.table.get(&factory)?.0,
-            tui: self.push(Tui)?,
-            theme: self.push(Theme("dark".to_owned()))?,
-            emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
-        };
+        let factory = self.local_factory(&factory, false)?;
         steps.push_back((host::LocalCall::Factory(factory), Nested::Factory(key)));
         self.push(super::host::Route {
             steps,
@@ -914,6 +1025,43 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
 
 impl host::HostTui for State {
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl host::HostFooterData for State {
+    fn get_git_branch(
+        &mut self,
+        _: Resource<FooterResource>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let branch = self.observed.ui.footer.read("getGitBranch");
+        Ok(Ok(branch.as_str().map(str::to_owned)))
+    }
+    fn get_extension_statuses(
+        &mut self,
+        _: Resource<FooterResource>,
+    ) -> wasmtime::Result<Result<Vec<(String, String)>, String>> {
+        let statuses = self.observed.ui.footer.read("getExtensionStatuses");
+        Ok(Ok(serde_json::from_value(statuses)?))
+    }
+    fn get_available_provider_count(
+        &mut self,
+        _: Resource<FooterResource>,
+    ) -> wasmtime::Result<Result<f64, String>> {
+        let count = self.observed.ui.footer.read("getAvailableProviderCount");
+        Ok(Ok(count.as_f64().unwrap_or_default()))
+    }
+    fn on_branch_change(
+        &mut self,
+        _: Resource<FooterResource>,
+        listener: Resource<super::host::Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Subscription>, String>> {
+        match self.observed.bus.on("branch", listener.rep()) {
+            Ok(subscription) => Ok(Ok(self.table.push(subscription)?)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
+    fn drop(&mut self, this: Resource<FooterResource>) -> wasmtime::Result<()> {
         self.release(this)
     }
 }

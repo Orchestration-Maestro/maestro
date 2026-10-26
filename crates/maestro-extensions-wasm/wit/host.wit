@@ -113,11 +113,11 @@ interface host {
     /// What a terminal input listener decided; absent members leave the input as it is.
     record terminal-input-result { consume: option<bool>, data: option<string> }
     /// One nested same-instance component factory.
-    record local-factory { target: u32, tui: tui, theme: theme, emitter: callback-emitter }
+    record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.
@@ -280,6 +280,14 @@ interface host {
     }
     /// Terminal handle lent to a component factory.
     resource tui;
+    /// The footer metadata a footer factory may read; each read is current.
+    resource footer-data {
+        get-git-branch: func() -> result<option<string>, string>;
+        get-extension-statuses: func() -> result<list<tuple<string, string>>, string>;
+        get-available-provider-count: func() -> result<f64, string>;
+        /// Calls the listener when the branch may have changed; dropping the subscription keeps it.
+        on-branch-change: func(listener: borrow<callback>) -> result<subscription, string>;
+    }
     /// A component a factory built, with the disposal the host calls when it removes it.
     record factory-component { component: callback, dispose: option<callback> }
     /// One available theme; a theme without a file has no path.
@@ -295,6 +303,8 @@ interface host {
         set-working-indicator: func(options: option<working-indicator-options>) -> import-route;
         set-hidden-thinking-label: func(label: option<string>) -> import-route;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> import-route;
+        /// Replaces the footer with the component a factory builds, or restores the host footer.
+        set-footer: func(factory: option<borrow<callback>>) -> import-route;
         /// Replaces the header with the component a factory builds, or restores the host header.
         set-header: func(factory: option<borrow<callback>>) -> import-route;
         /// Shows the component a factory builds; the host disposes the widget it replaces first.

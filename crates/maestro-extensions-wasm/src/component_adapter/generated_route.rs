@@ -88,11 +88,7 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
                 .map_err(crate::schema_error::to_wire),
         ),
-        host::LocalCall::Factory(call) => host::LocalResult::Factory(
-            exports
-                .invoke_component_factory(call.target, call.tui, call.theme, &call.emitter)
-                .map(|built| crate::component_adapter::factories::transfer(&Generated, built)),
-        ),
+        host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
@@ -117,7 +113,22 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
         }
         host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
         host::LocalKind::Dispose => exports.invoke_dispose(call.target, &call.emitter),
+        host::LocalKind::BranchChange => {
+            crate::component_adapter::factories::invoke_branch_change(call.target)
+        }
     }
+}
+
+/// Runs one nested component factory and transfers what it built.
+fn factory(call: host::LocalFactory) -> ExtensionResult<host::FactoryComponent> {
+    let lent = crate::component_adapter::factories::Lent {
+        tui: call.tui,
+        theme: call.theme,
+        footer: call.footer,
+    };
+    Exports::new(Generated)
+        .invoke_component_factory(call.target, lent, &call.emitter)
+        .map(|built| crate::component_adapter::factories::transfer(&Generated, built))
 }
 
 /// Starts one nested asynchronous callback with its original capabilities.

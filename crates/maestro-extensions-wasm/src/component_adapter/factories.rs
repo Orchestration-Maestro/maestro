@@ -3,7 +3,10 @@ use std::rc::Rc;
 
 use super::renderers::with_emitter;
 use super::{Exports, Imports, callbacks};
-use crate::{ComponentFactory, ExtensionComponent, ExtensionResult, TUI, TuiPort};
+use crate::{
+    BranchChangeListener, ComponentFactory, ExtensionComponent, ExtensionResult, FooterData,
+    FooterDataPort, FooterFactory, Subscription, TUI, TuiPort,
+};
 
 /// Host terminal behind the facade.
 struct Terminal<I: Imports> {
@@ -15,23 +18,76 @@ struct Terminal<I: Imports> {
 
 impl<I: Imports> TuiPort for Terminal<I> {}
 
+/// What a factory's host lends it: the terminal, the live theme and, for a footer, its
+/// metadata.
+pub(crate) struct Lent<I: Imports> {
+    /// The lent terminal.
+    pub(crate) tui: I::Tui,
+    /// The lent live theme.
+    pub(crate) theme: I::Theme,
+    /// The lent footer metadata of a footer factory.
+    pub(crate) footer: Option<I::FooterData>,
+}
+
+/// Host footer metadata behind the facade.
+struct Footer<I: Imports> {
+    /// The host the metadata belongs to.
+    imports: I,
+    /// The lent host metadata.
+    footer: I::FooterData,
+}
+
+impl<I: Imports> FooterDataPort for Footer<I> {
+    fn get_git_branch(&self) -> ExtensionResult<Option<String>> {
+        self.imports.footer_get_git_branch(&self.footer)
+    }
+    fn get_extension_statuses(&self) -> ExtensionResult<Vec<(String, String)>> {
+        self.imports.footer_get_extension_statuses(&self.footer)
+    }
+    fn get_available_provider_count(&self) -> ExtensionResult<f64> {
+        self.imports
+            .footer_get_available_provider_count(&self.footer)
+    }
+    fn on_branch_change(&self, listener: BranchChangeListener) -> ExtensionResult<Subscription> {
+        let identity = callbacks::Identity::new(&self.imports);
+        let remover = self
+            .imports
+            .footer_on_branch_change(&self.footer, &identity.handle)?;
+        identity.keep(listener);
+        Ok(super::event_bus::subscription(
+            self.imports.clone(),
+            remover,
+        ))
+    }
+}
+
 impl<I: Imports> Exports<I> {
-    /// Runs the factory under this identity with the lent terminal and theme.
+    /// Runs the factory under this identity with the lent terminal and theme, and with the
+    /// footer metadata when the factory builds a footer.
     pub(crate) fn invoke_component_factory(
         &self,
         handler: u32,
-        tui: I::Tui,
-        theme: I::Theme,
+        lent: Lent<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<ExtensionComponent> {
-        let factory = callbacks::find::<ComponentFactory>(handler)?;
         let tui = TUI::new(Rc::new(Terminal {
             _imports: self.imports.clone(),
-            _tui: tui,
+            _tui: lent.tui,
         }));
-        let theme = super::theme::theme(self.imports.clone(), theme);
+        let theme = super::theme::theme(self.imports.clone(), lent.theme);
+        let Some(footer) = lent.footer else {
+            let factory = callbacks::find::<ComponentFactory>(handler)?;
+            return with_emitter(&self.imports, emitter, |emitter| {
+                factory(tui, theme, emitter)
+            });
+        };
+        let factory = callbacks::find::<FooterFactory>(handler)?;
+        let footer = FooterData::new(Rc::new(Footer {
+            imports: self.imports.clone(),
+            footer,
+        }));
         with_emitter(&self.imports, emitter, |emitter| {
-            factory(tui, theme, emitter)
+            factory(tui, theme, footer, emitter)
         })
     }
 
@@ -57,4 +113,10 @@ pub(super) fn transfer<
         .dispose
         .map(|dispose| callbacks::Identity::<I>::new(imports).transfer(dispose));
     crate::bindings::maestro::extension::host::FactoryComponent { component, dispose }
+}
+
+/// Runs the branch change listener under this identity.
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) fn invoke_branch_change(handler: u32) -> ExtensionResult<()> {
+    callbacks::find::<BranchChangeListener>(handler)?()
 }

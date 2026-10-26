@@ -1061,6 +1061,7 @@ fn assert_async_exports(contract: &Contract) {
             "component-render",
             "component-wants-key-release",
             "invoke-abort",
+            "invoke-branch-change",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",

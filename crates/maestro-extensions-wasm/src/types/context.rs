@@ -80,6 +80,9 @@ port! {
             factory: crate::ComponentFactory,
             options: Option<ExtensionWidgetOptions>,
         ) -> ();
+        /// Replaces the footer with the component `factory` builds, or restores the host's
+        /// footer; the host disposes the footer it replaces first.
+        fn set_footer(factory: Option<crate::FooterFactory>) -> ();
         /// Replaces the header with the component `factory` builds, or restores the host's
         /// header; the host disposes the header it replaces first.
         fn set_header(factory: Option<crate::ComponentFactory>) -> ();

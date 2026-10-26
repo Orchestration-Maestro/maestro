@@ -2,6 +2,7 @@
 use super::{Capability, Lease, Message, Registry, pump::State};
 use maestro_extensions::callbacks::CallbackFrame;
 use maestro_extensions::{AgentToolUpdateCallback, LiveTheme, Local, Subscription};
+use std::rc::Rc;
 use std::sync::{Arc, mpsc};
 
 pub(crate) mod emission;
@@ -128,6 +129,24 @@ impl Registry {
             .on_terminal_input(listener)
             .map_err(|error| error.to_string())?;
         self.insert(Capability::UiSubscription(remove))
+            .map(SubscriptionEndpoint)
+    }
+
+    /// Retains the native footer metadata lent to one footer factory.
+    pub(crate) fn footer(
+        &self,
+        footer: Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>,
+    ) -> Result<crate::footer_data::Endpoint, String> {
+        self.insert(Capability::Footer(footer))
+            .map(crate::footer_data::Endpoint)
+    }
+
+    /// Retains a removal operation that leaves its observer when only dropped.
+    pub(crate) fn subscription_remover(
+        &self,
+        remove: Rc<dyn Fn()>,
+    ) -> Result<SubscriptionEndpoint, String> {
+        self.insert(Capability::SignalSubscription(remove))
             .map(SubscriptionEndpoint)
     }
 

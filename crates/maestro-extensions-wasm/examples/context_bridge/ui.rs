@@ -7,8 +7,9 @@
 use maestro_extensions_wasm::{
     AbortSignal, CallbackEmitter, Component, ComponentDisposer, ComponentFactory, ComponentView,
     ExtensionAPI, ExtensionComponent, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, FlagOptions, FlagType, NotificationType, Subscription,
-    TerminalInputResult, ThemeSelection, ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
+    ExtensionWidgetOptions, FlagOptions, FlagType, FooterData, FooterFactory, NotificationType,
+    Subscription, TerminalInputResult, ThemeSelection, ThemeSetResult, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -132,6 +133,53 @@ fn labelled(api: &ExtensionAPI, label: &str) -> ComponentFactory {
     })
 }
 
+/// A footer that renders its label and the footer metadata it reads on every render.
+struct FooterView {
+    /// The label it renders.
+    label: String,
+    /// The footer metadata its factory received.
+    footer: FooterData,
+}
+
+impl ComponentView for FooterView {
+    fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        let branch = self.footer.get_git_branch()?;
+        let statuses = self.footer.get_extension_statuses()?;
+        let providers = self.footer.get_available_provider_count()?;
+        Ok(vec![
+            json!([self.label, branch, statuses, providers]).to_string(),
+        ])
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+/// A footer factory whose branch listener registers the flag `branch-<label>`.
+fn footer(api: &ExtensionAPI, label: &str) -> FooterFactory {
+    let (api, label) = (api.clone(), label.to_owned());
+    Rc::new(move |_, _, footer, _| {
+        let (owner, named) = (api.clone(), label.clone());
+        let subscription = footer.on_branch_change(Rc::new(move || {
+            let flag = FlagOptions {
+                description: None,
+                type_: FlagType::Boolean,
+                default: None,
+            };
+            owner.register_flag(&format!("branch-{named}"), flag)
+        }))?;
+        drop(subscription);
+        let view = FooterView {
+            label: label.clone(),
+            footer,
+        };
+        Ok(ExtensionComponent {
+            component: Component::new(view),
+            dispose: None,
+        })
+    })
+}
+
 /// Shows a labelled factory widget, or replaces the header with one; `header` alone restores
 /// the host's header.
 fn widget(
@@ -142,6 +190,8 @@ fn widget(
     let ui = context.ui()?;
     match request.split_once(' ') {
         Some(("header", label)) => ui.set_header(Some(labelled(api, label)))?,
+        Some(("footer", label)) => ui.set_footer(Some(footer(api, label)))?,
+        None if request == "footer" => ui.set_footer(None)?,
         None if request == "header" => ui.set_header(None)?,
         _ => ui.set_widget_factory("bridge", labelled(api, request), None)?,
     }

@@ -184,6 +184,12 @@ pub struct Tui {
     _lease: Lease,
 }
 
+/// Footer metadata lent to a footer factory, with a counted lifetime.
+pub struct FooterData {
+    /// Counted owner.
+    _lease: Lease,
+}
+
 impl Controlled {
     /// Removes every widget under `key` from both placements, running each disposal before
     /// the component is released.
@@ -207,20 +213,38 @@ impl Controlled {
 
     /// Builds the component a factory under `factory` makes with a lent terminal and theme,
     /// and keeps it under a fresh handle.
-    fn build(&self, factory: &Callback) -> ExtensionResult<u32> {
-        let tui = Tui {
-            _lease: Lease::new(&self.observed),
+    fn build(&self, factory: &Callback, footer: bool) -> ExtensionResult<u32> {
+        let lent = crate::component_adapter::factories::Lent {
+            tui: Tui {
+                _lease: Lease::new(&self.observed),
+            },
+            theme: self.theme("dark"),
+            footer: footer.then(|| FooterData {
+                _lease: Lease::new(&self.observed),
+            }),
         };
         let emitter = super::bus_host::Emitter { key: 0 };
-        let built = Exports::new(self.clone()).invoke_component_factory(
-            factory.id,
-            tui,
-            self.theme("dark"),
-            &emitter,
-        )?;
+        let built =
+            Exports::new(self.clone()).invoke_component_factory(factory.id, lent, &emitter)?;
         let handle = self.observed.borrow_mut().next_identity();
         self.widgets.borrow_mut().insert(handle, built);
         Ok(handle)
+    }
+
+    /// The component the custom footer shows.
+    pub fn footer(&self) -> Option<crate::Component> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .footer
+            .custom
+            .as_ref()
+            .map(|slot| slot.component)?;
+        self.widgets
+            .borrow()
+            .get(&slot)
+            .map(|built| built.component.clone())
     }
 
     /// The component the custom header shows.
@@ -1120,6 +1144,39 @@ impl Imports for Controlled {
 
     type Ui = Ui;
     type Tui = Tui;
+    type FooterData = FooterData;
+    fn footer_get_git_branch(&self, _: &FooterData) -> ExtensionResult<Option<String>> {
+        let branch = self.observed.borrow().ui.footer.read("getGitBranch");
+        Ok(branch.as_str().map(str::to_owned))
+    }
+    fn footer_get_extension_statuses(
+        &self,
+        _: &FooterData,
+    ) -> ExtensionResult<Vec<(String, String)>> {
+        let statuses = self
+            .observed
+            .borrow()
+            .ui
+            .footer
+            .read("getExtensionStatuses");
+        serde_json::from_value(statuses).map_err(|error| error.to_string())
+    }
+    fn footer_get_available_provider_count(&self, _: &FooterData) -> ExtensionResult<f64> {
+        let count = self
+            .observed
+            .borrow()
+            .ui
+            .footer
+            .read("getAvailableProviderCount");
+        Ok(count.as_f64().unwrap_or_default())
+    }
+    fn footer_on_branch_change(
+        &self,
+        _: &FooterData,
+        listener: &Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        self.observed.borrow_mut().bus.on("branch", listener.id)
+    }
     fn ui_notify(
         &self,
         resource: &Ui,
@@ -1217,7 +1274,7 @@ impl Imports for Controlled {
         let operands = json!([key, placement]);
         ui_call(&self.observed, resource.key, "setWidgetFactory", &operands)?;
         self.take_widgets(key)?;
-        let handle = self.build(factory)?;
+        let handle = self.build(factory, false)?;
         self.observed
             .borrow_mut()
             .ui
@@ -1227,6 +1284,25 @@ impl Imports for Controlled {
                 component: handle,
                 dispose: None,
             });
+        Ok(())
+    }
+    fn ui_set_footer(&self, resource: &Ui, factory: Option<&Callback>) -> ExtensionResult<()> {
+        let operands = json!([factory.is_some()]);
+        ui_call(&self.observed, resource.key, "setFooter", &operands)?;
+        let old = self.observed.borrow_mut().ui.footer.custom.take();
+        let old = old.and_then(|old| self.widgets.borrow_mut().remove(&old.component));
+        if let Some(dispose) = old.as_ref().and_then(|old| old.dispose.clone()) {
+            self.dispose(&dispose)?;
+        }
+        drop(old);
+        if let Some(factory) = factory {
+            let component = self.build(factory, true)?;
+            self.observed.borrow_mut().ui.footer.custom = Some(super::ui_host::WidgetSlot {
+                key: "footer".to_owned(),
+                component,
+                dispose: None,
+            });
+        }
         Ok(())
     }
     fn ui_set_header(&self, resource: &Ui, factory: Option<&Callback>) -> ExtensionResult<()> {
@@ -1252,7 +1328,7 @@ impl Imports for Controlled {
             None => None,
             Some(factory) => Some(super::ui_host::WidgetSlot {
                 key: "header".to_owned(),
-                component: self.build(factory)?,
+                component: self.build(factory, false)?,
                 dispose: None,
             }),
         };

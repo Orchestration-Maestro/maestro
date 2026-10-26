@@ -103,6 +103,11 @@ macro_rules! forward_resources {
             route::drive(&$resource.$method($($value),*))
         })*
     };
+    (asynchronous functions { $($name:ident<$lt:lifetime>($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path[$($value:expr),* $(,)?];)* }) => {
+        $(fn $name<$lt>(&$lt self $(, $arg: $ty)*) -> ExtensionFuture<$lt, $ret> {
+            Box::pin($function($($value),*))
+        })*
+    };
     (asynchronous { $($name:ident<$lt:lifetime>($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) -> $ret:ty => $method:ident($($value:expr),* $(,)?);)* }) => {
         $(fn $name<$lt>(&$lt self, $resource: &$lt $resource_ty $(, $arg: $ty)*) -> ExtensionFuture<$lt, $ret> {
             Box::pin($resource.$method($($value),*))
