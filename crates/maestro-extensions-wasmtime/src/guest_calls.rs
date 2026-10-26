@@ -18,6 +18,7 @@ pub(crate) mod bash;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) mod paints;
+pub(crate) mod widget_calls;
 pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
@@ -67,6 +68,8 @@ pub(crate) enum Call<H = Handle> {
     ToolRender(tool_renders::ToolRenderCall<H>),
     /// Calls an authored styling or highlighting function for a host widget.
     Paint(paints::PaintCall<H>),
+    /// Calls an authored handler, style, truncation or submenu of a host list or loader.
+    Widget(widget_calls::WidgetCall<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.

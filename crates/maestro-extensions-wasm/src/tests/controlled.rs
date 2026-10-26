@@ -20,7 +20,7 @@ use serde_json::json;
 
 /// A cancellation flag the test controls.
 #[derive(Clone, Default)]
-pub struct Flag(std::sync::Arc<std::sync::atomic::AtomicBool>);
+pub struct Flag(pub(super) std::sync::Arc<std::sync::atomic::AtomicBool>);
 
 impl Flag {
     /// Shared flag for controlled receiver cancellation.
@@ -155,7 +155,7 @@ pub struct Node {
 /// Counted theme owner with its literal identity.
 pub struct Theme {
     /// Supplied identity.
-    key: String,
+    pub(super) key: String,
     /// Shared observations.
     observed: Rc<RefCell<Observed>>,
     /// Owned resource count.
@@ -237,6 +237,23 @@ impl Controlled {
         let handle = self.observed.borrow_mut().next_identity();
         self.widgets.borrow_mut().insert(handle, built);
         Ok(handle)
+    }
+
+    /// Keeps a component an authored widget callback returned, under a fresh identity.
+    pub(super) fn keep_component(&self, component: crate::Component) -> u32 {
+        let handle = self.observed.borrow_mut().next_identity();
+        let kept = crate::ExtensionComponent {
+            component,
+            dispose: None,
+        };
+        self.widgets.borrow_mut().insert(handle, kept);
+        handle
+    }
+
+    /// The component kept under `handle`.
+    pub(super) fn kept_component(&self, handle: u32) -> Option<crate::Component> {
+        let kept = self.widgets.borrow();
+        kept.get(&handle).map(|kept| kept.component.clone())
     }
 
     /// The redraw capability of the tool row `row`.

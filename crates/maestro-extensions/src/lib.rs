@@ -142,10 +142,12 @@ pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
 /// Toolkit widgets an extension host builds, and the capability that builds the ones whose
 /// look depends on the host.
 pub mod widgets {
-    pub use crate::types::ExtensionWidgets;
+    pub use crate::types::{ExtensionLoader, ExtensionWidgets};
     pub use maestro_tui::{
-        Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, Spacer, Text,
-        TextDecoration, editor_component::BorderColor,
+        Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
+        SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
+        SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
+        components::settings_list::SettingsListOptions, editor_component::BorderColor,
     };
 }
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

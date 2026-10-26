@@ -122,6 +122,8 @@ interface host {
     record local-style { target: u32, text: string }
     /// One nested same-instance code highlighting.
     record local-highlight { target: u32, code: string, lang: option<string> }
+    /// One nested same-instance widget callback.
+    record local-widget { target: u32, event: widget-event, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
     enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
@@ -187,6 +189,7 @@ interface host {
         tool-render(local-tool-render),
         style(local-style),
         highlight(local-highlight),
+        widget(local-widget),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -206,6 +209,7 @@ interface host {
         tool-render(result<tool-rendered, string>),
         style(result<string, string>),
         highlight(result<list<string>, string>),
+        widget(result<widget-answer, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-step { invoke(local-call), done(result<_, string>) }
@@ -333,6 +337,49 @@ interface host {
     variant widget-child { widget(borrow<widget>), component(borrow<callback>) }
     /// A child to remove: a host widget, or the identity an authored component was added under.
     variant child-key { widget(borrow<widget>), component(u32) }
+    /// One choice of a selection list.
+    record select-item { value: string, label: string, description: option<string> }
+    /// What an authored primary-column truncation receives.
+    record truncate-context { text: string, max-width: s64, column-width: s64, item: select-item, is-selected: bool }
+    /// Selection list styles.
+    record select-list-styles {
+        selected-prefix: style-source, selected-text: style-source, description: style-source,
+        scroll-info: style-source, no-match: style-source,
+    }
+    /// The live theme's selection list styles.
+    record select-list-theme { selected-prefix: style, selected-text: style, description: style, scroll-info: style, no-match: style }
+    /// Primary column layout; an absent member keeps the host's default.
+    record select-layout {
+        min-primary-column-width: option<s64>, max-primary-column-width: option<s64>,
+        truncate-primary: option<borrow<callback>>,
+    }
+    /// A host settings row styling that knows whether the row is selected.
+    resource row-style { apply: func(text: string, selected: bool) -> result<string, string>; }
+    /// A settings row styling the host calls: one it supplied, or an authored callback.
+    variant row-style-source { host(borrow<row-style>), authored(borrow<callback>) }
+    /// Settings list styles.
+    record settings-list-styles {
+        label: row-style-source, value: row-style-source, description: style-source,
+        cursor: string, hint: style-source,
+    }
+    /// The live theme's settings list styles.
+    record settings-list-theme { label: row-style, value: row-style, description: style, cursor: string, hint: style }
+    /// One setting; values cycle on activation, a submenu opens on activation.
+    record setting-item {
+        id: string, label: string, description: option<string>, current-value: string,
+        values: option<list<string>>, submenu: option<borrow<callback>>,
+    }
+    /// Closes an open settings submenu, with the chosen value or without one.
+    resource submenu-done { done: func(value: option<string>) -> import-route; }
+    /// What a widget tells an authored callback.
+    variant widget-event {
+        select(select-item), cancel, selection-change(select-item), change(tuple<string, string>),
+        abort, truncate(truncate-context), row(tuple<string, bool>), submenu(tuple<string, submenu-done>),
+    }
+    /// What an authored widget callback answers: nothing, text, or a component's identity.
+    variant widget-answer { done, text(string), component(callback) }
+    /// The widget handler an authored callback replaces.
+    enum handler-slot { select, cancel, selection-change, abort }
     /// A toolkit or application widget the host built for this extension.
     resource widget {
         /// Renders rows at a width; the host may call back into this instance first.
@@ -351,6 +398,22 @@ interface host {
         remove-child: func(child: child-key) -> result<_, string>;
         /// Removes every child of a container or box.
         clear: func() -> result<_, string>;
+        /// Delivers input; the host may call back into this instance first.
+        handle-input: func(data: string) -> import-route;
+        /// Filters a selection list by value prefix.
+        set-filter: func(filter: string) -> result<_, string>;
+        /// Selects a row of a selection list, clamped to its rows.
+        set-selected-index: func(index: s64) -> result<_, string>;
+        /// The selected choice of a selection list, absent without one.
+        get-selected-item: func() -> result<option<select-item>, string>;
+        /// Replaces or removes one handler of a selection list or loader.
+        set-handler: func(slot: handler-slot, handler: option<borrow<callback>>) -> result<_, string>;
+        /// Replaces the current value of every setting with this id.
+        update-value: func(id: string, value: string) -> result<_, string>;
+        /// The cancellation signal of a loader.
+        signal: func() -> result<abort-signal, string>;
+        /// Stops a loader's animation without cancelling it.
+        dispose: func() -> result<_, string>;
     }
     /// Wrapped text between padding, over an optional row background.
     new-text: func(text: string, padding-x: u32, padding-y: u32, background: option<style-source>) -> result<widget, string>;
@@ -366,6 +429,16 @@ interface host {
     new-dynamic-border: func(color: option<style-source>) -> result<widget, string>;
     /// The live theme's Markdown styles.
     get-markdown-theme: func() -> result<markdown-theme, string>;
+    /// A selection list.
+    new-select-list: func(items: list<select-item>, max-visible: u32, theme: select-list-styles, layout: select-layout) -> result<widget, string>;
+    /// A settings list that reports changes and cancellation to its callbacks.
+    new-settings-list: func(items: list<setting-item>, max-visible: u32, theme: settings-list-styles, on-change: borrow<callback>, on-cancel: borrow<callback>, enable-search: bool) -> result<widget, string>;
+    /// A bordered loader on a lent terminal, colored by a theme; absent cancellable means cancellable.
+    new-bordered-loader: func(tui: borrow<tui>, theme: borrow<theme>, message: string, cancellable: option<bool>) -> result<widget, string>;
+    /// The live theme's selection list styles.
+    get-select-list-theme: func() -> result<select-list-theme, string>;
+    /// The live theme's settings list styles.
+    get-settings-list-theme: func() -> result<settings-list-theme, string>;
     /// Which renderer a tool rendering enters.
     enum tool-render-slot { call, %result }
     /// What a tool renderer reads about its row at this rendering.

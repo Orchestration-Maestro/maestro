@@ -193,6 +193,9 @@ extension can build widgets without an interactive UI; only showing them goes th
 the UI context. Text, boxes, containers and spacers need nothing from the host and come
 from the toolkit directly. `maestro_extensions::widgets` re-exports those toolkit
 widgets beside the capability, and the chat crate's `ExtensionWidgetHost` implements it.
+The capability also lends the live theme's selection and settings list styles and builds the
+application's bordered loader as an `ExtensionLoader`, whose signal, abort notification,
+disposal and rows the extension keeps.
 
 ## Custom components
 

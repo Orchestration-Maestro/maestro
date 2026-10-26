@@ -100,6 +100,7 @@ pub(crate) mod ui_host;
 pub(crate) mod widget_component;
 mod widget_controlled;
 pub(crate) mod widget_host;
+pub(crate) mod widget_lists;
 mod with_deps_example;
 mod working_message_example;
 
@@ -1085,6 +1086,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-terminal-input",
             "invoke-tool",
             "invoke-tool-render",
+            "invoke-widget",
             "invoke-with-session",
             "start"
         ],

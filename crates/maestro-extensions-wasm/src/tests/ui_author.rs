@@ -892,7 +892,7 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 .and_then(|tool| api.register_tool(tool))
                 .map(|()| None),
         ),
-        Operation::Widgets { steps } => super::widget_author::run(steps),
+        Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
         Operation::DropKept => {
             drop(ALIASES.take());
             json!("dropped")

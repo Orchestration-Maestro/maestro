@@ -35,6 +35,9 @@ pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecu
 
 pub use maestro_extensions::MessageRendererCall;
 
+/// The application's bordered loader, as an extension holds it.
+pub use maestro_extensions::widgets::ExtensionLoader;
+
 /// Creates an empty shared event bus whose default callbacks use the thread-safe family.
 ///
 /// A frontend binds an inline native renderer to this bus through

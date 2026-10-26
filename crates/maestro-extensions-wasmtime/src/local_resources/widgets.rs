@@ -2,8 +2,8 @@
 use super::{Capability, Registry, pump::State};
 use crate::guest_calls::paints::{Failure, HighlightFn};
 use crate::widget_reads::{
-    HighlighterEndpoint, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint, WidgetMessage,
-    highlighting, role,
+    HighlighterEndpoint, Lent, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint,
+    WidgetMessage, highlighting, role,
 };
 use maestro_extensions::widgets::BorderColor;
 use std::rc::Rc;
@@ -30,6 +30,37 @@ impl Registry {
             Some(Capability::Highlighter(highlight)) => Ok(highlight.clone()),
             _ => Err("extension highlighter resource ended".to_owned()),
         }
+    }
+
+    /// The terminal behind a lent terminal resource.
+    pub(crate) fn terminal(
+        &self,
+        tui: &super::effects::TuiEndpoint,
+    ) -> Result<maestro_extensions::TUI, String> {
+        match self.capability(tui.lease.id).as_deref() {
+            Some(Capability::Tui(tui)) => Ok(tui.clone()),
+            _ => Err("extension terminal resource ended".to_owned()),
+        }
+    }
+
+    /// The row style behind a lent row style resource.
+    pub(crate) fn row_style(
+        &self,
+        style: &crate::widget_lists::RowStyleEndpoint,
+    ) -> Result<Rc<crate::widget_lists::RowStyleFn>, String> {
+        match self.capability(style.0.id).as_deref() {
+            Some(Capability::RowStyle(style)) => Ok(style.clone()),
+            _ => Err("extension row style resource ended".to_owned()),
+        }
+    }
+
+    /// Lends the closer of an open submenu.
+    pub(crate) fn submenu_done(
+        &self,
+        done: Rc<dyn Fn(Option<String>)>,
+    ) -> Result<crate::widget_lists::SubmenuDoneEndpoint, String> {
+        self.insert(Capability::SubmenuDone(done))
+            .map(crate::widget_lists::SubmenuDoneEndpoint)
     }
 
     /// The widget behind a widget resource.
@@ -65,24 +96,58 @@ impl State {
             WidgetMessage::LendTheme(reply) => {
                 let _ = reply.send(self.lend_theme());
             }
+            WidgetMessage::LendSelect(reply) => {
+                let theme = Rc::new(registry.widgets.select_list_theme());
+                let styles = crate::widget_lists::select_roles(&theme)
+                    .into_iter()
+                    .map(|style| registry.insert(Capability::Style(style)).map(StyleEndpoint))
+                    .collect();
+                let _ = reply.send(styles);
+            }
+            WidgetMessage::LendSettings(reply) => {
+                let _ = reply.send(self.lend_settings());
+            }
         }
     }
 
     /// Applies a lent style or runs the lent highlighting.
-    fn lent(&self, id: u64, lent: crate::widget_reads::Lent) {
+    fn lent(&self, id: u64, lent: Lent) {
         let capability = self.registry.capability(id);
         match (capability.as_deref(), lent) {
-            (Some(Capability::Style(style)), crate::widget_reads::Lent::Style(text, reply)) => {
+            (Some(Capability::Style(style)), Lent::Style(text, reply)) => {
                 let _ = reply.send(Ok(style(&text)));
             }
-            (
-                Some(Capability::Highlighter(highlight)),
-                crate::widget_reads::Lent::Highlight(code, lang, reply),
-            ) => {
+            (Some(Capability::Highlighter(highlight)), Lent::Highlight(code, lang, reply)) => {
                 let _ = reply.send(Ok(highlight(&code, lang.as_deref())));
+            }
+            (Some(Capability::RowStyle(style)), Lent::Row(text, selected, reply)) => {
+                let _ = reply.send(Ok(style(&text, selected)));
+            }
+            (Some(Capability::SubmenuDone(done)), Lent::Done(value, reply)) => {
+                done(value);
+                let _ = reply.send(Ok(()));
             }
             (_, lent) => lent.reject("extension style resource ended"),
         }
+    }
+
+    /// Lends the live theme's settings list styles.
+    fn lend_settings(&self) -> Result<crate::widget_reads::LentSettings, String> {
+        let registry = &self.registry;
+        let theme = registry.widgets.settings_list_theme();
+        let row = |style| {
+            registry
+                .insert(Capability::RowStyle(style))
+                .map(crate::widget_lists::RowStyleEndpoint)
+        };
+        let style = |style| registry.insert(Capability::Style(style)).map(StyleEndpoint);
+        Ok((
+            row(theme.label)?,
+            row(theme.value)?,
+            style(theme.description)?,
+            theme.cursor,
+            style(theme.hint)?,
+        ))
     }
 
     /// Lends each role of the live theme's Markdown styles and its highlighting.

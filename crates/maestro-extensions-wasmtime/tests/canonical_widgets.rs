@@ -316,3 +316,220 @@ fn markdown_expected(text: &str) -> Vec<Value> {
     ];
     expected.to_vec()
 }
+
+/// The authored selection list styles of the bridge: each role wraps text in its name.
+fn select_theme() -> maestro_tui::SelectListTheme {
+    let role = |name: &'static str| -> BorderColor {
+        Rc::new(move |text: &str| format!("{name}({text})"))
+    };
+    maestro_tui::SelectListTheme {
+        selected_prefix: role("selectedPrefix"),
+        selected_text: role("selectedText"),
+        description: role("description"),
+        scroll_info: role("scrollInfo"),
+        no_match: role("noMatch"),
+    }
+}
+
+/// The choices of the selection list scripts.
+fn choices() -> Vec<maestro_tui::SelectItem> {
+    [
+        ("a", "Alpha", None),
+        ("ab", "Abel", None),
+        ("b", "Beta", Some("desc")),
+    ]
+    .into_iter()
+    .map(|(value, label, description)| maestro_tui::SelectItem {
+        value: value.to_owned(),
+        label: label.to_owned(),
+        description: description.map(str::to_owned),
+    })
+    .collect()
+}
+
+#[test]
+fn canonical_select_lists_run_authored_handlers_styles_and_layout() {
+    with_bridge(async |runner| {
+        let items = json!([
+            ["a", "Alpha", null],
+            ["ab", "Abel", null],
+            ["b", "Beta", "desc"]
+        ]);
+        let steps = json!([
+            { "do": "select", "name": "s", "items": items, "maxVisible": 5, "theme": "authored" },
+            { "do": "render", "name": "s", "width": 30 },
+            { "do": "on", "name": "s", "slot": "select", "label": "picked" },
+            { "do": "on", "name": "s", "slot": "cancel", "label": "cancelled" },
+            { "do": "on", "name": "s", "slot": "change", "label": "moved" },
+            { "do": "input", "name": "s", "data": "\u{1b}[B" },
+            { "do": "input", "name": "s", "data": "\r" },
+            { "do": "input", "name": "s", "data": "\u{1b}" },
+            { "do": "filter", "name": "s", "filter": "A" },
+            { "do": "selectIndex", "name": "s", "index": 9 },
+            { "do": "selected", "name": "s" },
+            { "do": "select", "name": "l", "items": items, "maxVisible": 2, "theme": "authored",
+              "widths": [10, 20], "truncate": true },
+            { "do": "render", "name": "l", "width": 30 },
+            { "do": "views" },
+        ]);
+        let outcomes = script(runner, &steps).await;
+        let list = maestro_tui::SelectList::new(
+            choices(),
+            5,
+            select_theme(),
+            maestro_tui::SelectListLayoutOptions::default(),
+        );
+        let truncate: Rc<
+            dyn for<'a> Fn(maestro_tui::SelectListTruncatePrimaryContext<'a>) -> String,
+        > = Rc::new(|context| {
+            format!(
+                "cut {} {} {} {}",
+                context.text, context.max_width, context.column_width, context.is_selected
+            )
+        });
+        let layout = maestro_tui::SelectListLayoutOptions {
+            min_primary_column_width: Some(10),
+            max_primary_column_width: Some(20),
+            truncate_primary: Some(truncate),
+        };
+        let cut = maestro_tui::SelectList::new(choices(), 2, select_theme(), layout);
+        let done = ok(json!(true));
+        let mut expected = vec![done.clone(), rows(&list, 30)];
+        expected.extend(vec![done.clone(); 8]);
+        expected.extend([ok(json!(["ab", "Abel"])), done, rows(&cut, 30)]);
+        expected.push(ok(json!(["moved ab", "picked ab", "cancelled"])));
+        assert_eq!(outcomes, expected);
+    });
+}
+
+#[test]
+fn canonical_settings_lists_cycle_values_and_open_authored_submenus() {
+    with_bridge(async |runner| {
+        let items = json!([
+            ["mode", "Mode", "fast", ["fast", "slow"], null],
+            ["color", "Color", "red", null, "pick"],
+        ]);
+        let steps = json!([
+            { "do": "settings", "name": "t", "items": items, "maxVisible": 5, "theme": "authored" },
+            { "do": "render", "name": "t", "width": 40 },
+            { "do": "input", "name": "t", "data": "\r" },
+            { "do": "render", "name": "t", "width": 40 },
+            { "do": "input", "name": "t", "data": "\u{1b}[B" },
+            { "do": "input", "name": "t", "data": "\r" },
+            { "do": "render", "name": "t", "width": 40 },
+            { "do": "input", "name": "t", "data": "\r" },
+            { "do": "render", "name": "t", "width": 40 },
+            { "do": "updateValue", "name": "t", "id": "mode", "value": "fast" },
+            { "do": "render", "name": "t", "width": 40 },
+            { "do": "input", "name": "t", "data": "\u{1b}" },
+            { "do": "views" },
+        ]);
+        let outcomes = script(runner, &steps).await;
+        let rendered = |index: usize| outcomes[index]["ok"].to_string();
+        assert!(rendered(1).contains("> label(Mode"), "{}", rendered(1));
+        assert!(rendered(1).contains("value(fast,true)"), "{}", rendered(1));
+        assert!(
+            rendered(3).contains("value(slow,true)"),
+            "a cycle changes the value"
+        );
+        assert_eq!(
+            outcomes[6],
+            rows_of(&["submenu pick red 40"]),
+            "the submenu renders"
+        );
+        assert!(
+            rendered(8).contains("value(picked,true)"),
+            "{}",
+            rendered(8)
+        );
+        assert!(
+            rendered(10).contains("value(fast,false)"),
+            "an update changes no selection"
+        );
+        let calls = json!([
+            "change mode slow",
+            "pick opened red",
+            "pick input \"\\r\"",
+            "change color picked",
+            "cancel settings",
+        ]);
+        assert_eq!(outcomes[12], ok(calls));
+    });
+}
+
+/// Rows as a successful outcome.
+fn rows_of(rows: &[&str]) -> Value {
+    ok(json!(rows))
+}
+
+#[test]
+fn canonical_loaders_report_cancellation_through_their_signal() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = create_event_bus_for::<Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let ui = published_ui();
+        runner.set_ui_context(Some(maestro_extensions::ExtensionUIContext::new(
+            ui.clone(),
+        )));
+        let steps = json!([
+            { "do": "loader", "name": "l", "message": "Working" },
+            { "do": "aborted", "name": "l" },
+            { "do": "on", "name": "l", "slot": "abort", "label": "aborted" },
+            { "do": "input", "name": "l", "data": "x" },
+            { "do": "aborted", "name": "l" },
+            { "do": "input", "name": "l", "data": "\u{1b}" },
+            { "do": "aborted", "name": "l" },
+            { "do": "dispose", "name": "l" },
+            { "do": "loader", "name": "f", "message": "Fixed", "cancellable": false },
+            { "do": "input", "name": "f", "data": "\u{1b}" },
+            { "do": "aborted", "name": "f" },
+            { "do": "views" },
+        ]);
+        let outcomes = script(&runner, &steps).await;
+        let done = ok(json!(true));
+        let expected = [
+            done.clone(),
+            ok(json!(false)),
+            done.clone(),
+            done.clone(),
+            ok(json!(false)),
+            done.clone(),
+            ok(json!(true)),
+            done.clone(),
+            done.clone(),
+            done,
+            ok(json!(false)),
+            ok(json!(["aborted"])),
+        ];
+        assert_eq!(outcomes, expected);
+        drop(runner);
+        bus.clear();
+    });
+}
+
+/// A UI that builds factories on a terminal with a published theme.
+fn published_ui() -> Rc<super::canonical_ui::Widgets> {
+    let (tui, _terminal) = super::canonical_ui::screen();
+    let state = maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
+    let theme = maestro_theme::Theme::new(
+        [],
+        [],
+        maestro_theme::ColorMode::Truecolor,
+        maestro_theme::ThemeOptions::default(),
+    );
+    state.set_theme_instance(Rc::new(theme.unwrap())).unwrap();
+    Rc::new(super::canonical_ui::Widgets {
+        tui,
+        theme: state.theme(),
+        shown: RefCell::default(),
+    })
+}

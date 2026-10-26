@@ -5,10 +5,12 @@ use std::rc::Rc;
 use super::{Generated, route};
 use crate::bindings::maestro::extension::host;
 use crate::component_adapter::{
-    Builder, ChildKey, ChildRef, HighlightRef, HostMarkdownTheme, MarkdownStyles, StyleRef,
-    TextStyle, WidgetImports,
+    Builder, ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme,
+    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle,
+    WidgetAnswer, WidgetEvent, WidgetImports,
 };
 use crate::types::ExtensionResult;
+use crate::{SelectItem, SelectListTruncatePrimaryContext};
 
 /// The host that builds this component's widgets.
 pub(super) fn widget_host() -> Rc<dyn crate::WidgetHost> {
@@ -194,4 +196,218 @@ impl WidgetImports for Generated {
     ) -> ExtensionResult<Vec<String>> {
         highlighter.highlight(code, lang)
     }
+    type RowStyle = host::RowStyle;
+    type SubmenuDone = host::SubmenuDone;
+
+    fn new_select_list(
+        &self,
+        items: &[SelectItem],
+        max_visible: u32,
+        theme: Vec<StyleRef<'_, Self>>,
+        (min, max, truncate): LayoutRef<'_, Self>,
+    ) -> ExtensionResult<host::Widget> {
+        let items: Vec<_> = items.iter().map(select_item).collect();
+        let mut styles = theme.iter().map(style);
+        let mut next = || {
+            styles
+                .next()
+                .ok_or_else(|| "a selection list style is missing".to_owned())
+        };
+        let theme = host::SelectListStyles {
+            selected_prefix: next()?,
+            selected_text: next()?,
+            description: next()?,
+            scroll_info: next()?,
+            no_match: next()?,
+        };
+        let layout = host::SelectLayout {
+            min_primary_column_width: min,
+            max_primary_column_width: max,
+            truncate_primary: truncate,
+        };
+        host::new_select_list(&items, max_visible, &theme, &layout)
+    }
+    fn new_settings_list(
+        &self,
+        (items, max_visible): (&[SettingRef<'_, Self>], u32),
+        theme: SettingsStyles<'_, Self>,
+        (on_change, on_cancel): (&host::Callback, &host::Callback),
+        enable_search: bool,
+    ) -> ExtensionResult<host::Widget> {
+        let items: Vec<_> = items
+            .iter()
+            .map(|setting| host::SettingItem {
+                id: setting.item.id.clone(),
+                label: setting.item.label.clone(),
+                description: setting.item.description.clone(),
+                current_value: setting.item.current_value.clone(),
+                values: setting.item.values.clone(),
+                submenu: setting.submenu,
+            })
+            .collect();
+        let theme = host::SettingsListStyles {
+            label: row(&theme.label),
+            value: row(&theme.value),
+            description: style(&theme.description),
+            cursor: theme.cursor.to_owned(),
+            hint: style(&theme.hint),
+        };
+        host::new_settings_list(
+            &items,
+            max_visible,
+            &theme,
+            on_change,
+            on_cancel,
+            enable_search,
+        )
+    }
+    fn new_bordered_loader(
+        &self,
+        tui: &host::Tui,
+        theme: &host::Theme,
+        message: &str,
+        cancellable: Option<bool>,
+    ) -> ExtensionResult<host::Widget> {
+        host::new_bordered_loader(tui, theme, message, cancellable)
+    }
+    fn get_select_list_theme(&self) -> ExtensionResult<Vec<host::Style>> {
+        let theme = host::get_select_list_theme()?;
+        Ok(vec![
+            theme.selected_prefix,
+            theme.selected_text,
+            theme.description,
+            theme.scroll_info,
+            theme.no_match,
+        ])
+    }
+    fn get_settings_list_theme(&self) -> ExtensionResult<HostSettingsTheme<Self>> {
+        let theme = host::get_settings_list_theme()?;
+        Ok((
+            theme.label,
+            theme.value,
+            theme.description,
+            theme.cursor,
+            theme.hint,
+        ))
+    }
+    fn widget_handle_input(&self, widget: &host::Widget, data: &str) -> ExtensionResult<()> {
+        route::drive(&widget.handle_input(data))
+    }
+    fn widget_set_filter(&self, widget: &host::Widget, filter: &str) -> ExtensionResult<()> {
+        widget.set_filter(filter)
+    }
+    fn widget_set_selected_index(&self, widget: &host::Widget, index: i64) -> ExtensionResult<()> {
+        widget.set_selected_index(index)
+    }
+    fn widget_get_selected_item(
+        &self,
+        widget: &host::Widget,
+    ) -> ExtensionResult<Option<SelectItem>> {
+        Ok(widget.get_selected_item()?.map(item))
+    }
+    fn widget_set_handler(
+        &self,
+        widget: &host::Widget,
+        slot: HandlerSlot,
+        handler: Option<&host::Callback>,
+    ) -> ExtensionResult<()> {
+        let slot = match slot {
+            HandlerSlot::Select => host::HandlerSlot::Select,
+            HandlerSlot::Cancel => host::HandlerSlot::Cancel,
+            HandlerSlot::SelectionChange => host::HandlerSlot::SelectionChange,
+            HandlerSlot::Abort => host::HandlerSlot::Abort,
+        };
+        widget.set_handler(slot, handler)
+    }
+    fn widget_update_value(
+        &self,
+        widget: &host::Widget,
+        id: &str,
+        value: &str,
+    ) -> ExtensionResult<()> {
+        widget.update_value(id, value)
+    }
+    fn widget_signal(&self, widget: &host::Widget) -> ExtensionResult<host::AbortSignal> {
+        widget.signal()
+    }
+    fn widget_dispose(&self, widget: &host::Widget) -> ExtensionResult<()> {
+        widget.dispose()
+    }
+    fn row_style_apply(
+        &self,
+        style: &host::RowStyle,
+        text: &str,
+        selected: bool,
+    ) -> ExtensionResult<String> {
+        style.apply(text, selected)
+    }
+    fn submenu_done(&self, done: &host::SubmenuDone, value: Option<&str>) -> ExtensionResult<()> {
+        route::drive(&done.done(value))
+    }
+}
+
+/// The wire form of a row styling operand.
+fn row<'a>(style: &RowStyleRef<'a, Generated>) -> host::RowStyleSource<'a> {
+    match *style {
+        RowStyleRef::Host(style) => host::RowStyleSource::Host(style),
+        RowStyleRef::Authored(callback) => host::RowStyleSource::Authored(callback),
+    }
+}
+
+/// The wire form of a choice.
+fn select_item(item: &SelectItem) -> host::SelectItem {
+    host::SelectItem {
+        value: item.value.clone(),
+        label: item.label.clone(),
+        description: item.description.clone(),
+    }
+}
+
+/// A choice from its wire form.
+fn item(item: host::SelectItem) -> SelectItem {
+    SelectItem {
+        value: item.value,
+        label: item.label,
+        description: item.description,
+    }
+}
+
+/// A widget event from its wire form.
+fn event(event: host::WidgetEvent) -> WidgetEvent<Generated> {
+    match event {
+        host::WidgetEvent::Select(choice) => WidgetEvent::Select(item(choice)),
+        host::WidgetEvent::Cancel => WidgetEvent::Cancel,
+        host::WidgetEvent::SelectionChange(choice) => WidgetEvent::SelectionChange(item(choice)),
+        host::WidgetEvent::Change((id, value)) => WidgetEvent::Change(id, value),
+        host::WidgetEvent::Abort => WidgetEvent::Abort,
+        host::WidgetEvent::Truncate(context) => {
+            WidgetEvent::Truncate(SelectListTruncatePrimaryContext {
+                text: context.text,
+                max_width: context.max_width,
+                column_width: context.column_width,
+                item: item(context.item),
+                is_selected: context.is_selected,
+            })
+        }
+        host::WidgetEvent::Row((text, selected)) => WidgetEvent::Row(text, selected),
+        host::WidgetEvent::Submenu((value, done)) => WidgetEvent::Submenu(value, done),
+    }
+}
+
+/// Runs an authored widget callback and transfers what it answered.
+pub(super) fn invoke_widget(
+    handler: u32,
+    wire: host::WidgetEvent,
+    emitter: &host::CallbackEmitter,
+) -> ExtensionResult<host::WidgetAnswer> {
+    let answer =
+        crate::component_adapter::invoke_widget(&Generated, handler, event(wire), emitter)?;
+    Ok(match answer {
+        WidgetAnswer::Done => host::WidgetAnswer::Done,
+        WidgetAnswer::Text(text) => host::WidgetAnswer::Text(text),
+        WidgetAnswer::Component(component) => host::WidgetAnswer::Component(
+            crate::component_adapter::callbacks::Identity::<Generated>::new(&Generated)
+                .transfer(component),
+        ),
+    })
 }

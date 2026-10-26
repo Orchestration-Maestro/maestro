@@ -62,6 +62,8 @@ pub(crate) enum Build {
     Markdown(String, (u32, u32), Styles, Option<BaseStyle>),
     /// A rule with its color.
     Border(Option<Paint>),
+    /// A selection list, settings list or loader.
+    List(crate::widget_lists::ListBuild),
 }
 
 /// A child to add.
@@ -98,6 +100,10 @@ pub(crate) enum Request {
     Remove(Key, Reply<()>),
     /// Removes every child.
     Clear(Reply<()>),
+    /// Delivers input.
+    Input(String, Reply<()>),
+    /// A request only a list or loader takes.
+    List(crate::widget_lists::ListRequest),
 }
 
 /// A message for the widgets of one extension.
@@ -110,7 +116,20 @@ pub(crate) enum WidgetMessage {
     Lent(u64, Lent),
     /// Lends the live theme's Markdown styles and highlighting.
     LendTheme(Reply<LentTheme>),
+    /// Lends the live theme's selection list styles in field order.
+    LendSelect(Reply<Vec<StyleEndpoint>>),
+    /// Lends the live theme's settings list styles.
+    LendSettings(Reply<LentSettings>),
 }
+
+/// The lent settings list styles: label and value row styles, description, cursor and hint.
+pub(crate) type LentSettings = (
+    crate::widget_lists::RowStyleEndpoint,
+    crate::widget_lists::RowStyleEndpoint,
+    StyleEndpoint,
+    String,
+    StyleEndpoint,
+);
 
 /// One request on a lent host style or highlighting.
 pub(crate) enum Lent {
@@ -118,6 +137,22 @@ pub(crate) enum Lent {
     Style(String, Reply<String>),
     /// Runs the highlighting.
     Highlight(String, Option<String>, Reply<Vec<String>>),
+    /// Applies a row style to text of a row that is selected or not.
+    Row(String, bool, Reply<String>),
+    /// Closes a submenu with its chosen value, or without one.
+    Done(Option<String>, Reply<()>),
+}
+
+impl Lent {
+    /// Returns a catchable failure.
+    pub(crate) fn reject(self, error: &str) {
+        let error = error.to_owned();
+        match self {
+            Self::Style(_, reply) | Self::Row(_, _, reply) => drop(reply.send(Err(error))),
+            Self::Highlight(_, _, reply) => drop(reply.send(Err(error))),
+            Self::Done(_, reply) => drop(reply.send(Err(error))),
+        }
+    }
 }
 
 /// The toolkit widget behind one host widget.
@@ -134,6 +169,8 @@ enum Kind {
     Markdown(Rc<Markdown>),
     /// A widget with no further operations.
     Plain(ComponentHandle),
+    /// A selection list, settings list or loader.
+    List(crate::widget_lists::ListKind),
 }
 
 /// One host widget, the failure its authored functions report and its authored children.
@@ -158,6 +195,7 @@ impl Widget {
             Kind::Spacer(widget) => widget.clone(),
             Kind::Markdown(widget) => widget.clone(),
             Kind::Plain(widget) => widget.clone(),
+            Kind::List(list) => list.component(),
         }
     }
 
@@ -184,6 +222,16 @@ impl Widget {
             Build::Container => Kind::Container(Rc::new(Container::new())),
             Build::Spacer(lines) => Kind::Spacer(Rc::new(Spacer::new(width(lines)?))),
             Build::Border(color) => Kind::Plain(widgets.dynamic_border(paint(color)?)),
+            Build::List(list) => {
+                let binding = crate::widget_lists::Binding {
+                    registry,
+                    events: &events,
+                    failure: &failure,
+                };
+                Kind::List(crate::widget_lists::ListKind::build(
+                    list, &binding, widgets,
+                )?)
+            }
             Build::Markdown(text, padding, styles, base) => {
                 let theme = markdown_theme(registry, styles, &failure)?;
                 let options = MarkdownOptions {
@@ -245,8 +293,34 @@ impl Widget {
                     _ => Err("the widget has no rows".to_owned()),
                 });
             }
+            Request::Input(data, reply) => {
+                let _ = reply.send(self.input(&data));
+            }
+            Request::List(request) => match &self.kind {
+                Kind::List(list) => {
+                    let binding = crate::widget_lists::Binding {
+                        registry,
+                        events: &self.events,
+                        failure: &self.failure,
+                    };
+                    list.answer(request, &binding);
+                }
+                _ => request.reject("the widget is no list"),
+            },
             request => self.children(request, registry),
         }
+    }
+
+    /// Delivers input, then reports an authored callback's failure.
+    fn input(&self, data: &str) -> Result<(), String> {
+        let component = self.component();
+        let handled = component.input_handler().map_or(Ok(()), |handler| {
+            handler
+                .try_handle_input(data)
+                .map_err(|error| error.to_string())
+        });
+        let failed = self.failure.borrow_mut().take();
+        failed.map_or(handled, Err)
     }
 
     /// Replaces or removes the background of text or a box.
@@ -265,6 +339,10 @@ impl Widget {
         let parent = match &self.kind {
             Kind::Container(widget) => Parent::Container(widget),
             Kind::Box(widget) => Parent::Box(widget),
+            Kind::List(list) => match list.rows() {
+                Some(rows) => Parent::Container(rows),
+                None => return request.reject("the widget has no children"),
+            },
             _ => return request.reject("the widget has no children"),
         };
         match request {
@@ -363,7 +441,9 @@ impl Request {
             | Self::SetLines(_, reply)
             | Self::Add(_, reply)
             | Self::Remove(_, reply)
-            | Self::Clear(reply) => drop(reply.send(Err(error.to_owned()))),
+            | Self::Clear(reply)
+            | Self::Input(_, reply) => drop(reply.send(Err(error.to_owned()))),
+            Self::List(request) => request.reject(error),
         }
     }
 }

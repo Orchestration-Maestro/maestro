@@ -14,6 +14,7 @@ use wasmtime::component::Resource;
 use super::host::{Identity, Route, Settlement, State};
 use super::ui_host::Nested;
 use super::widget_host::{self, Build, CODE, Change, Child, Paint, Part, ROLES};
+use super::widget_lists::{self, Call, Event, List, Setting};
 use crate::bindings::host_side::maestro::extension::host;
 
 /// Host type of one widget, by key.
@@ -57,6 +58,10 @@ impl RenderRoute {
                 Some(host::LocalResult::Render(lines) | host::LocalResult::Highlight(lines)) => {
                     rows.extend(lines?);
                 }
+                Some(host::LocalResult::Widget(answer)) => match answer? {
+                    host::WidgetAnswer::Text(text) => rows.push(text),
+                    _ => return Err("expected text".to_owned()),
+                },
                 _ => return Err("a nested call has no result".to_owned()),
             }
         }
@@ -222,6 +227,7 @@ impl State {
                 code: CODE.0.to_owned(),
                 lang: Some(CODE.1.to_owned()),
             })),
+            Part::Widget(target, event) => Some(self.widget_call(*target, 0, event.clone())?),
         })
     }
 
@@ -237,6 +243,126 @@ impl State {
 }
 
 impl host::HostWidget for State {
+    fn handle_input(
+        &mut self,
+        this: Resource<WidgetResource>,
+        data: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let key = self.table.get(&this)?.0;
+        match widget_lists::input(&mut self.observed, key, &data) {
+            Ok(calls) => self.list_route(key, calls),
+            Err(error) => self.routed(Err(error)),
+        }
+    }
+    fn set_filter(
+        &mut self,
+        this: Resource<WidgetResource>,
+        filter: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        self.observed
+            .log(format!("widget {key} setFilter {}", json!(filter)));
+        let list = match widget_lists::list(&mut self.observed, key) {
+            Ok(list) => list,
+            Err(error) => return Ok(Err(error)),
+        };
+        let filter = filter.to_lowercase();
+        list.filtered = (0..list.items.len())
+            .filter(|&index| list.items[index].value.to_lowercase().starts_with(&filter))
+            .collect();
+        list.selected = 0;
+        Ok(Ok(()))
+    }
+    fn set_selected_index(
+        &mut self,
+        this: Resource<WidgetResource>,
+        index: i64,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        self.observed
+            .log(format!("widget {key} setSelectedIndex {index}"));
+        let list = match widget_lists::list(&mut self.observed, key) {
+            Ok(list) => list,
+            Err(error) => return Ok(Err(error)),
+        };
+        let final_row = i64::try_from(list.filtered.len())? - 1;
+        list.selected = usize::try_from(index.min(final_row).max(0))?;
+        Ok(Ok(()))
+    }
+    fn get_selected_item(
+        &mut self,
+        this: Resource<WidgetResource>,
+    ) -> wasmtime::Result<Result<Option<host::SelectItem>, String>> {
+        let key = self.table.get(&this)?.0;
+        let list = widget_lists::list(&mut self.observed, key);
+        Ok(list.map(|list| widget_lists::selected(list).map(wire_item)))
+    }
+    fn set_handler(
+        &mut self,
+        this: Resource<WidgetResource>,
+        slot: host::HandlerSlot,
+        handler: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        let slot = match slot {
+            host::HandlerSlot::Select => "select",
+            host::HandlerSlot::Cancel => "cancel",
+            host::HandlerSlot::SelectionChange => "selectionChange",
+            host::HandlerSlot::Abort => "abort",
+        };
+        let handler = handler
+            .map(|handler| self.table.get(&handler).map(|identity| identity.0))
+            .transpose()?;
+        self.observed.log(format!(
+            "widget {key} setHandler {slot} {}",
+            handler.is_some()
+        ));
+        let list = match widget_lists::list(&mut self.observed, key) {
+            Ok(list) => list,
+            Err(error) => return Ok(Err(error)),
+        };
+        match handler {
+            Some(handler) => list.handlers.insert(slot, handler),
+            None => list.handlers.remove(slot),
+        };
+        Ok(Ok(()))
+    }
+    fn update_value(
+        &mut self,
+        this: Resource<WidgetResource>,
+        id: String,
+        value: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        self.observed
+            .log(format!("widget {key} updateValue {}", json!([id, value])));
+        let list = match widget_lists::list(&mut self.observed, key) {
+            Ok(list) => list,
+            Err(error) => return Ok(Err(error)),
+        };
+        for setting in list.settings.iter_mut().filter(|setting| setting.id == id) {
+            setting.value.clone_from(&value);
+        }
+        Ok(Ok(()))
+    }
+    fn signal(
+        &mut self,
+        this: Resource<WidgetResource>,
+    ) -> wasmtime::Result<Result<Resource<super::host::Flag>, String>> {
+        let key = self.table.get(&this)?.0;
+        match widget_lists::list(&mut self.observed, key) {
+            Ok(list) => {
+                let flag = list.signal.clone();
+                Ok(Ok(self.push(super::host::Flag(flag))?))
+            }
+            Err(error) => Ok(Err(error)),
+        }
+    }
+    fn dispose(&mut self, this: Resource<WidgetResource>) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        self.observed.log(format!("widget {key} dispose"));
+        Ok(Ok(()))
+    }
     fn render(
         &mut self,
         this: Resource<WidgetResource>,
@@ -387,6 +513,253 @@ impl host::HostRenderRoute for State {
         self.push(Settlement)
     }
     fn drop(&mut self, this: Resource<RenderRoute>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+/// Host type of one host settings row style, by role.
+pub struct RowStyleResource(pub String);
+
+/// Host type of the closer of a settings list's open submenu, by the list's key.
+pub struct SubmenuDoneResource(pub u32);
+
+/// The wire form of a choice.
+fn wire_item(item: crate::SelectItem) -> host::SelectItem {
+    host::SelectItem {
+        value: item.value,
+        label: item.label,
+        description: item.description,
+    }
+}
+
+/// A choice from its wire form.
+fn item(item: host::SelectItem) -> crate::SelectItem {
+    crate::SelectItem {
+        value: item.value,
+        label: item.label,
+        description: item.description,
+    }
+}
+
+impl State {
+    /// The nested call of one authored widget callback of the list under `key`.
+    fn widget_call(
+        &mut self,
+        target: u32,
+        key: u32,
+        event: Event,
+    ) -> wasmtime::Result<host::LocalCall> {
+        let event = match event {
+            Event::Select(choice) => host::WidgetEvent::Select(wire_item(choice)),
+            Event::Cancel => host::WidgetEvent::Cancel,
+            Event::SelectionChange(choice) => host::WidgetEvent::SelectionChange(wire_item(choice)),
+            Event::Change(id, value) => host::WidgetEvent::Change((id, value)),
+            Event::Abort => host::WidgetEvent::Abort,
+            Event::Truncate(choice, width, is_selected) => {
+                host::WidgetEvent::Truncate(host::TruncateContext {
+                    text: choice.label.clone(),
+                    max_width: width - 2,
+                    column_width: 32,
+                    item: wire_item(choice),
+                    is_selected,
+                })
+            }
+            Event::Row(text, selected) => host::WidgetEvent::Row((text, selected)),
+            Event::Submenu(_, value) => {
+                host::WidgetEvent::Submenu((value, self.push(SubmenuDoneResource(key))?))
+            }
+        };
+        Ok(host::LocalCall::Widget(host::LocalWidget {
+            target,
+            event,
+            emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+        }))
+    }
+
+    /// The route of the nested calls an input of the list under `key` makes.
+    fn list_route(&mut self, key: u32, calls: Vec<Call>) -> wasmtime::Result<Resource<Route>> {
+        let mut steps = VecDeque::new();
+        for call in calls {
+            let step = match call {
+                Call::Widget(target, event) => {
+                    let index = match &event {
+                        Event::Submenu(index, _) => Some(*index),
+                        _ => None,
+                    };
+                    (
+                        self.widget_call(target, key, event)?,
+                        Nested::Widget(key, index),
+                    )
+                }
+                Call::Input(target, data) => {
+                    let unit = host::LocalUnit {
+                        target,
+                        data: Some(data),
+                        emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+                    };
+                    (host::LocalCall::Unit(unit), Nested::Invalidate)
+                }
+            };
+            steps.push_back(step);
+        }
+        self.push(Route {
+            steps,
+            running: None,
+            result: Some(Ok(())),
+        })
+    }
+
+    /// Records a list widget, keeps its state and lends it.
+    fn build_list(
+        &mut self,
+        kind: &'static str,
+        operands: serde_json::Value,
+        list: List,
+    ) -> wasmtime::Result<Result<Resource<WidgetResource>, String>> {
+        let key = widget_host::build(
+            &mut self.observed,
+            Build {
+                kind,
+                operands,
+                ..Build::default()
+            },
+        );
+        widget_lists::keep(&mut self.observed, key, list);
+        Ok(Ok(self.push(WidgetResource(key))?))
+    }
+
+    /// The paint a row styling operand names.
+    fn row_paint(&self, style: &host::RowStyleSource) -> wasmtime::Result<Paint> {
+        Ok(match style {
+            host::RowStyleSource::Host(style) => Paint::Host(self.table.get(style)?.0.clone()),
+            host::RowStyleSource::Authored(callback) => {
+                Paint::Authored(self.table.get(callback)?.0)
+            }
+        })
+    }
+
+    /// Records a selection list.
+    pub(super) fn build_select_list(
+        &mut self,
+        items: Vec<host::SelectItem>,
+        max_visible: u32,
+        theme: &host::SelectListStyles,
+        layout: &host::SelectLayout,
+    ) -> wasmtime::Result<Result<Resource<WidgetResource>, String>> {
+        let styles = [
+            &theme.selected_prefix,
+            &theme.selected_text,
+            &theme.description,
+            &theme.scroll_info,
+            &theme.no_match,
+        ]
+        .into_iter()
+        .map(|style| self.paint(style))
+        .collect::<wasmtime::Result<Vec<_>>>()?;
+        let truncate = layout
+            .truncate_primary
+            .as_ref()
+            .map(|callback| self.table.get(callback).map(|identity| identity.0))
+            .transpose()?;
+        let items: Vec<_> = items.into_iter().map(item).collect();
+        let operands = json!({ "items": items.iter().map(|item| [&item.value, &item.label])
+            .collect::<Vec<_>>(), "maxVisible": max_visible,
+            "styles": styles.iter().map(|style| format!("{style:?}")).collect::<Vec<_>>(),
+            "min": layout.min_primary_column_width, "max": layout.max_primary_column_width,
+            "truncate": truncate.is_some() });
+        let list = List {
+            items,
+            selected_style: styles.get(1).cloned(),
+            truncate,
+            ..List::default()
+        };
+        self.build_list("select", operands, list)
+    }
+
+    /// Records a settings list.
+    pub(super) fn build_settings_list(
+        &mut self,
+        (items, max_visible): (Vec<host::SettingItem>, u32),
+        theme: &host::SettingsListStyles,
+        (on_change, on_cancel): (u32, u32),
+        enable_search: bool,
+    ) -> wasmtime::Result<Result<Resource<WidgetResource>, String>> {
+        let mut settings = Vec::new();
+        for setting in items {
+            let submenu = setting
+                .submenu
+                .map(|callback| self.table.get(&callback).map(|identity| identity.0))
+                .transpose()?;
+            settings.push(Setting {
+                id: setting.id,
+                label: setting.label,
+                value: setting.current_value,
+                values: setting.values,
+                submenu,
+            });
+        }
+        let rows = (self.row_paint(&theme.label)?, self.row_paint(&theme.value)?);
+        let operands = json!({ "ids": settings.iter().map(|setting| &setting.id).collect::<Vec<_>>(),
+            "maxVisible": max_visible, "rows": format!("{rows:?}"), "cursor": theme.cursor,
+            "description": format!("{:?}", self.paint(&theme.description)?),
+            "hint": format!("{:?}", self.paint(&theme.hint)?), "search": enable_search });
+        let mut list = List {
+            settings,
+            rows: Some(rows),
+            ..List::default()
+        };
+        list.handlers.insert("change", on_change);
+        list.handlers.insert("cancel", on_cancel);
+        self.build_list("settings", operands, list)
+    }
+
+    /// Records a bordered loader.
+    pub(super) fn build_loader(
+        &mut self,
+        theme: &Resource<super::renderer_host::Theme>,
+        message: String,
+        cancellable: Option<bool>,
+    ) -> wasmtime::Result<Result<Resource<WidgetResource>, String>> {
+        let theme = self.table.get(theme)?.0.clone();
+        let operands = json!({ "theme": theme, "message": message, "cancellable": cancellable });
+        let list = List {
+            loader: Some((message, cancellable.unwrap_or(true))),
+            ..List::default()
+        };
+        self.build_list("loader", operands, list)
+    }
+}
+
+impl host::HostRowStyle for State {
+    fn apply(
+        &mut self,
+        this: Resource<RowStyleResource>,
+        text: String,
+        selected: bool,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let role = self.table.get(&this)?.0.clone();
+        self.observed
+            .log(format!("rowStyle {role} {}", json!([text, selected])));
+        Ok(Ok(format!("<{role} {selected}>{text}")))
+    }
+    fn drop(&mut self, this: Resource<RowStyleResource>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl host::HostSubmenuDone for State {
+    fn done(
+        &mut self,
+        this: Resource<SubmenuDoneResource>,
+        value: Option<String>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let key = self.table.get(&this)?.0;
+        match widget_lists::done(&mut self.observed, key, value.as_deref()) {
+            Ok(change) => self.list_route(key, change.into_iter().collect()),
+            Err(error) => self.routed(Err(error)),
+        }
+    }
+    fn drop(&mut self, this: Resource<SubmenuDoneResource>) -> wasmtime::Result<()> {
         self.release(this)
     }
 }

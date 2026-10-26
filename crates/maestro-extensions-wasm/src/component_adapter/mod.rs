@@ -24,6 +24,7 @@ pub(crate) mod factories;
 mod generated;
 mod host_api;
 mod imports;
+mod lists;
 mod model_registry;
 mod schema;
 mod session;
@@ -32,16 +33,20 @@ mod theme;
 pub(crate) mod tool_renders;
 mod tools;
 mod ui;
+mod widget_imports;
 mod widgets;
+pub(crate) use lists::invoke_widget;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
+pub(crate) use widget_imports::{
+    ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme, LayoutRef,
+    MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle, WidgetAnswer,
+    WidgetEvent, WidgetImports,
+};
 #[cfg(test)]
 pub(crate) use widgets::authored_component;
 pub(crate) use widgets::{Builder, install};
-pub(crate) use widgets::{
-    ChildKey, ChildRef, HighlightRef, HostMarkdownTheme, MarkdownStyles, StyleRef, TextStyle,
-    WidgetImports, invoke_highlight, invoke_style, widget_host,
-};
+pub(crate) use widgets::{invoke_highlight, invoke_style, widget_host};
 
 pub(crate) use callbacks::release;
 pub(crate) use exports::{Capabilities, Exports};

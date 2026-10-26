@@ -31,7 +31,7 @@ pub(super) fn observe(
     }
     if let Some(steps) = args.strip_prefix("ui widgets ") {
         let steps = serde_json::from_str(steps).map_err(|error| error.to_string())?;
-        return Ok(super::widget_author::run(steps).to_string());
+        return Ok(super::widget_author::run(steps, context.ui().ok()).to_string());
     }
     if let Some(label) = args.strip_prefix("ui widget ") {
         return widget(context, api, label);

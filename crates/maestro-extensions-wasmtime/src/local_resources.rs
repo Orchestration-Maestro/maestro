@@ -232,10 +232,11 @@ enum Capability {
     /// The lent host highlighting.
     Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
     /// Original terminal lent to a component factory.
-    Tui {
-        /// Ownership alone crosses the opaque canonical terminal resource.
-        _owner: maestro_extensions::TUI,
-    },
+    Tui(maestro_extensions::TUI),
+    /// A lent settings row style.
+    RowStyle(Rc<crate::widget_lists::RowStyleFn>),
+    /// Closes an open settings submenu.
+    SubmenuDone(Rc<dyn Fn(Option<String>)>),
 }
 
 /// Local entries and their monotonic identities.

@@ -74,6 +74,8 @@ pub enum Part {
     Component(u32),
     /// The rows the authored highlighting under this identity makes of the sample code.
     Highlight(u32),
+    /// The text an authored widget callback under this identity answers.
+    Widget(u32, super::widget_lists::Event),
 }
 
 /// Code an authored highlighting receives, with its language.
@@ -242,6 +244,10 @@ fn plan(
     width: u32,
     parts: &mut Vec<Part>,
 ) -> Result<(), String> {
+    if let Some(list) = super::widget_lists::render(observed, key, width) {
+        parts.extend(list);
+        return Ok(());
+    }
     let widget = widget(observed, key)?;
     let (px, py) = widget.padding;
     let paint = widget.paint.clone();

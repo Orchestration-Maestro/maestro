@@ -470,6 +470,22 @@ and code-block indent. The first failure of an authored style or highlighting is
 `render` or `invalidate` error of the widget that uses it. `DynamicBorder` without a color
 paints with the live border color.
 
+`SelectList` shows `SelectItem` choices: `set_filter` keeps the choices whose value starts
+with the filter, ignoring case; `set_selected_index` clamps to the rows; `get_selected_item`
+reads the selection; and `set_on_select`, `set_on_cancel` and `set_on_selection_change`
+replace or remove the handlers its input runs. `SelectListLayoutOptions` sets the narrowest
+and widest primary column and may replace the primary truncation with an authored
+`TruncatePrimary`. `SettingsList` shows `SettingItem` rows whose `values` cycle and whose
+`Submenu` opens a component with a `SubmenuDone`; closing it with a value reports the change
+to the list's `SettingChange` callback, and `update_value` changes a value without reporting
+it. `BorderedLoader` builds the application's loader from a lent `TUI` and `Theme`, so it is
+built inside a factory; its `signal` reports a cancellation, `set_on_abort` replaces the
+handler a cancellation runs, `dispose` stops the animation and its rows take children. A
+loader built with `cancellable: Some(false)` ignores input. `get_select_list_theme` and
+`get_settings_list_theme` lend the live theme's styles; a `RowStyle` also receives whether
+its row is selected. The first failure of an authored handler or style is the next `render`
+or `handle_input` error of its widget.
+
 ### Themes and tool expansion
 
 `theme` returns the UI's live theme, which reads the host's later selections.

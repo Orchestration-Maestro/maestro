@@ -19,89 +19,85 @@ type StyleFn = dyn Fn(&str) -> ExtensionResult<String>;
 /// An authored highlighting function's body.
 type HighlightFn = dyn Fn(&str, Option<&str>) -> ExtensionResult<Vec<String>>;
 
-/// Styles text, for example with a color; the host calls it while it renders.
-///
-/// Clones share one function. A style the host supplied goes back to the host unchanged.
-#[derive(Clone)]
-pub struct Style {
+/// A function an author wrote or the host supplied, with the host resource behind a supplied
+/// one; clones share the function.
+pub(crate) struct Supplied<F: ?Sized> {
     /// The function.
-    apply: Rc<StyleFn>,
-    /// The host resource behind a supplied style.
+    pub(crate) function: Rc<F>,
+    /// The host resource behind a supplied function.
     #[cfg(any(test, target_arch = "wasm32"))]
     host: Option<Rc<dyn Any>>,
 }
-impl Style {
-    /// Wraps an authored styling function.
-    #[must_use]
-    pub fn new(apply: impl Fn(&str) -> ExtensionResult<String> + 'static) -> Self {
+impl<F: ?Sized> Clone for Supplied<F> {
+    fn clone(&self) -> Self {
         Self {
-            apply: Rc::new(apply),
+            function: self.function.clone(),
+            #[cfg(any(test, target_arch = "wasm32"))]
+            host: self.host.clone(),
+        }
+    }
+}
+impl<F: ?Sized> Supplied<F> {
+    /// An authored function.
+    pub(crate) fn authored(function: Rc<F>) -> Self {
+        Self {
+            function,
             #[cfg(any(test, target_arch = "wasm32"))]
             host: None,
         }
     }
-    /// Styles `text`.
-    ///
-    /// # Errors
-    /// Returns the function's failure.
-    pub fn apply(&self, text: &str) -> ExtensionResult<String> {
-        (self.apply)(text)
-    }
-    /// A style the host supplied, kept as `host`.
+    /// A function the host supplied, kept as `host`.
     #[cfg(any(test, target_arch = "wasm32"))]
-    pub(crate) fn supplied<P: 'static>(apply: Rc<StyleFn>, host: Rc<P>) -> Self {
+    pub(crate) fn lent<P: 'static>(function: Rc<F>, host: Rc<P>) -> Self {
         Self {
-            apply,
+            function,
             host: Some(host),
         }
     }
-    /// The host resource behind this style, when the host supplied it as a `P`.
+    /// The host resource behind this function, when the host supplied it as a `P`.
     #[cfg(any(test, target_arch = "wasm32"))]
     pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
         self.host.clone()?.downcast().ok()
     }
 }
 
+/// Styles text, for example with a color; the host calls it while it renders.
+///
+/// Clones share one function. A style the host supplied goes back to the host unchanged.
+#[derive(Clone)]
+pub struct Style(pub(crate) Supplied<StyleFn>);
+impl Style {
+    /// Wraps an authored styling function.
+    #[must_use]
+    pub fn new(apply: impl Fn(&str) -> ExtensionResult<String> + 'static) -> Self {
+        Self(Supplied::authored(Rc::new(apply)))
+    }
+    /// Styles `text`.
+    ///
+    /// # Errors
+    /// Returns the function's failure.
+    pub fn apply(&self, text: &str) -> ExtensionResult<String> {
+        (self.0.function)(text)
+    }
+}
+
 /// Highlights a code block into rows, given its language when the block names one.
 #[derive(Clone)]
-pub struct Highlight {
-    /// The function.
-    highlight: Rc<HighlightFn>,
-    /// The host resource behind supplied highlighting.
-    #[cfg(any(test, target_arch = "wasm32"))]
-    host: Option<Rc<dyn Any>>,
-}
+pub struct Highlight(pub(crate) Supplied<HighlightFn>);
 impl Highlight {
     /// Wraps an authored highlighting function.
     #[must_use]
     pub fn new(
         highlight: impl Fn(&str, Option<&str>) -> ExtensionResult<Vec<String>> + 'static,
     ) -> Self {
-        Self {
-            highlight: Rc::new(highlight),
-            #[cfg(any(test, target_arch = "wasm32"))]
-            host: None,
-        }
+        Self(Supplied::authored(Rc::new(highlight)))
     }
     /// Highlights `code`.
     ///
     /// # Errors
     /// Returns the function's failure.
     pub fn highlight(&self, code: &str, lang: Option<&str>) -> ExtensionResult<Vec<String>> {
-        (self.highlight)(code, lang)
-    }
-    /// Highlighting the host supplied, kept as `host`.
-    #[cfg(any(test, target_arch = "wasm32"))]
-    pub(crate) fn supplied<P: 'static>(highlight: Rc<HighlightFn>, host: Rc<P>) -> Self {
-        Self {
-            highlight,
-            host: Some(host),
-        }
-    }
-    /// The host resource behind this highlighting, when the host supplied it as a `P`.
-    #[cfg(any(test, target_arch = "wasm32"))]
-    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
-        self.host.clone()?.downcast().ok()
+        (self.0.function)(code, lang)
     }
 }
 
@@ -184,13 +180,36 @@ pub(crate) trait WidgetPort {
     fn remove_child(&self, child: &Component) -> ExtensionResult<()>;
     /// Removes every child.
     fn clear(&self) -> ExtensionResult<()>;
+    /// Delivers input.
+    fn handle_input(&self, data: &str) -> ExtensionResult<()>;
+    /// Filters a selection list.
+    fn set_filter(&self, filter: &str) -> ExtensionResult<()>;
+    /// Selects a row of a selection list.
+    fn set_selected_index(&self, index: i64) -> ExtensionResult<()>;
+    /// The selected choice of a selection list.
+    fn get_selected_item(&self) -> ExtensionResult<Option<super::SelectItem>>;
+    /// Replaces or removes a selection list's confirmation handler.
+    fn set_on_select(&self, handler: Option<super::SelectHandler>) -> ExtensionResult<()>;
+    /// Replaces or removes a selection list's cancellation handler.
+    fn set_on_cancel(&self, handler: Option<super::WidgetNotice>) -> ExtensionResult<()>;
+    /// Replaces or removes a selection list's movement handler.
+    fn set_on_selection_change(&self, handler: Option<super::SelectHandler>)
+    -> ExtensionResult<()>;
+    /// Replaces or removes a loader's abort handler.
+    fn set_on_abort(&self, handler: Option<super::WidgetNotice>) -> ExtensionResult<()>;
+    /// Replaces a setting's current value.
+    fn update_value(&self, id: &str, value: &str) -> ExtensionResult<()>;
+    /// A loader's signal.
+    fn signal(&self) -> ExtensionResult<crate::AbortSignal>;
+    /// Stops a loader's animation.
+    fn dispose(&self) -> ExtensionResult<()>;
 }
 
 /// One host widget; clones share it.
 #[derive(Clone)]
 pub(crate) struct Widget {
     /// Its requests.
-    port: Rc<dyn WidgetPort>,
+    pub(super) port: Rc<dyn WidgetPort>,
     /// The same owner, for the adapter to find its host resource.
     #[cfg(any(test, target_arch = "wasm32"))]
     owner: Rc<dyn Any>,
@@ -238,13 +257,41 @@ pub(crate) trait WidgetHost {
     fn dynamic_border(&self, color: Option<&Style>) -> ExtensionResult<Widget>;
     /// The live theme's Markdown styles.
     fn markdown_theme(&self) -> ExtensionResult<MarkdownTheme>;
+    /// A selection list.
+    fn select_list(
+        &self,
+        items: &[super::SelectItem],
+        max_visible: u32,
+        theme: &super::SelectListTheme,
+        layout: &super::SelectListLayoutOptions,
+    ) -> ExtensionResult<Widget>;
+    /// A settings list.
+    fn settings_list(
+        &self,
+        items: (Vec<super::SettingItem>, u32),
+        theme: &super::SettingsListTheme,
+        callbacks: (super::SettingChange, super::WidgetNotice),
+        options: super::SettingsListOptions,
+    ) -> ExtensionResult<Widget>;
+    /// A bordered loader.
+    fn bordered_loader(
+        &self,
+        tui: &super::TUI,
+        theme: &crate::Theme,
+        message: &str,
+        cancellable: Option<bool>,
+    ) -> ExtensionResult<Widget>;
+    /// The live theme's selection list styles.
+    fn select_list_theme(&self) -> ExtensionResult<super::SelectListTheme>;
+    /// The live theme's settings list styles.
+    fn settings_list_theme(&self) -> ExtensionResult<super::SettingsListTheme>;
 }
 
 /// The host that builds widgets.
 ///
 /// # Errors
 /// Returns a message when no extension host runs this code.
-fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
+pub(super) fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
     #[cfg(any(test, target_arch = "wasm32"))]
     return crate::component_adapter::widget_host();
     #[cfg(not(any(test, target_arch = "wasm32")))]
@@ -252,10 +299,13 @@ fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
 }
 
 /// A host widget seen as a component.
-struct Hosted(Widget);
+pub(super) struct Hosted(pub(super) Widget);
 impl ComponentView for Hosted {
     fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
         self.0.port.render(width)
+    }
+    fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        self.0.port.handle_input(data)
     }
     fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         self.0.port.invalidate()

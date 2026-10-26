@@ -108,6 +108,7 @@ kinds! {
         BranchChange(crate::BranchChangeListener),
         Style(crate::Style),
         Highlight(crate::Highlight),
+        Widget(std::rc::Rc<super::lists::WidgetHandler>),
     }
     once {
         Abort(crate::AbortListener),

@@ -67,7 +67,7 @@ impl InvalidatorEndpoint {
 #[derive(Clone)]
 pub(crate) struct TuiEndpoint {
     /// Releases the retained terminal with the last holder.
-    _lease: Arc<Lease>,
+    pub(super) lease: Arc<Lease>,
 }
 
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
@@ -175,8 +175,8 @@ impl Registry {
 
     /// Retains the native terminal lent to one component factory.
     pub(crate) fn tui(&self, tui: maestro_extensions::TUI) -> Result<TuiEndpoint, String> {
-        self.insert(Capability::Tui { _owner: tui })
-            .map(|lease| TuiEndpoint { _lease: lease })
+        self.insert(Capability::Tui(tui))
+            .map(|lease| TuiEndpoint { lease })
     }
 
     /// Retains the native theme supplied to one renderer invocation.

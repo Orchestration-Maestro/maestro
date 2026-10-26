@@ -59,6 +59,7 @@ impl Call {
             Self::Factory(call) => Call::Factory(factory(call, completion)),
             Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
             Self::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
+            Self::Widget(call) => Call::Widget(widget(call, completion)),
             Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
@@ -68,6 +69,19 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the widget callback admission beside its event.
+fn widget(
+    call: crate::guest_calls::widget_calls::WidgetCall,
+    completion: &Completion,
+) -> crate::guest_calls::widget_calls::WidgetCall<Callback> {
+    crate::guest_calls::widget_calls::WidgetCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        emitter: call.emitter,
+        reply: call.reply,
     }
 }
 

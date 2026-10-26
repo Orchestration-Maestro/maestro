@@ -3,7 +3,7 @@ use super::records::{
     LocalBash, LocalCommand, LocalCompletion, LocalContinuation, LocalEvent, LocalFactory,
     LocalHighlight, LocalKey, LocalPrepare, LocalRender, LocalRenderer, LocalSchema, LocalSetup,
     LocalShortcut, LocalStyle, LocalSynchronous, LocalTerminalInput, LocalTool, LocalToolRender,
-    LocalUnit,
+    LocalUnit, LocalWidget,
 };
 use crate::{
     context_imports::{CommandContext, Context},
@@ -90,6 +90,9 @@ pub(super) enum LocalCall {
     /// An authored highlighting.
     #[component(name = "highlight")]
     Highlight(LocalHighlight),
+    /// An authored widget callback.
+    #[component(name = "widget")]
+    Widget(LocalWidget),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -144,6 +147,9 @@ pub(super) enum LocalResult {
     /// The highlighted rows, or the authored error.
     #[component(name = "highlight")]
     Highlight(Result<Vec<String>, String>),
+    /// The widget callback's answer, or the authored error.
+    #[component(name = "widget")]
+    Widget(Result<crate::guest_calls::widget_calls::Answer, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -206,24 +212,32 @@ pub(super) fn lower(
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Registered(call) => registered(table, call)?,
-        Call::Paint(call) => paint(call),
+        call @ (Call::Paint(_) | Call::Widget(_)) => paint(table, call)?,
         call => asynchronous(table, call)?,
     })
 }
 
-/// Marshals one authored styling or highlighting.
-fn paint(call: &PaintCall<Callback>) -> LocalCall {
-    match call {
-        PaintCall::Style(handler, text, _) => LocalCall::Style(LocalStyle {
+/// Marshals one authored styling, highlighting or widget callback.
+fn paint(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
+    Ok(match call {
+        Call::Paint(PaintCall::Style(handler, text, _)) => LocalCall::Style(LocalStyle {
             target: handler.id,
             text: text.clone(),
         }),
-        PaintCall::Highlight(handler, code, lang, _) => LocalCall::Highlight(LocalHighlight {
-            target: handler.id,
-            code: code.clone(),
-            lang: lang.clone(),
+        Call::Paint(PaintCall::Highlight(handler, code, lang, _)) => {
+            LocalCall::Highlight(LocalHighlight {
+                target: handler.id,
+                code: code.clone(),
+                lang: lang.clone(),
+            })
+        }
+        Call::Widget(call) => LocalCall::Widget(LocalWidget {
+            target: call.handler.id,
+            event: call.event.lower(table)?,
+            emitter: table.push(call.emitter.clone())?,
         }),
-    }
+        _ => return Err(wasmtime::format_err!("expected a widget call")),
+    })
 }
 
 /// Marshals one retained component method.
@@ -403,6 +417,13 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);
+        }
+        (Call::Widget(call), LocalResult::Widget(value)) => {
+            let value = match value {
+                Ok(answer) => Ok(crate::guest_calls::widget_calls::answered(store, answer)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
 
         (call, value) => settle_asynchronous(store, call, value)?,

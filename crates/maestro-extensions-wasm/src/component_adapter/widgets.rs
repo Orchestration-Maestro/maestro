@@ -8,152 +8,19 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::Imports;
 use super::callbacks::{self, Identity};
+use super::lists::{WidgetHandler, set_handler};
+use super::widget_imports::{
+    ChildKey, ChildRef, HandlerSlot, HighlightRef, MarkdownStyles, StyleRef, TextStyle,
+    WidgetImports,
+};
 use crate::{
     Component, DefaultTextStyle, ExtensionResult, Highlight, HostWidgetHandle as Widget,
-    MarkdownTheme, Style, TextDecoration, WidgetHost, WidgetPort,
+    MarkdownTheme, Style, WidgetHost, WidgetPort,
 };
 
-/// A styling operand: a host style, or the identity of an authored one.
-pub(crate) enum StyleRef<'a, I: WidgetImports> {
-    /// A style the host supplied.
-    Host(&'a I::Style),
-    /// An authored style, staged under this identity.
-    Authored(&'a I::Callback),
-}
-
-/// A highlighting operand: the host's highlighting, or the identity of an authored one.
-pub(crate) enum HighlightRef<'a, I: WidgetImports> {
-    /// Highlighting the host supplied.
-    Host(&'a I::Highlighter),
-    /// Authored highlighting, staged under this identity.
-    Authored(&'a I::Callback),
-}
-
-/// A child to add: a host widget, or the identity of an authored component.
-pub(crate) enum ChildRef<'a, I: WidgetImports> {
-    /// A host widget.
-    Widget(&'a I::Widget),
-    /// An authored component, staged under this identity.
-    Component(&'a I::Callback),
-}
-
-/// A child to remove: a host widget, or the identity an authored component was added under.
-pub(crate) enum ChildKey<'a, I: WidgetImports> {
-    /// A host widget.
-    Widget(&'a I::Widget),
-    /// The identity of an added authored component.
-    Component(u32),
-}
-
-/// Markdown styles as operands, in the order of [`MarkdownTheme`]'s fields.
-pub(crate) struct MarkdownStyles<'a, I: WidgetImports> {
-    /// The fourteen element styles.
-    pub(crate) roles: Vec<StyleRef<'a, I>>,
-    /// Code highlighting.
-    pub(crate) highlight: Option<HighlightRef<'a, I>>,
-    /// Code row prefix.
-    pub(crate) indent: Option<&'a str>,
-}
-
-/// A base text style as operands.
-pub(crate) struct TextStyle<'a, I: WidgetImports> {
-    /// Foreground.
-    pub(crate) color: Option<StyleRef<'a, I>>,
-    /// Row background.
-    pub(crate) bg_color: Option<StyleRef<'a, I>>,
-    /// Decorations to apply.
-    pub(crate) decorations: &'a [TextDecoration],
-}
-
-/// The live theme's Markdown styles as the host lends them, in field order.
-pub(crate) type HostMarkdownTheme<I> = (
-    Vec<<I as WidgetImports>::Style>,
-    <I as WidgetImports>::Highlighter,
-);
-
-/// The widget requests of the host at the wire level.
-pub(crate) trait WidgetImports: Imports {
-    /// A host widget.
-    type Widget: 'static;
-    /// A host styling function.
-    type Style: 'static;
-    /// The host's code highlighting.
-    type Highlighter: 'static;
-    /// Builds wrapped text.
-    fn new_text(
-        &self,
-        text: &str,
-        padding: (u32, u32),
-        background: Option<StyleRef<'_, Self>>,
-    ) -> ExtensionResult<Self::Widget>;
-    /// Builds a box.
-    fn new_box(
-        &self,
-        padding: (u32, u32),
-        background: Option<StyleRef<'_, Self>>,
-    ) -> ExtensionResult<Self::Widget>;
-    /// Builds a container.
-    fn new_container(&self) -> ExtensionResult<Self::Widget>;
-    /// Builds a spacer.
-    fn new_spacer(&self, lines: u32) -> ExtensionResult<Self::Widget>;
-    /// Builds Markdown.
-    fn new_markdown(
-        &self,
-        text: &str,
-        padding: (u32, u32),
-        theme: MarkdownStyles<'_, Self>,
-        style: Option<TextStyle<'_, Self>>,
-    ) -> ExtensionResult<Self::Widget>;
-    /// Builds a rule.
-    fn new_dynamic_border(
-        &self,
-        color: Option<StyleRef<'_, Self>>,
-    ) -> ExtensionResult<Self::Widget>;
-    /// Lends the live theme's Markdown styles.
-    fn get_markdown_theme(&self) -> ExtensionResult<HostMarkdownTheme<Self>>;
-    /// Renders rows, running the nested calls the host makes first.
-    fn widget_render(&self, widget: &Self::Widget, width: u32) -> ExtensionResult<Vec<String>>;
-    /// Drops cached rows, running the nested calls the host makes first.
-    fn widget_invalidate(&self, widget: &Self::Widget) -> ExtensionResult<()>;
-    /// Replaces the text.
-    fn widget_set_text(&self, widget: &Self::Widget, text: &str) -> ExtensionResult<()>;
-    /// Replaces or removes the row background.
-    fn widget_set_background(
-        &self,
-        widget: &Self::Widget,
-        style: Option<StyleRef<'_, Self>>,
-    ) -> ExtensionResult<()>;
-    /// Replaces the row count.
-    fn widget_set_lines(&self, widget: &Self::Widget, lines: u32) -> ExtensionResult<()>;
-    /// Appends a child.
-    fn widget_add_child(
-        &self,
-        widget: &Self::Widget,
-        child: ChildRef<'_, Self>,
-    ) -> ExtensionResult<()>;
-    /// Removes the first occurrence of a child.
-    fn widget_remove_child(
-        &self,
-        widget: &Self::Widget,
-        child: ChildKey<'_, Self>,
-    ) -> ExtensionResult<()>;
-    /// Removes every child.
-    fn widget_clear(&self, widget: &Self::Widget) -> ExtensionResult<()>;
-    /// Applies a host style.
-    fn style_apply(&self, style: &Self::Style, text: &str) -> ExtensionResult<String>;
-    /// Runs the host's highlighting.
-    fn highlight(
-        &self,
-        highlighter: &Self::Highlighter,
-        code: &str,
-        lang: Option<&str>,
-    ) -> ExtensionResult<Vec<String>>;
-}
-
 /// A host style kept by its facade.
-struct HostStyle<I: WidgetImports> {
+pub(super) struct HostStyle<I: WidgetImports> {
     /// The host resource.
     style: I::Style,
 }
@@ -165,7 +32,7 @@ struct HostHighlighter<I: WidgetImports> {
 }
 
 /// An authored function staged for one request, or the host resource a facade names.
-enum Staged<I: WidgetImports, H> {
+pub(super) enum Staged<I: WidgetImports, H> {
     /// A host resource.
     Host(Rc<H>),
     /// An authored function under a fresh identity.
@@ -174,7 +41,7 @@ enum Staged<I: WidgetImports, H> {
 
 impl<I: WidgetImports, H> Staged<I, H> {
     /// Keeps a staged function after an accepted request, or withdraws it.
-    fn settle(self, accepted: bool) {
+    pub(super) fn settle(self, accepted: bool) {
         if let Self::Authored(identity) = self {
             identity.settle(accepted);
         }
@@ -182,8 +49,8 @@ impl<I: WidgetImports, H> Staged<I, H> {
 }
 
 /// The host style behind `style`, or `style` staged under a fresh identity.
-fn stage_style<I: WidgetImports>(imports: &I, style: &Style) -> Staged<I, HostStyle<I>> {
-    if let Some(host) = style.host::<HostStyle<I>>() {
+pub(super) fn stage_style<I: WidgetImports>(imports: &I, style: &Style) -> Staged<I, HostStyle<I>> {
+    if let Some(host) = style.0.host::<HostStyle<I>>() {
         return Staged::Host(host);
     }
     let identity = Identity::new(imports);
@@ -192,7 +59,7 @@ fn stage_style<I: WidgetImports>(imports: &I, style: &Style) -> Staged<I, HostSt
 }
 
 /// The operand naming a staged style.
-fn style_ref<I: WidgetImports>(staged: &Staged<I, HostStyle<I>>) -> StyleRef<'_, I> {
+pub(super) fn style_ref<I: WidgetImports>(staged: &Staged<I, HostStyle<I>>) -> StyleRef<'_, I> {
     match staged {
         Staged::Host(host) => StyleRef::Host(&host.style),
         Staged::Authored(identity) => StyleRef::Authored(&identity.handle),
@@ -298,6 +165,52 @@ impl<I: WidgetImports> WidgetPort for HostWidget<I> {
         drop(removed);
         Ok(())
     }
+    fn handle_input(&self, data: &str) -> ExtensionResult<()> {
+        self.imports.widget_handle_input(&self.widget, data)
+    }
+    fn set_filter(&self, filter: &str) -> ExtensionResult<()> {
+        self.imports.widget_set_filter(&self.widget, filter)
+    }
+    fn set_selected_index(&self, index: i64) -> ExtensionResult<()> {
+        self.imports.widget_set_selected_index(&self.widget, index)
+    }
+    fn get_selected_item(&self) -> ExtensionResult<Option<crate::SelectItem>> {
+        self.imports.widget_get_selected_item(&self.widget)
+    }
+    fn set_on_select(&self, handler: Option<crate::SelectHandler>) -> ExtensionResult<()> {
+        let handler = handler.map(WidgetHandler::Select);
+        set_handler(&self.imports, &self.widget, HandlerSlot::Select, handler)
+    }
+    fn set_on_cancel(&self, handler: Option<crate::WidgetNotice>) -> ExtensionResult<()> {
+        let handler = handler.map(WidgetHandler::Notice);
+        set_handler(&self.imports, &self.widget, HandlerSlot::Cancel, handler)
+    }
+    fn set_on_selection_change(
+        &self,
+        handler: Option<crate::SelectHandler>,
+    ) -> ExtensionResult<()> {
+        let handler = handler.map(WidgetHandler::Select);
+        set_handler(
+            &self.imports,
+            &self.widget,
+            HandlerSlot::SelectionChange,
+            handler,
+        )
+    }
+    fn set_on_abort(&self, handler: Option<crate::WidgetNotice>) -> ExtensionResult<()> {
+        let handler = handler.map(WidgetHandler::Notice);
+        set_handler(&self.imports, &self.widget, HandlerSlot::Abort, handler)
+    }
+    fn update_value(&self, id: &str, value: &str) -> ExtensionResult<()> {
+        self.imports.widget_update_value(&self.widget, id, value)
+    }
+    fn signal(&self) -> ExtensionResult<crate::AbortSignal> {
+        let signal = self.imports.widget_signal(&self.widget)?;
+        Ok(super::signals::signal(&self.imports, signal))
+    }
+    fn dispose(&self) -> ExtensionResult<()> {
+        self.imports.widget_dispose(&self.widget)
+    }
 }
 
 /// Builds host widgets over `I`.
@@ -375,7 +288,7 @@ fn stage_highlight<I: WidgetImports>(
     imports: &I,
     highlight: &Highlight,
 ) -> Staged<I, HostHighlighter<I>> {
-    if let Some(host) = highlight.host::<HostHighlighter<I>>() {
+    if let Some(host) = highlight.0.host::<HostHighlighter<I>>() {
         return Staged::Host(host);
     }
     let identity = Identity::new(imports);
@@ -384,13 +297,13 @@ fn stage_highlight<I: WidgetImports>(
 }
 
 /// A style that applies the lent host style.
-fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Style {
+pub(super) fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Style {
     let host = Rc::new(HostStyle::<I> { style });
     let (imports, owner) = (imports.clone(), host.clone());
-    Style::supplied(
+    Style(crate::Supplied::lent(
         Rc::new(move |text: &str| imports.style_apply(&owner.style, text)),
         host,
-    )
+    ))
 }
 
 impl<I: WidgetImports> WidgetHost for Builder<I> {
@@ -443,12 +356,12 @@ impl<I: WidgetImports> WidgetHost for Builder<I> {
         };
         let host = Rc::new(HostHighlighter::<I> { highlighter });
         let (imports, owner) = (self.0.clone(), host.clone());
-        let highlight = Highlight::supplied(
+        let highlight = Highlight(crate::Supplied::lent(
             Rc::new(move |code: &str, lang: Option<&str>| {
                 imports.highlight(&owner.highlighter, code, lang)
             }),
             host,
-        );
+        ));
         Ok(MarkdownTheme {
             heading: next()?,
             link: next()?,
@@ -467,6 +380,42 @@ impl<I: WidgetImports> WidgetHost for Builder<I> {
             highlight_code: Some(highlight),
             code_block_indent: None,
         })
+    }
+    fn select_list(
+        &self,
+        items: &[crate::SelectItem],
+        max_visible: u32,
+        theme: &crate::SelectListTheme,
+        layout: &crate::SelectListLayoutOptions,
+    ) -> ExtensionResult<Widget> {
+        let widget = self.build_select_list(items, max_visible, theme, layout)?;
+        Ok(HostWidget::retain(&self.0, widget))
+    }
+    fn settings_list(
+        &self,
+        (items, max_visible): (Vec<crate::SettingItem>, u32),
+        theme: &crate::SettingsListTheme,
+        callbacks: (crate::SettingChange, crate::WidgetNotice),
+        options: crate::SettingsListOptions,
+    ) -> ExtensionResult<Widget> {
+        let widget = self.build_settings_list((&items, max_visible), theme, callbacks, options)?;
+        Ok(HostWidget::retain(&self.0, widget))
+    }
+    fn bordered_loader(
+        &self,
+        tui: &crate::TUI,
+        theme: &crate::Theme,
+        message: &str,
+        cancellable: Option<bool>,
+    ) -> ExtensionResult<Widget> {
+        let widget = self.build_bordered_loader(tui, theme, message, cancellable)?;
+        Ok(HostWidget::retain(&self.0, widget))
+    }
+    fn select_list_theme(&self) -> ExtensionResult<crate::SelectListTheme> {
+        self.lent_select_list_theme()
+    }
+    fn settings_list_theme(&self) -> ExtensionResult<crate::SettingsListTheme> {
+        self.lent_settings_list_theme()
     }
 }
 

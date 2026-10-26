@@ -652,6 +652,66 @@ impl host::Host for State {
     fn get_markdown_theme(&mut self) -> wasmtime::Result<Result<host::MarkdownTheme, String>> {
         self.markdown_theme().map(Ok)
     }
+    fn new_select_list(
+        &mut self,
+        items: Vec<host::SelectItem>,
+        max_visible: u32,
+        theme: host::SelectListStyles,
+        layout: host::SelectLayout,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_select_list(items, max_visible, &theme, &layout)
+    }
+    fn new_settings_list(
+        &mut self,
+        items: Vec<host::SettingItem>,
+        max_visible: u32,
+        theme: host::SettingsListStyles,
+        on_change: Resource<Identity>,
+        on_cancel: Resource<Identity>,
+        enable_search: bool,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let callbacks = (self.table.get(&on_change)?.0, self.table.get(&on_cancel)?.0);
+        self.build_settings_list((items, max_visible), &theme, callbacks, enable_search)
+    }
+    fn new_bordered_loader(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: Resource<super::renderer_host::Theme>,
+        message: String,
+        cancellable: Option<bool>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_loader(&theme, message, cancellable)
+    }
+    fn get_select_list_theme(&mut self) -> wasmtime::Result<Result<host::SelectListTheme, String>> {
+        self.observed.log("getSelectListTheme");
+        let mut role =
+            |name: &str| self.push(super::widget_component::StyleResource(name.to_owned()));
+        Ok(Ok(host::SelectListTheme {
+            selected_prefix: role("selectedPrefix")?,
+            selected_text: role("selectedText")?,
+            description: role("description")?,
+            scroll_info: role("scrollInfo")?,
+            no_match: role("noMatch")?,
+        }))
+    }
+    fn get_settings_list_theme(
+        &mut self,
+    ) -> wasmtime::Result<Result<host::SettingsListTheme, String>> {
+        self.observed.log("getSettingsListTheme");
+        Ok(Ok(host::SettingsListTheme {
+            label: self.push(super::widget_component::RowStyleResource(
+                "label".to_owned(),
+            ))?,
+            value: self.push(super::widget_component::RowStyleResource(
+                "value".to_owned(),
+            ))?,
+            description: self.push(super::widget_component::StyleResource(
+                "description".to_owned(),
+            ))?,
+            cursor: "→ ".to_owned(),
+            hint: self.push(super::widget_component::StyleResource("hint".to_owned()))?,
+        }))
+    }
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,

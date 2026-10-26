@@ -254,3 +254,15 @@ pub(super) struct LocalHighlight {
     /// The code block's language, when it names one.
     pub(super) lang: Option<String>,
 }
+
+/// Owned operands of one nested authored widget callback.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalWidget {
+    /// Authored identity of the callback.
+    pub(super) target: u32,
+    /// What the widget tells it.
+    pub(super) event: crate::guest_calls::widget_calls::WireEvent,
+    /// Independent native invocation frame.
+    pub(super) emitter: Resource<EmitterEndpoint>,
+}

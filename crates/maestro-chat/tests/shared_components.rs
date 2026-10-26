@@ -202,6 +202,65 @@ fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
 }
 
 #[test]
+fn extension_widget_host_builds_application_loaders_and_list_styles() {
+    use maestro_app::ExtensionWidgets;
+    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let host = maestro_chat::ExtensionWidgetHost::new(
+        live.clone(),
+        highlighter,
+        TerminalImage::new(|_| None, || 1),
+    );
+    let runtime = ManualRuntime::new();
+    let tui = writer(&runtime);
+    let theme = live.get().unwrap();
+    for cancellable in [true, false] {
+        let loader = host
+            .bordered_loader(&tui, theme.clone(), "Working".into(), cancellable)
+            .unwrap();
+        let options = maestro_chat::BorderedLoaderOptions { cancellable };
+        let direct = maestro_chat::BorderedLoader::new(
+            &tui,
+            theme.clone(),
+            "Working".into(),
+            options,
+            &live,
+        )
+        .unwrap();
+        assert_eq!(
+            loader.render(30),
+            direct.render(30),
+            "the application's loader"
+        );
+        loader.dispose();
+        direct.dispose();
+    }
+    let loader = host
+        .bordered_loader(&tui, theme, "Working".into(), true)
+        .unwrap();
+    let aborted = Rc::new(Cell::new(false));
+    let seen = aborted.clone();
+    loader.set_on_abort(Some(Rc::new(move || seen.set(true))));
+    loader.input_handler().unwrap().handle_input("\u{1b}");
+    assert!(
+        loader.signal().is_aborted() && aborted.get(),
+        "escape cancels the loader"
+    );
+    assert_eq!(
+        loader.rows().children().borrow().len(),
+        6,
+        "borders, loader, hint and spacers"
+    );
+    let select = host.select_list_theme();
+    let direct = maestro_theme::get_select_list_theme(live.clone());
+    assert_eq!((select.selected_text)("x"), (direct.selected_text)("x"));
+    let settings = host.settings_list_theme();
+    let direct = maestro_theme::get_settings_list_theme(live);
+    assert_eq!((settings.value)("x", false), (direct.value)("x", false));
+    assert_eq!(settings.cursor, direct.cursor);
+}
+
+#[test]
 fn border_returns_painter_output_without_preserving_rule_glyphs() {
     let state = published::unpublished();
     let border = DynamicBorder::new(state.theme(), Some(Rc::new(|text| text.replace('─', "="))));

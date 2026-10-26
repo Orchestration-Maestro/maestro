@@ -99,6 +99,9 @@ impl Header {
 pub enum Nested {
     /// An authored component's invalidation.
     Invalidate,
+    /// An authored widget callback of the list under this key; a submenu's answer opens at
+    /// the setting index.
+    Widget(u32, Option<usize>),
     /// A footer factory, whose component replaces the current footer.
     Footer,
     /// A header factory, whose component replaces the current header.
@@ -136,6 +139,8 @@ pub struct Bank {
     tools: bool,
     /// Host widgets the extension built.
     pub hosted: super::widget_host::Bank,
+    /// The lists and loaders among them.
+    pub lists: super::widget_lists::Lists,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -624,7 +629,16 @@ impl State {
                 _,
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
             )
-            | (Nested::Invalidate, host::LocalResult::Unit(Err(error))) => Ok(Some(error)),
+            | (Nested::Invalidate, host::LocalResult::Unit(Err(error)))
+            | (Nested::Widget(..), host::LocalResult::Widget(Err(error))) => Ok(Some(error)),
+            (Nested::Widget(key, Some(index)), host::LocalResult::Widget(Ok(answer))) => {
+                if let host::WidgetAnswer::Component(component) = answer {
+                    let id = self.table.get(&component)?.0;
+                    let list = super::widget_lists::list(&mut self.observed, key);
+                    list.map_err(wasmtime::Error::msg)?.submenu = Some((index, id));
+                }
+                Ok(None)
+            }
             _ => Ok(None),
         }
     }

@@ -45,6 +45,7 @@ impl Call {
             Self::TerminalInput(call) => attach(&call.reply, completion),
             Self::Factory(call) => attach(&call.reply, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
+            Self::Widget(call) => attach(&call.reply, completion),
             Self::Paint(crate::guest_calls::paints::PaintCall::Highlight(_, _, _, reply)) => {
                 attach(reply, completion);
             }

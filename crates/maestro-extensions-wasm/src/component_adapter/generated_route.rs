@@ -131,15 +131,30 @@ fn dispatch(call: host::LocalCall) -> Running {
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
+        call @ (host::LocalCall::Style(_)
+        | host::LocalCall::Highlight(_)
+        | host::LocalCall::Widget(_)) => widget(call),
+        call => return asynchronous(call),
+    };
+    Box::pin(std::future::ready(result))
+}
+
+/// Runs one nested authored style, highlighting or widget callback.
+fn widget(call: host::LocalCall) -> host::LocalResult {
+    match call {
         host::LocalCall::Style(call) => {
             host::LocalResult::Style(super::super::invoke_style(call.target, &call.text))
         }
         host::LocalCall::Highlight(call) => host::LocalResult::Highlight(
             super::super::invoke_highlight(call.target, &call.code, call.lang.as_deref()),
         ),
-        call => return asynchronous(call),
-    };
-    Box::pin(std::future::ready(result))
+        host::LocalCall::Widget(call) => host::LocalResult::Widget(super::widgets::invoke_widget(
+            call.target,
+            call.event,
+            &call.emitter,
+        )),
+        _ => host::LocalResult::Unit(Err("expected a widget call".to_owned())),
+    }
 }
 
 /// Runs one nested synchronous callback prefix.

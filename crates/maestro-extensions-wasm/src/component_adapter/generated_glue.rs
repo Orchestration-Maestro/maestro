@@ -193,6 +193,14 @@ impl<E: Extension> Guest for Glue<E> {
         ))
     }
 
+    fn invoke_widget(
+        handler: &host::Callback,
+        event: host::WidgetEvent,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::WidgetAnswer>> {
+        std::future::ready(super::widgets::invoke_widget(handler.id(), event, emitter))
+    }
+
     fn invoke_terminal_input(
         handler: &host::Callback,
         data: String,

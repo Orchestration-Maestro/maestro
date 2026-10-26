@@ -5,7 +5,7 @@ use crate::{
     import_route::{Route, push},
     local_resources::Message,
     widget_reads::{
-        BaseStyle, Build, Child, HighlighterEndpoint, Highlighting, Key, Lent, Paint, Request,
+        BaseStyle, Build, Child, HighlighterEndpoint, Highlighting, Key, Paint, Request,
         StyleEndpoint, Styles, WidgetEndpoint, WidgetMessage,
     },
 };
@@ -17,7 +17,7 @@ use wasmtime::{
 /// A styling operand: a lent host style, or an authored callback.
 #[derive(ComponentType, Lift)]
 #[component(variant)]
-enum StyleSource {
+pub(crate) enum StyleSource {
     /// A lent host style.
     #[component(name = "host")]
     Host(Resource<StyleEndpoint>),
@@ -197,7 +197,10 @@ struct MarkdownTheme {
 }
 
 /// The paint a styling operand names, retaining an authored style's identity.
-fn paint<T: CallbackView>(store: &mut T, style: &StyleSource) -> wasmtime::Result<Paint> {
+pub(crate) fn paint<T: CallbackView>(
+    store: &mut T,
+    style: &StyleSource,
+) -> wasmtime::Result<Paint> {
     Ok(match style {
         StyleSource::Host(style) => Paint::Host(store.ctx().table.get(style)?.clone()),
         StyleSource::Authored(callback) => {
@@ -253,7 +256,7 @@ fn styles<T: CallbackView>(store: &mut T, theme: &MarkdownStyles) -> wasmtime::R
 }
 
 /// Builds one widget on the local owner and lends it.
-fn build<T: CallbackView>(
+pub(crate) fn build<T: CallbackView>(
     store: &mut T,
     build: Build,
 ) -> wasmtime::Result<Result<Resource<WidgetEndpoint>, String>> {
@@ -278,6 +281,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     markdown(host)?;
     methods(host)?;
     children(host)?;
+    crate::widget_list_imports::add_to_linker(host)?;
     lent(host)
 }
 
@@ -397,7 +401,7 @@ fn lend<T: CallbackView>(
 }
 
 /// The widget behind a borrowed resource.
-fn widget<T: CallbackView>(
+pub(crate) fn widget<T: CallbackView>(
     store: &mut T,
     resource: &Resource<WidgetEndpoint>,
 ) -> wasmtime::Result<WidgetEndpoint> {
@@ -498,14 +502,4 @@ fn lent<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime
             Ok((highlighter.highlight(code, lang),))
         },
     )
-}
-
-impl Lent {
-    /// Returns a catchable failure.
-    pub(crate) fn reject(self, error: &str) {
-        match self {
-            Self::Style(_, reply) => drop(reply.send(Err(error.to_owned()))),
-            Self::Highlight(_, _, reply) => drop(reply.send(Err(error.to_owned()))),
-        }
-    }
 }

@@ -9,11 +9,9 @@ use crate::{
 };
 
 /// Host terminal behind the facade.
-struct Terminal<I: Imports> {
-    /// The host the terminal belongs to.
-    _imports: I,
+pub(super) struct Terminal<I: Imports> {
     /// The lent host terminal.
-    _tui: I::Tui,
+    pub(super) tui: I::Tui,
 }
 
 impl<I: Imports> TuiPort for Terminal<I> {}
@@ -70,10 +68,7 @@ impl<I: Imports> Exports<I> {
         lent: Lent<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<ExtensionComponent> {
-        let tui = TUI::new(Rc::new(Terminal {
-            _imports: self.imports.clone(),
-            _tui: lent.tui,
-        }));
+        let tui = TUI::supplied(Rc::new(Terminal::<I> { tui: lent.tui }));
         let theme = super::theme::theme(self.imports.clone(), lent.theme);
         let Some(footer) = lent.footer else {
             let factory = callbacks::find::<ComponentFactory>(handler)?;

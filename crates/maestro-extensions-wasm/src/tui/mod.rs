@@ -32,14 +32,24 @@ pub trait ComponentView {
     fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()>;
 }
 
+#[macro_use]
 mod widgets;
+mod lists;
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) use lists::SubmenuDonePort;
+pub use lists::{
+    BorderedLoader, BorderedLoaderOptions, RowStyle, SelectHandler, SelectItem, SelectList,
+    SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext, SettingChange,
+    SettingItem, SettingsList, SettingsListOptions, SettingsListTheme, Submenu, SubmenuDone,
+    TruncatePrimary, WidgetNotice, get_select_list_theme, get_settings_list_theme,
+};
 use widgets::Widget;
 pub use widgets::{
     Box, Container, DefaultTextStyle, DynamicBorder, Highlight, Markdown, MarkdownTheme, Spacer,
     Style, Text, TextDecoration, get_markdown_theme,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
-pub(crate) use widgets::{Widget as HostWidgetHandle, WidgetHost, WidgetPort};
+pub(crate) use widgets::{Supplied, Widget as HostWidgetHandle, WidgetHost, WidgetPort};
 
 /// Independently retained component; clones share the authored view.
 #[derive(Clone)]
@@ -116,12 +126,32 @@ port! {
 pub struct TUI {
     /// The owner of this capability, kept while the author holds the terminal.
     _port: Rc<dyn TuiPort>,
+    /// The host resource behind a terminal the host lent, which a widget can pass back.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    host: Option<Rc<dyn std::any::Any>>,
 }
 impl TUI {
     /// Retains the supplied host capability.
     #[must_use]
     pub fn new(port: Rc<dyn TuiPort>) -> Self {
-        Self { _port: port }
+        Self {
+            _port: port,
+            #[cfg(any(test, target_arch = "wasm32"))]
+            host: None,
+        }
+    }
+    /// Retains a host-lent terminal whose resource a widget can pass back.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn supplied<P: TuiPort + 'static>(port: Rc<P>) -> Self {
+        Self {
+            _port: port.clone(),
+            host: Some(port),
+        }
+    }
+    /// The host resource behind this terminal, when the host lent it as a `P`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
+        self.host.clone()?.downcast().ok()
     }
 }
 
