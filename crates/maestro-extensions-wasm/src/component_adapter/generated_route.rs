@@ -311,23 +311,34 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::WithSession(call) => {
                 host::LocalResult::Unit(exports.invoke_with_session(call.target, call.ctx).await)
             }
-            host::LocalCall::CustomFuture(target) => host::LocalResult::Factory(
-                super::super::custom::invoke_custom_future(target)
-                    .await
-                    .map(|built| super::super::factories::transfer(&Generated, built)),
-            ),
+            call @ (host::LocalCall::CustomFuture(_) | host::LocalCall::Autocomplete(_)) => {
+                ui_asynchronous(call).await
+            }
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }
-            host::LocalCall::Autocomplete(call) => host::LocalResult::Autocomplete(
-                super::editors::provider(call.target, call.request, call.signal).await,
-            ),
             _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),
         }
     })
+}
+
+/// Runs one nested asynchronous UI callback: a custom factory's owned continuation or a
+/// completion provider request.
+async fn ui_asynchronous(call: host::LocalCall) -> host::LocalResult {
+    match call {
+        host::LocalCall::CustomFuture(target) => host::LocalResult::Factory(
+            super::super::custom::invoke_custom_future(target)
+                .await
+                .map(|built| super::super::factories::transfer(&Generated, built)),
+        ),
+        host::LocalCall::Autocomplete(call) => host::LocalResult::Autocomplete(
+            super::editors::provider(call.target, call.request, call.signal).await,
+        ),
+        _ => host::LocalResult::Unit(Err("expected an asynchronous UI callback".into())),
+    }
 }
 
 /// Executes the authored tool with its supplied capabilities.
