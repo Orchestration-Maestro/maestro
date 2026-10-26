@@ -41,12 +41,10 @@ fn windows_direct_kill_helper() {
             .stderr(Stdio::null())
             .spawn()
             .unwrap();
-        let mut stream = announce(b'P');
-        let _ = stream.read(&mut [0]);
-        return;
+    } else {
+        assert_eq!(role, "grandchild");
     }
-    assert_eq!(role, "grandchild");
-    let mut stream = announce(b'G');
+    let mut stream = announce(if role == "parent" { b'P' } else { b'G' });
     let mut command = [0];
     while stream.read_exact(&mut command).is_ok() {
         if command[0] == 2 {
@@ -157,5 +155,38 @@ fn windows_child_kill_leaves_grandchild_running() {
             drop(parent);
             collector.await.unwrap();
         }
+    });
+}
+
+#[test]
+fn windows_invalid_signal_leaves_the_child_running() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let (child, collector) = launch(listener.local_addr().unwrap().port()).await;
+        let (mut parent, mut grandchild) = children(&listener, child.pid().unwrap());
+        for name in ["invalid-signal", "sigterm", "", "SIGHUP"] {
+            for result in [
+                signal_pid(i32::try_from(child.pid().unwrap()).unwrap(), Some(name)),
+                child.kill(Some(name)).map(|_| ()),
+            ] {
+                let error = result.unwrap_err();
+                assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+                assert!(error.to_string().contains(name));
+                parent.write_all(&[1]).unwrap();
+                let mut alive = [0];
+                parent.read_exact(&mut alive).unwrap();
+                assert_eq!(&alive, b"A");
+            }
+        }
+        assert!(child.kill(Some("SIGQUIT")).unwrap());
+        grandchild.0.write_all(&[2]).unwrap();
+        assert_eq!(grandchild.0.read(&mut [0]).unwrap(), 0);
+        assert_eq!(child.wait().await.unwrap().signal(), Some("SIGQUIT"));
+        drop(parent);
+        collector.await.unwrap();
     });
 }

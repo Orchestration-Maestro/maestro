@@ -134,12 +134,19 @@ pub fn signal_pid(pid: i32, name: Option<&str>) -> io::Result<()> {
     signal(pid.unsigned_abs(), selected, pid < 0)
 }
 
-/// Terminates only the direct Windows process; groups are unsupported.
+/// Terminates only the direct Windows process with a supported termination signal.
 ///
 /// # Errors
-/// Returns an invalid PID or the native process-termination failure.
+/// Returns an invalid PID/name or the native process-termination failure.
 #[cfg(windows)]
-pub fn signal_pid(pid: i32, _name: Option<&str>) -> io::Result<()> {
+pub fn signal_pid(pid: i32, name: Option<&str>) -> io::Result<()> {
+    let name = name.unwrap_or("SIGTERM");
+    if !matches!(name, "SIGTERM" | "SIGKILL" | "SIGINT" | "SIGQUIT") {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Unknown signal {name}"),
+        ));
+    }
     let pid = u32::try_from(pid)
         .ok()
         .filter(|pid| *pid != 0)
