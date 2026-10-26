@@ -579,6 +579,7 @@ for fd in (1, 2):
 
 /// Writes its partial streams, reports READY and answers each termination request with
 /// `T` on the socket instead of ending.
+#[cfg(unix)]
 const STUBBORN: &str = r"
 import os, signal, socket, sys, threading
 os.write(1, sys.argv[2].encode()); os.write(2, sys.argv[3].encode())
