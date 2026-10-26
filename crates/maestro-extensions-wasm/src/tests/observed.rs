@@ -77,6 +77,8 @@ pub struct Observed {
     pub native_io: super::native_io_host::Bank,
     /// Supplied HTTP responses and forwarded request operands.
     pub native_http: super::native_http_host::Bank,
+    /// Supplied file watch registration observations.
+    pub native_watch: super::native_watch_host::Bank,
     /// Raw shell byte receiver observations.
     pub shell: super::shell_host::Bank,
     /// Replacement-operation host decisions.

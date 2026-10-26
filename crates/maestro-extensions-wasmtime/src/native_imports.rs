@@ -79,13 +79,14 @@ struct Exit {
 }
 
 /// Installs each typed native resource against its original local owner.
-pub(crate) fn add_to_linker<T: ApiView + 'static>(
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_resource::<T, Child>(host, "child-process")?;
     add_resource::<T, Reader>(host, "readable")?;
     add_resource::<T, Writer>(host, "writable")?;
     crate::http_imports::add_to_linker(host)?;
+    crate::watch_imports::add_to_linker(host)?;
     launch(host)?;
     controls(host)?;
     pipes(host)?;

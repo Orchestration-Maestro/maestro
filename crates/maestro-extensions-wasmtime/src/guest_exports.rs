@@ -89,6 +89,8 @@ pub(crate) struct Exports {
     compaction_error: Prefix,
     /// Native abort observer.
     abort: Abort,
+    /// Native file notification callback.
+    watch: Abort,
     /// Independently owned event continuation.
     tail: Tail,
     /// Actual authored table-release operation.
@@ -150,6 +152,7 @@ impl Exports {
             compaction_complete: typed(store, instance, &guest, "invoke-compaction-complete")?,
             compaction_error: typed(store, instance, &guest, "invoke-compaction-error")?,
             abort: typed(store, instance, &guest, "invoke-abort")?,
+            watch: typed(store, instance, &guest, "invoke-watch")?,
             tail: typed(store, instance, &guest, "invoke-tail")?,
         })
     }
@@ -317,9 +320,13 @@ impl Exports {
             SynchronousKind::Listener => self.listener,
             SynchronousKind::CompactionComplete => self.compaction_complete,
             SynchronousKind::CompactionError => self.compaction_error,
-            SynchronousKind::Abort | SynchronousKind::Dispose | SynchronousKind::BranchChange => {
+            SynchronousKind::Abort
+            | SynchronousKind::Dispose
+            | SynchronousKind::BranchChange
+            | SynchronousKind::Watch => {
                 let export = match call.kind {
                     SynchronousKind::Abort => self.abort,
+                    SynchronousKind::Watch => self.watch,
                     SynchronousKind::Dispose => self.dispose,
                     _ => self.branch_change,
                 };

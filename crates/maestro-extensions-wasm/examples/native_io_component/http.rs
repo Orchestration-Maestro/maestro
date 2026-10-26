@@ -70,15 +70,16 @@ pub(super) fn register(api: &ExtensionAPI, io: Rc<dyn NativeIo>) -> ExtensionRes
             let (io, slot) = (Rc::clone(&io), Rc::clone(&slot));
             Box::pin(async move {
                 let request = slot.armed.borrow_mut().take();
-                if let Some(request) = request {
-                    *slot.signal.borrow_mut() = context.signal()?;
-                    let owner = Rc::clone(&slot);
-                    start(
-                        &slot,
-                        Box::pin(async move { fetch(io, &owner, request).await }),
-                    )
-                    .await?;
-                }
+                let Some(request) = request else {
+                    return Ok(None);
+                };
+                *slot.signal.borrow_mut() = context.signal()?;
+                let owner = Rc::clone(&slot);
+                start(
+                    &slot,
+                    Box::pin(async move { fetch(io, &owner, request).await }),
+                )
+                .await?;
                 Ok(None)
             })
         }),

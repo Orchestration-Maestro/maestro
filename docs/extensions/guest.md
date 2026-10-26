@@ -8,7 +8,7 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
-Native waits, child processes and raw HTTP bodies are described in
+Native waits, child processes, raw HTTP bodies and file watches are described in
 [native operations](guest_operations.md).
 Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
 

@@ -18,6 +18,9 @@ mod http;
 #[cfg(target_arch = "wasm32")]
 #[path = "native_io_component/waits.rs"]
 mod waits;
+#[cfg(target_arch = "wasm32")]
+#[path = "native_io_component/watch.rs"]
+mod watch;
 
 /// Registers independently callable native operations.
 #[cfg(target_arch = "wasm32")]
@@ -26,6 +29,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         let io = api.native_io();
         children::register(&api, Rc::clone(&io))?;
         http::register(&api, Rc::clone(&io))?;
+        watch::register(&api, Rc::clone(&io))?;
         let direct = Rc::clone(&io);
         api.register_command(
             "native-wait",

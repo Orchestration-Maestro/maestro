@@ -10,6 +10,15 @@ use std::{rc::Rc, time::Duration};
 
 /// Owned access to native operations, independent of a callback's lifetime.
 pub trait NativeIo {
+    /// Watches a supplied file until explicitly closed or its last handle is dropped.
+    ///
+    /// # Errors
+    /// Returns native watch creation failures without retaining the callback.
+    fn watch(
+        &self,
+        path: String,
+        listener: crate::fs::WatchListener,
+    ) -> crate::ExtensionResult<Rc<dyn crate::fs::FsWatcher>>;
     /// Launches a literal program and argument vector without selecting a shell.
     fn spawn(
         &self,

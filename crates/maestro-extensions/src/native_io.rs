@@ -108,6 +108,11 @@ pub trait Response {
 }
 /// Application-supplied native effects available to component resources.
 pub trait NativeIo {
+    /// Watches a supplied native file without a callback-scoped lifetime.
+    ///
+    /// # Errors
+    /// Returns the native registration failure.
+    fn watch(&self, path: String, listener: Rc<dyn Fn()>) -> Result<Rc<dyn FsWatcher>, String>;
     /// Sends one native HTTP attempt without retry or an implicit timeout.
     fn fetch(&self, request: Request) -> IoFuture<'_, Rc<dyn Response>>;
     /// Launches literal command operands without shell or environment rewriting.
@@ -122,4 +127,13 @@ pub trait NativeIo {
     /// # Errors
     /// Returns the native signal failure.
     fn kill(&self, pid: i32, signal: Option<String>) -> Result<(), String>;
+}
+
+/// An owned native notification registration; dropping it stops delivery.
+pub trait FsWatcher {
+    /// Stops notifications from the original registration.
+    ///
+    /// # Errors
+    /// Returns the native close failure.
+    fn close(&self) -> Result<(), String>;
 }

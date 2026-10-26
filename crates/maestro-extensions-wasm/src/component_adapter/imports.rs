@@ -305,6 +305,8 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
 
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
+    /// Registers the borrowed callback identity on the supplied native path.
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher>;
     /// Independently retained theme owner.
     type Theme: 'static;
     /// Reads the theme name.

@@ -32,6 +32,7 @@ mod import_route;
 mod lifecycle;
 mod local_resources;
 mod native_imports;
+mod watch_imports;
 /// Native capability contract accepted by the artifact factory.
 pub use maestro_extensions::native_io;
 mod model_calls;

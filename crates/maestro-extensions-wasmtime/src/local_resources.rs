@@ -20,6 +20,7 @@ pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
+pub(crate) mod watches;
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -149,6 +150,8 @@ pub(crate) enum Message {
     Native(u64, native_resources::Request),
     /// HTTP operations retain their native response and signal.
     Http(u64, http::Request),
+    /// Native watch registration and explicit close on the same owner.
+    Watch(u64, watches::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -238,6 +241,8 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Original native notification registration, closed on its final release.
+    NativeWatcher(Rc<dyn maestro_extensions::native_io::FsWatcher>),
     /// Original native child, independently retained after its creating callback.
     NativeChild(Rc<dyn maestro_extensions::native_io::ChildProcess>),
     /// Original native response, never a body snapshot.

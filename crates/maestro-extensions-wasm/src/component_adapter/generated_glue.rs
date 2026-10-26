@@ -169,6 +169,13 @@ impl<E: Extension> Guest for Glue<E> {
         ))
     }
 
+    fn invoke_watch(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_watch(handler.id(), emitter))
+    }
+
     fn invoke_abort(
         handler: &host::Callback,
         emitter: &host::CallbackEmitter,

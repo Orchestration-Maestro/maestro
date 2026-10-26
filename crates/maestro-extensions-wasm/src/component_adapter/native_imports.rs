@@ -8,6 +8,10 @@ use crate::{ExtensionFuture, ExtensionResult};
 
 /// Native resource operations implemented by generated and controlled imports.
 pub trait NativeImports {
+    /// Independently owned native watch registration.
+    type Watcher: 'static;
+    /// Stops the original native watch.
+    fn watcher_close(&self, watcher: &Self::Watcher) -> ExtensionResult<()>;
     /// Host-owned cancellation flag.
     type Signal: 'static;
     /// Sends supplied operands with an original borrowed host signal.

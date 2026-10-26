@@ -61,6 +61,7 @@ mod model_streams;
 pub(crate) mod native_http_host;
 mod native_io;
 pub(crate) mod native_io_host;
+pub(crate) mod native_watch_host;
 mod observed;
 mod parameter_schemas;
 mod pirate_example;
@@ -1120,6 +1121,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-terminal-input",
             "invoke-tool",
             "invoke-tool-render",
+            "invoke-watch",
             "invoke-with-session",
             "start"
         ],

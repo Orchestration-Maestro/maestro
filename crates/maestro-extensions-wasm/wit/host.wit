@@ -2,6 +2,9 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Owned native file watch; drop and close stop notification delivery.
+    resource fs-watcher { close: func() -> result<_, string>; }
+    watch: func(path: string, listener: borrow<callback>) -> result<fs-watcher, string>;
     /// Supplied HTTP operands, normalized only by the native HTTP owner.
     record http-request {
         url: string, method: option<string>, headers: list<tuple<string, string>>,
@@ -226,7 +229,7 @@ interface host {
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change, watch }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.

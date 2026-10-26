@@ -15,6 +15,13 @@ use std::{
 /// A real application adapter whose output consumer supplies one selected failure.
 struct FailedIo(Rc<dyn NativeIo>);
 impl NativeIo for FailedIo {
+    fn watch(
+        &self,
+        path: String,
+        listener: Rc<dyn Fn()>,
+    ) -> Result<Rc<dyn maestro_extensions_wasmtime::native_io::FsWatcher>, String> {
+        self.0.watch(path, listener)
+    }
     fn fetch(
         &self,
         request: maestro_extensions_wasmtime::native_io::Request,

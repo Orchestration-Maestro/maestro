@@ -27,6 +27,18 @@ struct Operations {
     local: Weak<LocalSet>,
 }
 impl NativeIo for Operations {
+    fn watch(
+        &self,
+        path: String,
+        listener: Rc<dyn Fn()>,
+    ) -> Result<Rc<dyn maestro_extensions::native_io::FsWatcher>, String> {
+        use maestro_watch::fs_watch::WatchOperations;
+        let local = self.local.upgrade().ok_or("native executor ended")?;
+        let watch = maestro_watch::fs_watch::NativeWatchOperations::new(local)
+            .watch(&path, Rc::new(move |_| listener()), Rc::new(|| {}))
+            .map_err(|error| error.to_string())?;
+        Ok(Rc::new(Watch(std::cell::RefCell::new(watch))))
+    }
     fn fetch(&self, request: Request) -> IoFuture<'_, Rc<dyn Response>> {
         Box::pin(async move {
             let signal = request.signal;
@@ -164,5 +176,16 @@ impl Writable for Input {
     }
     fn end(&self) -> IoFuture<'_, ()> {
         Box::pin(async move { self.0.end().await.map_err(|e| e.to_string()) })
+    }
+}
+
+/// Projection of the watch owner's existing close and last-drop behavior.
+struct Watch(std::cell::RefCell<Box<dyn maestro_watch::fs_watch::FsWatcher>>);
+impl maestro_extensions::native_io::FsWatcher for Watch {
+    fn close(&self) -> Result<(), String> {
+        self.0
+            .borrow_mut()
+            .close()
+            .map_err(|error| error.to_string())
     }
 }

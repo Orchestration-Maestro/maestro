@@ -69,6 +69,8 @@ interface guest {
     invoke-compaction-error: async func(handler: borrow<callback>, error: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a cancellation listener once with its synchronous emitter.
     invoke-abort: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a retained native file notification with its synchronous emitter.
+    invoke-watch: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a component factory and transfers the identities of its component and disposal.
     invoke-component-factory: async func(handler: borrow<callback>, tui: tui, theme: theme, footer: option<footer-data>, emitter: borrow<callback-emitter>) -> result<factory-component, string>;
     /// Runs a tool's call or result renderer for one row.

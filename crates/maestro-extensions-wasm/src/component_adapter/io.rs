@@ -12,6 +12,18 @@ use std::time::Duration;
 pub(super) struct Io<I: Imports>(pub(super) I);
 
 impl<I: Imports> NativeIo for Io<I> {
+    fn watch(
+        &self,
+        path: String,
+        listener: crate::fs::WatchListener,
+    ) -> crate::ExtensionResult<std::rc::Rc<dyn crate::fs::FsWatcher>> {
+        let identity = super::callbacks::Identity::new(&self.0);
+        let handle = self.0.watch(path, &identity.handle)?;
+        identity.keep(WatchCallback(listener));
+        Ok(std::rc::Rc::new(Watcher(
+            super::byte_resources::Resource::new(&self.0, handle),
+        )))
+    }
     fn fetch(
         &self,
         request: crate::http::Request,
@@ -129,3 +141,30 @@ impl<I: Imports> crate::streams::Readable for Body<I> {
         self.reader.imports.readable_close(&self.reader.handle)
     }
 }
+
+/// Owns the original native watch resource, not a separate callback registration.
+struct Watcher<I: Imports>(super::byte_resources::Resource<I, I::Watcher>);
+impl<I: Imports> crate::fs::FsWatcher for Watcher<I> {
+    fn close(&self) -> crate::ExtensionResult<()> {
+        self.0.imports.watcher_close(&self.0.handle)
+    }
+}
+impl<I: Imports> super::Exports<I> {
+    /// Runs one native notification under its retained callback identity.
+    pub(crate) fn invoke_watch(
+        &self,
+        handler: u32,
+        emitter: &I::Emitter,
+    ) -> crate::ExtensionResult<()> {
+        let listener = super::callbacks::find::<WatchCallback>(handler)?;
+        let port = super::event_bus::Emitter {
+            imports: &self.imports,
+            handle: emitter,
+        };
+        (listener.0)(crate::CallbackEmitter::new(&port))
+    }
+}
+
+/// Distinguishes repeated watch delivery from the same-shaped one-shot abort listener.
+#[derive(Clone)]
+pub(super) struct WatchCallback(pub(super) crate::fs::WatchListener);

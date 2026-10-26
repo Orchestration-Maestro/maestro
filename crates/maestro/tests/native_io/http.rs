@@ -463,3 +463,23 @@ fn native_response_close_keeps_caller_signal_live() {
         rpc.finish();
     }
 }
+
+/// Checks body identity and independent retention through the generated author adapter.
+pub(super) fn adapter_contract(rpc: &mut Rpc) {
+    let (url, server) = bodies(vec![b"[]".to_vec()]);
+    assert_eq!(call(rpc, &json!({"op":"fetch", "url":url}))["status"], 200);
+    assert_eq!(call(rpc, &json!({"op":"aliases"})), true);
+    call(rpc, &json!({"op":"drop_response"}));
+    let mut bytes = Vec::new();
+    loop {
+        let chunk = call(rpc, &json!({"op":"read"}));
+        if chunk.is_null() {
+            break;
+        }
+        bytes.extend(serde_json::from_value::<Vec<u8>>(chunk).unwrap());
+    }
+    assert_eq!(bytes, b"[]");
+    call(rpc, &json!({"op":"close"}));
+    call(rpc, &json!({"op":"drop_body"}));
+    server.join().unwrap();
+}

@@ -518,6 +518,11 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    type Watcher = super::native_watch_host::Watcher;
+    fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
+        watch.close();
+        Ok(())
+    }
     type Signal = Signal;
     fn fetch<'a>(
         &'a self,
@@ -666,6 +671,11 @@ impl crate::component_adapter::NativeImports for Controlled {
 }
 
 impl Imports for Controlled {
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher> {
+        self.observe()
+            .native_watch
+            .watch(path, self.callback_id(listener))
+    }
     fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
         serde_json::from_str(&self.observe().actions.record_for("format_size")?)
             .map_err(|error| error.to_string())

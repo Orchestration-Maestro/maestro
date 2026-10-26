@@ -108,6 +108,31 @@ Collection and raw reads observe the original request signal after headers arriv
 A late body error leaves already delivered bytes intact. Closing or dropping the
 last body consumer releases its work without aborting the caller signal.
 
+## File watches
+
+```rust
+# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+# fn example(api: &ExtensionAPI, path: String) -> ExtensionResult<()> {
+let watch = api.native_io().watch(path, std::rc::Rc::new(|emitter| {
+    emitter.emit("file-changed", serde_json::Value::Null)
+}))?;
+watch.close()?;
+# Ok(())
+# }
+```
+
+`watch` passes the supplied path to the shared native watch owner, including an
+absolute file outside the current directory. Notifications invoke the retained
+callback with its synchronous emitter. They do not promise an event count or
+ordering, and the bridge adds no polling or debounce.
+
+A watch can outlive its creating callback. Cloning its author handle keeps the
+same registration alive. Explicit close, repeated close and dropping the last
+handle stop delivery and release its callback. A callback may close its own watch;
+its active invocation finishes before its final captures are released. A creation
+failure returns the native error without retaining the callback or stopping a
+sibling watch.
+
 ## Executable example
 
 Build the native-operation witness as a component:
@@ -117,9 +142,10 @@ mise exec -- cargo build -p maestro-extensions-wasm --example native_io_componen
   --target wasm32-wasip2 --release --locked
 ```
 
-The example registers `native-wait`, `native-retained-wait`, `native-child` and
-`native-http`. Integration tests load that artifact through the production host; guest-authoring tests also run the
-same forwarding code against controlled imports.
+The example registers `native-wait`, `native-retained-wait`, `native-child`,
+`native-http` and `native-watch`. Integration tests load that artifact through
+the production host; guest-authoring tests also run the same forwarding code
+against controlled imports.
 
 ## Native helpers
 

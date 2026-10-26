@@ -33,6 +33,8 @@ pub mod bindings;
 pub mod child_process;
 pub mod compaction;
 mod exec;
+/// Native filesystem notifications.
+pub mod fs;
 /// Native HTTP resources.
 pub mod http;
 /// Native operation capability.

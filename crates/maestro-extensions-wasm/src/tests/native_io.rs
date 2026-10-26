@@ -196,6 +196,33 @@ fn native_io_adapters_keep_the_same_author_contract() -> ExtensionResult<()> {
         &child.stderr().unwrap(),
         &child.stderr().unwrap()
     ));
+    let response = super::block_on(io.fetch(http_request(None)))?;
+    assert!(std::rc::Rc::ptr_eq(
+        &response.body().unwrap(),
+        &response.body().unwrap()
+    ));
+    let watch = io.watch(
+        "/identity Ω".into(),
+        std::rc::Rc::new(|emitter| emitter.emit("identity", serde_json::json!("watch Ω"))),
+    )?;
+    let alias = watch.clone();
+    drop(watch);
+    host.notify_watch(0)?;
+    assert!(
+        host.observed()
+            .bus
+            .emissions
+            .contains(&("identity".into(), serde_json::json!("watch Ω")))
+    );
+    alias.close()?;
+    assert!(
+        host.observed().native_watch.watches[0]
+            .upgrade()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .is_none()
+    );
     Ok(())
 }
 
@@ -842,5 +869,127 @@ fn native_response_text_uses_the_existing_decoder() -> ExtensionResult<()> {
         let response = super::block_on(io.fetch(http_request(None)))?;
         assert_eq!(super::block_on(response.text())?, expected);
     }
+    Ok(())
+}
+
+#[test]
+fn native_watch_notifies_for_the_supplied_file() -> ExtensionResult<()> {
+    use std::{cell::Cell, rc::Rc};
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let calls = Rc::new(Cell::new(0));
+    let received = calls.clone();
+    let watch = io.watch(
+        "/outside Ω/trigger.txt".into(),
+        Rc::new(move |emitter| {
+            received.set(received.get() + 1);
+            emitter.emit("watched", serde_json::json!("effect Ω"))
+        }),
+    )?;
+    assert_eq!(
+        host.observed().native_watch.paths,
+        ["/outside Ω/trigger.txt"]
+    );
+    host.notify_watch(0)?;
+    host.notify_watch(0)?;
+    assert_eq!(calls.get(), 2);
+    assert!(
+        host.observed()
+            .bus
+            .emissions
+            .contains(&("watched".into(), serde_json::json!("effect Ω")))
+    );
+    watch.close()?;
+    Ok(())
+}
+
+#[test]
+fn native_watch_close_releases_its_registration() -> ExtensionResult<()> {
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for close in [false, true] {
+        let captured = Rc::new(());
+        let released = Rc::downgrade(&captured);
+        let calls = Rc::new(Cell::new(0));
+        let received = calls.clone();
+        let watch = io.watch(
+            "/outside/trigger".into(),
+            Rc::new(move |_| {
+                let _ = &captured;
+                received.set(received.get() + 1);
+                Ok(())
+            }),
+        )?;
+        let index = host.observed().native_watch.watches.len() - 1;
+        let alias = watch.clone();
+        drop(watch);
+        host.notify_watch(index)?;
+        assert_eq!(calls.get(), 1);
+        assert!(released.upgrade().is_some());
+        if close {
+            alias.close()?;
+            alias.close()?;
+            assert!(released.upgrade().is_none());
+        }
+        drop(alias);
+        assert!(released.upgrade().is_none());
+        host.notify_watch(index)?;
+        assert_eq!(calls.get(), 1);
+    }
+    let slot = Rc::new(RefCell::new(None::<Rc<dyn crate::fs::FsWatcher>>));
+    let retained = slot.clone();
+    let captured = Rc::new(());
+    let released = Rc::downgrade(&captured);
+    *slot.borrow_mut() = Some(io.watch(
+        "/self-close".into(),
+        Rc::new(move |_| {
+            let _ = &captured;
+            retained.borrow().as_ref().unwrap().close()
+        }),
+    )?);
+    host.notify_watch(2)?;
+    assert!(released.upgrade().is_none());
+    slot.borrow().as_ref().unwrap().close()?;
+    Ok(())
+}
+
+#[test]
+fn native_watch_failures_do_not_leak_callbacks() -> ExtensionResult<()> {
+    use std::{cell::Cell, rc::Rc};
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let calls = Rc::new(Cell::new(0));
+    let received = calls.clone();
+    let sibling = io.watch(
+        "/outside/live".into(),
+        Rc::new(move |_| {
+            received.set(received.get() + 1);
+            Ok(())
+        }),
+    )?;
+    let capture = Rc::new(());
+    let released = Rc::downgrade(&capture);
+    host.observe().native_watch.error = Some("watch creation failed Ω".into());
+    let failure = io.watch(
+        "/outside/missing".into(),
+        Rc::new(move |_| {
+            let _ = &capture;
+            Ok(())
+        }),
+    );
+    assert_eq!(failure.err(), Some("watch creation failed Ω".into()));
+    assert!(released.upgrade().is_none());
+    assert_eq!(host.observed().native_watch.watches.len(), 1);
+    host.notify_watch(0)?;
+    assert_eq!(calls.get(), 1);
+    host.observe().native_watch.error = None;
+    let next = io.watch("/outside/recovered".into(), Rc::new(|_| Ok(())))?;
+    host.notify_watch(1)?;
+    next.close()?;
+    sibling.close()?;
     Ok(())
 }

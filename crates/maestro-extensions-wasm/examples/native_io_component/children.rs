@@ -170,7 +170,7 @@ impl Slot {
     }
 }
 /// Encodes status for observation only; no identity or stream crosses JSON.
-fn status(status: ExitStatus) -> Value {
+fn status(status: &ExitStatus) -> Value {
     json!({"code":status.code,"signal":status.signal})
 }
 
@@ -291,7 +291,7 @@ fn settled(slot: &Slot, result: ExtensionResult<ExitStatus>) -> ExtensionResult<
         .borrow_mut()
         .take()
         .map_or(Ok(()), |subscription| subscription.unsubscribe());
-    result.and_then(|status| removed.map(|()| self::status(status)))
+    result.and_then(|status| removed.map(|()| self::status(&status)))
 }
 
 /// Registers commands and an explicit caller policy on the ordinary event owner.

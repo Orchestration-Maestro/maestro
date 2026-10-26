@@ -4,6 +4,7 @@ use crate::support::{Root, rpc::Rpc};
 use serde_json::{Value, json};
 mod faults;
 mod http;
+mod watch;
 
 /// Loads the compiled native-operation component through normal startup.
 fn loaded(root: &Root) -> Rpc {
@@ -537,5 +538,7 @@ fn native_io_adapters_keep_the_same_author_contract() {
     );
     assert_eq!(call(&mut rpc, &json!({"op":"aliases"})), true);
     assert_eq!(call(&mut rpc, &json!({"op":"wait"}))["code"], 0);
+    http::adapter_contract(&mut rpc);
+    watch::adapter_contract(&root, &mut rpc);
     rpc.finish();
 }

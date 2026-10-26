@@ -238,6 +238,7 @@ impl State {
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
             Message::Http(id, request) => self.http(id, request),
+            Message::Watch(id, request) => self.watch(id, request),
             Message::Release(id) => self.release(id),
         }
     }

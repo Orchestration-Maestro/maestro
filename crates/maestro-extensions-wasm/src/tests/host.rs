@@ -610,6 +610,13 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn watch(
+        &mut self,
+        _path: String,
+        _listener: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::native_watch_host::Watcher>, String>> {
+        Ok(Err("native file watch requires the production host".into()))
+    }
     fn kill(&mut self, pid: i32, signal: Option<String>) -> wasmtime::Result<Result<(), String>> {
         Ok(self.observed.native_io.kill(pid, signal))
     }
