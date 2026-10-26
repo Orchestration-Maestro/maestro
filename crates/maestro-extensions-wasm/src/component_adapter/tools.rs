@@ -5,6 +5,18 @@ use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExecute};
 use std::rc::Rc;
 
+/// Per-tool executable annotations returned beside the metadata document.
+pub type ToolListing<C> = (
+    String,
+    Vec<(
+        u32,
+        String,
+        C,
+        crate::bindings::maestro::extension::host::SchemaShape,
+        bool,
+    )>,
+);
+
 /// Restore the shared schema owner with the guest callback representation.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
     maestro_request::parameter_schema::transport::decode_tools(text)
