@@ -1,0 +1,71 @@
+.maestro-agent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--maestro-color-background);
+  color: var(--maestro-color-text);
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-agent-empty {
+  padding: 1rem;
+  color: var(--maestro-color-muted);
+  text-align: center;
+}
+.maestro-agent-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.maestro-agent-scroll {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+}
+.maestro-agent-content {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 0;
+}
+.maestro-agent-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.maestro-agent-input {
+  flex-shrink: 0;
+}
+.maestro-agent-inner {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+}
+.maestro-agent-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 1.25rem;
+  font-size: 0.75rem;
+  color: var(--maestro-color-muted);
+}
+.maestro-agent-usage {
+  margin-left: auto;
+}
+.maestro-agent-usage-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: color 150ms;
+}
+.maestro-agent-usage-action:hover {
+  color: var(--maestro-color-text);
+}
+.maestro-agent-usage-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--maestro-color-accent);
+}

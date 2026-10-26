@@ -2,6 +2,11 @@
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
+/// The conversation owner and its construction, state, input and subscription records.
+pub use maestro_agent::{
+    Agent, AgentInitialState, AgentListener, AgentOptions, AgentSpawner, AgentState, PromptInput,
+    Subscription,
+};
 pub use maestro_agent::{
     AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, SharedAgentTool, StreamFn,
 };
@@ -39,6 +44,12 @@ pub use maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES;
 
 /// Provider identifiers in embedded catalog order.
 pub use maestro_models::get_providers;
+
+/// Embedded catalog descriptors by provider, and one descriptor by provider and identifier.
+pub use maestro_models::{get_model, get_models};
+
+/// One raw invocation observed to its final message, and the common options it carries.
+pub use maestro_models::{StreamOptions, complete};
 
 /// Authorization choice prompt retaining supplied option order.
 pub use maestro_models::OAuthSelectPrompt;
