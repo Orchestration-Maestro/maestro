@@ -5,8 +5,8 @@ use maestro_app::presentation_data::input_selectors::{
     SessionListProgress, SessionSelectorCallbacks, SessionsLoader,
 };
 use maestro_app::{
-    AgentSessionRuntimeError, ReadonlySessionManager, SessionChangeResult, SessionManager,
-    SwitchSessionOptions, is_whitespace_scalar,
+    AgentSessionRuntimeError, EventError, ReadonlySessionManager, SessionChangeResult,
+    SessionManager, SwitchSessionOptions, is_whitespace_scalar,
 };
 use maestro_tui::tui::LocalFuture;
 use std::{
@@ -84,7 +84,7 @@ impl InteractiveMode {
         self: &Rc<Self>,
         session_path: String,
         options: SwitchSessionOptions,
-    ) -> Result<SessionChangeResult, Box<dyn Error>> {
+    ) -> Result<SessionChangeResult, EventError> {
         self.stop_working_loader();
         let first = SwitchSessionOptions {
             with_session: options.with_session.clone(),
@@ -98,10 +98,7 @@ impl InteractiveMode {
             Err(AgentSessionRuntimeError::MissingSessionCwd(error)) => error,
             Err(error) => self.handle_fatal_runtime_error("Failed to resume session", &error),
         };
-        let selected = self
-            .prompt_for_missing_session_cwd(&error)
-            .await
-            .map_err(|error| -> Box<dyn Error> { error })?;
+        let selected = self.prompt_for_missing_session_cwd(&error).await?;
         let Some(cwd) = selected.filter(|cwd| !cwd.is_empty()) else {
             self.show_status("Resume cancelled")?;
             return Ok(SessionChangeResult { cancelled: true });
@@ -118,7 +115,7 @@ impl InteractiveMode {
         &self,
         result: SessionChangeResult,
         status: &str,
-    ) -> Result<SessionChangeResult, Box<dyn Error>> {
+    ) -> Result<SessionChangeResult, EventError> {
         if !result.cancelled {
             self.render_current_session_state()?;
             self.show_status(status)?;
@@ -132,7 +129,10 @@ fn spawn_resume(mode: Rc<InteractiveMode>, path: String) {
     let runtime = Rc::clone(&mode.tool_environment.runtime);
     runtime.spawn_local(Box::pin(async move {
         let options = SwitchSessionOptions::default();
-        mode.handle_resume_session(path, options).await.map(drop)
+        mode.handle_resume_session(path, options)
+            .await
+            .map(drop)
+            .map_err(|error| -> Box<dyn Error> { error })
     }));
 }
 

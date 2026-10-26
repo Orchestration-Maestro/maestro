@@ -249,9 +249,12 @@ impl InteractiveMode {
     /// Returns the failure of a row's rendering or of the published theme.
     fn handle_message_start(&self, message: &NativeAgentMessage) -> Result<(), Box<dyn Error>> {
         match message {
-            AgentMessage::Custom(_) => self.add_message_to_chat(message, false)?,
+            AgentMessage::Custom(_) => self
+                .add_message_to_chat(message, false)
+                .map_err(|error| -> Box<dyn Error> { error })?,
             AgentMessage::User(_) => {
-                self.add_message_to_chat(message, false)?;
+                self.add_message_to_chat(message, false)
+                    .map_err(|error| -> Box<dyn Error> { error })?;
                 self.update_pending_messages_display()?;
             }
             AgentMessage::Assistant(message) => {
@@ -445,7 +448,9 @@ impl InteractiveMode {
         &self,
         call: ToolCall,
     ) -> Result<Rc<ToolExecutionComponent>, Box<dyn Error>> {
-        let row = self.render_tool_call(&call.id, &call.name, Some(call.arguments))?;
+        let row = self
+            .render_tool_call(&call.id, &call.name, Some(call.arguments))
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.pending_tools
             .borrow_mut()
             .insert(call.id, Rc::clone(&row));

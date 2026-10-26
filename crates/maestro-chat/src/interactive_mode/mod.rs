@@ -5,7 +5,7 @@
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
-    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, KeybindingsManager,
+    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, EventError, KeybindingsManager,
     ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,
     ToolRenderEnvironment,
 };
@@ -23,6 +23,7 @@ mod actions;
 mod authentication;
 mod autocomplete;
 mod bash;
+mod command_context_actions;
 mod commands;
 mod compaction_queue;
 mod debug;
@@ -291,7 +292,8 @@ impl InteractiveMode {
         self.ui.start()?;
         self.is_initialized.set(true);
         self.rebind_current_session().await?;
-        self.render_initial_messages()?;
+        self.render_initial_messages()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -316,7 +318,7 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the failure of reading the session context, of a stored record, of a row's
     /// rendering or of the published theme.
-    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+    pub fn render_current_session_state(&self) -> Result<(), EventError> {
         self.chat_container.clear();
         self.pending_messages_container.clear();
         self.compaction_queued_messages.borrow_mut().clear();

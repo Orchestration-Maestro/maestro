@@ -132,7 +132,8 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .set_hide_thinking_block(hide);
-        self.rebuild_chat_from_messages()?;
+        self.rebuild_chat_from_messages()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let streaming = self.streaming.borrow().clone();
         if let Some((component, message)) = streaming {
             component.set_hide_thinking_block(hide);

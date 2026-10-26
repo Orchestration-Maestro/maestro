@@ -110,6 +110,7 @@ impl InteractiveMode {
             .map_err(|error| error as Box<dyn Error>)?;
         self.setup_extension_shortcuts(&self.runtime_host.session().extension_runner());
         self.rebuild_chat_from_messages()
+            .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Applies editor settings to the default editor and independently to a distinct

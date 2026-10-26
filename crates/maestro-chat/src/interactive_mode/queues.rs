@@ -240,7 +240,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's dim colour.
-    pub(super) fn update_pending_messages_display(&self) -> Result<(), Box<dyn Error>> {
+    pub(super) fn update_pending_messages_display(&self) -> Result<(), maestro_theme::ThemeError> {
         self.pending_messages_container.clear();
         for shell in self.pending_shells.borrow().iter() {
             let row = Rc::clone(shell);
@@ -315,7 +315,7 @@ impl InteractiveMode {
         if options.abort {
             self.runtime_host.session().agent().abort();
         }
-        shown.map(|()| queued.len())
+        Ok(shown.map(|()| queued.len())?)
     }
 
     /// Hands the failure of a key action to the terminal host, which reports it.

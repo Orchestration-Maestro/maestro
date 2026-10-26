@@ -2,7 +2,7 @@
 mod escape;
 mod flush;
 mod replacement;
-mod resume;
+pub(super) mod resume;
 mod resume_options;
 mod tree;
 mod tree_choices;
@@ -20,7 +20,7 @@ use maestro_tui::Component;
 use std::{path::Path, rc::Rc};
 
 /// Appends a user message and returns its entry identity.
-fn append_user(world: &World, text: &str) -> String {
+pub(super) fn append_user(world: &World, text: &str) -> String {
     world
         .host
         .session()
