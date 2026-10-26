@@ -5,10 +5,11 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    ExtensionContext, ExtensionResult, ExtensionWidgetOptions, NotificationType, WidgetPlacement,
-    WorkingIndicatorOptions,
+    AbortSignal, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, NotificationType, WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde_json::{Value, json};
+use std::rc::Rc;
 
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
 pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
@@ -45,23 +46,30 @@ pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult
     Ok("UI forwarded".into())
 }
 
-/// Shows the dialog `request` names on the originally acquired UI and returns its answer.
+/// Shows the dialog `request` names on the originally acquired UI, with an already aborted
+/// caller signal when it asks for one, and returns its answer.
 pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> ExtensionResult<String> {
     let request: Value = serde_json::from_str(request).map_err(|error| error.to_string())?;
     let text = |key: &str| request[key].as_str().map(str::to_owned);
     let title = text("title").unwrap_or_default();
+    let opts = request["aborted"]
+        .as_bool()
+        .map(|_| ExtensionUIDialogOptions {
+            signal: Some(AbortSignal::new(Rc::new(super::exec::AlreadyAborted))),
+            timeout: None,
+        });
     let ui = context.ui()?;
     let answer = match request["method"].as_str() {
         Some("select") => {
             let options = serde_json::from_value(request["options"].clone());
             let options = options.map_err(|error| error.to_string())?;
-            json!(ui.select(title, options, None).await?)
+            json!(ui.select(title, options, opts).await?)
         }
         Some("confirm") => {
             let message = text("message").unwrap_or_default();
-            json!(ui.confirm(title, message, None).await?)
+            json!(ui.confirm(title, message, opts).await?)
         }
-        Some("input") => json!(ui.input(title, text("placeholder"), None).await?),
+        Some("input") => json!(ui.input(title, text("placeholder"), opts).await?),
         _ => json!(ui.editor(title, text("prefill")).await?),
     };
     Ok(answer.to_string())

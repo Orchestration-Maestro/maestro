@@ -417,7 +417,12 @@ future that owns its operands, so it may outlive the handle that started it:
 | `editor` | A title and optional prefilled text. | `None` |
 
 `ExtensionUIDialogOptions::timeout` reaches the host's dialog as the supplied
-milliseconds, without a guest timer or a changed value. An absent placeholder or
+milliseconds, without a guest timer or a changed value. A supplied `signal` gets a
+host signal of its own for that dialog: an abort before the call, or while the dialog
+waits, reaches the host, which decides what the dialog answers. The guest adds no
+deadline or dismissal of its own. When the dialog returns, its listener on the
+caller's signal is removed, so the caller can keep the signal, abort it later or
+pass it to another dialog. An absent placeholder or
 prefill stays distinct from an empty one, and an empty answer stays distinct from a
 dismissal. A host rejection resolves to its message; it is never turned into a
 dismissal.

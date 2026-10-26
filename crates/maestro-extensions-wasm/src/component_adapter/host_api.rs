@@ -3,30 +3,12 @@
 use super::callbacks::Identity;
 use super::exports::encode_value;
 use super::imports::Imports;
+use super::signals::Mirror;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
-use std::rc::Rc;
 
 /// The host imports behind the facade.
 pub(super) struct Host<I: Imports>(pub(super) I);
-
-/// An execution's caller-signal listener, removed when the execution settles or is dropped.
-struct Listening(Option<crate::Subscription>);
-
-impl Listening {
-    /// Removes the listener once, returning the host's rejection.
-    fn remove(&mut self) -> ExtensionResult<()> {
-        self.0
-            .take()
-            .map_or(Ok(()), |subscription| subscription.unsubscribe())
-    }
-}
-
-impl Drop for Listening {
-    fn drop(&mut self) {
-        let _ = self.remove();
-    }
-}
 
 impl<I: Imports> ExtensionHost for Host<I> {
     fn exec<'a>(
@@ -38,36 +20,11 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move {
             let data = encode_value(&(command, args, options.as_ref()))?;
             let caller = options.and_then(|options| options.signal);
-            let native = caller
-                .as_ref()
-                .map(|_| self.0.new_signal())
-                .transpose()?
-                .map(Rc::new);
-            let mut listening = Listening(
-                caller
-                    .as_ref()
-                    .zip(native.as_ref())
-                    .map(|(caller, native)| {
-                        let (imports, native) = (self.0.clone(), Rc::clone(native));
-                        caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
-                    })
-                    .transpose()?,
-            );
-            let aborted = caller.as_ref().is_some_and(crate::AbortSignal::aborted);
-            let notified = native
-                .as_deref()
-                .filter(|_| aborted)
-                .map(|native| self.0.signal_abort(native))
-                .transpose();
-            let result = match notified {
-                Ok(_) => self.0.call("exec", data, native.as_deref()).await,
-                Err(error) => Err(error),
-            };
-            let removed = listening.remove();
-            result.and_then(|data| {
-                removed?;
-                super::session::decode(&data)
-            })
+            let mirror = Mirror::new(&self.0, caller.as_ref())?;
+            let result = self.0.call("exec", data, mirror.signal()).await;
+            mirror
+                .settle(result)
+                .and_then(|data| super::session::decode(&data))
         })
     }
 

@@ -316,18 +316,24 @@ fn ui_call(
 ) -> ExtensionResult<()> {
     super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)
 }
-/// Records one dialog through the controlled host, waits while it is held pending, then
-/// answers its supplied decision.
+/// Records one dialog through the controlled host, waits while it is held pending, records
+/// whether its signal is aborted by then and answers its supplied decision.
 async fn ui_dialog(
     observed: &Rc<RefCell<Observed>>,
     key: usize,
     method: &str,
     operands: &serde_json::Value,
+    signal: Option<&Signal>,
 ) -> ExtensionResult<serde_json::Value> {
     super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)?;
     let hold = observed.borrow_mut().take_hold();
     pause(hold).await;
-    Ok(super::ui_host::decision(&mut observed.borrow_mut()))
+    let mut observed = observed.borrow_mut();
+    if let Some(signal) = signal {
+        let aborted = signal.flag.0.load(std::sync::atomic::Ordering::SeqCst);
+        super::ui_host::settle(&mut observed, key, &json!(aborted));
+    }
+    Ok(super::ui_host::decision(&mut observed))
 }
 
 /// Dialog operands followed by whether the lent signal is aborted, or null, and the timeout.
@@ -1114,7 +1120,14 @@ impl Imports for Controlled {
     ) -> ExtensionFuture<'a, Option<String>> {
         let operands = dialog_operands(json!([title, options]), &dialog);
         Box::pin(async move {
-            let decision = ui_dialog(&self.observed, resource.key, "select", &operands).await?;
+            let decision = ui_dialog(
+                &self.observed,
+                resource.key,
+                "select",
+                &operands,
+                dialog.signal,
+            )
+            .await?;
             Ok(super::ui_host::chosen(&decision))
         })
     }
@@ -1127,7 +1140,14 @@ impl Imports for Controlled {
     ) -> ExtensionFuture<'a, bool> {
         let operands = dialog_operands(json!([title, message]), &dialog);
         Box::pin(async move {
-            let decision = ui_dialog(&self.observed, resource.key, "confirm", &operands).await?;
+            let decision = ui_dialog(
+                &self.observed,
+                resource.key,
+                "confirm",
+                &operands,
+                dialog.signal,
+            )
+            .await?;
             Ok(super::ui_host::confirmed(&decision))
         })
     }
@@ -1140,7 +1160,14 @@ impl Imports for Controlled {
     ) -> ExtensionFuture<'a, Option<String>> {
         let operands = dialog_operands(json!([title, placeholder]), &dialog);
         Box::pin(async move {
-            let decision = ui_dialog(&self.observed, resource.key, "input", &operands).await?;
+            let decision = ui_dialog(
+                &self.observed,
+                resource.key,
+                "input",
+                &operands,
+                dialog.signal,
+            )
+            .await?;
             Ok(super::ui_host::chosen(&decision))
         })
     }
@@ -1152,7 +1179,8 @@ impl Imports for Controlled {
     ) -> ExtensionFuture<'a, Option<String>> {
         let operands = json!([title, prefill]);
         Box::pin(async move {
-            let decision = ui_dialog(&self.observed, resource.key, "editor", &operands).await?;
+            let decision =
+                ui_dialog(&self.observed, resource.key, "editor", &operands, None).await?;
             Ok(super::ui_host::chosen(&decision))
         })
     }

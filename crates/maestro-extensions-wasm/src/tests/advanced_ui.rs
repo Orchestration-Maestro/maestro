@@ -483,3 +483,120 @@ async fn dialog_inputs(driver: &mut impl Driver) -> Result<(), String> {
 fn dialog_requests_preserve_owned_inputs() -> Result<(), String> {
     on_both_adapters!(dialog_inputs)
 }
+
+/// Supplies the host's next dialog decision, runs one dialog through a fresh acquisition,
+/// holding the host's answer pending when `held`, and returns the author's answer with the
+/// host's receipts as method and operands.
+async fn signaled(
+    driver: &mut impl Driver,
+    call: &Value,
+    decision: &Value,
+    held: bool,
+) -> Result<(Value, Vec<(String, Value)>), String> {
+    let control = json!({ "op": "control", "answer": decision });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    let from = driver.transcript().len();
+    let operation = json!({ "op": "dialog", "call": call }).to_string();
+    if held {
+        driver.command_held("ui", &operation).await?;
+    } else {
+        driver.run_plain_command("ui", &operation).await?;
+    }
+    let seen = receipts(&driver.transcript()[from..])
+        .into_iter()
+        .map(|seen| (seen.method, seen.operands))
+        .collect();
+    Ok((answer(driver, "entry ui-answer ")?, seen))
+}
+
+/// The receipt of one dialog, whose operands carry the signal it received, and the signal
+/// state the host read when the dialog settled.
+fn signal_receipts(method: &str, operands: Value, settled: bool) -> Vec<(String, Value)> {
+    vec![
+        (method.to_owned(), operands),
+        ("settle".to_owned(), json!([settled])),
+    ]
+}
+
+/// An abort before the call and an abort while the dialog waits both reach its host
+/// signal, while the host still decides the answer.
+async fn signal_aborts(driver: &mut impl Driver) -> Result<(), String> {
+    let aborted = json!({ "op": "select", "title": "Pick", "options": ["a"],
+        "opts": { "signal": "aborted" } });
+    let (answer, seen) = signaled(driver, &aborted, &json!("a"), false).await?;
+    assert_eq!(
+        answer,
+        json!({ "ok": "a" }),
+        "the host still decides an aborted dialog"
+    );
+    assert_eq!(
+        seen,
+        signal_receipts("select", json!(["Pick", ["a"], true, null]), true)
+    );
+    let live = json!({ "op": "confirm", "title": "Sure", "message": "",
+        "opts": { "signal": "live" } });
+    let (answer, seen) = signaled(driver, &live, &json!(true), false).await?;
+    assert_eq!(answer, json!({ "ok": true }));
+    assert_eq!(
+        seen,
+        signal_receipts("confirm", json!(["Sure", "", false, null]), false)
+    );
+    let pending = json!({ "op": "input", "title": "Name",
+        "opts": { "signal": "abortPending" } });
+    let (answer, seen) = signaled(driver, &pending, &Value::Null, true).await?;
+    assert_eq!(
+        answer,
+        json!({ "ok": null }),
+        "an abort while waiting reaches the host"
+    );
+    assert_eq!(
+        seen,
+        signal_receipts("input", json!(["Name", null, false, null]), true)
+    );
+    Ok(())
+}
+
+/// A kept caller signal serves a later dialog through its alias, holds no listener once its
+/// dialogs returned, and a later abort reaches only the dialog that follows it.
+async fn kept_signal(driver: &mut impl Driver) -> Result<(), String> {
+    let alias = json!({ "op": "select", "title": "Again", "options": [],
+        "opts": { "signal": { "kept": 1 } } });
+    let (_, seen) = signaled(driver, &alias, &Value::Null, false).await?;
+    assert_eq!(
+        seen,
+        signal_receipts("select", json!(["Again", [], false, null]), false)
+    );
+    let from = driver.transcript().len();
+    let abort = json!({ "op": "abortKept", "index": 1 });
+    assert_eq!(
+        operate(driver, abort).await?,
+        json!({ "ok": { "listeners": 0 } }),
+        "both returned dialogs removed their listeners from the kept signal"
+    );
+    assert!(
+        receipts(&driver.transcript()[from..]).is_empty(),
+        "an abort after the dialogs returned reaches no host dialog"
+    );
+    let (_, seen) = signaled(driver, &alias, &Value::Null, false).await?;
+    assert_eq!(
+        seen,
+        signal_receipts("select", json!(["Again", [], true, null]), true)
+    );
+    Ok(())
+}
+
+/// Each dialog follows its caller signal with its own host signal, and the caller's listener
+/// is removed once the dialog returns.
+async fn signal_retention(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    signal_aborts(driver).await?;
+    kept_signal(driver).await?;
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0, "every host signal was released");
+    Ok(())
+}
+
+#[test]
+fn dialog_signal_is_retained_after_return() -> Result<(), String> {
+    on_both_adapters!(signal_retention)
+}

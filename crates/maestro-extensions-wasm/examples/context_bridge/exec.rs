@@ -129,7 +129,7 @@ impl SignalPort for Relay {
 }
 
 /// A caller-owned prior abort, with no admitted listener to remove or replay.
-struct AlreadyAborted;
+pub(super) struct AlreadyAborted;
 
 impl SignalPort for AlreadyAborted {
     fn aborted(&self) -> bool {

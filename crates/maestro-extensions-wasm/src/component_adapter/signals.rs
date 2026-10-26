@@ -31,6 +31,70 @@ impl<I: Imports> SignalPort for Signal<I> {
     }
 }
 
+/// A caller's signal listener, removed when its host call settles or is dropped.
+struct Listening(Option<Subscription>);
+
+impl Listening {
+    /// Removes the listener once, returning the host's rejection.
+    fn remove(&mut self) -> ExtensionResult<()> {
+        self.0
+            .take()
+            .map_or(Ok(()), |subscription| subscription.unsubscribe())
+    }
+}
+
+impl Drop for Listening {
+    fn drop(&mut self) {
+        let _ = self.remove();
+    }
+}
+
+/// A host signal that follows a caller's signal for one host call.
+pub(super) struct Mirror<I: Imports> {
+    /// The host signal the call receives; absent without a caller signal.
+    native: Option<Rc<I::Signal>>,
+    /// The caller-signal listener that aborts it.
+    listening: Listening,
+}
+
+impl<I: Imports> Mirror<I> {
+    /// Follows `caller` with a new host signal, aborted at once when the caller already is.
+    pub(super) fn new(imports: &I, caller: Option<&AbortSignal>) -> ExtensionResult<Self> {
+        let native = caller
+            .map(|_| imports.new_signal())
+            .transpose()?
+            .map(Rc::new);
+        let listening = Listening(
+            caller
+                .zip(native.as_ref())
+                .map(|(caller, native)| {
+                    let (imports, native) = (imports.clone(), Rc::clone(native));
+                    caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
+                })
+                .transpose()?,
+        );
+        let mirror = Self { native, listening };
+        if caller.is_some_and(AbortSignal::aborted)
+            && let Some(native) = mirror.signal()
+        {
+            imports.signal_abort(native)?;
+        }
+        Ok(mirror)
+    }
+
+    /// The host signal the call receives.
+    pub(super) fn signal(&self) -> Option<&I::Signal> {
+        self.native.as_deref()
+    }
+
+    /// Stops following the caller once the call settled with `result`; the call's own error
+    /// comes before a rejected listener removal.
+    pub(super) fn settle<T>(mut self, result: ExtensionResult<T>) -> ExtensionResult<T> {
+        let removed = self.listening.remove();
+        result.and_then(|value| removed.map(|()| value))
+    }
+}
+
 /// Wraps a host signal.
 pub(crate) fn signal<I: Imports>(imports: &I, signal: I::Signal) -> AbortSignal {
     AbortSignal::new(Rc::new(Signal {

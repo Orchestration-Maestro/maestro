@@ -26,12 +26,13 @@ impl<I: Imports> Ui<I> {
     }
 }
 
-/// The dialog operands the host receives.
-fn dialog<'a, S>(opts: Option<ExtensionUIDialogOptions>) -> Dialog<'a, S> {
-    Dialog {
-        signal: None,
-        timeout: opts.and_then(|opts| opts.timeout),
-    }
+/// The host signal following a dialog's caller signal, and the dialog's timeout.
+fn follow<I: Imports>(
+    imports: &I,
+    opts: Option<ExtensionUIDialogOptions>,
+) -> ExtensionResult<(Mirror<I>, Option<f64>)> {
+    let (signal, timeout) = opts.map_or((None, None), |opts| (opts.signal, opts.timeout));
+    Ok((Mirror::new(imports, signal.as_ref())?, timeout))
 }
 
 impl<I: Imports> ExtensionUIContextPort for Ui<I> {
@@ -87,9 +88,13 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     ) -> ExtensionFuture<'static, Option<String>> {
         let (imports, resource) = self.owned();
         Box::pin(async move {
-            imports
-                .ui_select(&resource, title, options, dialog(opts))
-                .await
+            let (mirror, timeout) = follow(&imports, opts)?;
+            let dialog = Dialog {
+                signal: mirror.signal(),
+                timeout,
+            };
+            let answer = imports.ui_select(&resource, title, options, dialog).await;
+            mirror.settle(answer)
         })
     }
     fn confirm(
@@ -100,9 +105,13 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     ) -> ExtensionFuture<'static, bool> {
         let (imports, resource) = self.owned();
         Box::pin(async move {
-            imports
-                .ui_confirm(&resource, title, message, dialog(opts))
-                .await
+            let (mirror, timeout) = follow(&imports, opts)?;
+            let dialog = Dialog {
+                signal: mirror.signal(),
+                timeout,
+            };
+            let answer = imports.ui_confirm(&resource, title, message, dialog).await;
+            mirror.settle(answer)
         })
     }
     fn input(
@@ -113,9 +122,15 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     ) -> ExtensionFuture<'static, Option<String>> {
         let (imports, resource) = self.owned();
         Box::pin(async move {
-            imports
-                .ui_input(&resource, title, placeholder, dialog(opts))
-                .await
+            let (mirror, timeout) = follow(&imports, opts)?;
+            let dialog = Dialog {
+                signal: mirror.signal(),
+                timeout,
+            };
+            let answer = imports
+                .ui_input(&resource, title, placeholder, dialog)
+                .await;
+            mirror.settle(answer)
         })
     }
     fn editor(
@@ -134,7 +149,7 @@ use crate::types::{
     ReplacedSessionContextPort,
 };
 
-use super::signals::signal;
+use super::signals::{Mirror, signal};
 
 /// Host ordinary context behind the facade.
 struct Ordinary<I: Imports> {

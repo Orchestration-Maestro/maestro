@@ -124,6 +124,11 @@ pub fn get_editor_text(observed: &mut Observed, key: usize) -> Result<String, St
     Ok(observed.ui.editors.get(&key).cloned().unwrap_or_default())
 }
 
+/// Records whether the signal of a settling dialog on the acquisition `key` is aborted.
+pub fn settle(observed: &mut Observed, key: usize, aborted: &Value) {
+    observed.log(format!("ui {key} settle {}", json!([aborted])));
+}
+
 /// The decision supplied for the dialog that is settling.
 pub fn decision(observed: &mut Observed) -> Value {
     observed.ui.answer.take().unwrap_or(Value::Null)
@@ -398,19 +403,28 @@ impl host::HostExtensionUiContext for State {
     }
 }
 
-/// Records one dialog, waits while the host holds it pending, then answers its decision.
+/// Waits while the host holds a recorded dialog pending, records whether its signal is
+/// aborted by then, and answers its decision.
 async fn settled(
     accessor: &Accessor<State, super::host::Imports>,
     recorded: wasmtime::Result<Result<(), String>>,
+    this: &Resource<Ui>,
+    signal: Option<&Resource<Flag>>,
 ) -> wasmtime::Result<Result<Value, String>> {
     if let Err(error) = recorded? {
         return Ok(Err(error));
     }
     let hold = accessor.with(|mut access| access.get().observed.take_hold());
     super::observed::pause(hold).await;
-    Ok(Ok(
-        accessor.with(|mut access| decision(&mut access.get().observed))
-    ))
+    accessor.with(|mut access| {
+        let state = access.get();
+        if signal.is_some() {
+            let key = state.table.get(this)?.0;
+            let aborted = state.flag_state(signal)?;
+            settle(&mut state.observed, key, &aborted);
+        }
+        Ok(Ok(decision(&mut state.observed)))
+    })
 }
 
 impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
@@ -428,7 +442,7 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
             let operands = json!([title, options, signal, timeout]);
             state.ui_dialog(&this, "select", &operands)
         });
-        let answer = settled(accessor, recorded).await?;
+        let answer = settled(accessor, recorded, &this, signal.as_ref()).await?;
         Ok(answer.map(|decision| chosen(&decision)))
     }
 
@@ -446,7 +460,7 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
             let operands = json!([title, message, signal, timeout]);
             state.ui_dialog(&this, "confirm", &operands)
         });
-        let answer = settled(accessor, recorded).await?;
+        let answer = settled(accessor, recorded, &this, signal.as_ref()).await?;
         Ok(answer.map(|decision| confirmed(&decision)))
     }
 
@@ -464,7 +478,7 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
             let operands = json!([title, placeholder, signal, timeout]);
             state.ui_dialog(&this, "input", &operands)
         });
-        let answer = settled(accessor, recorded).await?;
+        let answer = settled(accessor, recorded, &this, signal.as_ref()).await?;
         Ok(answer.map(|decision| chosen(&decision)))
     }
 
@@ -477,7 +491,7 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
         let operands = json!([title, prefill]);
         let recorded =
             accessor.with(|mut access| access.get().ui_dialog(&this, "editor", &operands));
-        let answer = settled(accessor, recorded).await?;
+        let answer = settled(accessor, recorded, &this, None).await?;
         Ok(answer.map(|decision| chosen(&decision)))
     }
 }
