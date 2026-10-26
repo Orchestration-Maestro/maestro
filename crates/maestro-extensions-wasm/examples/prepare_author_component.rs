@@ -9,10 +9,16 @@
     clippy::excessive_nesting
 )]
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../src/tests/build.rs"]
 mod build;
 
+/// Preparation runs the native host, which a WebAssembly build does not have.
+#[cfg(target_arch = "wasm32")]
+fn main() {}
+
 /// Builds and compiles the components, then hands their paths to nextest's environment file.
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), String> {
     let path = build::author_component()?;
     build::compile(path).map_err(|error| error.to_string())?;

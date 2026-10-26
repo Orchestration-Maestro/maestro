@@ -52,7 +52,10 @@ fn result_value(result: CompactionResult) -> ExtensionResult<Value> {
 /// An optional callback-scoped emission, whose rejection can be caught by author code.
 fn emit(api: &ExtensionAPI, emitter: &CallbackEmitter<'_>, input: &Value) -> ExtensionResult<()> {
     if let Some(data) = input.get("emit") {
-        let result = emitter.emit(data["channel"].as_str().unwrap(), data["payload"].clone());
+        let result = emitter.emit(
+            data["channel"].as_str().ok_or("channel is not a string")?,
+            data["payload"].clone(),
+        );
         if input["catchEmit"] == true {
             api.append_entry("emit-error", Some(json!(result.err())))?;
         } else {
@@ -107,10 +110,10 @@ fn options(
     };
     let error = error_callback(api, input);
     Some(CompactOptions {
-        custom_instructions: input["instructions"]["present"]
-            .as_bool()
-            .unwrap_or(false)
-            .then(|| input["instructions"]["value"].as_str().unwrap().to_owned()),
+        custom_instructions: input["instructions"]["value"]
+            .as_str()
+            .filter(|_| input["instructions"]["present"] == true)
+            .map(str::to_owned),
         on_complete: complete,
         on_error: error,
     })

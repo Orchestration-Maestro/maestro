@@ -1,9 +1,11 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::bindings::{Retiring, installed, renaming_replacements};
+use super::extension_ui::{RecordingWatcher, with_custom_theme};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
+use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
@@ -1006,15 +1008,35 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
     const TEST: &str = "transfer_import_runtime_failure_reaches_the_existing_fatal_owner";
     let output = super::isolated_output(TEST, "fatal", &[], ":", async |directory| {
         let path = import_file(directory, "fatal.jsonl", directory);
+        let watcher = Rc::new(RecordingWatcher::default());
         let world = Setup {
             create: Some(import_failed_factory()),
             session_history: Some(directory.join("destination")),
+            directories: Some(with_custom_theme(directory)),
+            watcher: Some(Rc::clone(&watcher) as Rc<dyn FooterOperations>),
+            configure: Box::new(|settings| settings.set_theme("custom".to_owned())),
             ..Setup::default()
         }
         .build(directory);
         world.mode.init().await.unwrap();
         world.runtime.settle().unwrap();
-        world.terminal.set_tap(|bytes| eprint!("{bytes}"));
+        let theme = watcher
+            .paths()
+            .iter()
+            .position(|path| path.ends_with("custom"));
+        assert!(
+            !watcher.closed(theme.unwrap()),
+            "the custom theme is watched"
+        );
+        world.terminal.set_tap(move |bytes| {
+            if bytes.contains("\x1b[?25h") {
+                eprint!(
+                    "\nPROBE theme watch closed={}\n",
+                    watcher.closed(theme.unwrap())
+                );
+            }
+            eprint!("{bytes}");
+        });
         submit(&world.mode, &format!("/import {}", path.display()));
         import_settle(&world);
         import_answer(&world, "\r");
@@ -1031,6 +1053,10 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
         assert!(
             painted.contains("\x1b[?25h"),
             "terminal stopped: {painted:?}"
+        );
+        assert!(
+            text.contains("PROBE theme watch closed=true") && !text.contains("closed=false"),
+            "the theme watch closes before the terminal stops: {text}"
         );
     }
 }
@@ -1241,8 +1267,49 @@ fn transfer_import_retains_mode_only_until_completion() {
                 drop((terminal, runtime, themes, host, loader));
             }
             import_held_factory_lifetime(directory).await;
+            import_retry_failure_release(directory).await;
         },
     );
+}
+
+/// Releases the in-flight mode once a retry's replacement failure has propagated.
+async fn import_retry_failure_release(directory: &Path) {
+    let offered = directory.join("released");
+    std::fs::create_dir_all(&offered).unwrap();
+    let path = import_file(directory, "released.jsonl", &directory.join("gone"));
+    let World {
+        mode,
+        terminal,
+        runtime,
+        themes,
+        host,
+        loader,
+    } = Setup {
+        cwd: Some(offered.to_str().unwrap().to_owned()),
+        create: Some(import_failed_factory()),
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    mode.init().await.unwrap();
+    runtime.settle().unwrap();
+    let weak = Rc::downgrade(&mode);
+    let editor = Rc::clone(&mode.editor);
+    editor.on_submit().unwrap()(&format!("/import {}", path.display()));
+    assert!(runtime.drain_futures().is_empty());
+    terminal.send_input("\r");
+    assert!(runtime.drain_futures().is_empty());
+    drop(mode);
+    assert!(weak.upgrade().is_some(), "the cwd prompt owns the mode");
+    terminal.send_input("\r");
+    let errors = runtime.drain_futures();
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_import_retry_error(errors[0].as_ref(), "factory");
+    assert!(
+        weak.upgrade().is_none(),
+        "the propagated failure releases the mode"
+    );
+    drop((terminal, runtime, themes, host, loader));
 }
 
 /// Keeps import dispatch ahead of both busy-session queue owners.

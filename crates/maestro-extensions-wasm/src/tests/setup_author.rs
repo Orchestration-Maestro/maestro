@@ -40,13 +40,13 @@ fn run(writer: &SessionManager, input: &Value) -> ExtensionResult<Value> {
         "isPersisted" => writer.is_persisted().map(|v| json!(v)),
         "getChildren" => writer.get_children(text(0)).map(|v| json!(v)),
         "buildSessionContext" => writer.build_session_context().map(|v| json!({"messages":v.messages,"thinkingLevel":v.thinking_level,"model":v.model.map(|m|json!({"provider":m.provider,"modelId":m.model_id}))})),
-        "appendMessage" => writer.append_message(authored_message(input)).map(|v| json!(v)),
+        "appendMessage" => writer.append_message(authored_message(input)?).map(|v| json!(v)),
         "appendThinkingLevelChange" => writer.append_thinking_level_change(text(0)).map(|v| json!(v)),
         "appendModelChange" => writer.append_model_change(text(0),text(1)).map(|v| json!(v)),
-        "appendCompaction" => writer.append_compaction(authored_compaction(input), input["fromHook"].as_bool()).map(|v| json!(v)),
+        "appendCompaction" => writer.append_compaction(authored_compaction(input)?, input["fromHook"].as_bool()).map(|v| json!(v)),
         "appendCustomEntry" => writer.append_custom_entry(text(0), optional(input,"data")).map(|v| json!(v)),
         "appendSessionInfo" => writer.append_session_info(text(0)).map(|v| json!(v)),
-        "appendCustomMessageEntry" => writer.append_custom_message_entry(serde_json::from_value(input["message"].clone()).unwrap()).map(|v| json!(v)),
+        "appendCustomMessageEntry" => writer.append_custom_message_entry(serde_json::from_value(input["message"].clone()).map_err(|e| e.to_string())?).map(|v| json!(v)),
         "appendLabelChange" => writer.append_label_change(text(0),input["label"].as_str()).map(|v| json!(v)),
         "branch" => writer.branch(text(0)).map(|()| Value::Null),
         "resetLeaf" => writer.reset_leaf().map(|()| Value::Null),
@@ -81,12 +81,12 @@ async fn dispatch(
         return Ok(());
     }
     if input["retainedReader"] == true {
-        let reader = kept.borrow().reader.as_ref().unwrap().clone();
+        let reader = kept.borrow().reader.clone().ok_or("no retained reader")?;
         log.append_entry("setup-answer", Some(json!(reader.get_session_name()?)))?;
         return Ok(());
     }
     if input["retained"] == true {
-        let writer = kept.borrow().writer.as_ref().unwrap().clone();
+        let writer = kept.borrow().writer.clone().ok_or("no retained writer")?;
         log.append_entry("setup-answer", Some(caught(run(&writer, &input))))?;
         return Ok(());
     }
@@ -291,23 +291,25 @@ struct Kept {
 }
 
 /// Mutate a typed number before the real authored encoder runs.
-fn authored_message(input: &Value) -> maestro_extensions_wasm::AgentMessage {
+fn authored_message(input: &Value) -> ExtensionResult<maestro_extensions_wasm::AgentMessage> {
     let mut message: maestro_extensions_wasm::AgentMessage =
-        serde_json::from_value(input["message"].clone()).unwrap();
+        serde_json::from_value(input["message"].clone()).map_err(|e| e.to_string())?;
     if input["nonfinite"] == true
         && let maestro_extensions_wasm::AgentMessage::Message(message) = &mut message
         && let maestro_extensions_wasm::Message::User(user) = message.as_mut()
     {
         user.timestamp = f64::NAN;
     }
-    message
+    Ok(message)
 }
 /// Supply nonfinite authored tokens without substituting JSON null.
-fn authored_compaction(input: &Value) -> maestro_extensions_wasm::CompactionResult {
+fn authored_compaction(
+    input: &Value,
+) -> ExtensionResult<maestro_extensions_wasm::CompactionResult> {
     let mut value: maestro_extensions_wasm::CompactionResult =
-        serde_json::from_value(input["compaction"].clone()).unwrap();
+        serde_json::from_value(input["compaction"].clone()).map_err(|e| e.to_string())?;
     if input["nonfinite"] == true {
         value.tokens_before = f64::INFINITY;
     }
-    value
+    Ok(value)
 }
