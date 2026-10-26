@@ -44,3 +44,20 @@ async fn focus(driver: &mut impl Driver) -> Result<(), String> {
 fn authored_focus_keeps_setter_order_and_cursor_marker() -> Result<(), String> {
     on_both_adapters!(focus)
 }
+
+/// A host editor remains focusable after conversion to a component.
+async fn editors(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    assert_eq!(
+        operate(driver, json!({"op":"hostEditorFocus"})).await?,
+        json!({"ok":true})
+    );
+    assert!(!driver.widget("editor-focus", 20).await?.is_empty());
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn host_editors_keep_focus_through_component_views() -> Result<(), String> {
+    on_both_adapters!(editors)
+}

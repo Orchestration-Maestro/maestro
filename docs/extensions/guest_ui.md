@@ -155,6 +155,10 @@ Emit `CURSOR_MARKER` at the text cursor only while focused. The host removes the
 zero-width marker and positions its hardware cursor there. This does not install
 an overlay or make a nonfocusable view focusable.
 
+`Editor` and `CustomEditor` keep their host focus capability through either
+`Component::from(&editor)` or `Component::new(editor.clone())`. Both views read and
+change the original editor's flag, rather than keeping a second guest flag.
+
 | Protocol operation | Native counterpart | Ownership |
 | --- | --- | --- |
 | `component-focused`, `component-set-focused` | `Component::focusable`, `Focusable::set_focused` | Borrows the retained component and the current emission frame; focus state stays with the author. |

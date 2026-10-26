@@ -734,6 +734,8 @@ enum Operation {
     TuiFactory,
     /// Checks the authored component focus contract.
     FocusContract,
+    /// Checks host editors through the component focus capability.
+    HostEditorFocus,
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -885,6 +887,7 @@ fn factories(
 ) -> ExtensionResult<()> {
     match operation {
         Operation::TuiFactory => super::tui_author::install(&ctx.ui()?),
+        Operation::HostEditorFocus => super::focus_author::install_editors(&ctx.ui()?),
         Operation::WidgetFactory {
             key,
             label,
@@ -953,7 +956,8 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::FocusContract => caught(focus_probe(ctx)),
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
         Operation::DropKept => drop_kept(),
-        operation @ (Operation::TuiFactory
+        operation @ (Operation::HostEditorFocus
+        | Operation::TuiFactory
         | Operation::WidgetFactory { .. }
         | Operation::FactoryCapabilities { .. }
         | Operation::KeptWidget { .. }

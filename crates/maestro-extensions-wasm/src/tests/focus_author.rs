@@ -5,8 +5,9 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    CURSOR_MARKER, CallbackEmitter, Component, ComponentView, ExtensionComponent, ExtensionResult,
-    ExtensionUIContext, Focusable,
+    CURSOR_MARKER, CallbackEmitter, Component, ComponentView, CustomEditor, Editor, EditorOptions,
+    ExtensionComponent, ExtensionResult, ExtensionUIContext, Focusable, get_editor_theme,
+    get_keybindings, is_focusable,
 };
 use serde_json::json;
 use std::{
@@ -68,4 +69,44 @@ pub fn install(ui: &ExtensionUIContext) -> ExtensionResult<()> {
         }),
         None,
     )
+}
+
+/// Gives focus through each component conversion of the host editors.
+pub fn install_editors(ui: &ExtensionUIContext) -> ExtensionResult<()> {
+    ui.set_widget_factory(
+        "editor-focus",
+        Rc::new(|tui, _, emitter| {
+            let theme = get_editor_theme()?;
+            let editor = Editor::new(&tui, &theme, EditorOptions::default())?;
+            check_editor(&editor, &Component::from(&editor), emitter)?;
+            check_editor(&editor, &Component::new(editor.clone()), emitter)?;
+            let custom =
+                CustomEditor::new(&tui, &theme, &get_keybindings()?, EditorOptions::default())?;
+            check_editor(&custom, &Component::from(&custom), emitter)?;
+            check_editor(&custom, &Component::new(custom.clone()), emitter)?;
+            Ok(ExtensionComponent {
+                component: Component::from(&editor),
+                dispose: None,
+                set_expanded: None,
+                width: None,
+            })
+        }),
+        None,
+    )
+}
+
+/// Both views read and change the same native focus flag.
+fn check_editor(
+    editor: &Editor,
+    view: &Component,
+    emitter: CallbackEmitter<'_>,
+) -> ExtensionResult<()> {
+    assert!(is_focusable(Some(view)));
+    assert_eq!(view.focused(emitter)?, Some(false));
+    view.set_focused(true, emitter)?;
+    assert!(editor.focused()?);
+    assert_eq!(view.focused(emitter)?, Some(true));
+    view.set_focused(false, emitter)?;
+    assert!(!editor.focused()?);
+    Ok(())
 }

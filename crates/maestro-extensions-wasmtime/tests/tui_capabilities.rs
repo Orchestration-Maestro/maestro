@@ -146,3 +146,42 @@ fn cursor(
     assert!(!output.contains("maestro:c"));
     assert!(output.contains("\x1b[?25h"));
 }
+
+#[test]
+fn canonical_host_editors_keep_their_component_focus_capability() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let (tui, _) = super::canonical_ui::screen();
+        let ui = Rc::new(Ui {
+            tui,
+            shown: RefCell::default(),
+        });
+        runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        assert_eq!(
+            handler("ui editor-focus".into(), runner.create_command_context())
+                .await
+                .unwrap_err()
+                .to_string(),
+            "editor focus shown"
+        );
+        let field = ui.shown.borrow().as_ref().unwrap().component.clone();
+        assert!(!field.focusable().unwrap().focus_flag().get());
+        ui.tui.set_focus(Some(field.clone()));
+        assert!(field.focusable().unwrap().focus_flag().get());
+        ui.tui.set_focus(None);
+        assert!(!field.focusable().unwrap().focus_flag().get());
+        bus.clear();
+    });
+}

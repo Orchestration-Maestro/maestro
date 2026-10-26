@@ -20,6 +20,10 @@ pub(super) fn observe(
     api: &ExtensionAPI,
     args: &str,
 ) -> ExtensionResult<String> {
+    if args == "ui editor-focus" {
+        super::focus_author::install_editors(&context.ui()?)?;
+        return Ok("editor focus shown".into());
+    }
     if args == "ui focus" {
         super::focus_author::install(&context.ui()?)?;
         return Ok("focus shown".into());
@@ -57,6 +61,11 @@ pub(super) fn observe(
     if let Some(label) = args.strip_prefix("ui widget ") {
         return widget(context, api, label);
     }
+    basic(context, args)
+}
+
+/// Forwards fixed UI values or their explicit clearing forms.
+fn basic(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
     let clear = args == "ui clear";
     let ui = context.ui()?;
     ui.notify(
