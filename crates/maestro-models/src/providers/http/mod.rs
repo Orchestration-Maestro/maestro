@@ -32,7 +32,7 @@ use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use body::buffered;
-pub(crate) use body::collect_body;
+pub use body::collect_body;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use client::{ProxySelector, Route, configured_fetch, supplied_fetch};
 #[cfg(not(target_arch = "wasm32"))]

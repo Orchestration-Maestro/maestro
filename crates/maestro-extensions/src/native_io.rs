@@ -89,6 +89,8 @@ pub struct Request {
 }
 /// Independently retained native response.
 pub trait Response {
+    /// Collects the original unused body through the shared HTTP and text owners.
+    fn text(&self) -> IoFuture<'_, String>;
     /// Native status, including non-success outcomes.
     fn status(&self) -> u16;
     /// Whether the status is within 200 through 299 inclusive.

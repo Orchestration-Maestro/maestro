@@ -650,3 +650,39 @@ fn native_response_close_keeps_caller_signal_live() -> ExtensionResult<()> {
     assert!(!caller.aborted());
     Ok(())
 }
+
+#[test]
+fn native_fetch_returns_non_success_responses() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_http.body = Some(vec![b"denied".to_vec()]);
+    host.observe().native_http.text = "denied".into();
+    let io = captured_api(&host)?.native_io();
+    for (status, ok) in [
+        (200, true),
+        (204, true),
+        (299, true),
+        (300, false),
+        (401, false),
+        (404, false),
+        (599, false),
+    ] {
+        host.observe().native_http.status = status;
+        let response = super::block_on(io.fetch(crate::http::Request {
+            url: "http://loopback/".into(),
+            method: None,
+            headers: vec![],
+            body: None,
+            signal: None,
+        }))?;
+        assert_eq!(response.status(), status);
+        assert_eq!(response.ok(), ok);
+        if status == 401 {
+            let error = format!(
+                "Token exchange failed: {}",
+                super::block_on(response.text())?
+            );
+            assert_eq!(error, "Token exchange failed: denied");
+        }
+    }
+    Ok(())
+}

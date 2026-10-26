@@ -45,6 +45,9 @@ impl super::native_imports::NativeImports for Generated {
     }
 
     type Response = host::Response;
+    fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String> {
+        Box::pin(response.text())
+    }
     fn response_status_text(&self, response: &Self::Response) -> String {
         response.status_text()
     }

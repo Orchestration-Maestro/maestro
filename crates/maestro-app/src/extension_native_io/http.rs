@@ -4,7 +4,7 @@ use futures_util::{
     future::{Either, select},
 };
 use maestro_extensions::native_io::{IoFuture, Readable, Response};
-use maestro_models::providers::http::{Raced, race};
+use maestro_models::providers::http::{Raced, collect_body, race};
 use maestro_models::{Cancellation, HttpBody, HttpResponse};
 use std::{
     cell::{Cell, RefCell},
@@ -35,6 +35,7 @@ impl Http {
                     stream: RefCell::new(Some(response.body)),
                     signal,
                     ended: Cell::new(false),
+                    used: Cell::new(false),
                     closed: Notify::new(),
                 })
             }),
@@ -42,6 +43,15 @@ impl Http {
     }
 }
 impl Response for Http {
+    fn text(&self) -> IoFuture<'_, String> {
+        Box::pin(async move {
+            let bytes = match &self.body {
+                Some(body) => body.collect().await?,
+                None => Vec::new(),
+            };
+            Ok(maestro_text::decode_utf8(&bytes).into_owned())
+        })
+    }
     fn status(&self) -> u16 {
         self.status
     }
@@ -65,10 +75,34 @@ struct Body {
     signal: Option<Cancellation>,
     /// EOF, explicit close and a terminal error release the native stream.
     ended: Cell<bool>,
+    /// Raw reading and whole-body consumption share this admission flag.
+    used: Cell<bool>,
     /// Wakes a pending read when this consumer closes.
     closed: Notify,
 }
 impl Body {
+    /// Claims an unread body once, retaining native cancellation and consumer close.
+    async fn collect(&self) -> Result<Vec<u8>, String> {
+        if self.used.replace(true) || self.ended.get() {
+            return Err("body already used".into());
+        }
+        let stream = self
+            .stream
+            .borrow_mut()
+            .take()
+            .ok_or("body already in use")?;
+        let reading = std::pin::pin!(race(collect_body(stream), None, self.signal.as_ref()));
+        let closed = std::pin::pin!(self.closed.notified());
+        let result = match select(reading, closed).await {
+            Either::Left((Raced::Done(result), _)) => result.map_err(|e| e.to_string()),
+            Either::Left((Raced::Cancelled | Raced::TimedOut, _)) => {
+                Err(maestro_models::FetchError::Aborted.to_string())
+            }
+            Either::Right(_) => Err("body closed".into()),
+        };
+        self.ended.set(true);
+        result
+    }
     /// Races this consumer's next chunk against only its original signal and own close.
     async fn next(&self, stream: &mut HttpBody) -> Result<Option<Vec<u8>>, String> {
         let next = std::pin::pin!(race(stream.next(), None, self.signal.as_ref()));
@@ -85,6 +119,7 @@ impl Body {
 impl Readable for Body {
     fn read(&self) -> IoFuture<'_, Option<Vec<u8>>> {
         Box::pin(async move {
+            self.used.set(true);
             if self.ended.get() {
                 return Ok(None);
             }

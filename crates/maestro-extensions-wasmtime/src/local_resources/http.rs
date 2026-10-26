@@ -26,6 +26,8 @@ pub(crate) struct Fetch {
 pub(crate) enum Request {
     /// Starts one attempt through supplied domain capabilities.
     Fetch(Fetch, oneshot::Sender<Result<Response, String>>, Admission),
+    /// Collects the original body through its native response owner.
+    Text(oneshot::Sender<Result<String, String>>, Admission),
     /// Reads the native status without consuming the body.
     Status(Sender<Result<u16, String>>),
     /// Original native reason phrase.
@@ -60,6 +62,16 @@ impl State {
             _ => Err("native response resource ended".to_owned()),
         };
         match request {
+            Request::Text(reply, admission) => {
+                let response = response.cloned();
+                self.admit(
+                    super::native_resources::consuming(
+                        Box::pin(async move { response?.text().await }),
+                        reply,
+                    ),
+                    admission,
+                );
+            }
             Request::Status(reply) => {
                 let _ = reply.send(response.map(|response| response.status()));
             }

@@ -23,6 +23,8 @@ pub struct Request {
 }
 /// A controlled response, not a claim of native networking.
 pub struct Response {
+    /// Supplied decoded text from the controlled native owner.
+    pub text: String,
     /// Supplied status.
     pub status: u16,
     /// Supplied reason phrase.
@@ -34,6 +36,8 @@ pub struct Response {
 }
 /// Supplied responses and exact request observations.
 pub struct Bank {
+    /// Supplied decoded text from the controlled native owner.
+    pub text: String,
     /// Supplied status.
     pub status: u16,
     /// Supplied reason phrase.
@@ -48,6 +52,7 @@ pub struct Bank {
 impl Default for Bank {
     fn default() -> Self {
         Self {
+            text: String::new(),
             status: 200,
             status_text: String::new(),
             headers: vec![],
@@ -61,11 +66,32 @@ impl Bank {
     pub fn fetch(&mut self, request: Request) -> Response {
         self.requests.push(request);
         Response {
+            text: self.text.clone(),
             status: self.status,
             status_text: self.status_text.clone(),
             headers: self.headers.clone(),
             body: self.body.clone().map(super::native_io_host::Reader::new),
         }
+    }
+}
+impl Response {
+    /// Returns the supplied native text, enforcing shared one-time consumption.
+    pub fn text(&self) -> Result<String, String> {
+        if let Some(body) = &self.body {
+            if !body.claim() {
+                return Err("body already used".into());
+            }
+            body.close();
+        }
+        Ok(self.text.clone())
+    }
+}
+impl host::HostResponseWithStore<State> for Imports {
+    fn text(
+        accessor: &Accessor<State, Self>,
+        response: Resource<Response>,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(accessor.with(|mut a| Ok(a.get().table.get(&response)?.text())))
     }
 }
 /// Supplies a response through the generated import path.

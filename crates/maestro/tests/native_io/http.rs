@@ -142,3 +142,40 @@ fn native_response_yields_bytes_before_body_completion() {
     server.join().unwrap();
     rpc.finish();
 }
+
+#[test]
+fn native_fetch_returns_non_success_responses() {
+    let endpoint = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/status", endpoint.local_addr().unwrap());
+    let server = std::thread::spawn(move || {
+        for status in [200, 204, 299, 300, 401, 404, 599, 401] {
+            let (mut socket, _) = endpoint.accept().unwrap();
+            request(&mut socket);
+            let body = if status == 204 { "" } else { "denied" };
+            write!(socket, "HTTP/1.1 {status} Owned reason\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+        }
+    });
+    let root = Root::new();
+    let mut rpc = loaded(&root);
+    for (status, ok) in [
+        (200, true),
+        (204, true),
+        (299, true),
+        (300, false),
+        (401, false),
+        (404, false),
+        (599, false),
+    ] {
+        let response = call(&mut rpc, &json!({"op":"fetch", "url":url}));
+        assert_eq!(response["status"], status);
+        assert_eq!(response["ok"], ok);
+    }
+    let reply = command_answer(
+        &mut rpc,
+        "native-http",
+        &json!({"op":"exchange", "url":url}),
+    );
+    assert_eq!(reply["error"], "Token exchange failed: denied");
+    server.join().unwrap();
+    rpc.finish();
+}

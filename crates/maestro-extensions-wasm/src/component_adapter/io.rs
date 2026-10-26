@@ -75,6 +75,9 @@ struct Response<I: Imports> {
     body: std::cell::OnceCell<Option<std::rc::Rc<dyn crate::streams::Readable>>>,
 }
 impl<I: Imports> crate::http::Response for Response<I> {
+    fn text(&self) -> ExtensionFuture<'_, String> {
+        self.resource.imports.response_text(&self.resource.handle)
+    }
     fn status_text(&self) -> String {
         self.resource
             .imports

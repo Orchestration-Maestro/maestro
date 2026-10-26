@@ -559,6 +559,9 @@ impl crate::component_adapter::NativeImports for Controlled {
     }
 
     type Response = super::native_http_host::Response;
+    fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String> {
+        Box::pin(async move { response.text() })
+    }
     fn response_status_text(&self, response: &Self::Response) -> String {
         response.status_text.clone()
     }

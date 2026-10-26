@@ -23,6 +23,8 @@ pub struct Request {
 pub trait Response {
     /// Native HTTP status code, including non-success responses.
     fn status(&self) -> u16;
+    /// Consumes the original unused body as BOM-aware, lossy UTF-8 text.
+    fn text(&self) -> crate::ExtensionFuture<'_, String>;
     /// Whether the status is within 200 through 299 inclusive.
     fn ok(&self) -> bool {
         (200..300).contains(&self.status())

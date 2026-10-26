@@ -18,18 +18,27 @@ type Chunks = VecDeque<Result<Vec<u8>, String>>;
 
 /// One supplied consuming byte resource, not a native collector.
 #[derive(Clone)]
-pub struct Reader(Arc<Mutex<Chunks>>);
+pub struct Reader(Arc<Mutex<Chunks>>, Arc<AtomicBool>);
 impl Reader {
     /// Supplies exact chunks through the existing consuming byte resource.
     pub fn new(chunks: Vec<Vec<u8>>) -> Self {
-        Self(Arc::new(Mutex::new(chunks.into_iter().map(Ok).collect())))
+        Self(
+            Arc::new(Mutex::new(chunks.into_iter().map(Ok).collect())),
+            Arc::default(),
+        )
     }
     /// Consumes the next supplied chunk without decoding it.
     pub fn read(&self) -> Result<Option<Vec<u8>>, String> {
+        self.1.store(true, Ordering::SeqCst);
         self.0.lock().unwrap().pop_front().transpose()
+    }
+    /// Claims a whole-body operation only before any supplied read or close.
+    pub fn claim(&self) -> bool {
+        !self.1.swap(true, Ordering::SeqCst)
     }
     /// Releases all supplied unread chunks.
     pub fn close(&self) {
+        self.1.store(true, Ordering::SeqCst);
         self.0.lock().unwrap().clear();
     }
 }
@@ -132,7 +141,7 @@ impl Bank {
         let reader = |selected: Stdio, bytes: &Vec<Vec<u8>>, error: Option<&String>| {
             (selected == Stdio::Pipe).then(|| {
                 let chunks = bytes.iter().cloned().map(Ok).chain(error.cloned().map(Err));
-                Reader(Arc::new(Mutex::new(chunks.collect())))
+                Reader(Arc::new(Mutex::new(chunks.collect())), Arc::default())
             })
         };
         let child = Child {

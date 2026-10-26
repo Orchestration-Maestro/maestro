@@ -221,7 +221,7 @@ impl State {
 }
 
 /// A dropped consumer stops only its pending observation, not the underlying native owner.
-fn consuming<T: 'static>(work: IoFuture<'static, T>, mut reply: Async<T>) -> Work {
+pub(super) fn consuming<T: 'static>(work: IoFuture<'static, T>, mut reply: Async<T>) -> Work {
     Box::pin(async move {
         let result = {
             let closed = std::pin::pin!(reply.closed());

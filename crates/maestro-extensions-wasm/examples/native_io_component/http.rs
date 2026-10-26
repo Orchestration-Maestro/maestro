@@ -61,6 +61,7 @@ async fn execute(io: Rc<dyn NativeIo>, slot: &Slot, args: &str) -> ExtensionResu
             response.body().ok_or("no response body")?.read().await?
         ));
     }
+    let exchange = action["op"] == "exchange";
     let request: Fetch = serde_json::from_value(action).map_err(|e| e.to_string())?;
     let response = io
         .fetch(Request {
@@ -71,6 +72,9 @@ async fn execute(io: Rc<dyn NativeIo>, slot: &Slot, args: &str) -> ExtensionResu
             signal: None,
         })
         .await?;
+    if exchange && !response.ok() {
+        return Err(format!("Token exchange failed: {}", response.text().await?));
+    }
     let value = json!({"status":response.status(), "ok":response.ok(),
         "status_text":response.status_text(), "headers":response.headers(),
         "body":response.body().is_some()});

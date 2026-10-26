@@ -63,6 +63,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
             })
         },
     )?;
+    text(host)?;
     metadata(host)?;
     host.func_wrap(
         "[method]response.status",
@@ -111,6 +112,26 @@ fn metadata<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime:
                 .map(|body| store.data_mut().ctx().table.push(body))
                 .transpose()?;
             Ok((body,))
+        },
+    )
+}
+
+/// Collects response text without holding a Store or capability-table borrow.
+fn text<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap_concurrent(
+        "[method]response.text",
+        |accessor, (response,): (Resource<Response>,)| {
+            Box::pin(async move {
+                let response =
+                    accessor.with(|mut a| a.get().ctx().table.get(&response).cloned())?;
+                let result = response
+                    .0
+                    .request_async(|id, reply, admission| {
+                        Message::Http(id, Request::Text(reply, admission))
+                    })
+                    .await;
+                Ok((result,))
+            })
         },
     )
 }

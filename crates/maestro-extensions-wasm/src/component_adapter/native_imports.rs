@@ -25,6 +25,8 @@ pub trait NativeImports {
 
     /// Independently retained native HTTP response.
     type Response: 'static;
+    /// Consumes the original unused body as native-decoded text.
+    fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String>;
     /// Reads the native response status.
     fn response_status(&self, response: &Self::Response) -> u16;
     /// Reads the original native reason phrase.

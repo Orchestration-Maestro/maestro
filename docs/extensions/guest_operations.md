@@ -95,6 +95,13 @@ consumer, with no replay. Responses and bodies can outlive their creating callba
 A retained body also keeps the caller's cancellation forwarding alive. Raw reads
 preserve NUL, malformed UTF-8 and split code points without decoding.
 
+`text().await` consumes the same body once through the native HTTP collector and
+text decoder. It strips one initial UTF-8 BOM and replaces malformed UTF-8; it does
+not trim whitespace or remove NUL. Getting a body handle does not consume it, but
+reading from that handle prevents later whole-body text consumption. A second
+`text()` call fails rather than replaying bytes. Collection observes the original
+request signal; closing a body releases that consumer without aborting the signal.
+
 ## Executable example
 
 Build the native-operation witness as a component:

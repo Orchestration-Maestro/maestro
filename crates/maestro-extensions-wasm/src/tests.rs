@@ -603,6 +603,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]readable.read",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "[method]response.text",
             "[method]writable.end",
             "[method]writable.write",
             "call",
