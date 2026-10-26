@@ -83,25 +83,6 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         self.native.copy_to_clipboard(text, mode)
     }
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
-        self.native.capture_focus()
-    }
-    fn restore_focus(
-        &self,
-        target: Rc<FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        self.native.restore_focus(target)
-    }
-    fn dialog_bounds(
-        &self,
-        id: egui::Id,
-        dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentHostError> {
-        self.native.dialog_bounds(id, dimensions)
-    }
-    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
-        self.native.native_key(event, context);
-    }
 
     fn set_retained_visibility(
         &self,
@@ -132,9 +113,6 @@ impl AttachmentHost for Host {
     }
     fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         self.native.hover_capable()
-    }
-    fn take_escape(&self) -> bool {
-        self.native.take_escape()
     }
     fn timer(
         &self,

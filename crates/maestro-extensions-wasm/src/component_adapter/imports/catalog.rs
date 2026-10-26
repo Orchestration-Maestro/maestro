@@ -3,6 +3,16 @@
 /// Declares catalog operations without creating a second adapter trait.
 macro_rules! catalog_imports {
     () => {
+        /// Registers JSON provider data.
+        fn register_provider(
+            &self,
+            name: &str,
+            config: &str,
+            oauth: ProviderOAuth<'_, Self::Callback>,
+        ) -> ExtensionResult<()>;
+        /// Unregisters a provider.
+        fn unregister_provider(&self, name: &str) -> ExtensionResult<()>;
+
         /// Forwards the corresponding host capability call.
         fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String>;
         /// Forwards the corresponding host capability call.

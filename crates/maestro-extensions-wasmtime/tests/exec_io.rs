@@ -602,12 +602,22 @@ fn exec_term_resistance_uses_existing_escalation() {
         let fields =
             json!({"args":["-c", STUBBORN, "", "partial-out", "partial-err"], "signal":"relay"});
         let (execution, mut socket) = started(&runner, &fields).await;
-        signal.abort();
-        let aborted = tokio::time::Instant::now();
-        let mut answer = [0; 1];
-        socket.read_exact(&mut answer).await.unwrap();
-        assert_eq!(&answer, b"T", "terminated, still running");
         tokio::time::pause();
+        let aborted = tokio::time::Instant::now();
+        signal.abort();
+        let mut answer = [0; 1];
+        // Keep virtual time still until the real child acknowledges TERM.
+        loop {
+            tokio::select! {
+                biased;
+                result = socket.read_exact(&mut answer) => {
+                    result.unwrap();
+                    break;
+                }
+                () = tokio::task::yield_now() => {}
+            }
+        }
+        assert_eq!(&answer, b"T", "terminated, still running");
         let result = execution.await.unwrap();
         assert!(aborted.elapsed() >= std::time::Duration::from_secs(5));
         assert_eq!(

@@ -1152,3 +1152,4 @@ fn assert_model_hook_contract(contract: &Contract) {
 mod tool_record_views;
 
 mod credential_host;
+mod native_helpers;
