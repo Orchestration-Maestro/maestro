@@ -13,13 +13,16 @@ use std::{
     },
 };
 
+/// Supplied byte chunks and an optional late operation failure.
+type Chunks = VecDeque<Result<Vec<u8>, String>>;
+
 /// One supplied consuming byte resource, not a native collector.
 #[derive(Clone)]
-pub struct Reader(Arc<Mutex<VecDeque<Vec<u8>>>>);
+pub struct Reader(Arc<Mutex<Chunks>>);
 impl Reader {
     /// Consumes the next supplied chunk without decoding it.
-    pub fn read(&self) -> Option<Vec<u8>> {
-        self.0.lock().unwrap().pop_front()
+    pub fn read(&self) -> Result<Option<Vec<u8>>, String> {
+        self.0.lock().unwrap().pop_front().transpose()
     }
     /// Releases all supplied unread chunks.
     pub fn close(&self) {
@@ -100,6 +103,10 @@ pub struct Bank {
     pub stdout: Vec<Vec<u8>>,
     /// Supplied chunks for the next child's stderr.
     pub stderr: Vec<Vec<u8>>,
+    /// Supplied failure after the next child's stdout prefix.
+    pub read_error: Option<String>,
+    /// Supplied ordinary exit code; omitted selects seven.
+    pub exit_code: Option<i32>,
     /// Most recently admitted original child and its resource aliases.
     pub child: Option<Child>,
     /// Supplied operation failure.
@@ -118,17 +125,20 @@ impl Bank {
         if let Some(error) = &self.error {
             return Err(error.clone());
         }
-        let reader = |selected: Stdio, bytes: &Vec<Vec<u8>>| {
-            (selected == Stdio::Pipe).then(|| Reader(Arc::new(Mutex::new(bytes.clone().into()))))
+        let reader = |selected: Stdio, bytes: &Vec<Vec<u8>>, error: Option<&String>| {
+            (selected == Stdio::Pipe).then(|| {
+                let chunks = bytes.iter().cloned().map(Ok).chain(error.cloned().map(Err));
+                Reader(Arc::new(Mutex::new(chunks.collect())))
+            })
         };
         let child = Child {
             pid: 1234,
             stdin: (options.stdio[0] == Stdio::Pipe).then(Writer::default),
-            stdout: reader(options.stdio[1], &self.stdout),
-            stderr: reader(options.stdio[2], &self.stderr),
+            stdout: reader(options.stdio[1], &self.stdout, self.read_error.as_ref()),
+            stderr: reader(options.stdio[2], &self.stderr, None),
             state: Arc::new(Mutex::new(ChildState {
                 live: true,
-                code: Some(7),
+                code: Some(self.exit_code.unwrap_or(7)),
                 signal: None,
             })),
         };
@@ -255,7 +265,7 @@ impl host::HostReadableWithStore<State> for Imports {
         accessor: &Accessor<State, Self>,
         reader: Resource<Reader>,
     ) -> impl Future<Output = wasmtime::Result<Result<Option<Vec<u8>>, String>>> {
-        std::future::ready(accessor.with(|mut a| Ok(Ok(a.get().table.get(&reader)?.read()))))
+        std::future::ready(accessor.with(|mut a| Ok(a.get().table.get(&reader)?.read())))
     }
 }
 impl host::HostWritable for State {

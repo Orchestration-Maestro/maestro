@@ -1,4 +1,4 @@
-//! Native wait forwarding through the controlled author imports.
+//! Native waits, child controls and bytes through the controlled author imports.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -9,7 +9,7 @@ use super::{
     controlled::{Controlled, Flag},
     observed::gate,
 };
-use crate::{ExtensionResult, component_adapter::signal};
+use crate::{ExtensionResult, child_process::SpawnOptions, component_adapter::signal};
 use std::{
     task::{Context, Waker},
     time::Duration,
@@ -94,7 +94,6 @@ fn native_wait_releases_its_signal_observer() -> ExtensionResult<()> {
 
 #[test]
 fn native_child_streams_bytes_while_input_is_pending() -> ExtensionResult<()> {
-    use crate::child_process::SpawnOptions;
     let host = Controlled::default();
     host.observe().native_io.stdout = vec![vec![0, 255, 226], vec![130, 172]];
     host.observe().native_io.stderr = vec![b"error\0".to_vec()];
@@ -197,5 +196,348 @@ fn native_io_adapters_keep_the_same_author_contract() -> ExtensionResult<()> {
         &child.stderr().unwrap(),
         &child.stderr().unwrap()
     ));
+    Ok(())
+}
+
+#[test]
+fn native_child_keeps_literal_arguments_and_cwd() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let arguments = vec!["space value", "$HOME; `literal`", "line\nbreak", "Ω雪", ""];
+    for cwd in [None, Some("/outside Ω/../literal path".to_owned())] {
+        super::block_on(io.spawn(
+            "literal program Ω".into(),
+            arguments.iter().map(|arg| (*arg).to_owned()).collect(),
+            SpawnOptions {
+                cwd: cwd.clone(),
+                ..SpawnOptions::default()
+            },
+        ))?;
+        let observed = host.observed();
+        let (command, args, options) = observed.native_io.launches.last().unwrap();
+        assert_eq!(command, "literal program Ω");
+        assert_eq!(args, &arguments);
+        assert_eq!(options.cwd, cwd);
+    }
+    Ok(())
+}
+
+#[test]
+fn native_child_keeps_environment_selection() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for env in [
+        None,
+        Some(Vec::new()),
+        Some(vec![
+            ("UNCHANGED".into(), "inherited Ω".into()),
+            ("OVERLAY".into(), "replacement\n".into()),
+            ("EMPTY".into(), String::new()),
+        ]),
+    ] {
+        super::block_on(io.spawn(
+            "literal".into(),
+            Vec::new(),
+            SpawnOptions {
+                env: env.clone(),
+                ..SpawnOptions::default()
+            },
+        ))?;
+        assert_eq!(
+            host.observed().native_io.launches.last().unwrap().2.env,
+            env
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn native_child_keeps_descriptor_selection() -> ExtensionResult<()> {
+    use crate::child_process::{SpawnOptions, Stdio};
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for stdin in [Stdio::Pipe, Stdio::Ignore, Stdio::Inherit] {
+        for stdout in [Stdio::Pipe, Stdio::Ignore, Stdio::Inherit] {
+            for stderr in [Stdio::Pipe, Stdio::Ignore, Stdio::Inherit] {
+                let stdio = [stdin, stdout, stderr];
+                let child = super::block_on(io.spawn(
+                    "literal".into(),
+                    Vec::new(),
+                    SpawnOptions {
+                        stdio,
+                        ..SpawnOptions::default()
+                    },
+                ))?;
+                assert_eq!(
+                    [
+                        child.stdin().is_some(),
+                        child.stdout().is_some(),
+                        child.stderr().is_some()
+                    ],
+                    stdio.map(|descriptor| descriptor == Stdio::Pipe)
+                );
+                assert_eq!(
+                    host.observed().native_io.launches.last().unwrap().2.stdio,
+                    stdio
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn native_child_writes_all_bytes_before_eof() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let child = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    let input = child.stdin().unwrap();
+    let bytes: Vec<u8> = (0..131_089)
+        .map(|value| u8::try_from(value % 256).unwrap())
+        .collect();
+    super::block_on(input.write(&[]))?;
+    super::block_on(input.write(&bytes))?;
+    super::block_on(input.write(&[255, 0, 226, 130, 172]))?;
+    super::block_on(input.end())?;
+    let mut expected = bytes;
+    expected.extend([255, 0, 226, 130, 172]);
+    let observed = host.observed();
+    let original = observed
+        .native_io
+        .child
+        .as_ref()
+        .unwrap()
+        .stdin
+        .as_ref()
+        .unwrap();
+    assert_eq!(*original.bytes.lock().unwrap(), expected);
+    assert!(original.ended.load(std::sync::atomic::Ordering::SeqCst));
+    drop(observed);
+    assert!(super::block_on(input.write(&[1])).is_err());
+    Ok(())
+}
+
+#[test]
+fn native_child_completion_keeps_output_close_order() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_io.stdout = vec![b"early".to_vec(), b"late\0\xff".to_vec()];
+    host.observe().native_io.stderr = vec![b"early-error".to_vec(), b"late-error".to_vec()];
+    let io = captured_api(&host)?.native_io();
+    let child = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    let stdout = child.stdout().unwrap();
+    let stderr = child.stderr().unwrap();
+    assert_eq!(super::block_on(stdout.read())?, Some(b"early".to_vec()));
+    assert_eq!(
+        super::block_on(stderr.read())?,
+        Some(b"early-error".to_vec())
+    );
+    let (hold, _started, open) = gate();
+    host.observe().hold_next_idle(hold);
+    let mut wait = child.wait();
+    assert!(
+        wait.as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    open.send(()).unwrap();
+    assert_eq!(super::block_on(wait)?.code, Some(7));
+    assert_eq!(
+        super::block_on(stdout.read())?,
+        Some(b"late\0\xff".to_vec())
+    );
+    assert_eq!(
+        super::block_on(stderr.read())?,
+        Some(b"late-error".to_vec())
+    );
+    assert_eq!(super::block_on(stdout.read())?, None);
+    assert_eq!(super::block_on(stderr.read())?, None);
+    Ok(())
+}
+
+#[test]
+fn native_child_keeps_exit_and_signal_distinct() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for code in [0, 7] {
+        host.observe().native_io.exit_code = Some(code);
+        let child =
+            super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+        assert_eq!(
+            child.pid(),
+            Some(host.observed().native_io.child.as_ref().unwrap().pid)
+        );
+        let (hold, _started, open) = gate();
+        host.observe().hold_next_idle(hold);
+        let mut wait = child.wait();
+        assert!(
+            wait.as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()))
+                .is_pending()
+        );
+        open.send(()).unwrap();
+        assert_eq!(
+            super::block_on(wait)?,
+            crate::child_process::ExitStatus {
+                code: Some(code),
+                signal: None
+            }
+        );
+    }
+    let child = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    assert!(child.kill(Some("SIGINT".into()))?);
+    assert_eq!(
+        super::block_on(child.wait())?,
+        crate::child_process::ExitStatus {
+            code: None,
+            signal: Some("SIGINT".into())
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn native_child_kill_controls_the_retained_child() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for selected in [None, Some("SIGKILL".to_owned())] {
+        let child =
+            super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+        let original = host.observed().native_io.child.as_ref().unwrap().clone();
+        assert!(child.kill(selected.clone())?);
+        assert!(!original.kill(None));
+        let status = super::block_on(child.wait())?;
+        assert_eq!(status.code, None);
+        assert_eq!(
+            status.signal,
+            Some(selected.unwrap_or_else(|| "SIGTERM".into()))
+        );
+        assert!(!child.kill(None)?);
+        assert_eq!(super::block_on(child.wait())?, status);
+    }
+    Ok(())
+}
+
+#[test]
+fn native_child_group_signal_keeps_direct_fallback() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let child = super::block_on(io.spawn(
+        "literal".into(),
+        Vec::new(),
+        SpawnOptions {
+            detached: true,
+            ..SpawnOptions::default()
+        },
+    ))?;
+    assert!(host.observed().native_io.launches[0].2.detached);
+    let group = -i32::try_from(child.pid().unwrap()).unwrap();
+    io.kill(group, Some("SIGKILL".into()))?;
+    assert_eq!(
+        host.observed().native_io.signals,
+        [(group, Some("SIGKILL".into()))]
+    );
+    host.observe().native_io.error = Some("group unavailable".into());
+    assert_eq!(
+        io.kill(group, Some("SIGKILL".into())),
+        Err("group unavailable".into())
+    );
+    assert!(child.kill(Some("SIGKILL".into()))?);
+    assert_eq!(
+        super::block_on(child.wait())?.signal.as_deref(),
+        Some("SIGKILL")
+    );
+    Ok(())
+}
+
+#[test]
+fn native_child_abort_keeps_the_original_signal() -> ExtensionResult<()> {
+    use std::rc::Rc;
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let flag = Flag::default();
+    let original_signal = signal(&host, host.signal(&flag));
+    let child = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    let retained = Rc::clone(&child);
+    let subscription =
+        original_signal.subscribe(Rc::new(move |_| retained.kill(None).map(|_| ())))?;
+    drop(original_signal);
+    assert_eq!(host.observed().bus.listeners.len(), 1);
+    assert_eq!(host.abort(&flag), [Ok(())]);
+    assert_eq!(
+        super::block_on(child.wait())?.signal.as_deref(),
+        Some("SIGTERM")
+    );
+    subscription.unsubscribe()?;
+    assert!(host.observed().bus.listeners.is_empty());
+    Ok(())
+}
+
+#[test]
+fn native_child_errors_remain_catchable() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for failure in ["missing executable", "invalid cwd"] {
+        host.observe().native_io.error = Some(failure.into());
+        assert_eq!(
+            super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default())).err(),
+            Some(failure.into())
+        );
+    }
+    host.observe().native_io.error = None;
+    host.observe().native_io.stdout = vec![vec![0, 255]];
+    host.observe().native_io.read_error = Some("read failed Ω".into());
+    let child = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    let output = child.stdout().unwrap();
+    assert_eq!(super::block_on(output.read())?, Some(vec![0, 255]));
+    assert_eq!(super::block_on(output.read()), Err("read failed Ω".into()));
+    let input = child.stdin().unwrap();
+    super::block_on(input.end())?;
+    assert_eq!(
+        super::block_on(input.write(&[1])),
+        Err("controlled input closed".into())
+    );
+    host.observe().native_io.error = Some("signal failed".into());
+    assert_eq!(
+        io.kill(1234, Some("bad signal".into())),
+        Err("signal failed".into())
+    );
+    host.observe().native_io.error = None;
+    host.observe().native_io.read_error = None;
+    host.observe().native_io.stdout = vec![b"sibling".to_vec()];
+    let sibling = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    assert_eq!(
+        super::block_on(sibling.stdout().unwrap().read())?,
+        Some(b"sibling".to_vec())
+    );
+    assert_eq!(super::block_on(sibling.wait())?.code, Some(7));
+    Ok(())
+}
+
+#[test]
+fn native_child_handles_outlive_the_callback() -> ExtensionResult<()> {
+    use std::sync::Arc;
+    let host = Controlled::default();
+    host.observe().native_io.stdout = vec![vec![0, 255]];
+    host.observe().native_io.stderr = vec![b"retained".to_vec()];
+    let io = captured_api(&host)?.native_io();
+    let child = super::block_on(io.spawn("literal".into(), Vec::new(), SpawnOptions::default()))?;
+    let input = child.stdin().unwrap();
+    let output = child.stdout().unwrap();
+    let error = child.stderr().unwrap();
+    let mut original = host.observe().native_io.child.take().unwrap();
+    let input_released = Arc::downgrade(&original.stdin.take().unwrap().bytes);
+    drop(child);
+    drop(io);
+    assert!(input_released.upgrade().is_some());
+    super::block_on(input.write(&[0, 255]))?;
+    super::block_on(input.end())?;
+    assert_eq!(super::block_on(output.read())?, Some(vec![0, 255]));
+    assert_eq!(super::block_on(error.read())?, Some(b"retained".to_vec()));
+    drop(input);
+    assert!(input_released.upgrade().is_none());
+    assert!(
+        original.kill(None),
+        "dropping controls must not signal the child"
+    );
     Ok(())
 }

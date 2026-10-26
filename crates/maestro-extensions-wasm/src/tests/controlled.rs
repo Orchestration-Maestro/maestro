@@ -548,7 +548,11 @@ impl crate::component_adapter::NativeImports for Controlled {
         &'a self,
         child: &'a Self::Child,
     ) -> ExtensionFuture<'a, crate::child_process::ExitStatus> {
-        Box::pin(std::future::ready(Ok(child.wait())))
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            Ok(child.wait())
+        })
     }
     fn child_kill(&self, child: &Self::Child, signal: Option<String>) -> ExtensionResult<bool> {
         Ok(child.kill(signal))
@@ -557,7 +561,7 @@ impl crate::component_adapter::NativeImports for Controlled {
         &'a self,
         reader: &'a Self::Readable,
     ) -> ExtensionFuture<'a, Option<Vec<u8>>> {
-        Box::pin(std::future::ready(Ok(reader.read())))
+        Box::pin(std::future::ready(reader.read()))
     }
     fn readable_close(&self, reader: &Self::Readable) -> ExtensionResult<()> {
         reader.close();
