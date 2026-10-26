@@ -23,6 +23,9 @@ struct Request {
     resize: Option<bool>,
     /// Optional operation to reject with a structured diagnostic.
     fail: Option<String>,
+    /// Uses the four-argument executable instead of the context-bearing definition.
+    #[serde(default)]
+    executable: bool,
 }
 /// Records the native arguments to every supplied observation.
 type Calls = Rc<RefCell<Vec<serde_json::Value>>>;
@@ -35,22 +38,25 @@ pub(super) async fn execute(
 ) -> ExtensionResult<String> {
     let request: Request = serde_json::from_str(request).map_err(|error| error.to_string())?;
     let calls = Calls::default();
-    let tool = api.create_read_tool_definition(
-        "/virtual".into(),
-        ReadToolOptions {
-            auto_resize_images: request.resize,
-            operations: Some(operations(request, &calls)),
-        },
-    )?;
-    let prepares = tool.prepare_arguments.is_some();
-    let result = (tool.execute)(
-        "custom-read".into(),
-        serde_json::json!({"path":"雪.bin"}),
-        None,
-        None,
-        context,
-    )
-    .await;
+    let executable = request.executable;
+    let options = ReadToolOptions {
+        auto_resize_images: request.resize,
+        operations: Some(operations(request, &calls)),
+    };
+    let args = serde_json::json!({"path":"雪.bin"});
+    let (prepares, result) = if executable {
+        let tool = api.create_read_tool("/virtual".into(), options)?;
+        (
+            tool.prepare_arguments.is_some(),
+            (tool.execute)("custom-read".into(), args, None, None).await,
+        )
+    } else {
+        let tool = api.create_read_tool_definition("/virtual".into(), options)?;
+        (
+            tool.prepare_arguments.is_some(),
+            (tool.execute)("custom-read".into(), args, None, None, context).await,
+        )
+    };
     let mut response = serde_json::json!({"calls":*calls.borrow(),"prepares":prepares});
     match result {
         Ok(result) => {
