@@ -678,7 +678,7 @@ fn catalog_refresh_retains_readers_and_drains_load_error() {
                 path.display()
             ))
         );
-        assert_eq!(retained["models"].as_array().unwrap().len(), shipped.len());
+        assert_eq!(retained["models"], serde_json::to_value(&shipped).unwrap());
         assert!(!shipped.is_empty());
         runner.invalidate(Some(
             "context retired, retained owners remain callable".into(),
