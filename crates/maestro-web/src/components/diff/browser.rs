@@ -59,40 +59,6 @@ fn build(
     mounted.update(lines);
     Ok(mounted)
 }
-/// Mount literal rows and the optional title/count header with their own stylesheet.
-pub(super) fn mount(
-    document: &web_sys::Document,
-    lines: &Rc<Lines>,
-) -> Result<attachment_content::ReadingRoot, attachment_content::AttachmentHostError> {
-    use attachment_content::browser::element;
-    let mounted = build(document, lines)?;
-    let style = element(document, "style", "")?;
-    style.set_text_content(Some(include_str!("../diff.css")));
-    mounted
-        .root
-        .prepend_with_node_1(&style)
-        .map_err(|error| attachment_content::browser::host_error(&error))?;
-    let root = mounted.root.clone();
-    let lines = Rc::clone(lines);
-    let mounted = Rc::new(RefCell::new(mounted));
-    Ok(attachment_content::ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        element: root,
-        slots: vec![],
-        owner: Some(Box::new(Rc::clone(&mounted))),
-        commit: Some(Box::new(move |previous| {
-            if let Some(previous) = previous
-                .owner
-                .as_ref()
-                .and_then(|owner| owner.downcast_ref::<Rc<RefCell<Mounted>>>())
-            {
-                previous.borrow_mut().reconcile(&mounted.borrow(), &lines)?;
-            }
-            Ok(())
-        })),
-    })
-}
 /// The shown input and its retained nodes.
 type Shown = RefCell<(Rc<super::Normalized>, Mounted)>;
 impl DomContent for super::DiffContent {

@@ -200,7 +200,6 @@ impl ArtifactsToolRenderer {
                     text: display.into_owned(),
                     filename: filename.and_then(Field::text).map(str::to_owned),
                     panel: self.artifacts_panel.clone(),
-                    actions: None,
                 }),
             );
         }

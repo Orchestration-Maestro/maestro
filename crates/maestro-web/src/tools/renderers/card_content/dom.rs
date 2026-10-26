@@ -1,5 +1,5 @@
 //! Page-mounted card bodies share the existing branch preparation and native child owners.
-use super::{Body, Caption, CardContent, CardOutput, CollapsibleCard, Content};
+use super::{Body, Caption, CardContent};
 use crate::{
     ConsoleBlock,
     browser::attachment_content::browser::element,
@@ -7,25 +7,14 @@ use crate::{
     dom::{DomContent, DomRoot, DomView, MountedContent},
     tools::{
         renderer_registry::{
-            ToolHeaderState, ToolHeaderText,
-            header::dom::{ToolHeaderRefs, glyph, render_collapsible_header, render_header},
+            ToolHeaderRefs, ToolHeaderState, ToolHeaderText, header::dom::glyph,
+            render_collapsible_header, render_header,
         },
         types::ToolUiError,
     },
 };
 use std::cell::RefCell;
 
-impl CardOutput for Box<dyn DomContent> {
-    fn card(card: CardContent) -> Self {
-        Box::new(card)
-    }
-    fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
-        Box::new(Content::<R, Self>::from(card))
-    }
-    fn diff(props: crate::components::diff::DiffProps) -> Self {
-        crate::components::diff::dom::diff(props)
-    }
-}
 /// Prepare a card's status header from its glyph and caption, with an artifact's filename pill
 /// after its label, toggling `refs` when a body exists.
 /// # Errors

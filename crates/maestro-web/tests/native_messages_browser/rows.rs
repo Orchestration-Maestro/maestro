@@ -2,7 +2,7 @@
 use crate::contributions_support::{body, call, computed, localized_view, rgb, select, text};
 use maestro_app::{JsonObject, ToolCall, ToolResultMessage};
 use maestro_web::{
-    components::messages::dom::{AbortedMessage, ToolMessage, ToolMessageDebugView},
+    components::messages::{AbortedMessage, ToolMessage, ToolMessageDebugView},
     dom::{DomContent, DomRoot, DomView},
     tools::types::{
         ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView, ToolUiError,
@@ -301,22 +301,18 @@ fn card_paint(view: &DomView, card: &Element) {
     assert_ne!(computed(card, "box-shadow"), "none");
 }
 
-/// One listing's decoded operand, painted text and language label.
+/// One listing's original copy operand, painted text and language label.
 pub(super) fn listings(root: &DomRoot) -> Vec<(String, String, String)> {
-    use base64::Engine as _;
     let blocks = root
         .node
         .unchecked_ref::<Element>()
-        .query_selector_all("code-block")
+        .query_selector_all(".maestro-code")
         .unwrap();
     (0..blocks.length())
         .map(|index| {
             let block: Element = blocks.item(index).unwrap().unchecked_into();
-            let code = base64::engine::general_purpose::STANDARD
-                .decode(block.get_attribute("code").unwrap())
-                .unwrap();
             (
-                String::from_utf8(code).unwrap(),
+                select(&block, "copy-button").get_attribute("text").unwrap(),
                 text(&select(&block, "pre code")),
                 block.get_attribute("language").unwrap(),
             )
@@ -562,11 +558,11 @@ pub(super) fn debug_row_lifecycle(view: &Rc<DomView>) {
     let root = row.mount(view).unwrap();
     body().append_child(&root.node).unwrap();
     let element: &Element = root.node.unchecked_ref();
-    let first = element.query_selector_all("code-block").unwrap();
+    let first = element.query_selector_all(".maestro-code").unwrap();
     assert_eq!(first.length(), 3);
     row.call_args = Some(json!({"a": 2}));
     row.update(&root, view).unwrap();
-    let again = element.query_selector_all("code-block").unwrap();
+    let again = element.query_selector_all(".maestro-code").unwrap();
     for at in 0..3 {
         assert!(
             again
@@ -579,7 +575,10 @@ pub(super) fn debug_row_lifecycle(view: &Rc<DomView>) {
     row.has_result = false;
     row.update(&root, view).unwrap();
     assert_eq!(
-        element.query_selector_all("code-block").unwrap().length(),
+        element
+            .query_selector_all(".maestro-code")
+            .unwrap()
+            .length(),
         1
     );
     assert_eq!(
@@ -599,7 +598,7 @@ pub(super) fn debug_row_lifecycle(view: &Rc<DomView>) {
     assert_eq!(listings(&root).len(), 3);
     assert!(
         element
-            .query_selector_all("code-block")
+            .query_selector_all(".maestro-code")
             .unwrap()
             .item(0)
             .unwrap()

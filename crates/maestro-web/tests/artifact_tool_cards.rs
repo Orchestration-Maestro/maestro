@@ -196,7 +196,7 @@ fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     use maestro_app::browser::tools::artifacts::{
         ArtifactCommand, ArtifactsParams, LocalArtifactsPanel,
     };
-    use maestro_web::{ArtifactsToolRenderer, ToolRenderer, tools::types::ToolRenderState};
+    use maestro_web::{ArtifactsToolRenderer, ToolRenderer};
     use std::rc::Rc;
     let host = Rc::new(crate::attachment_support::Host::default());
     let presentation = Rc::new(crate::artifact_support::presentation::Presentation::new(
@@ -223,16 +223,7 @@ fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     renderer.artifacts_panel = None;
     drop(renderer);
     assert!(weak.upgrade().is_some());
-    let mut frame = crate::attachment_support::Frame::default();
-    let mut state = ToolRenderState::default();
-    crate::document_card_support::frame_owner(&mut frame, &host, vec![], |ui, view| {
-        recipe.render(ui, view, &mut state)
-    })
-    .response
-    .unwrap();
+    assert!(host.effects.borrow().is_empty());
     drop(recipe);
-    assert!(weak.upgrade().is_some());
-    drop(state);
     assert!(weak.upgrade().is_none());
-    assert!(!host.effects.borrow().is_empty());
 }

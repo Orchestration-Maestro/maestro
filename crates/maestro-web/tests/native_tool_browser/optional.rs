@@ -5,7 +5,7 @@ use crate::{
 };
 use maestro_app::ToolResultMessage;
 use maestro_web::{
-    ArtifactsToolRenderer, CalculateRenderer, GetCurrentTimeRenderer,
+    ArtifactsToolRenderer, BashRenderer, CalculateRenderer, GetCurrentTimeRenderer,
     dom::{DomContent, DomView, MountedContent},
     tools::types::{ToolRenderResult, ToolRenderer, ToolUiError},
 };
@@ -48,7 +48,7 @@ fn opaque(result: &ToolResultMessage) -> ToolResultMessage<Rc<Opaque>> {
         timestamp: result.timestamp,
     }
 }
-/// Prepare a recorded calculation or current-time card for page content.
+/// Prepare a recorded command, calculation or current-time card for page content.
 fn optional<D: 'static>(
     tool: &str,
     input: &crate::support::tool_input::Input,
@@ -57,25 +57,22 @@ fn optional<D: 'static>(
     let (params, streaming) = (input.params.as_ref(), input.is_streaming);
     let result = result.map(Into::into);
     match tool {
+        "bash" => BashRenderer.render(params, result, streaming),
         "calculate" => CalculateRenderer.render(params, result, streaming),
         "time" => GetCurrentTimeRenderer.render(params, result, streaming),
         other => panic!("unknown optional tool {other}"),
     }
     .unwrap()
 }
-/// Every recorded calculation and current-time branch, field domain and locale, with the same
-/// outcome for opaque native details.
+/// Every recorded command, calculation and current-time branch, field domain and locale, with
+/// the same outcome for opaque native details.
 pub(super) fn optional_tools(view: &Rc<DomView>) {
     let fixture = crate::tool_cards_support::fixture();
     let rows = (fixture.rows.into_iter()).map(|row| (row.tool, row.input, row.expected));
     let domains = (fixture.domains.into_iter()).map(|row| (row.tool, row.input, row.expected));
     let localized = (fixture.localized.into_iter()).map(|row| (row.tool, row.input, row.expected));
-    let cases: Vec<_> = rows
-        .chain(domains)
-        .chain(localized)
-        .filter(|(tool, ..)| tool != "bash")
-        .collect();
-    assert_eq!(cases.len(), 140);
+    let cases: Vec<_> = rows.chain(domains).chain(localized).collect();
+    assert_eq!(cases.len(), 210);
     for (index, (tool, input, expected)) in cases.iter().enumerate() {
         let view = input.language.as_deref().map_or_else(
             || Rc::clone(view),
@@ -149,7 +146,7 @@ fn observe_artifact(card: &Element, expected: &records::Expected, index: &str) {
 }
 /// Listings, consoles, destructive text and difference rows, each in order.
 fn observe_artifact_children(card: &Element, expected: &records::Expected, index: &str) {
-    let listings: Vec<_> = super::all(card, "code-block")
+    let listings: Vec<_> = super::all(card, ".maestro-code")
         .iter()
         .map(|shown| {
             let language = shown.get_attribute("language").unwrap();
@@ -191,11 +188,7 @@ fn observe_artifact_children(card: &Element, expected: &records::Expected, index
 }
 /// Observe the literal operand separately from HTML parsing's newline conversion.
 fn listing_text(block: &Element) -> String {
-    use base64::Engine as _;
-    let bytes = base64::engine::general_purpose::STANDARD
-        .decode(block.get_attribute("code").unwrap())
-        .unwrap();
-    let code = String::from_utf8(bytes).unwrap();
+    let code = select(block, "copy-button").get_attribute("text").unwrap();
     assert_eq!(
         text(&select(block, "pre code")),
         maestro_app::normalize_to_lf(&code)
@@ -352,7 +345,7 @@ fn fields(view: &Rc<DomView>) {
     for (index, row) in domains.iter().enumerate() {
         let shown = value(Some(&row.input.params), &row.input.phase).unwrap();
         let card = Shown::new(shown.content.as_ref(), view);
-        let code = card.root().query_selector("code-block").unwrap();
+        let code = card.root().query_selector(".maestro-code").unwrap();
         let expected = match &row.expected {
             records::CodeSelection::Omitted {} => None,
             records::CodeSelection::Text { text } => Some(text.clone()),
@@ -377,7 +370,7 @@ fn languages(view: &Rc<DomView>) {
         }
         let shown = value(Some(&params), "pending").unwrap();
         let card = Shown::new(shown.content.as_ref(), view);
-        let block = select(&card.root(), "code-block");
+        let block = select(&card.root(), ".maestro-code");
         assert_eq!(block.get_attribute("language").unwrap(), row.expected);
         assert_eq!(text(&select(&block, "pre code")), "literal");
     }
@@ -486,7 +479,7 @@ pub(super) fn transitions(view: &Rc<DomView>) {
         let (caption, body, code) = (
             find(".maestro-tool-caption").unwrap(),
             find(".maestro-tool-body"),
-            find("code-block"),
+            find(".maestro-code"),
         );
         if body.is_some() {
             super::header_of(&root).click();
@@ -509,7 +502,8 @@ pub(super) fn transitions(view: &Rc<DomView>) {
         );
         if let Some(expected) = row.expected.code_retained {
             assert_eq!(
-                code.as_ref().is_some_and(|code| kept(code, "code-block")),
+                code.as_ref()
+                    .is_some_and(|code| kept(code, ".maestro-code")),
                 expected,
                 "{index}"
             );
@@ -533,7 +527,8 @@ pub(super) fn transitions(view: &Rc<DomView>) {
 /// Direct differences keep their title, counts, class and ordered rows when mounted and when
 /// one retained root is updated through every case.
 pub(super) fn diffs(view: &Rc<DomView>) {
-    use maestro_web::components::diff::{DiffProps, dom::diff};
+    use maestro_web::components::diff::{DiffProps, diff};
+    crate::diff_factory::diff_factory_identity_uses_normalized_semantics(view);
     let cases = cards::diff_cases();
     assert_eq!(cases.len(), 48);
     let mut retained = Shown(MountedContent::default());
@@ -730,6 +725,7 @@ fn literal_pills(view: &Rc<DomView>) {
 /// it, opens that file once without toggling the body, while the header still toggles it.
 pub(super) fn created_artifact(view: &Rc<DomView>) {
     let panel = Panel::new();
+    let weak = Rc::downgrade(&panel.panel);
     let result = panel.create("made.rs");
     let mut renderer = ArtifactsToolRenderer::new(Some(Rc::clone(&panel.panel)));
     let params = json!({"command": "create", "filename": "made.rs", "content": "stored"});
@@ -763,4 +759,15 @@ pub(super) fn created_artifact(view: &Rc<DomView>) {
     assert_eq!(panel.panel.active_filename().as_deref(), Some("made.rs"));
     assert_eq!(panel.presentation.opened.get(), 2);
     assert!(!body.class_list().contains("max-h-0"));
+    drop(shown);
+    drop(panel);
+    assert!(
+        weak.upgrade().is_some(),
+        "the mounted action retains its panel"
+    );
+    drop(card);
+    assert!(
+        weak.upgrade().is_none(),
+        "released actions free the captured panel"
+    );
 }

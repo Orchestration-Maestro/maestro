@@ -6,6 +6,7 @@ use maestro_web::dom::DomContent as _;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
 use web_sys::{CustomEvent, Element, HtmlElement};
+mod overlay;
 
 /// Assign an unreflected element operand.
 fn set(element: &Element, name: &str, value: &JsValue) {
@@ -274,7 +275,7 @@ fn opened(
     view: &Rc<maestro_web::dom::DomView>,
     record: maestro_web::SharedAttachment,
 ) -> (maestro_web::AttachmentOverlay, Element) {
-    let overlay = maestro_web::AttachmentOverlay::open_native(view, record, None).unwrap();
+    let overlay = maestro_web::AttachmentOverlay::open(view, record, None).unwrap();
     let mounted = overlay.mount(view).unwrap();
     let element: Element = mounted.node.unchecked_into();
     assert!(element.is_connected());
@@ -369,6 +370,7 @@ fn content_cases(view: &Rc<maestro_web::dom::DomView>) {
     for case in cases {
         let record = case.input.record();
         valid_document(&record, &case.expected.kind);
+        let filename = record.read().unwrap().file_name.clone();
         let (_, root) = opened(view, record);
         if case.show_text && case.expected.small {
             control(&root, ".maestro-toggle button:nth-child(2)");
@@ -387,6 +389,7 @@ fn content_cases(view: &Rc<maestro_web::dom::DomView>) {
         if let Some(source) = case.expected.source {
             let image = root.query_selector("img").unwrap().unwrap();
             assert_eq!(image.get_attribute("src").unwrap(), source);
+            assert_eq!(image.get_attribute("alt").unwrap(), filename);
             assert_eq!(
                 web_sys::window()
                     .unwrap()
@@ -433,6 +436,7 @@ fn error_modes(view: &Rc<maestro_web::dom::DomView>) {
     );
     control(&root, ".maestro-toggle button:nth-child(1)");
     let error = root.query_selector(".maestro-file-error").unwrap().unwrap();
+    overlay::preserve_error(&overlay, view, &root, &record);
     record.write().unwrap().content = crate::pdf_views_browser::encoded(true);
     let mounted = overlay.mount(view).unwrap();
     overlay.update(&mounted, view).unwrap();
@@ -460,6 +464,9 @@ pub fn overlay_dom_fixed_chrome_modes_text_and_locales() {
     let view = view();
     classification_and_labels(&view);
     content_cases(&view);
+    overlay::live_text(&view);
+    overlay::live_modes(&view);
+    overlay::borrow_failure(&view);
     let unset = view.document.create_element("attachment-overlay").unwrap();
     body().append_child(&unset).unwrap();
     assert!(unset.first_element_child().is_none());
@@ -494,6 +501,7 @@ pub fn overlay_dom_fixed_chrome_modes_text_and_locales() {
             .unwrap(),
         "auto"
     );
+    overlay::chrome_layout(&root);
     close(&root);
 }
 
@@ -632,7 +640,11 @@ pub async fn overlay_dom_documents_keep_resources_and_sheet_state(import_module:
     let view = view();
     let page = crate::contributions_support::page_module(import_module).await;
     overlay_pdf(&view, &page).await;
+    overlay::pdf::raw_admission(&view);
+    overlay::pdf::live_replacement(&view, &page).await;
     overlay_sheets(&view);
+    overlay::sheet_replacement(&view);
+    overlay::sheet_failure(&view);
     overlay_word_resources(&view).await;
     for case in crate::native_document_artifacts_browser::packages() {
         let record = crate::attachment_support::attachment();
@@ -687,7 +699,7 @@ async fn close_routes(
             a.extracted_text = Some("literal text".into());
         }
         let seen = Rc::clone(calls);
-        let overlay = maestro_web::AttachmentOverlay::open_native(
+        let overlay = maestro_web::AttachmentOverlay::open(
             view,
             record,
             Some(Rc::new(move || seen.set(seen.get() + 1))),
@@ -744,11 +756,20 @@ pub async fn overlay_dom_close_reopen_and_pending_document_release(import_module
     native.call("finishKeys", &Array::new()).unwrap();
     assert_eq!(Rc::strong_count(&calls), 1);
     assert_eq!(calls.get(), 3);
+    overlay::close_callback(&view);
+    overlay::keyboard_order(&view).await;
+    crate::session_header_browser::attachment_layer_intercepts_header_controls(&view).await;
     let (_, first) = opened(&view, crate::attachment_support::attachment());
     let (_, second) = opened(&view, crate::attachment_support::attachment());
     close(&first);
     assert!(second.is_connected());
     close(&second);
+    let (_, first) = opened(&view, crate::attachment_support::attachment());
+    let (_, second) = opened(&view, crate::attachment_support::attachment());
+    native
+        .call("pressKey", &Array::of1(&"Escape".into()))
+        .unwrap();
+    assert!(!first.is_connected() && !second.is_connected());
 }
 
 /// Exercise original-byte downloads and each reached native refusal independently.
@@ -834,18 +855,15 @@ async fn refused_overlay_open(
         .call("refuseCreation", &Array::new())
         .unwrap()
         .unchecked_into();
-    let error = maestro_web::AttachmentOverlay::open_native(
-        view,
-        crate::attachment_support::attachment(),
-        None,
-    )
-    .err()
-    .unwrap();
+    let error =
+        maestro_web::AttachmentOverlay::open(view, crate::attachment_support::attachment(), None)
+            .err()
+            .unwrap();
     restore.call0(&JsValue::UNDEFINED).unwrap();
     assert!(error.to_string().contains("controlled overlay creation"));
     for mode in ["append", "body"] {
         download.begin(mode);
-        let error = maestro_web::AttachmentOverlay::open_native(
+        let error = maestro_web::AttachmentOverlay::open(
             view,
             crate::attachment_support::attachment(),
             None,
@@ -875,14 +893,20 @@ async fn refused_overlay_open(
 pub async fn tile_dom_preview_fallback_badge_and_utf16_names(import_module: &Function) {
     let view = view();
     crate::attachment_tiles::native_cases(&view);
+    crate::attachment_surfaces::attachment_surfaces_keep_fractional_rects_and_owned_content(&view);
+    crate::attachment_surfaces::attachment_styles_follow_caller_brand_pack(&view);
     tile_hover(&view, import_module).await;
+    crate::attachment_tiles::tile_badge_keeps_image_pointer_route(&view, import_module).await;
 }
 
 /// Removal uses the latest callback and never reaches the opening listener.
 #[wasm_bindgen]
 pub async fn tile_dom_remove_does_not_open_and_uses_current_callback() {
-    use maestro_web::components::attachment_tile::dom::AttachmentTile;
+    use maestro_web::components::attachment_tile::AttachmentTile;
     let view = view();
+    crate::attachment_surfaces::attachment_tiles_replace_transactionally_and_release_listeners(
+        &view,
+    );
     let mut tile = AttachmentTile::from(crate::attachment_support::attachment());
     let root = tile.mount(&view).unwrap();
     body().append_child(&root.node).unwrap();
@@ -918,6 +942,13 @@ pub async fn tile_dom_remove_does_not_open_and_uses_current_callback() {
     assert_eq!(calls.get(), 1);
     crate::contributions_support::driver("driverPress", "Space").await;
     assert_eq!(calls.get(), 2);
+    tile.on_delete = None;
+    tile.update(&root, &view).unwrap();
+    control(&node, "[data-remove]");
+    assert_eq!(calls.get(), 2);
+    tile.show_delete = false;
+    tile.update(&root, &view).unwrap();
+    assert!(node.query_selector("[data-remove]").unwrap().is_none());
     assert_eq!(
         view.document
             .query_selector_all("attachment-overlay")
@@ -931,7 +962,7 @@ pub async fn tile_dom_remove_does_not_open_and_uses_current_callback() {
 /// Opened overlays retain the original record after their originating tile is gone.
 #[wasm_bindgen]
 pub fn tile_dom_opened_overlays_outlive_tiles() {
-    use maestro_web::components::attachment_tile::dom::AttachmentTile;
+    use maestro_web::components::attachment_tile::AttachmentTile;
     let view = view();
     let attachment = crate::attachment_support::attachment();
     attachment.write().unwrap().mime_type = "image/png".into();
@@ -986,13 +1017,15 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
     close(&first);
     assert!(second.is_connected());
     close(&second);
+    crate::attachment_surfaces::attachment_modal_hides_and_restores_existing_surfaces(&view);
+    crate::attachment_tiles::user_attachment_tiles_wrap_as_single_fixed_items(&view);
 }
 
 /// Hover-capable paint and focused removal remain visible through native pointer input.
 async fn tile_hover(view: &maestro_web::dom::DomView, import_module: &Function) {
     use crate::contributions_support::{call, computed, driver, page_module};
     let page = page_module(import_module).await;
-    let mut tile = maestro_web::components::attachment_tile::dom::AttachmentTile::from(
+    let mut tile = maestro_web::components::attachment_tile::AttachmentTile::from(
         crate::attachment_support::attachment(),
     );
     tile.show_delete = true;

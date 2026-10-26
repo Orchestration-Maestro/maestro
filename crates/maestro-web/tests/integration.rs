@@ -7,7 +7,6 @@ mod artifact_elements_browser;
 mod artifact_panel;
 mod artifact_panel_browser;
 mod artifact_tool_cards;
-mod artifact_tool_cards_browser;
 mod attachment_exports;
 mod attachment_overlay;
 mod attachment_surfaces;
@@ -18,7 +17,6 @@ mod browser_fixture_support;
 mod browser_fixtures;
 mod browser_formatting;
 mod code_blocks;
-mod composed_consumer;
 mod contributions;
 mod contributions_browser;
 mod copy_buttons;
@@ -43,14 +41,10 @@ mod markdown_blocks;
 mod markdown_blocks_browser;
 mod markdown_svg_artifacts;
 mod markdown_svg_artifacts_browser;
-mod message_debug_browser;
 mod message_errors;
-mod message_reading_browser;
 mod message_renderers;
 mod message_renderers_browser;
 mod message_tool_arguments;
-mod message_visuals_browser;
-mod messages_browser;
 mod native_artifact_console_browser;
 mod native_artifact_console_support;
 mod native_artifact_controls_browser;
@@ -80,9 +74,7 @@ mod session_links_browser;
 mod storage_exports;
 mod text_image_artifacts;
 mod text_image_artifacts_browser;
-mod thinking_blocks_browser;
 mod tool_cards;
-mod tool_cards_browser;
 mod tool_renderers;
 mod tool_renderers_browser;
 
@@ -129,13 +121,9 @@ pub mod text_image_support;
 pub mod tool_cards_support;
 pub mod tool_renderer_support;
 use tool_renderer_support as recipes;
-#[cfg(target_arch = "wasm32")]
-use tool_renderer_support::browser as tool_renderer_browser;
 
 mod message_renderer_support;
 use tool_renderer_support as renderer_recipes;
-
-use text_image_support::recording as recording_highlighter;
 
 mod offline_tool_card_support;
 mod offline_tool_cards;

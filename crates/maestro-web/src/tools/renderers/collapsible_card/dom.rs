@@ -1,12 +1,12 @@
 //! Page-mounted disclosures: the status header, its animated body and the files outside it.
-use super::{Body, CollapsibleCard, Content, Phase, output};
+use super::{Body, CollapsibleCard, Content, Phase};
 use crate::{
     SharedAttachment,
     browser::attachment_content::browser::{element, host_error},
-    components::attachment_tile::dom::AttachmentTile,
+    components::attachment_tile::AttachmentTile,
     dom::{DomContent, DomRoot, DomView, MountedContent},
     tools::{
-        renderer_registry::header::dom::ToolHeaderRefs,
+        renderer_registry::ToolHeaderRefs,
         renderers::{
             card_content::dom::{ErrorText, console, header},
             default_renderer::Listing,
@@ -216,4 +216,33 @@ impl DomContent for Url {
         }
         Ok(())
     }
+}
+
+impl super::Download {
+    /// Compare caller-visible input, excluding generated identity and derived text.
+    fn matches(&self, record: &crate::SharedAttachment) -> Result<bool, ToolUiError> {
+        let record = record.try_read().map_err(|_| {
+            ToolUiError::Attachment(
+                crate::dialogs::attachment_overlay::AttachmentUiError::BorrowConflict,
+            )
+        })?;
+        let original = &self.attachment;
+        Ok(record.file_name == original.file_name
+            && record.mime_type == original.mime_type
+            && record.size == original.size
+            && record.content == original.content)
+    }
+}
+/// Translate only a selected empty-output fallback, never caller text.
+fn output(
+    text: &str,
+    fallback: Option<&'static str>,
+    i18n: &crate::I18n,
+) -> Result<String, ToolUiError> {
+    if text.is_empty()
+        && let Some(key) = fallback
+    {
+        return Ok(i18n.text(key)?);
+    }
+    Ok(text.into())
 }

@@ -37,65 +37,17 @@ pub(super) fn icon(document: &Document, name: &str, class: &str) -> Result<Eleme
     Ok(span)
 }
 
-use super::ToolHeaderText;
+use super::{Header, ToolHeaderRefs, ToolHeaderText};
 use crate::{
     browser::event_subscription::EventSubscription,
     dom::{DomContent, DomRoot, DomView, MountedContent},
     icons::IconNode,
+    tools::renderer_registry::render_header,
 };
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
-use web_sys::{Event, HtmlElement};
+use web_sys::Event;
 
-/// Live body and chevron references read together at activation.
-#[derive(Clone, Default)]
-pub struct ToolHeaderRefs {
-    /// Current disclosure body, which may be rebound independently of the header.
-    pub content: Rc<RefCell<Option<HtmlElement>>>,
-    /// Current chevron container.
-    pub chevron: Rc<RefCell<Option<HtmlElement>>>,
-}
-/// Prepare a plain status header with literal or native child content.
-#[must_use]
-pub fn render_header(
-    state: ToolHeaderState,
-    tool_icon: IconNode,
-    text: ToolHeaderText<Box<dyn DomContent>>,
-) -> Box<dyn DomContent> {
-    Box::new(Header {
-        state,
-        tool_icon,
-        text,
-        disclosure: None,
-    })
-}
-/// Prepare a native toggle; initial expansion selects icons, never rewrites the body.
-#[must_use]
-pub fn render_collapsible_header(
-    state: ToolHeaderState,
-    tool_icon: IconNode,
-    text: ToolHeaderText<Box<dyn DomContent>>,
-    refs: ToolHeaderRefs,
-    default_expanded: bool,
-) -> Box<dyn DomContent> {
-    Box::new(Header {
-        state,
-        tool_icon,
-        text,
-        disclosure: Some((refs, default_expanded)),
-    })
-}
-/// Immutable native header recipe.
-struct Header {
-    /// Current result state.
-    state: ToolHeaderState,
-    /// Caller-selected tool geometry.
-    tool_icon: IconNode,
-    /// Authored caption or independently owned native child.
-    text: ToolHeaderText<Box<dyn DomContent>>,
-    /// Live targets and initial chevron selection.
-    disclosure: Option<(ToolHeaderRefs, bool)>,
-}
 /// One retained click subscription.
 pub(crate) type Click = EventSubscription<Closure<dyn Fn(Event) -> Result<(), JsValue>>>;
 /// A stable caption placement and the header's installed event.

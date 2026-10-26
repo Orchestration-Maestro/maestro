@@ -69,20 +69,15 @@ fn web_attachment_exports_use_application_records() {
     assert_eq!(error.to_string(), "Request was aborted.");
 }
 
-/// Prove that application admission reaches the same view and download owner.
+/// Application admission and the tile retain the same original attachment owner.
 fn check_shared_attachment(
     user: &mut UserMessageWithAttachments,
     attachment: &maestro_web::SharedAttachment,
 ) {
     let retained = Arc::clone(&user.attachments.take().unwrap()[0]);
-    let host = std::rc::Rc::new(crate::attachment_support::Host::default());
-    let tile = maestro_web::AttachmentTile::new(Arc::clone(&retained), host.clone());
+    let tile = maestro_web::AttachmentTile::from(retained);
     assert!(Arc::ptr_eq(&tile.attachment, attachment));
-    let overlay = maestro_web::AttachmentOverlay::open(Arc::clone(&retained), None, host.clone());
-    maestro_web::browser::attachment_content::AttachmentHost::download(host.as_ref(), retained)
-        .unwrap();
-    assert!(Arc::ptr_eq(&host.downloads.borrow()[0], attachment));
-    drop((tile, overlay));
+    drop(tile);
     user.attachments = Some(vec![Arc::clone(attachment)]);
 }
 

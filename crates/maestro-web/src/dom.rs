@@ -20,6 +20,12 @@ pub struct DomView {
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
 }
+/// Prepared renderer output: owned records on native targets, which have no page.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) type PreparedContent = Box<dyn Any>;
+/// Prepared renderer output: page content in the browser.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type PreparedContent = Box<dyn DomContent>;
 /// A mounted root and the native resources that live exactly as long as it.
 pub struct DomRoot {
     /// Root node the caller places.

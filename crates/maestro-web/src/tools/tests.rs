@@ -249,12 +249,13 @@ fn returned_files() {
 }
 /// The recorded execution files reach each original record field, without the generated identity.
 fn recorded_files() {
-    let cases: Vec<Value> = serde_json::from_str(include_str!(
-        "../../tests/fixtures/native_document_cards.json"
-    ))
-    .unwrap();
+    let cases = [
+        include_str!("../../tests/fixtures/native_document_cards.json"),
+        include_str!("../../tests/fixtures/document_tool_cards.json"),
+    ]
+    .map(|fixture| serde_json::from_str::<Vec<Value>>(fixture).unwrap());
     let mut seen = 0;
-    for case in cases.iter().filter(|case| case["tool"] == "repl") {
+    for case in cases.iter().flatten().filter(|case| case["tool"] == "repl") {
         let expected = &case["expected"]["attachments"];
         if expected.as_array().is_none_or(Vec::is_empty) {
             continue;
@@ -268,7 +269,7 @@ fn recorded_files() {
         assert_eq!(&Value::Array(records(&card)), expected);
         seen += 1;
     }
-    assert_eq!(seen, 4);
+    assert_eq!(seen, 6);
 }
 /// Each prepared record with its generated identity removed.
 fn records(card: &CollapsibleCard<Recorded>) -> Vec<Value> {
@@ -434,4 +435,68 @@ fn artifact_replacements_and_pill() {
     };
     let shown = render(&renderer, Some(&typed), None::<&ToolResultMessage>).unwrap();
     assert_eq!(replacements(shown), Some(("o".into(), "n".into(), None)));
+}
+
+/// The real initializer's built-ins prepare their owned records through the shared dispatcher on
+/// native targets, for map, JSON and typed operands and for details no transport trait describes.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn builtin_initializer_prepares_native_records() {
+    use super::{
+        render_tool,
+        renderer_registry::{TOOL_RENDERERS, get_tool_renderer},
+        renderers::{collapsible_card::Content, default_renderer::DefaultContent},
+        types::{ToolParams, ToolRenderResult},
+    };
+    use std::any::Any;
+    /// Details with no transport, cloning or default trait.
+    struct Opaque;
+    /// The record each built-in prepares, independent of the operand route.
+    fn record(name: &str, shown: &ToolRenderResult<Box<dyn Any>>) {
+        assert!(!shown.is_custom, "{name}");
+        let content = shown.content.as_ref();
+        let prepared = match name {
+            "bash" => content.is::<CardContent>(),
+            "javascript_repl" => content.is::<Content<JavaScriptReplRenderer, Box<dyn Any>>>(),
+            "extract_document" => content.is::<Content<ExtractDocumentRenderer, Box<dyn Any>>>(),
+            _ => content.is::<DefaultContent>(),
+        };
+        assert!(prepared, "{name}");
+    }
+    TOOL_RENDERERS.with(|all| {
+        let names: Vec<_> = all.borrow().keys().cloned().collect();
+        assert_eq!(names, ["javascript_repl", "extract_document", "bash"]);
+    });
+    let params = json!({"command": "ls", "code": "1 + 1", "url": "https://a.test/d"});
+    let members = params.as_object().unwrap();
+    for name in ["bash", "javascript_repl", "extract_document", "unknown"] {
+        if let Some(renderer) = get_tool_renderer::<JsonObject, Value>(name) {
+            record(name, &renderer.render(Some(members), None, false).unwrap());
+        }
+        let object = ToolParams::object(members);
+        record(
+            name,
+            &render_tool::<JsonObject, Value>(name, Some(object), None, false).unwrap(),
+        );
+        let json = Some(ToolParams::json(&params));
+        record(
+            name,
+            &render_tool::<Value, Value>(name, json, None, false).unwrap(),
+        );
+    }
+    let repl: JavaScriptReplParams =
+        serde_json::from_value(json!({"title": "t", "code": "1"})).unwrap();
+    let typed = Some(ToolParams::typed(&repl, |_| Ok(None)));
+    let shown = render_tool::<_, JavaScriptReplToolResult>("javascript_repl", typed, None, false);
+    record("javascript_repl", &shown.unwrap());
+    let extract: ExtractDocumentParams = serde_json::from_value(json!({"url": "u"})).unwrap();
+    let typed = Some(ToolParams::typed(&extract, |_| Ok(None)));
+    let shown = render_tool::<_, ExtractDocumentResult>("extract_document", typed, None, false);
+    record("extract_document", &shown.unwrap());
+    let opaque = result("out", false, Some(Opaque));
+    let object = Some(ToolParams::object(members));
+    record(
+        "bash",
+        &render_tool("bash", object, Some(&opaque), false).unwrap(),
+    );
 }

@@ -4,12 +4,27 @@ use crate::contributions_support::{body, view};
 use maestro_app::{
     AgentMessage, NoCustomMessages, browser::components::messages::CustomAgentMessages,
 };
-use maestro_web::{components::messages::dom::UserMessage, dom::DomContent as _};
+use maestro_web::{components::messages::UserMessage, dom::DomContent as _};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 mod assistant;
 mod rows;
+mod transcript;
+
+/// Composed rows paint through brand roles in both packs and modes at narrow and wide widths,
+/// keep offscreen text findable and keep native controls usable by keyboard and after a
+/// collapse clamps the scroll position.
+#[wasm_bindgen]
+pub async fn transcript_parts_dom_use_brand_roles_layout_and_native_focus(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    let page = crate::contributions_support::page_module(import_module).await;
+    transcript::paint(&view);
+    transcript::keyboard_and_scroll(&view, &page).await;
+}
 
 /// Assistant admission, order and original tool/result operands through native children.
 #[wasm_bindgen]

@@ -1,5 +1,5 @@
 //! Native attachment chrome, registration and element-owned lifetime.
-use super::{AttachmentOverlay, Overlay};
+use super::AttachmentOverlay;
 use crate::{
     SharedAttachment,
     browser::{
@@ -19,6 +19,8 @@ use std::{
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::{Event, HtmlElement};
 mod content;
+mod inputs;
+mod update;
 /// One owned native listener.
 type EventBinding = EventSubscription<Closure<dyn Fn(Event) -> Result<(), JsValue>>>;
 thread_local! {
@@ -47,13 +49,16 @@ pub(super) struct State {
     body: RefCell<Option<content::Body>>,
     /// Pending page delivery, cancelled on disconnect or mode change.
     frame: RefCell<Option<Timer>>,
+    /// Last published body operands, compared before resetting document resources.
+    previous: RefCell<Option<inputs::Inputs>>,
+    /// File failures stay visible until a deliberate mode change.
+    failed: Cell<bool>,
 }
 impl AttachmentOverlay {
     /// Open an element-owned native preview in the supplied page.
     /// # Errors
     /// Returns creation, append, localization or native registration failure synchronously.
-    #[doc(hidden)]
-    pub fn open_native(
+    pub fn open(
         view: &Rc<DomView>,
         attachment: SharedAttachment,
         on_close: Option<Rc<dyn Fn()>>,
@@ -71,6 +76,8 @@ impl AttachmentOverlay {
             modes: RefCell::default(),
             body: RefCell::default(),
             frame: RefCell::default(),
+            previous: RefCell::default(),
+            failed: Cell::new(false),
         });
         let previous = CREATING.replace(Some(Rc::clone(&state)));
         let created = view.document.create_element("attachment-overlay");
@@ -96,9 +103,7 @@ impl AttachmentOverlay {
             root.remove();
             return Err(error);
         }
-        Ok(Self {
-            state: Overlay::Native(state),
-        })
+        Ok(Self { state })
     }
 }
 impl State {
@@ -116,10 +121,10 @@ impl State {
         name.set_text_content(Some(&filename));
         append(&header, &name)?;
         let actions = self.element("div", "maestro-attachment-actions")?;
-        if let Some(modes) = self.mode_group()? {
-            append(&actions, &modes.node)?;
-            *self.modes.borrow_mut() = Some(modes);
-        }
+        let modes = ModeGroup::new(&self.view, self.mode_options()?, None)?;
+        self.bind(modes.node.clone().into(), "mode-change", Action::Mode)?;
+        append(&actions, &modes.node)?;
+        *self.modes.borrow_mut() = Some(modes);
         for (icon, attribute) in [("Download", "data-download"), ("X", "data-close")] {
             let control = self.control(icon)?;
             control
@@ -231,6 +236,7 @@ impl State {
         }
         self.disconnect();
         self.extracted.set(false);
+        self.failed.set(false);
         let callback = self.on_close.borrow_mut().take();
         if let Some(callback) = callback {
             callback();
@@ -246,7 +252,8 @@ impl State {
         let body = self.body.borrow_mut().take();
         let events = self.events.take();
         let modes = self.modes.borrow_mut().take();
-        drop((frame, body, events, modes));
+        let previous = self.previous.borrow_mut().take();
+        drop((frame, body, events, modes, previous));
     }
 }
 /// Native action selected when binding a control.
@@ -297,11 +304,7 @@ fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
 }
 impl DomContent for AttachmentOverlay {
     fn mount(&self, _: &DomView) -> Result<DomRoot, ToolUiError> {
-        let Overlay::Native(state) = &self.state else {
-            return Err(ToolUiError::Presentation(
-                "Overlay has no native root".into(),
-            ));
-        };
+        let state = &self.state;
         let root = state
             .root
             .borrow()
@@ -314,6 +317,6 @@ impl DomContent for AttachmentOverlay {
         })
     }
     fn update(&self, _: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
-        Ok(())
+        self.state.refresh()
     }
 }

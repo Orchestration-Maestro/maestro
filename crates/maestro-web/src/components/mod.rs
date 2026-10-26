@@ -7,7 +7,6 @@ pub mod input;
 pub mod message_renderer_registry;
 /// Retained transcript message rows.
 pub mod messages;
-pub(crate) mod native_text;
 /// Retained reasoning disclosure.
 pub mod thinking_block;
 

@@ -1,6 +1,6 @@
 //! Owned user operands retain their original attachment handles.
 #![cfg(test)]
-use super::dom::UserMessage;
+use super::UserMessage;
 use maestro_app::{AgentMessage, browser::components::messages::CustomAgentMessages};
 use std::sync::{Arc, RwLock};
 
@@ -47,7 +47,7 @@ fn user_owned_operand_keeps_content_and_attachment_handles() {
 
 #[test]
 fn assistant_preparation_has_linear_admission_and_no_tool_name_search() {
-    use super::dom::AssistantMessage;
+    use super::AssistantMessage;
     use maestro_app::{AssistantContent, ToolCall};
     use std::{cell::Cell, collections::HashSet, rc::Rc};
     for count in [8, 16, 32] {

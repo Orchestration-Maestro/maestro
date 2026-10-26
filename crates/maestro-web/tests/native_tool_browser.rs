@@ -5,17 +5,21 @@ use maestro_web::{
     dom::DomContent,
     tools::renderer_registry::{
         ToolHeaderState, ToolHeaderText,
-        header::dom::{ToolHeaderRefs, render_collapsible_header, render_header},
+        header::{ToolHeaderRefs, render_collapsible_header, render_header},
     },
 };
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::HtmlElement;
 
+mod artifact_owners;
 mod optional;
+mod registered;
+mod sections;
 
-/// Calculation, current-time and artifact cards, their filename pills and direct differences
-/// replay every recorded branch through mounted page content.
+/// Command, calculation, current-time and artifact cards, their filename pills and direct
+/// differences replay every recorded branch through mounted page content; artifact cards own
+/// their prepared inputs and keep their console across body changes.
 #[wasm_bindgen]
 pub fn native_optional_tools_artifacts_and_diff_replay_existing_corpus(
     import_module: &js_sys::Function,
@@ -27,6 +31,9 @@ pub fn native_optional_tools_artifacts_and_diff_replay_existing_corpus(
     optional::transitions(&view);
     optional::diffs(&view);
     optional::pills(&view);
+    artifact_owners::adapters_own_inputs(&view);
+    artifact_owners::caption_without_pill(&view);
+    artifact_owners::console_scroll(&view);
 }
 
 /// Status colors, literal captions, rich children and spinner placement remain independent.
@@ -287,7 +294,9 @@ fn native_binding(
 pub fn native_binding_keeps_typed_json_and_details_agnostic_views() {
     let (renderer, result) = native_binding(Rc::new(|| {}));
     let binding = ToolRendererBinding::from_dom(renderer.clone());
-    assert!(binding.renderer::<Rc<Cell<u32>>, Rc<Cell<u32>>>().is_none());
+    let retained = binding.renderer::<Rc<Cell<u32>>, Rc<Cell<u32>>>().unwrap();
+    let expected: Rc<dyn ToolRenderer<Rc<Cell<u32>>, Rc<Cell<u32>>>> = renderer.clone();
+    assert!(Rc::ptr_eq(&retained, &expected));
     maestro_web::register_tool_renderer("native-identity", binding);
     let shown = maestro_web::tools::dom::render_tool(
         "native-identity",
@@ -303,6 +312,187 @@ pub fn native_binding_keeps_typed_json_and_details_agnostic_views() {
     assert_eq!(text(&root.node), "selected");
     maestro_web::tools::renderer_registry::TOOL_RENDERERS
         .with(|all| all.borrow_mut().shift_remove("native-identity"));
+}
+/// The built-ins prepare page content through the root dispatcher for both operand families, a
+/// later replacement or removal survives initialization, and forced JSON keeps the registration.
+#[wasm_bindgen]
+pub fn native_defaults_register_once_and_keep_override_json_modes() {
+    use maestro_web::{render_tool, set_show_json_mode};
+    let view = view();
+    let caption = |shown: ToolRenderResult| {
+        let root = shown.content.mount(&view).unwrap();
+        let caption = root.node.unchecked_ref::<web_sys::Element>();
+        let caption = caption.query_selector(".maestro-tool-caption").unwrap();
+        caption.map_or_else(|| text(&root.node), |caption| text(&caption))
+    };
+    let params = serde_json::json!({"command": "ls", "code": "1", "url": "u"});
+    let members = params.as_object().unwrap();
+    for (name, expected) in [
+        ("bash", "Running command..."),
+        ("javascript_repl", "Executing JavaScript"),
+        ("extract_document", "Extracting document..."),
+        ("unknown", "Tool Call"),
+    ] {
+        let object = Some(ToolParams::object(members));
+        let shown =
+            render_tool::<maestro_app::JsonObject, serde_json::Value>(name, object, None, false);
+        assert_eq!(caption(shown.unwrap()), expected, "{name}");
+        let json = Some(ToolParams::json(&params));
+        let shown = render_tool::<serde_json::Value, serde_json::Value>(name, json, None, false);
+        assert_eq!(caption(shown.unwrap()), expected, "{name}");
+    }
+    typed_default_captions(&caption);
+    registered::recorded(&view);
+    let (replacement, result) = native_binding(Rc::new(|| {}));
+    let dispatch = || {
+        let typed = Some(ToolParams::typed(&replacement.argument, |_| Ok(None)));
+        caption(render_tool("bash", typed, Some(&result), false).unwrap())
+    };
+    let handle: Rc<dyn ToolRenderer<Rc<Cell<u32>>, Rc<Cell<u32>>>> = replacement.clone();
+    maestro_web::register_tool_renderer("bash", ToolRendererBinding::from_raw(Rc::clone(&handle)));
+    let registered = maestro_web::get_tool_renderer::<Rc<Cell<u32>>, Rc<Cell<u32>>>("bash");
+    assert!(Rc::ptr_eq(&registered.unwrap(), &handle));
+    assert_eq!(dispatch(), "selected");
+    set_show_json_mode(true);
+    let object = Some(ToolParams::object(members));
+    let forced =
+        render_tool::<maestro_app::JsonObject, serde_json::Value>("bash", object, None, false);
+    assert_eq!(caption(forced.unwrap()), "Tool Call");
+    set_show_json_mode(false);
+    assert_eq!(
+        dispatch(),
+        "selected",
+        "disabling JSON reveals the retained registration"
+    );
+    let removed = maestro_web::tools::renderer_registry::TOOL_RENDERERS
+        .with(|all| all.borrow_mut().shift_remove("bash"));
+    drop(removed);
+    let object = Some(ToolParams::object(members));
+    let shown =
+        render_tool::<maestro_app::JsonObject, serde_json::Value>("bash", object, None, false);
+    assert_eq!(
+        caption(shown.unwrap()),
+        "Tool Call",
+        "removal is not undone by the defaults"
+    );
+    registered::artifacts(&view);
+}
+/// Typed application arguments use the same built-in preparations as raw model objects.
+fn typed_default_captions(caption: &impl Fn(ToolRenderResult) -> String) {
+    use maestro_app::browser::tools::{
+        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
+        javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
+    };
+    use maestro_web::render_tool;
+    let repl: JavaScriptReplParams =
+        serde_json::from_value(serde_json::json!({"title": "", "code": "1"})).unwrap();
+    let typed = Some(ToolParams::typed(&repl, |_| Ok(None)));
+    let shown = render_tool::<_, JavaScriptReplToolResult>("javascript_repl", typed, None, false);
+    assert_eq!(caption(shown.unwrap()), "Executing JavaScript");
+    let extract: ExtractDocumentParams =
+        serde_json::from_value(serde_json::json!({"url": "u"})).unwrap();
+    let typed = Some(ToolParams::typed(&extract, |_| Ok(None)));
+    let shown = render_tool::<_, ExtractDocumentResult>("extract_document", typed, None, false);
+    assert_eq!(caption(shown.unwrap()), "Extracting document...");
+}
+
+/// A caller child whose native state only its own root holds.
+struct CapturedField;
+impl DomContent for CapturedField {
+    fn mount(
+        &self,
+        view: &maestro_web::dom::DomView,
+    ) -> Result<maestro_web::dom::DomRoot, ToolUiError> {
+        Ok(maestro_web::dom::DomRoot::new(
+            view.document.create_element("input").unwrap(),
+        ))
+    }
+    fn update(
+        &self,
+        _: &maestro_web::dom::DomRoot,
+        _: &maestro_web::dom::DomView,
+    ) -> Result<(), ToolUiError> {
+        Ok(())
+    }
+}
+
+/// A section keeps its captured child's original root while collapsed, expanded and toggled
+/// again; its summary stays literal, reconnection reapplies the current default, instances
+/// stay independent, the recorded moments replay and dropping it releases the child.
+#[wasm_bindgen]
+pub async fn expandable_section_dom_keeps_captured_child_across_toggles() {
+    use maestro_web::ExpandableSection;
+    use web_sys::HtmlInputElement;
+    let view = view();
+    let mut section = ExpandableSection::new(vec![Box::new(CapturedField)]);
+    section.summary = "Details <b>".into();
+    let root = section.mount(&view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let element: &web_sys::Element = root.node.unchecked_ref();
+    let field = || {
+        element
+            .query_selector("input")
+            .unwrap()
+            .map(wasm_bindgen::JsCast::unchecked_into::<HtmlInputElement>)
+    };
+    let toggle: HtmlElement =
+        crate::contributions_support::select(element, "button").unchecked_into();
+    assert_eq!(text(&toggle), "Details <b>");
+    assert!(field().is_none(), "collapsed by default");
+    toggle.click();
+    let input = field().unwrap();
+    input.set_value("edited");
+    toggle.click();
+    assert!(field().is_none());
+    toggle.focus().unwrap();
+    crate::contributions_support::driver("driverPress", "Enter").await;
+    let again = field().unwrap();
+    assert!(
+        again.is_same_node(Some(&input)),
+        "the captured child is reinserted"
+    );
+    assert_eq!(again.value(), "edited");
+    section.summary = "Renamed".into();
+    section.update(&root, &view).unwrap();
+    assert_eq!(text(&toggle), "Renamed");
+    assert!(
+        field().unwrap().is_same_node(Some(&input)),
+        "update keeps expansion and child"
+    );
+    section.connected_callback(&root).unwrap();
+    assert!(
+        field().is_none(),
+        "reconnection reapplies the collapsed default"
+    );
+    section.default_expanded = true;
+    section.connected_callback(&root).unwrap();
+    assert!(field().unwrap().is_same_node(Some(&input)));
+    independent_section(&view, element, &input, &toggle);
+    sections::recorded(&view);
+    sections::release(&view);
+}
+/// A separately mounted section keeps its own original child and expansion.
+fn independent_section(
+    view: &maestro_web::dom::DomView,
+    element: &web_sys::Element,
+    input: &web_sys::HtmlInputElement,
+    toggle: &HtmlElement,
+) {
+    let mut other = maestro_web::ExpandableSection::new(vec![Box::new(CapturedField)]);
+    other.default_expanded = true;
+    let other_root = other.mount(view).unwrap();
+    body().append_child(&other_root.node).unwrap();
+    let other_element: &web_sys::Element = other_root.node.unchecked_ref();
+    let other_input = other_element.query_selector("input").unwrap().unwrap();
+    assert!(
+        !other_input.is_same_node(Some(input)),
+        "instances capture their own children"
+    );
+    toggle.click();
+    assert!(element.query_selector("input").unwrap().is_none());
+    assert!(other_element.query_selector("input").unwrap().is_some());
+    element.remove();
+    other_element.remove();
 }
 /// Reentrant removal and replacement leave the already selected callback alive.
 #[wasm_bindgen]
@@ -618,7 +808,7 @@ fn observe_document_card(
         expected.url.as_ref().map(|url| format!("URL: {url}")),
         "{index}"
     );
-    let listings: Vec<_> = all(card, ".maestro-tool-body > code-block")
+    let listings: Vec<_> = all(card, ".maestro-tool-body > .maestro-code")
         .iter()
         .map(|shown| {
             let language = shown.get_attribute("language").unwrap();
@@ -721,11 +911,11 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
     driver("driverPress", "Enter").await;
     assert!(header.is_same_node(view.document.active_element().as_deref()));
     assert_motion(&page, &header, &pending).await;
-    let code = select(&pending, "code-block");
+    let code = select(&pending, ".maestro-code");
     slot.show(execution_card("b", None).as_ref(), &parent, &view)
         .unwrap();
     assert!(select(&card, ".maestro-tool-body").is_same_node(Some(&pending)));
-    assert!(select(&pending, "code-block").is_same_node(Some(&code)));
+    assert!(select(&pending, ".maestro-code").is_same_node(Some(&code)));
     assert_eq!(text(&select(&code, "pre code")), "b");
     assert!(
         pending.class_list().contains("max-h-[2000px]"),
@@ -743,7 +933,7 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
         !finished.is_same_node(Some(&pending)),
         "a result is a new template"
     );
-    assert!(!select(&finished, "code-block").is_same_node(Some(&code)));
+    assert!(!select(&finished, ".maestro-code").is_same_node(Some(&code)));
     assert_collapsed(&header_of(&card), &finished);
     assert_result_branch_retains(&page, (&mut slot, &parent), &view, &result).await;
     assert_instances_and_release(slot, &card, &parent, &view);
@@ -826,7 +1016,7 @@ async fn assert_result_branch_retains(
         "files stay outside the collapsed body"
     );
     let (code, console) = (
-        select(&body, "code-block"),
+        select(&body, ".maestro-code"),
         select(&body, ".maestro-console"),
     );
     let clipboard = Recorded::install(Clipboard::Accept);
@@ -839,7 +1029,7 @@ async fn assert_result_branch_retains(
     slot.show(execution_card("c", Some(result)).as_ref(), parent, view)
         .unwrap();
     assert!(select(&card, ".maestro-tool-body").is_same_node(Some(&body)));
-    assert!(select(&body, "code-block").is_same_node(Some(&code)));
+    assert!(select(&body, ".maestro-code").is_same_node(Some(&code)));
     assert_eq!(text(&select(&code, "pre code")), "c");
     assert!(select(&body, ".maestro-console").is_same_node(Some(&console)));
     assert!(

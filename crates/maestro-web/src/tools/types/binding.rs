@@ -57,13 +57,6 @@ impl ToolRendererBinding {
         drop(previous);
         self
     }
-    /// Clone the stored handle for one operand and content combination.
-    #[cfg(target_arch = "wasm32")]
-    pub(crate) fn slot<P: 'static, D: 'static, C: 'static>(
-        &self,
-    ) -> Option<Rc<dyn ToolRenderer<P, D, C>>> {
-        self.renderer_for::<P, D, C>()
-    }
     /// Additionally admit present JSON operands through their selected decoders.
     #[must_use]
     pub fn from_typed<P: DeserializeOwned + 'static, D: DeserializeOwned + 'static>(
@@ -108,7 +101,7 @@ impl ToolRendererBinding {
     /// Clone the renderer handle for these concrete operand types.
     #[must_use]
     pub fn renderer<P: 'static, D: 'static>(&self) -> Option<Rc<dyn ToolRenderer<P, D>>> {
-        self.renderer_for::<P, D, Box<dyn super::ToolContent>>()
+        self.renderer_for::<P, D, crate::dom::PreparedContent>()
     }
     /// Resolve a concrete content slot, admitting arbitrary details only for output-only callbacks.
     fn renderer_for<P: 'static, D: 'static, C: 'static>(

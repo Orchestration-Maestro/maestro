@@ -1,11 +1,11 @@
 //! Native file selection, shared document roots and cancellable page progression.
-use super::{Action, State};
+use super::{State, inputs::Inputs};
 use crate::{
     browser::{
         attachment_content::{FileType, browser::sync_text},
         timer,
     },
-    components::mode_toggle::{Mode, ModeGroup, Options},
+    components::mode_toggle::{Mode, Options},
     dialogs::attachment_overlay::{content::file_type, error, excel::Excel, pdf::Pdf},
     dom::DomRoot,
     tools::types::ToolUiError,
@@ -20,32 +20,33 @@ pub(super) struct Body {
     pdf: Option<Pdf>,
 }
 impl State {
-    /// Construct the shared mode controls only for a supported document with nonempty text.
-    pub(super) fn mode_group(self: &Rc<Self>) -> Result<Option<ModeGroup>, ToolUiError> {
+    /// Supply mode buttons only for a supported document with nonempty text.
+    pub(super) fn mode_options(&self) -> Result<Options, ToolUiError> {
         let label = {
             let attachment = self
                 .attachment
                 .try_read()
                 .map_err(|_| ToolUiError::Presentation("Attachment borrow conflict".into()))?;
-            if attachment
-                .extracted_text
-                .as_ref()
-                .is_none_or(String::is_empty)
-            {
-                return Ok(None);
-            }
             match file_type(&attachment) {
-                FileType::Pdf => "PDF",
-                FileType::Docx => "Document",
-                FileType::Excel => "Spreadsheet",
-                _ => return Ok(None),
+                _ if attachment
+                    .extracted_text
+                    .as_ref()
+                    .is_none_or(String::is_empty) =>
+                {
+                    None
+                }
+                FileType::Pdf => Some("PDF"),
+                FileType::Docx => Some("Document"),
+                FileType::Excel => Some("Spreadsheet"),
+                _ => None,
             }
         };
         let read = Rc::clone(&self.extracted);
         let write = Rc::clone(&self.extracted);
-        let options = Options {
-            modes: [label, "Text"]
+        Ok(Options {
+            modes: label
                 .into_iter()
+                .flat_map(|label| [label, "Text"])
                 .map(|label| {
                     Ok(Mode {
                         label: self.view.i18n.text(label)?,
@@ -56,19 +57,26 @@ impl State {
             read: Rc::new(move || f64::from(u8::from(read.get()))),
             write: Rc::new(move |index| write.set(index.to_bits() == 1_f64.to_bits())),
             detail: |index, _| index.into(),
-        };
-        let modes = ModeGroup::new(&self.view, options, None)?;
-        self.bind(modes.node.clone().into(), "mode-change", Action::Mode)?;
-        Ok(Some(modes))
+        })
     }
     /// Replace file/text content and cancel any prior document before starting new work.
     pub(super) fn show_content(self: &Rc<Self>) -> Result<(), ToolUiError> {
+        let inputs = {
+            let attachment = self
+                .attachment
+                .try_read()
+                .map_err(|_| ToolUiError::Presentation("Attachment borrow conflict".into()))?;
+            Inputs::read(&attachment, self.extracted.get())
+        };
+        let prepared = self.prepare(&inputs);
+        let container = self.container()?;
         let frame = self.frame.borrow_mut().take();
         let body = self.body.borrow_mut().take();
         drop((frame, body));
-        let container = self.container()?;
         container.set_text_content(None);
-        match self.prepare() {
+        self.failed.set(false);
+        self.previous.replace(Some(inputs));
+        match prepared {
             Ok(body) => {
                 container
                     .append_child(&body.root.node)
@@ -83,21 +91,9 @@ impl State {
             Err(error) => self.show_error(&error),
         }
     }
-    /// Select the content branch from the original record, releasing its lock before rendering.
-    fn prepare(&self) -> Result<Body, ToolUiError> {
-        let (kind, name, mime, content, text) = {
-            let attachment = self
-                .attachment
-                .try_read()
-                .map_err(|_| ToolUiError::Presentation("Attachment borrow conflict".into()))?;
-            (
-                file_type(&attachment),
-                attachment.file_name.clone(),
-                attachment.mime_type.clone(),
-                attachment.content.clone(),
-                attachment.extracted_text.clone(),
-            )
-        };
+    /// Select a native body after releasing the original record's guard.
+    fn prepare(&self, inputs: &Inputs) -> Result<Body, ToolUiError> {
+        let kind = inputs.kind;
         if self.extracted.get() && kind != FileType::Image
             || matches!(kind, FileType::Text | FileType::Pptx)
         {
@@ -117,9 +113,10 @@ impl State {
                 },
             )?;
             let pre = self.element("pre", "")?;
-            let text = text
-                .filter(|text| !text.is_empty())
-                .map_or_else(|| self.view.i18n.text(fallback), Ok)?;
+            let text = inputs
+                .text
+                .as_deref()
+                .map_or_else(|| self.view.i18n.text(fallback), |text| Ok(text.to_owned()))?;
             pre.set_text_content(Some(&text));
             super::append(&root, &pre)?;
             return Ok(Body {
@@ -130,8 +127,11 @@ impl State {
         if kind == FileType::Image {
             let root = self.element("img", "maestro-attachment-image")?;
             for (key, value) in [
-                ("src", format!("data:{mime};base64,{content}")),
-                ("alt", name),
+                (
+                    "src",
+                    format!("data:{};base64,{}", inputs.mime, inputs.content),
+                ),
+                ("alt", inputs.name.clone()),
             ] {
                 root.set_attribute(key, &value)
                     .map_err(|error| ToolUiError::native(&error))?;
@@ -141,7 +141,7 @@ impl State {
                 pdf: None,
             });
         }
-        let bytes = crate::utils::base64::decode(&content)
+        let bytes = crate::utils::base64::decode(&inputs.content)
             .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
         self.document(kind, bytes)
     }
@@ -199,6 +199,7 @@ impl State {
     }
     /// Show a literal error until an explicit file/text selection clears it.
     fn show_error(&self, error: &ToolUiError) -> Result<(), ToolUiError> {
+        self.failed.set(true);
         let message = error.to_string();
         let detail = if message.is_empty() {
             let kind = {

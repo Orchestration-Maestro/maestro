@@ -150,6 +150,7 @@ code-block, markdown-block, thinking-block {
 .maestro-tool-section-label {
   margin-bottom: 0.25rem;
   font-size: 0.75rem;
+  line-height: 1rem;
   font-weight: 500;
   color: var(--maestro-color-muted);
 }
@@ -178,6 +179,25 @@ code-block, markdown-block, thinking-block {
 .maestro-thinking-expanded .maestro-thinking-chevron {
   transform: rotate(90deg);
 }
+.maestro-expandable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--maestro-color-muted);
+  font-family: var(--maestro-type-body-font);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.maestro-expandable-toggle:hover { color: var(--maestro-color-text); }
+.maestro-expandable-chevron { display: inline-flex; }
+.maestro-expandable-details { margin-top: 0.5rem; }
 .maestro-toggle {
   display: inline-flex;
   align-items: center;
@@ -386,7 +406,7 @@ code-block, markdown-block, thinking-block {
 .maestro-tile-image { display: block; width: 100%; height: 100%; object-fit: cover; }
 .maestro-tile-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: .5rem; background: var(--maestro-color-panel); color: var(--maestro-color-muted); }
 .maestro-tile-label { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: .625rem; }
-.maestro-tile-badge { position: absolute; bottom: 0; left: 0; right: 0; padding: .125rem .25rem; border-radius: 0 0 var(--maestro-radii-panel) var(--maestro-radii-panel); background: color-mix(in srgb, var(--maestro-color-panel) 90%, transparent); color: var(--maestro-color-muted); font-size: .625rem; text-align: center; font-weight: 500; }
+.maestro-tile-badge { position: absolute; bottom: 0; left: 0; right: 0; padding: .125rem .25rem; border-radius: 0 0 var(--maestro-radii-panel) var(--maestro-radii-panel); background: color-mix(in srgb, var(--maestro-color-background) 90%, transparent); color: var(--maestro-color-muted); font-size: .625rem; text-align: center; font-weight: 500; }
 .maestro-tile-remove { position: absolute; top: -.25rem; right: -.25rem; width: 1.25rem; height: 1.25rem; padding: 0; border: 1px solid var(--maestro-color-border); border-radius: 50%; background: var(--maestro-color-panel); color: var(--maestro-color-muted); transition: opacity .15s; }
 .maestro-tile-remove:hover { background: var(--maestro-color-border); color: var(--maestro-color-text); }
 @media (hover: hover) { .maestro-tile-remove { opacity: 0; } .maestro-tile-shell:hover .maestro-tile-remove, .maestro-tile-remove:focus-visible { opacity: 1; } }

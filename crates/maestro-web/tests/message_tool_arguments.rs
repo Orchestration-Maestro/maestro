@@ -1,7 +1,6 @@
 //! Model object admission through the public browser tool dispatch.
 #![cfg(test)]
-use crate::support::tool_output::TextOnlyOutput as _;
-use crate::{brand, effects_support, recording_highlighter, support, tool_renderer_support};
+use crate::tool_renderer_support;
 
 use maestro_web::tools::types::{
     ToolParams, ToolRendererBinding, ToolResultMessageView, ToolUiError,
@@ -227,10 +226,12 @@ fn native_operands_and_non_object_sdk_values_remain_available() {
     non_object_sdk_values();
 }
 
-#[test]
-fn default_object_input_keeps_canonical_json_spelling() {
-    use maestro_web::browser::attachment_content::AttachmentHost;
-    use maestro_web::tools::types::{ToolRenderState, ToolRenderView};
+/// The default listing preserves canonical numeric keys, number spelling and literal Unicode.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn default_object_input_keeps_canonical_json_spelling(import_module: &js_sys::Function) {
+    use crate::contributions_support::{container, host, select, text, view};
+    use maestro_web::dom::MountedContent;
     reset();
     let object: maestro_app::JsonObject = serde_json::from_str(
         r#"{"b":"雪 <literal>","10":10,"2":2,"zero":-0.0,"large":1e21,"small":1e-7}"#,
@@ -243,34 +244,23 @@ fn default_object_input_keeps_canonical_json_spelling() {
         false,
     )
     .unwrap();
-    let highlighter = recording_highlighter::Highlighter::default();
-    let host: Rc<dyn AttachmentHost> = Rc::new(effects_support::Host::default());
-    let i18n = maestro_web::I18n::new(Rc::new(support::Host::default())).unwrap();
-    let pack = brand::pack("brand.json").unwrap();
-    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
-    let context = egui::Context::default();
-    let mut row = ToolRenderState::default();
-    let mut output = context.run_ui(
-        egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(
-                egui::Pos2::ZERO,
-                egui::vec2(600., 600.),
-            )),
-            ..Default::default()
-        },
-        |ui| {
-            recipe
-                .render(
-                    ui,
-                    ToolRenderView::new(&host, &i18n, &presentation, &highlighter, None),
-                    &mut row,
-                )
-                .assert_no_overlays()
-                .unwrap();
-        },
+    let view = view();
+    let _elements = host(&view, import_module);
+    let parent = container();
+    let mut slot = MountedContent::default();
+    slot.show(recipe.content.as_ref(), &parent, &view).unwrap();
+    let block = select(slot.root().unwrap(), ".maestro-code");
+    assert_eq!(
+        parent.query_selector_all(".maestro-code").unwrap().length(),
+        1
     );
-    output.textures_delta.clear();
-    assert_eq!(&*highlighter.requests.borrow(), &[("{\n  \"2\": 2,\n  \"10\": 10,\n  \"b\": \"雪 <literal>\",\n  \"zero\": 0,\n  \"large\": 1e+21,\n  \"small\": 1e-7\n}".into(), "json".into())]);
+    assert_eq!(block.get_attribute("language").unwrap(), "json");
+    assert_eq!(
+        text(&select(&block, "pre code")),
+        "{\n  \"2\": 2,\n  \"10\": 10,\n  \"b\": \"雪 <literal>\",\n  \"zero\": 0,\n  \"large\": 1e+21,\n  \"small\": 1e-7\n}"
+    );
+    slot.clear();
+    parent.remove();
 }
 
 /// Register the typed callback with the original envelope addresses.

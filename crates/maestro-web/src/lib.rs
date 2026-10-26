@@ -13,10 +13,10 @@ pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
 };
 pub use components::messages::{
-    AbortedMessage, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageDebugView,
-    ToolMessageProps, UserMessage, UserMessageInput,
+    AbortedMessage, AssistantMessage, ToolMessage, ToolMessageDebugView, UserMessage,
 };
 pub use components::thinking_block::ThinkingBlock;
+#[cfg(target_arch = "wasm32")]
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod export_html;
 pub mod icons;

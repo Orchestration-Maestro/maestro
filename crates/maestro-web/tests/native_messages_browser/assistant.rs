@@ -2,7 +2,7 @@
 use crate::contributions_support::{body, select, text};
 use maestro_app::{JsonObject, SharedAssistantMessage, ToolResultMessage};
 use maestro_web::{
-    components::messages::dom::{AssistantMessage, ToolResults},
+    components::messages::{AssistantMessage, ToolResults},
     dom::{DomContent, DomRoot, DomView},
     tools::types::{
         ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView, ToolUiError,

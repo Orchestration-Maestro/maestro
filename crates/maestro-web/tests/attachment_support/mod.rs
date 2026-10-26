@@ -272,38 +272,6 @@ impl Frame {
         self.shapes = output.shapes;
         value
     }
-    /// Drive the retained overlay.
-    /// # Errors
-    /// Returns the widget failure.
-    pub fn overlay(
-        &mut self,
-        o: &mut maestro_web::AttachmentOverlay,
-        events: Vec<Event>,
-    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
-        self.run(events, |ctx, i, p| o.render(ctx, i, p))
-    }
-    /// Draw one tile at a deterministic position.
-    /// # Errors
-    /// Returns the widget failure.
-    pub fn tile(
-        &mut self,
-        t: &mut maestro_web::AttachmentTile,
-        events: Vec<Event>,
-    ) -> Result<
-        Option<maestro_web::AttachmentOverlay>,
-        maestro_web::dialogs::attachment_overlay::AttachmentUiError,
-    > {
-        self.run(events, |ctx, i, p| {
-            let mut ui = egui::Ui::new(
-                ctx.clone(),
-                egui::Id::new("root"),
-                egui::UiBuilder::new()
-                    .max_rect(ctx.content_rect())
-                    .layout(egui::Layout::top_down(egui::Align::Min)),
-            );
-            t.render(&mut ui, i, p)
-        })
-    }
     /// Complete visible text in painter order.
     #[must_use]
     pub fn texts(&self) -> Vec<String> {

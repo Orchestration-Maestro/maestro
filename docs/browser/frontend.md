@@ -73,8 +73,9 @@ The [session fixture](../../crates/maestro-web/tests/fixtures/test_sessions.json
 keeps two complete offline conversations. The
 [replay tests](../../crates/maestro-web/tests/sample_sessions_browser.rs),
 `simple_html_session_replays_existing_browser_owners` and
-`long_session_replays_existing_browser_owners`, render their user and assistant
-rows, inspect tool cards and compare complete reconstructed artifact files.
+`long_session_replays_existing_browser_owners`, mount their user and assistant
+rows as page content, expand every tool card, inspect the card bodies and compare
+complete reconstructed artifact files.
 Missing timestamps become zero and historical tool outputs become text blocks
 only in the tests' owned copies. Recorded browser commands and model requests
 are not executed. HTML is observed through source/diff cards and reconstructed
