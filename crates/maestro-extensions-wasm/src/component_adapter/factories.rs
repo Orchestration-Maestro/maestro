@@ -16,10 +16,11 @@ pub(super) struct Terminal<I: WidgetImports> {
     pub(super) tui: I::Tui,
     /// The frame writer as a container widget, built on first use.
     pub(super) writer: std::cell::OnceCell<Rc<super::widgets::HostWidget<I>>>,
-    /// Authored components lent as focus or overlay targets, with their identities.
-    pub(super) lent: std::cell::RefCell<Vec<(crate::Component, u32)>>,
-    /// Input listeners added through this frame writer, with their subscriptions.
-    pub(super) listeners: std::cell::RefCell<Vec<(crate::TerminalInputHandler, Subscription)>>,
+    /// Authored components lent as focus or overlay targets, held weakly, with their
+    /// identities.
+    pub(super) lent: std::cell::RefCell<Vec<(std::rc::Weak<dyn crate::ComponentView>, u32)>>,
+    /// Input listeners added through this frame writer, each once, with their host removers.
+    pub(super) listeners: Rc<super::writer::InputListeners>,
 }
 
 impl<I: WidgetImports> Terminal<I> {
@@ -30,7 +31,7 @@ impl<I: WidgetImports> Terminal<I> {
             tui,
             writer: std::cell::OnceCell::new(),
             lent: std::cell::RefCell::default(),
-            listeners: std::cell::RefCell::default(),
+            listeners: Rc::default(),
         }))
     }
 }

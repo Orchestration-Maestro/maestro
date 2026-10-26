@@ -285,6 +285,27 @@ async fn host(fixture: &Fixture) {
         fixture.take(),
         [r#"change "a""#, r#"change "a!""#, r#"change "probe""#]
     );
+    focus(editor.as_ref());
+}
+
+/// The editor keeps the focus capability of the host editor it wraps: focus shows the cursor
+/// marker and blur removes it.
+fn focus(editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>) {
+    let marked = || {
+        editor
+            .try_render(20)
+            .unwrap()
+            .concat()
+            .contains(maestro_tui::CURSOR_MARKER)
+    };
+    let focus = editor.focusable().unwrap();
+    assert!(!focus.focus_flag().get());
+    assert!(!marked());
+    focus.set_focused(true);
+    assert!(focus.focus_flag().get());
+    assert!(marked());
+    focus.set_focused(false);
+    assert!(!marked());
 }
 
 /// An authored editor on the custom editor shares that editor's actions, keeps the

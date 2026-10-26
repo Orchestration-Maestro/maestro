@@ -84,6 +84,7 @@ fn expected(lent: &str) -> Vec<String> {
         format!("writer showOverlay component {lent} false"),
         "writer hasOverlay".to_owned(),
         "writer setFocus None".to_owned(),
+        format!("writer lentLive {lent}"),
         format!("writer setFocus Some(\"lent {lent}\")"),
         "writer hideOverlay".to_owned(),
         "writer hasOverlay".to_owned(),

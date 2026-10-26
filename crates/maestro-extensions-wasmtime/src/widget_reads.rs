@@ -7,7 +7,7 @@ use maestro_extensions::widgets::{
     TextDecoration,
 };
 use maestro_extensions::{ComponentHandle, EventBus, Local};
-use std::{cell::RefCell, rc::Rc, sync::Arc, sync::mpsc::Sender};
+use std::{cell::OnceCell, cell::RefCell, rc::Rc, sync::Arc, sync::mpsc::Sender};
 
 /// Catchable completion of one widget request.
 pub(crate) type Reply<T> = Sender<Result<T, String>>;
@@ -245,6 +245,8 @@ pub(crate) struct Widget {
     pub(crate) events: EventBus<Local>,
     /// Authored children by the identity each was added under, in insertion order.
     pub(crate) guests: RefCell<Vec<(u32, ComponentHandle)>>,
+    /// The widget as another component's child, built once so removal finds it.
+    pub(crate) nested: OnceCell<ComponentHandle>,
 }
 
 impl Widget {
@@ -284,6 +286,7 @@ impl Widget {
             failure,
             events,
             guests: RefCell::default(),
+            nested: OnceCell::new(),
         }
     }
 
@@ -339,6 +342,7 @@ impl Widget {
             failure,
             events,
             guests: RefCell::default(),
+            nested: OnceCell::new(),
         })
     }
 
@@ -474,7 +478,7 @@ impl Widget {
     /// The component of a child to add; an authored one is kept under its identity.
     fn child(&self, child: Child, registry: &Registry) -> Result<ComponentHandle, String> {
         match child {
-            Child::Widget(widget) => registry.widget(&widget).map(|widget| widget.component()),
+            Child::Widget(widget) => registry.widget(&widget).map(|widget| widget.nested()),
             Child::Component(handle) => {
                 let id = handle.id();
                 let view = crate::guest_component::GuestComponent::new(
@@ -492,9 +496,7 @@ impl Widget {
     /// The component of a child to remove, absent when no authored child has the identity.
     fn key(&self, key: Key, registry: &Registry) -> Result<Option<ComponentHandle>, String> {
         match key {
-            Key::Widget(widget) => registry
-                .widget(&widget)
-                .map(|widget| Some(widget.component())),
+            Key::Widget(widget) => registry.widget(&widget).map(|widget| Some(widget.nested())),
             Key::Component(id) => {
                 let mut guests = self.guests.borrow_mut();
                 let index = guests.iter().position(|(added, _)| *added == id);

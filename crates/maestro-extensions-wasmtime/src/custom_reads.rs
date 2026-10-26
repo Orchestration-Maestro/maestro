@@ -47,11 +47,14 @@ impl Request {
     ) -> Result<maestro_extensions::types::ExtensionUIFuture<()>, String> {
         let api = registry.facade(&self.api)?;
         let reporter = api.ui_error_reporter(ui).ok();
+        let factory = self
+            .factory
+            .custom_factory(registry.clone(), &api, reporter.clone());
         let options = self
             .options
             .map(|options| options.native(registry, &api, reporter))
             .transpose()?;
-        Ok(ui.custom_component(self.factory.custom_factory(registry.clone(), &api), options))
+        Ok(ui.custom_component(factory, options))
     }
 }
 impl Options {

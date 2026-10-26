@@ -9,7 +9,7 @@ use crate::{
 };
 use maestro_extensions::{
     EventError, ExtensionAPI, Local,
-    types::{CustomComponentFactory, CustomFactoryOutcome},
+    types::{CustomComponentFactory, CustomFactoryOutcome, UIErrorReporter},
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource};
 
@@ -93,11 +93,12 @@ impl Handle {
         self,
         registry: Registry,
         api: &ExtensionAPI<Local>,
+        reporter: Option<UIErrorReporter>,
     ) -> CustomComponentFactory {
         let facade = api.clone();
         api.ui_callback(move |(tui, theme, keys, close), emitter| {
             let input = Input {
-                tui: registry.tui(tui)?,
+                tui: registry.tui(tui, reporter.clone())?,
                 theme: registry.theme(theme)?,
                 keybindings: registry.keybindings(
                     maestro_extensions::widgets::ExtensionKeybindings {

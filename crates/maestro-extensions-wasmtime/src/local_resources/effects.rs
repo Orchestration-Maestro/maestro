@@ -190,9 +190,14 @@ impl Registry {
             .map(SubscriptionEndpoint)
     }
 
-    /// Retains the native terminal lent to one component factory.
-    pub(crate) fn tui(&self, tui: maestro_extensions::TUI) -> Result<TuiEndpoint, String> {
-        self.insert(Capability::Tui(tui))
+    /// Retains the native terminal lent to one component factory, with the reporter of
+    /// failures of the callbacks it runs.
+    pub(crate) fn tui(
+        &self,
+        tui: maestro_extensions::TUI,
+        reporter: Option<maestro_extensions::types::UIErrorReporter>,
+    ) -> Result<TuiEndpoint, String> {
+        self.insert(Capability::Tui(tui, reporter))
             .map(|lease| TuiEndpoint { lease })
     }
 

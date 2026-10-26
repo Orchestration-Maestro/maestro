@@ -378,7 +378,7 @@ terminal's default limits. `start` takes an input `TextHandler` and a resize
 | Protocol value | Native counterpart | Ownership |
 | --- | --- | --- |
 | `tui.writer` | `TUI` as a container widget | Lends the original frame writer once per `TUI` value; it keeps the authored components it lent. |
-| `widget.writer`, `writer-request`, `terminal-request` | `TUI` and `TUI::terminal` methods | One request per operation; focus, overlay and visibility requests may call back into the guest. |
+| `widget.writer`, `writer-request`, `terminal-request` | `TUI` and `TUI::terminal` methods | One request per operation; focus, overlay and visibility requests may call back into the guest. The host holds focus and overlay targets only while the frame writer does, so refocusing a component first asks `lent-live` and lends it again once released. |
 | `widget.add-input-listener` | `TUI::add_input_listener` | The host keeps the listener until its subscription is unsubscribed. |
 | `widget.drain-input` | `Terminal::drain_input` | The host owns the drain future until it settles. |
 

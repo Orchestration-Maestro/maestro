@@ -58,6 +58,7 @@ impl Controlled {
                 ("getClearOnShrink".into(), WriterAnswer::Flag(true))
             }
             WriterRequest::HasOverlay => ("hasOverlay".into(), WriterAnswer::Flag(true)),
+            WriterRequest::LentLive(id) => (format!("lentLive {id}"), WriterAnswer::Flag(true)),
             WriterRequest::ShowOverlay(component, options) => (
                 format!("showOverlay {} {}", target(component), options.is_some()),
                 WriterAnswer::Overlay(Tui::lent(&self.observed)),

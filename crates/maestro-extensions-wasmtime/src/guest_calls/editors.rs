@@ -9,8 +9,8 @@ use crate::local_resources::{
 };
 use crate::widget_reads::{StyleEndpoint, WidgetEndpoint};
 use maestro_extensions::{
-    EventError, ExtensionAPI, KeybindingsManager, Local, TUI,
-    types::{EditorFactory, EditorFactoryOutcome},
+    EventError, ExtensionAPI, KeybindingsManager, Local,
+    types::{EditorFactory, EditorFactoryOutcome, UIErrorReporter},
     widgets::{EditorTheme, ExtensionKeybindings},
 };
 use std::rc::Rc;
@@ -265,9 +265,11 @@ impl Handle {
         self,
         registry: Registry,
         api: &ExtensionAPI<Local>,
+        reporter: Option<UIErrorReporter>,
     ) -> EditorFactory {
         let events = api.events.clone();
         api.ui_callback(move |(tui, theme, keybindings), emitter| {
+            let tui = registry.tui(tui, reporter.clone())?;
             let frame = registry.emitter(emitter.frame())?;
             let built = self.build_editor(&registry, (tui, theme, keybindings), frame)?;
             let custom = built
@@ -294,7 +296,7 @@ impl Handle {
     fn build_editor(
         &self,
         registry: &Registry,
-        (tui, theme, keybindings): (TUI, EditorTheme, KeybindingsManager),
+        (tui, theme, keybindings): (TuiEndpoint, EditorTheme, KeybindingsManager),
         emitter: EmitterEndpoint,
     ) -> Result<RetainedEditor, EventError> {
         self.0
@@ -302,7 +304,7 @@ impl Handle {
             .synchronous(registry, |reply| {
                 Ok(Call::EditorFactory(FactoryCall {
                     handler: self.clone(),
-                    tui: registry.tui(tui)?,
+                    tui,
                     theme: registry.lend_editor_theme(theme)?,
                     keybindings: registry.keybindings(ExtensionKeybindings {
                         manager: keybindings,

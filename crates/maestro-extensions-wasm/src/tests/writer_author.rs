@@ -6,15 +6,30 @@
 )]
 use maestro_extensions_wasm::{
     CallbackEmitter, Component, ComponentView, ExtensionComponent, ExtensionResult,
-    ExtensionUIContext, OverlayHandle, TUI, TerminalInputHandler, TerminalInputResult,
+    ExtensionUIContext, OverlayHandle, OverlayOptions, OverlayOptionsHandle, TUI,
+    TerminalInputHandler, TerminalInputResult,
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 
 /// Fixed rows.
 struct Rows(Vec<String>);
 impl ComponentView for Rows {
     fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
         Ok(self.0.clone())
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+/// A view that keeps a token, so a test sees when every owner released it.
+struct Token(Rc<()>);
+impl ComponentView for Token {
+    fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        Ok(vec![format!("token held {}", Rc::strong_count(&self.0))])
     }
     fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         Ok(())
@@ -38,6 +53,8 @@ struct Driver {
     overlay: RefCell<Option<OverlayHandle>>,
     /// An input listener that consumes `x`.
     listener: TerminalInputHandler,
+    /// The token of the last retired focus and overlay target.
+    retired: RefCell<Weak<()>>,
 }
 impl ComponentView for Driver {
     fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
@@ -86,6 +103,7 @@ impl Driver {
             }
             "listen" => {
                 tui.add_input_listener(self.listener.clone())?;
+                tui.add_input_listener(self.listener.clone())?;
                 "listening".into()
             }
             "unlisten" => {
@@ -106,8 +124,21 @@ impl Driver {
             "render" => tui
                 .request_render(true)
                 .map(|()| "render requested".into())?,
-            _ => return Err(format!("unknown request {command}")),
+            _ => return self.release(command),
         })
+    }
+    /// Runs a request on subscriptions, retired targets or overlay visibility.
+    fn release(&self, command: &str) -> ExtensionResult<String> {
+        match command {
+            "resubscribe" => self.resubscribe(),
+            "retire" => self.retire(),
+            "released" => Ok(format!(
+                "released {}",
+                self.retired.borrow().strong_count() == 0
+            )),
+            "hidden" => self.hidden(),
+            _ => Err(format!("unknown request {command}")),
+        }
     }
     /// Turns both frame writer flags on and reads them back.
     fn settings(&self) -> ExtensionResult<String> {
@@ -126,6 +157,40 @@ impl Driver {
         let away = handle.is_focused()?;
         self.tui.set_focus(Some(&self.target))?;
         Ok(format!("focus {away} {}", handle.is_focused()?))
+    }
+    /// Removes the listener through the subscription its addition returned, which also stops
+    /// retaining it, then adds it again.
+    fn resubscribe(&self) -> ExtensionResult<String> {
+        let subscription = self.tui.add_input_listener(self.listener.clone())?;
+        let held = Rc::strong_count(&self.listener);
+        subscription.unsubscribe()?;
+        let released = Rc::strong_count(&self.listener) < held;
+        self.tui.add_input_listener(self.listener.clone())?;
+        Ok(format!("resubscribed released {released}"))
+    }
+    /// Focuses, blurs and refocuses a fresh component within one call, then shows and hides
+    /// it as an overlay, keeping only a weak view of its token.
+    fn retire(&self) -> ExtensionResult<String> {
+        let token = Rc::new(());
+        let target = Component::new(Token(token.clone()));
+        self.tui.set_focus(Some(&target))?;
+        self.tui.set_focus(None)?;
+        self.tui.set_focus(Some(&target))?;
+        self.tui.set_focus(None)?;
+        self.tui.show_overlay(&target, None)?.hide()?;
+        self.retired.replace(Rc::downgrade(&token));
+        Ok("retired".into())
+    }
+    /// Shows the target as an overlay whose visibility check fails, then hides it.
+    fn hidden(&self) -> ExtensionResult<String> {
+        let options = OverlayOptionsHandle::new(OverlayOptions::default())?;
+        options.set_visible(Some(Rc::new(|columns, rows| {
+            Err(format!("direct overlay failed at {columns}x{rows}"))
+        })))?;
+        let overlay = self.tui.show_overlay(&self.target, Some(&options))?;
+        let shown = self.tui.has_overlay()?;
+        overlay.hide()?;
+        Ok(format!("hidden overlay {shown}"))
     }
     /// Drives every terminal operation once.
     fn terminal(&self) -> ExtensionResult<String> {
@@ -185,6 +250,7 @@ pub fn install(ui: &ExtensionUIContext) -> ExtensionResult<()> {
                     target: Component::new(Rows(vec!["target".into()])),
                     overlay: RefCell::default(),
                     listener,
+                    retired: RefCell::default(),
                 }),
                 dispose: None,
                 set_expanded: None,

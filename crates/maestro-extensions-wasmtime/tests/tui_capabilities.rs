@@ -286,8 +286,8 @@ fn input(
     terminal.send_input("\x1b[100;6u");
     let rows = driver.try_render(40).unwrap();
     assert_eq!(
-        rows[rows.len() - 2..],
-        ["listener \x1b[100;6u", "debug key"]
+        rows[rows.len() - 3..],
+        ["debug set", "listener \x1b[100;6u", "debug key"]
     );
     assert_eq!(run(driver, "unlisten"), "not listening");
     terminal.send_input("x");
@@ -300,8 +300,19 @@ fn input(
     assert_eq!(terminal.events(), ["start", "stop"]);
 }
 
-#[test]
-fn canonical_tui_writer_forwards_frame_and_terminal_requests() {
+/// The answer of one bridge command.
+type Answer = std::pin::Pin<Box<dyn std::future::Future<Output = String>>>;
+
+/// Shows the driver widget on a real frame writer and runs `body` with it, the bridge's
+/// commands and the runner errors reported meanwhile.
+fn with_writer(
+    body: impl AsyncFnOnce(
+        &Ui,
+        &maestro_extensions::ComponentHandle,
+        &super::recording_terminal::RecordingTerminal,
+        &dyn Fn(&str) -> Answer,
+    ) -> Vec<maestro_extensions::ExtensionError>,
+) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
@@ -317,27 +328,79 @@ fn canonical_tui_writer_forwards_frame_and_terminal_requests() {
             shown: RefCell::default(),
         });
         runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let errors = Rc::new(RefCell::new(Vec::new()));
+        let received = errors.clone();
+        let _remove = runner.on_error(Rc::new(move |error| {
+            received.borrow_mut().push(error.clone());
+            Ok(())
+        }));
         let handler = runner
             .get_command("bridge-observe")
             .unwrap()
             .command
             .handler;
-        for (command, answer) in [
-            ("ui writer", "writer shown"),
-            ("ui writer-drain", "drained"),
-        ] {
-            assert_eq!(
-                handler(command.into(), runner.create_command_context())
-                    .await
-                    .unwrap_err()
-                    .to_string(),
-                answer
-            );
-        }
+        let command = |command: &str| -> Answer {
+            let answer = handler(command.into(), runner.create_command_context());
+            Box::pin(async move { answer.await.unwrap_err().to_string() })
+        };
+        assert_eq!(command("ui writer").await, "writer shown");
+        assert_eq!(command("ui writer-drain").await, "drained");
         let driver = ui.shown.borrow().as_ref().unwrap().component.clone();
-        frame(&ui, &driver);
-        terminal(&driver, &recording);
-        input(&ui, &driver, &recording);
+        let command: &dyn Fn(&str) -> Answer = &command;
+        let expected = body(ui.as_ref(), &driver, &recording, command).await;
+        assert_eq!(*errors.borrow(), expected);
         bus.clear();
+    });
+}
+
+#[test]
+fn canonical_tui_writer_forwards_frame_and_terminal_requests() {
+    with_writer(async |ui, driver, recording, _| {
+        frame(ui, driver);
+        terminal(driver, recording);
+        input(ui, driver, recording);
+        Vec::new()
+    });
+}
+
+#[test]
+fn canonical_tui_writer_input_subscription_releases_its_listener() {
+    with_writer(async |_, driver, terminal, _| {
+        assert_eq!(run(driver, "start"), "started");
+        assert_eq!(run(driver, "resubscribe"), "resubscribed released true");
+        terminal.send_input("x");
+        assert_eq!(last(driver), "listener x");
+        assert_eq!(run(driver, "unlisten"), "not listening");
+        terminal.send_input("x");
+        assert_eq!(last(driver), "not listening");
+        assert_eq!(run(driver, "stop"), "stopped");
+        Vec::new()
+    });
+}
+
+#[test]
+fn canonical_tui_writer_releases_retired_focus_and_overlay_targets() {
+    with_writer(async |_, driver, _, command| {
+        assert_eq!(run(driver, "retire"), "retired");
+        // The host releases retired identities through the guest's queue; a later command
+        // runs after them.
+        assert_eq!(command("ui writer-drain").await, "drained");
+        assert_eq!(run(driver, "released"), "released true");
+        Vec::new()
+    });
+}
+
+#[test]
+fn canonical_tui_writer_reports_direct_overlay_visibility_failures() {
+    with_writer(async |_, driver, _, _| {
+        assert_eq!(run(driver, "hidden"), "hidden overlay false");
+        let failed = maestro_extensions::ExtensionError {
+            extension_path: std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap(),
+            event: "overlay.visible".into(),
+            error: "direct overlay failed at 40x12".into(),
+            stack: None,
+        };
+        // Showing the overlay and asking for one each check its visibility once.
+        vec![failed.clone(), failed]
     });
 }

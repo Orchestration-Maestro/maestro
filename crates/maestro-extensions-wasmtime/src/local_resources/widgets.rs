@@ -6,6 +6,7 @@ use crate::widget_reads::{
     HighlighterEndpoint, Lent, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint,
     WidgetMessage,
 };
+use maestro_extensions::types::UIErrorReporter;
 use maestro_extensions::widgets::BorderColor;
 use std::rc::Rc;
 
@@ -38,8 +39,17 @@ impl Registry {
         &self,
         tui: &super::effects::TuiEndpoint,
     ) -> Result<maestro_extensions::TUI, String> {
+        self.lent_terminal(tui).map(|(tui, _)| tui)
+    }
+
+    /// The terminal behind a lent terminal resource and the reporter of failures of the
+    /// callbacks it runs, when the UI that lent it has one.
+    pub(crate) fn lent_terminal(
+        &self,
+        tui: &super::effects::TuiEndpoint,
+    ) -> Result<(maestro_extensions::TUI, Option<UIErrorReporter>), String> {
         match self.capability(tui.lease.id).as_deref() {
-            Some(Capability::Tui(tui)) => Ok(tui.clone()),
+            Some(Capability::Tui(tui, reporter)) => Ok((tui.clone(), reporter.clone())),
             _ => Err("extension terminal resource ended".to_owned()),
         }
     }
@@ -131,7 +141,8 @@ impl Registry {
         let api = self.facade(api)?;
         let factory = factory.map(|factory| {
             let id = factory.id();
-            let native = factory.editor_factory(self.clone(), &api);
+            let reporter = api.ui_error_reporter(ui).ok();
+            let native = factory.editor_factory(self.clone(), &api, reporter);
             let weak = native.downgrade();
             let identity = super::Identity::EditorFactory(native.downgrade(), id);
             self.resources.borrow_mut().identity(weak.addr(), identity);
@@ -246,7 +257,7 @@ impl State {
         match message {
             WidgetMessage::Writer(api, tui, reply) => {
                 let writer = registry.events_of(api).and_then(|events| {
-                    let writer = Widget::writer(registry.terminal(&tui)?, events);
+                    let writer = Widget::writer(registry.lent_terminal(&tui)?, events);
                     registry.insert(Capability::Widget(Rc::new(writer)))
                 });
                 let _ = reply.send(writer.map(WidgetEndpoint));
@@ -295,7 +306,7 @@ impl State {
     /// Reads the original frame writer's redraw counter.
     fn full_redraws(&self, id: u64, reply: &crate::widget_reads::Reply<u64>) {
         let result = match self.registry.capability(id).as_deref() {
-            Some(Capability::Tui(tui)) => {
+            Some(Capability::Tui(tui, _)) => {
                 u64::try_from(tui.full_redraws()).map_err(|error| error.to_string())
             }
             _ => Err("extension terminal resource ended".to_owned()),

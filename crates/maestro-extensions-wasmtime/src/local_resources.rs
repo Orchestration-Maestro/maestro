@@ -328,8 +328,12 @@ enum Capability {
     OverlayHandle(overlays::SharedHandle),
     /// Original custom-component close operation.
     CustomClose(maestro_extensions::types::CustomClose),
-    /// Original terminal lent to a component factory.
-    Tui(maestro_extensions::TUI),
+    /// Original terminal lent to a component factory, with the reporter of failures of the
+    /// callbacks it runs.
+    Tui(
+        maestro_extensions::TUI,
+        Option<maestro_extensions::types::UIErrorReporter>,
+    ),
     /// A lent settings row style.
     RowStyle(Rc<crate::widget_lists::RowStyleFn>),
     /// Closes an open settings submenu.

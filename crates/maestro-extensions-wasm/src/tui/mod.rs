@@ -123,6 +123,16 @@ impl Component {
     pub(crate) fn same(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.view, &other.view)
     }
+    /// A reference to the view that does not keep it.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn downgrade(&self) -> std::rc::Weak<dyn ComponentView> {
+        Rc::downgrade(&self.view)
+    }
+    /// Whether `view` refers to this component's view.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn is(&self, view: &std::rc::Weak<dyn ComponentView>) -> bool {
+        std::ptr::addr_eq(Rc::as_ptr(&self.view), view.as_ptr())
+    }
     /// Renders at the supplied width.
     /// # Errors
     /// Returns the author's failure.

@@ -174,23 +174,26 @@ impl FactoryRequest {
             }
             Self::Footer(factory, api, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
-                    let factory =
-                        factory.map(|factory| factory.footer_factory(registry.clone(), &api));
+                    let reporter = api.ui_error_reporter(ui).ok();
+                    let factory = factory
+                        .map(|factory| factory.footer_factory(registry.clone(), &api, reporter));
                     ui.set_footer(factory).map_err(|error| error.to_string())
                 });
                 let _ = reply.send(shown);
             }
             Self::Header(factory, api, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
-                    let factory =
-                        factory.map(|factory| factory.component_factory(registry.clone(), &api));
+                    let reporter = api.ui_error_reporter(ui).ok();
+                    let factory = factory
+                        .map(|factory| factory.component_factory(registry.clone(), &api, reporter));
                     ui.set_header(factory).map_err(|error| error.to_string())
                 });
                 let _ = reply.send(shown);
             }
             Self::WidgetFactory(key, factory, api, options, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
-                    let factory = factory.component_factory(registry.clone(), &api);
+                    let reporter = api.ui_error_reporter(ui).ok();
+                    let factory = factory.component_factory(registry.clone(), &api, reporter);
                     let content = Some(WidgetContent::Factory(factory));
                     ui.set_widget(key, content, options)
                         .map_err(|error| error.to_string())

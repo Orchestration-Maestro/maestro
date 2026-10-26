@@ -13,7 +13,7 @@ use super::widget_imports::WidgetImports;
 use super::{Exports, callbacks};
 use crate::{
     CallbackEmitter, ComponentView, EditorComponent, EditorFactory, EditorFactoryOutcome,
-    ExtensionResult, Style, TextHandler,
+    ExtensionResult, Focusable, Style, TextHandler,
 };
 
 /// The current editor factory: absent, one this extension set by identity, or another
@@ -94,6 +94,9 @@ impl ComponentView for EditorView {
     }
     fn wants_key_release(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
         self.0.wants_key_release(emitter)
+    }
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        self.0.focusable()
     }
     fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
         self.0.invalidate(emitter)

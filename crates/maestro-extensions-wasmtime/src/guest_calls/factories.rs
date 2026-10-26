@@ -9,8 +9,11 @@ use crate::local_resources::{
     effects::{EmitterEndpoint, ThemeEndpoint, TuiEndpoint},
 };
 use maestro_extensions::{
-    ComponentHandle, EventError, ExtensionAPI, LiveTheme, Local, TUI,
-    types::{ComponentDisposer, ComponentFactory, ExtensionComponent, FooterFactory, UIHostCall},
+    ComponentHandle, EventError, ExtensionAPI, LiveTheme, Local,
+    types::{
+        ComponentDisposer, ComponentFactory, ExtensionComponent, FooterFactory, UIErrorReporter,
+        UIHostCall,
+    },
 };
 use std::rc::Rc;
 use wasmtime::component::{ComponentType, Lift, Resource};
@@ -64,9 +67,11 @@ impl Handle {
         self,
         registry: Registry,
         api: &ExtensionAPI<Local>,
+        reporter: Option<UIErrorReporter>,
     ) -> ComponentFactory {
         let facade = api.clone();
         api.ui_callback(move |(tui, theme), emitter| {
+            let tui = registry.tui(tui, reporter.clone())?;
             let frame = registry.emitter(emitter.frame())?;
             self.build(&registry, &facade, (tui, theme, None), frame)
         })
@@ -77,9 +82,11 @@ impl Handle {
         self,
         registry: Registry,
         api: &ExtensionAPI<Local>,
+        reporter: Option<UIErrorReporter>,
     ) -> FooterFactory {
         let facade = api.clone();
         api.ui_callback(move |(tui, theme, footer), emitter| {
+            let tui = registry.tui(tui, reporter.clone())?;
             let frame = registry.emitter(emitter.frame())?;
             let footer = Some(registry.footer(footer)?);
             self.build(&registry, &facade, (tui, theme, footer), frame)
@@ -92,13 +99,13 @@ impl Handle {
         &self,
         registry: &Registry,
         api: &ExtensionAPI<Local>,
-        (tui, theme, footer): (TUI, LiveTheme, Option<crate::footer_data::Endpoint>),
+        (tui, theme, footer): (TuiEndpoint, LiveTheme, Option<crate::footer_data::Endpoint>),
         emitter: EmitterEndpoint,
     ) -> Result<ExtensionComponent, EventError> {
         let built = self.0.endpoint.synchronous(registry, |reply| {
             Ok(Call::Factory(FactoryCall {
                 handler: self.clone(),
-                tui: registry.tui(tui)?,
+                tui,
                 theme: registry.theme(theme)?,
                 footer,
                 emitter,

@@ -132,7 +132,10 @@ impl Component for GuestEditor {
         self.view.wants_key_release()
     }
     fn focusable(&self) -> Option<&dyn Focusable> {
-        self.custom.as_ref().and_then(|custom| custom.focusable())
+        match &self.custom {
+            Some(custom) => custom.focusable(),
+            None => self.view.focusable(),
+        }
     }
 }
 

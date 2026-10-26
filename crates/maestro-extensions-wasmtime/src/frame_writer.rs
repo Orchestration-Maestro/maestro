@@ -7,8 +7,12 @@ use crate::local_resources::Registry;
 use crate::overlay_reads::OptionsEndpoint;
 use crate::widget_lists::Binding;
 use crate::widget_reads::{Kind, Widget, WidgetEndpoint};
-use maestro_extensions::{ComponentHandle, EventBus, InputListenerResult, Local, TUI};
-use std::{cell::RefCell, rc::Rc};
+use maestro_extensions::types::UIErrorReporter;
+use maestro_extensions::{Component, ComponentHandle, EventBus, InputListenerResult, Local, TUI};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 use wasmtime::component::{ComponentType, Lift, Resource};
 
 /// What focus or an overlay goes to, as the guest sends it.
@@ -117,6 +121,9 @@ pub(crate) enum WireRequest {
     /// Starts the terminal with authored input and resize callbacks.
     #[component(name = "terminal-start")]
     TerminalStart((Resource<Callback>, Resource<Callback>)),
+    /// Reads whether the component lent under an identity is still kept.
+    #[component(name = "lent-live")]
+    LentLive(u32),
 }
 
 /// What focus or an overlay goes to, Store-safe.
@@ -180,16 +187,20 @@ impl WireRequest {
 pub(crate) struct Writer {
     /// The original frame writer.
     pub(crate) tui: TUI,
-    /// Authored focus and overlay targets by the identity each was lent under.
-    lent: RefCell<Vec<(u32, ComponentHandle)>>,
+    /// Authored focus and overlay targets by the identity each was lent under, held weakly so
+    /// a target the frame writer no longer keeps is released.
+    lent: RefCell<Vec<(u32, Weak<dyn Component>)>>,
+    /// Where failed visibility checks of overlays shown here are reported.
+    reporter: Option<UIErrorReporter>,
 }
 
 impl Writer {
-    /// Keeps the original frame writer.
-    pub(crate) fn new(tui: TUI) -> Self {
+    /// Keeps the original frame writer and the reporter of its overlays' failures.
+    pub(crate) fn new(tui: TUI, reporter: Option<UIErrorReporter>) -> Self {
         Self {
             tui,
             lent: RefCell::default(),
+            reporter,
         }
     }
 
@@ -213,7 +224,11 @@ impl Writer {
             Request::ShowOverlay(target, options) => {
                 let component = self.component(target, binding, children)?;
                 let options = options
-                    .map(|options| binding.registry.overlay_options(&options, None))
+                    .map(|options| {
+                        binding
+                            .registry
+                            .overlay_options(&options, self.reporter.as_ref())
+                    })
                     .transpose()?;
                 let shown = tui
                     .show_overlay(component, options)
@@ -271,6 +286,7 @@ impl Writer {
                 Ok(Value::Unit)
             }
             WireRequest::Terminal(request) => terminal(tui, request),
+            WireRequest::LentLive(id) => Ok(Value::Boolean(self.lent(id).is_some())),
             _ => Err("expected a frame writer setting".to_owned()),
         }
     }
@@ -296,18 +312,25 @@ impl Writer {
                     binding.events.clone(),
                 );
                 let view: ComponentHandle = Rc::new(view);
-                self.lent.borrow_mut().push((id, view.clone()));
+                let mut lent = self.lent.borrow_mut();
+                lent.retain(|(_, view)| view.strong_count() > 0);
+                lent.push((id, Rc::downgrade(&view)));
                 Ok(view)
             }
-            Target::Lent(id) => {
-                let lent = self.lent.borrow();
-                let lent = lent
-                    .iter()
-                    .find_map(|(lent, view)| (*lent == id).then(|| view.clone()));
-                lent.or_else(|| children(id))
-                    .ok_or_else(|| "extension component was not lent to this terminal".to_owned())
-            }
+            Target::Lent(id) => self
+                .lent(id)
+                .or_else(|| children(id))
+                .ok_or_else(|| "extension component was not lent to this terminal".to_owned()),
         }
+    }
+
+    /// The target lent under `id`, while something else still keeps it.
+    fn lent(&self, id: u32) -> Option<ComponentHandle> {
+        self.lent
+            .borrow()
+            .iter()
+            .find(|(lent, _)| *lent == id)
+            .and_then(|(_, view)| view.upgrade())
     }
 }
 
@@ -394,14 +417,19 @@ pub(crate) fn listener(
 }
 
 impl Widget {
-    /// The writer widget of a lent frame writer whose authored callbacks enter `events`.
-    pub(crate) fn writer(tui: maestro_extensions::TUI, events: EventBus<Local>) -> Self {
+    /// The writer widget of a lent frame writer whose authored callbacks enter `events` and
+    /// whose overlays' failures go to the reporter it was lent with.
+    pub(crate) fn writer(
+        (tui, reporter): (TUI, Option<UIErrorReporter>),
+        events: EventBus<Local>,
+    ) -> Self {
         let component: ComponentHandle = Rc::new(tui.clone());
         Self {
-            kind: Kind::Writer(Rc::new(Writer::new(tui)), component),
+            kind: Kind::Writer(Rc::new(Writer::new(tui, reporter)), component),
             failure: crate::guest_calls::paints::Failure::default(),
             events,
             guests: RefCell::default(),
+            nested: std::cell::OnceCell::new(),
         }
     }
 

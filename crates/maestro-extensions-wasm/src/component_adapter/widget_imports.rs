@@ -405,6 +405,8 @@ pub(crate) enum WriterRequest<'a, I: WidgetImports> {
     Terminal(TerminalRequest<'a>),
     /// Starts the terminal with input and resize callbacks.
     TerminalStart(&'a I::Callback, &'a I::Callback),
+    /// Reads whether the host still keeps the component lent under an identity.
+    LentLive(u32),
 }
 
 /// What a frame writer request answers.

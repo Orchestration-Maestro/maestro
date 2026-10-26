@@ -13,10 +13,11 @@ use super::widget_imports::{
 use super::widgets::HostWidget;
 use crate::{
     Component, ExtensionFuture, ExtensionResult, HostWidgetHandle as Widget, OverlayHandle,
-    OverlayOptionsHandle, Subscription, Terminal, TerminalInputHandler, TerminalPort, TextHandler,
-    TuiPort, WidgetNotice, WidgetPort,
+    OverlayOptionsHandle, Subscription, SubscriptionPort, Terminal, TerminalInputHandler,
+    TerminalPort, TextHandler, TuiPort, WidgetNotice, WidgetPort,
 };
-use std::rc::Rc;
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
 
 /// The message of an answer of the wrong kind.
 const MISMATCH: &str = "extension frame writer result kind mismatch";
@@ -46,7 +47,8 @@ impl<I: WidgetImports> Writer<I> {
         }
     }
     /// Runs `request` on `component`'s target: a host widget, an identity this writer lent
-    /// it under before, or a fresh identity kept once the host accepts.
+    /// it under before while the host still keeps it, or a fresh identity kept once the host
+    /// accepts.
     fn targeted<T>(
         &self,
         component: &Component,
@@ -55,13 +57,9 @@ impl<I: WidgetImports> Writer<I> {
         if let Some(host) = component.widget().and_then(Widget::owner::<HostWidget<I>>) {
             return request(WriterTarget::Widget(&host.widget));
         }
-        let lent = self
-            .lent
-            .borrow()
-            .iter()
-            .find_map(|(added, id)| added.same(component).then_some(*id));
-        if let Some(id) =
-            lent.or_else(|| self.writer.get().and_then(|widget| widget.guest(component)))
+        if let Some(id) = self
+            .live(component)?
+            .or_else(|| self.writer.get().and_then(|widget| widget.guest(component)))
         {
             return request(WriterTarget::Lent(id));
         }
@@ -69,12 +67,25 @@ impl<I: WidgetImports> Writer<I> {
         identity.stage(component.clone());
         let result = request(WriterTarget::Component(&identity.handle));
         if result.is_ok() {
-            self.lent
-                .borrow_mut()
-                .push((component.clone(), identity.id()));
+            let mut lent = self.lent.borrow_mut();
+            lent.retain(|(view, _)| view.strong_count() > 0 && !component.is(view));
+            lent.push((component.downgrade(), identity.id()));
         }
         identity.settle(result.is_ok());
         result
+    }
+    /// The identity `component` was lent under, when the host still keeps it; the host
+    /// releases a retired target asynchronously, so it is asked.
+    fn live(&self, component: &Component) -> ExtensionResult<Option<u32>> {
+        let lent = self
+            .lent
+            .borrow()
+            .iter()
+            .find_map(|(view, id)| component.is(view).then_some(*id));
+        match lent {
+            Some(id) if self.flag(WriterRequest::LentLive(id))? => Ok(Some(id)),
+            _ => Ok(None),
+        }
     }
 }
 
@@ -161,29 +172,34 @@ impl<I: WidgetImports> TuiPort for Writer<I> {
         self.act(WriterRequest::RequestRender(force))
     }
     fn add_input_listener(&self, listener: TerminalInputHandler) -> ExtensionResult<Subscription> {
-        let widget = self.widget()?;
-        let identity = Identity::new(&self.imports);
-        let remover = self
-            .imports
-            .widget_add_input_listener(&widget.widget, &identity.handle)?;
-        identity.keep(listener.clone());
-        let subscription = super::event_bus::subscription(self.imports.clone(), remover);
-        self.listeners
-            .borrow_mut()
-            .push((listener, subscription.clone()));
-        Ok(subscription)
-    }
-    fn remove_input_listener(&self, listener: &TerminalInputHandler) -> ExtensionResult<()> {
-        let index = self
+        let added = self
             .listeners
             .borrow()
             .iter()
-            .position(|(added, _)| Rc::ptr_eq(added, listener));
-        let Some(index) = index else {
-            return Ok(());
+            .find_map(|(kept, remover)| Rc::ptr_eq(kept, &listener).then(|| remover.clone()));
+        let remover = if let Some(remover) = added {
+            remover
+        } else {
+            let widget = self.widget()?;
+            let identity = Identity::new(&self.imports);
+            let remover = self
+                .imports
+                .widget_add_input_listener(&widget.widget, &identity.handle)?;
+            identity.keep(listener.clone());
+            let remover = super::event_bus::subscription(self.imports.clone(), remover);
+            self.listeners
+                .borrow_mut()
+                .push((listener.clone(), remover.clone()));
+            remover
         };
-        let (_, subscription) = self.listeners.borrow_mut().remove(index);
-        subscription.unsubscribe()
+        Ok(Subscription::new(Rc::new(InputRemoval {
+            listeners: Rc::downgrade(&self.listeners),
+            listener: Rc::downgrade(&listener),
+            remover,
+        })))
+    }
+    fn remove_input_listener(&self, listener: &TerminalInputHandler) -> ExtensionResult<()> {
+        remove_listener(&self.listeners, Rc::as_ptr(listener))
     }
     fn set_on_debug(&self, callback: Option<WidgetNotice>) -> ExtensionResult<()> {
         let staged =
@@ -195,6 +211,51 @@ impl<I: WidgetImports> TuiPort for Writer<I> {
             staged.settle(result.is_ok());
         }
         result
+    }
+}
+
+/// The callable behind an input listener.
+type TerminalInputFn = dyn for<'a> Fn(
+    &str,
+    crate::CallbackEmitter<'a>,
+) -> ExtensionResult<Option<crate::TerminalInputResult>>;
+
+/// Input listeners added through one frame writer, each once, with their host removers.
+pub(super) type InputListeners = RefCell<Vec<(TerminalInputHandler, Subscription)>>;
+
+/// Removes `listener` from the frame writer and its host; one that is not present is ignored.
+fn remove_listener(
+    listeners: &InputListeners,
+    listener: *const TerminalInputFn,
+) -> ExtensionResult<()> {
+    let index = listeners
+        .borrow()
+        .iter()
+        .position(|(kept, _)| std::ptr::addr_eq(Rc::as_ptr(kept), listener));
+    let Some(index) = index else {
+        return Ok(());
+    };
+    let removed = listeners.borrow_mut().remove(index);
+    removed.1.unsubscribe()
+}
+
+/// The removal an addition returns; it keeps the host remover but neither the listener nor
+/// the frame writer.
+struct InputRemoval {
+    /// The frame writer's listeners.
+    listeners: Weak<InputListeners>,
+    /// The added listener.
+    listener: Weak<TerminalInputFn>,
+    /// The host's removal, used directly once the frame writer is gone.
+    remover: Subscription,
+}
+
+impl SubscriptionPort for InputRemoval {
+    fn unsubscribe(&self) -> ExtensionResult<()> {
+        match self.listeners.upgrade() {
+            Some(listeners) => remove_listener(&listeners, self.listener.as_ptr()),
+            None => self.remover.unsubscribe(),
+        }
     }
 }
 

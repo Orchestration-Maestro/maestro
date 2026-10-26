@@ -58,6 +58,7 @@ fn wire<'a>(request: &WriterRequest<'a, Generated>) -> host::WriterRequest<'a> {
         WriterRequest::TerminalStart(input, resize) => {
             host::WriterRequest::TerminalStart((input, resize))
         }
+        WriterRequest::LentLive(id) => host::WriterRequest::LentLive(id),
     }
 }
 

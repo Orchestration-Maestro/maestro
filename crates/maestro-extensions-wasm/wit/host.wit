@@ -468,6 +468,8 @@ interface host {
         terminal(terminal-request),
         /// Starts the terminal with authored input and resize callbacks.
         terminal-start(tuple<borrow<callback>, borrow<callback>>),
+        /// Reads whether the host still keeps the component lent under an identity.
+        lent-live(u32),
     }
     /// A host text styling function.
     resource style { apply: func(text: string) -> result<string, string>; }
