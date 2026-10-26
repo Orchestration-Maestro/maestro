@@ -1,16 +1,17 @@
 # Native terminal
 
-`ProcessTerminal` connects a Unix process to the toolkit. It implements the toolkit's
-`Terminal` port over the process's own standard input and standard output, so it needs no
-terminal framework and sends the toolkit raw protocol text rather than decoded key events.
-The type exists on Unix only; the native runtime host described [below](#the-runtime-host) exists
-on every native target, and only browser targets build the crate empty. It drives the
-descriptors directly and never opens the controlling terminal, so redirecting one of the two
-changes what it controls: raw mode and input come from standard input, window size and
-output from standard output.
+`ProcessTerminal` connects a Unix or Windows process to the toolkit. It implements the
+toolkit's `Terminal` port over the process's own standard input and standard output, so it
+needs no terminal framework and sends the toolkit raw protocol text rather than decoded key
+events. The native runtime host described [below](#the-runtime-host) exists on every native
+target, and only browser targets build the crate empty. The terminal drives the standard
+handles directly and never opens the controlling terminal or console, so redirecting one of
+the two changes what it controls: raw mode and input come from standard input, window size
+and output from standard output. [Windows consoles](#windows-consoles) describes what differs
+there.
 
 ```rust,no_run
-# #[cfg(unix)] {
+# #[cfg(any(unix, windows))] {
 use std::rc::Rc;
 
 use maestro_tui::Terminal;
@@ -32,10 +33,10 @@ runtime.block_on(local.run_until(async {
 
 ## The runtime it needs
 
-The terminal starts no runtime and no thread. It is given a `LocalSet`, and every task it
+The terminal starts no runtime, and on Unix no thread. It is given a `LocalSet`, and every task it
 creates runs there: the input reader, the output writer, the progress keepalive and every callback. Tasks run
 only while the caller drives that set inside a Tokio runtime whose I/O, time and signal
-drivers are enabled; a runtime built without one of them is a caller error, which Tokio
+drivers are enabled (time alone on Windows); a runtime built without one of them is a caller error, which Tokio
 reports itself. The standalone one-input wait validates the I/O driver before changing
 standard-input attributes or flags. `start` called outside a running runtime returns an `ErrorKind::Other` error
 and changes nothing, even on a terminal that is already started. Because callbacks never
@@ -78,11 +79,11 @@ application disposal is pending. See [interactive shutdown](../chat/interactive-
 ## Starting and stopping
 
 `new` reads the size of standard output and the write-log setting and does nothing else.
-`start` puts standard input in raw mode when it is a terminal, makes its reads nonblocking,
+On Unix, `start` puts standard input in raw mode when it is a terminal, makes its reads nonblocking,
 subscribes to window-change signals, writes the bracketed-paste enable and the keyboard
 query, registers nonblocking output and spawns the input and output tasks.
 
-Raw mode is applied to the device standard input refers to. It clears echo, line editing,
+On Unix, raw mode is applied to the device standard input refers to. It clears echo, line editing,
 signal keys, extended input processing, break handling, parity marking, stripping, newline
 and carriage-return mapping and the start and stop keys, so bytes are delivered as they
 become available, without line buffering. It also turns output post-processing and
@@ -124,7 +125,7 @@ input and output share an open file description, input restoration runs last.
 ## Input
 
 Standard input uses the shared [streaming text decoder](../text.md) and is read as UTF-8,
-at most 4096 bytes per read: a read takes what
+on Unix at most 4096 bytes per read: a read takes what
 is available at that moment, and a longer burst arrives in consecutive reads. A character
 split across reads is held until it completes, and invalid bytes become U+FFFD; only text
 that is complete reaches the toolkit's shared `StdinBuffer`. Its framing and release rules
@@ -166,7 +167,7 @@ enables a mode, and a reply that arrives is consumed instead of delivered.
 ## Window size
 
 The size is cached from standard output when the terminal is created and refreshed when the
-input task starts and on each window-change signal. The resize callback runs only when the
+input task starts and on each window-change signal (on Windows, each window-size record). The resize callback runs only when the
 size differs from the cached one. A failed query leaves the cached size as it was. A
 dimension the cache holds as zero, or never observed, falls back independently: to the
 number in `COLUMNS` (width) or `LINES` (height), then to 80 by 24.
@@ -180,7 +181,7 @@ which a `usize` cannot hold.
 
 ## Output
 
-While started, output commands accept owned UTF-8 bytes into one ordered queue and
+On Unix, while started, output commands accept owned UTF-8 bytes into one ordered queue and
 return without waiting for the terminal reader. One task writes at most 16 KiB per
 syscall and waits on descriptor readiness when output is full, leaving input runnable.
 A permanent write failure drops the remaining queue, refuses further accumulation
@@ -237,7 +238,7 @@ background tasks cannot be returned where they happen, so the first is kept and 
 
 ## One-input wait
 
-On Unix, `terminal::wait_for_input()` is a standalone future for a host-owned pause.
+`terminal::wait_for_input()` is a standalone future for a host-owned pause.
 Its first poll checks the caller's Tokio runtime and opens the existing input source
 before acquiring raw/nonblocking stdin through the terminal's restoration guard.
 It completes on one nonempty raw read: no key decoding, Enter requirement, protocol
@@ -248,4 +249,36 @@ Success, errors and future drop restore the saved terminal attributes and descri
 flags, including initially raw state. Explicit completion reports restoration failures
 unless an earlier operation already failed. Opening or acquisition failures release the
 input registration. A later wait opens its own reader rather than retaining one.
-Windows native raw input is not exposed by this Unix operation.
+On Windows it acquires the standard-input console as `start` does, without the output
+mode, and completes on the first typed text the console reader delivers; standard input that
+is not a console stays pending until drop, and drop restores the saved mode.
+
+## Windows consoles
+
+On Windows, `start` saves the console mode of standard input and applies raw mode: line
+input, echo and processed input (so Ctrl+C arrives as input) are turned off and window-size
+records on. It then adds escape-sequence input, so the console sends the sequences a
+terminal sends and modified keys such as Shift+Tab are told apart. A console that refuses
+escape-sequence input stays in raw mode without it, and `start` still succeeds; such a
+console delivers typed characters but no sequences for keys that produce none. `start` also
+turns on escape-sequence processing for the standard-output console when it accepts it.
+`stop` restores both saved modes; repeated and replacing starts keep the modes saved first,
+as on Unix. Standard input or output that is not a console is left alone.
+
+The console offers no read that can be cancelled, so input is read by a thread of its own
+for each input generation. It asks the console how many records are waiting, reads only when
+some are, and sleeps 10 ms otherwise, which bounds the added latency; idle, it costs one
+console query per interval. Key presses that produce a UTF-16 unit, and Alt releases that
+carry a character composed on the numeric keypad, become text in order, repeated as the
+record says; a surrogate pair split across reads is joined, and an unpaired surrogate becomes
+U+FFFD. That text then follows the shared [Input](#input) path, so framing, paste markers,
+keyboard replies and their order are as on Unix. A window-size record refreshes the size,
+which is read from the window of the standard-output console. The thread checks a stop flag
+before every read; `stop` and a replacing `start` set it and join the thread before the
+console mode is restored, so no record is read after they return. A console read failure
+ends the reader and is returned by the next `stop`.
+
+Standard input that is not a console (a pipe or `NUL`) is treated as ended at once: no
+thread is started and no input is delivered, because a blocking read of it could not be
+stopped. Output is written synchronously to standard output, so
+`pending_output_bytes` is always zero.

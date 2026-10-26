@@ -14,7 +14,7 @@ use std::os::windows::process::CommandExt;
 use std::pin::pin;
 use std::process::{Command, Output, Stdio};
 use std::rc::Rc;
-use std::task::{Context, Poll, Waker};
+use std::task::{Context, Waker};
 use std::time::Duration;
 
 use crossterm_winapi::{Console, ConsoleMode, Handle, HandleType, ScreenBuffer, WindowPositions};

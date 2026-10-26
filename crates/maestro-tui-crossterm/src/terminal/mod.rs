@@ -216,7 +216,7 @@ impl ProcessTerminal {
                 dimensions: Dimensions::observe(),
                 failure: RefCell::new(None),
                 errors: Rc::new(OutputErrors::default()),
-                output: platform::Output::default(),
+                output: platform::Output::new(),
             }),
             running: None,
             progress: None,

@@ -129,8 +129,14 @@ async fn run(mut input: Input, mut source: Source, mut resize: Signal) {
 }
 
 /// The one live output writer, retained across input generations.
-#[derive(Default)]
 pub(super) struct Output(RefCell<Option<Rc<TtyWriter>>>);
+
+impl Output {
+    /// Output with no writer yet.
+    pub(super) fn new() -> Self {
+        Self(RefCell::new(None))
+    }
+}
 
 impl OutputPort for Output {
     /// Registers nonblocking output with a writer task on `local`, unless one is running or

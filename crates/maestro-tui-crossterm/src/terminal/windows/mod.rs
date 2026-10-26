@@ -216,8 +216,14 @@ fn woken(arrival: Option<Arrival>) -> (Wake, Vec<u8>) {
 
 /// Output to the console, which accepts each write before it returns, so nothing is
 /// retained, opened or drained.
-#[derive(Default)]
 pub(super) struct Output;
+
+impl Output {
+    /// Output to the console.
+    pub(super) fn new() -> Self {
+        Self
+    }
+}
 
 impl OutputPort for Output {
     fn write(&self, text: &str) -> io::Result<()> {
