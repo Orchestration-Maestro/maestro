@@ -296,6 +296,15 @@ pub trait Imports: Clone + 'static {
     fn theme_get_fg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
     /// Reads a background escape.
     fn theme_get_bg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Colors text with the border color of a thinking level.
+    fn theme_thinking_border(
+        &self,
+        theme: &Self::Theme,
+        level: &str,
+        text: &str,
+    ) -> ExtensionResult<String>;
+    /// Colors text with the shell mode border color.
+    fn theme_bash_mode_border(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
     /// Reads the color depth.
     fn theme_get_color_mode(&self, theme: &Self::Theme) -> ExtensionResult<crate::ColorMode>;
     /// Registers a renderer against its host callback identity.

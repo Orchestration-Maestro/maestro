@@ -997,3 +997,49 @@ async fn theme_requests(driver: &mut impl Driver) -> Result<(), String> {
 fn theme_lookup_selection_and_tool_expansion_use_host() -> Result<(), String> {
     on_both_adapters!(theme_requests)
 }
+
+/// Every thinking level and the shell mode reach the host's border colors, and each answer is
+/// the host's own bytes for the palette the retained theme reads.
+async fn border_colors(driver: &mut impl Driver) -> Result<(), String> {
+    retain_themes(driver, &["dark", "quantized"]).await?;
+    let rows = dark_replies(&["thinkingBorder", "bashModeBorder"]);
+    assert_eq!(rows.len(), 7, "six thinking levels and the shell mode");
+    for row in &rows {
+        let answer = reached(driver, 0, "dark", &row.method, &row.operands).await?;
+        assert_eq!(answer, row.answer, "{} {}", row.method, row.operands);
+    }
+    let quantized = corpus().palettes.remove("quantized").unwrap().replies;
+    let quantized: Vec<_> = quantized
+        .into_iter()
+        .filter(|reply| reply.method.ends_with("Border"))
+        .collect();
+    assert_eq!(
+        quantized.len(),
+        7,
+        "the other palette records its own bytes"
+    );
+    for row in &quantized {
+        let answer = reached(driver, 1, "quantized", &row.method, &row.operands).await?;
+        assert_eq!(
+            answer, row.answer,
+            "quantized {} {}",
+            row.method, row.operands
+        );
+        assert!(
+            !rows.iter().any(|dark| dark.answer == row.answer),
+            "distinct bytes per palette"
+        );
+    }
+    let level = themed(driver, 0, "thinkingBorder", &json!(["extreme", "x"])).await?;
+    assert_eq!(
+        level,
+        json!({ "error": "unknown thinking level" }),
+        "levels are typed"
+    );
+    release_themes(driver).await
+}
+
+#[test]
+fn theme_border_helpers_forward_every_level() -> Result<(), String> {
+    on_both_adapters!(border_colors)
+}

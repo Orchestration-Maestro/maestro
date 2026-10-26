@@ -47,6 +47,10 @@ interface host {
         get-fg-ansi: func(color: string) -> result<string, string>;
         get-bg-ansi: func(color: string) -> result<string, string>;
         get-color-mode: func() -> result<color-mode, string>;
+        /// Colors text with the border color of a thinking level.
+        thinking-border: func(level: string, text: string) -> result<string, string>;
+        /// Colors text with the shell mode border color.
+        bash-mode-border: func(text: string) -> result<string, string>;
     }
     /// Registers a renderer without invoking it.
     register-message-renderer: func(custom-type: string, handler: borrow<callback>) -> result<_, string>;

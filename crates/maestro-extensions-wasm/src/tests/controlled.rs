@@ -1596,6 +1596,22 @@ impl Imports for Controlled {
     }
 
     type Theme = Theme;
+    fn theme_thinking_border(
+        &self,
+        theme: &Theme,
+        level: &str,
+        text: &str,
+    ) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "thinkingBorder",
+            &json!([level, text]),
+        )
+    }
+    fn theme_bash_mode_border(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "bashModeBorder", &json!([text]))
+    }
     fn theme_name(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
         super::theme_host::optional(&mut self.observed.borrow_mut(), &theme.key, "name")
     }

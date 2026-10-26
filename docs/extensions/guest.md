@@ -416,6 +416,11 @@ author built itself cannot be passed back and returns an error. A host rejection
 error, not a failed selection. `get_tools_expanded` and `set_tools_expanded` read and
 change the tool output expansion.
 
+`Theme::get_thinking_border_color` and `Theme::get_bash_mode_border_color` return a
+`BorderColor` callback that asks the theme's owner to color text with the border color
+of a `ModelThinkingLevel` or of the shell mode. The level-to-color choice stays with the
+host's theme, and each call reads the theme the handle currently observes.
+
 ### Terminal input
 
 `on_terminal_input` adds a listener that sees each raw chunk of terminal input before

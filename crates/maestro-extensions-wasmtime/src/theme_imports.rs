@@ -73,6 +73,7 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
         ("strikethrough", Request::Strikethrough),
         ("get-fg-ansi", Request::FgAnsi),
         ("get-bg-ansi", Request::BgAnsi),
+        ("bash-mode-border", Request::BashModeBorder),
     ] {
         add_operand(
             host,
@@ -92,6 +93,7 @@ fn colors<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::
             Request::Fg as fn(String, String, Sender<Result<String, String>>) -> Request,
         ),
         ("bg", Request::Bg),
+        ("thinking-border", Request::ThinkingBorder),
     ] {
         host.func_wrap(
             &format!("[method]theme.{method}"),

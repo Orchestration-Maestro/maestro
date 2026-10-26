@@ -581,6 +581,75 @@
      "answer": {
       "ok": "\u001b[48;2;58;58;74m"
      }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "off",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;80;80;80m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "minimal",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;110;110;110m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "low",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;95;135;175m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "medium",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;129;162;190m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "high",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;178;148;187m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "xhigh",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;209;131;232m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "bashModeBorder",
+     "operands": [
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;2;181;189;104m│ 雪 \u001b[39m"
+     }
     }
    ]
   },
@@ -626,6 +695,75 @@
      ],
      "answer": {
       "ok": "\u001b[48;5;59m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "off",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;239m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "minimal",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;242m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "low",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;67m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "medium",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;109m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "high",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;139m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "thinkingBorder",
+     "operands": [
+      "xhigh",
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;176m│ 雪 \u001b[39m"
+     }
+    },
+    {
+     "method": "bashModeBorder",
+     "operands": [
+      "│ 雪 "
+     ],
+     "answer": {
+      "ok": "\u001b[38;5;143m│ 雪 \u001b[39m"
      }
     }
    ]

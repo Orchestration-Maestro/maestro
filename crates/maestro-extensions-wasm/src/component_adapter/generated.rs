@@ -144,6 +144,8 @@ impl Imports for Generated {
         theme_get_fg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_fg_ansi(color);
         theme_get_bg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_bg_ansi(color);
         theme_get_color_mode(theme: &Self::Theme) -> ExtensionResult<crate::ColorMode> => get_color_mode();
+        theme_thinking_border(theme: &Self::Theme, level: &str, text: &str) -> ExtensionResult<String> => thinking_border(level, text);
+        theme_bash_mode_border(theme: &Self::Theme, text: &str) -> ExtensionResult<String> => bash_mode_border(text);
         ui_get_editor_text(resource: &Self::Ui) -> ExtensionResult<String> => get_editor_text();
         ui_on_terminal_input(resource: &Self::Ui, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_terminal_input(handler);
         ui_theme(resource: &Self::Ui) -> ExtensionResult<Self::Theme> => theme();

@@ -10,7 +10,7 @@ use std::any::Any;
 use std::rc::Rc;
 
 pub use crate::bindings::maestro::extension::host::{ColorMode, ThemeInfo, ThemeSetResult};
-use crate::{ExtensionResult, SourceInfo};
+use crate::{ExtensionResult, ModelThinkingLevel, SourceInfo};
 
 /// Independently retained theme capability; clones share its host owner.
 #[derive(Clone)]
@@ -89,5 +89,28 @@ port! {
         fn get_bg_ansi(color: &str) -> String;
         /// The color depth the theme renders at.
         fn get_color_mode() -> ColorMode;
+        /// Colors text with the border color of a thinking level.
+        fn thinking_border(level: ModelThinkingLevel, text: &str) -> String;
+        /// Colors text with the shell mode border color.
+        fn bash_mode_border(text: &str) -> String;
+    }
+}
+
+/// A border color the theme's owner applies to text each time it is called.
+pub type BorderColor = Rc<dyn Fn(&str) -> ExtensionResult<String>>;
+
+impl Theme {
+    /// The border color of a thinking level, read from the theme's owner on each call.
+    #[must_use]
+    pub fn get_thinking_border_color(&self, level: ModelThinkingLevel) -> BorderColor {
+        let theme = self.clone();
+        Rc::new(move |text| theme.thinking_border(level.clone(), text))
+    }
+
+    /// The shell mode border color, read from the theme's owner on each call.
+    #[must_use]
+    pub fn get_bash_mode_border_color(&self) -> BorderColor {
+        let theme = self.clone();
+        Rc::new(move |text| theme.bash_mode_border(text))
     }
 }
