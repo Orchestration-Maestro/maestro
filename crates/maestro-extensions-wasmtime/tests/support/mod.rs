@@ -26,6 +26,9 @@ pub fn bind_prompt(runner: &ExtensionRunner<Local>, prompt: &'static str) {
 struct ToolkitWidgets(maestro_theme::LiveTheme);
 
 impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        self.0.clone()
+    }
     fn markdown(
         &self,
         text: String,

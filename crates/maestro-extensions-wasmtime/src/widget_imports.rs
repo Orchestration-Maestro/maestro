@@ -285,6 +285,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             Ok((tui.full_redraws(),))
         },
     )?;
+    crate::theme_imports::add_global(host)?;
     constructors(host)?;
     markdown(host)?;
     methods(host)?;

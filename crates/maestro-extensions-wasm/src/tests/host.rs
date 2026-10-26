@@ -682,6 +682,13 @@ impl host::Host for State {
             ..Default::default()
         })
     }
+    fn global_theme(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::renderer_host::Theme>, String>> {
+        Ok(Ok(self
+            .table
+            .push(super::renderer_host::Theme("dark".into()))?))
+    }
     fn get_markdown_theme(&mut self) -> wasmtime::Result<Result<host::MarkdownTheme, String>> {
         self.markdown_theme().map(Ok)
     }

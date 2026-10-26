@@ -548,6 +548,8 @@ interface host {
     new-markdown: func(text: string, padding-x: u32, padding-y: u32, theme: markdown-styles, style: option<default-text-style>) -> result<widget, string>;
     /// A full-width rule painted by `color`, or by the live border color.
     new-dynamic-border: func(color: option<style-source>) -> result<widget, string>;
+    /// Retains the host's live theme independently of its interactive UI.
+    global-theme: func() -> result<theme, string>;
     /// The live theme's Markdown styles.
     get-markdown-theme: func() -> result<markdown-theme, string>;
     /// A selection list.

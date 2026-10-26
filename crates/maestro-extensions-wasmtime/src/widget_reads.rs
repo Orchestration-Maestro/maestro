@@ -114,6 +114,8 @@ pub(crate) enum Request {
 pub(crate) enum WidgetMessage {
     /// The full redraw count of the original frame writer.
     FullRedraws(u64, Reply<u64>),
+    /// Retains the host's live theme independently of UI availability.
+    GlobalTheme(Reply<crate::theme_reads::Endpoint>),
     /// A request on the widget with this identity.
     Request(u64, Request),
     /// Builds a widget for the extension whose API has this identity.

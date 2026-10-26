@@ -38,6 +38,7 @@ pub trait ComponentView {
 
 #[macro_use]
 mod widgets;
+pub(crate) use widgets::host as widget_host;
 mod editors;
 mod focus;
 pub use focus::{CURSOR_MARKER, Focusable, is_focusable};

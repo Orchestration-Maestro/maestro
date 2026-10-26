@@ -314,6 +314,9 @@ pub(super) fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Styl
 }
 
 impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
+    fn theme(&self) -> ExtensionResult<crate::Theme> {
+        Ok(super::theme::theme(self.0.clone(), self.0.global_theme()?))
+    }
     fn text(
         &self,
         text: &str,

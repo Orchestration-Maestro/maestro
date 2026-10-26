@@ -1634,3 +1634,22 @@ async fn factory_capabilities(driver: &mut impl Driver) -> Result<(), String> {
 fn factory_component_preserves_width_and_retained_expansion() -> Result<(), String> {
     on_both_adapters!(factory_capabilities)
 }
+
+/// A standalone theme has no UI dependency and retained aliases read later publications.
+async fn global_theme(driver: &mut impl Driver) -> Result<(), String> {
+    retain_themes(driver, &[]).await?;
+    driver.run_plain_command("theme", "global").await?;
+    assert_eq!(observe(driver, 0).await?, recorded("dark"));
+    driver.run_plain_command("theme", "global").await?;
+    driver
+        .run_plain_command("theme", r#"publish {"theme":"dark","palette":"quantized"}"#)
+        .await?;
+    assert_eq!(observe(driver, 0).await?, recorded("quantized"));
+    assert_eq!(observe(driver, 1).await?, recorded("quantized"));
+    release_themes(driver).await
+}
+
+#[test]
+fn standalone_theme_keeps_live_aliases_without_ui() -> Result<(), String> {
+    on_both_adapters!(global_theme)
+}
