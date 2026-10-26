@@ -1,6 +1,6 @@
 //! Nested credential callbacks retain their original update capability.
 use super::{Call, Callback, LocalBackend, LocalCall, LocalFallback};
-use wasmtime::component::ResourceTable;
+use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
 
 /// Marshals one credential callback with its original update capability.
 pub(super) fn lower(
@@ -50,4 +50,35 @@ pub(super) fn settle(
         }
     }
     Ok(())
+}
+
+/// Owned input for a nested synchronous OAuth notification.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalOAuth {
+    /// Original authored identity.
+    target: u32,
+    /// Native-selected interaction form.
+    phase: crate::oauth_callbacks::Phase,
+    /// Exact supplied record or progress text.
+    data: String,
+    /// Original native interaction for an authored provider login.
+    interaction: Option<Resource<crate::oauth_interaction::Interaction>>,
+}
+
+/// Marshals the original OAuth identity and optional native interaction.
+pub(super) fn oauth(
+    table: &mut ResourceTable,
+    call: &crate::oauth_callbacks::Invocation<Callback>,
+) -> wasmtime::Result<LocalCall> {
+    Ok(LocalCall::OAuth(LocalOAuth {
+        target: call.handler.id,
+        phase: call.phase,
+        data: call.data.clone(),
+        interaction: call
+            .interaction
+            .clone()
+            .map(|interaction| table.push(interaction))
+            .transpose()?,
+    }))
 }

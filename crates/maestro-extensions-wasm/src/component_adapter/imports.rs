@@ -37,6 +37,12 @@ pub struct Dialog<'a, S> {
     pub timeout: Option<f64>,
 }
 
+/// Optional retained OAuth implementation with its label and callback-server metadata.
+pub type ProviderOAuth<'a, C> = Option<(&'a C, &'a str, Option<bool>)>;
+
+/// Optional streaming and OAuth capabilities of the same provider registration.
+pub type ProviderRegistration<'a, C> = (Option<&'a C>, ProviderOAuth<'a, C>);
+
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
 ///

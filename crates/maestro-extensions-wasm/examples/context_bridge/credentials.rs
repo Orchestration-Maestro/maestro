@@ -4,6 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
+use super::{oauth, providers};
 use maestro_extensions_wasm::{
     AsyncLockUpdate, AuthStorage, AuthStorageBackend, ExtensionAPI, ExtensionFuture,
     ExtensionResult,
@@ -246,4 +247,43 @@ fn retain_pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
 /// Runs the shared retained-owner composition through either host transport.
 pub(super) async fn composition(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
     state::composition(api, request).await
+}
+
+/// Runs native credential login over the controlled raw backend.
+pub(super) async fn login(
+    api: &ExtensionAPI,
+    mode: &str,
+    callbacks: Rc<maestro_extensions_wasm::OAuthLoginCallbacks>,
+) -> ExtensionResult<Value> {
+    state::login(api, mode, callbacks).await
+}
+
+/// Dispatches exact credential observations after parameterized routes are selected.
+pub(super) async fn observation(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionContext,
+    request: &str,
+) -> Result<serde_json::Value, String> {
+    match request {
+        request if request.starts_with("credential oauth login ") => {
+            oauth::login(
+                api,
+                context,
+                request.trim_start_matches("credential oauth login "),
+            )
+            .await
+        }
+        "credential oauth pending create" => oauth::pending_create(context),
+        "credential oauth pending complete" => oauth::pending_complete().await,
+        "credential oauth providers" => oauth::providers(context),
+        "credential oauth registration" => oauth::registration(api, context).await,
+        "credential oauth operations" => oauth::operations(context).await,
+        "credential oauth retain" | "credential oauth key" | "credential oauth release" => {
+            oauth::retained(context, request.trim_start_matches("credential oauth "))
+        }
+        "credential fallback" => fallback(api).await,
+        "credential backend" => backend(api),
+        "credential state" => state(api).await,
+        _ => providers::command(api, context, request).await,
+    }
 }

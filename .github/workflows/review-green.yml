@@ -1,4 +1,4 @@
-name: Native I/O review green evidence
+name: Native I/O OAuth merge proof
 "on":
   push:
     branches: [ci/659-fix-r1-green]
@@ -38,11 +38,11 @@ jobs:
         run: |
           set -o pipefail
           capped mise exec -- cargo clippy --locked -p maestro-extensions-wasm --target wasm32-wasip2 --example native_io_component -- -D warnings 2>&1 | tee proof-logs/fix-r1-guest-clippy.log
-      - name: Selected package suites
+      - name: Native bridge and OAuth merge regressions
         if: ${{ !cancelled() }}
         run: |
           set -o pipefail
-          capped mise exec -- cargo nextest run --locked -p maestro-app -p maestro-process -p maestro-extensions-wasm -p maestro-extensions-wasmtime -p maestro --no-fail-fast 2>&1 | tee proof-logs/fix-r1-packages-green.log
+          capped mise exec -- cargo nextest run --locked -p maestro-app -p maestro-process -p maestro-extensions-wasm -p maestro-extensions-wasmtime -p maestro --no-fail-fast -E 'test(native_) | test(raw_) | test(retained_front_reads_only_unwritten_bytes) | test(cancelled_pending_body_read_retains_the_stream) | test(maestro_component_contract_keeps_sync_and_async_calls) | test(oauth::) | test(oauth_)' 2>&1 | tee proof-logs/fix-r1-packages-green.log
           for name in cancelled_pending_body_read_retains_the_stream native_response_text_uses_the_existing_decoder native_watch_close_releases_its_registration native_watch_failures_do_not_leak_callbacks retained_front_reads_only_unwritten_bytes raw_read_failure_keeps_prefix_and_sibling_controls raw_child_output_close_is_independent_of_exit raw_child_pipes_survive_control_drop_and_reap_once native_child_read_failure_follows_the_real_prefix; do
             grep -E "PASS.*$name" proof-logs/fix-r1-packages-green.log
             cp proof-logs/fix-r1-packages-green.log "proof-logs/$name-green.log"

@@ -11,7 +11,7 @@ setup = "author-component"
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "package(maestro-models) & test(/(^|::)oauth_callback::/)"
+filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
 [test-groups.browser-author]

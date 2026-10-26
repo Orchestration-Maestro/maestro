@@ -149,17 +149,16 @@ fn add_mutations<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "[method]model-registry.register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, name, config, stream): (
+         (resource, name, config, callbacks): (
             Resource<Endpoint>,
             String,
             String,
-            Option<Resource<crate::guest_calls::Callback>>,
+            crate::provider_registration::Wire,
         )| {
-            let stream = stream
-                .map(|stream| crate::callback_imports::retain(store.data_mut(), &stream))
-                .transpose()?;
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Register(name, config, stream, reply));
+            let route = endpoint.route(|reply| Request::Register(name, config, callbacks, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )

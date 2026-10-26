@@ -102,6 +102,8 @@ kinds! {
         Schema(crate::schema_code::Handler),
         CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
         CredentialFallback(crate::FallbackResolver),
+        OAuthCallbacks(std::rc::Rc<super::oauth::Interaction>),
+        OAuthProvider(std::rc::Rc<dyn crate::OAuthProviderInterface>),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),
         ToolRenderCall(crate::ToolRenderCall),
