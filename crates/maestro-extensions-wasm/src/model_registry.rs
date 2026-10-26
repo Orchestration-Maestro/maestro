@@ -21,7 +21,7 @@ port! {
     }
     asynchronous {
         /// Resolves credentials for the supplied model.
-        fn get_api_key_and_headers(model: Model) -> ResolvedRequestAuth;
+        fn get_api_key_and_headers<'a>(model: Model) -> ResolvedRequestAuth;
     }
 }
 /// Retained catalog; clones share its host owner.

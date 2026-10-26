@@ -5,13 +5,16 @@ and streams events as JSON lines on standard output. Embedders drive a full sess
 way: prompts, models, queues, compaction, shell commands, session files and extension
 dialogs.
 
-The protocol has one connection runner, `maestro_app::run_rpc_connection`. It serves a
-workspace command handler and an optional local session over a caller's line reader
-and writer and returns how the connection ended; it never exits the process.
-`RpcModeOptions::session` groups the runtime, signal registration, theme and export
-facilities. Without a session, workspace commands still run and session commands return
-a correlated refusal asking the caller to open in a session. The writer receives each record as an
-`RpcLine`, already framed, and `rpc_mode::stdout_output` writes those lines to standard
+The protocol has one connection runner, `maestro_app::run_rpc_connection`. It serves an
+optional workspace command handler and an optional local session over a caller's line
+reader and writer and returns how the connection ended; it never exits the process.
+`RpcModeOptions::workspace` supplies the workspace handler. With `None`, workspace
+commands receive the ordinary unknown-command response, as they do in the session-only
+executable. `RpcModeOptions::session` groups the runtime, signal registration, theme and
+export facilities. Without a session, a supplied workspace handler still runs and session
+commands return a correlated refusal asking the caller to open in a session.
+
+The writer receives each record as an `RpcLine`, already framed, and `rpc_mode::stdout_output` writes those lines to standard
 output. `maestro_rpc::run_rpc_mode` is its
 standard-stream adapter: it reserves standard output for protocol records, serves the
 runtime and exits with the connection's code.
@@ -204,4 +207,4 @@ it then ends.
 The application-owned `presentation_data::mode_dispatch::RpcModeRunner` accepts
 the prepared session runtime. A native adapter supplies `RpcModeOptions` and
 calls `run_rpc_mode`; the runner retains its standard-stream framing and exit
-policy. Executable composition is not provided by this contract.
+policy. The `maestro` executable wires that adapter to command-line startup.

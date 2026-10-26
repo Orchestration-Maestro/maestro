@@ -4,7 +4,7 @@ experimental = ["setup-scripts"]
 command = "sh .config/prepare-author-component.sh"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime)"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & test(startup_modes::))"
 setup = "author-component"
 
 [test-groups.oauth-callback]

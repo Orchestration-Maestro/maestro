@@ -34,8 +34,8 @@ pub fn kill_process(pid: u32) -> io::Result<()> {
 /// Builds the native tree-kill operands with ignored standard streams.
 #[cfg(any(windows, test))]
 pub(super) fn tree_kill_command(pid: u32) -> std::process::Command {
-    use std::process::{Command, Stdio};
-    let mut command = Command::new("taskkill");
+    use std::process::Stdio;
+    let mut command = crate::command("taskkill").into_std();
     command
         .args(["/F", "/T", "/PID", &pid.to_string()])
         .stdin(Stdio::null())

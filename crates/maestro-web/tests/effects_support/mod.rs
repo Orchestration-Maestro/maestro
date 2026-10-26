@@ -1,10 +1,7 @@
 //! Controlled native-clock policy at the shared content-host seam.
 #![cfg(test)]
 use maestro_theme::BrandPresentation;
-use maestro_web::{
-    Attachment,
-    browser::{attachment_content::*, timer::Timer},
-};
+use maestro_web::browser::{attachment_content::*, timer::Timer};
 use std::{
     cell::{Cell, RefCell},
     future::Future,
@@ -203,7 +200,7 @@ impl AttachmentHost for Host {
             .push((name.into(), mime.into(), bytes.to_vec()));
         Ok(())
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

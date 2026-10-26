@@ -1,11 +1,8 @@
 //! Call-scoped content placement with retained platform ownership.
-use crate::{
-    Attachment,
-    icons::{self, IconSize},
-};
+use crate::icons::{self, IconSize};
 use maestro_theme::BrandPresentation;
 use num_traits::ToPrimitive as _;
-use std::{cell::RefCell, io, rc::Rc};
+use std::{io, rc::Rc};
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod browser;
 #[cfg(target_arch = "wasm32")]
@@ -78,7 +75,7 @@ pub enum AttachmentContent<'a> {
         /// Selected renderer.
         file_type: FileType,
         /// Original mutable record.
-        attachment: Rc<RefCell<Attachment>>,
+        attachment: crate::SharedAttachment,
         /// Whether the renderer must restart.
         reload: bool,
     },
@@ -204,7 +201,7 @@ pub trait AttachmentHost {
     /// Download the original record.
     /// # Errors
     /// Returns decoding or platform failures.
-    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError>;
+    fn download(&self, attachment: crate::SharedAttachment) -> Result<(), AttachmentHostError>;
 }
 /// Convert brand measurements for the drawing library.
 pub(crate) fn points(n: f64) -> f32 {

@@ -20,6 +20,12 @@ pub struct DomView {
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
 }
+/// Prepared renderer output: owned records on native targets, which have no page.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) type PreparedContent = Box<dyn Any>;
+/// Prepared renderer output: page content in the browser.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type PreparedContent = Box<dyn DomContent>;
 /// A mounted root and the native resources that live exactly as long as it.
 pub struct DomRoot {
     /// Root node the caller places.
@@ -76,6 +82,19 @@ impl MountedContent {
         parent: &Node,
         view: &DomView,
     ) -> Result<(), ToolUiError> {
+        self.show_before(content, parent, None, view)
+    }
+    /// Like [`Self::show`], but a first root is placed before `before` instead of last.
+    /// # Errors
+    /// Returns the content's failure; a failed replacement keeps the previous root.
+    #[cfg(target_arch = "wasm32")]
+    pub fn show_before(
+        &mut self,
+        content: &dyn DomContent,
+        parent: &Node,
+        before: Option<&Node>,
+        view: &DomView,
+    ) -> Result<(), ToolUiError> {
         let kind = (content as &dyn Any).type_id();
         if let Some((active, key, root)) = &self.active
             && *active == kind
@@ -86,11 +105,19 @@ impl MountedContent {
         let root = content.mount(view)?;
         match &self.active {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
-            None => parent.append_child(&root.node),
+            None => parent.insert_before(&root.node, before),
         }
         .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
+    }
+    /// Remove the root element from its parent and release its resources.
+    #[cfg(target_arch = "wasm32")]
+    pub fn clear(&mut self) {
+        use wasm_bindgen::JsCast as _;
+        if let Some((.., root)) = self.active.take() {
+            root.node.unchecked_ref::<web_sys::Element>().remove();
+        }
     }
 }
 /// An element property reflected onto one of its attributes.
@@ -204,6 +231,7 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
     css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
     css.push_str(include_str!("tools/artifacts/console.css"));
+    css.push_str(include_str!("components/diff.css"));
     css.push_str(include_str!("dom.css"));
     css.push_str(include_str!("dialogs/dialogs.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
@@ -251,9 +279,7 @@ pub(crate) fn icon(
     class: &str,
 ) -> Result<web_sys::Element, ToolUiError> {
     use crate::browser::attachment_content::browser::{element, host_error};
-    let node = crate::icons::icon_node(name)
-        .map_err(|error| ToolUiError::Presentation(error.to_string()))?
-        .ok_or_else(|| ToolUiError::Presentation(format!("Missing icon {name}")))?;
+    let node = crate::tools::renderer_registry::header::dom::glyph(name)?;
     let span = element(document, "span", class)?;
     let svg = crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)
         .map_err(|error| host_error(&error))?;

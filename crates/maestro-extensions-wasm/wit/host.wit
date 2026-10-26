@@ -107,7 +107,7 @@ interface host {
     /// One nested same-instance argument preparation.
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error }
+    enum local-kind { listener, compaction-complete, compaction-error, abort }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.
@@ -202,7 +202,14 @@ interface host {
     /// Host-owned cancellation flag.
     resource abort-signal {
         aborted: func() -> bool;
+        abort: func() -> result<_, string>;
     }
+    /// Creates an independently owned cancellation signal.
+    new-signal: func() -> result<abort-signal, string>;
+    /// Calls the host with ordinary data and an optional borrowed cancellation signal.
+    call: async func(operation: string, data: string, signal: option<borrow<abort-signal>>) -> result<string, string>;
+    /// Runs a listener once when the signal is cancelled; the subscription removes it.
+    signal-subscribe: func(signal: borrow<abort-signal>, listener: borrow<callback>) -> result<subscription, string>;
 
     /// Partial output delivered by an executing tool.
     resource tool-update { update: func(partial: string) -> import-route; }

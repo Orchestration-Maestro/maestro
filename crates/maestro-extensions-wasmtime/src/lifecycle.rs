@@ -127,6 +127,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
+    crate::exec_imports::add_to_linker(&mut host)?;
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
     crate::ui_imports::add_to_linker(&mut host)?;
@@ -140,6 +141,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::session_imports::add_to_linker(&mut host)?;
     crate::effect_imports::add_to_linker(&mut host)?;
     crate::event_imports::add_to_linker(&mut host)?;
+    crate::signal_imports::add_to_linker(&mut host)?;
     crate::schema_imports::add_to_linker(&mut host)?;
     crate::registration_imports::add_to_linker(&mut host)?;
     crate::import_route::link(&mut host)

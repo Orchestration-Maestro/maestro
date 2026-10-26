@@ -1,7 +1,7 @@
 //! Controlled observations of the shared native content boundary.
 #![cfg(test)]
 use maestro_theme::BrandPresentation;
-use maestro_web::{Attachment, browser::attachment_content::*, browser::timer::Timer};
+use maestro_web::{browser::attachment_content::*, browser::timer::Timer};
 use std::{cell::RefCell, rc::Rc};
 /// Presentation observer, called outside any host borrow.
 pub type Inspect = dyn Fn(&AttachmentSurface<'_>, &BrandPresentation<'_>);
@@ -94,7 +94,7 @@ impl AttachmentHost for Host {
     fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn timer(&self, _: i32, _: bool, _: Rc<dyn Fn()>) -> Result<Timer, AttachmentHostError> {

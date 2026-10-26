@@ -33,7 +33,7 @@ pub fn git_rev_parse_verify(repo_root: &Path, revision: &str) -> Option<String> 
 
 /// Run a noninteractive Git query through the existing process owner.
 fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
-    let mut command = tokio::process::Command::new("git");
+    let mut command = maestro_process::command("git");
     command.arg("-C").arg(repo_root).args(args);
     let output = spawn_sync(
         &mut command,

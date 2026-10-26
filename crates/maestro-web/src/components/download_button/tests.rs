@@ -70,7 +70,7 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-    fn download(&self, _: Rc<RefCell<crate::Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: crate::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

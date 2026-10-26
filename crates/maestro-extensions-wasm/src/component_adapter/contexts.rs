@@ -68,30 +68,10 @@ use crate::bindings::maestro::extension::session::SessionChangeResult;
 use crate::types::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
     ExtensionFuture, ExtensionResult, NewSessionCommandOptions, ReplacedSessionContext,
-    ReplacedSessionContextPort, SignalPort,
+    ReplacedSessionContextPort,
 };
 
-/// Host signal behind the facade.
-struct Signal<I: Imports> {
-    /// The host the signal belongs to.
-    imports: I,
-    /// The host's cancellation flag.
-    signal: I::Signal,
-}
-
-impl<I: Imports> SignalPort for Signal<I> {
-    fn aborted(&self) -> bool {
-        self.imports.aborted(&self.signal)
-    }
-}
-
-/// Wraps a host signal.
-pub(super) fn signal<I: Imports>(imports: &I, signal: I::Signal) -> AbortSignal {
-    AbortSignal::new(Rc::new(Signal {
-        imports: imports.clone(),
-        signal,
-    }))
-}
+use super::signals::signal;
 
 /// Host ordinary context behind the facade.
 struct Ordinary<I: Imports> {

@@ -89,6 +89,25 @@ impl ArtifactPresentation for Presentation {
         self.changed.set(self.changed.get() + 1);
     }
 }
+/// Store a literal fixture record without creating its specialized view.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn store(
+    panel: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    filename: &str,
+) {
+    let now = chrono::DateTime::from_timestamp_millis(0).unwrap();
+    panel.artifacts().write().unwrap().insert(
+        filename.into(),
+        std::sync::Arc::new(std::sync::RwLock::new(
+            maestro_app::browser::tools::artifacts::Artifact {
+                filename: filename.into(),
+                content: "stored".into(),
+                created_at: now,
+                updated_at: now,
+            },
+        )),
+    );
+}
 /// Drive immediate tool work without a second executor implementation.
 /// # Panics
 /// Panics if the command unexpectedly suspends.

@@ -49,8 +49,11 @@ function observedBrowser(observe) {
     assert(options.args.includes('--force-device-scale-factor=1.25'));
     const browser = await chromium.launch(options);
     const original = browser.newPage.bind(browser);
+    let pageIndex = -1;
     browser.newPage = async (...args) => {
-      assert.deepEqual(args, [{deviceScaleFactor: 1.25}]);
+      const expected = {deviceScaleFactor: 1.25};
+      if (all[pageIndex++] === 'tile_dom_remove_does_not_open_and_uses_current_callback') expected.hasTouch = true;
+      assert.deepEqual(args, [expected]);
       const page = await original(...args);
       await observe(page, browser);
       return page;
@@ -65,8 +68,8 @@ test('inventory_rejects_empty_or_invalid_names', () => {
   }
   const selected = runner.validateInventory(inventory);
   assert.equal(selected.execution.length, 26);
-  assert.equal(selected.loading.length, 25);
-  assert.equal(selected.contributions.length, 107);
+  assert.equal(selected.loading.length, 26);
+  assert.equal(selected.contributions.length, 165);
 });
 
 test('loading_exports_receive_the_page_module_import', async t => {
@@ -118,7 +121,7 @@ test('exports_run_serially_in_fresh_pages', async t => {
   assert.deepEqual(lines.filter(line => line.startsWith('START ')).map(line => line.split(' ')[2]), all);
   assert.deepEqual(lines.filter(line => line.startsWith('PASS ')).map(line => line.split(' ')[2]), all);
   assert(lines.includes('FAMILY execution 26/26'));
-  assert(lines.includes('FAMILY loading 25/25'));
+  assert(lines.includes('FAMILY loading 26/26'));
   assert(lines.includes(`FAMILY contributions ${inventory.contributions.length}/${inventory.contributions.length}`));
   assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
 });
@@ -332,19 +335,21 @@ test('tool_versions_must_match_the_supplied_contract', t => {
 // The authored wasm exports of one existing browser source module.
 function sourceExports(file) {
   const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-  return [...source.matchAll(/#\[wasm_bindgen\]\npub (?:async )?fn (\w+)\(/g)].map(match => match[1]);
+  return [...source.matchAll(/#\[(?:wasm_bindgen::prelude::)?wasm_bindgen\]\npub (?:async )?fn (\w+)\(/g)].map(match => match[1]);
 }
 
 test('inventory_matches_authored_exports', () => {
+  const documentOverlay = sourceExports('native_attachment_browser.rs')
+    .filter(name => name === 'overlay_dom_documents_keep_resources_and_sheet_state');
   for (const family of ['execution', 'loading']) {
     const source = fs.readFileSync(path.join(__dirname, `../sandbox_${family}_browser.rs`), 'utf8');
     const names = [...source.matchAll(/pub async fn (\w+)\(\)/g)].map(match => match[1]);
-    if (family === 'loading') names.push(...sourceExports('native_document_artifacts_browser.rs'), ...sourceExports('sample_sessions_browser.rs'));
+    if (family === 'loading') names.push(...sourceExports('native_document_artifacts_browser.rs'), ...sourceExports('sample_sessions_browser.rs'), ...documentOverlay);
     assert.deepEqual(inventory[family], names);
   }
-  const contributions = ["dom_content_browser.rs", "contributions_browser.rs", "native_markdown_browser.rs", "native_thinking_browser.rs", "native_artifact_controls_browser.rs", "native_simple_artifacts_browser.rs", "native_console_browser.rs", "custom_provider_card_browser.rs", "native_artifact_console_browser.rs", "dialogs_browser.rs", "provider_dialogs_browser.rs", "settings_dialogs_browser.rs"]
-    .flatMap(sourceExports);
-  assert.deepEqual(inventory.contributions, contributions);
+  const contributions = ["dom_content_browser.rs", "contributions_browser.rs", "native_markdown_browser.rs", "native_thinking_browser.rs", "native_artifact_controls_browser.rs", "native_attachment_browser.rs", "native_messages_browser.rs", "native_tool_browser.rs", "native_simple_artifacts_browser.rs", "native_console_browser.rs", "custom_provider_card_browser.rs", "native_artifact_console_browser.rs", "document_tool_cards_browser.rs", "native_transcript_browser.rs", "message_tool_arguments.rs", "message_renderers_browser.rs", "message_errors.rs", "tool_renderers_browser/page.rs", "tool_renderer_support/lifetimes.rs", "dialogs_browser.rs", "provider_dialogs_browser.rs", "settings_dialogs_browser.rs"]
+    .flatMap(sourceExports).filter(name => !documentOverlay.includes(name));
+  assert.deepEqual(inventory.contributions.toSorted(), contributions.toSorted());
 });
 
 test('packaging_keeps_linked_modules_and_locked_sources', t => {

@@ -189,12 +189,13 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
   Removal returns ownership to the caller, and traversal sees the collection as it
-  is. Models, the toolkit, agent, application, extensions and the
-  terminal adapter may depend on it; they keep their own borrowing, locking and
-  settlement policy.
+  is. Models, the toolkit, agent, application, extensions, the
+  terminal adapter and cancellation may depend on it; they keep their own
+  borrowing, locking and settlement policy.
   Its storage reclaims retired registrations while no traversal runs.
-- `maestro-cancellation` owns cooperative cancellation below layer 0, with no
-  internal dependencies. Only models and the toolkit may depend directly on it.
+- `maestro-cancellation` owns cooperative cancellation below layer 0. Its only
+  internal dependency is `maestro-listeners`, for synchronous abort observers.
+  Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
@@ -335,8 +336,9 @@ protocol crate. The connection output accepts only an `RpcLine`, which only an
 `RpcRecord` builds, so protocol output has one writer by type. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
-The workspace daemon is core design: the root always wires the daemon and the
-multiplexer through the application interface.
+The workspace daemon is core design: the root always wires the daemon through
+the application interface. A direct multiplexer dependency is permitted when its
+launcher is wired, not required for command-line startup.
 These declared owners need no placeholder crates before their first delivery.
 
 ## Libraries and formats

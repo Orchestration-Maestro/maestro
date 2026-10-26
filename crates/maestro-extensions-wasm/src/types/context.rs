@@ -90,10 +90,18 @@ use std::rc::Rc;
 use super::extension_result::{ExtensionFuture, ExtensionResult};
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 
+/// A synchronous cancellation notification with callback-scoped emission.
+pub type AbortListener = Rc<dyn for<'a> Fn(crate::CallbackEmitter<'a>) -> ExtensionResult<()>>;
+
 /// Host capability reporting whether an operation was cancelled.
 pub trait SignalPort {
     /// Whether the operation was cancelled.
     fn aborted(&self) -> bool;
+    /// Registers `listener` to run once when the operation is cancelled.
+    ///
+    /// # Errors
+    /// Returns the host rejection; a rejected listener is not retained.
+    fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription>;
 }
 
 /// Cancellation flag of an operation. Clones share the host flag and may outlive the
@@ -112,6 +120,19 @@ impl AbortSignal {
     #[must_use]
     pub fn aborted(&self) -> bool {
         self.0.aborted()
+    }
+
+    /// Registers `listener` to run once when the operation is cancelled.
+    ///
+    /// Host signals invoke the listener synchronously on their local owner; an abort
+    /// from another thread wakes that owner. A listener registered after cancellation
+    /// never runs; read [`AbortSignal::aborted`] first.
+    /// Dropping the returned subscription keeps the listener; unsubscribe to remove it.
+    ///
+    /// # Errors
+    /// Returns the host rejection; a rejected listener is not retained.
+    pub fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription> {
+        self.0.subscribe(listener)
     }
 }
 

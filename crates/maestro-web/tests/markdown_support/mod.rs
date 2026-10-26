@@ -10,7 +10,7 @@ mod tests {
     use crate::support::{self, brand::pack};
     use maestro_theme::{BrandMode, BrandPack, SyntaxHighlighter, SyntectHighlighter};
     use maestro_web::{
-        Attachment, I18n, TranslationFunction,
+        I18n, TranslationFunction,
         browser::{
             attachment_content::{
                 AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
@@ -405,7 +405,10 @@ mod tests {
         ) -> Result<(), AttachmentHostError> {
             self.native.download_bytes(bytes, name, mime)
         }
-        fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+        fn download(
+            &self,
+            attachment: maestro_web::SharedAttachment,
+        ) -> Result<(), AttachmentHostError> {
             self.native.download(attachment)
         }
     }

@@ -13,7 +13,7 @@ pub(crate) enum FailureSource {
     /// Reading standard input; retained, never an output failure.
     Input,
     /// Writing to standard output of the process terminal.
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     Output,
     /// Reporting on standard error.
     Stderr,

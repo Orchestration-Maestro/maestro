@@ -8,6 +8,20 @@ use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, ParameterSchema, Sc
 use serde_json::{Value, json};
 use std::rc::Rc;
 
+/// Runs the schema command `args` names, or returns `None` for any other command.
+pub(super) fn command(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<Value>> {
+    if let Some(count) = args.strip_prefix("schema growth:") {
+        let count = count.parse::<usize>().map_err(|e| e.to_string());
+        return Some(count.and_then(|count| growth(api, count)));
+    }
+    match args {
+        "schema executable" => Some(executable(api)),
+        "schema relay" => Some(relay(api)),
+        "schema imports" => Some(observe(api)),
+        _ => None,
+    }
+}
+
 /// Registers an authored schema, then observes the original host's enumerated declaration.
 pub(super) fn observe(api: &ExtensionAPI) -> ExtensionResult<Value> {
     let mut metadata: maestro_extensions_wasm::ToolMetadata = serde_json::from_value(json!({"name":"schema-roundtrip", "label":"Schema", "description":"Authored schema", "parameters":{"type":"object","properties":{"n":{"type":"number"}}}})).map_err(|error| error.to_string())?;

@@ -833,3 +833,113 @@ fn clipped_header_controls(header: &mut Header) {
         assert!(header.actions.is_empty());
     }
 }
+
+/// The native attachment layer intercepts real pointer input above every offline header control.
+pub(crate) async fn attachment_layer_intercepts_header_controls(
+    view: &Rc<maestro_web::dom::DomView>,
+) {
+    let canvas = view.document.create_element("canvas").unwrap();
+    for (name, value) in [
+        ("id", "canvas"),
+        ("width", "800"),
+        ("height", "600"),
+        ("style", "width:800px;height:600px;margin-top:120px"),
+    ] {
+        canvas.set_attribute(name, value).unwrap();
+    }
+    view.document.body().unwrap().append_child(&canvas).unwrap();
+    let header = Rc::new(std::cell::RefCell::new(Header::new()));
+    header.borrow_mut().draw(egui::vec2(800., 600.));
+    let listener = header_pointer_listener(&header, &canvas);
+    canvas
+        .add_event_listener_with_callback("click", listener.as_ref().unchecked_ref())
+        .unwrap();
+    for index in 0..3 {
+        header_overlay_pointer(view, &header, &canvas, index).await;
+    }
+    canvas
+        .remove_event_listener_with_callback("click", listener.as_ref().unchecked_ref())
+        .unwrap();
+    canvas.remove();
+}
+
+/// Compare one uncovered control with the same real pointer click intercepted by the attachment layer.
+async fn header_overlay_pointer(
+    view: &Rc<maestro_web::dom::DomView>,
+    header: &Rc<std::cell::RefCell<Header>>,
+    canvas: &web_sys::Element,
+    index: u32,
+) {
+    use crate::contributions_support::select;
+    use maestro_web::dom::DomContent as _;
+    let slot = select(&panel(), &format!(".control-slot:nth-child({})", index + 1));
+    let bounds = slot.get_bounding_client_rect();
+    let (x, y) = (
+        bounds.x() + bounds.width() / 2.,
+        bounds.y() + bounds.height() / 2.,
+    );
+    assert!(
+        view.document
+            .element_from_point(x.to_f32().unwrap(), y.to_f32().unwrap())
+            .unwrap()
+            .is_same_node(Some(canvas))
+    );
+    let point = serde_json::json!([x, y, true]).to_string();
+    crate::contributions_support::driver("driverPointer", &point).await;
+    assert_eq!(
+        header.borrow().actions.len(),
+        1,
+        "uncovered control {index}"
+    );
+    header.borrow_mut().actions.clear();
+    let overlay =
+        maestro_web::AttachmentOverlay::open(view, crate::attachment_support::attachment(), None)
+            .unwrap();
+    let root = overlay.mount(view).unwrap();
+    let target = view
+        .document
+        .element_from_point(x.to_f32().unwrap(), y.to_f32().unwrap())
+        .unwrap();
+    assert!(root.node.contains(Some(&target)));
+    crate::contributions_support::driver("driverPointer", &point).await;
+    assert!(
+        header.borrow().actions.is_empty(),
+        "covered control {index}"
+    );
+    assert!(
+        root.node.is_connected(),
+        "clicks inside the body do not close it"
+    );
+    select(&root.node, "[data-close]")
+        .unchecked_ref::<web_sys::HtmlElement>()
+        .click();
+    assert!(!root.node.is_connected());
+    crate::contributions_support::driver("driverPointer", &point).await;
+    assert_eq!(header.borrow().actions.len(), 1, "restored control {index}");
+    header.borrow_mut().actions.clear();
+}
+
+/// Forward an admitted native click through the same controlled header caller as its canvas witnesses.
+fn header_pointer_listener(
+    header: &Rc<std::cell::RefCell<Header>>,
+    canvas: &web_sys::Element,
+) -> wasm_bindgen::closure::Closure<dyn Fn(web_sys::Event)> {
+    let header = Rc::clone(header);
+    let canvas = canvas.clone();
+    wasm_bindgen::closure::Closure::new(move |event: web_sys::Event| {
+        let rect = canvas.get_bounding_client_rect();
+        let coordinate = |name: &str| {
+            js_sys::Reflect::get(&event, &name.into())
+                .unwrap()
+                .as_f64()
+                .unwrap()
+        };
+        let x = (coordinate("clientX") - rect.x()) * 800. / rect.width();
+        let y = (coordinate("clientY") - rect.y()) * 600. / rect.height();
+        click_header(
+            &mut header.borrow_mut(),
+            egui::pos2(x.to_f32().unwrap(), y.to_f32().unwrap()),
+            egui::vec2(800., 600.),
+        );
+    })
+}

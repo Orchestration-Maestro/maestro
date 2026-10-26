@@ -19,6 +19,9 @@ mod api;
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/exec.rs"]
+mod exec;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
@@ -33,6 +36,10 @@ mod registrations;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/retained.rs"]
 mod retained;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/signals.rs"]
+mod signals;
 
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/ui.rs"]
@@ -168,6 +175,12 @@ fn command(
         if args == "healthy-admitted" {
             return retained::healthy(context).await;
         }
+        if args == "exec shell" {
+            return Err(exec::shell(&api)?);
+        }
+        if let Some(request) = args.strip_prefix("exec imports:") {
+            return Err(exec::observe(&api, &context, request).await?);
+        }
         if args == "register-tool" {
             return registrations::tool(&api);
         }
@@ -183,18 +196,11 @@ fn command(
         if let Some(path) = args.strip_prefix("command imports:") {
             return Err(commands::observe(&context, path.into()).await?.to_string());
         }
-        if let Some(count) = args.strip_prefix("schema growth:") {
-            let count = count.parse::<usize>().map_err(|e| e.to_string())?;
-            return Err(schema::growth(&api, count)?.to_string());
+        if let Some(request) = args.strip_prefix("signal ") {
+            return Err(signals::command(&api, &context, request)?);
         }
-        if args == "schema executable" {
-            return Err(schema::executable(&api)?.to_string());
-        }
-        if args == "schema relay" {
-            return Err(schema::relay(&api)?.to_string());
-        }
-        if args == "schema imports" {
-            return Err(schema::observe(&api)?.to_string());
+        if let Some(answer) = schema::command(&api, &args) {
+            return Err(answer?.to_string());
         }
         if args == "ui imports" || args == "ui clear" || args.starts_with("editor ") {
             return Err(ui::observe(&context, &args)?);

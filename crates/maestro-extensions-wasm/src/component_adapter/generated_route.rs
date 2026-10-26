@@ -107,6 +107,7 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
         host::LocalKind::CompactionError => {
             exports.invoke_compaction_error(call.target, call.data.clone(), &call.emitter)
         }
+        host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
     }
 }
 
