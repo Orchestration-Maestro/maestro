@@ -50,8 +50,10 @@ macro_rules! produce {
                     common.on_response.as_ref().unwrap()(ProviderResponse {
                         status:207.5, headers:[("x-controlled".into(),"literal".into())].into(),
                     }, model).await.unwrap();
+                    let signal = selected.signal.unwrap();
+                    assert!(!signal.is_aborted(), "another invocation cancelled this signal");
                     work.ready.send(()).unwrap();
-                    selected.signal.unwrap().cancelled().await;
+                    signal.cancelled().await;
                     let message = faux_assistant_message("", FauxAssistantMessageOptions {
                         stop_reason:Some(StopReason::Aborted),
                         error_message:Some("Request was aborted".into()),

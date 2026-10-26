@@ -16,10 +16,21 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 
 /// Destruction must run outside the callback table and may synchronously allocate another stream.
 struct Released {
-    /// The actual application action boundary.
-    api: ExtensionAPI,
+    /// The original context remains valid without its initiating registration owner.
+    context: ExtensionCommandContext,
     /// Distinguishable capture from one invocation.
     label: String,
+}
+impl Released {
+    /// Observe through the retained native context, without reviving a released registration API.
+    fn report(&self, label: &str) -> ExtensionResult<()> {
+        self.context
+            .compact(Some(maestro_extensions_wasm::CompactOptions {
+                custom_instructions: Some(label.into()),
+                on_complete: None,
+                on_error: None,
+            }))
+    }
 }
 impl Drop for Released {
     fn drop(&mut self) {
@@ -29,7 +40,7 @@ impl Drop for Released {
         } else {
             "destructor-reentry-failed"
         };
-        let _ = self.api.set_session_name(label);
+        let _ = self.report(label);
     }
 }
 /// An arbitrary author signal, not a host-owned cancellation endpoint.
@@ -80,7 +91,7 @@ pub fn start(
         "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":1,"maxTokens":1
     }))
     .map_err(|e| e.to_string())?;
-    let common = options(api, context, &request.id)?;
+    let common = options(context, &request.id)?;
     let stream = invoke(model, common, request.simple)?;
     let mut observers = Vec::new();
     for _ in 0..3 {
@@ -139,37 +150,31 @@ fn invoke(
     }
 }
 /// Every callback capture has its own observable final release, separate from the signal.
-fn options(
-    api: &ExtensionAPI,
-    context: &ExtensionCommandContext,
-    id: &str,
-) -> ExtensionResult<StreamOptions> {
+fn options(context: &ExtensionCommandContext, id: &str) -> ExtensionResult<StreamOptions> {
     Ok(StreamOptions {
         signal: Some(AbortSignal::new(Rc::new(Relay {
             inner: context.signal()?.ok_or("missing original signal")?,
             release: Released {
-                api: api.clone(),
+                context: context.clone(),
                 label: format!("{id}:signal-drop"),
             },
         }))),
-        on_payload: Some(payload(api, id)),
-        on_response: Some(response(api, id)),
+        on_payload: Some(payload(context, id)),
+        on_response: Some(response(context, id)),
         ..Default::default()
     })
 }
 /// Retain the payload closure independently of the initiating command.
-fn payload(api: &ExtensionAPI, id: &str) -> OnPayload {
+fn payload(context: &ExtensionCommandContext, id: &str) -> OnPayload {
     let payload_capture = Released {
-        api: api.clone(),
+        context: context.clone(),
         label: format!("{id}:payload-drop"),
     };
     let payload_id = id.to_owned();
     Rc::new(move |mut input, model| {
         let _ = &payload_capture;
         let result = if model.id == payload_id && input.payload == json!({"original":true}) {
-            payload_capture
-                .api
-                .set_session_name(&format!("{payload_id}:payload"))
+            payload_capture.report(&format!("{payload_id}:payload"))
         } else {
             Err("wrong retained payload operands".into())
         };
@@ -182,9 +187,9 @@ fn payload(api: &ExtensionAPI, id: &str) -> OnPayload {
 }
 
 /// Retain the response closure independently of the initiating command.
-fn response(api: &ExtensionAPI, id: &str) -> OnResponse {
+fn response(context: &ExtensionCommandContext, id: &str) -> OnResponse {
     let response_capture = Released {
-        api: api.clone(),
+        context: context.clone(),
         label: format!("{id}:response-drop"),
     };
     let response_id = id.to_owned();
@@ -194,9 +199,7 @@ fn response(api: &ExtensionAPI, id: &str) -> OnResponse {
             && response.status.to_bits() == 207.5_f64.to_bits()
             && response.headers.get("x-controlled").map(String::as_str) == Some("literal")
         {
-            response_capture
-                .api
-                .set_session_name(&format!("{response_id}:response"))
+            response_capture.report(&format!("{response_id}:response"))
         } else {
             Err("wrong retained response operands".into())
         };
@@ -207,23 +210,18 @@ fn response(api: &ExtensionAPI, id: &str) -> OnResponse {
 /// Extract fixture operands before polling or destroying anything that can reenter the host.
 async fn observe(action: &str) -> ExtensionResult<String> {
     let (action, id) = action.split_once(' ').ok_or("missing retained action")?;
-    if action == "release" {
-        let kept = KEPT.with_borrow_mut(|kept| kept.remove(id));
-        drop(kept.ok_or("missing retained invocation")?);
+    if release(action, id)? {
         return Ok("null".into());
     }
     let streams = KEPT
         .with_borrow(|kept| kept.get(id).map(|k| k.streams.clone()))
         .ok_or("missing retained streams")?;
-    if action == "drop-observers" {
-        let observers = KEPT
-            .with_borrow_mut(|kept| {
-                kept.get_mut(id)
-                    .map(|kept| std::mem::take(&mut kept.observers))
-            })
-            .ok_or("missing observers")?;
-        drop(observers);
+    if action == "finish" {
+        explicit_end(&streams[0])?;
         return Ok("null".into());
+    }
+    if action != "observe" {
+        return Err("unknown retained action".into());
     }
     let message = streams[0].result().await?;
     let same_owner = Arc::ptr_eq(&message, &streams[1].result().await?);
@@ -232,4 +230,52 @@ async fn observe(action: &str) -> ExtensionResult<String> {
         events.push(serde_json::to_value(event.as_ref()).map_err(|e| e.to_string())?);
     }
     Ok(json!({"message":message,"sameOwner":same_owner,"events":events,"eof":streams[1].next().await?.is_none()}).to_string())
+}
+
+/// Push and end use the returned native resource, not a new authored stream.
+fn explicit_end(stream: &AssistantMessageEventStream) -> ExtensionResult<()> {
+    let message = serde_json::from_value(json!({
+        "role":"assistant", "api":"controlled", "provider":"custom", "model":"second",
+        "content":[{"type":"text", "text":"explicit guest result"}],
+        "usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,
+            "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},
+        "stopReason":"stop", "timestamp":13.5,
+    }))
+    .map_err(|e| e.to_string())?;
+    let message = Arc::new(std::sync::RwLock::new(message));
+    stream.push(maestro_extensions_wasm::AssistantMessageEvent::Start {
+        partial: message.clone(),
+    })?;
+    stream.end(Some(message))
+}
+
+/// Move every destructible operand out of fixture storage before releasing it.
+fn release(action: &str, id: &str) -> ExtensionResult<bool> {
+    if action == "release" {
+        let kept = KEPT.with_borrow_mut(|kept| kept.remove(id));
+        drop(kept.ok_or("missing retained invocation")?);
+        return Ok(true);
+    }
+    if action == "drop-alias" {
+        let alias = KEPT.with_borrow_mut(|kept| {
+            kept.get_mut(id).and_then(|kept| {
+                (kept.streams.len() > 1)
+                    .then(|| kept.streams.pop())
+                    .flatten()
+            })
+        });
+        drop(alias.ok_or("missing independent alias")?);
+        return Ok(true);
+    }
+    if action == "drop-observers" {
+        let observers = KEPT
+            .with_borrow_mut(|kept| {
+                kept.get_mut(id)
+                    .map(|kept| std::mem::take(&mut kept.observers))
+            })
+            .ok_or("missing observers")?;
+        drop(observers);
+        return Ok(true);
+    }
+    Ok(false)
 }

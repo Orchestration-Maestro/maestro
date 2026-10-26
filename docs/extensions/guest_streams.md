@@ -138,3 +138,9 @@ for caller-defined signal ports. Producer completion releases its own captures;
 final stream aliases do not cancel the producer. Capture destructors may reenter
 stream creation outside callback-storage borrows, and final containing-owner
 release still shuts down the component normally.
+
+Overlapping invocations keep separate hook and signal scopes. Dropping every
+observer and stream alias leaves the native producer running; finishing one
+producer cannot release another invocation's uncalled hooks. Explicit `push`
+and `end` on a returned stream use its original native buffer. Ending that
+buffer does not cancel its independently owned producer.

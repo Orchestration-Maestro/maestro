@@ -1,10 +1,10 @@
 //! Returned model invocations keep their own hooks and cancellation after registration release.
 #![cfg(test)]
+mod overlap;
 mod producer;
 
 use maestro_extensions::{
-    ExtensionActions, ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local,
-    types::ProviderActions,
+    ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, types::ProviderActions,
 };
 use maestro_models::{ApiProvider, Cancellation, register_api_provider, unregister_api_providers};
 use serde_json::{Value, json};
@@ -135,20 +135,19 @@ async fn start(
     incoming.recv().await.unwrap()
 }
 
-/// Bind one original caller signal and observe callbacks through the application action owner.
+/// Bind one original signal and observe through independently retained native contexts.
 fn bind(runner: &ExtensionRunner<Local>, trace: &Rc<Trace>, signal: Cancellation) {
     let observed = trace.clone();
     runner
         .bind_core(
-            ExtensionActions {
-                set_session_name: Rc::new(move |label| {
+            Local::unbound_actions(),
+            ExtensionContextActions {
+                compact: Rc::new(move |options| {
+                    let label = options.unwrap().custom_instructions.unwrap();
                     observed.labels.borrow_mut().push(label);
                     observed.changed.notify_one();
                     Ok(())
                 }),
-                ..Local::unbound_actions()
-            },
-            ExtensionContextActions {
                 get_signal: Rc::new(move || Ok(Some(signal.clone()))),
                 ..Default::default()
             },
