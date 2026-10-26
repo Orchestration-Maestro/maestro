@@ -99,6 +99,14 @@ fn basic(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
     Ok("UI forwarded".into())
 }
 
+/// Runs a custom factory that returns immediately or after yielding.
+pub(super) async fn custom(
+    context: &ExtensionContext,
+    asynchronous: bool,
+) -> ExtensionResult<String> {
+    super::custom_author::run(&context.ui()?, asynchronous).await
+}
+
 /// Shows the dialog `request` names on the originally acquired UI, with an already aborted
 /// caller signal and the timeout it asks for, and returns its answer.
 pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> ExtensionResult<String> {

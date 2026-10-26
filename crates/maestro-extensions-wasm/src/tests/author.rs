@@ -51,6 +51,8 @@ mod setup_author;
 mod stacked_provider_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "custom_author.rs"]
+pub(crate) mod custom_author;
 #[path = "focus_author.rs"]
 pub(crate) mod focus_author;
 #[path = "nested_schema_fixture.rs"]

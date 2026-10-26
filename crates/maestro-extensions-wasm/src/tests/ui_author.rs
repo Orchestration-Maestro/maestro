@@ -738,6 +738,8 @@ enum Operation {
     HostEditorFocus,
     /// Reads and replaces one retained overlay options owner.
     OverlayOptions,
+    /// Runs an immediately ready or asynchronous custom factory.
+    Custom { asynchronous: bool },
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -958,6 +960,11 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::OverlayOptions => {
             caught(super::overlay_author::options().map(|value| Some(json!(value))))
         }
+        Operation::Custom { asynchronous } => caught(
+            super::custom_author::run(&ctx.ui()?, asynchronous)
+                .await
+                .map(|value| Some(json!(value))),
+        ),
         Operation::FocusContract => caught(focus_probe(ctx)),
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
         Operation::DropKept => drop_kept(),

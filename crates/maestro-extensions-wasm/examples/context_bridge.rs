@@ -72,6 +72,9 @@ mod ui;
 mod theme;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "../src/tests/custom_author.rs"]
+mod custom_author;
+#[cfg(target_arch = "wasm32")]
 #[path = "../src/tests/focus_author.rs"]
 mod focus_author;
 #[cfg(target_arch = "wasm32")]
@@ -269,6 +272,11 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if matches!(args.as_str(), "ui custom-ready" | "ui custom-async") {
+            return Err(ui::custom(&context, args == "ui custom-async")
+                .await?
+                .into());
+        }
         if args.starts_with("credential ") || args.starts_with("provider ") {
             return Err(credential_command(&api, &context, &args).await?.to_string());
         }

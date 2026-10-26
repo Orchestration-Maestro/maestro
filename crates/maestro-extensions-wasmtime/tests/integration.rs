@@ -61,3 +61,5 @@ mod model_hook_gates;
 mod model_signal_selection;
 
 mod tui_capabilities;
+
+mod custom_ui;

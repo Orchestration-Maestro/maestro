@@ -77,3 +77,21 @@ async fn overlay_options(driver: &mut impl Driver) -> Result<(), String> {
 fn overlay_options_preserve_placement_and_shared_mutation() -> Result<(), String> {
     on_both_adapters!(overlay_options)
 }
+
+/// Completion keeps the guest value's identity and ignores a later completion.
+async fn custom(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    for (asynchronous, answer) in [(false, "custom ready done"), (true, "custom async done")] {
+        assert_eq!(
+            operate(driver, json!({"op":"custom", "asynchronous":asynchronous})).await?,
+            json!({"ok":answer})
+        );
+    }
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn custom_component_preserves_opaque_done_for_ready_and_async_factories() -> Result<(), String> {
+    on_both_adapters!(custom)
+}
