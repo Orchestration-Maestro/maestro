@@ -944,39 +944,49 @@ impl host::Host for State {
 
     fn auth_storage_from_backend(
         &mut self,
-        _backend: Resource<Identity>,
+        backend: Resource<Identity>,
     ) -> wasmtime::Result<Resource<Route>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_from_backend", &[])?;
-            self.table
-                .push(reader)
-                .map(host::RouteValue::Credentials)
-                .map_err(|error| error.to_string())
-        });
-        self.push(Route {
-            steps: std::collections::VecDeque::new(),
-            running: None,
-            result: Some(result),
-        })
+        let reader = match self.observed.readers.acquire() {
+            Ok(reader) => reader.fresh(),
+            Err(error) => return self.routed(Err(error)),
+        };
+        if let Err(error) = reader.unit("auth_storage_from_backend", &[]) {
+            return self.routed(Err(error));
+        }
+        reader.1.lock().unwrap().backend = Some(self.table.get(&backend)?.0);
+        self.observed
+            .register("credential-backend".into(), backend.rep());
+        let owner = self.push(reader.clone())?;
+        self.credential_backend_route(&reader, Ok(host::RouteValue::Credentials(owner)))
     }
     fn create_auth_storage(
         &mut self,
         path: Option<String>,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn auth_storage_in_memory(
         &mut self,
         data: String,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn create_model_registry(
@@ -1002,6 +1012,7 @@ impl host::Host for State {
         &mut self,
         name: String,
         config: String,
+        _stream: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));

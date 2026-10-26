@@ -5,7 +5,7 @@ use crate::read_imports::{add_read, add_routed_operand};
 use maestro_extensions::types;
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Lower},
+    component::{ComponentType, Lift, LinkerInstance, Lower, Resource},
 };
 use wasmtime_wasi::WasiView;
 
@@ -15,8 +15,8 @@ pub(crate) trait ApiView: WasiView {
     fn api(&self) -> &Endpoint;
 }
 
-/// Installs callback-independent registration and runtime action imports.
-pub(crate) fn add_to_linker<T: ApiView + 'static>(
+/// Installs provider registration and runtime action imports.
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_values(host)?;
@@ -188,14 +188,24 @@ impl From<FlagOptions> for types::ExtensionFlagOptions {
 }
 
 /// Links individual provider mutations to their original registration facade.
-fn add_providers<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+fn add_providers<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     host.func_wrap(
         "register-provider",
-        |mut store: StoreContextMut<'_, T>, (name, config): (String, String)| {
+        |mut store: StoreContextMut<'_, T>,
+         (name, config, stream): (
+            String,
+            String,
+            Option<Resource<crate::guest_calls::Callback>>,
+        )| {
+            let stream = stream
+                .map(|stream| crate::callback_imports::retain(store.data_mut(), &stream))
+                .transpose()?;
             let route = store
                 .data()
                 .api()
-                .route(|reply| Request::RegisterProvider(name, config, reply));
+                .route(|reply| Request::RegisterProvider(name, config, stream, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;

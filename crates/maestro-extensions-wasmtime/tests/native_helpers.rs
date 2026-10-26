@@ -231,9 +231,16 @@ fn isolate_paths(name: &str) -> bool {
     .is_none()
 }
 /// Expands only named fixture placeholders, leaving authored path spellings intact.
+///
+/// `${SEP}` marks a separator that resolution writes, so it takes the host's spelling.
 fn expand(value: &mut Value, root: &str, home: &str) {
     match value {
-        Value::String(text) => *text = text.replace("${ROOT}", root).replace("${HOME}", home),
+        Value::String(text) => {
+            *text = text
+                .replace("${ROOT}", root)
+                .replace("${HOME}", home)
+                .replace("${SEP}", std::path::MAIN_SEPARATOR_STR);
+        }
         Value::Array(items) => {
             for item in items {
                 expand(item, root, home);
