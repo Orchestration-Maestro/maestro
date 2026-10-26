@@ -29,8 +29,18 @@ pub use tools::{
 };
 #[doc(hidden)]
 pub mod bindings;
+/// Native child resources.
+pub mod child_process;
 pub mod compaction;
 mod exec;
+/// Native filesystem notifications.
+pub mod fs;
+/// Native HTTP resources.
+pub mod http;
+/// Native operation capability.
+pub mod io;
+/// Raw byte resources.
+pub mod streams;
 pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;

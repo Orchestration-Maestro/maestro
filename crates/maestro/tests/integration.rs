@@ -4,5 +4,6 @@
 mod component_stdout;
 mod entry_routes;
 mod model_streams;
+mod native_io;
 mod startup_modes;
 mod support;

@@ -189,9 +189,7 @@ impl State {
             Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
-            Message::LockUpdate(_, _, reply) => {
-                let _ = reply.send(Err("extension lock update ended".into()));
-            }
+            Message::LockUpdate(_, _, reply) => Self::reject_lock_update(&reply),
             Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
             Message::EndLockUpdate(id) => self.end_lock_update(id),
             Message::SchemaListing(id, reply) => self.reply_schema_listing(id, &reply),
@@ -200,10 +198,9 @@ impl State {
             Message::Api(id, request) => self.api_request(id, request),
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.api_request(id, request),
-            Message::ApiModel(id, model, reply, admission) => {
-                self.start_api_model(id, *model, reply, admission);
-            }
+            Message::ApiModel(id, model, tx, scope) => self.start_api_model(id, *model, tx, scope),
             Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
+            Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
             Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),
             Message::ProviderKey(id, provider, reply, admission) => {
@@ -239,8 +236,16 @@ impl State {
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
+            Message::Native(id, request) => self.native(id, request),
+            Message::Http(id, request) => self.http(id, request),
+            Message::Watch(id, request) => self.watch(id, request),
             Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Rejects a synchronous credential update whose native frame has ended.
+    fn reject_lock_update(reply: &std::sync::mpsc::Sender<Result<Option<String>, String>>) {
+        let _ = reply.send(Err("extension lock update ended".into()));
     }
 
     /// Creates the supplied cancellation binding on its original local owner.

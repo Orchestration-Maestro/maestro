@@ -517,6 +517,159 @@ impl Controlled {
     }
 }
 
+impl crate::component_adapter::NativeImports for Controlled {
+    type Watcher = super::native_watch_host::Watcher;
+    fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
+        watch.close();
+        Ok(())
+    }
+    type Signal = Signal;
+    fn fetch<'a>(
+        &'a self,
+        request: crate::bindings::maestro::extension::host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response> {
+        Box::pin(async move {
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            let mut response =
+                self.observe()
+                    .native_http
+                    .fetch(super::native_http_host::Request {
+                        url: request.url,
+                        method: request.method,
+                        headers: request.headers,
+                        body: request.body,
+                        signal: signal.map(|signal| signal.flag.key()),
+                    })?;
+            response.body = response
+                .body
+                .map(|body| body.with_signal(signal.map(|s| s.flag.shared())));
+            Ok(response)
+        })
+    }
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            self.observe()
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                Err("Aborted".into())
+            } else {
+                Ok(())
+            }
+        })
+    }
+
+    type Response = super::native_http_host::Response;
+    fn response_json<'a>(
+        &'a self,
+        response: &'a Self::Response,
+    ) -> ExtensionFuture<'a, serde_json::Value> {
+        Box::pin(async move { response.json() })
+    }
+    fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String> {
+        Box::pin(async move { response.text() })
+    }
+    fn response_status_text(&self, response: &Self::Response) -> String {
+        response.status_text.clone()
+    }
+    fn response_headers(&self, response: &Self::Response) -> Vec<(String, String)> {
+        response.headers.clone()
+    }
+    fn response_body(&self, response: &Self::Response) -> Option<Self::Readable> {
+        response.body.clone()
+    }
+    fn response_status(&self, response: &Self::Response) -> u16 {
+        response.status
+    }
+
+    type Child = super::native_io_host::Child;
+    type Readable = super::native_io_host::Reader;
+    type Writable = super::native_io_host::Writer;
+    fn spawn(
+        &self,
+        command: String,
+        args: Vec<String>,
+        options: crate::child_process::SpawnOptions,
+    ) -> ExtensionFuture<'_, Self::Child> {
+        Box::pin(async move { self.observe().native_io.spawn(command, args, options) })
+    }
+    fn kill(&self, pid: i32, signal: Option<String>) -> ExtensionResult<()> {
+        self.observe().native_io.kill(pid, signal)
+    }
+    fn child_pid(&self, child: &Self::Child) -> Option<u32> {
+        Some(child.pid)
+    }
+    fn child_stdin(&self, child: &Self::Child) -> Option<Self::Writable> {
+        child.stdin.clone()
+    }
+    fn child_stdout(&self, child: &Self::Child) -> Option<Self::Readable> {
+        child.stdout.clone()
+    }
+    fn child_stderr(&self, child: &Self::Child) -> Option<Self::Readable> {
+        child.stderr.clone()
+    }
+    fn child_wait<'a>(
+        &'a self,
+        child: &'a Self::Child,
+    ) -> ExtensionFuture<'a, crate::child_process::ExitStatus> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            Ok(child.wait())
+        })
+    }
+    fn child_kill(&self, child: &Self::Child, signal: Option<String>) -> ExtensionResult<bool> {
+        Ok(child.kill(signal))
+    }
+    fn readable_read<'a>(
+        &'a self,
+        reader: &'a Self::Readable,
+    ) -> ExtensionFuture<'a, Option<Vec<u8>>> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            reader.read()
+        })
+    }
+    fn readable_close(&self, reader: &Self::Readable) -> ExtensionResult<()> {
+        reader.close();
+        Ok(())
+    }
+    fn writable_write<'a>(
+        &'a self,
+        writer: &'a Self::Writable,
+        bytes: &'a [u8],
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            writer.write(bytes)
+        })
+    }
+    fn writable_end<'a>(&'a self, writer: &'a Self::Writable) -> ExtensionFuture<'a, ()> {
+        writer
+            .ended
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+
 impl Imports for Controlled {
     type OAuthProvider = Reader;
     fn credentials_oauth_providers(&self, owner: &Reader) -> ExtensionResult<Vec<Reader>> {
@@ -587,6 +740,11 @@ impl Imports for Controlled {
             .ok_or_else(|| "missing OAuth key".into())
     }
 
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher> {
+        self.observe()
+            .native_watch
+            .watch(path, self.callback_id(listener))
+    }
     fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
         serde_json::from_str(&self.observe().actions.record_for("format_size")?)
             .map_err(|error| error.to_string())
@@ -1802,7 +1960,6 @@ impl Imports for Controlled {
     type Node = Node;
     type Update = Update;
     type Callback = Callback;
-    type Signal = Signal;
     type Context = Context;
     type CommandContext = CommandContext;
     type ReplacedContext = ReplacedContext;

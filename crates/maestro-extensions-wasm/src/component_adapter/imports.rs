@@ -47,7 +47,7 @@ pub type ProviderRegistration<'a, C> = (Option<&'a C>, ProviderOAuth<'a, C>);
 /// component, an in-process host where the same logic runs natively.
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
-pub trait Imports: Clone + 'static {
+pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
     /// Formats all floating-point byte counts directly.
     fn native_format_size(&self, bytes: f64) -> ExtensionResult<String>;
     /// Reads metadata numbers without passing them through JSON.
@@ -307,6 +307,8 @@ pub trait Imports: Clone + 'static {
 
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
+    /// Registers the borrowed callback identity on the supplied native path.
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher>;
     /// Independently retained theme owner.
     type Theme: 'static;
     /// Reads the theme name.
@@ -362,8 +364,6 @@ pub trait Imports: Clone + 'static {
     type BashOutput: 'static;
     /// Delivers one uninterpreted output chunk.
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()>;
-    /// Host-owned cancellation flag.
-    type Signal: 'static;
     /// Context with the live capabilities every callback receives.
     type Context: 'static;
     /// Context that also has the session-replacing operations.
