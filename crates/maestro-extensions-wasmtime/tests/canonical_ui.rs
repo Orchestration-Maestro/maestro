@@ -904,3 +904,136 @@ fn screen() -> (
     );
     (tui, terminal)
 }
+
+/// Supports no language, so rendering never classifies code.
+struct Plain;
+impl maestro_theme::SyntaxHighlighter for Plain {
+    fn supports_language(&self, _: &str) -> bool {
+        false
+    }
+    fn highlight(
+        &self,
+        _: &str,
+        _: &str,
+    ) -> Result<Vec<maestro_theme::SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(Vec::new())
+    }
+}
+
+/// One rendering's lines, parsed from the JSON each holds.
+fn lines(component: &maestro_extensions::ComponentHandle) -> Vec<Value> {
+    let lines = component.try_render(60).unwrap();
+    lines
+        .iter()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect()
+}
+
+/// Registers the bridge's painter tool and returns its registration.
+async fn painter(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+) -> maestro_extensions::RegisteredTool<maestro_extensions::Local> {
+    let handler = runner
+        .get_command("bridge-observe")
+        .unwrap()
+        .command
+        .handler;
+    let _ = handler("register-painter".into(), runner.create_command_context()).await;
+    runner
+        .get_all_registered_tools()
+        .into_iter()
+        .find(|tool| tool.definition.name() == "bridge-painter")
+        .unwrap()
+}
+
+/// A row's render context: completed arguments, an expanded row and a redraw counter.
+fn row_context<'a>(
+    args: &'a Value,
+    rows: &'a maestro_extensions::ToolRendererState,
+    redraws: &Rc<std::cell::Cell<u32>>,
+) -> maestro_extensions::ToolRenderContext<'a, maestro_extensions::ToolRendererState> {
+    let counted = redraws.clone();
+    let environment = Rc::new(maestro_extensions::ToolRenderEnvironment {
+        runtime: super::manual_runtime::ManualRuntime::new().handle(),
+        readme_path: String::new(),
+        live_theme: maestro_theme::LiveTheme::default(),
+        highlighter: Rc::new(Plain),
+        terminal_image: maestro_tui::TerminalImage::default(),
+    });
+    maestro_extensions::ToolRenderContext {
+        args: Some(args),
+        tool_call_id: "n1".into(),
+        invalidate: Rc::new(move || counted.set(counted.get() + 1)),
+        environment,
+        last_component: None,
+        state: Rc::new(RefCell::new(
+            maestro_extensions::ToolRendererState::default(),
+        )),
+        renderer_state: Some(rows),
+        cwd: "/work".into(),
+        phase: maestro_extensions::ToolRenderPhase {
+            execution_started: true,
+            args_complete: true,
+            is_partial: false,
+        },
+        expanded: true,
+        show_images: false,
+        is_error: false,
+    }
+}
+
+#[test]
+fn canonical_tool_renderers_keep_row_state_and_read_the_row() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let tool = painter(&runner).await;
+        let theme = maestro_theme::LiveTheme::default();
+        let rows = maestro_extensions::ToolRendererState::default();
+        let redraws = Rc::new(std::cell::Cell::new(0));
+        let args = json!({ "a": 1, "redraw": true });
+        let context = row_context(&args, &rows, &redraws);
+        let binding = tool.definition.renderer_binding().unwrap();
+        let render_call = binding.render_call.unwrap();
+        let first = lines(&render_call(context.args, &theme, &context).unwrap());
+        assert_eq!(
+            first,
+            [json!(["call", "n1", args, "/work", true, true, 1, false])]
+        );
+        let second = lines(&render_call(context.args, &theme, &context).unwrap());
+        assert_eq!(second[0][6], json!(2), "the row's guest state persists");
+        assert_eq!(
+            second[0][7],
+            json!(true),
+            "the slot sees its previous component"
+        );
+        assert_eq!(redraws.get(), 2, "each rendering redrew its row");
+        let details = json!({ "n": 1 });
+        let result = maestro_extensions::ToolRenderResultLike {
+            content: &[],
+            details: Some(&details),
+            terminate: None,
+            is_error: Some(false),
+        };
+        let prepared = binding.render_result.unwrap().prepare(result).unwrap();
+        let options = maestro_extensions::ToolRenderResultOptions {
+            expanded: true,
+            is_partial: false,
+        };
+        let rendered = lines(&prepared.render(options, &theme, &context).unwrap());
+        assert_eq!(rendered[0][6], json!(3), "both slots share the row's state");
+        assert_eq!(
+            rendered[0][7],
+            json!(false),
+            "the result slot has no previous component yet"
+        );
+        assert_eq!(rendered[1]["details"], details);
+        bus.clear();
+    });
+}

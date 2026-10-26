@@ -1404,3 +1404,146 @@ async fn component_release(driver: &mut impl Driver) -> Result<(), String> {
 fn component_release_is_not_dispose() -> Result<(), String> {
     on_both_adapters!(component_release)
 }
+
+/// What one painter rendering read about its row.
+async fn painted(
+    driver: &mut impl Driver,
+    slot: &str,
+    info: &Value,
+    result: Option<&Value>,
+) -> Result<Value, String> {
+    let run = super::scenario::ToolRenderRun {
+        tool: "painter",
+        slot,
+        info,
+        result,
+    };
+    let lines = driver.render_tool(run, 30).await?;
+    assert_eq!(lines.len(), 1, "one line per rendering");
+    serde_json::from_str(&lines[0]).map_err(|error| error.to_string())
+}
+
+/// A row's info: its call id, arguments so far and every flag.
+fn row(id: &str, args: Value, flags: [bool; 6]) -> Value {
+    let [started, complete, partial, expanded, images, error] = flags;
+    let mut info = json!({ "toolCallId": id, "cwd": "/work", "executionStarted": started,
+        "argsComplete": complete, "isPartial": partial, "expanded": expanded,
+        "showImages": images, "isError": error });
+    info["args"] = args;
+    info
+}
+
+/// Both renderers read every field of their row, the row's typed state is shared by both
+/// slots and kept apart from other rows, and each slot sees its own previous component.
+async fn tool_rows(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    assert_eq!(
+        operate(driver, json!({ "op": "painter" })).await?,
+        json!({ "ok": true })
+    );
+    let first = row(
+        "c1",
+        json!({ "a": 1 }),
+        [false, false, false, true, false, false],
+    );
+    let call = painted(driver, "call", &first, None).await?;
+    let expected = json!({ "slot": "call", "args": { "a": 1 }, "argsSeen": { "a": 1 },
+        "id": "c1", "cwd": "/work", "started": false, "complete": false, "partial": false,
+        "expanded": true, "images": false, "error": false, "renders": 1, "last": false });
+    assert_eq!(call, expected);
+    let next = row(
+        "c1",
+        json!({ "a": 1, "b": 2 }),
+        [true, true, true, false, true, true],
+    );
+    let call = painted(driver, "call", &next, None).await?;
+    assert_eq!(
+        (call["renders"].clone(), call["last"].clone()),
+        (json!(2), json!(true))
+    );
+    assert_eq!(call["args"], json!({ "a": 1, "b": 2 }), "current arguments");
+    result_slot(driver, &next).await?;
+    other_rows(driver).await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+/// The result slot shares the row's state but keeps its own previous component.
+async fn result_slot(driver: &mut impl Driver, next: &Value) -> Result<(), String> {
+    let result = json!({ "content": [{ "type": "text", "text": "done" }], "details": { "n": 1 } });
+    let rendered = painted(driver, "result", next, Some(&result)).await?;
+    assert_eq!(
+        (rendered["renders"].clone(), rendered["last"].clone()),
+        (json!(3), json!(false))
+    );
+    assert_eq!(rendered["result"], result);
+    assert_eq!(rendered["options"], json!([false, true]));
+    let rendered = painted(driver, "result", next, Some(&result)).await?;
+    assert_eq!(
+        rendered["last"],
+        json!(true),
+        "the result slot keeps its own component"
+    );
+    Ok(())
+}
+
+/// Another row starts with its own state, and a renderer can redraw its row.
+async fn other_rows(driver: &mut impl Driver) -> Result<(), String> {
+    let other = row("c2", json!({}), [false; 6]);
+    assert_eq!(
+        painted(driver, "call", &other, None).await?["renders"],
+        json!(1)
+    );
+    let redraw = row("c1", json!({ "invalidate": true }), [false; 6]);
+    painted(driver, "call", &redraw, None).await?;
+    assert!(
+        driver
+            .transcript()
+            .iter()
+            .any(|line| line == "invalidate c1"),
+        "the row redraws"
+    );
+    Ok(())
+}
+
+#[test]
+fn tool_render_context_keeps_every_field_per_row() -> Result<(), String> {
+    on_both_adapters!(tool_rows)
+}
+
+/// A result rendered before any call rendering, as history replays it, still reads the
+/// current arguments and flags, and a later rendering reads updated arguments.
+async fn result_first(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    operate(driver, json!({ "op": "painter" })).await?;
+    let result = json!({ "content": [], "details": null, "isError": true });
+    for flags in [
+        [true, true, false, true, false, true],
+        [true, true, true, false, true, false],
+    ] {
+        let info = row("h1", json!({ "replayed": flags[2] }), flags);
+        let rendered = painted(driver, "result", &info, Some(&result)).await?;
+        assert_eq!(rendered["args"], json!({ "replayed": flags[2] }));
+        let seen = [
+            &rendered["expanded"],
+            &rendered["images"],
+            &rendered["error"],
+        ];
+        assert_eq!(seen, [&json!(flags[3]), &json!(flags[4]), &json!(flags[5])]);
+        assert_eq!(rendered["options"], json!([flags[3], flags[2]]));
+    }
+    let info = row("h1", json!({ "later": true }), [true; 6]);
+    let call = painted(driver, "call", &info, None).await?;
+    assert_eq!(
+        (call["args"].clone(), call["last"].clone()),
+        (json!({ "later": true }), json!(false))
+    );
+    assert_eq!(call["renders"], json!(3), "the replayed row kept its state");
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn tool_renderer_result_first_and_history_keep_current_inputs() -> Result<(), String> {
+    on_both_adapters!(result_first)
+}

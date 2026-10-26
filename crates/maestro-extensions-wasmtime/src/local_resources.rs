@@ -220,6 +220,8 @@ enum Capability {
     Ui(ExtensionUIContext),
     /// Original footer metadata lent to a footer factory.
     Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
+    /// Original redraw capability of one tool row.
+    Invalidate(Rc<dyn Fn()>),
     /// Original terminal lent to a component factory.
     Tui {
         /// Ownership alone crosses the opaque canonical terminal resource.

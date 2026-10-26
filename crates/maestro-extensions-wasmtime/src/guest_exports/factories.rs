@@ -22,8 +22,20 @@ type Factory = TypedFunc<
     (Result<Built, String>,),
 >;
 
-/// The component factory export of the canonical guest instance.
-pub(super) struct Exports(Factory);
+/// Exact canonical tool rendering signature.
+type Render = TypedFunc<
+    (
+        Resource<Callback>,
+        crate::guest_calls::tool_renders::Render,
+        Resource<ThemeEndpoint>,
+        Resource<crate::local_resources::effects::InvalidatorEndpoint>,
+        Resource<EmitterEndpoint>,
+    ),
+    (Result<crate::guest_calls::tool_renders::Rendered, String>,),
+>;
+
+/// The component factory and tool rendering exports of the canonical guest instance.
+pub(super) struct Exports(Factory, Render);
 
 impl Exports {
     /// Resolves the real guest export.
@@ -32,7 +44,10 @@ impl Exports {
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        super::typed(store, instance, guest, "invoke-component-factory").map(Self)
+        Ok(Self(
+            super::typed(store, instance, guest, "invoke-component-factory")?,
+            super::typed(store, instance, guest, "invoke-tool-render")?,
+        ))
     }
 
     /// Transfers the terminal and theme, borrows the callback and frame, and retains the
@@ -68,6 +83,57 @@ impl Exports {
         let _ = call.reply.send(result);
         Ok(())
     }
+}
+
+impl Exports {
+    /// Transfers the theme and redraw capability, borrows the callback and frame, and retains
+    /// the returned component and new row state.
+    pub(super) async fn render<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: crate::guest_calls::tool_renders::ToolRenderCall<Callback>,
+    ) -> wasmtime::Result<()> {
+        let (callback, theme) = arguments(accessor, &call.handler, call.theme)?;
+        let (invalidator, emitter) = accessor.with(|mut access| {
+            let table = access.get().ctx().table;
+            Ok::<_, wasmtime::Error>((table.push(call.invalidator)?, table.push(call.emitter)?))
+        })?;
+        let operands = (
+            Resource::new_borrow(callback.rep()),
+            call.render,
+            theme,
+            invalidator,
+            Resource::new_borrow(emitter.rep()),
+        );
+        let result = self.1.call_concurrent(accessor, operands).await;
+        let result = accessor.with(|mut access| {
+            let table = access.get().ctx().table;
+            table.delete(callback)?;
+            table.delete(emitter)?;
+            match result?.0 {
+                Ok(rendered) => Ok(Ok(rendered_owners(access.get(), rendered)?)),
+                Err(error) => Ok::<_, wasmtime::Error>(Err(error)),
+            }
+        })?;
+        let _ = call.reply.send(result);
+        Ok(())
+    }
+}
+
+/// Retains a rendered component and a new row's state as native owners.
+pub(crate) fn rendered_owners<T: crate::callback_imports::CallbackView>(
+    store: &mut T,
+    rendered: crate::guest_calls::tool_renders::Rendered,
+) -> wasmtime::Result<(
+    crate::guest_calls::Handle,
+    Option<crate::guest_calls::Handle>,
+)> {
+    let component = crate::callback_imports::transferred(store, rendered.component)?;
+    let row = rendered
+        .row
+        .map(|row| crate::callback_imports::transferred(store, row))
+        .transpose()?;
+    Ok((component, row))
 }
 
 /// Retains a built component and its optional disposal as native owners.

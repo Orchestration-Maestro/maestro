@@ -184,6 +184,14 @@ pub struct Tui {
     _lease: Lease,
 }
 
+/// Redraw capability of one tool row, with a counted lifetime.
+pub struct Invalidator {
+    /// The row it redraws.
+    pub row: String,
+    /// Counted owner.
+    _lease: Lease,
+}
+
 /// Footer metadata lent to a footer factory, with a counted lifetime.
 pub struct FooterData {
     /// Counted owner.
@@ -229,6 +237,14 @@ impl Controlled {
         let handle = self.observed.borrow_mut().next_identity();
         self.widgets.borrow_mut().insert(handle, built);
         Ok(handle)
+    }
+
+    /// The redraw capability of the tool row `row`.
+    pub fn invalidator(&self, row: &str) -> Invalidator {
+        Invalidator {
+            row: row.to_owned(),
+            _lease: Lease::new(&self.observed),
+        }
     }
 
     /// The component the custom footer shows.
@@ -1144,6 +1160,12 @@ impl Imports for Controlled {
 
     type Ui = Ui;
     type Tui = Tui;
+    type Invalidator = Invalidator;
+    fn invalidate(&self, invalidator: &Invalidator) -> ExtensionResult<()> {
+        let mut observed = self.observed.borrow_mut();
+        observed.log(format!("invalidate {}", invalidator.row));
+        Ok(())
+    }
     type FooterData = FooterData;
     fn footer_get_git_branch(&self, _: &FooterData) -> ExtensionResult<Option<String>> {
         let branch = self.observed.borrow().ui.footer.read("getGitBranch");
@@ -1996,8 +2018,7 @@ impl Imports for Controlled {
     fn register_tool(
         &self,
         metadata: &str,
-        prepare: Option<&Callback>,
-        execute: &Callback,
+        callbacks: crate::component_adapter::ToolCallbacks<'_, Callback>,
         schemas: &[(String, &Callback)],
     ) -> ExtensionResult<()> {
         let name = super::schema_host::tool_name(metadata).map_err(|error| error.to_string())?;
@@ -2010,9 +2031,12 @@ impl Imports for Controlled {
                     .map(|(pointer, callback)| (name.clone(), pointer.clone(), callback.id)),
             );
         }
-        self.observed
-            .borrow_mut()
-            .register_tool(metadata, prepare.map(|p| p.id), execute.id)
+        let id = |callback: Option<&Callback>| callback.map(|callback| callback.id);
+        self.observed.borrow_mut().register_tool(
+            metadata,
+            (id(callbacks.prepare), callbacks.execute.id),
+            (id(callbacks.render_call), id(callbacks.render_result)),
+        )
     }
 
     fn tool_update(&self, update: &Update, partial: &str) -> ExtensionResult<()> {

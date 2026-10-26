@@ -124,6 +124,58 @@ impl ControlledDriver {
     }
 }
 
+impl ControlledDriver {
+    /// Runs one tool renderer for its row, keeping a new row's state, and renders the result.
+    fn rendered_tool(
+        &self,
+        run: &super::scenario::ToolRenderRun<'_>,
+        width: u32,
+    ) -> Result<Vec<String>, String> {
+        use crate::bindings::maestro::extension::host;
+        let handler = self.identity(&format!("render-{} {}", run.slot, run.tool))?;
+        let wire = super::ui_host::render_info(run.info);
+        let info = host::ToolRenderInfo {
+            tool_call_id: wire.tool_call_id,
+            args: wire.args,
+            cwd: wire.cwd,
+            phase: host::ToolRenderPhase {
+                execution_started: wire.phase.execution_started,
+                args_complete: wire.phase.args_complete,
+                is_partial: wire.phase.is_partial,
+            },
+            expanded: wire.expanded,
+            show_images: wire.show_images,
+            is_error: wire.is_error,
+        };
+        let id = info.tool_call_id.clone();
+        let slot = if run.slot == "call" {
+            host::ToolRenderSlot::Call
+        } else {
+            host::ToolRenderSlot::Result
+        };
+        let render = host::ToolRender {
+            slot,
+            row: self.host.observed().tool_rows.get(&id).copied(),
+            info,
+            result: run.result.map(ToString::to_string),
+        };
+        let lent = (self.host.theme("dark"), self.host.invalidator(&id));
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let (component, row) = self
+            .exports()
+            .invoke_tool_render(handler, &render, lent, &emitter)?;
+        if let Some(row) = row {
+            let row = crate::component_adapter::tool_renders::keep_row(&self.host, row);
+            self.host.observe().tool_rows.insert(id, row);
+        }
+        let call = super::renderer_host::Call::Render(width);
+        match super::renderer_host::invoke(&component, call, &self.host, 0)? {
+            super::renderer_host::Reply::Lines(lines) => Ok(lines),
+            _ => Err("expected rendered lines".to_owned()),
+        }
+    }
+}
+
 impl Drop for ControlledDriver {
     /// The callback table is shared by the thread, so a driver leaves nothing behind.
     fn drop(&mut self) {
@@ -349,6 +401,13 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn render_tool(
+        &mut self,
+        run: super::scenario::ToolRenderRun<'_>,
+        width: u32,
+    ) -> impl Future<Output = Result<Vec<String>, String>> {
+        std::future::ready(self.rendered_tool(&run, width))
+    }
     fn footer(&mut self, width: u32) -> impl Future<Output = Result<Option<Vec<String>>, String>> {
         let rendered = self.host.footer().map(|component| {
             let call = super::renderer_host::Call::Render(width);

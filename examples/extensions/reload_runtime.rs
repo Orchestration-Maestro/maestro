@@ -16,6 +16,8 @@ use maestro_extensions_wasm::{
 /// A tool that requests the command through follow-up delivery.
 fn reload_runtime_tool(api: ExtensionAPI) -> ToolDefinition {
     ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: ToolMetadata {
             name: "reload_runtime".into(),
             label: "Reload Runtime".into(),

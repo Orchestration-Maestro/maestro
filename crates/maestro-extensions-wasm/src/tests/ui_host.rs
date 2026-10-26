@@ -26,6 +26,9 @@ pub struct Tui;
 /// Host type of the footer metadata lent to a footer factory.
 pub struct FooterResource;
 
+/// Host type of one tool row's redraw capability.
+pub struct Invalidator(pub String);
+
 /// The footer the host keeps and the metadata a footer reads.
 #[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -308,6 +311,29 @@ pub fn listeners_on(observed: &Observed, channel: &str) -> Vec<u32> {
         .filter(|(it, _)| it == channel)
         .map(|(_, id)| *id)
         .collect()
+}
+
+/// The text of one info member.
+fn text(info: &Value, key: &str) -> String {
+    info[key].as_str().unwrap_or_default().to_owned()
+}
+
+/// The info record a tool renderer reads, from its JSON description.
+pub fn render_info(info: &Value) -> host::ToolRenderInfo {
+    let flag = |key: &str| info[key] == true;
+    host::ToolRenderInfo {
+        tool_call_id: text(info, "toolCallId"),
+        args: (!info["args"].is_null()).then(|| info["args"].to_string()),
+        cwd: text(info, "cwd"),
+        phase: host::ToolRenderPhase {
+            execution_started: flag("executionStarted"),
+            args_complete: flag("argsComplete"),
+            is_partial: flag("isPartial"),
+        },
+        expanded: flag("expanded"),
+        show_images: flag("showImages"),
+        is_error: flag("isError"),
+    }
 }
 
 /// One listener's unit answer, or its failure.
@@ -1062,6 +1088,17 @@ impl host::HostFooterData for State {
         }
     }
     fn drop(&mut self, this: Resource<FooterResource>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl host::HostToolInvalidator for State {
+    fn invalidate(&mut self, this: Resource<Invalidator>) -> wasmtime::Result<Result<(), String>> {
+        let row = self.table.get(&this)?.0.clone();
+        self.observed.log(format!("invalidate {row}"));
+        Ok(Ok(()))
+    }
+    fn drop(&mut self, this: Resource<Invalidator>) -> wasmtime::Result<()> {
         self.release(this)
     }
 }

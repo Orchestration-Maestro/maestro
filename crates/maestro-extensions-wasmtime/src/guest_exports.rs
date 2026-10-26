@@ -12,7 +12,7 @@ use wasmtime_wasi::WasiView;
 pub(crate) mod bash;
 pub(crate) mod events;
 mod factories;
-pub(crate) use factories::retained;
+pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
 pub(crate) mod schema;
@@ -160,7 +160,9 @@ impl Exports {
             Call::Schema(call) => self.schema.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
-            call @ (Call::TerminalInput(_) | Call::Factory(_)) => self.ui(accessor, call).await?,
+            call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
+                self.ui(accessor, call).await?;
+            }
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
             Call::Tail(handler, reply) => self.tail(accessor, &handler, reply).await?,
 
@@ -185,6 +187,7 @@ impl Exports {
         match call {
             Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
             Call::Factory(call) => self.factories.invoke(accessor, call).await,
+            Call::ToolRender(call) => self.factories.render(accessor, call).await,
             _ => Err(wasmtime::format_err!("expected a UI callback")),
         }
     }

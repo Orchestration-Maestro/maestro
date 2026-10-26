@@ -148,6 +148,21 @@ intact. Metadata transport does not validate invocation arguments; argument prep
 and validation remain with the model argument validator. Model-server JSON limits do
 not apply to these author-supplied declarations.
 
+### Tool renderers
+
+`render_call` and `render_result` are optional and independent. Each returns a `Component`
+that the host shows in the tool's row. A call renderer gets the arguments as they stand,
+the live theme, a `ToolRenderContext` and a `CallbackEmitter`. A result renderer also gets
+the `AgentToolResult` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+
+`ToolRenderContext` holds the row's `tool_call_id`, arguments, working directory,
+`ToolRenderPhase`, expansion, image visibility and error flag. `last_component` is the
+component that the same renderer returned for the row last time. `invalidate()` asks the
+host to redraw the row. `state::<S>()` returns the row's state of type `S`. It is created
+with its default the first time it is read and shared by both renderers of the row on
+every rendering, so a value set by the call renderer is visible to the result renderer.
+The row keeps its state and previous components until the host releases the row.
+
 ### Executable schema nodes
 
 Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a

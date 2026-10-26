@@ -1078,6 +1078,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-tail",
             "invoke-terminal-input",
             "invoke-tool",
+            "invoke-tool-render",
             "invoke-with-session",
             "start"
         ],

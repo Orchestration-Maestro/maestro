@@ -10,6 +10,18 @@ use crate::{
 /// Per-tool executable annotations returned beside the metadata document.
 pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 
+/// The callbacks one tool registers beside its metadata.
+pub struct ToolCallbacks<'a, C> {
+    /// Optional argument preparation.
+    pub prepare: Option<&'a C>,
+    /// Execution.
+    pub execute: &'a C,
+    /// Optional call renderer.
+    pub render_call: Option<&'a C>,
+    /// Optional result renderer.
+    pub render_result: Option<&'a C>,
+}
+
 /// Optional operands of one dialog, each absent unless the author supplied it.
 pub struct Dialog<'a, S> {
     /// Host signal that dismisses the dialog.
@@ -370,8 +382,7 @@ pub trait Imports: Clone + 'static {
     fn register_tool(
         &self,
         metadata: &str,
-        prepare: Option<&Self::Callback>,
-        execute: &Self::Callback,
+        callbacks: ToolCallbacks<'_, Self::Callback>,
         schemas: &[(String, &Self::Callback)],
     ) -> ExtensionResult<()>;
 
@@ -490,6 +501,10 @@ pub trait Imports: Clone + 'static {
 
     /// Terminal handle lent to a component factory.
     type Tui: 'static;
+    /// Redraw capability of one tool row.
+    type Invalidator: 'static;
+    /// Redraws the tool row behind `invalidator`.
+    fn invalidate(&self, invalidator: &Self::Invalidator) -> ExtensionResult<()>;
     /// Footer metadata lent to a footer factory.
     type FooterData: 'static;
     /// Reads the current branch.

@@ -22,6 +22,7 @@ pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod schema;
 pub(crate) mod terminal;
+pub(crate) mod tool_renders;
 pub(crate) mod tools;
 pub(crate) use bash::{BashCall, BashRequest};
 pub(crate) use registrations::RegisteredCall;
@@ -61,6 +62,8 @@ pub(crate) enum Call<H = Handle> {
     TerminalInput(terminal::Input<H>),
     /// Builds one component with the terminal and theme the native owner lent.
     Factory(factories::FactoryCall<H>),
+    /// Renders one tool row through its authored renderer.
+    ToolRender(tool_renders::ToolRenderCall<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.

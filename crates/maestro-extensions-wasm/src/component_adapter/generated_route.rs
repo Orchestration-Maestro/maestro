@@ -89,6 +89,7 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .map_err(crate::schema_error::to_wire),
         ),
         host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
+        host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
@@ -117,6 +118,14 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
             crate::component_adapter::factories::invoke_branch_change(call.target)
         }
     }
+}
+
+/// Runs one nested tool rendering and transfers what it returned.
+fn tool_render(call: host::LocalToolRender) -> ExtensionResult<host::ToolRendered> {
+    let lent = (call.theme, call.invalidator);
+    Exports::new(Generated)
+        .invoke_tool_render(call.target, &call.render, lent, &call.emitter)
+        .map(super::rendered_row)
 }
 
 /// Runs one nested component factory and transfers what it built.

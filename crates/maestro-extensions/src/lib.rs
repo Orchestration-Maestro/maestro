@@ -133,5 +133,10 @@ pub use maestro_tools::types::local;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+/// Native tool renderers, the row context they read and the result they render.
+pub use maestro_tools::{
+    ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
+    ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
+};
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

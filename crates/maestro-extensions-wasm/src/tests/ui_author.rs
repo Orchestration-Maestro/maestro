@@ -15,7 +15,8 @@ use maestro_extensions_wasm::{
     ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterData, FooterFactory, NotificationType,
     SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Theme, ThemeSelection,
-    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
+    ThemeSetResult, ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderResult,
+    WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -259,6 +260,64 @@ fn footer_factory(api: &ExtensionAPI, label: String) -> FooterFactory {
             component: Component::new(view),
             dispose: Some(dispose),
         })
+    })
+}
+
+/// Fixed lines a tool renderer returns.
+struct Lines(Vec<String>);
+
+impl ComponentView for Lines {
+    fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        Ok(self.0.clone())
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+/// Renderings of one row, counted in the row's typed state.
+#[derive(Default)]
+struct Renders(u32);
+
+/// Everything a renderer read about its row, as one line, after counting the rendering in
+/// the row's state and redrawing the row when its arguments ask for it.
+fn painted(slot: &str, args: Option<&Value>, ctx: &ToolRenderContext) -> ExtensionResult<Value> {
+    let renders = ctx.state::<Renders>();
+    renders.borrow_mut().0 += 1;
+    if args.is_some_and(|args| args["invalidate"] == true) {
+        (ctx.invalidate)()?;
+    }
+    let phase = ctx.phase;
+    Ok(
+        json!({ "slot": slot, "args": args, "argsSeen": ctx.args, "id": ctx.tool_call_id,
+        "cwd": ctx.cwd, "started": phase.execution_started, "complete": phase.args_complete,
+        "partial": phase.is_partial, "expanded": ctx.expanded, "images": ctx.show_images,
+        "error": ctx.is_error, "renders": renders.borrow().0,
+        "last": ctx.last_component.is_some() }),
+    )
+}
+
+/// A tool whose renderers report what they read about their row.
+fn painter() -> ExtensionResult<ToolDefinition> {
+    let metadata = serde_json::from_value(json!({ "name": "painter", "label": "Painter",
+        "description": "Paints its row", "parameters": { "type": "object" } }))
+    .map_err(|error| error.to_string())?;
+    let render_call: ToolRenderCall = Rc::new(|args, _theme, ctx, _emitter| {
+        let line = painted("call", args.as_ref(), ctx)?;
+        Ok(Component::new(Lines(vec![line.to_string()])))
+    });
+    let render_result: ToolRenderResult = Rc::new(|result, options, _theme, ctx, _emitter| {
+        let mut line = painted("result", ctx.args.as_ref(), ctx)?;
+        line["result"] = json!(result);
+        line["options"] = json!([options.expanded, options.is_partial]);
+        Ok(Component::new(Lines(vec![line.to_string()])))
+    });
+    Ok(ToolDefinition {
+        metadata,
+        prepare_arguments: None,
+        execute: Rc::new(|_, _, _, _, _| Box::pin(async { Err("not executed".to_owned()) })),
+        render_call: Some(render_call),
+        render_result: Some(render_result),
     })
 }
 
@@ -641,6 +700,8 @@ enum Operation {
         #[serde(default)]
         label: Option<String>,
     },
+    /// Registers the painter tool, whose renderers report what they read.
+    Painter,
     /// Shows a labelled factory widget whose component the author also keeps.
     KeptWidget {
         /// Label the widget renders.
@@ -820,6 +881,11 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
         Operation::Theme { call } => caught(themes(&ctx.ui()?, call).map(Some)),
         Operation::RenderKept { width } => caught(render_kept(width).map(Some)),
+        Operation::Painter => caught(
+            painter()
+                .and_then(|tool| api.register_tool(tool))
+                .map(|()| None),
+        ),
         Operation::DropKept => {
             drop(ALIASES.take());
             json!("dropped")

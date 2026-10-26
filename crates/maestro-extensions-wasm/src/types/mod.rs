@@ -23,6 +23,8 @@ mod tool_events;
 mod tool_results;
 pub use tool_results::*;
 mod tools;
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) use tools::ToolRow;
 pub use tools::*;
 
 pub use agent_events::*;

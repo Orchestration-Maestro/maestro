@@ -67,6 +67,22 @@ pub(super) struct LocalKey {
     emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested tool rendering.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalToolRender {
+    /// Authored identity of the renderer.
+    target: u32,
+    /// The rendering operands.
+    render: crate::guest_calls::tool_renders::Render,
+    /// Original live theme, transferred.
+    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
+    /// The row's redraw capability, transferred.
+    invalidator: Resource<crate::local_resources::effects::InvalidatorEndpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
 /// Owned operands of one nested component factory.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -281,6 +297,9 @@ pub(super) enum LocalCall {
     /// A component factory.
     #[component(name = "factory")]
     Factory(LocalFactory),
+    /// A tool rendering.
+    #[component(name = "tool-render")]
+    ToolRender(LocalToolRender),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -326,6 +345,9 @@ pub(super) enum LocalResult {
     /// The built component identities, or the authored error.
     #[component(name = "factory")]
     Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// The rendered component and new row state identities, or the authored error.
+    #[component(name = "tool-render")]
+    ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -356,6 +378,13 @@ pub(super) fn lower(
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::ToolRender(call) => LocalCall::ToolRender(LocalToolRender {
+            target: call.handler.id,
+            render: call.render.clone(),
+            theme: table.push(call.theme.clone())?,
+            invalidator: table.push(call.invalidator.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Factory(call) => LocalCall::Factory(LocalFactory {
@@ -542,6 +571,13 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             let _ = call.reply.send(Ok(value));
         }
         (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
+            let value = match value {
+                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
+                Err(error) => Err(error),
+            };
             let _ = call.reply.send(value);
         }
         (Call::Factory(call), LocalResult::Factory(value)) => {

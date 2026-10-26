@@ -181,8 +181,8 @@ fn command(
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);
         }
-        if args == "register-tool" {
-            return registrations::tool(&api);
+        if args == "register-tool" || args == "register-painter" {
+            return registrations::register_tool(&api, &args);
         }
         if args == "register-prefixes" {
             return prefixes::register(&api, context);

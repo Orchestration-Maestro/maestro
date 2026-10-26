@@ -57,6 +57,7 @@ impl Call {
                 reply: call.reply,
             }),
             Self::Factory(call) => Call::Factory(factory(call, completion)),
+            Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
             Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
@@ -79,6 +80,21 @@ fn factory(
         tui: call.tui,
         theme: call.theme,
         footer: call.footer,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the renderer admission beside its row operands.
+fn tool_render(
+    call: crate::guest_calls::tool_renders::ToolRenderCall,
+    completion: &Completion,
+) -> crate::guest_calls::tool_renders::ToolRenderCall<Callback> {
+    crate::guest_calls::tool_renders::ToolRenderCall {
+        handler: completion.callback(call.handler),
+        render: call.render,
+        theme: call.theme,
+        invalidator: call.invalidator,
         emitter: call.emitter,
         reply: call.reply,
     }

@@ -2,7 +2,7 @@
 
 use super::callbacks::Identity;
 use super::exports::encode_value;
-use super::imports::Imports;
+use super::imports::{Imports, ToolCallbacks};
 use super::signals::Mirror;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
@@ -175,6 +175,8 @@ impl<I: Imports> ExtensionHost for Host<I> {
             metadata,
             prepare_arguments,
             execute,
+            render_call,
+            render_result,
         } = tool;
         let encoded = super::tools::encode_metadata(&metadata)?;
         let code = metadata
@@ -189,22 +191,32 @@ impl<I: Imports> ExtensionHost for Host<I> {
             })
             .collect::<Vec<_>>();
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
+        let render_call = render_call.map(|render| (Identity::new(&self.0), render));
+        let render_result = render_result.map(|render| (Identity::new(&self.0), render));
         let identity = Identity::new(&self.0);
-        let result = self.0.register_tool(
-            &encoded,
-            prepare.as_ref().map(|(identity, _)| &identity.handle),
-            &identity.handle,
-            &code
-                .iter()
-                .map(|(pointer, id)| (pointer.clone(), &id.handle))
-                .collect::<Vec<_>>(),
-        );
+        let callbacks = ToolCallbacks {
+            prepare: prepare.as_ref().map(|(identity, _)| &identity.handle),
+            execute: &identity.handle,
+            render_call: render_call.as_ref().map(|(identity, _)| &identity.handle),
+            render_result: render_result.as_ref().map(|(identity, _)| &identity.handle),
+        };
+        let schemas = code
+            .iter()
+            .map(|(pointer, id)| (pointer.clone(), &id.handle))
+            .collect::<Vec<_>>();
+        let result = self.0.register_tool(&encoded, callbacks, &schemas);
         for (_, identity) in code {
             identity.settle(result.is_ok());
         }
         result?;
         if let Some((identity, prepare)) = prepare {
             identity.keep(prepare);
+        }
+        if let Some((identity, render)) = render_call {
+            identity.keep(render);
+        }
+        if let Some((identity, render)) = render_result {
+            identity.keep(render);
         }
         identity.keep(execute);
         Ok(())

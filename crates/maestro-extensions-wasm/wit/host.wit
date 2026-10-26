@@ -112,6 +112,8 @@ interface host {
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
     /// What a terminal input listener decided; absent members leave the input as it is.
     record terminal-input-result { consume: option<bool>, data: option<string> }
+    /// One nested same-instance tool rendering.
+    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
     /// One nested same-instance component factory.
     record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
@@ -178,6 +180,7 @@ interface host {
         tail(u32),
         bash(local-bash),
         factory(local-factory),
+        tool-render(local-tool-render),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -194,6 +197,7 @@ interface host {
         tool(result<string, string>),
         bash(result<option<f64>, string>),
         factory(result<factory-component, string>),
+        tool-render(result<tool-rendered, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-step { invoke(local-call), done(result<_, string>) }
@@ -280,6 +284,22 @@ interface host {
     }
     /// Terminal handle lent to a component factory.
     resource tui;
+    /// Which renderer a tool rendering enters.
+    enum tool-render-slot { call, %result }
+    /// What a tool renderer reads about its row at this rendering.
+    record tool-render-info {
+        tool-call-id: string, args: option<string>, cwd: string, phase: tool-render-phase,
+        expanded: bool, show-images: bool, is-error: bool,
+    }
+    /// Execution progress of a tool row.
+    record tool-render-phase { execution-started: bool, args-complete: bool, is-partial: bool }
+    /// One tool rendering: the renderer slot, the identity of the row's guest state once it
+    /// has one, what the renderer reads and, for a result, the result document.
+    record tool-render { slot: tool-render-slot, row: option<u32>, info: tool-render-info, %result: option<string> }
+    /// A tool rendering's component, and the row's guest state identity when the row had none.
+    record tool-rendered { component: callback, row: option<callback> }
+    /// Redraws one tool row.
+    resource tool-invalidator { invalidate: func() -> result<_, string>; }
     /// The footer metadata a footer factory may read; each read is current.
     resource footer-data {
         get-git-branch: func() -> result<option<string>, string>;
@@ -448,7 +468,7 @@ interface host {
         name: string, description: option<string>, completions: option<borrow<callback>>, handler: borrow<callback>,
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
-    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>) -> import-route;
+    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> import-route;
 

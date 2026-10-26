@@ -1378,6 +1378,8 @@ impl host::HostWithStore<State> for Imports {
         prepare: Option<Resource<Identity>>,
         execute: Resource<Identity>,
         schemas: Vec<(String, Resource<Identity>)>,
+        render_call: Option<Resource<Identity>>,
+        render_result: Option<Resource<Identity>>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Resource<Route>>> {
         std::future::ready(accessor.with(|mut access| {
             let state = access.get();
@@ -1393,10 +1395,12 @@ impl host::HostWithStore<State> for Imports {
                     .schemas
                     .push((name.clone(), pointer, handler.rep()));
             }
-            let result =
-                state
-                    .observed
-                    .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
+            let rep = |handler: Option<Resource<Identity>>| handler.map(|handler| handler.rep());
+            let result = state.observed.register_tool(
+                &metadata,
+                (rep(prepare), execute.rep()),
+                (rep(render_call), rep(render_result)),
+            );
             state.routed(result)
         }))
     }

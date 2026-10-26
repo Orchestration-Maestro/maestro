@@ -14,6 +14,8 @@ type Reply = mpsc::Sender<Result<(), String>>;
 pub(crate) enum Request {
     /// Traverses a retained listener snapshot using the same receiver.
     Emission(emission::Request),
+    /// Redraws a tool row.
+    Invalidate(Reply),
     /// Delivers a decoded partial result to the original observer.
     Update(String, Reply),
     /// Removes exactly the native registration, without cancelling its tails.
@@ -48,6 +50,18 @@ impl SubscriptionEndpoint {
 
 /// Live theme endpoint retained independently of its renderer.
 pub(crate) use crate::theme_reads::Endpoint as ThemeEndpoint;
+
+/// Redraw capability of one tool row.
+#[derive(Clone)]
+pub(crate) struct InvalidatorEndpoint(pub(super) Arc<Lease>);
+
+impl InvalidatorEndpoint {
+    /// Redraws the row on the local owner.
+    pub(crate) fn invalidate(&self) -> Result<(), String> {
+        self.0
+            .request(|id, reply| Message::Effect(id, Request::Invalidate(reply)))
+    }
+}
 
 /// Terminal lent to one component factory; it keeps the native terminal while the guest holds it.
 #[derive(Clone)]
@@ -132,6 +146,15 @@ impl Registry {
             .map(SubscriptionEndpoint)
     }
 
+    /// Retains the redraw capability of one tool row.
+    pub(crate) fn invalidator(
+        &self,
+        invalidate: Rc<dyn Fn()>,
+    ) -> Result<InvalidatorEndpoint, String> {
+        self.insert(Capability::Invalidate(invalidate))
+            .map(InvalidatorEndpoint)
+    }
+
     /// Retains the native footer metadata lent to one footer factory.
     pub(crate) fn footer(
         &self,
@@ -174,6 +197,16 @@ impl State {
                         frame.start_tail(tail, self.registry.clone())
                     }
                     _ => Err("extension callback-emitter resource ended".to_owned()),
+                };
+                let _ = reply.send(result);
+            }
+            Request::Invalidate(reply) => {
+                let result = match capability.as_deref() {
+                    Some(Capability::Invalidate(invalidate)) => {
+                        invalidate();
+                        Ok(())
+                    }
+                    _ => Err("extension tool-invalidator resource ended".to_owned()),
                 };
                 let _ = reply.send(result);
             }

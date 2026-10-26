@@ -29,6 +29,7 @@ mod schema;
 mod session;
 mod setup;
 mod theme;
+pub(crate) mod tool_renders;
 mod tools;
 mod ui;
 #[cfg(test)]
@@ -43,6 +44,8 @@ pub use generated::Glue;
 #[cfg(test)]
 pub(crate) use imports::Dialog;
 pub(crate) use imports::Imports;
+#[cfg(test)]
+pub(crate) use imports::ToolCallbacks;
 
 pub(crate) use imports::ToolListing;
 

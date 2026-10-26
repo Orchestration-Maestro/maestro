@@ -485,6 +485,64 @@ impl Driver for ComponentDriver {
         &mut self.previous
     }
 
+    async fn render_tool(
+        &mut self,
+        run: super::scenario::ToolRenderRun<'_>,
+        width: u32,
+    ) -> Result<Vec<String>, String> {
+        use crate::bindings::host_side::maestro::extension::host;
+        let handler = self.identity(&format!("render-{} {}", run.slot, run.tool))?;
+        let info = super::ui_host::render_info(run.info);
+        let id = info.tool_call_id.clone();
+        let row = self.observed(|observed| observed.tool_rows.get(&id).copied());
+        let slot = if run.slot == "call" {
+            host::ToolRenderSlot::Call
+        } else {
+            host::ToolRenderSlot::Result
+        };
+        let render = host::ToolRender {
+            slot,
+            row,
+            info,
+            result: run.result.map(ToString::to_string),
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let state = harness.store.data_mut();
+        let theme = state.push(super::renderer_host::Theme("dark".into()));
+        let invalidator = state.push(super::ui_host::Invalidator(id.clone()));
+        let emitter = state.table.push(super::bus_host::Emitter { key: 0 });
+        let (theme, invalidator, emitter) = (
+            theme.map_err(|e| e.to_string())?,
+            invalidator.map_err(|e| e.to_string())?,
+            emitter.map_err(|e| e.to_string())?,
+        );
+        let operands = (
+            borrow(handler),
+            render,
+            theme,
+            invalidator,
+            Resource::new_borrow(emitter.rep()),
+        );
+        let rendered = harness
+            .exports
+            .func_invoke_tool_render()
+            .call_async(&mut harness.store, operands)
+            .await
+            .map_err(|e| e.to_string())?
+            .0?;
+        let state = harness.store.data_mut();
+        state.table.delete(emitter).map_err(|e| e.to_string())?;
+        if let Some(row) = rendered.row {
+            let row = state.table.get(&row).map_err(|e| e.to_string())?.0;
+            state.observed.tool_rows.insert(id, row);
+        }
+        let component = rendered.component.rep();
+        state
+            .observed
+            .register(format!("tool-component {component}"), component);
+        self.render_slot(component, width).await
+    }
+
     async fn footer(&mut self, width: u32) -> Result<Option<Vec<String>>, String> {
         let custom = self.observed(|observed| {
             observed
