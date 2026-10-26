@@ -2,9 +2,9 @@
 
 use maestro_theme::ThemeState;
 use maestro_tui::TUI;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use maestro_tui::TerminalImage;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
 use std::cell::{Cell, RefCell};
 use std::io;
@@ -12,7 +12,7 @@ use std::rc::{Rc, Weak};
 use tokio::sync::oneshot;
 
 /// Construct the native terminal and its runtime over `local` without starting either.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[must_use]
 pub fn native_terminal(local: Rc<tokio::task::LocalSet>) -> (TerminalHandle, Rc<dyn TuiRuntime>) {
     let terminal: TerminalHandle = Rc::new(RefCell::new(
@@ -36,7 +36,7 @@ impl SelectorHost {
     ///
     /// `local` drives the deferred terminal work; the terminal itself is created
     /// when the presentation asks for its frame writer.
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[must_use]
     pub fn native(local: Rc<tokio::task::LocalSet>) -> Self {
         Self {

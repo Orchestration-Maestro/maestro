@@ -14,8 +14,9 @@ use tokio::io::Interest;
 use tokio::sync::Notify;
 use tokio::task::{JoinHandle, LocalSet};
 
-use super::{Shared, descriptor::Source};
+use super::descriptor::Source;
 use crate::output_errors::FailureSource;
+use crate::terminal::Shared;
 
 /// Largest request sent to a terminal in one syscall.
 const MAX_TTY_WRITE_CHUNK_BYTES: NonZeroUsize = NonZeroUsize::MIN.saturating_add(16_383);

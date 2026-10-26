@@ -4614,6 +4614,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
+ "crossterm_winapi",
  "maestro-brand",
  "maestro-dependencies",
  "maestro-listeners",
