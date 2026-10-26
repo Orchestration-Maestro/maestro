@@ -6,6 +6,7 @@ use maestro_app::browser::components::messages::{
     convert_attachments, default_convert_to_llm, is_artifact_message,
     is_user_message_with_attachments,
 };
+use maestro_app::browser::utils::attachment_utils::SharedAttachment;
 use maestro_app::{AgentMessage, UserContent};
 use maestro_models::Message;
 use serde::Deserialize;
@@ -336,6 +337,8 @@ fn browser_shared_attachments_keep_plain_serialization_and_projection() {
     for row in corpus.rows {
         let _: RecordedMessage = serde_json::from_value(row.input.clone()).unwrap();
         let input: UserMessageWithAttachments = serde_json::from_value(row.input).unwrap();
+        let retained: Vec<SharedAttachment> =
+            input.attachments.iter().flatten().map(Arc::clone).collect();
         let expected = if row.id == "null" {
             let decoded: UserMessageWithAttachments =
                 serde_json::from_value(row.expected.persisted).unwrap();
@@ -351,12 +354,32 @@ fn browser_shared_attachments_keep_plain_serialization_and_projection() {
             .unwrap(),
             &row.expected.blocks,
         );
-        let message: AgentMessage<CustomAgentMessages> = AgentMessage::Custom(Arc::new(
+        let history: [AgentMessage<CustomAgentMessages>; 1] = [AgentMessage::Custom(Arc::new(
             RwLock::new(CustomAgentMessages::UserWithAttachments(input)),
-        ));
+        ))];
         equal(
-            &serde_json::to_value(default_convert_to_llm(&[message])).unwrap(),
+            &serde_json::to_value(default_convert_to_llm(&history)).unwrap(),
             &row.expected.projected,
         );
+        assert_same_members(&history[0], &retained);
     }
+}
+/// The projected record still holds the handles a view retained: serialization and projection
+/// read the shared members in place and copy none of them.
+fn assert_same_members(message: &AgentMessage<CustomAgentMessages>, retained: &[SharedAttachment]) {
+    let AgentMessage::Custom(record) = message else {
+        panic!("expected the browser record");
+    };
+    let record = record.read().unwrap();
+    let CustomAgentMessages::UserWithAttachments(user) = &*record else {
+        panic!("expected an attachment-bearing user record");
+    };
+    let members = user.attachments.as_deref().unwrap_or_default();
+    assert_eq!(members.len(), retained.len());
+    assert!(
+        members
+            .iter()
+            .zip(retained)
+            .all(|(member, handle)| Arc::ptr_eq(member, handle))
+    );
 }

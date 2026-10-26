@@ -88,9 +88,10 @@ pub async fn tool_headers_dom_keep_state_icons_and_literal_captions() {
     collapsible_headers(&view).await;
 }
 
-/// Activation follows both live references and native descendant bubbling exactly once.
+/// Activation follows both live references and native descendant bubbling exactly once, and the
+/// keyboard reaches a panel pill and the disclosure as separate buttons.
 #[wasm_bindgen]
-pub fn native_header_targets_and_pill_bubbling_follow_current_elements(
+pub async fn native_header_targets_and_pill_bubbling_follow_current_elements(
     import_module: &js_sys::Function,
 ) {
     let view = view();
@@ -146,6 +147,7 @@ pub fn native_header_targets_and_pill_bubbling_follow_current_elements(
     explicit_parent_and_bubbling_toggle_twice(header, &refs, &second);
     header.remove();
     optional::created_artifact(&view);
+    optional::keyboard_pills(&view).await;
 }
 
 /// The command corpus keeps exact caption, console text, result status and card choice.
@@ -608,7 +610,15 @@ async fn collapsible_header(
         expanded,
         "default expansion never rewrites caller body"
     );
-    header.focus().unwrap();
+    let names = driver("driverAria", ".maestro-tool-toggle")
+        .await
+        .as_string()
+        .unwrap();
+    assert!(names.contains("button \"<literal>\""), "{names}");
+    crate::contributions_support::disclosure(header)
+        .unwrap()
+        .focus()
+        .unwrap();
     driver("driverPress", "Enter").await;
     assert_eq!(target.class_list().contains("max-h-0"), !expanded);
     assert_eq!(computed(header, "outline-style"), "solid");
@@ -624,7 +634,23 @@ async fn collapsible_header(
 /// Measure the reached native chevron and pending glyph placement.
 fn observe_header(header: &HtmlElement, state: ToolHeaderState, expanded: bool) {
     use crate::contributions_support::computed;
-    assert_eq!(header.tag_name(), "BUTTON");
+    let disclosure = crate::contributions_support::disclosure(header).unwrap();
+    let caption = header
+        .query_selector(".maestro-tool-caption")
+        .unwrap()
+        .unwrap();
+    assert!(!caption.id().is_empty());
+    assert_eq!(
+        disclosure.get_attribute("aria-labelledby"),
+        Some(caption.id())
+    );
+    assert!(!disclosure.has_attribute("aria-expanded"));
+    assert_eq!(header.tag_name(), "DIV");
+    assert_eq!(
+        header.query_selector_all("button").unwrap().length(),
+        1,
+        "the row is not itself a control and holds only the disclosure"
+    );
     assert_eq!(text(header), "<literal>");
     assert_eq!(
         computed(
@@ -782,7 +808,7 @@ fn observe_document_card(
     use crate::contributions_support::select;
     let header = card.first_element_child().unwrap();
     assert_eq!(
-        header.tag_name() == "BUTTON",
+        crate::contributions_support::disclosure(&header).is_some(),
         expected.collapsible,
         "{index}"
     );
@@ -907,9 +933,10 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
     let header: HtmlElement = card.first_element_child().unwrap().unchecked_into();
     let pending = select(&card, ".maestro-tool-body");
     assert_collapsed(&header, &pending);
-    header.focus().unwrap();
+    let toggle = crate::contributions_support::disclosure(&header).unwrap();
+    toggle.focus().unwrap();
     driver("driverPress", "Enter").await;
-    assert!(header.is_same_node(view.document.active_element().as_deref()));
+    assert!(toggle.is_same_node(view.document.active_element().as_deref()));
     assert_motion(&page, &header, &pending).await;
     let code = select(&pending, ".maestro-code");
     slot.show(execution_card("b", None).as_ref(), &parent, &view)

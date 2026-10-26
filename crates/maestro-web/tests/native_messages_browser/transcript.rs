@@ -198,16 +198,17 @@ pub(super) async fn keyboard_and_scroll(view: &DomView, page: &JsValue) {
 /// the clamped scroll position reveals.
 async fn clamped_controls(parent: &Element, page: &JsValue) {
     let scroller: &HtmlElement = parent.unchecked_ref();
-    let headers = parent
-        .query_selector_all("button.maestro-tool-header")
-        .unwrap();
+    let headers = parent.query_selector_all(".maestro-tool-toggle").unwrap();
     let header: HtmlElement = headers.item(headers.length() - 1).unwrap().unchecked_into();
     header.click();
     let disclosure = header.next_element_sibling().unwrap();
     call(page, "finish", &js_sys::Array::of1(&disclosure)).await;
     scroller.set_scroll_top(scroller.scroll_height());
     let bottom = scroller.scroll_top();
-    header.focus().unwrap();
+    crate::contributions_support::disclosure(&header)
+        .unwrap()
+        .focus()
+        .unwrap();
     driver("driverPress", "Enter").await;
     call(page, "finish", &js_sys::Array::of1(&disclosure)).await;
     let limit = scroller.scroll_height() - scroller.client_height();

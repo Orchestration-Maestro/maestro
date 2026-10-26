@@ -62,7 +62,7 @@ struct MountedHeader {
     spinner: RefCell<Option<Element>>,
     /// Independent rich caption lifetime.
     rich: RefCell<MountedContent>,
-    /// Current activation references, updated without rebuilding the button.
+    /// Current activation references, updated without rebuilding the header.
     refs: Rc<RefCell<Option<ToolHeaderRefs>>>,
     /// Native click registration, removed with the root.
     _click: Option<Click>,
@@ -71,7 +71,7 @@ impl DomContent for Header {
     /// A plain header has one template per state, a toggle one for all states.
     fn key(&self) -> Option<&str> {
         Some(match (&self.disclosure, self.state) {
-            (Some(_), _) => "button",
+            (Some(_), _) => "toggle",
             (None, ToolHeaderState::Inprogress) => "inprogress",
             (None, ToolHeaderState::Complete) => "complete",
             (None, ToolHeaderState::Error) => "error",
@@ -79,12 +79,7 @@ impl DomContent for Header {
     }
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         crate::dom::install_styles(view).map_err(|error| host_error(&error))?;
-        let tag = if self.disclosure.is_some() {
-            "button"
-        } else {
-            "div"
-        };
-        let node = element(&view.document, tag, "maestro-tool-header")?;
+        let node = element(&view.document, "div", "maestro-tool-header")?;
         let lead = element(&view.document, "div", "maestro-tool-header-lead")?;
         let tool = element(&view.document, "span", "maestro-tool-icon")?;
         let caption = element(&view.document, "span", "maestro-tool-caption")?;
@@ -93,13 +88,13 @@ impl DomContent for Header {
         node.append_child(&lead)
             .map_err(|error| host_error(&error))?;
         let refs = Rc::new(RefCell::new(None::<ToolHeaderRefs>));
+        // The whole row toggles on a pointer click; its chevron is the keyboard disclosure, so a
+        // caption's own controls never sit inside another control.
         let click = if let Some((targets, expanded)) = &self.disclosure {
-            node.set_attribute("type", "button")
-                .map_err(|error| host_error(&error))?;
             node.class_list()
                 .add_1("maestro-tool-toggle")
                 .map_err(|error| host_error(&error))?;
-            let chevron = chevron(&view.document, *expanded)?;
+            let chevron = chevron(&view.document, *expanded, &caption)?;
             node.append_child(&chevron)
                 .map_err(|error| host_error(&error))?;
             targets.chevron.replace(Some(chevron.unchecked_into()));
@@ -193,9 +188,20 @@ impl Header {
         result
     }
 }
-/// Both icon children stay mounted so activation can change only visibility.
-fn chevron(document: &Document, expanded: bool) -> Result<Element, ToolUiError> {
-    let root = element(document, "span", "maestro-tool-chevron")?;
+/// The disclosure button; both icon children stay mounted so activation can change only visibility.
+fn chevron(document: &Document, expanded: bool, caption: &Element) -> Result<Element, ToolUiError> {
+    /// Caption identities independent of authored text and other mounted headers.
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let id = format!(
+        "maestro-tool-caption-{}",
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    );
+    caption.set_id(&id);
+    let root = element(document, "button", "maestro-tool-chevron")?;
+    for (name, value) in [("type", "button"), ("aria-labelledby", id.as_str())] {
+        root.set_attribute(name, value)
+            .map_err(|error| host_error(&error))?;
+    }
     for (name, class, hidden) in [
         ("ChevronUp", "chevron-up", !expanded),
         ("ChevronsUpDown", "chevrons-up-down", expanded),

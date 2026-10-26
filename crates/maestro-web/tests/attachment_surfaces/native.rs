@@ -45,7 +45,8 @@ pub(crate) fn attachment_surfaces_keep_fractional_rects_and_owned_content(view: 
     parent.remove();
 }
 
-/// Updating one placement is transactional and does not replace another placement's inputs.
+/// Updating one placement is transactional, keeps its controls for the current inputs and does
+/// not replace another placement's inputs.
 pub(crate) fn attachment_tiles_replace_transactionally_and_release_listeners(view: &DomView) {
     let record = attachment();
     record.write().unwrap().preview = Some("first".into());
@@ -81,15 +82,7 @@ pub(crate) fn attachment_tiles_replace_transactionally_and_release_listeners(vie
         "data:image/png;base64,first"
     );
     replace_preview_with_fallback(&mut tile, &first, view);
-    old_remove.unchecked_ref::<HtmlElement>().click();
-    old_open.unchecked_ref::<HtmlElement>().click();
-    assert_eq!(calls.get(), 0);
-    assert!(
-        view.document
-            .query_selector("attachment-overlay")
-            .unwrap()
-            .is_none()
-    );
+    kept_controls_use_current_inputs(&tile, &first, [&old_remove, &old_open], &calls, view);
     let live_remove = select(&second.node, "[data-remove]");
     live_remove.unchecked_ref::<HtmlElement>().click();
     assert_eq!(calls.get(), 1);
@@ -104,6 +97,35 @@ pub(crate) fn attachment_tiles_replace_transactionally_and_release_listeners(vie
     assert!(weak.upgrade().is_none());
     live_remove.unchecked_ref::<HtmlElement>().click();
     assert_eq!(calls.get(), 1);
+}
+
+/// Controls kept through an update act on the current inputs: removal reaches the current
+/// callback, here none, and opening reads the current record.
+fn kept_controls_use_current_inputs(
+    tile: &AttachmentTile,
+    root: &maestro_web::dom::DomRoot,
+    [remove, open]: [&Element; 2],
+    calls: &Cell<i32>,
+    view: &DomView,
+) {
+    assert!(remove.is_same_node(Some(&select(&root.node, "[data-remove]"))));
+    assert!(open.is_same_node(Some(&select(&root.node, "[data-open]"))));
+    remove.unchecked_ref::<HtmlElement>().click();
+    assert_eq!(calls.get(), 0, "the kept control uses the current callback");
+    tile.attachment.write().unwrap().file_name = "current.txt".into();
+    open.unchecked_ref::<HtmlElement>().click();
+    let overlay = view
+        .document
+        .query_selector("attachment-overlay")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        text(&select(&overlay, ".maestro-attachment-name")),
+        "current.txt"
+    );
+    select(&overlay, "[data-close]")
+        .unchecked_ref::<HtmlElement>()
+        .click();
 }
 
 /// Each caller brand scope paints the native fallback, image frame, badge and removal boundary.

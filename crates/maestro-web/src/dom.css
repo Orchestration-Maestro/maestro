@@ -401,8 +401,9 @@ code-block, markdown-block, thinking-block {
 
 .maestro-attachment-tile { display: block; max-height: 4rem; font-family: var(--maestro-type-body-font); }
 .maestro-tile-shell { position: relative; display: inline-block; }
-.maestro-tile-open { box-sizing: border-box; width: 4rem; height: 4rem; cursor: pointer; border: 1px solid var(--maestro-color-border); border-radius: var(--maestro-radii-panel); overflow: hidden; transition: opacity .15s; }
+.maestro-tile-open { display: block; box-sizing: border-box; width: 4rem; height: 4rem; margin: 0; padding: 0; cursor: pointer; border: 1px solid var(--maestro-color-border); border-radius: var(--maestro-radii-panel); background: none; color: inherit; font: inherit; overflow: hidden; transition: opacity .15s; }
 .maestro-tile-open:hover { opacity: .8; }
+.maestro-tile-open:focus-visible { outline: 2px solid var(--maestro-color-accent); }
 .maestro-tile-image { display: block; width: 100%; height: 100%; object-fit: cover; }
 .maestro-tile-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: .5rem; background: var(--maestro-color-panel); color: var(--maestro-color-muted); }
 .maestro-tile-label { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: .625rem; }
@@ -411,10 +412,11 @@ code-block, markdown-block, thinking-block {
 .maestro-tile-remove:hover { background: var(--maestro-color-border); color: var(--maestro-color-text); }
 @media (hover: hover) { .maestro-tile-remove { opacity: 0; } .maestro-tile-shell:hover .maestro-tile-remove, .maestro-tile-remove:focus-visible { opacity: 1; } }
 
-.maestro-tool-toggle { width: 100%; border: 0; padding: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer; transition: color .15s; }
+.maestro-tool-toggle { cursor: pointer; transition: color .15s; }
 .maestro-tool-toggle:hover { color: var(--maestro-color-text); }
-.maestro-tool-toggle:focus-visible { outline: 2px solid var(--maestro-color-accent); }
-.maestro-tool-chevron { display: inline-block; color: var(--maestro-color-muted); }
+.maestro-tool-toggle:has(> .maestro-tool-chevron:focus-visible) { outline: 2px solid var(--maestro-color-accent); }
+.maestro-tool-chevron { display: inline-block; margin: 0; padding: 0; border: 0; background: transparent; color: var(--maestro-color-muted); font: inherit; cursor: pointer; }
+.maestro-tool-chevron:focus-visible { outline: none; }
 .maestro-tool-chevron .hidden { display: none; }
 .maestro-tool-card > * + * { margin-top: .75rem; }
 .maestro-tool-body { overflow: hidden; transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); }

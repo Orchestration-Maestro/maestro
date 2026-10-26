@@ -158,20 +158,24 @@ pub async fn controls(import: &js_sys::Function) {
         .first_element_child()
         .unwrap()
         .unchecked_into::<web_sys::HtmlElement>();
-    header.focus().unwrap();
+    let toggle = crate::contributions_support::disclosure(&header).unwrap();
+    toggle.focus().unwrap();
     driver("driverPress", "Space").await;
-    assert!(header.is_same_node(view.document.active_element().as_deref()));
-    call(&page, "finish", &js_sys::Array::of1(&header)).await;
+    assert!(toggle.is_same_node(view.document.active_element().as_deref()));
+    let body = select(&card.root(), ".maestro-tool-body");
+    call(&page, "finish", &js_sys::Array::of1(&body)).await;
     let code = select(&card.root(), ".maestro-code");
     let before = call(&page, "select", &js_sys::Array::of1(&select(&code, "code")))
         .await
         .as_string()
         .unwrap();
+    assert_eq!(before, input.expected.as_ref().unwrap().blocks[0].code);
     copies(&card, &input, &page).await;
-    header.focus().unwrap();
+    toggle.focus().unwrap();
     for _ in 0..2 {
         driver("driverPress", "Space").await;
     }
+    call(&page, "finish", &js_sys::Array::of1(&body)).await;
     assert!(select(&card.root(), ".maestro-code").is_same_node(Some(&code)));
     assert_eq!(
         crate::contributions_support::selection(&page, &code)
@@ -229,7 +233,10 @@ async fn modal(card: &Card, header: &web_sys::HtmlElement) {
     );
     super::downloads::close(root.node.unchecked_ref());
     assert!(code.is_connected());
-    header.focus().unwrap();
+    crate::contributions_support::disclosure(header)
+        .unwrap()
+        .focus()
+        .unwrap();
     driver("driverPress", "Space").await;
     assert_ne!(
         select(&card.root(), ".maestro-tool-body").class_name(),

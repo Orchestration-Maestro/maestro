@@ -99,7 +99,7 @@ fn observe_artifact(card: &Element, expected: &records::Expected, index: &str) {
     use crate::contributions_support::select;
     let header = card.first_element_child().unwrap();
     assert_eq!(
-        header.tag_name() == "BUTTON",
+        crate::contributions_support::disclosure(&header).is_some(),
         expected.collapsible,
         "{index}"
     );
@@ -401,7 +401,17 @@ fn typed(view: &Rc<DomView>) {
         Shown::new(native.content.as_ref(), view),
         Shown::new(object.content.as_ref(), view),
     );
-    assert_eq!(native.root().outer_html(), object.root().outer_html());
+    let native_id = select(&native.root(), ".maestro-tool-caption").id();
+    let object_id = select(&object.root(), ".maestro-tool-caption").id();
+    assert!(!native_id.is_empty());
+    assert_ne!(
+        native_id, object_id,
+        "independent headers have distinct labels"
+    );
+    assert_eq!(
+        native.root().outer_html().replace(&native_id, "caption"),
+        object.root().outer_html().replace(&object_id, "caption")
+    );
     assert_eq!(
         diff_rows(&native.root()),
         [("  a", "unchanged"), ("- b", "removed"), ("+ c", "added")]
@@ -770,4 +780,71 @@ pub(super) fn created_artifact(view: &Rc<DomView>) {
         weak.upgrade().is_none(),
         "released actions free the captured panel"
     );
+}
+
+/// A panel pill is its own button beside the disclosure, never inside it: Tab reaches the pill
+/// and then the disclosure, Enter and Space on the pill open the file without toggling, and Enter
+/// on the disclosure toggles. Without a panel the pill is text the keyboard passes over.
+pub(super) async fn keyboard_pills(view: &Rc<DomView>) {
+    let panel = Panel::new();
+    crate::presentation::store(&panel.panel, "made.rs");
+    let before: HtmlElement = view
+        .document
+        .create_element("button")
+        .unwrap()
+        .unchecked_into();
+    body().append_child(&before).unwrap();
+    for supplied in [Some(&panel), None] {
+        keyboard_pill(view, supplied, &before).await;
+    }
+    before.remove();
+}
+/// Walk one pill card's controls by keyboard, starting after `before`.
+async fn keyboard_pill(view: &DomView, panel: Option<&Panel>, before: &HtmlElement) {
+    use crate::contributions_support::{disclosure, driver, focused};
+    let shown = pill_card(&"made.rs".into(), panel);
+    let card = Shown::new(shown.content.as_ref(), view);
+    let root = card.root();
+    let pill = select(&root, ".maestro-artifact-pill");
+    let content = select(&root, ".maestro-tool-body");
+    let toggle = disclosure(&super::header_of(&root)).unwrap();
+    assert_eq!(pill.tag_name() == "BUTTON", panel.is_some());
+    let parent = pill.parent_element().unwrap();
+    assert!(
+        parent.closest("button").unwrap().is_none(),
+        "no nested control"
+    );
+    before.focus().unwrap();
+    driver("driverPress", "Tab").await;
+    if let Some(panel) = panel {
+        pill_keys(&pill, panel).await;
+        assert!(
+            content.class_list().contains("max-h-0"),
+            "the pill does not toggle"
+        );
+        driver("driverPress", "Tab").await;
+    }
+    assert!(focused(&toggle));
+    driver("driverPress", "Enter").await;
+    assert!(
+        !content.class_list().contains("max-h-0"),
+        "the disclosure toggles"
+    );
+}
+/// The focused panel pill and the disclosure carry their names, and Enter and Space on the pill
+/// each open its file.
+async fn pill_keys(pill: &Element, panel: &Panel) {
+    use crate::contributions_support::{driver, focused};
+    assert!(focused(pill));
+    let names = driver("driverAria", ".maestro-tool-toggle")
+        .await
+        .as_string()
+        .unwrap();
+    for name in ["made.rs", "Updating artifact made.rs"] {
+        assert!(names.contains(&format!("button \"{name}\"")), "{names}");
+    }
+    for key in ["Enter", "Space"] {
+        driver("driverPress", key).await;
+    }
+    assert_eq!(panel.presentation.opened.get(), 2);
 }

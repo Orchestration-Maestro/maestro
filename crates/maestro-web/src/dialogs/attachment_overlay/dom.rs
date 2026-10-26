@@ -125,8 +125,11 @@ impl State {
         self.bind(modes.node.clone().into(), "mode-change", Action::Mode)?;
         append(&actions, &modes.node)?;
         *self.modes.borrow_mut() = Some(modes);
-        for (icon, attribute) in [("Download", "data-download"), ("X", "data-close")] {
-            let control = self.control(icon)?;
+        for (icon, attribute, label) in [
+            ("Download", "data-download", "Download"),
+            ("X", "data-close", "Close"),
+        ] {
+            let control = self.control(icon, &self.view.i18n.text(label)?)?;
             control
                 .set_attribute(attribute, "")
                 .map_err(|error| ToolUiError::native(&error))?;
@@ -157,8 +160,8 @@ impl State {
             .dyn_into()
             .map_err(|error| ToolUiError::native(&error))
     }
-    /// Reuse the shared ghost button and glyph owners.
-    fn control(&self, icon: &str) -> Result<HtmlElement, ToolUiError> {
+    /// Reuse the shared ghost button and glyph owners; the localized title names the glyph-only control.
+    fn control(&self, icon: &str, title: &str) -> Result<HtmlElement, ToolUiError> {
         let glyph = crate::icons::icon_node(icon)
             .map_err(|error| ToolUiError::Presentation(error.to_string()))?
             .ok_or_else(|| ToolUiError::Presentation("Missing icon".into()))?;
@@ -169,6 +172,7 @@ impl State {
             &ButtonProps {
                 variant: ButtonVariant::Ghost,
                 size: ButtonSize::Icon,
+                title: Some(title),
                 ..ButtonProps::default()
             },
             &[node.into()],

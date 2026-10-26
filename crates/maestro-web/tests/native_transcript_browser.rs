@@ -341,15 +341,57 @@ fn same(left: &Entry, right: &Entry) -> bool {
 }
 
 /// Rows keep their roots by emitted position, forward the list's current operands with the
-/// stable flags, and the recorded callback edits replay against the live history.
+/// stable flags, and the recorded callback edits replay against the live history; an unrelated
+/// refresh keeps an unchanged user row's selection, focus and copy feedback.
 #[wasm_bindgen]
-pub fn message_list_preserves_emitted_positions_and_current_actions() {
+pub async fn message_list_preserves_emitted_positions_and_current_actions(
+    import_module: &js_sys::Function,
+) {
     let view = view();
     positions(&view);
     let fixture = fixture();
     forwarding(&view, &fixture["listForwarding"]);
     callbacks(&view, &fixture["listCallbacks"]);
     indexed_result(&view);
+    let _elements = crate::contributions_support::host(&view, import_module);
+    let page = crate::contributions_support::page_module(import_module).await;
+    unchanged_user_row(&view, &page).await;
+}
+
+/// An unrelated refresh updates an unchanged user row in place: its selected text, its focused
+/// tile and its listing's copy feedback survive with their nodes.
+async fn unchanged_user_row(view: &DomView, page: &wasm_bindgen::JsValue) {
+    use crate::contributions_support::{Clipboard, Recorded, call, select, selection, until};
+    let clipboard = Recorded::install(Clipboard::Accept);
+    let (list, root) = mounted(view, vec![attached("selected words\n\n```\ncopied\n```")]);
+    let row = rows(&root).remove(0);
+    let (words, copy) = (select(&row, "p"), select(&row, "copy-button"));
+    select(&copy, "button")
+        .unchecked_ref::<HtmlElement>()
+        .click();
+    until(page, &copy, || text(&copy).contains("Copied!")).await;
+    let tile = select(&row, "[data-open]");
+    tile.unchecked_ref::<HtmlElement>().focus().unwrap();
+    call(page, "select", &js_sys::Array::of1(&words)).await;
+    list.messages.write().unwrap().push(user("later"));
+    list.update(&root, view).unwrap();
+    assert_eq!(rows(&root).len(), 2);
+    assert!(select(&row, "p").is_same_node(Some(&words)));
+    assert!(select(&row, "copy-button").is_same_node(Some(&copy)));
+    assert!(select(&row, "[data-open]").is_same_node(Some(&tile)));
+    assert!(
+        view.document
+            .active_element()
+            .unwrap()
+            .is_same_node(Some(&tile))
+    );
+    assert_eq!(
+        selection(page, &words).await,
+        ("selected words".to_owned(), true)
+    );
+    assert!(text(&copy).contains("Copied!"));
+    assert_eq!(clipboard.texts().len(), 1);
+    unmount(&root);
 }
 
 /// Filtered entries before or between rows do not move them; a row keeps its root while the

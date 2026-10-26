@@ -111,7 +111,7 @@ fn status(root: &Element, row: &Row) {
         row.id
     );
     assert_eq!(
-        root.first_element_child().unwrap().tag_name() == "BUTTON",
+        crate::contributions_support::disclosure(&root.first_element_child().unwrap()).is_some(),
         expected.collapsible
     );
     assert_eq!(

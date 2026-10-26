@@ -36,6 +36,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  margin: 0;
   padding: 0.125rem 0.5rem;
   border: 1px solid var(--maestro-color-border);
   border-radius: 0.25rem;
@@ -46,6 +47,7 @@
   line-height: 1rem;
 }
 .maestro-artifact-pill.maestro-text-action:hover { background: var(--maestro-color-panel); }
+.maestro-artifact-pill:focus-visible { outline: 2px solid var(--maestro-color-accent); }
 .maestro-artifact-pill svg { flex-shrink: 0; }
 
 .maestro-user-row { display: flex; justify-content: flex-start; margin: 0 1rem; }

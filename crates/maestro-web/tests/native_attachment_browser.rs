@@ -460,7 +460,7 @@ fn error_modes(view: &Rc<maestro_web::dom::DomView>) {
 }
 /// Fixed chrome, classification priority, modes and literal localized fallbacks.
 #[wasm_bindgen]
-pub fn overlay_dom_fixed_chrome_modes_text_and_locales() {
+pub async fn overlay_dom_fixed_chrome_modes_text_and_locales() {
     let view = view();
     classification_and_labels(&view);
     content_cases(&view);
@@ -503,6 +503,26 @@ pub fn overlay_dom_fixed_chrome_modes_text_and_locales() {
     );
     overlay::chrome_layout(&root);
     close(&root);
+    control_names(&view).await;
+}
+/// The icon-only download and close controls carry the selected localization's names.
+async fn control_names(view: &Rc<maestro_web::dom::DomView>) {
+    for (language, names) in [
+        ("en", ["Download", "Close"]),
+        ("de", ["Herunterladen", "Schließen"]),
+    ] {
+        let localized = crate::contributions_support::localized_view(view, language);
+        let (_, root) = opened(&localized, crate::attachment_support::attachment());
+        let tree =
+            crate::contributions_support::driver("driverAria", ".maestro-attachment-actions")
+                .await
+                .as_string()
+                .unwrap();
+        for name in names {
+            assert!(tree.contains(&format!("button \"{name}\"")), "{tree}");
+        }
+        close(&root);
+    }
 }
 
 /// Progressive native pages preserve identity and release finished documents.
@@ -957,6 +977,60 @@ pub async fn tile_dom_remove_does_not_open_and_uses_current_callback() {
         0
     );
     node.remove();
+    opener_keyboard(&view).await;
+}
+/// The opener is a native button named by the filename: Tab reaches it before removal, Enter and
+/// Space each open the current record, and it keeps focus while an update changes its thumbnail.
+async fn opener_keyboard(view: &Rc<maestro_web::dom::DomView>) {
+    use crate::contributions_support::{driver, focused};
+    let record = crate::attachment_support::attachment();
+    let mut tile = maestro_web::components::attachment_tile::AttachmentTile::from(
+        std::sync::Arc::clone(&record),
+    );
+    tile.show_delete = true;
+    let before: HtmlElement = view
+        .document
+        .create_element("button")
+        .unwrap()
+        .unchecked_into();
+    body().append_child(&before).unwrap();
+    let root = tile.mount(view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let node: Element = root.node.clone().unchecked_into();
+    let opener = select(&node, "[data-open]");
+    let names = driver("driverAria", ".maestro-attachment-tile")
+        .await
+        .as_string()
+        .unwrap();
+    for name in ["note.txt", "Remove"] {
+        assert!(names.contains(&format!("button \"{name}\"")), "{names}");
+    }
+    before.focus().unwrap();
+    driver("driverPress", "Tab").await;
+    assert!(focused(&opener));
+    keyboard_opens(view).await;
+    record.write().unwrap().preview = Some("AA==".into());
+    tile.update(&root, view).unwrap();
+    assert!(select(&node, "[data-open]").is_same_node(Some(&opener)));
+    assert!(node.query_selector("[data-open] img").unwrap().is_some());
+    assert!(focused(&opener), "an update keeps focus on the opener");
+    driver("driverPress", "Tab").await;
+    assert!(focused(&select(&node, "[data-remove]")));
+    node.remove();
+    before.remove();
+}
+/// Enter and Space on the focused opener each open the current record once.
+async fn keyboard_opens(view: &maestro_web::dom::DomView) {
+    for key in ["Enter", "Space"] {
+        crate::contributions_support::driver("driverPress", key).await;
+        let overlay = view.document.query_selector("attachment-overlay").unwrap();
+        let overlay = overlay.unwrap_or_else(|| panic!("{key} opens the record"));
+        assert_eq!(
+            text(&select(&overlay, ".maestro-attachment-name")),
+            "note.txt"
+        );
+        close(&overlay);
+    }
 }
 
 /// Opened overlays retain the original record after their originating tile is gone.

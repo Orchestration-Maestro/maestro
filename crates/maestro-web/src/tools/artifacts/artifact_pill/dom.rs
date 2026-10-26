@@ -18,40 +18,50 @@ use web_sys::{Element, Event};
 
 /// The panel and authored filename a click currently opens.
 type Target = Rc<RefCell<(Option<Rc<LocalArtifactsPanel>>, Option<String>)>>;
-/// A mounted pill's name, its live click operands and the click registration.
+/// A mounted pill's name, its live click operands and, for a button, the click registration.
 struct Mounted {
     /// Literal filename text.
     name: Element,
     /// Operands read when clicked, replaced on update.
     target: Target,
-    /// Native click registration, removed with the root.
-    _click: Click,
+    /// Native click registration of a button, removed with the root.
+    _click: Option<Click>,
 }
 impl DomContent for Pill {
+    /// A pill with a panel is its own button; without one it is text whose clicks reach the
+    /// containing header.
+    fn key(&self) -> Option<&str> {
+        Some(if self.panel.is_some() {
+            "button"
+        } else {
+            "text"
+        })
+    }
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        let root = element(&view.document, "span", "maestro-artifact-pill")?;
+        let root = if self.panel.is_some() {
+            let button = element(
+                &view.document,
+                "button",
+                "maestro-artifact-pill maestro-text-action",
+            )?;
+            button
+                .set_attribute("type", "button")
+                .map_err(|error| host_error(&error))?;
+            button
+        } else {
+            element(&view.document, "span", "maestro-artifact-pill")?
+        };
         let icon = crate::icons::icon_dom(&glyph("FileCode2")?, crate::icons::IconSize::Sm, None)
             .map_err(|error| host_error(&error))?;
         let name = element(&view.document, "span", "")?;
         root.append_with_node_2(&icon, &name)
             .map_err(|error| host_error(&error))?;
         let target = Target::default();
-        let current = Rc::clone(&target);
-        // Without a panel the click is not consumed, so it reaches the containing header.
-        let callback = Closure::new(move |event: Event| {
-            let (panel, filename) = current.borrow().clone();
-            let Some(panel) = panel else {
-                return Ok(());
-            };
-            event.prevent_default();
-            event.stop_propagation();
-            if let Some(filename) = filename {
-                panel.open_artifact(&filename);
-            }
-            Ok(())
-        });
-        let click = EventSubscription::new(root.clone().into(), "click", callback)
-            .map_err(|error| host_error(&error))?;
+        let click = self
+            .panel
+            .as_ref()
+            .map(|_| open_binding(&root, &target))
+            .transpose()?;
         let root = DomRoot {
             node: root.into(),
             owner: Some(Box::new(Mounted {
@@ -64,24 +74,38 @@ impl DomContent for Pill {
         Ok(root)
     }
     fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
-        use wasm_bindgen::JsCast as _;
         let mounted = root
             .owner
             .as_ref()
             .and_then(|owner| owner.downcast_ref::<Mounted>())
             .ok_or_else(|| ToolUiError::Presentation("Missing pill state".into()))?;
         mounted.name.set_text_content(Some(&self.text));
-        root.node
-            .unchecked_ref::<Element>()
-            .class_list()
-            .toggle_with_force("maestro-text-action", self.panel.is_some())
-            .map_err(|error| host_error(&error))?;
         let previous = mounted
             .target
             .replace((self.panel.clone(), self.filename.clone()));
         drop(previous);
         Ok(())
     }
+}
+/// Open the current file in the current panel, consuming the click so the header does not toggle.
+fn open_binding(root: &Element, target: &Target) -> Result<Click, ToolUiError> {
+    let current = Rc::clone(target);
+    let callback = Closure::new(move |event: Event| {
+        let (panel, filename) = current.borrow().clone();
+        let Some(panel) = panel else {
+            return Ok(());
+        };
+        event.prevent_default();
+        event.stop_propagation();
+        if let Some(filename) = filename {
+            panel.open_artifact(&filename);
+        }
+        Ok(())
+    });
+    Ok(
+        EventSubscription::new(root.clone().into(), "click", callback)
+            .map_err(|error| host_error(&error))?,
+    )
 }
 /// A localized label followed by its filename pill.
 struct Caption {
