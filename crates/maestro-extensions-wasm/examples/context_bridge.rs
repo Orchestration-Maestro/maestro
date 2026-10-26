@@ -252,6 +252,11 @@ fn command(
         let request = request.to_owned();
         return Box::pin(async move { Err(streams::command(&request).await?) });
     }
+    if args.starts_with("credential ") || args.starts_with("provider ") {
+        return Box::pin(async move {
+            Err(credential_command(&api, &context, &args).await?.to_string())
+        });
+    }
     context_command(args, context, api)
 }
 
@@ -263,9 +268,6 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        if args.starts_with("credential ") || args.starts_with("provider ") {
-            return Err(credential_command(&api, &context, &args).await?.to_string());
-        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
@@ -475,6 +477,9 @@ async fn credential_command(
     context: &maestro_extensions_wasm::ExtensionContext,
     request: &str,
 ) -> Result<serde_json::Value, String> {
+    if let Some(request) = request.strip_prefix("credential callbacks") {
+        return credentials::composition(api, request.trim_start()).await;
+    }
     if let Some(text) = request.strip_prefix("provider control ") {
         return provider_controls::control(api, context, text).await;
     }
@@ -493,28 +498,7 @@ async fn credential_command(
     if let Some(mode) = request.strip_prefix("credential oauth storage ") {
         return oauth::storage(api, context, mode).await;
     }
-    match request {
-        request if request.starts_with("credential oauth login ") => {
-            oauth::login(
-                api,
-                context,
-                request.trim_start_matches("credential oauth login "),
-            )
-            .await
-        }
-        "credential oauth pending create" => oauth::pending_create(context),
-        "credential oauth pending complete" => oauth::pending_complete().await,
-        "credential oauth providers" => oauth::providers(context),
-        "credential oauth registration" => oauth::registration(api, context).await,
-        "credential oauth operations" => oauth::operations(context).await,
-        "credential oauth retain" | "credential oauth key" | "credential oauth release" => {
-            oauth::retained(context, request.trim_start_matches("credential oauth "))
-        }
-        "credential fallback" => credentials::fallback(api).await,
-        "credential backend" => credentials::backend(api),
-        "credential state" => credentials::state(api).await,
-        _ => providers::command(api, context, request).await,
-    }
+    credentials::observation(api, context, request).await
 }
 
 /// Preserves the caller-controlled startup failure before any callback registration.

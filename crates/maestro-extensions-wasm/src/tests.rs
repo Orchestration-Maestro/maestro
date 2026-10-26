@@ -64,6 +64,7 @@ mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
 mod provider_catalog;
+mod provider_composition;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
