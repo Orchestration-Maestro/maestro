@@ -143,3 +143,79 @@ fn response(
         })
     })
 }
+
+/// Return a selected signal to the real content-generation transport while it remains pending.
+pub async fn signals(request: &str, context: ExtensionCommandContext) -> Result<String, String> {
+    let request: Request = serde_json::from_str(request).map_err(|e| e.to_string())?;
+    let model: Model = serde_json::from_value(json!({
+        "id":"selected-model","name":"selected","api":"component-selected-signal",
+        "provider":"custom","baseUrl":request.base_url,"reasoning":false,"input":["text"],
+        "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
+        "contextWindow":1000,"maxTokens":100
+    }))
+    .map_err(|e| e.to_string())?;
+    let conversation: Context = serde_json::from_value(json!({
+        "messages":[{"role":"user","content":"unchanged neighbor","timestamp":1}]
+    }))
+    .map_err(|e| e.to_string())?;
+    let common = selected_signal_options(context, request.action)?;
+    let stream = if request.simple {
+        maestro_extensions_wasm::stream_simple(
+            model,
+            conversation,
+            Some(SimpleStreamOptions {
+                common,
+                ..Default::default()
+            }),
+        )?
+    } else {
+        maestro_extensions_wasm::stream(
+            model,
+            conversation,
+            Some(ProviderStreamOptions {
+                common,
+                ..Default::default()
+            }),
+        )?
+    };
+    let message = stream.result().await?;
+    let same_owner = Arc::ptr_eq(&message, &stream.result().await?);
+    let mut events = Vec::new();
+    while let Some(event) = stream.next().await? {
+        events.push(serde_json::to_value(event.as_ref()).map_err(|e| e.to_string())?);
+    }
+    Ok(json!({"message":message,"sameOwner":same_owner,"events":events,"eof":stream.next().await?.is_none()}).to_string())
+}
+
+/// The context provides independent caller signals before and during payload selection.
+fn selected_signal_options(
+    context: ExtensionCommandContext,
+    action: String,
+) -> Result<StreamOptions, String> {
+    Ok(StreamOptions {
+        temperature: Some(0.25),
+        api_key: Some("controlled".into()),
+        signal: context.signal()?,
+        on_payload: Some(Rc::new(move |mut input, model| {
+            let (context, action) = (context.clone(), action.clone());
+            Box::pin(async move {
+                if model.id != "selected-model"
+                    || input
+                        .signal
+                        .as_ref()
+                        .is_none_or(maestro_extensions_wasm::AbortSignal::aborted)
+                {
+                    return Err("missing live original signal".into());
+                }
+                match action.as_str() {
+                    "keep" => {}
+                    "replace" => input.signal = context.signal()?,
+                    "remove" => input.signal = None,
+                    _ => return Err("unknown signal selection".into()),
+                }
+                Ok(input)
+            })
+        })),
+        ..Default::default()
+    })
+}

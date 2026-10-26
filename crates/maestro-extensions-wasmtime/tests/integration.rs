@@ -46,3 +46,4 @@ mod model_hooks;
 mod model_finite;
 
 mod model_hook_gates;
+mod model_signal_selection;
