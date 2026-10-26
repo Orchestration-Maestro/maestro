@@ -170,6 +170,7 @@ pub mod widgets {
     pub use maestro_tui::{
         Editor, EditorOptions, EditorTheme, FocusFlag, Focusable, KeybindingConflict,
         KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, KeybindingsConfig,
+        OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
         get_keybindings,
     };
 }

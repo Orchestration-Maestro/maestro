@@ -736,6 +736,8 @@ enum Operation {
     FocusContract,
     /// Checks host editors through the component focus capability.
     HostEditorFocus,
+    /// Reads and replaces one retained overlay options owner.
+    OverlayOptions,
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -952,6 +954,9 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                     .await
                     .map(Some),
             )
+        }
+        Operation::OverlayOptions => {
+            caught(super::overlay_author::options().map(|value| Some(json!(value))))
         }
         Operation::FocusContract => caught(focus_probe(ctx)),
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),

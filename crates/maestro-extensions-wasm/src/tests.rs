@@ -68,6 +68,7 @@ mod join;
 mod json_payloads;
 mod model_streams;
 mod observed;
+pub(crate) mod overlay_host;
 mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;

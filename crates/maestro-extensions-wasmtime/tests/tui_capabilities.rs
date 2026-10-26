@@ -185,3 +185,30 @@ fn canonical_host_editors_keep_their_component_focus_capability() {
         bus.clear();
     });
 }
+
+#[test]
+fn canonical_overlay_options_retain_the_native_placement_owner() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        assert_eq!(
+            handler("ui overlay-options".into(), runner.create_command_context())
+                .await
+                .unwrap_err()
+                .to_string(),
+            "overlay options shared"
+        );
+        bus.clear();
+    });
+}

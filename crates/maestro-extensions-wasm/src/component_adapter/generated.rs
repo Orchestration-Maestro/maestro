@@ -333,6 +333,20 @@ impl Imports for Generated {
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
+    type OverlayOptions = host::OverlayOptions;
+    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<host::OverlayOptions> {
+        host::new_overlay_options(encoded)
+    }
+    fn overlay_options_get(&self, options: &host::OverlayOptions) -> ExtensionResult<String> {
+        options.get()
+    }
+    fn overlay_options_set(
+        &self,
+        options: &host::OverlayOptions,
+        encoded: &str,
+    ) -> ExtensionResult<()> {
+        options.set(encoded)
+    }
     type Tui = host::Tui;
     fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {
         tui.full_redraws()

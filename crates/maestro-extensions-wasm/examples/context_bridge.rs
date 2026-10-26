@@ -75,6 +75,9 @@ mod theme;
 #[path = "../src/tests/focus_author.rs"]
 mod focus_author;
 #[cfg(target_arch = "wasm32")]
+#[path = "../src/tests/overlay_author.rs"]
+mod overlay_author;
+#[cfg(target_arch = "wasm32")]
 #[path = "../src/tests/tui_author.rs"]
 mod tui_author;
 #[cfg(target_arch = "wasm32")]

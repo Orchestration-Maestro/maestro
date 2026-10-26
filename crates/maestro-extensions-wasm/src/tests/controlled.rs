@@ -184,6 +184,14 @@ pub struct Tui {
     _lease: Lease,
 }
 
+/// Retained placement and its counted host capability.
+pub struct OverlayOptions {
+    /// The shared record.
+    value: super::overlay_host::Options,
+    /// Counted resource lifetime.
+    _lease: Lease,
+}
+
 /// Redraw capability of one tool row, with a counted lifetime.
 pub struct Invalidator {
     /// The row it redraws.
@@ -1410,6 +1418,19 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    type OverlayOptions = OverlayOptions;
+    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<OverlayOptions> {
+        Ok(OverlayOptions {
+            value: super::overlay_host::Options::new(encoded)?,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn overlay_options_get(&self, options: &OverlayOptions) -> ExtensionResult<String> {
+        options.value.get()
+    }
+    fn overlay_options_set(&self, options: &OverlayOptions, encoded: &str) -> ExtensionResult<()> {
+        options.value.set(encoded)
+    }
     type Tui = Tui;
     fn tui_full_redraws(&self, _: &Tui) -> ExtensionResult<u64> {
         self.observe().log("tui fullRedraws");

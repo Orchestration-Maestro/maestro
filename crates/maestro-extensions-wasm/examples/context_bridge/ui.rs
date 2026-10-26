@@ -20,6 +20,9 @@ pub(super) fn observe(
     api: &ExtensionAPI,
     args: &str,
 ) -> ExtensionResult<String> {
+    if args == "ui overlay-options" {
+        return super::overlay_author::options();
+    }
     if args == "ui editor-focus" {
         super::focus_author::install_editors(&context.ui()?)?;
         return Ok("editor focus shown".into());

@@ -112,6 +112,8 @@ pub(crate) enum Request {
 
 /// A message for the widgets of one extension.
 pub(crate) enum WidgetMessage {
+    /// Requests on retained overlay capabilities.
+    Overlay(crate::overlay_reads::OverlayMessage),
     /// The full redraw count of the original frame writer.
     FullRedraws(u64, Reply<u64>),
     /// Retains the host's live theme independently of UI availability.

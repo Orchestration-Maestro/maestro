@@ -13,6 +13,7 @@ mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod model_streams;
+mod overlays;
 mod providers;
 mod signals;
 pub(crate) mod stream_reads;
@@ -282,6 +283,8 @@ enum Capability {
     Style(maestro_extensions::widgets::BorderColor),
     /// The lent host highlighting.
     Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
+    /// Shared native overlay placement.
+    OverlayOptions(Rc<RefCell<maestro_extensions::widgets::OverlayOptions>>),
     /// Original terminal lent to a component factory.
     Tui(maestro_extensions::TUI),
     /// A lent settings row style.

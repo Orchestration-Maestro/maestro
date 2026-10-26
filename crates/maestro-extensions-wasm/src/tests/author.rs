@@ -55,6 +55,8 @@ use super::registration_fixture;
 pub(crate) mod focus_author;
 #[path = "nested_schema_fixture.rs"]
 pub(crate) mod nested_schema_fixture;
+#[path = "overlay_author.rs"]
+pub(crate) mod overlay_author;
 #[path = "schema_author.rs"]
 mod schema_author;
 #[path = "shell_author.rs"]

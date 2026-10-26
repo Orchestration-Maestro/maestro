@@ -314,6 +314,12 @@ pub(super) fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Styl
 }
 
 impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
+    fn overlay_options(
+        &self,
+        options: crate::OverlayOptions,
+    ) -> ExtensionResult<crate::OverlayOptionsHandle> {
+        super::overlays::options(&self.0, &options)
+    }
     fn theme(&self) -> ExtensionResult<crate::Theme> {
         Ok(super::theme::theme(self.0.clone(), self.0.global_theme()?))
     }

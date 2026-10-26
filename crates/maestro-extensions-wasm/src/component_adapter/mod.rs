@@ -35,6 +35,7 @@ mod imports;
 mod keys;
 mod lists;
 mod model_registry;
+mod overlays;
 mod providers;
 mod schema;
 mod session;

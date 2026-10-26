@@ -375,6 +375,13 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// Shared placement on the native options owner; executable visibility stays separate.
+    resource overlay-options {
+        get: func() -> result<string, string>;
+        set: func(placement: string) -> result<_, string>;
+    }
+    /// Creates one retained placement owner from its plain record.
+    new-overlay-options: func(placement: string) -> result<overlay-options, string>;
     /// Terminal handle lent to a component factory.
     resource tui {
         /// The original frame writer's count of full redraws.

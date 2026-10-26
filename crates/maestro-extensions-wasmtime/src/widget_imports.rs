@@ -286,6 +286,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
         },
     )?;
     crate::theme_imports::add_global(host)?;
+    crate::overlay_imports::add_to_linker(host)?;
     constructors(host)?;
     markdown(host)?;
     methods(host)?;

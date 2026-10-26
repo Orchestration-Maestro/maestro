@@ -232,6 +232,11 @@ impl Widget {
 
 /// Builds host widgets.
 pub(crate) trait WidgetHost {
+    /// Creates one shared host overlay placement owner.
+    fn overlay_options(
+        &self,
+        options: super::OverlayOptions,
+    ) -> ExtensionResult<super::OverlayOptionsHandle>;
     /// The host's live theme, independent of UI availability.
     fn theme(&self) -> ExtensionResult<crate::Theme>;
     /// Wrapped text between padding.

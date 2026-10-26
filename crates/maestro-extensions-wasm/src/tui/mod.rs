@@ -41,7 +41,14 @@ mod widgets;
 pub(crate) use widgets::host as widget_host;
 mod editors;
 mod focus;
+mod overlays;
 pub use focus::{CURSOR_MARKER, Focusable, is_focusable};
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) use overlays::OverlayOptionsPort;
+pub use overlays::{
+    OverlayAnchor, OverlayMargin, OverlayMarginValue, OverlayOptions, OverlayOptionsHandle,
+    SizeValue,
+};
 mod keys;
 mod lists;
 pub use editors::{

@@ -178,6 +178,7 @@ impl State {
     pub(super) fn widgets(&self, message: WidgetMessage) {
         let registry = &self.registry;
         match message {
+            WidgetMessage::Overlay(message) => self.overlays(message),
             WidgetMessage::FullRedraws(id, reply) => self.full_redraws(id, &reply),
             WidgetMessage::GlobalTheme(reply) => {
                 let _ = reply.send(registry.theme(registry.widgets.theme()));
@@ -198,9 +199,7 @@ impl State {
                 _ => request.reject("extension widget resource ended"),
             },
             WidgetMessage::Lent(id, lent) => self.lent(id, lent),
-            WidgetMessage::LendTheme(reply) => {
-                let _ = reply.send(self.lend_theme());
-            }
+            WidgetMessage::LendTheme(reply) => drop(reply.send(self.lend_theme())),
             WidgetMessage::LendSelect(reply) => {
                 let theme = Rc::new(registry.widgets.select_list_theme());
                 let styles = crate::widget_lists::select_roles(&theme)

@@ -61,3 +61,19 @@ async fn editors(driver: &mut impl Driver) -> Result<(), String> {
 fn host_editors_keep_focus_through_component_views() -> Result<(), String> {
     on_both_adapters!(editors)
 }
+
+/// The same retained host record is visible to both guest aliases.
+async fn overlay_options(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    assert_eq!(
+        operate(driver, json!({"op":"overlayOptions"})).await?,
+        json!({"ok":"overlay options shared"})
+    );
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn overlay_options_preserve_placement_and_shared_mutation() -> Result<(), String> {
+    on_both_adapters!(overlay_options)
+}

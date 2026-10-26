@@ -179,3 +179,20 @@ the independently supplied theme it received.
 | Protocol value | Native counterpart | Ownership |
 | --- | --- | --- |
 | `global-theme` | `ExtensionWidgets::theme`, `LiveTheme` | Lends the widget host's live slot through the existing retained theme resource. |
+
+## Shared overlay placement
+
+`OverlayOptions` holds the placement fields, with `SizeValue` for cells or
+percentage text, all nine `OverlayAnchor` positions and uniform or per-edge
+margins. The host toolkit resolves those values; the guest does not lay out an
+overlay.
+
+`OverlayOptionsHandle::new` creates one host-owned placement record. Clones share
+it: `get` reads the current native fields and `set` replaces them on that same
+record. A replacement preserves the record's executable visibility policy.
+Dropping a guest alias releases that capability, not another native owner's
+reference to the record.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `overlay-options` | `Rc<RefCell<maestro_tui::OverlayOptions>>` | Retains one shared record; `get`/`set` carry only placement, not executable code. |

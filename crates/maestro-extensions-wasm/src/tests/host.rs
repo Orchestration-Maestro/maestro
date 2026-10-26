@@ -613,6 +613,12 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn new_overlay_options(
+        &mut self,
+        encoded: String,
+    ) -> wasmtime::Result<Result<Resource<super::overlay_host::Options>, String>> {
+        super::overlay_host::create(self, &encoded)
+    }
     fn new_text(
         &mut self,
         text: String,

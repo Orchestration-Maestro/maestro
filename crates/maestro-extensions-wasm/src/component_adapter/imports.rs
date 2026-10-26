@@ -512,6 +512,18 @@ pub trait Imports: Clone + 'static {
     /// The label timestamp retained by this node.
     fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
 
+    /// Retained native overlay placement.
+    type OverlayOptions: 'static;
+    /// Creates one shared placement owner.
+    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<Self::OverlayOptions>;
+    /// Reads current placement from its original owner.
+    fn overlay_options_get(&self, options: &Self::OverlayOptions) -> ExtensionResult<String>;
+    /// Replaces placement on the original owner.
+    fn overlay_options_set(
+        &self,
+        options: &Self::OverlayOptions,
+        encoded: &str,
+    ) -> ExtensionResult<()>;
     /// Terminal handle lent to a component factory.
     type Tui: 'static;
     /// Reads the original frame writer's full redraw count.
