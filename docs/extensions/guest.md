@@ -391,6 +391,11 @@ draining reach that same owner. `get_api_key` uses its original credential-comma
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
 remain in `drain_errors` rather than rolling back accepted state.
 
+A stale registration facade does not invalidate credentials acquired earlier.
+Malformed host input and nonfinite authored numbers fail before provider or
+credential mutation; another valid resource remains callable. Rejections preserve
+the host's supplied error text.
+
 The guest currently acquires credentials from a catalog or wraps a supplied
 `AuthStoragePort`. `AuthStorage::create(&api, path)` and
 `ModelRegistry::create(&api, auth_storage, path)` accept independent optional file

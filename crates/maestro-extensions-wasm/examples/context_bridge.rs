@@ -227,6 +227,11 @@ fn command(
         let request = request.to_owned();
         return Box::pin(async move { Err(streams::command(&request).await?) });
     }
+    if args.starts_with("credential ") || args.starts_with("provider ") {
+        return Box::pin(async move {
+            Err(credential_command(&api, &context, &args).await?.to_string())
+        });
+    }
     context_command(args, context, api)
 }
 
@@ -238,9 +243,6 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        if args.starts_with("credential ") || args.starts_with("provider ") {
-            return Err(credential_command(&api, &context, &args).await?.to_string());
-        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
@@ -441,6 +443,9 @@ async fn credential_command(
     context: &maestro_extensions_wasm::ExtensionContext,
     request: &str,
 ) -> Result<serde_json::Value, String> {
+    if let Some(request) = request.strip_prefix("credential callbacks") {
+        return credentials::composition(api, request.trim_start()).await;
+    }
     if let Some(text) = request.strip_prefix("provider control ") {
         return provider_controls::control(api, context, text).await;
     }
