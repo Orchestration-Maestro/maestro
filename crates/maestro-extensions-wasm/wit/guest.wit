@@ -2,6 +2,9 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
+    use host.{auth-lock-update};
+    invoke-auth-backend: async func(handler: borrow<callback>, update: borrow<auth-lock-update>, asynchronous: bool) -> result<_, string>;
+    invoke-auth-fallback: async func(handler: borrow<callback>, provider: string) -> result<option<string>, string>;
     use host.{theme, json-node, schema-shape, schema-operation, diagnostic-error-info};
     invoke-schema: async func(handler: borrow<callback>, operation: schema-operation, node: borrow<json-node>, emitter: borrow<callback-emitter>) -> result<string, diagnostic-error-info>;
     /// Read callbacks retained at this originating node.

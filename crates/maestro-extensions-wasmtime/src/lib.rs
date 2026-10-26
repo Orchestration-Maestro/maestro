@@ -7,6 +7,7 @@ mod catalog_reads;
 mod command_imports;
 mod command_reads;
 mod compact_calls;
+mod construction;
 mod context_imports;
 mod context_reads;
 mod credential_imports;

@@ -84,6 +84,8 @@ pub struct ExtensionActions<E: ExtensionExecution = Threaded> {
 
 /// The shared runtime behind every extension API and its runner.
 pub struct ExtensionRuntime<E: ExtensionExecution = Threaded> {
+    /// Application-supplied constructor defaults, installed before factory loading.
+    pub(crate) construction: RwLock<Option<crate::CatalogConstruction>>,
     /// Flag values and the activity guard, shared with the runner's contexts.
     pub(crate) state: Arc<ExtensionRuntimeState>,
     /// The bound operations; not-initialized until a runner binds.

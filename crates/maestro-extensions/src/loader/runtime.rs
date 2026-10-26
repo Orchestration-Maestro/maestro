@@ -68,6 +68,7 @@ impl<E: ExtensionExecution> BoundProviders<E> {
 #[must_use]
 pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionRuntime<E>> {
     E::share(ExtensionRuntime {
+        construction: RwLock::new(None),
         state: Arc::new(ExtensionRuntimeState::default()),
         actions: RwLock::new(E::unbound_actions()),
         pending_provider_registrations: RwLock::new(BTreeMap::new()),

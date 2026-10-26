@@ -29,6 +29,46 @@ impl Drop for Listening {
 }
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn auth_storage_from_backend(
+        &self,
+        backend: Rc<dyn crate::AuthStorageBackend>,
+    ) -> ExtensionResult<crate::AuthStorage> {
+        let identity = Identity::new(&self.0);
+        identity.stage(backend);
+        let result = self.0.auth_storage_from_backend(&identity.handle);
+        identity.settle(result.is_ok());
+        result.map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<crate::AuthStorage> {
+        self.0
+            .create_auth_storage(path)
+            .map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn auth_storage_in_memory(
+        &self,
+        data: crate::AuthStorageData,
+    ) -> ExtensionResult<crate::AuthStorage> {
+        self.0
+            .auth_storage_in_memory(&encode_value(&data)?)
+            .map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn create_model_registry(
+        &self,
+        auth: crate::AuthStorage,
+        path: Option<&str>,
+    ) -> ExtensionResult<crate::ModelRegistry> {
+        self.0
+            .create_model_registry(super::auth_storage::resource::<I>(&auth)?, path)
+            .map(|resource| super::model_registry::registry(self.0.clone(), resource))
+    }
+    fn in_memory_model_registry(
+        &self,
+        auth: crate::AuthStorage,
+    ) -> ExtensionResult<crate::ModelRegistry> {
+        self.0
+            .in_memory_model_registry(super::auth_storage::resource::<I>(&auth)?)
+            .map(|resource| super::model_registry::registry(self.0.clone(), resource))
+    }
     fn exec<'a>(
         &'a self,
         command: &'a str,

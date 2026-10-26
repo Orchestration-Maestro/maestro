@@ -48,12 +48,16 @@ pub mod footer_data_provider;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
-pub use maestro_catalog::{AuthCredential, AuthStorage, AuthStorageData};
+pub use maestro_catalog::{
+    AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageData,
+    AuthStorageError, AuthStorageFuture, LockUpdate,
+};
 pub use maestro_catalog::{
     ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
 };
 pub use maestro_models::{
-    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
+    Base, OAuthError, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode,
+    schema_transport,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
@@ -86,6 +90,7 @@ pub use types::{
 pub mod runner;
 pub use runner::ExtensionRunner;
 
+pub use loader::CatalogConstruction;
 pub use loader::runtime::create_extension_runtime;
 pub use maestro_models::{
     Cancellation, Local, Model, ModelThinkingLevel, SharedHandle, ToolInfo,
@@ -105,7 +110,7 @@ pub use types::{
 pub mod wrapper;
 pub use loader::load_extension_from_factory;
 #[cfg(not(target_arch = "wasm32"))]
-pub use loader::{discover_and_load_extensions, load_extensions};
+pub use loader::{discover_and_load_extensions, load_extensions, load_extensions_with_runtime};
 pub use types::{
     ExtensionFactory, ExtensionHandler, RegisteredTool, RegisteredToolInput, ToolDefinitionMetadata,
 };

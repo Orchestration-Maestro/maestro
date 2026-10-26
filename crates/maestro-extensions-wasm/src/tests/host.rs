@@ -516,7 +516,7 @@ impl host::HostCallbackEmitter for State {
     }
 }
 /// A host operation the test host completed before returning it; it makes no nested call.
-pub struct Route(Option<Result<(), String>>);
+pub struct Route(pub(super) Option<Result<host::RouteValue, String>>);
 
 /// A deferred nested call; the test host never makes one.
 pub struct Settlement;
@@ -536,14 +536,16 @@ impl State {
         &mut self,
         result: Result<(), String>,
     ) -> wasmtime::Result<Resource<Route>> {
-        self.push(Route(Some(result)))
+        self.push(Route(Some(result.map(|()| host::RouteValue::Unit))))
     }
 }
 
 impl host::HostImportRoute for State {
     fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
         let result = self.table.get_mut(&this)?.0.take();
-        Ok(host::RouteStep::Done(result.unwrap_or(Ok(()))))
+        Ok(host::RouteStep::Done(
+            result.unwrap_or(Ok(host::RouteValue::Unit)),
+        ))
     }
     fn resume(&mut self, _: Resource<Route>, _: host::LocalResult) -> wasmtime::Result<()> {
         Ok(())
@@ -843,19 +845,71 @@ impl host::Host for State {
         }))
     }
 
+    fn auth_storage_from_backend(
+        &mut self,
+        _backend: Resource<Identity>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_from_backend", &[])?;
+            self.table
+                .push(reader)
+                .map(host::RouteValue::Credentials)
+                .map_err(|error| error.to_string())
+        });
+        self.push(Route(Some(result)))
+    }
+    fn create_auth_storage(
+        &mut self,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn auth_storage_in_memory(
+        &mut self,
+        data: String,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn create_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("create_model_registry", &[serde_json::json!(path)])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn in_memory_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("in_memory_model_registry", &[])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
     fn register_provider(
         &mut self,
         name: String,
         config: String,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));
-        Ok(Ok(()))
+        self.routed(Ok(()))
     }
 
-    fn unregister_provider(&mut self, name: String) -> wasmtime::Result<Result<(), String>> {
+    fn unregister_provider(&mut self, name: String) -> wasmtime::Result<Resource<Route>> {
         self.observed.log(format!("provider unregister {name}"));
-        Ok(Ok(()))
+        self.routed(Ok(()))
     }
 
     fn append_entry(

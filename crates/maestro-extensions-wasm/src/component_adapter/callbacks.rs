@@ -99,6 +99,8 @@ kinds! {
         Component(crate::Component),
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
+        CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
+        CredentialFallback(crate::FallbackResolver),
     }
     once {
         Abort(crate::AbortListener),

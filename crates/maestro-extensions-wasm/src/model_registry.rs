@@ -76,3 +76,27 @@ impl ModelRegistry {
         self.0.get_api_key_for_provider(provider)
     }
 }
+
+impl ModelRegistry {
+    /// Creates a file catalog over the supplied live credential owner.
+    ///
+    /// # Errors
+    /// Returns the host's construction failure.
+    pub fn create(
+        api: &crate::ExtensionAPI,
+        auth_storage: crate::AuthStorage,
+        path: Option<&str>,
+    ) -> ExtensionResult<Self> {
+        api.create_model_registry(auth_storage, path)
+    }
+    /// Creates a catalog without file access.
+    ///
+    /// # Errors
+    /// Returns the host's construction failure.
+    pub fn in_memory(
+        api: &crate::ExtensionAPI,
+        auth_storage: crate::AuthStorage,
+    ) -> ExtensionResult<Self> {
+        api.in_memory_model_registry(auth_storage)
+    }
+}

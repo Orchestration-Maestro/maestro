@@ -48,6 +48,16 @@ pub struct CommandOptions {
 port! {
     /// Registrations and ordinary actions a host provides; each method forwards one request.
     ExtensionHost for ExtensionAPI via 0 {
+        /// Constructs file-backed credentials with the application's optional default path.
+        fn create_auth_storage(path: Option<&str>) -> crate::AuthStorage;
+        /// Constructs credentials over a retained raw-text backend.
+        fn auth_storage_from_backend(backend: Rc<dyn crate::AuthStorageBackend>) -> crate::AuthStorage;
+        /// Constructs credentials without file access.
+        fn auth_storage_in_memory(data: crate::AuthStorageData) -> crate::AuthStorage;
+        /// Constructs a file catalog over the supplied live credential owner.
+        fn create_model_registry(auth_storage: crate::AuthStorage, path: Option<&str>) -> crate::ModelRegistry;
+        /// Constructs a catalog without file access.
+        fn in_memory_model_registry(auth_storage: crate::AuthStorage) -> crate::ModelRegistry;
         /// Registers a handler for an event name. Names the host does not define are
         /// forwarded unchanged, and nothing is retained when the host rejects the handler.
         fn on(event: &str, handler: ExtensionHandler) -> ();

@@ -16,13 +16,28 @@ struct Owner<I: Imports> {
     /// Calls into the creating host.
     imports: I,
     /// Independently owned native credentials.
-    resource: I::Credentials,
+    resource: Rc<I::Credentials>,
 }
 /// Wraps an independently retained host resource in the public credential facade.
 pub(super) fn storage<I: Imports>(imports: I, resource: I::Credentials) -> AuthStorage {
-    AuthStorage::new(Rc::new(Owner { imports, resource }))
+    let resource = Rc::new(resource);
+    let mut storage = AuthStorage::new(Rc::new(Owner {
+        imports,
+        resource: resource.clone(),
+    }));
+    storage.resource = Some(resource);
+    storage
 }
 impl<I: Imports> AuthStoragePort for Owner<I> {
+    fn set_fallback_resolver(&self, resolver: crate::FallbackResolver) -> ExtensionResult<()> {
+        let identity = super::callbacks::Identity::new(&self.imports);
+        identity.stage(resolver);
+        let result = self
+            .imports
+            .credentials_set_fallback(&self.resource, &identity.handle);
+        identity.settle(result.is_ok());
+        result
+    }
     fn set_runtime_api_key(&self, provider: &str, api_key: &str) -> ExtensionResult<()> {
         self.imports
             .credentials_set_runtime_api_key(&self.resource, provider, api_key)
@@ -85,3 +100,42 @@ impl<I: Imports> AuthStoragePort for Owner<I> {
         )
     }
 }
+
+/// Borrows the original transport resource, rejecting supplied or foreign port types.
+pub(super) fn resource<I: Imports>(storage: &AuthStorage) -> ExtensionResult<&I::Credentials> {
+    storage
+        .resource
+        .as_deref()
+        .and_then(|value| value.downcast_ref())
+        .ok_or_else(|| "extension credential resource belongs to another host".into())
+}
+
+/// Invokes the author's backend outside the callback table borrow.
+pub(crate) fn invoke_backend<I: Imports>(
+    imports: &I,
+    target: u32,
+    update: &I::LockUpdate,
+) -> ExtensionResult<()> {
+    let backend = super::callbacks::find::<Rc<dyn crate::AuthStorageBackend>>(target)?;
+    backend.with_lock(&mut |current| imports.lock_update(update, current))
+}
+/// Awaits the author's backend, keeping both its owner and the borrowed update until settlement.
+pub(super) async fn invoke_backend_async<I: Imports>(
+    imports: &I,
+    target: u32,
+    update: &I::LockUpdate,
+) -> ExtensionResult<()> {
+    let backend = super::callbacks::find::<Rc<dyn crate::AuthStorageBackend>>(target)?;
+    backend
+        .with_lock_async(Box::new(|current| {
+            imports.lock_update_async(update, current)
+        }))
+        .await
+}
+/// Delivers the exact authored fallback result, including absent and empty values.
+pub(super) fn invoke_fallback(target: u32, provider: &str) -> ExtensionResult<Option<String>> {
+    super::callbacks::find::<crate::FallbackResolver>(target)?(provider)
+}
+
+#[cfg(test)]
+mod tests;

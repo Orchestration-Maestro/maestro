@@ -206,3 +206,12 @@ the original native owner.
 catalog uses. Its retained handle also keeps the catalog's credential-command
 effects, available to native adapters through `config_values()`. A key changed
 through that handle is visible to later catalog requests.
+
+Guest catalogs can also be constructed over a retained credential handle from the
+same host. `create(&api, auth_storage, path)` uses the supplied model path or the
+application's lazy default; `in_memory(&api, auth_storage)` performs no model-file
+I/O. Credential and model paths are independent. The application installs
+`CatalogConstruction` on the extension runtime before loading factories, using
+its configuration-path owner and credential-command effects. Catalog metadata
+queries support authored credential fallback callbacks, including same-instance
+synchronous reentry.

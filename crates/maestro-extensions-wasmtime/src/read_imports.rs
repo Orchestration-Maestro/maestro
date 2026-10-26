@@ -17,9 +17,9 @@ pub(crate) trait ReadEndpoint: Clone + Send + 'static {
         request: impl FnOnce(Sender<Result<T, String>>) -> Self::Request,
     ) -> Result<T, String>;
     /// Sends a request whose native code may call back into this instance.
-    fn route(
+    fn route<T: Into<crate::import_route::Value> + Send + 'static>(
         &self,
-        request: impl FnOnce(Sender<Result<(), String>>) -> Self::Request,
+        request: impl FnOnce(Sender<Result<T, String>>) -> Self::Request,
     ) -> crate::import_route::Route;
 }
 /// Declares the request envelope without copying the endpoint's transport implementation.
@@ -30,7 +30,7 @@ macro_rules! endpoints {
             fn read<T>(&self, request: impl FnOnce(Sender<Result<T, String>>) -> Self::Request) -> Result<T, String> {
                 self.0.request(|id, reply| Message::$variant(id, request(reply)))
             }
-            fn route(&self, request: impl FnOnce(Sender<Result<(), String>>) -> Self::Request) -> crate::import_route::Route {
+            fn route<T: Into<crate::import_route::Value> + Send + 'static>(&self, request: impl FnOnce(Sender<Result<T, String>>) -> Self::Request) -> crate::import_route::Route {
                 self.0.route(|id, reply| Message::$variant(id, request(reply)))
             }
         }
@@ -71,16 +71,17 @@ where
     })
 }
 /// Installs one no-operand action whose native code may call back into this instance.
-pub(crate) fn add_routed<T, E, P>(
+pub(crate) fn add_routed<T, E, P, V>(
     host: &mut LinkerInstance<'_, T>,
     name: &str,
-    request: fn(Sender<Result<(), String>>) -> E::Request,
+    request: fn(Sender<Result<V, String>>) -> E::Request,
     endpoint: fn(&mut T, P) -> wasmtime::Result<E>,
 ) -> wasmtime::Result<()>
 where
     T: WasiView + 'static,
     E: ReadEndpoint,
     P: ComponentNamedList + Lift + 'static,
+    V: Into<crate::import_route::Value> + Send + 'static,
 {
     host.func_wrap(name, move |mut store: StoreContextMut<'_, T>, params: P| {
         let route = endpoint(store.data_mut(), params)?.route(request);
@@ -88,10 +89,10 @@ where
     })
 }
 /// Installs one exact-operand action whose native code may call back into this instance.
-pub(crate) fn add_routed_operand<T, E, P, A>(
+pub(crate) fn add_routed_operand<T, E, P, A, V>(
     host: &mut LinkerInstance<'_, T>,
     name: &str,
-    request: fn(A, Sender<Result<(), String>>) -> E::Request,
+    request: fn(A, Sender<Result<V, String>>) -> E::Request,
     endpoint: fn(&mut T, P) -> wasmtime::Result<(E, A)>,
 ) -> wasmtime::Result<()>
 where
@@ -99,6 +100,7 @@ where
     E: ReadEndpoint,
     P: ComponentNamedList + Lift + 'static,
     A: 'static,
+    V: Into<crate::import_route::Value> + Send + 'static,
 {
     host.func_wrap(name, move |mut store: StoreContextMut<'_, T>, params: P| {
         let (endpoint, value) = endpoint(store.data_mut(), params)?;

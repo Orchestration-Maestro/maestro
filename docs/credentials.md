@@ -158,6 +158,16 @@ algorithms above. Key resolution retains the original owner and command effects
 until it settles. Host and record-decoding failures are recoverable
 `ExtensionResult` errors; persistence failures still drain from the owner.
 
-Guest file and memory constructors, raw-text backend callbacks and fallback
-resolver installation are not exposed yet. Native constructors and backends are
-unchanged.
+Guest `create` and `in_memory` constructors use the host selected by the supplied
+`ExtensionAPI`. An omitted file path uses the application's lazy default;
+`in_memory` performs no file I/O. `from_storage` retains the author's raw-text
+backend and lends it the native update for the duration of the call. Synchronous
+and awaited updates preserve no replacement versus an empty replacement and
+propagate the original error. A pending update retains its native borrow and
+selected backend until settlement.
+
+`set_fallback_resolver` replaces the retained resolver without changing an already
+selected invocation. Synchronous metadata reads return the callback's actual value
+before returning to their caller. Native constructors and backend algorithms are
+unchanged. Component-backed native callbacks run on their creating local pump;
+they are not an off-thread credential backend.

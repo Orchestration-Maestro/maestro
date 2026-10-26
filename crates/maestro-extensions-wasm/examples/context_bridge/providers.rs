@@ -129,9 +129,110 @@ pub(super) async fn command(
     request: &str,
 ) -> Result<Value, String> {
     match request {
+        request if request.starts_with("credential files ") => {
+            file_constructors(api, &request[17..]).await
+        }
+        "credential factory" => factory_result().await,
+        "credential constructors" => constructors(api).await,
         "provider catalog" => observe(api, context).await,
         "credential owner" => credentials(context, false).await,
         "credential retained" => credentials(context, true).await,
         _ => Err("unknown provider fixture request".into()),
     }
+}
+
+/// Constructs independent memory owners and checks live sharing after construction.
+pub(super) async fn constructors(api: &ExtensionAPI) -> Result<Value, String> {
+    use maestro_extensions_wasm::AuthStorage;
+    let owner = AuthStorage::in_memory(api, maestro_extensions_wasm::AuthStorageData::default())?;
+    let catalog = ModelRegistry::in_memory(api, owner.clone())?;
+    owner.set_runtime_api_key("constructor-provider", "changed-after-construction")?;
+    let alias = catalog.auth_storage()?;
+    Ok(json!({
+        "key": catalog.get_api_key_for_provider("constructor-provider").await?,
+        "alias": alias.get_api_key("constructor-provider", None).await?,
+        "errors": catalog.get_error()?, "stored": owner.list()?
+    }))
+}
+
+/// Reads independently selected files, then changes credentials through an alias.
+async fn file_constructors(api: &ExtensionAPI, input: &str) -> Result<Value, String> {
+    let input: Value = serde_json::from_str(input).map_err(|error| error.to_string())?;
+    let auth = maestro_extensions_wasm::AuthStorage::create(api, input["auth"].as_str())?;
+    let catalog = ModelRegistry::create(api, auth.clone(), input["models"].as_str())?;
+    let key = catalog
+        .get_api_key_for_provider("constructor-provider")
+        .await?;
+    let before = catalog
+        .get_all()?
+        .into_iter()
+        .filter(|model| model.provider == "constructor-provider")
+        .map(|model| model.id)
+        .collect::<Vec<_>>();
+    catalog
+        .auth_storage()?
+        .set_runtime_api_key("constructor-provider", "later-key")?;
+    let after = catalog
+        .get_api_key_for_provider("constructor-provider")
+        .await?;
+    Ok(json!({"key":key,"models":before,"after":after,"error":catalog.get_error()?}))
+}
+
+thread_local! {
+    /// Catalog constructed during factory loading, before runtime actions are bound.
+    static FACTORY_CATALOG: std::cell::RefCell<Option<ModelRegistry>> = const { std::cell::RefCell::new(None) };
+}
+/// Admits optional constructor controls without affecting ordinary component setup.
+pub(super) fn factory(api: &ExtensionAPI) -> Result<(), String> {
+    use maestro_extensions_wasm::{AuthStorage, FlagOptions, FlagType, FlagValue};
+    for (name, type_) in [
+        ("catalog-construction", FlagType::Boolean),
+        ("constructor-auth-path", FlagType::String),
+        ("constructor-model-path", FlagType::String),
+    ] {
+        api.register_flag(
+            name,
+            FlagOptions {
+                description: None,
+                type_,
+                default: None,
+            },
+        )?;
+    }
+    if !matches!(
+        api.get_flag("catalog-construction")?,
+        Some(FlagValue::Boolean(true))
+    ) {
+        return Ok(());
+    }
+    let path = |name| -> Result<Option<String>, String> {
+        Ok(match api.get_flag(name)? {
+            Some(FlagValue::String(path)) => Some(path),
+            _ => None,
+        })
+    };
+    let auth = AuthStorage::create(api, path("constructor-auth-path")?.as_deref())?;
+    let catalog = ModelRegistry::create(
+        api,
+        auth.clone(),
+        path("constructor-model-path")?.as_deref(),
+    )?;
+    auth.set_runtime_api_key("constructor-provider", "changed-in-factory")?;
+    FACTORY_CATALOG.with(|slot| slot.replace(Some(catalog)));
+    Ok(())
+}
+/// Observes the factory-selected files and the same credentials after the factory returned.
+async fn factory_result() -> Result<Value, String> {
+    let catalog = FACTORY_CATALOG
+        .with(|slot| slot.borrow().clone())
+        .ok_or("missing factory catalog")?;
+    let models = catalog
+        .get_all()?
+        .into_iter()
+        .filter(|model| model.provider == "constructor-provider")
+        .map(|model| model.id)
+        .collect::<Vec<_>>();
+    Ok(
+        json!({"models":models,"stored":catalog.auth_storage()?.get("constructor-provider")?,"key":catalog.get_api_key_for_provider("constructor-provider").await?}),
+    )
 }

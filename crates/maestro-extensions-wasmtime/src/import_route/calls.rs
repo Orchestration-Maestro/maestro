@@ -195,10 +195,36 @@ pub(super) struct LocalBash {
     resources: BashResources,
 }
 
+/// Owned operands of one nested credential backend method.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalBackend {
+    /// Authored backend identity.
+    target: u32,
+    /// Invocation-local native update.
+    update: Resource<crate::local_resources::credential_scope::Endpoint>,
+    /// Whether the author must await its update.
+    asynchronous: bool,
+}
+/// Owned operands of one nested fallback lookup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalFallback {
+    /// Authored resolver identity.
+    target: u32,
+    /// Literal provider.
+    provider: String,
+}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Authored backend and still-borrowed native update.
+    #[component(name = "auth-backend")]
+    AuthBackend(LocalBackend),
+    /// Authored fallback with its original optional result.
+    #[component(name = "auth-fallback")]
+    AuthFallback(LocalFallback),
     /// A message renderer.
     #[component(name = "renderer")]
     Renderer(LocalRenderer),
@@ -253,6 +279,9 @@ pub(super) enum LocalCall {
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Exact optional fallback value or authored error.
+    #[component(name = "auth-fallback")]
+    AuthFallback(Result<Option<String>, String>),
     /// Optional retained component identity, or the authored error.
     #[component(name = "renderer")]
     Renderer(Result<Option<Resource<Callback>>, String>),
@@ -294,6 +323,19 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::Credential(crate::guest_calls::credentials::CredentialCall::Backend(call)) => {
+            LocalCall::AuthBackend(LocalBackend {
+                target: call.handler.id,
+                update: table.push(call.update.clone())?,
+                asynchronous: call.asynchronous,
+            })
+        }
+        Call::Credential(crate::guest_calls::credentials::CredentialCall::Fallback(call)) => {
+            LocalCall::AuthFallback(LocalFallback {
+                target: call.handler.id,
+                provider: call.provider.clone(),
+            })
+        }
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
             message: call.message.clone(),
@@ -461,6 +503,18 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (
+            Call::Credential(crate::guest_calls::credentials::CredentialCall::Backend(call)),
+            LocalResult::Unit(value),
+        ) => {
+            let _ = call.reply.send(value);
+        }
+        (
+            Call::Credential(crate::guest_calls::credentials::CredentialCall::Fallback(call)),
+            LocalResult::AuthFallback(value),
+        ) => {
+            let _ = call.reply.send(value);
+        }
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component

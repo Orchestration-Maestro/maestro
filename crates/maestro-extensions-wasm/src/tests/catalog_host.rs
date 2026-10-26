@@ -199,12 +199,14 @@ impl host::HostModelRegistry for State {
     fn get_available(
         &mut self,
         this: Resource<Reader>,
-    ) -> wasmtime::Result<Result<String, String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
             .record("getAvailable", &[])
-            .and_then(|v| v.ok_or("missing list".into())))
+            .and_then(|v| v.ok_or("missing list".into()))
+            .map(host::RouteValue::Text);
+        self.push(super::host::Route(Some(result)))
     }
     fn find(
         &mut self,
@@ -217,8 +219,12 @@ impl host::HostModelRegistry for State {
             .get(&this)?
             .record("find", &[json!(provider), json!(model_id)]))
     }
-    fn refresh(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<(), String>> {
-        Ok(self.table.get(&this)?.unit("refresh", &[]))
+    fn refresh(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.unit("refresh", &[]);
+        self.routed(result)
     }
     fn get_error(
         &mut self,
@@ -230,22 +236,26 @@ impl host::HostModelRegistry for State {
         &mut self,
         this: Resource<Reader>,
         model: String,
-    ) -> wasmtime::Result<Result<bool, String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
-            .flag("hasConfiguredAuth", &[json!(model)]))
+            .flag("hasConfiguredAuth", &[json!(model)])
+            .map(host::RouteValue::Boolean);
+        self.push(super::host::Route(Some(result)))
     }
     fn get_provider_auth_status(
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Result<String, String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
             .record("getProviderAuthStatus", &[json!(provider)])
-            .and_then(|v| v.ok_or("missing status".into())))
+            .and_then(|v| v.ok_or("missing status".into()))
+            .map(host::RouteValue::Text);
+        self.push(super::host::Route(Some(result)))
     }
     fn get_provider_display_name(
         &mut self,
@@ -270,21 +280,23 @@ impl host::HostModelRegistry for State {
         this: Resource<Reader>,
         name: String,
         config: String,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
-            .unit("registerProvider", &[json!(name), json!(config)]))
+            .unit("registerProvider", &[json!(name), json!(config)]);
+        self.routed(result)
     }
     fn unregister_provider(
         &mut self,
         this: Resource<Reader>,
         name: String,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
-            .unit("unregisterProvider", &[json!(name)]))
+            .unit("unregisterProvider", &[json!(name)]);
+        self.routed(result)
     }
     fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
         self.release(this)

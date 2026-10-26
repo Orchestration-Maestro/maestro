@@ -375,9 +375,24 @@ effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence fail
 remain in `drain_errors` rather than rolling back accepted state.
 
 The guest currently acquires credentials from a catalog or wraps a supplied
-`AuthStoragePort`. File and memory constructors, authored raw-text backends and
-fallback resolver callbacks are not exposed yet. Callable provider stream and
-OAuth fields remain separate from the provider data record.
+`AuthStoragePort`. `AuthStorage::create(&api, path)` and
+`ModelRegistry::create(&api, auth_storage, path)` accept independent optional file
+paths. Omitted paths use lazy defaults supplied by the application before factory
+loading. Both `in_memory` constructors avoid file access; catalogs retain the
+supplied credential owner rather than copying its current records.
+
+`AuthStorage::from_storage(&api, backend)` retains an authored `AuthStorageBackend`.
+Its synchronous and awaited methods receive a borrowed native update. `None`
+leaves stored text unchanged; `Some("")` writes empty text. The awaited update can
+remain pending without blocking the host's local executor. Backend failures keep
+the native accepted-state and drainable-error behavior.
+
+`set_fallback_resolver` retains the supplied callback until replacement or final
+release. It returns absent, empty and nonempty keys distinctly and preserves the
+callback's error text. Backend and fallback callbacks may call back into the same
+host, including from synchronous credential and catalog metadata reads. Callback
+resources stay typed; their identities are never placed in JSON. Callable provider
+stream and OAuth fields remain separate from the provider data record.
 
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied

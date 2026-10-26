@@ -89,6 +89,7 @@ impl Pump {
             routes: RefCell::default(),
             worker: RefCell::default(),
         });
+        super::credential_scope::register(Rc::downgrade(&state));
         (
             Self { state },
             Admission {
@@ -183,6 +184,14 @@ impl State {
         match message {
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
+            Message::LockUpdate(_, _, reply) => {
+                let _ = reply.send(Err("extension lock update ended".into()));
+            }
+            Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
+            Message::EndLockUpdate(id) => {
+                let frame = self.synchronous.async_frames.borrow_mut().remove(&id);
+                drop(frame);
+            }
             Message::SchemaListing(id, reply) => {
                 let _ = reply.send(self.schema_listing(id));
             }
@@ -216,14 +225,7 @@ impl State {
                 self.start_credential_key(id, request, reply, admission);
             }
             Message::Catalog(id, request) => self.catalog(id, request),
-            Message::Node(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::Node(node)) = capability.as_deref() {
-                    node.answer(request, &self.registry);
-                } else {
-                    request.reject("extension tree node resource ended");
-                }
-            }
+            Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, admission) => {
                 self.start_replaced(id, request, admission);
             }
@@ -496,79 +498,4 @@ impl Drop for State {
     }
 }
 
-impl State {
-    /// Selects and retains the original catalog while its provider-key operation settles.
-    fn start_provider_key(
-        &self,
-        id: u64,
-        provider: String,
-        reply: tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Catalog(catalog)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension catalog resource ended".to_owned()));
-            return;
-        };
-        let catalog = catalog.clone();
-        self.admit(
-            Box::pin(async move {
-                let result = catalog
-                    .get_api_key_for_provider(&provider)
-                    .await
-                    .map_err(|error| error.to_string());
-                let _ = reply.send(result);
-            }),
-            admission,
-        );
-    }
-}
-
-impl State {
-    /// Retains accepted credentials and their selected effects until the key settles.
-    fn start_credential_key(
-        &self,
-        id: u64,
-        (provider, include): (String, Option<bool>),
-        reply: tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Credentials(owner, effects)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension credential resource ended".to_owned()));
-            return;
-        };
-        let (owner, effects) = (owner.clone(), effects.clone());
-        self.admit(
-            Box::pin(async move {
-                let result = owner
-                    .get_api_key(&provider, include.unwrap_or(true), &*effects)
-                    .await
-                    .map_err(|error| error.to_string());
-                let _ = reply.send(result);
-            }),
-            admission,
-        );
-    }
-}
-
-impl State {
-    /// Dispatches a credential request outside the capability-table borrow.
-    fn credentials(&self, id: u64, request: crate::credential_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Credentials(owner, _)) = capability.as_deref() {
-            request.answer(owner);
-        } else {
-            request.reject("extension credential resource ended");
-        }
-    }
-    /// Dispatches a catalog request outside the capability-table borrow.
-    fn catalog(&self, id: u64, request: crate::catalog_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
-            request.answer(catalog, &self.registry);
-        } else {
-            request.reject("extension catalog resource ended");
-        }
-    }
-}
+mod catalog;

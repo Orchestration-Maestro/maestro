@@ -332,7 +332,80 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type LockUpdate = Reader;
+    fn lock_update(
+        &self,
+        update: &Reader,
+        current: Option<&str>,
+    ) -> ExtensionResult<Option<String>> {
+        update
+            .data
+            .optional("lock_update", &[serde_json::json!(current)])
+    }
+    fn lock_update_async<'a>(
+        &'a self,
+        update: &'a Reader,
+        current: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move {
+            update
+                .data
+                .optional("lock_update_async", &[serde_json::json!(current)])
+        })
+    }
+    fn auth_storage_from_backend(&self, backend: &Self::Callback) -> ExtensionResult<Reader> {
+        let data = self.observed.borrow().readers.acquire()?;
+        data.unit("auth_storage_from_backend", &[])?;
+        let resource = Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        };
+        crate::component_adapter::auth_storage::invoke_backend(
+            self,
+            self.callback_id(backend),
+            &resource,
+        )?;
+        Ok(resource)
+    }
+    fn credentials_set_fallback(
+        &self,
+        owner: &Reader,
+        _resolver: &Self::Callback,
+    ) -> ExtensionResult<()> {
+        owner.data.unit("set_fallback_resolver", &[])
+    }
     type Credentials = Reader;
+    fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<Reader> {
+        let data = self.observed.borrow().readers.acquire()?;
+        data.unit("create_auth_storage", &[serde_json::json!(path)])?;
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn auth_storage_in_memory(&self, data: &str) -> ExtensionResult<Reader> {
+        let reader = self.observed.borrow().readers.acquire()?;
+        reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+        Ok(Reader {
+            data: reader,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn create_model_registry(&self, auth: &Reader, path: Option<&str>) -> ExtensionResult<Reader> {
+        auth.data
+            .unit("create_model_registry", &[serde_json::json!(path)])?;
+        Ok(Reader {
+            data: auth.data.clone(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn in_memory_model_registry(&self, auth: &Reader) -> ExtensionResult<Reader> {
+        auth.data.unit("in_memory_model_registry", &[])?;
+        Ok(Reader {
+            data: auth.data.clone(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
     fn registry_auth_storage(&self, resource: &Reader) -> ExtensionResult<Reader> {
         Ok(Reader {
             data: resource.data.clone(),

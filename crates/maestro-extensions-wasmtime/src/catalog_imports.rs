@@ -1,5 +1,7 @@
 //! Canonical catalog imports preserve current descriptors and exact lookup operands.
-use crate::read_imports::{ReadEndpoint, add_operand, add_read, operand, resource};
+use crate::read_imports::{
+    ReadEndpoint, add_operand, add_read, add_routed, add_routed_operand, operand, resource,
+};
 use crate::{
     catalog_reads::{Endpoint, Request},
     context_imports::add_resource,
@@ -18,18 +20,18 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
     add_metadata(host)?;
     add_mutations(host)?;
     add_provider_key(host)?;
-    for (method, request) in [
-        ("get-all", Request::All as fn(_) -> _),
-        ("get-available", Request::Available),
-    ] {
-        host.func_wrap(
-            &format!("[method]model-registry.{method}"),
-            move |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Endpoint>,)| {
-                let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-                Ok((endpoint.read(request),))
-            },
-        )?;
-    }
+    add_read(
+        host,
+        "[method]model-registry.get-all",
+        Request::All,
+        resource::<T, Endpoint>,
+    )?;
+    add_routed(
+        host,
+        "[method]model-registry.get-available",
+        Request::Available,
+        resource::<T, Endpoint>,
+    )?;
     host.func_wrap(
         "[method]model-registry.find",
         |mut store: StoreContextMut<'_, T>,
@@ -101,42 +103,41 @@ fn add_metadata<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasm
         Request::Error,
         resource::<T, Endpoint>,
     )?;
-    for (name, request) in [
-        ("get-provider-auth-status", Request::Status as fn(_, _) -> _),
-        ("get-provider-display-name", Request::Display),
-    ] {
-        add_operand(
-            host,
-            &format!("[method]model-registry.{name}"),
-            request,
-            operand::<T, Endpoint, String>,
-        )?;
-    }
-    for (name, request) in [
-        (
-            "has-configured-auth",
-            Request::HasConfiguredAuth as fn(_, _) -> _,
-        ),
-        ("is-using-oauth", Request::IsUsingOAuth),
-    ] {
-        add_operand(
-            host,
-            &format!("[method]model-registry.{name}"),
-            request,
-            operand::<T, Endpoint, String>,
-        )?;
-    }
+    add_routed_operand(
+        host,
+        "[method]model-registry.get-provider-auth-status",
+        Request::Status,
+        operand::<T, Endpoint, String>,
+    )?;
+    add_operand(
+        host,
+        "[method]model-registry.get-provider-display-name",
+        Request::Display,
+        operand::<T, Endpoint, String>,
+    )?;
+    add_routed_operand(
+        host,
+        "[method]model-registry.has-configured-auth",
+        Request::HasConfiguredAuth,
+        operand::<T, Endpoint, String>,
+    )?;
+    add_operand(
+        host,
+        "[method]model-registry.is-using-oauth",
+        Request::IsUsingOAuth,
+        operand::<T, Endpoint, String>,
+    )?;
     Ok(())
 }
 /// Mutates this catalog directly, never the extension's registration queue.
 fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    add_read(
+    add_routed(
         host,
         "[method]model-registry.refresh",
         Request::Refresh,
         resource::<T, Endpoint>,
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "[method]model-registry.unregister-provider",
         Request::Unregister,
@@ -147,7 +148,8 @@ fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> was
         |mut store: StoreContextMut<'_, T>,
          (resource, name, config): (Resource<Endpoint>, String, String)| {
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((endpoint.read(|reply| Request::Register(name, config, reply)),))
+            let route = endpoint.route(|reply| Request::Register(name, config, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )
 }

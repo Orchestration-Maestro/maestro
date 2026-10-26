@@ -38,7 +38,7 @@ pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
 mod component_driver;
 mod context_catalog;
-mod controlled;
+pub(crate) mod controlled;
 mod controlled_driver;
 mod documents;
 mod event_transport;
@@ -110,7 +110,7 @@ use controlled_driver::ControlledDriver;
 use scenario::{Decision, Driver, EXPECTED};
 
 /// Runs a future to completion on a current-thread runtime.
-fn block_on<T>(future: impl Future<Output = T>) -> T {
+pub(crate) fn block_on<T>(future: impl Future<Output = T>) -> T {
     match tokio::runtime::Builder::new_current_thread().build() {
         Ok(runtime) => runtime.block_on(future),
         Err(error) => panic!("cannot build a runtime: {error}"),
@@ -575,6 +575,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_eq!(
         names(&contract.imports, true),
         [
+            "[method]auth-lock-update.update-async",
             "[method]auth-storage.get-api-key",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
@@ -1074,6 +1075,8 @@ fn assert_async_exports(contract: &Contract) {
             "component-render",
             "component-wants-key-release",
             "invoke-abort",
+            "invoke-auth-backend",
+            "invoke-auth-fallback",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",

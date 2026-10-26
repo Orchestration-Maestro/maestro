@@ -7,6 +7,10 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+/// Credential and constructor declarations on the same canonical import trait.
+#[macro_use]
+mod credentials;
+
 /// Per-tool executable annotations returned beside the metadata document.
 pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 
@@ -15,85 +19,7 @@ pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
-    /// Independently retained native credentials.
-    type Credentials: 'static;
-    /// Returns the original catalog's credential owner.
-    fn registry_auth_storage(
-        &self,
-        resource: &Self::Registry,
-    ) -> ExtensionResult<Self::Credentials>;
-
-    /// Forwards the corresponding credential operation.
-    fn credentials_set_runtime_api_key(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-        key: &str,
-    ) -> ExtensionResult<()>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_remove_runtime_api_key(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<()>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_reload(&self, resource: &Self::Credentials) -> ExtensionResult<()>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_get(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<Option<String>>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_set(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-        credential: &str,
-    ) -> ExtensionResult<()>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_remove(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<()>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_list(&self, resource: &Self::Credentials) -> ExtensionResult<Vec<String>>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_has(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<bool>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_has_auth(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<bool>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_get_auth_status(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<String>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_get_all(&self, resource: &Self::Credentials) -> ExtensionResult<String>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_drain_errors(&self, resource: &Self::Credentials) -> ExtensionResult<String>;
-    /// Forwards the corresponding credential operation.
-    fn credentials_logout(
-        &self,
-        resource: &Self::Credentials,
-        provider: &str,
-    ) -> ExtensionResult<()>;
-    /// Resolves a key through the retained native credential effects.
-    fn credentials_get_api_key<'a>(
-        &'a self,
-        resource: &'a Self::Credentials,
-        provider: String,
-        include_fallback: Option<bool>,
-    ) -> ExtensionFuture<'a, Option<String>>;
+    credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
         &'a self,

@@ -10,6 +10,7 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
+mod credentials;
 pub(crate) mod events;
 pub(crate) mod registrations;
 mod renderers;
@@ -43,6 +44,8 @@ type Abort = TypedFunc<
 
 /// Exports resolved from the canonical guest interface, never substitute implementations.
 pub(crate) struct Exports {
+    /// Actual credential backend and fallback callbacks.
+    credentials: credentials::Exports,
     /// Original authored factory entry point.
     start: TypedFunc<(), (Result<(), String>,)>,
     /// The original retained pub.
@@ -107,6 +110,7 @@ impl Exports {
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
+            credentials: credentials::Exports::new(store, instance, &guest)?,
             renderers,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
@@ -132,15 +136,7 @@ impl Exports {
         call: Call<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
-            Call::Start(reply) => {
-                let result = self.start.call_concurrent(accessor, ()).await?.0;
-                // The authored message answers the load before the failed Store is torn down.
-                if let Err(message) = result {
-                    let _ = reply.send(Err(message.clone()));
-                    return Err(wasmtime::Error::msg(message));
-                }
-                let _ = reply.send(Ok(()));
-            }
+            Call::Start(reply) => self.start(accessor, reply).await?,
             Call::Finished => {
                 return Err(wasmtime::format_err!("completion is not a guest export"));
             }
@@ -149,6 +145,7 @@ impl Exports {
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
             Call::Schema(call) => self.schema.invoke(accessor, call).await?,
+            Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -174,6 +171,20 @@ impl Exports {
             }
             Call::Release(release) => self.release(accessor, release).await?,
         }
+        Ok(())
+    }
+    /// Answers factory initialization before tearing down a failing Store.
+    async fn start<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        reply: crate::lifecycle::replies::Reply<()>,
+    ) -> wasmtime::Result<()> {
+        let result = self.start.call_concurrent(accessor, ()).await?.0;
+        if let Err(message) = result {
+            let _ = reply.send(Err(message.clone()));
+            return Err(wasmtime::Error::msg(message));
+        }
+        let _ = reply.send(Ok(()));
         Ok(())
     }
     /// Retires a callback identity, entering the guest's release export once it is unused.

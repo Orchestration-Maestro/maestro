@@ -99,9 +99,9 @@ impl crate::read_imports::ReadEndpoint for Endpoint {
     ) -> Result<T, String> {
         self.0.request(|id, reply| Message::Ui(id, request(reply)))
     }
-    fn route(
+    fn route<T: Into<crate::import_route::Value> + Send + 'static>(
         &self,
-        request: impl FnOnce(Sender<Result<(), String>>) -> Request,
+        request: impl FnOnce(Sender<Result<T, String>>) -> Request,
     ) -> crate::import_route::Route {
         self.0.route(|id, reply| Message::Ui(id, request(reply)))
     }

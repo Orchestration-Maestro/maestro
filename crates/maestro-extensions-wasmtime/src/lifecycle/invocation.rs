@@ -43,6 +43,14 @@ impl Call {
             },
             Self::Synchronous(call) => attach(&call.completion, completion),
             Self::Schema(call) => attach(&call.reply, completion),
+            Self::Credential(call) => match call {
+                crate::guest_calls::credentials::CredentialCall::Backend(call) => {
+                    attach(&call.reply, completion);
+                }
+                crate::guest_calls::credentials::CredentialCall::Fallback(call) => {
+                    attach(&call.reply, completion);
+                }
+            },
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),
             Self::Registered(call) => match call {

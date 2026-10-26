@@ -191,14 +191,15 @@ impl From<FlagOptions> for types::ExtensionFlagOptions {
 fn add_providers<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
     host.func_wrap(
         "register-provider",
-        |store: StoreContextMut<'_, T>, (name, config): (String, String)| {
-            Ok((store
+        |mut store: StoreContextMut<'_, T>, (name, config): (String, String)| {
+            let route = store
                 .data()
                 .api()
-                .read(|reply| Request::RegisterProvider(name, config, reply)),))
+                .route(|reply| Request::RegisterProvider(name, config, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
-    crate::read_imports::add_operand(
+    crate::read_imports::add_routed_operand(
         host,
         "unregister-provider",
         Request::UnregisterProvider,

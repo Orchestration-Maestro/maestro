@@ -70,6 +70,25 @@ pub(super) async fn loaded_at(
     EventBus<Local>,
 ) {
     let runtime = create_extension_runtime::<Local>();
+    runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
+        auth_path: std::sync::Arc::new(|| Err("unexpected default auth path".into())),
+        models_path: std::sync::Arc::new(|| Err("unexpected default model path".into())),
+        config_values: session.model_registry.config_values().clone(),
+    });
+    loaded_with_runtime(events, session, cwd, runtime).await
+}
+
+/// Loads the real artifact after the caller installed factory-time defaults and flags.
+pub(super) async fn loaded_with_runtime(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
         artifact_factory(path.clone()),
