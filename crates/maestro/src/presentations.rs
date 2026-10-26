@@ -14,7 +14,7 @@ use maestro_cli::{
     },
     startup::main::presentation::MissingSessionCwdPresentation,
 };
-use maestro_theme::{Collator, NativeThemeWatchOperations, ThemeState};
+use maestro_theme::{Collator, NativeThemeWatchOperations, ThemeState, supports_color};
 use maestro_tui::TUI;
 #[cfg(unix)]
 use maestro_tui::TerminalImage;
@@ -68,7 +68,7 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
                     agent_dir: request.agent_dir,
                     theme: palette.clone(),
                     collator: Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
-                    styles_enabled: Rc::new(crate::host::styles_enabled),
+                    styles_enabled: Rc::new(supports_color),
                 },
                 callbacks,
             ));
@@ -110,7 +110,7 @@ pub fn sessions(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> SessionPresentati
                             * 1000.0
                     }),
                     home: Rc::new(|| maestro_app::home_directory().unwrap_or_default()),
-                    styles_enabled: Rc::new(crate::host::styles_enabled),
+                    styles_enabled: Rc::new(supports_color),
                 },
             )?;
             Ok(PresentedSelector {

@@ -4,7 +4,7 @@ use maestro_app::configuration::{
     version_check::VersionCheckOptions,
 };
 use maestro_cli::{MainOptions, packages::PackageCommandContext, startup::main::MainHost};
-use maestro_theme::ThemeState;
+use maestro_theme::{ThemeState, supports_color};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
@@ -79,7 +79,7 @@ pub async fn run(args: Vec<String>, local: Rc<LocalSet>) -> Result<i32, Box<dyn 
         stderr: Rc::new(RefCell::new(io::stderr())),
         exit_code: &status,
         entrypoint: Some(&installation.executable),
-        styles_enabled: styles_enabled(),
+        styles_enabled: supports_color(),
     };
     let effects = NativeStartup {
         local: Rc::clone(&local),
@@ -118,7 +118,7 @@ async fn startup(
     let now = || start.elapsed().as_secs_f64() * 1000.0;
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
     let files =
-        maestro_cli::input::file_processor::NativeFileArgumentOperations::new(styles_enabled());
+        maestro_cli::input::file_processor::NativeFileArgumentOperations::new(supports_color());
     let host = MainHost {
         package,
         apply_startup: Rc::new(move |value| offline.set(Some(value))),
@@ -149,11 +149,6 @@ async fn startup(
         }),
     };
     maestro_cli::main(args, MainOptions::default(), host).await
-}
-
-/// Read the existing native decoration policy.
-pub fn styles_enabled() -> bool {
-    std::env::var_os("NO_COLOR").is_none() && io::stdout().is_terminal()
 }
 
 /// Retain the central export bundle path for this executable's lifetime.

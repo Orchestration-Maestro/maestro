@@ -522,3 +522,23 @@ fn rpc_root_exports_html() {
     assert!(root.path("project/explicit.html").exists());
     rpc.finish();
 }
+
+#[test]
+fn shipped_root_uses_native_color_policy() {
+    let root = Root::new();
+    for (force, styled) in [("1", true), ("0", false), ("false", false)] {
+        let output = root
+            .command(&["install", "--help"])
+            .env("FORCE_COLOR", force)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            String::from_utf8(output.stdout)
+                .unwrap()
+                .contains("\x1b[1mUsage:\x1b[22m"),
+            styled,
+            "FORCE_COLOR={force}"
+        );
+    }
+}
