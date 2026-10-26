@@ -1,19 +1,10 @@
 //! Native connection callbacks for a retained session view.
-use crate::{
-    browser::attachment_content::browser::{element, host_error},
-    dom,
-    tools::types::ToolUiError,
-};
+use crate::{browser::attachment_content::browser::host_error, dom, tools::types::ToolUiError};
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element};
 
 /// Connection notification installed after the session view has been built.
 pub(super) type Connection = Rc<RefCell<Option<Rc<dyn Fn(bool)>>>>;
-
-thread_local! {
-    /// Operands consumed by the next native element constructor.
-    static CREATING: RefCell<Option<Connection>> = const { RefCell::new(None) };
-}
 
 /// Native element holding only a weakly bound connection notification.
 struct SessionElement {
@@ -53,13 +44,14 @@ pub(super) fn root(document: &Document, connection: &Connection) -> Result<Eleme
     {
         dom::define_element("maestro-agent-interface", Vec::new(), &[], |_, _| {
             SessionElement {
-                connection: CREATING.take(),
+                connection: dom::take_creating::<Connection>(),
             }
         })
         .map_err(|error| host_error(&error))?;
     }
-    CREATING.set(Some(Rc::clone(connection)));
-    let root = element(document, "maestro-agent-interface", "maestro-agent");
-    CREATING.take();
-    root.map_err(Into::into)
+    let root = dom::create_with(document, "maestro-agent-interface", Rc::clone(connection))
+        .map_err(|error| ToolUiError::native(&error))?;
+    root.set_attribute("class", "maestro-agent")
+        .map_err(|error| ToolUiError::native(&error))?;
+    Ok(root)
 }
