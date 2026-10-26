@@ -1,6 +1,7 @@
 //! Awaited compiled-guest edits reach a real protocol request only after each gate opens.
 #![cfg(test)]
 mod http;
+mod reverse;
 
 use maestro_extensions::{
     CommandContextOperations, ExtensionCommandContextActions, ExtensionContextActions,
@@ -44,6 +45,7 @@ pub(super) fn run_cases(actions: &[&str]) {
             }
         }
     });
+    reverse::run(actions);
 }
 
 /// The guest waits inside both original hook exports while native observations stay pending.
@@ -89,7 +91,7 @@ async fn exercise(simple: bool, action: &str) {
                 serde_json::from_str(&output).unwrap_or_else(|_| panic!("{output}"));
             check_output(&output, action);
         },
-        drive(incoming, &probe, action),
+        drive(incoming, &probe, action, None),
     )
     .await;
     assert_eq!(signal.is_aborted(), action == "abort");
@@ -157,18 +159,19 @@ async fn drive(
     mut incoming: mpsc::UnboundedReceiver<oneshot::Sender<()>>,
     probe: &http::Probe,
     action: &str,
+    imported: Option<&maestro_models::AssistantMessageEventStream>,
 ) {
     let payload = incoming.recv().await.unwrap();
     assert_eq!(probe.dispatches(), 0);
     assert_eq!(probe.body_polls(), 0);
-    probe.assert_pending();
+    assert_pending(probe, imported);
     probe.allow_payload();
     payload.send(()).unwrap();
     if !matches!(action, "abort" | "payload-failure") {
         let response = incoming.recv().await.unwrap();
         assert_eq!(probe.dispatches(), 1);
         assert_eq!(probe.body_polls(), 0);
-        probe.assert_pending();
+        assert_pending(probe, imported);
         probe.allow_response();
         response.send(()).unwrap();
     }
@@ -281,4 +284,15 @@ fn check_hook_error(output: &Value, phase: &str) {
         output["message"]["errorMessage"],
         format!("{phase} gate failed")
     );
+}
+
+/// Observe both the underlying HTTP producer and any registered guest-facing stream.
+fn assert_pending(
+    probe: &http::Probe,
+    imported: Option<&maestro_models::AssistantMessageEventStream>,
+) {
+    probe.assert_pending();
+    if let Some(stream) = imported {
+        super::model_registered::pending(stream);
+    }
 }

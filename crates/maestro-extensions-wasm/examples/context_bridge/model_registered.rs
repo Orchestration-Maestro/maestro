@@ -71,6 +71,13 @@ fn setup(
         }
         _ => return Err("original option variant changed".into()),
     }
+    retained(model, options)
+}
+/// Keep producer work separate from the returned stream and its independent observations.
+fn retained(
+    model: Model,
+    options: StreamOptionsInput,
+) -> Result<AssistantMessageEventStream, String> {
     let stream = AssistantMessageEventStream::new()?;
     PRODUCER.with(|slot| {
         slot.replace(Some(Producer {
@@ -85,15 +92,18 @@ fn setup(
 fn register(
     api: &ExtensionAPI,
     catalog: Option<maestro_extensions_wasm::ModelRegistry>,
+    mode: &str,
 ) -> Result<(), String> {
     let mut config: ProviderConfig = serde_json::from_value(json!({"api":"guest-owned-stream","apiKey":"controlled","baseUrl":"https://example.invalid",
         "models":[{"id":"registered-case","name":"registered","reasoning":false,"input":[],
         "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10}]})).map_err(|e|e.to_string())?;
-    config.callbacks.stream_simple =
-        Some(
-            Rc::new(|model, context, options| setup(model, &context, options))
-                as StreamFunction<StreamOptionsInput>,
-        );
+    config.callbacks.stream_simple = Some(match mode {
+        "agent" => Rc::new(|model, context, options| agent(model, &context, options))
+            as StreamFunction<StreamOptionsInput>,
+        "http" => Rc::new(http) as StreamFunction<StreamOptionsInput>,
+        _ => Rc::new(|model, context, options| setup(model, &context, options))
+            as StreamFunction<StreamOptionsInput>,
+    });
     if let Some(catalog) = catalog {
         catalog.register_provider("compiled-stream", config)
     } else {
@@ -175,11 +185,11 @@ pub async fn command(
     request: &str,
 ) -> Result<String, String> {
     match request {
-        "create" | "catalog" => {
+        "create" | "catalog" | "agent" | "http" => {
             let catalog = (request == "catalog")
                 .then(|| context.model_registry())
                 .transpose()?;
-            register(api, catalog)?;
+            register(api, catalog, request)?;
             Ok("registered".into())
         }
         "produce" => {
@@ -190,5 +200,40 @@ pub async fn command(
             Ok("produced".into())
         }
         _ => Err("unknown registered stream command".into()),
+    }
+}
+
+/// Native agent requests retain their real conversation and original simple capabilities.
+fn agent(
+    model: Model,
+    context: &Context,
+    options: Option<StreamOptionsInput>,
+) -> Result<AssistantMessageEventStream, String> {
+    if !serde_json::to_string(&context.messages)
+        .map_err(|e| e.to_string())?
+        .contains("native agent 雪")
+    {
+        return Err("agent conversation changed".into());
+    }
+    let Some(options @ StreamOptionsInput::Simple(_)) = options else {
+        return Err("agent simple options changed".into());
+    };
+    retained(model, options)
+}
+
+/// Forward the registered guest's original option variant to the bundled native protocol.
+fn http(
+    mut model: Model,
+    context: Context,
+    options: Option<StreamOptionsInput>,
+) -> Result<AssistantMessageEventStream, String> {
+    model.api = "component-gated-http".into();
+    match options.ok_or("missing original options")? {
+        StreamOptionsInput::Raw(options) => {
+            maestro_extensions_wasm::stream::stream(model, context, Some(options))
+        }
+        StreamOptionsInput::Simple(options) => {
+            maestro_extensions_wasm::stream::stream_simple(model, context, Some(options))
+        }
     }
 }

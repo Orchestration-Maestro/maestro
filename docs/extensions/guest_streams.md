@@ -139,6 +139,16 @@ and simple calls retain their original option variants. Native hooks stay callab
 and awaited in the guest, including their selected payload and supplied failures.
 Native opaque controls stay retained; they do not become guest HTTP clients.
 
+A registered guest provider can forward those original native hooks to a bundled
+protocol. The selected request reaches the actual HTTP peer, with payload selection
+before dispatch and response completion before the first body poll. Hook failures
+retain the same terminal protocol in both callback directions.
+
+The SDK agent loop consumes the registered guest stream through its normal stream
+function. Start, delta and completion observations keep their original order.
+Completed agent messages share the native final-message owner with independent,
+repeated result observations.
+
 The native consumer fronts the original authored stream. There is no forwarding
 queue or task that drains its events. Repeated final observations share one decoded
 native message, also used by the terminal event. Dropping an unassigned pending read

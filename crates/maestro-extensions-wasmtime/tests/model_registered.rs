@@ -1,5 +1,7 @@
 //! Registered guest stream functions consume original native hooks and option variants.
 #![cfg(test)]
+mod affinity;
+mod retention;
 use maestro_models::*;
 use serde_json::{Value, json};
 use std::{rc::Rc, sync::Arc};
@@ -27,6 +29,8 @@ fn registered_guest_streams_invoke_native_hook_handles() {
         "response-failure",
     ]);
     fault_orders();
+    affinity::run();
+    retention::run();
 }
 
 /// Each case reaches the actual provider installed through the public guest registration facade.
@@ -59,7 +63,7 @@ async fn route_cases(
     }
 }
 /// Register through the compiled guest's public facade, never a test-only callback route.
-async fn register(runner: &maestro_extensions::ExtensionRunner<Local>, route: &str) {
+pub(super) async fn register(runner: &maestro_extensions::ExtensionRunner<Local>, route: &str) {
     let command = runner
         .get_command("bridge-observe")
         .unwrap()
@@ -213,7 +217,7 @@ async fn gate(
     done.await.unwrap();
 }
 /// Native event and result observations remain independent and pending at either original hook.
-fn pending(stream: &AssistantMessageEventStream) {
+pub(super) fn pending(stream: &AssistantMessageEventStream) {
     use std::{
         future::Future,
         task::{Context, Waker},
@@ -320,12 +324,7 @@ async fn fault_order(cached: bool) {
 
 /// Dispatch on the actual provider registry while retaining the supplied option variant.
 fn start(simple: bool, common: StreamOptions<Local>) -> AssistantMessageEventStream {
-    let model: Model = serde_json::from_value(json!({"id":"registered-case","name":"registered","api":"guest-owned-stream","provider":"compiled-stream","baseUrl":"https://example.invalid","reasoning":false,"input":[],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10})).unwrap();
-    let context = Context {
-        system_prompt: Some(if simple { "simple" } else { "raw" }.into()),
-        messages: Vec::new(),
-        tools: None,
-    };
+    let (model, context) = operands(simple);
     let provider = get_api_provider("guest-owned-stream").unwrap();
     let submit = Rc::new(|future| {
         tokio::task::spawn_local(future);
@@ -352,7 +351,7 @@ fn start(simple: bool, common: StreamOptions<Local>) -> AssistantMessageEventStr
     }
 }
 /// Deliberately unequal raw policies must not become simple reasoning or budgets.
-fn raw_options(common: StreamOptions<Local>) -> ProviderStreamOptions<Local> {
+fn raw_options<E: ProviderExecution>(common: StreamOptions<E>) -> ProviderStreamOptions<E> {
     ProviderStreamOptions {
         common,
         extra: serde_json::from_value(json!({"reasoning":"raw-low","thinkingBudgets":{"high":19}}))
@@ -361,7 +360,7 @@ fn raw_options(common: StreamOptions<Local>) -> ProviderStreamOptions<Local> {
     }
 }
 /// Requested simple policies are independent of similarly named raw extras.
-fn simple_options(common: StreamOptions<Local>) -> SimpleStreamOptions<Local> {
+fn simple_options<E: ProviderExecution>(common: StreamOptions<E>) -> SimpleStreamOptions<E> {
     SimpleStreamOptions {
         common,
         reasoning: Some(ThinkingLevel::High),
@@ -519,4 +518,15 @@ async fn fault_observations(
         .expect("one terminal after the Store fault");
     assert!(Arc::ptr_eq(terminal.message(), &result));
     (result, terminal)
+}
+
+/// Use the same literal native operands in local and off-thread invocation.
+fn operands(simple: bool) -> (Model, Context) {
+    let model: Model = serde_json::from_value(json!({"id":"registered-case","name":"registered","api":"guest-owned-stream","provider":"compiled-stream","baseUrl":"https://example.invalid","reasoning":false,"input":[],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10})).unwrap();
+    let context = Context {
+        system_prompt: Some(if simple { "simple" } else { "raw" }.into()),
+        messages: Vec::new(),
+        tools: None,
+    };
+    (model, context)
 }
