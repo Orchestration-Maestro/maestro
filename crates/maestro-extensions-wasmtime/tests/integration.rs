@@ -51,3 +51,5 @@ mod model_completions;
 mod model_hooks;
 
 mod model_finite;
+
+mod model_hook_gates;

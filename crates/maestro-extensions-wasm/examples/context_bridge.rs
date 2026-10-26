@@ -74,6 +74,10 @@ mod model_completions;
 mod model_hooks;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_hook_gates.rs"]
+mod model_hook_gates;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/model_finite.rs"]
 mod model_finite;
 
@@ -188,6 +192,10 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(request) = args.strip_prefix("model-hook-gates ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(model_hook_gates::command(&request, context).await?) });
+    }
     if args == "model-finite" {
         return Box::pin(async { Err(model_finite::command()?) });
     }
