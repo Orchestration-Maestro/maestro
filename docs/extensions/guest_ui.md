@@ -128,7 +128,7 @@ holds no copy of the UI logic.
 | `tui` | `TUI` | `maestro_tui::TUI` |
 | `footer-data` | `FooterData` | `maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider` |
 | `tool-invalidator` | `ToolRenderContext::invalidate` | `maestro_tools::ToolRenderContext::invalidate` |
-| `subscription` | `Subscription` | `maestro_extensions::Subscription` |
+| `subscription` | `Subscription` | `maestro_extensions::Subscription<Local>` for an event-bus listener; for a terminal input listener, the `maestro_extensions::types::UIUnsubscribe` callback; for a branch change or abort listener, the removal callback its owner returns |
 | `callback-emitter` | `CallbackEmitter` | `maestro_extensions::CallbackEmitter` |
 | `abort-signal` | `AbortSignal` | The caller's signal, followed by a host signal for each dialog. |
 
