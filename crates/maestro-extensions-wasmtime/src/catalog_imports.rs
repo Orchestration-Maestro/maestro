@@ -10,7 +10,6 @@ use wasmtime::{
     StoreContextMut,
     component::{ComponentType, LinkerInstance, Lower, Resource},
 };
-use wasmtime_wasi::WasiView;
 
 /// Defines catalog reads and credential resolution through the original local owner.
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
@@ -96,7 +95,9 @@ impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
 }
 
 /// Links current metadata and model-authentication predicates.
-fn add_metadata<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+fn add_metadata<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     add_read(
         host,
         "[method]model-registry.get-error",
@@ -148,21 +149,22 @@ fn add_mutations<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "[method]model-registry.register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, name, config, oauth): (
+         (resource, name, config, callbacks): (
             Resource<Endpoint>,
             String,
             String,
-            crate::oauth_registration::Wire,
+            crate::provider_registration::Wire,
         )| {
-            let oauth = crate::oauth_registration::retain(store.data_mut(), &name, oauth)?;
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Register(name, config, oauth, reply));
+            let route = endpoint.route(|reply| Request::Register(name, config, callbacks, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )
 }
 /// Resolves the provider key on the original local catalog without blocking other requests.
-fn add_provider_key<T: WasiView + 'static>(
+fn add_provider_key<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     host.func_wrap_concurrent(

@@ -468,8 +468,12 @@ shared-types container.
 
 Shared invocation options also live in `maestro-request::types`: `ThinkingBudgets`,
 `CacheRetention`, `Transport`, `ProviderResponse`, `StreamOptions`,
-`ProviderStreamOptions` and `SimpleStreamOptions`. `StreamOptionSlots` selects the
-signal, payload hook, response hook and fetch representations without operations.
+`ProviderStreamOptions`, `SimpleStreamOptions` and `StreamOptionsInput<C, O, T>`.
+The input enum preserves the original raw or simple variant, parametrizing only
+common options, opaque objects and tool choice; native and guest aliases retain
+their own capability types. It borrows the common options without converting
+between the variants. `StreamOptionSlots` selects the signal, payload hook,
+response hook and fetch representations without operations.
 Native aliases specialize the fetch slot so unannotated SDK constructors still
 coerce transport closures; they retain execution-family identity and defaults. Guest aliases
 retain local capabilities. Provider execution, opaque native objects and tool

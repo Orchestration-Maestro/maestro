@@ -292,7 +292,10 @@ impl host::HostModelRegistry for State {
         this: Resource<Reader>,
         name: String,
         config: String,
-        _oauth: Option<(Resource<super::host::Identity>, String, Option<bool>)>,
+        _callbacks: (
+            Option<Resource<super::host::Identity>>,
+            Option<(Resource<super::host::Identity>, String, Option<bool>)>,
+        ),
     ) -> wasmtime::Result<Resource<super::host::Route>> {
         let result = self
             .table

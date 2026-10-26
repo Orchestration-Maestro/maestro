@@ -146,6 +146,7 @@ fn install(api: &ExtensionAPI) -> ExtensionResult<Value> {
         ProviderConfig {
             callbacks: ProviderCallbacks {
                 oauth: Some(Rc::new(Provider)),
+                ..ProviderCallbacks::default()
             },
             ..ProviderConfig::default()
         },

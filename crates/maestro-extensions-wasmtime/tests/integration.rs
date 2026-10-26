@@ -58,5 +58,10 @@ mod model_finite;
 mod model_hook_gates;
 mod model_signal_selection;
 
+mod model_lifetimes;
+
 mod foreign_schema;
+mod model_protocol_routes;
 mod oauth;
+
+mod model_registered;

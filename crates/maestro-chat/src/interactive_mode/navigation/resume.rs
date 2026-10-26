@@ -52,8 +52,8 @@ impl InteractiveMode {
         })
     }
 
-    /// Closes the selector before resuming, cancelling or exiting, without retaining the
-    /// mode.
+    /// Closes the selector before resuming or cancelling, and requests shutdown on exit,
+    /// without retaining the mode.
     fn session_callbacks(self: &Rc<Self>, done: Rc<dyn Fn()>) -> SessionSelectorCallbacks {
         let (selecting, exiting) = (Rc::downgrade(self), Rc::downgrade(self));
         let closing = Rc::clone(&done);

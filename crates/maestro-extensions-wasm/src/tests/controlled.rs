@@ -2136,7 +2136,7 @@ impl Imports for Controlled {
         resource: &Reader,
         name: &str,
         config: &str,
-        _oauth: Option<(&Self::Callback, &str, Option<bool>)>,
+        _callbacks: crate::component_adapter::ProviderRegistration<'_, Self::Callback>,
     ) -> ExtensionResult<()> {
         resource.data.unit(
             "registerProvider",
@@ -2412,7 +2412,7 @@ impl Imports for Controlled {
         &self,
         name: &str,
         config: &str,
-        _oauth: Option<(&Self::Callback, &str, Option<bool>)>,
+        _callbacks: crate::component_adapter::ProviderRegistration<'_, Self::Callback>,
     ) -> ExtensionResult<()> {
         self.observed
             .borrow_mut()

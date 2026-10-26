@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use std::rc::Rc;
 
 /// Computes a key which is not present in any credential field.
-pub(super) struct Provider;
+pub(crate) struct Provider;
 impl OAuthProviderInterface for Provider {
     fn id(&self) -> &'static str {
         "ignored-author-id"
@@ -80,6 +80,7 @@ pub(crate) async fn run(api: &ExtensionAPI, context: &ExtensionContext) -> Exten
         ProviderConfig {
             callbacks: ProviderCallbacks {
                 oauth: Some(Rc::new(Provider)),
+                ..ProviderCallbacks::default()
             },
             ..ProviderConfig::default()
         },
@@ -120,6 +121,7 @@ fn facade(api: &ExtensionAPI, context: &ExtensionContext) -> ExtensionResult<Str
         ProviderConfig {
             callbacks: ProviderCallbacks {
                 oauth: Some(Rc::new(Provider)),
+                ..ProviderCallbacks::default()
             },
             ..ProviderConfig::default()
         },

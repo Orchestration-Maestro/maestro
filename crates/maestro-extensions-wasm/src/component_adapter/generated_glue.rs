@@ -21,6 +21,22 @@ impl<E: Extension> Guest for Glue<E> {
         let interaction = interaction.map(super::oauth::interaction);
         super::super::oauth::invoke(handler.id(), phase, &data, interaction).await
     }
+    fn invoke_provider(
+        handler: &host::Callback,
+        data: String,
+        input: host::ProviderInput,
+    ) -> impl Future<Output = ExtensionResult<host::Callback>> {
+        std::future::ready(super::provider_streams::invoke(handler.id(), &data, input))
+    }
+    async fn invoke_assistant(
+        handler: &host::Callback,
+        operation: host::AssistantOperation,
+        data: Option<String>,
+        signal: Option<host::AbortSignal>,
+    ) -> ExtensionResult<Option<String>> {
+        super::provider_streams::assistant(handler.id(), operation, data, signal).await
+    }
+
     fn invoke_auth_backend(
         handler: &host::Callback,
         update: &host::AuthLockUpdate,

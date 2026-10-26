@@ -23,6 +23,8 @@ impl Call {
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
             Self::OAuth(call) => Call::OAuth(oauth(call, completion)),
+            Self::Provider(call) => Call::Provider(provider(call, completion)),
+            Self::Assistant(call) => Call::Assistant(assistant(call, completion)),
             Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
             Self::Stream(call) => Call::Stream(stream(call, completion)),
             Self::Schema(call) => Call::Schema(schema(call, completion)),
@@ -224,7 +226,33 @@ fn stream(
     }
 }
 
-/// Retains schema callback admission beside its invocation-local operand.
+/// Transfer setup admission beside its original native capability operands.
+fn provider(
+    call: crate::provider_calls::Invocation,
+    completion: &Completion,
+) -> crate::provider_calls::Invocation<Callback> {
+    crate::provider_calls::Invocation {
+        handler: completion.callback(call.handler),
+        data: call.data,
+        input: call.input,
+        reply: call.reply,
+    }
+}
+/// Transfer returned-stream admission beside only its observation's cancellation.
+fn assistant(
+    call: crate::provider_calls::Assistant,
+    completion: &Completion,
+) -> crate::provider_calls::Assistant<Callback> {
+    crate::provider_calls::Assistant {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        data: call.data,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Transfer schema admission without extending its invocation-local operand borrow.
 fn schema(
     call: crate::guest_calls::schema::Invocation,
     completion: &Completion,

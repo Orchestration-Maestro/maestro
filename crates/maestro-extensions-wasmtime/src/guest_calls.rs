@@ -73,6 +73,10 @@ pub(crate) enum Call<H = Handle> {
     ToolRender(tool_renders::ToolRenderCall<H>),
     /// Awaits an authored hook on the original pending native model invocation.
     ModelHook(crate::model_calls::Invocation<H>),
+    /// Sets up the original registered guest provider.
+    Provider(crate::provider_calls::Invocation<H>),
+    /// Operates on the original returned authored stream.
+    Assistant(crate::provider_calls::Assistant<H>),
     /// Invokes an authored stream callback on the retained local event.
     Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.

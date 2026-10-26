@@ -15,7 +15,7 @@ pub(crate) trait ApiView: WasiView {
     fn api(&self) -> &Endpoint;
 }
 
-/// Installs registration and runtime actions on their original owners.
+/// Installs provider registration and runtime action imports.
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
@@ -194,12 +194,13 @@ fn add_providers<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (name, config, oauth): (String, String, crate::oauth_registration::Wire)| {
-            let oauth = crate::oauth_registration::retain(store.data_mut(), &name, oauth)?;
+         (name, config, callbacks): (String, String, crate::provider_registration::Wire)| {
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
             let route = store
                 .data()
                 .api()
-                .route(|reply| Request::RegisterProvider(name, config, oauth, reply));
+                .route(|reply| Request::RegisterProvider(name, config, callbacks, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;

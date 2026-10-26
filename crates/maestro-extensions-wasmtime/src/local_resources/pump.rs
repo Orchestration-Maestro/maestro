@@ -183,6 +183,7 @@ impl State {
     pub(super) fn dispatch(&self, message: Message) {
         match message {
             Message::ModelStart(request) => request.answer(&self.registry),
+            Message::Provider(request) => self.provider_request(request),
             Message::ModelStream(id, request) => self.model_stream_request(id, request),
             Message::NewStream(request) => request.answer(&self.registry),
             Message::Stream(id, request) => self.stream_request(id, request),
@@ -196,9 +197,9 @@ impl State {
             Message::SchemaListing(id, reply) => self.reply_schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
-            Message::Api(id, request) => self.read_api(id, request),
+            Message::Api(id, request) => self.api_request(id, request),
             Message::Events(id, request) => self.event(id, request),
-            Message::Registration(id, request) => self.registration(id, request),
+            Message::Registration(id, request) => self.api_request(id, request),
             Message::ApiModel(id, model, reply, admission) => {
                 self.start_api_model(id, *model, reply, admission);
             }
@@ -208,7 +209,7 @@ impl State {
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
-            Message::NewSignal(reply) => self.new_signal(&reply),
+            Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
@@ -242,9 +243,13 @@ impl State {
         }
     }
 
-    /// Creates cancellation on its original local resource owner.
-    fn new_signal(&self, reply: &std::sync::mpsc::Sender<Result<super::SignalEndpoint, String>>) {
-        let _ = reply.send(self.registry.signal(Cancellation::new()));
+    /// Creates the supplied cancellation binding on its original local owner.
+    fn new_signal(
+        &self,
+        signal: Option<Cancellation>,
+        reply: &std::sync::mpsc::Sender<Result<super::SignalEndpoint, String>>,
+    ) {
+        let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
     }
 
     /// Releases an ended lock update outside its frame-table borrow.
@@ -325,18 +330,8 @@ impl State {
         let _ = reply.send(result);
     }
 
-    /// Selects a real API outside the capability-table borrow.
-    fn read_api(&self, id: u64, request: crate::api_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Api(api)) = capability.as_deref() {
-            request.answer(api);
-        } else {
-            request.reject("extension API resource ended");
-        }
-    }
-
-    /// Registers native records without holding the capability-table borrow.
-    fn registration(&self, id: u64, request: crate::registration_reads::Request) {
+    /// Selects the original API once for reads and callback-bearing registrations.
+    fn api_request(&self, id: u64, request: impl crate::api_reads::ApiRequest) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Api(api)) = capability.as_deref() {
             request.answer(api, &self.registry);

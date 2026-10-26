@@ -12,13 +12,13 @@ use std::sync::{Arc, mpsc};
 /// A catchable result after native registration or action dispatch.
 type Reply<T> = mpsc::Sender<Result<T, String>>;
 
-/// Operations on the original extension API and its retained registrations.
+/// Operations on the original extension API and its current runtime.
 pub(crate) enum Request {
     /// Registers a provider through the facade's loading or bound action route.
     RegisterProvider(
         String,
         String,
-        Option<maestro_extensions::OAuthProviderHandle>,
+        crate::provider_registration::Callbacks,
         Reply<()>,
     ),
     /// Removes every queued occurrence or the bound provider.
@@ -51,13 +51,21 @@ pub(crate) enum Request {
     SetThinking(String, Reply<()>),
 }
 
-impl Request {
+/// Requests answered against the original API after releasing capability storage.
+pub(crate) trait ApiRequest {
+    /// Dispatch against the original facade and capability owner.
+    fn answer(self, api: &ExtensionAPI<Local>, registry: &crate::local_resources::Registry);
+    /// Settle when that original capability has ended.
+    fn reject(self, error: &str);
+}
+
+impl ApiRequest for Request {
     /// Calls the real API after the pump releases its capability-table borrow.
-    pub(crate) fn answer(self, api: &ExtensionAPI<Local>) {
+    fn answer(self, api: &ExtensionAPI<Local>, registry: &crate::local_resources::Registry) {
         match self {
-            Self::RegisterProvider(name, config, oauth, reply) => {
-                let result =
-                    crate::catalog_reads::provider_config(&config, oauth).and_then(|config| {
+            Self::RegisterProvider(name, config, callbacks, reply) => {
+                let result = crate::provider_registration::config(&config, callbacks, registry)
+                    .and_then(|config| {
                         api.register_provider(name, config)
                             .map_err(|e| e.to_string())
                     });
@@ -105,7 +113,7 @@ impl Request {
     }
 
     /// Settles missing API resources without stranding the waiting Store caller.
-    pub(crate) fn reject(self, error: &str) {
+    fn reject(self, error: &str) {
         match self {
             Self::RegisterProvider(_, _, _, reply)
             | Self::UnregisterProvider(_, reply)
@@ -182,7 +190,7 @@ impl Endpoint {
 
     /// Allocates an operation's signal through the original local owner.
     pub(crate) fn new_signal(&self) -> Result<crate::local_resources::SignalEndpoint, String> {
-        self.0.request(|_, reply| Message::NewSignal(reply))
+        self.0.request(|_, reply| Message::NewSignal(None, reply))
     }
 
     /// Admits explicit execution on the original local runtime.

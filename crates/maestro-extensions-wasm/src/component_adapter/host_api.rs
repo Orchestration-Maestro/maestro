@@ -288,8 +288,8 @@ impl<I: Imports> ExtensionHost for Host<I> {
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
     }
     fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
-        super::oauth::register(&self.0, config, |text, oauth| {
-            self.0.register_provider(name, text, oauth)
+        super::provider_registration::register(&self.0, config, |text, callbacks| {
+            self.0.register_provider(name, text, callbacks)
         })
     }
     fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {

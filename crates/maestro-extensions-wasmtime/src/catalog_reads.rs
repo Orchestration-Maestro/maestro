@@ -27,7 +27,7 @@ pub(crate) enum Request {
     Register(
         String,
         String,
-        Option<maestro_extensions::OAuthProviderHandle>,
+        crate::provider_registration::Callbacks,
         Reply<()>,
     ),
     /// Removes directly through native replay policy.
@@ -104,12 +104,13 @@ impl Request {
             Self::Display(provider, reply) => {
                 let _ = reply.send(Ok(catalog.get_provider_display_name(&provider)));
             }
-            Self::Register(name, config, oauth, reply) => {
-                let result = provider_config(&config, oauth).and_then(|config| {
-                    catalog
-                        .register_provider(&name, config)
-                        .map_err(|error| error.to_string())
-                });
+            Self::Register(name, config, callbacks, reply) => {
+                let result = crate::provider_registration::config(&config, callbacks, registry)
+                    .and_then(|config| {
+                        catalog
+                            .register_provider(&name, config)
+                            .map_err(|error| error.to_string())
+                    });
                 let _ = reply.send(result);
             }
             Self::Unregister(name, reply) => send(&reply, catalog.unregister_provider(&name)),
@@ -164,15 +165,6 @@ impl Endpoint {
     }
 }
 
-/// Decodes the native registration record once, retaining the original field domains.
-pub(crate) fn provider_config(
-    text: &str,
-    oauth: Option<maestro_extensions::OAuthProviderHandle>,
-) -> Result<maestro_extensions::SharedHandle<RwLock<maestro_extensions::ProviderConfig>>, String> {
-    let mut config: maestro_extensions::ProviderConfig = crate::writer_reads::decode(text)?;
-    config.callbacks.oauth = oauth;
-    Ok(maestro_extensions::SharedHandle::new(RwLock::new(config)))
-}
 /// Decodes an independently supplied model without requiring catalog admission.
 fn model_record(text: &str) -> Result<Arc<RwLock<Model>>, String> {
     crate::writer_reads::decode(text).map(|model| Arc::new(RwLock::new(model)))

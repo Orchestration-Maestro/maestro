@@ -179,30 +179,6 @@ pub(crate) async fn invoke(
     }
 }
 
-/// Announces callable OAuth beside the one ordinary registration operation.
-pub(super) fn register<I: Imports>(
-    imports: &I,
-    config: crate::ProviderConfig,
-    register: impl FnOnce(&str, super::imports::ProviderOAuth<'_, I::Callback>) -> ExtensionResult<()>,
-) -> ExtensionResult<()> {
-    let text = crate::types::finite::encode_value(&config)?;
-    let Some(provider) = config.callbacks.oauth else {
-        return register(&text, None);
-    };
-    let handler = super::callbacks::Identity::new(imports);
-    handler.stage(provider.clone());
-    let result = register(
-        &text,
-        Some((
-            &handler.handle,
-            provider.name(),
-            provider.uses_callback_server(),
-        )),
-    );
-    handler.settle(result.is_ok());
-    result
-}
-
 /// Invokes the original author implementation without holding its callback-table borrow.
 async fn invoke_provider(
     handler: u32,

@@ -220,26 +220,13 @@ pub(super) struct LocalFallback {
     /// Literal provider.
     provider: String,
 }
-/// Owned input for a nested synchronous OAuth notification.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalOAuth {
-    /// Original authored identity.
-    target: u32,
-    /// Native-selected interaction form.
-    phase: crate::oauth_callbacks::Phase,
-    /// Exact supplied record or progress text.
-    data: String,
-    /// Original native interaction for an authored provider login.
-    interaction: Option<Resource<crate::oauth_interaction::Interaction>>,
-}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
     /// Original OAuth interaction.
     #[component(name = "oauth")]
-    OAuth(LocalOAuth),
+    OAuth(credentials::LocalOAuth),
     /// Authored backend and still-borrowed native update.
     #[component(name = "auth-backend")]
     AuthBackend(LocalBackend),
@@ -273,6 +260,12 @@ pub(super) enum LocalCall {
     /// A synchronous authored-stream classifier or extractor.
     #[component(name = "stream")]
     Stream(crate::stream_calls::Local),
+    /// Nested original provider setup.
+    #[component(name = "provider")]
+    Provider(crate::provider_calls::LocalProvider),
+    /// Nested returned-stream operation.
+    #[component(name = "assistant")]
+    Assistant(crate::provider_calls::LocalAssistant),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -345,6 +338,12 @@ pub(super) enum LocalResult {
     /// Selected terminal classification or retained result.
     #[component(name = "stream")]
     Stream(Result<crate::stream_calls::WireSelection, String>),
+    /// Original returned authored stream.
+    #[component(name = "provider")]
+    Provider(Result<Resource<Callback>, String>),
+    /// Ordinary returned-stream operation result.
+    #[component(name = "assistant")]
+    Assistant(Result<Option<String>, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -371,16 +370,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
-        Call::OAuth(call) => LocalCall::OAuth(LocalOAuth {
-            target: call.handler.id,
-            phase: call.phase,
-            data: call.data.clone(),
-            interaction: call
-                .interaction
-                .clone()
-                .map(|interaction| table.push(interaction))
-                .transpose()?,
-        }),
+        Call::OAuth(call) => credentials::oauth(table, call)?,
         Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
@@ -399,6 +389,21 @@ pub(super) fn lower(
             target: handler.id,
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
+        }),
+        Call::Provider(call) => LocalCall::Provider(crate::provider_calls::LocalProvider {
+            target: call.handler.id,
+            data: call.data.clone(),
+            input: call.input.lower(table)?,
+        }),
+        Call::Assistant(call) => LocalCall::Assistant(crate::provider_calls::LocalAssistant {
+            target: call.handler.id,
+            operation: call.operation,
+            data: call.data.clone(),
+            signal: call
+                .signal
+                .clone()
+                .map(|signal| table.push(signal))
+                .transpose()?,
         }),
         Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
@@ -584,6 +589,16 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::Provider(call), LocalResult::Provider(value)) => {
+            let value = match value {
+                Ok(value) => Ok(crate::callback_imports::transferred(store, value)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Assistant(call), LocalResult::Assistant(value)) => {
+            let _ = call.reply.send(value);
+        }
         (Call::Event(call), LocalResult::Event(value)) => {
             let value = match value {
                 Ok(returned) => Ok(returned.retained(store)?),

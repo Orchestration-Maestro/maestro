@@ -170,6 +170,18 @@ fn asynchronous(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     Box::pin(async move {
         match call {
+            host::LocalCall::Provider(call) => host::LocalResult::Provider(
+                super::provider_streams::invoke(call.target, &call.data, call.input),
+            ),
+            host::LocalCall::Assistant(call) => host::LocalResult::Assistant(
+                super::provider_streams::assistant(
+                    call.target,
+                    call.operation,
+                    call.data,
+                    call.signal,
+                )
+                .await,
+            ),
             host::LocalCall::Oauth(call) => host::LocalResult::Oauth(
                 super::super::oauth::invoke(
                     call.target,

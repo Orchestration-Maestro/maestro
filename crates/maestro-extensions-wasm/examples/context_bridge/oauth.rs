@@ -150,7 +150,7 @@ pub use login::storage;
 
 #[path = "oauth/registration.rs"]
 mod registration;
-pub(super) use registration::run as registration;
+pub(super) use registration::{Provider, run as registration};
 
 #[path = "oauth/reverse.rs"]
 mod reverse;

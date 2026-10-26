@@ -476,7 +476,17 @@ fn native_listener_reentry_completes_while_another_component_still_renders() {
             )]
         );
         assert_eq!(outer.try_render(31).unwrap(), ["outer:31"]);
+        let released = Rc::downgrade(&runner);
+        drop(runner);
+        assert!(
+            released.upgrade().is_some(),
+            "the listener retains the runner"
+        );
         subscription.unsubscribe();
+        assert!(
+            released.upgrade().is_none(),
+            "unsubscribe releases the runner"
+        );
     });
 }
 
