@@ -15,7 +15,30 @@ pub struct ExtensionKeybindings {
     /// Reloads the user bindings from the manager's file.
     pub reload: Option<Rc<dyn Fn()>>,
 }
-use std::rc::Rc;
+use std::{ops::Deref, rc::Rc};
+
+impl ExtensionKeybindings {
+    /// Reloads through the supplied application manager, or does nothing without a reload.
+    pub fn reload(&self) {
+        if let Some(reload) = &self.reload {
+            reload();
+        }
+    }
+
+    /// Returns owned, resolved bindings for known actions in definition order.
+    #[must_use]
+    pub fn get_effective_config(&self) -> KeybindingsConfig {
+        self.manager.get_resolved_bindings()
+    }
+}
+
+impl Deref for ExtensionKeybindings {
+    type Target = KeybindingsManager;
+
+    fn deref(&self) -> &Self::Target {
+        &self.manager
+    }
+}
 
 /// The application's bordered loader, as an extension holds it.
 pub trait ExtensionLoader: Component {

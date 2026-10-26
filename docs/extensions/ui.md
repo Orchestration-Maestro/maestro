@@ -196,9 +196,14 @@ widgets beside the capability, and the chat crate's `ExtensionWidgetHost` implem
 The capability also lends the live theme's selection and settings list styles and builds the
 application's bordered loader as an `ExtensionLoader`, whose signal, abort notification,
 disposal and rows the extension keeps. It builds the application's keybindings managers as
-`ExtensionKeybindings`, with the reload of a manager that has a file. It formats keybinding
-hints and editor styles with the live theme. It builds the application's custom editor as an
-`ExtensionEditor`, whose toolkit editor answers the editor requests.
+`ExtensionKeybindings`. Its `reload()` uses the supplied application reload; a pathless
+manager keeps its runtime overrides. `get_effective_config()` returns an owned snapshot
+of resolved known actions, not raw user overrides. Clones share the manager and its reload;
+ordinary toolkit operations such as `get_keys()` and `set_user_bindings()` remain available.
+`create_keybindings(agent_dir)` loads through the host's existing application manager.
+The capability formats keybinding hints and editor styles with the live theme. It builds
+the application's custom editor as an `ExtensionEditor`, whose toolkit editor answers
+the editor requests.
 
 ## Custom components
 
