@@ -19,6 +19,8 @@ pub struct DomView {
     pub pack: Rc<maestro_theme::BrandPack>,
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
+    /// Instance-local tool renderers, selected before page-wide registrations.
+    pub tool_renderers: Rc<indexmap::IndexMap<String, crate::tools::types::ToolRendererBinding>>,
 }
 /// Prepared renderer output: owned records on native targets, which have no page.
 #[cfg(not(target_arch = "wasm32"))]
@@ -237,6 +239,7 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("dialogs/dialogs.css"));
     css.push_str(include_str!("components/message_editor.css"));
     css.push_str(include_str!("components/agent_interface.css"));
+    css.push_str(include_str!("chat_panel.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))
 }

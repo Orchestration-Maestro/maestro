@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Cancellation, Model, ReadonlySessionManager, ResolvedRequestAuth};
+use maestro_extensions::{Model, ReadonlySessionManager, ResolvedRequestAuth};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -183,6 +183,7 @@ impl State {
     pub(super) fn dispatch(&self, message: Message) {
         match message {
             Message::ModelStart(request) => request.answer(&self.registry),
+            Message::Provider(request) => self.provider_request(request),
             Message::ModelStream(id, request) => self.model_stream_request(id, request),
             Message::NewStream(request) => request.answer(&self.registry),
             Message::Stream(id, request) => self.stream_request(id, request),
@@ -196,9 +197,9 @@ impl State {
             Message::SchemaListing(id, reply) => self.schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
-            Message::Api(id, request) => self.read_api(id, request),
+            Message::Api(id, request) => self.api_request(id, request),
             Message::Events(id, request) => self.event(id, request),
-            Message::Registration(id, request) => self.registration(id, request),
+            Message::Registration(id, request) => self.api_request(id, request),
             Message::ApiModel(id, model, reply, admission) => {
                 self.start_api_model(id, *model, reply, admission);
             }
@@ -213,8 +214,8 @@ impl State {
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
-            Message::NewSignal(reply) => {
-                let _ = reply.send(self.registry.signal(Cancellation::new()));
+            Message::NewSignal(signal, reply) => {
+                let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
             }
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
@@ -318,18 +319,8 @@ impl State {
         let _ = reply.send(result);
     }
 
-    /// Selects a real API outside the capability-table borrow.
-    fn read_api(&self, id: u64, request: crate::api_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Api(api)) = capability.as_deref() {
-            request.answer(api);
-        } else {
-            request.reject("extension API resource ended");
-        }
-    }
-
-    /// Registers native records without holding the capability-table borrow.
-    fn registration(&self, id: u64, request: crate::registration_reads::Request) {
+    /// Selects the original API once for reads and callback-bearing registrations.
+    fn api_request(&self, id: u64, request: impl crate::api_reads::ApiRequest) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Api(api)) = capability.as_deref() {
             request.answer(api, &self.registry);

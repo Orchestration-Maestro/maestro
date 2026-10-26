@@ -23,6 +23,9 @@ mod glue;
 #[path = "generated_model_streams.rs"]
 pub(crate) mod model_streams;
 
+#[path = "generated_provider_streams.rs"]
+pub(crate) mod provider_streams;
+
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;
@@ -36,11 +39,11 @@ impl Imports for Generated {
     }
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
-        registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, stream: Option<&Self::Callback>) => register_provider(name, config, stream);
         registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
     } }
     forward_resources! { routed functions {
-        register_provider(name: &str, config: &str) => host::register_provider;
+        register_provider(name: &str, config: &str, stream: Option<&Self::Callback>) => host::register_provider;
         unregister_provider(name: &str) => host::unregister_provider;
     } }
     fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {

@@ -1,0 +1,34 @@
+name: Native I/O isolated historical red evidence
+"on":
+  push:
+    branches: [ci/659-fix-r1-historical]
+permissions:
+  contents: read
+jobs:
+  historical:
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [guest-decoder, process]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target-historical
+      CARGO_BUILD_JOBS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Command boundary and nextest
+        run: |
+          mkdir -p ~/.local/bin proof-logs
+          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
+          chmod +x ~/.local/bin/capped
+          curl -fLsS https://get.nexte.st/0.9.148/linux | tar xz -C ~/.cargo/bin
+      - name: Genuine historical receipts
+        run: python3 .github/review-historical.py ${{ matrix.kind }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: review-red-${{ matrix.kind }}
+          path: proof-logs/

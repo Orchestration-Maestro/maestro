@@ -97,6 +97,10 @@ impl Header {
 
 /// What the result of a nested call the host made settles.
 pub enum Nested {
+    /// The scripted native caller's backend outcome, separate from accepted state.
+    CredentialBackend(Option<String>),
+    /// The exact result of the author's synchronous fallback.
+    CredentialFallback(Result<Option<String>, String>),
     /// A footer factory, whose component replaces the current footer.
     Footer,
     /// A header factory, whose component replaces the current header.
@@ -579,6 +583,14 @@ impl State {
         value: host::LocalResult,
     ) -> wasmtime::Result<Option<String>> {
         match (nested, value) {
+            (Nested::CredentialBackend(expected), host::LocalResult::Unit(actual)) => {
+                assert_eq!(actual.err(), expected);
+                Ok(None)
+            }
+            (Nested::CredentialFallback(expected), host::LocalResult::AuthFallback(actual)) => {
+                assert_eq!(actual, expected);
+                Ok(actual.err())
+            }
             (Nested::Footer, host::LocalResult::Factory(Ok(built))) => {
                 let dispose = built
                     .dispose

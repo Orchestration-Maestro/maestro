@@ -201,8 +201,10 @@ fn interrupted_reads_retry_and_a_closed_receiver_does_not_consume_the_batch() {
         if std::mem::take(&mut interrupted) {
             return Err(io::ErrorKind::Interrupted.into());
         }
-        entered.send(()).unwrap();
-        released.recv().unwrap();
+        // The worker reads again after the test returns; closed channels end its stream.
+        if entered.send(()).is_err() || released.recv().is_err() {
+            return Ok(None);
+        }
         Ok(Some(vec![Arrival::Bytes(b"held".to_vec())]))
     })
     .unwrap();

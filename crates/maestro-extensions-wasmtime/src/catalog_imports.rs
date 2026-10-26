@@ -10,10 +10,9 @@ use wasmtime::{
     StoreContextMut,
     component::{ComponentType, LinkerInstance, Lower, Resource},
 };
-use wasmtime_wasi::WasiView;
 
 /// Defines catalog reads and credential resolution through the original local owner.
-pub(crate) fn add_to_linker<T: WasiView + 'static>(
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_resource::<T, Endpoint>(host, "model-registry")?;
@@ -96,7 +95,9 @@ impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
 }
 
 /// Links current metadata and model-authentication predicates.
-fn add_metadata<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+fn add_metadata<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     add_read(
         host,
         "[method]model-registry.get-error",
@@ -130,7 +131,9 @@ fn add_metadata<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasm
     Ok(())
 }
 /// Mutates this catalog directly, never the extension's registration queue.
-fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+fn add_mutations<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
     add_routed(
         host,
         "[method]model-registry.refresh",
@@ -146,15 +149,23 @@ fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> was
     host.func_wrap(
         "[method]model-registry.register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, name, config): (Resource<Endpoint>, String, String)| {
+         (resource, name, config, stream): (
+            Resource<Endpoint>,
+            String,
+            String,
+            Option<Resource<crate::guest_calls::Callback>>,
+        )| {
+            let stream = stream
+                .map(|stream| crate::callback_imports::retain(store.data_mut(), &stream))
+                .transpose()?;
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Register(name, config, reply));
+            let route = endpoint.route(|reply| Request::Register(name, config, stream, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )
 }
 /// Resolves the provider key on the original local catalog without blocking other requests.
-fn add_provider_key<T: WasiView + 'static>(
+fn add_provider_key<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     host.func_wrap_concurrent(

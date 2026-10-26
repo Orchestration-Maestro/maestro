@@ -12,6 +12,9 @@ use std::{
 };
 use tokio::sync::Notify;
 
+#[cfg(test)]
+mod tests;
+
 /// One original response with independently retained consuming body state.
 pub(super) struct Http {
     /// Native status.
@@ -85,6 +88,20 @@ struct Body {
     /// Wakes a pending read when this consumer closes.
     closed: Notify,
 }
+/// Restores a raw read's stream when its future is dropped before settlement.
+struct BodyRead<'a> {
+    /// The consumer retains its independent close and terminal state.
+    body: &'a Body,
+    /// The stream claimed by this read, absent when another read already owns it.
+    stream: Option<HttpBody>,
+}
+impl Drop for BodyRead<'_> {
+    fn drop(&mut self) {
+        if !self.body.ended.get() {
+            *self.body.stream.borrow_mut() = self.stream.take();
+        }
+    }
+}
 impl Body {
     /// Claims an unread body once, retaining native cancellation and consumer close.
     async fn collect(&self) -> Result<Vec<u8>, String> {
@@ -128,15 +145,13 @@ impl Readable for Body {
             if self.ended.get() {
                 return Ok(None);
             }
-            let mut stream = self
-                .stream
-                .borrow_mut()
-                .take()
-                .ok_or("body already in use")?;
-            let result = self.next(&mut stream).await;
-            if matches!(result, Ok(Some(_))) && !self.ended.get() {
-                *self.stream.borrow_mut() = Some(stream);
-            } else {
+            let mut reading = BodyRead {
+                body: self,
+                stream: self.stream.borrow_mut().take(),
+            };
+            let stream = reading.stream.as_mut().ok_or("body already in use")?;
+            let result = self.next(stream).await;
+            if !matches!(result, Ok(Some(_))) {
                 self.ended.set(true);
             }
             result

@@ -87,7 +87,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Browser icon geometry
 
-The 31 glyph datasets in `crates/maestro-web/assets/icons.json` derive from
+The 35 glyph datasets in `crates/maestro-web/assets/icons.json` derive from
 Lucide 0.544.0.
 
 ```text

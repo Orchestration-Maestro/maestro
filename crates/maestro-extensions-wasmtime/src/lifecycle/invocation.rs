@@ -46,6 +46,8 @@ impl Call {
             Self::Factory(call) => attach(&call.reply, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
             Self::Stream(call) => attach(&call.reply, completion),
+            Self::Provider(call) => attach(&call.reply, completion),
+            Self::Assistant(call) => attach(&call.reply, completion),
             Self::ModelHook(call) => attach(&call.reply, completion),
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Credential(call) => match call {

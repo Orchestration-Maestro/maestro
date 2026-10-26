@@ -36,7 +36,7 @@ rounding use `ryu-js`; token text uses `k`, never `M`.
 
 ## Icons
 
-`icons()` loads 28 used glyphs. `icon_svg` serializes ordered primitive nodes
+`icons()` loads 35 used glyphs. `icon_svg` serializes ordered primitive nodes
 with literal names and attributes, adding no namespace bindings;
 [`markup`](../../crates/maestro-text/src/markup.rs) owns XML attribute escaping.
 `icon` renders the SVG through usvg/resvg into an egui image, accepting caller
@@ -113,7 +113,8 @@ feedback and caller-measured message slots. It does not render message content.
 creates its own `DomRoot` and `update` brings that root up to date. A `DomRoot`
 holds the root node and, optionally, an owner for native resources that live
 exactly as long as the root, such as an isolated frame. `DomView` carries the
-page operands once (document, localization, syntax engine, brand pack and mode).
+document, localization, syntax engine, brand pack and mode, plus view-local tool
+renderer bindings that take precedence over page registrations.
 `MountedContent` keeps one placed root. Content of the same type and `key`
 updates the root in place. Content of another type, or of another key (module
 elements use their tag), mounts a new root in place of the old one and releases
@@ -121,9 +122,10 @@ the old root's owner. A failed mount returns its error and keeps the
 previous root. `show_before` places a first root before a given sibling instead
 of last, and `clear` removes the root and releases its owner.
 
-`ContributionHost::new` defines the built-in `copy-button`, `code-block`,
-`markdown-block`, `thinking-block` and `maestro-slot` elements once per page and
-installs their stylesheet once: the selected pack's properties on the document
+`ContributionHost::new` and `ChatPanel::new` share one per-page registration of
+the built-in `copy-button`, `code-block`, `markdown-block`, `thinking-block`,
+`maestro-slot` and native artifact elements. They install the same stylesheet:
+the selected pack's properties on the document
 root, then the rules for listings, Markdown, reasoning disclosures, buttons, tool
 headers and contribution failures. A definition is permanent: its
 constructor callback lives as long as the page, while views connect and

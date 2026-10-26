@@ -4,7 +4,7 @@ experimental = ["setup-scripts"]
 command = "sh .config/prepare-author-component.sh"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(native_io::)))"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(native_io::)))"
 setup = "author-component"
 
 [test-groups.oauth-callback]
@@ -18,5 +18,5 @@ test-group = "oauth-callback"
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "package(maestro-tooling) & test(/^browser_author_build::/)"
+filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"
 test-group = "browser-author"
