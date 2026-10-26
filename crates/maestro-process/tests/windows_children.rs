@@ -37,6 +37,8 @@ fn windows_direct_kill_helper() {
             .nocapture()
             .env(ROLE, "grandchild")
             .env(PORT, std::env::var(PORT).unwrap())
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()
             .unwrap();
         let mut stream = announce(b'P');
