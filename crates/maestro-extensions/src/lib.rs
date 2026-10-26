@@ -50,7 +50,8 @@ mod loader;
 pub mod types;
 pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
 pub use maestro_models::{
-    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
+    Base, EventStream, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode,
+    schema_transport,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;

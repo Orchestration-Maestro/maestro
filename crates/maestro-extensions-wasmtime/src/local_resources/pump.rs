@@ -181,6 +181,8 @@ impl State {
     /// Answers one request with the native owner it names.
     fn dispatch(&self, message: Message) {
         match message {
+            Message::NewStream(request) => request.answer(&self.registry),
+            Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
             Message::SchemaListing(id, reply) => {

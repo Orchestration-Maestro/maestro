@@ -14,6 +14,7 @@ pub(crate) mod events;
 pub(crate) mod registrations;
 mod renderers;
 pub(crate) mod schema;
+mod streams;
 pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.
@@ -47,6 +48,8 @@ pub(crate) struct Exports {
     start: TypedFunc<(), (Result<(), String>,)>,
     /// The original retained pub.
     pub(crate) schema: schema::Exports,
+    /// Actual synchronous authored-stream callbacks.
+    streams: streams::Exports,
     /// Actual renderer and retained component methods.
     renderers: renderers::Exports,
     /// Actual returned shell operation method.
@@ -108,6 +111,7 @@ impl Exports {
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
             renderers,
+            streams: streams::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -148,6 +152,7 @@ impl Exports {
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
+            Call::Stream(call) => self.streams.invoke(accessor, call).await?,
             Call::Schema(call) => self.schema.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,

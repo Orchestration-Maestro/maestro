@@ -55,6 +55,8 @@ pub(crate) enum Call<H = Handle> {
     Tool(ToolCall<H>),
     /// The original weak schema allocation and guest callback admission.
     Schema(schema::Invocation<H>),
+    /// Invokes an authored stream callback on the retained local event.
+    Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.

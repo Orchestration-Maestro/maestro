@@ -30,6 +30,7 @@ mod advanced_ui;
 mod agent_events;
 mod application_messages;
 pub(crate) mod author;
+mod authored_streams;
 mod basic_ui;
 mod bookmark_example;
 mod build;
@@ -46,6 +47,7 @@ mod event_values;
 mod example_support;
 mod exec_records;
 mod finite_records;
+pub(crate) mod stream_host;
 #[macro_use]
 mod fixtures;
 mod guest_family;
@@ -1069,6 +1071,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-schema",
             "invoke-setup",
             "invoke-shortcut",
+            "invoke-stream",
             "invoke-tail",
             "invoke-tool",
             "invoke-with-session",

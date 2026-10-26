@@ -82,6 +82,27 @@ interface host {
 
     }
 
+    /// Independently retained author value, never encoded as JSON.
+    resource stream-value {
+        constructor(value: callback);
+        id: func() -> u32;
+    }
+    /// Host-buffered generic authored events and their independent final result.
+    resource event-stream {
+        push: func(value: stream-value) -> import-route;
+        end: func(value: option<stream-value>) -> import-route;
+        next: async func() -> result<option<stream-value>, string>;
+        %result: async func() -> result<stream-value, string>;
+    }
+    /// Create the native buffer with synchronous author callbacks.
+    new-event-stream: func(classifier: borrow<callback>, extractor: borrow<callback>) -> result<event-stream, string>;
+    /// Which synchronous author callback native admission requests.
+    enum stream-operation { classify, extract }
+    /// Typed result of one author callback.
+    variant stream-selection { complete(bool), extracted(stream-value) }
+    /// One synchronous callback on the original retained event.
+    record local-stream { target: u32, value: u32, operation: stream-operation }
+
     /// Explicit subscription remover.
     resource subscription { unsubscribe: func() -> result<_, string>; }
     /// Emission capability lent to a synchronous invocation.
@@ -157,6 +178,7 @@ interface host {
         prepare(local-prepare),
         synchronous(local-synchronous),
         schema(local-schema),
+        %stream(local-stream),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -176,6 +198,7 @@ interface host {
         prepared(result<string, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
+        %stream(result<stream-selection, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),

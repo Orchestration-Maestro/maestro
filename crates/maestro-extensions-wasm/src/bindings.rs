@@ -30,6 +30,8 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.event-stream": crate::tests::stream_host::Stream,
+            "maestro:extension/host.stream-value": crate::tests::stream_host::Value,
             "maestro:extension/host.bash-output": crate::tests::shell_host::Receiver,
             "maestro:extension/host.theme": crate::tests::renderer_host::Theme,
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,

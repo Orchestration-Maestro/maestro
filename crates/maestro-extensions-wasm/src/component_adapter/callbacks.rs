@@ -99,6 +99,9 @@ kinds! {
         Component(crate::Component),
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
+        StreamValue(super::streams::Value),
+        StreamClassifier(super::streams::Classifier),
+        StreamExtractor(super::streams::Extractor),
     }
     once {
         Abort(crate::AbortListener),
@@ -139,7 +142,6 @@ impl<I: Imports> Identity<I> {
     }
 
     /// Hands the identity handle to the host while the object stays in this table.
-    #[cfg(target_arch = "wasm32")]
     pub(super) fn transfer(self, object: impl Stored) -> I::Callback {
         let Self { handle, id } = self;
         insert(

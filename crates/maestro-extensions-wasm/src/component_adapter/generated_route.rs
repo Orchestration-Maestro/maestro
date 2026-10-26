@@ -10,7 +10,9 @@ use std::{
 use super::{Generated, host};
 use crate::ExtensionResult;
 use crate::component_adapter::tools::ToolCapabilities;
-use crate::component_adapter::{Exports, bash::BashCapabilities, callbacks, renderers};
+use crate::component_adapter::{
+    Capabilities, Exports, bash::BashCapabilities, callbacks, renderers,
+};
 
 /// One nested call's result, ready at once or after its later continuation.
 type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
@@ -88,6 +90,11 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
                 .map_err(crate::schema_error::to_wire),
         ),
+        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+            call.target,
+            call.value,
+            call.operation,
+        )),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call => return asynchronous(call),
     };
@@ -176,7 +183,7 @@ pub(super) async fn event(
 ) -> Result<host::EventOutcome, String> {
     let host::Capabilities { ctx, signal } = resources;
     let outcome = Exports::new(Generated)
-        .invoke_event(target, event, super::Capabilities { ctx, signal })
+        .invoke_event(target, event, Capabilities { ctx, signal })
         .await?;
     Ok(host::EventOutcome {
         event: outcome.event,
