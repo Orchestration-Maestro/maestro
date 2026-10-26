@@ -28,5 +28,17 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
                 })
             }),
         },
+    )?;
+    let edit = Rc::new(host::create_edit_tool("/nonexistent-builtin-root")?);
+    api.register_command(
+        "builtin-prepare-edit",
+        CommandOptions {
+            description: None,
+            get_argument_completions: None,
+            handler: Rc::new(move |args, _| {
+                let result = edit.prepare(&args);
+                Box::pin(async move { Err(result?) })
+            }),
+        },
     )
 }

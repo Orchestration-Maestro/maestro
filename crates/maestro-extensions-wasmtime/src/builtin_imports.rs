@@ -14,17 +14,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Endpoint>(host, "builtin-tool")?;
-    host.func_wrap(
-        "create-read-tool",
-        |mut store: StoreContextMut<'_, T>, (cwd, resize): (String, Option<bool>)| {
-            let result = store.data().api().create_read(cwd, resize);
-            let result = match result {
-                Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
-                Err(error) => Err(error),
-            };
-            Ok((result,))
-        },
-    )?;
+    add_factories(host)?;
     crate::read_imports::add_read(
         host,
         "[method]builtin-tool.metadata",
@@ -60,6 +50,32 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
                     })
                     .await,))
             })
+        },
+    )?;
+    Ok(())
+}
+/// Installs native factory returns without copying their typed definitions.
+fn add_factories<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "create-read-tool",
+        |mut store: StoreContextMut<'_, T>, (cwd, resize): (String, Option<bool>)| {
+            let result = store.data().api().create_read(cwd, resize);
+            let result = match result {
+                Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
+        },
+    )?;
+    host.func_wrap(
+        "create-edit-tool",
+        |mut store: StoreContextMut<'_, T>, (cwd,): (String,)| {
+            let result = store.data().api().create_edit(cwd);
+            let result = match result {
+                Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
         },
     )?;
     Ok(())

@@ -10,6 +10,8 @@ interface host {
     }
     /// Constructs the native read definition without performing file work.
     create-read-tool: func(cwd: string, auto-resize-images: option<bool>) -> result<builtin-tool, string>;
+    /// Constructs the native edit definition without performing file work.
+    create-edit-tool: func(cwd: string) -> result<builtin-tool, string>;
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};

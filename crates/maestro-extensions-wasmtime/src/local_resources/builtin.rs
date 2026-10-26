@@ -7,24 +7,35 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+/// Constructor operands of native definitions, without executing their callbacks.
+pub(crate) enum Factory {
+    /// Read with its independently selected image policy.
+    Read(String, Option<bool>),
+    /// Edit with native argument preparation and file operations.
+    Edit(String),
+}
 impl Registry {
-    /// Constructs the native definition lazily and gives it an independent resource lease.
-    pub(super) fn create_read(
-        &self,
-        cwd: String,
-        auto_resize_images: Option<bool>,
-    ) -> Result<Endpoint, String> {
-        let definition = maestro_extensions::local::create_read_tool_definition::<
-            crate::builtin_tools::Context,
-        >(
-            cwd,
-            ReadToolOptions {
-                auto_resize_images,
-                operations: None,
-            },
-        );
-        self.insert(Capability::Builtin(Rc::new(RwLock::new(definition))))
-            .map(Endpoint)
+    /// Constructs the original typed definition and gives it an independent resource lease.
+    pub(super) fn create_builtin(&self, factory: Factory) -> Result<Endpoint, String> {
+        let definition: Rc<dyn crate::builtin_tools::Definition> = match factory {
+            Factory::Read(cwd, auto_resize_images) => Rc::new(RwLock::new(
+                maestro_extensions::local::create_read_tool_definition::<
+                    crate::builtin_tools::Context,
+                >(
+                    cwd,
+                    ReadToolOptions {
+                        auto_resize_images,
+                        operations: None,
+                    },
+                ),
+            )),
+            Factory::Edit(cwd) => Rc::new(RwLock::new(
+                maestro_extensions::local::create_edit_tool_definition::<
+                    crate::builtin_tools::Context,
+                >(cwd, maestro_extensions::EditToolOptions::default()),
+            )),
+        };
+        self.insert(Capability::Builtin(definition)).map(Endpoint)
     }
 }
 impl crate::api_reads::Endpoint {
@@ -35,7 +46,12 @@ impl crate::api_reads::Endpoint {
         resize: Option<bool>,
     ) -> Result<Endpoint, String> {
         self.0
-            .request(|_, reply| Message::CreateRead(cwd, resize, reply))
+            .request(|_, reply| Message::CreateBuiltin(Factory::Read(cwd, resize), reply))
+    }
+    /// Retains native edit preparation without requiring a context or accessing a file.
+    pub(crate) fn create_edit(&self, cwd: String) -> Result<Endpoint, String> {
+        self.0
+            .request(|_, reply| Message::CreateBuiltin(Factory::Edit(cwd), reply))
     }
 }
 impl State {

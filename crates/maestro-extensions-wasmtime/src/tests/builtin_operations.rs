@@ -2,6 +2,30 @@
 use serde_json::json;
 
 #[test]
+fn builtin_owned_edit_prepares_before_execution() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        let command = runner
+            .get_command("builtin-prepare-edit")
+            .expect("compiled guest retains the native edit preparation")
+            .command;
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("edit_preparation.json")).unwrap();
+        assert_eq!(cases.len(), 22);
+        for case in cases {
+            let result =
+                (command.handler)(case["input"].to_string(), runner.create_command_context()).await;
+            let observed: serde_json::Value =
+                serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+            assert_eq!(observed, case["expected"], "{}", case["id"]);
+        }
+    });
+}
+
+#[test]
 fn builtin_owned_tool_survives_factory_and_callback_return() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()

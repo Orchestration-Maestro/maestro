@@ -636,6 +636,12 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn create_edit_tool(
+        &mut self,
+        _: String,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
     fn create_read_tool(
         &mut self,
         _: String,

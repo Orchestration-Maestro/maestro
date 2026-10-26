@@ -44,10 +44,9 @@ pub(crate) enum Message {
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
     Api(u64, crate::api_reads::Request),
-    /// Creates and retains an original native read definition.
-    CreateRead(
-        String,
-        Option<bool>,
+    /// Creates and retains an original typed native definition.
+    CreateBuiltin(
+        builtin::Factory,
         std::sync::mpsc::Sender<Result<crate::builtin_reads::Endpoint, String>>,
     ),
     /// Reads or prepares an original native built-in definition.
