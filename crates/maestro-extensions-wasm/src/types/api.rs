@@ -48,6 +48,15 @@ pub struct CommandOptions {
 port! {
     /// Registrations and ordinary actions a host provides; each method forwards one request.
     ExtensionHost for ExtensionAPI via 0 {
+        /// Formats a native byte count without narrowing its floating-point domain.
+        #[doc(hidden)]
+        fn native_format_size(bytes: f64) -> String;
+        /// Reads complete typed metadata through the installed host.
+        #[doc(hidden)]
+        fn native_frontmatter(content: &str) -> crate::bindings::maestro::extension::host::FrontmatterDocument;
+        /// Forwards ordinary helper operands to their native owners.
+        #[doc(hidden)]
+        fn native_helper(operation: &str, data: &str) -> String;
         /// Constructs file-backed credentials with the application's optional default path.
         fn create_auth_storage(path: Option<&str>) -> crate::AuthStorage;
         /// Constructs credentials over a retained raw-text backend.
@@ -158,5 +167,18 @@ impl ExtensionAPI {
     #[must_use]
     pub fn set_model(&self, model: Model) -> ExtensionFuture<'_, bool> {
         self.0.set_model(model)
+    }
+}
+
+impl ExtensionAPI {
+    /// Encodes ordinary operands without introducing another native algorithm.
+    pub(crate) fn helper<A: serde::Serialize, R: serde::de::DeserializeOwned>(
+        &self,
+        operation: &str,
+        args: &A,
+    ) -> ExtensionResult<R> {
+        let data = serde_json::to_string(args).map_err(|error| error.to_string())?;
+        let value = self.0.native_helper(operation, &data)?;
+        serde_json::from_str(&value).map_err(|error| error.to_string())
     }
 }

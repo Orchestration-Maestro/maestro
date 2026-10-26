@@ -81,6 +81,7 @@ code-block, markdown-block, thinking-block {
   color: var(--maestro-color-text);
 }
 .maestro-button-secondary {
+  box-shadow: inset 0 0 0 1px var(--maestro-color-border);
   background: var(--maestro-color-panel);
   color: var(--maestro-color-text);
 }

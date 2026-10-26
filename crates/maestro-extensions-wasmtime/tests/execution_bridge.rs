@@ -28,7 +28,7 @@ async fn composed_contexts() {
         Rc::new(|_| panic!("this fixture registers no bus listeners")),
     );
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone()),
+        artifact_factory(path.clone(), "installed-component-host".into()),
         "/factory-only".into(),
         bus.for_extension(),
         runtime.clone(),

@@ -27,6 +27,7 @@ pub fn loader() -> ModuleLoader<Local> {
     Rc::new(|path: &str| {
         Box::pin(std::future::ready(Ok(Some(artifact_factory(
             path.to_owned(),
+            "installed-component-host".into(),
         )))))
     })
 }

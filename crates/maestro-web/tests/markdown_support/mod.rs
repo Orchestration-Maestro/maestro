@@ -14,7 +14,7 @@ mod tests {
         browser::{
             attachment_content::{
                 AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
-                BrowserAttachmentHost, FocusTarget, ReadingLayout, ReadingPhase,
+                BrowserAttachmentHost, ReadingLayout, ReadingPhase,
             },
             timer::Timer,
         },
@@ -326,22 +326,6 @@ mod tests {
             self.copies.borrow_mut().push(text.to_owned());
             Box::pin(std::future::ready(true))
         }
-        fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
-            self.native.capture_focus()
-        }
-        fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentHostError> {
-            self.native.restore_focus(target)
-        }
-        fn dialog_bounds(
-            &self,
-            id: egui::Id,
-            dimensions: [&str; 2],
-        ) -> Result<egui::Rect, AttachmentHostError> {
-            self.native.dialog_bounds(id, dimensions)
-        }
-        fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
-            self.native.native_key(event, context);
-        }
         fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
             if self.fail_measure.replace(false) {
                 return Err(AttachmentHostError::Host(
@@ -395,9 +379,6 @@ mod tests {
         fn remove(&self, id: egui::Id) {
             self.removed.borrow_mut().push(id);
             self.native.remove(id);
-        }
-        fn take_escape(&self) -> bool {
-            self.native.take_escape()
         }
         fn timer(
             &self,

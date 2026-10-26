@@ -77,6 +77,8 @@ pub(crate) struct State {
     table: ResourceTable,
     /// The original registration facade's endpoint, not a reconstructed API.
     api: Endpoint,
+    /// Application installation identity supplied at factory composition.
+    pub(crate) installation_version: String,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
     /// The original retained pub.
@@ -86,8 +88,14 @@ impl State {
     /// Constructs the one instance state before canonical linking.
     ///
     /// The instance reads `path`, the artifact it is loaded from, as `MAESTRO_EXTENSION_PATH`.
-    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> Self {
+    pub(crate) fn new(
+        api: Endpoint,
+        callbacks: Callbacks,
+        path: &str,
+        installation_version: String,
+    ) -> Self {
         Self {
+            installation_version,
             wasi: wasmtime_wasi::WasiCtxBuilder::new()
                 .env("MAESTRO_EXTENSION_PATH", path)
                 .build(),
@@ -127,6 +135,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
+    crate::helper_imports::add_to_linker(&mut host)?;
     crate::exec_imports::add_to_linker(&mut host)?;
     crate::builtin_imports::add_to_linker(&mut host)?;
     crate::native_render_imports::link(&mut host)?;

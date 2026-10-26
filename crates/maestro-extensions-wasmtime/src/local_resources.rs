@@ -15,6 +15,7 @@ pub(crate) mod effects;
 mod footer;
 pub(crate) mod model_streams;
 mod rendering;
+pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
@@ -230,6 +231,8 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// An independently retained enumerated schema node.
+    Schema(maestro_extensions::SchemaNode),
     /// Original native model invocation buffer.
     AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.

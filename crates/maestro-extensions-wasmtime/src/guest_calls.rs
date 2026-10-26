@@ -36,6 +36,8 @@ pub(crate) use tools::ToolCall;
 pub(crate) struct Callback {
     /// Stable key used by the authored closure table.
     pub(crate) id: u32,
+    /// An enumerated foreign node retained by the existing native registry.
+    pub(crate) schema: Option<crate::local_resources::schema::Endpoint>,
 }
 
 /// Invocations consumed by the single Store driver, not by a replacement executor.
@@ -143,7 +145,7 @@ impl Callbacks {
         self.next = id
             .checked_add(1)
             .ok_or_else(|| "extension callback identity exhausted".to_owned())?;
-        Ok(Callback { id })
+        Ok(Callback { id, schema: None })
     }
 
     /// Retains one callback admission, shared by every native alias of this identity.

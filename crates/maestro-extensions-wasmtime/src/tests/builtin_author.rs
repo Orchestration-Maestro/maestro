@@ -8,7 +8,7 @@ pub(super) async fn loaded() -> ExtensionRunner<Local> {
     let runtime = create_extension_runtime::<Local>();
     let events = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
     let owner = maestro_extensions::load_extension_from_factory(
-        crate::artifact_factory(path.clone()),
+        crate::artifact_factory(path.clone(), "builtin-test-version".into()),
         "/".into(),
         events.for_extension(),
         runtime.clone(),

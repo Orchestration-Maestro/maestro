@@ -11,6 +11,17 @@ pub(crate) mod edit;
 pub(crate) mod read;
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod write;
+/// Per-tool executable annotations returned beside the metadata document.
+pub type ToolListing<C> = (
+    String,
+    Vec<(
+        u32,
+        String,
+        C,
+        crate::bindings::maestro::extension::host::SchemaShape,
+        bool,
+    )>,
+);
 
 /// Restore the shared schema owner with the guest callback representation.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
