@@ -6,9 +6,18 @@ pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
 pub mod dom;
+#[cfg(target_arch = "wasm32")]
+pub use components::agent_interface::AgentInterface;
+pub use components::agent_interface::{
+    AgentInterfaceProps, ApiKeyRequired, BeforeSend, BrowserSession,
+};
 pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
+#[cfg(target_arch = "wasm32")]
 pub use components::input::Input;
+#[cfg(target_arch = "wasm32")]
+pub use components::message_editor::MessageEditor;
+pub use components::message_editor::{EditorControls, MessageEditorProps};
 pub use components::message_list::MessageList;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
@@ -16,16 +25,32 @@ pub use components::message_renderer_registry::{
 pub use components::messages::{
     AbortedMessage, AssistantMessage, ToolMessage, ToolMessageDebugView, UserMessage,
 };
+#[cfg(target_arch = "wasm32")]
+pub use components::provider_key_input::ProviderKeyInput;
 pub use components::streaming_message_container::StreamingMessageContainer;
+#[cfg(target_arch = "wasm32")]
+pub use components::theme_toggle::ThemeToggle;
 pub use components::thinking_block::ThinkingBlock;
 #[cfg(target_arch = "wasm32")]
 pub use dialogs::attachment_overlay::AttachmentOverlay;
+#[cfg(target_arch = "wasm32")]
+pub use dialogs::{
+    api_key_prompt_dialog::ApiKeyPromptDialog,
+    custom_provider_dialog::CustomProviderDialog,
+    model_selector_dialog::ModelSelector,
+    persistent_storage_dialog::PersistentStorageDialog,
+    providers_models_tab::ProvidersModelsTab,
+    session_list_dialog::SessionListDialog,
+    settings_dialog::{ApiKeysTab, ProxyTab, SettingsDialog, SettingsTab},
+};
 pub mod export_html;
 pub mod icons;
 pub mod storage;
 #[cfg(target_arch = "wasm32")]
 pub use storage::backends::indexeddb_storage_backend::IndexedDBStorageBackend;
 pub mod utils;
+#[cfg(target_arch = "wasm32")]
+pub use utils::auth_token::{clear_auth_token, get_auth_token};
 pub use utils::format::{format_cost, format_model_cost, format_token_count, format_usage};
 #[cfg(target_arch = "wasm32")]
 pub use utils::i18n::BrowserLanguageHost;
@@ -42,7 +67,8 @@ pub use maestro_app::browser::utils::attachment_utils::{
     Attachment, SharedAttachment, load_attachment,
 };
 pub use maestro_app::browser::utils::proxy_utils::{
-    apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
+    apply_proxy_if_needed, create_local_stream_fn, create_stream_fn, is_cors_error,
+    should_use_proxy_for_provider,
 };
 
 pub use maestro_app::{
@@ -67,6 +93,7 @@ pub use maestro_app::browser::components::sandbox::{
     console_runtime_provider::{ConsoleLog, ConsoleRuntimeProvider},
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
 };
+pub use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW;
 pub mod tools;
 pub use tools::artifacts::ArtifactElement;
 

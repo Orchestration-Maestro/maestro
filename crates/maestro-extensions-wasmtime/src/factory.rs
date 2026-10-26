@@ -14,12 +14,14 @@ use wasmtime::{
 
 /// Creates a local factory for one authored extension component at the supplied path.
 ///
+/// The application supplies its installation version; components do not choose it.
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
-pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
+pub fn artifact_factory(path: String, installation_version: String) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
+        let installation_version = installation_version.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api)?;
@@ -31,7 +33,7 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path);
+            let state = lifecycle::State::new(endpoint, callbacks, &path, installation_version);
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {

@@ -1,275 +1,148 @@
-//! Owned dialog lifetimes in one canvas context.
-use super::dialog::{DialogBody, DialogProps};
-use crate::dialogs::dialog::DialogUiError;
+//! An opened dialog that keeps itself mounted until closed and restores the focus it took over.
+use super::dialog::{DialogProps, dialog};
 use crate::{
-    I18n,
-    browser::attachment_content::{AttachmentHost, FocusTarget, identity},
+    browser::attachment_content::browser::host_error,
+    dom::{DomRoot, DomView},
+    tools::types::ToolUiError,
 };
-use maestro_theme::BrandPresentation;
-use std::{
-    cell::{Cell, RefCell},
-    rc::{Rc, Weak},
-};
-/// One drawing context with weak dialog registrations.
+use std::{any::Any, cell::RefCell, rc::Rc};
+use wasm_bindgen::JsCast as _;
+use web_sys::{Element, Node};
+
+/// The standard panel width of an opened dialog.
+pub const MODAL_WIDTH: &str = "min(600px, 90vw)";
+/// The standard panel height of an opened dialog.
+pub const MODAL_HEIGHT: &str = "min(600px, 80vh)";
+/// A dialog mounted on the page body.
+///
+/// Opening keeps the dialog alive until it closes, whether or not this handle is kept.
+/// Clones share one dialog.
 #[derive(Clone)]
-pub struct DialogContext {
-    /// Shared platform and weak owner registry.
-    inner: Rc<Context>,
-}
-/// Context-owned platform effects and non-owning paint handles.
-struct Context {
-    /// Canvas drawing owner.
-    drawing: egui::Context,
-    /// Replaceable native content owner.
-    host: Rc<dyn AttachmentHost>,
-    /// Independent dialogs in opening order.
-    owners: RefCell<Vec<Weak<State>>>,
-    /// Pending next-frame effects with their completion flags.
-    restorations: RefCell<Vec<(crate::browser::timer::Timer, Rc<Cell<bool>>)>>,
-}
-/// Mutable caller operands, owned only by the retained handle.
-pub(super) struct State {
-    /// Platform context.
-    pub(super) context: DialogContext,
-    /// Independent modal identity.
-    pub(super) id: egui::Id,
-    /// Live props, snapshotted before calling user code.
-    pub(super) props: RefCell<DialogProps>,
-    /// Focus captured before admission, consumed at removal.
-    focus: RefCell<Option<Rc<FocusTarget>>>,
-    /// Last admitted pointer gesture, independent of stale toolkit clicks.
-    pub(super) pressed: RefCell<Option<bool>>,
-    /// Retained Close texture, updated only when its painted operands change.
-    pub(super) ring:
-        RefCell<crate::browser::control_paint::Painter<super::dialog::close::CloseKey>>,
-    /// Mount identity invalidated before removal effects or caller callbacks.
-    pub(super) mount: Cell<u64>,
-    /// Mounted Close properties, discarded before any removal effects.
-    pub(super) transitions: RefCell<Option<super::dialog::close::CloseTransitions>>,
-    /// Non-owning aliases for the existing reading transaction.
-    #[cfg(target_arch = "wasm32")]
-    pub(super) native: RefCell<super::dialog::browser::Native>,
-}
-/// Retained shell owner; dropping it releases its handling route.
 pub struct DialogBase {
-    /// Private lifetime shared only with temporary paint snapshots.
+    /// Shared dialog state.
     state: Rc<State>,
 }
-impl DialogContext {
-    /// Retain the canvas and existing native content owner.
-    #[must_use]
-    pub fn new(context: egui::Context, host: Rc<dyn AttachmentHost>) -> Self {
-        Self {
-            inner: Rc::new(Context {
-                drawing: context,
-                host,
-                owners: RefCell::default(),
-                restorations: RefCell::default(),
-            }),
-        }
-    }
-    /// Paint open retained dialogs and dispatch their input.
-    /// # Errors
-    /// Returns reached localization or platform failures.
-    pub fn render<F: ?Sized>(
-        &self,
-        i18n: &I18n<F>,
-        presentation: &BrandPresentation<'_>,
-    ) -> Result<(), DialogUiError> {
-        let completed: Vec<_> = self
-            .inner
-            .restorations
-            .borrow_mut()
-            .extract_if(.., |(_, done)| done.get())
-            .collect();
-        drop(completed);
-        let owners = self.inner.owners.borrow().clone();
-        let escape = self.inner.host.take_escape()
-            | self
-                .inner
-                .drawing
-                .input(|i| i.key_pressed(egui::Key::Escape));
-        let mut result = Ok(());
-        for registration in owners {
-            let Some(owner) = registration.upgrade() else {
-                continue;
-            };
-            if !owner.props.borrow().is_open {
-                continue;
-            }
-            let current = if escape {
-                owner.close(true)
-            } else {
-                super::dialog::draw(&owner, i18n, presentation)
-            };
-            result = result.and(current);
-        }
-        result
-    }
-    /// Shared canvas context for the source-mapped shell painter.
-    pub(super) fn drawing(&self) -> &egui::Context {
-        &self.inner.drawing
-    }
-    /// Existing native effect owner.
-    pub(super) fn host(&self) -> &dyn AttachmentHost {
-        self.inner.host.as_ref()
-    }
+/// Operands and the open dialog's resources.
+struct State {
+    /// Page operands.
+    view: Rc<DomView>,
+    /// Literal CSS panel width.
+    width: String,
+    /// Literal CSS panel height.
+    height: String,
+    /// The open dialog, absent while closed.
+    opened: RefCell<Option<Opened>>,
+    /// Notified after each close, once the dialog is removed and focus restored.
+    on_close: RefCell<Option<Rc<dyn Fn()>>>,
+}
+/// Resources of an open dialog.
+struct Opened {
+    /// Mounted backdrop and its close routes, whose callbacks keep the state alive.
+    root: DomRoot,
+    /// The element focused before opening, including a focusable non-HTML element.
+    previous_focus: Option<Element>,
+    /// State of the component showing this dialog, kept alive while it is open.
+    _component: Option<Rc<dyn Any>>,
 }
 impl DialogBase {
-    /// Retain a closed shell with base dimensions.
+    /// A closed dialog with the given panel dimensions.
     #[must_use]
-    pub fn new(context: DialogContext, children: DialogBody) -> Self {
-        let mut props = DialogProps::new(false, children);
-        props.height = "min(600px, 80vh)".into();
+    pub fn new(view: Rc<DomView>, width: &str, height: &str) -> Self {
         Self {
             state: Rc::new(State {
-                context,
-                id: identity(),
-                props: RefCell::new(props),
-                focus: RefCell::default(),
-                pressed: RefCell::default(),
-                ring: RefCell::default(),
-                mount: Cell::new(0),
-                transitions: RefCell::default(),
-                #[cfg(target_arch = "wasm32")]
-                native: RefCell::default(),
+                view,
+                width: width.into(),
+                height: height.into(),
+                opened: RefCell::default(),
+                on_close: RefCell::default(),
             }),
         }
     }
-    /// Replace the live caller operands.
-    /// # Errors
-    /// Returns reached native failures.
-    pub fn set_props(&self, props: DialogProps) -> Result<(), DialogUiError> {
-        let open = props.is_open;
-        let was_open = self.state.props.borrow().is_open;
-        let mut props = props;
-        props.is_open = was_open;
-        let previous = self.state.props.replace(props);
+    /// Replace the callback notified after each close.
+    pub fn set_on_close(&self, callback: Option<Rc<dyn Fn()>>) {
+        let previous = self.state.on_close.replace(callback);
         drop(previous);
-        self.state.context.inner.drawing.request_repaint();
-        if open { self.open() } else { self.close() }
     }
-    /// Eagerly admit this modal before any render or result polling.
+    /// Remember the focused element and mount the dialog with `content` on the page body.
+    ///
+    /// `component` is the state of the component showing this dialog; it stays alive while the
+    /// dialog is open, so its callbacks may hold it weakly. Opening an open dialog changes nothing.
     /// # Errors
-    /// Returns native admission failures.
-    pub fn open(&self) -> Result<(), DialogUiError> {
-        if self.state.props.borrow().is_open {
+    /// Returns a localization or native failure; the dialog then stays closed.
+    pub fn open(
+        &self,
+        content: Vec<Node>,
+        component: Option<Rc<dyn Any>>,
+    ) -> Result<(), ToolUiError> {
+        if self.is_open() {
             return Ok(());
         }
-        let focus = self.state.context.inner.host.capture_focus()?;
-        let target = focus_target(&self.state.context.inner.drawing, focus);
-        if let Err(error) = self
-            .state
-            .context
-            .inner
-            .host
-            .set_overlay(self.state.id, true)
-        {
-            let _ = self
-                .state
-                .context
-                .inner
-                .host
-                .set_overlay(self.state.id, false);
-            return Err(DialogUiError::Host(error));
-        }
-        *self.state.focus.borrow_mut() = target;
-        self.state.props.borrow_mut().is_open = true;
-        self.state
-            .context
-            .inner
-            .owners
-            .borrow_mut()
-            .push(Rc::downgrade(&self.state));
-        self.state.context.inner.drawing.request_repaint();
-        Ok(())
-    }
-    /// Remove this shell before invoking its optional notification.
-    /// # Errors
-    /// Returns reached platform failures.
-    pub fn close(&self) -> Result<(), DialogUiError> {
-        self.state.close(true)
-    }
-}
-impl State {
-    /// Revoke before removal; caller notification is never run under a borrow.
-    pub(super) fn close(&self, notify: bool) -> Result<(), DialogUiError> {
-        let callback = {
-            let mut props = self.props.borrow_mut();
-            if !props.is_open {
-                return Ok(());
-            }
-            props.is_open = false;
-            props.on_close.clone()
+        let state = &self.state;
+        let document = &state.view.document;
+        let previous_focus = document.active_element();
+        let owner = Rc::clone(state);
+        let props = DialogProps {
+            on_close: Some(Rc::new(move || close(&owner))),
+            width: state.width.clone(),
+            height: state.height.clone(),
+            backdrop_class_name: "maestro-dialog-blur".into(),
+            ..DialogProps::new(content)
         };
-        self.mount.set(self.mount.get().wrapping_add(1));
-        self.transitions.take();
-        self.context
-            .inner
-            .drawing
-            .memory_mut(|memory| memory.surrender_focus(self.id.with("close")));
-        self.context
-            .inner
-            .owners
-            .borrow_mut()
-            .retain(|owner| owner.as_ptr() != self);
-        self.context.inner.host.remove(self.id);
-        let removed = self.context.inner.host.set_overlay(self.id, false);
-        let focus = self.focus.take();
-        let restored = focus.map_or(Ok(()), |target| {
-            let complete = Rc::new(Cell::new(false));
-            let delivered = complete.clone();
-            let target: Rc<FocusTarget> = Rc::new(move || {
-                delivered.set(true);
-                target()
-            });
-            let timer = self.context.inner.host.restore_focus(target)?;
-            self.context
-                .inner
-                .restorations
-                .borrow_mut()
-                .push((timer, complete));
-            Ok(())
-        });
-        self.context.inner.drawing.request_repaint();
-        if notify && let Some(callback) = callback {
-            callback();
-        }
-        removed.and(restored).map_err(DialogUiError::Host)
-    }
-}
-impl Drop for DialogBase {
-    fn drop(&mut self) {
-        let _ = self.state.close(false);
-    }
-}
-
-/// Keep native and canvas focus together without scheduling an absent target.
-fn focus_target(
-    drawing: &egui::Context,
-    native: Option<Rc<FocusTarget>>,
-) -> Option<Rc<FocusTarget>> {
-    let canvas = drawing.memory(egui::Memory::focused);
-    if native.is_none() && canvas.is_none() {
-        return None;
-    }
-    let drawing = drawing.clone();
-    Some(Rc::new(move || {
-        if let Some(native) = &native {
-            native()?;
-        }
-        if let Some(id) = canvas {
-            drawing.memory_mut(|memory| memory.request_focus(id));
-        }
+        let root = dialog(&state.view, &props)?
+            .ok_or_else(|| ToolUiError::Presentation("Open dialog mounted nothing".into()))?;
+        document
+            .body()
+            .ok_or_else(|| ToolUiError::Presentation("Document has no body".into()))?
+            .append_child(&root.node)
+            .map_err(|error| host_error(&error))?;
+        state.opened.replace(Some(Opened {
+            root,
+            previous_focus,
+            _component: component,
+        }));
         Ok(())
-    }))
-}
-
-#[cfg(target_arch = "wasm32")]
-impl DialogBase {
-    /// Set literal panel classes for the next browser render without replacing its body.
-    pub fn set_class_name(&self, class_name: String) {
-        self.state.native.borrow_mut().class_name = class_name.into();
-        self.state.context.drawing().request_repaint();
     }
+    /// Remove the dialog, restore the focus it took over, then notify the close callback.
+    ///
+    /// Closing a closed dialog changes nothing.
+    pub fn close(&self) {
+        close(&self.state);
+    }
+    /// Whether the dialog is mounted.
+    #[must_use]
+    pub fn is_open(&self) -> bool {
+        self.state.opened.borrow().is_some()
+    }
+    /// The open dialog's panel.
+    #[must_use]
+    pub fn panel(&self) -> Option<Element> {
+        self.state
+            .opened
+            .borrow()
+            .as_ref()
+            .and_then(|opened| opened.root.node.first_child())
+            .and_then(|panel| panel.dyn_into().ok())
+    }
+}
+/// Close `state`'s dialog once, releasing the routes that keep it alive.
+fn close(state: &Rc<State>) {
+    let Some(opened) = state.opened.take() else {
+        return;
+    };
+    if let Some(parent) = opened.root.node.parent_node() {
+        let _ = parent.remove_child(&opened.root.node);
+    }
+    if let Some(previous) = opened
+        .previous_focus
+        .as_ref()
+        .filter(|focused| focused.is_connected())
+    {
+        let _ = crate::browser::invoke0(previous, "focus");
+    }
+    let callback = state.on_close.borrow().clone();
+    if let Some(callback) = callback {
+        callback();
+    }
+    // The component may hold this dialog only weakly; release it after its notification.
+    drop(opened);
 }

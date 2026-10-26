@@ -4,6 +4,10 @@ pub mod attachment_content;
 /// Composed native control decorations.
 pub(crate) mod control_paint;
 
+/// Local-server model discovery with the page's effects.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod discovery;
+
 /// Cancel-on-drop browser timers.
 pub mod timer;
 
