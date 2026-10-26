@@ -14,6 +14,7 @@ mod credentials;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
+mod providers;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -57,6 +58,8 @@ pub(crate) struct Exports {
     pub(crate) schema: schema::Exports,
     /// Awaited hooks on the native invocation.
     model_hooks: model_hooks::Exports,
+    /// Registered setup and original returned-stream operations.
+    providers: providers::Exports,
     /// Actual synchronous authored-stream callbacks.
     streams: streams::Exports,
     /// Actual renderer and retained component methods.
@@ -133,6 +136,7 @@ impl Exports {
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
             model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
+            providers: providers::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -169,7 +173,11 @@ impl Exports {
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
-            call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
+            call @ (Call::Stream(_)
+            | Call::ModelHook(_)
+            | Call::Schema(_)
+            | Call::Provider(_)
+            | Call::Assistant(_)) => {
                 self.invoke_value_callback(accessor, call).await?;
             }
             Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
@@ -214,6 +222,8 @@ impl Exports {
         call: Call<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
+            Call::Provider(call) => self.providers.invoke(accessor, call).await,
+            Call::Assistant(call) => self.providers.assistant(accessor, call).await,
             Call::Stream(call) => self.streams.invoke(accessor, call).await,
             Call::ModelHook(call) => self.model_hooks.invoke(accessor, call).await,
             Call::Schema(call) => self.schema.invoke(accessor, call).await,

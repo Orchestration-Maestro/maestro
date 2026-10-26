@@ -284,7 +284,7 @@ async fn boundary(api: &ExtensionAPI, context: &ExtensionContext) -> Result<Valu
     let json_error = host::auth_storage_in_memory("{")
         .err()
         .ok_or("invalid JSON admitted")?;
-    let route = host::register_provider("boundary-invalid", "{");
+    let route = host::register_provider("boundary-invalid", "{", None);
     let host::RouteStep::Done(Err(provider_json)) = route.next() else {
         return Err("invalid provider JSON admitted".into());
     };

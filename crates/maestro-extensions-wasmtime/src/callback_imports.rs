@@ -74,3 +74,16 @@ pub(crate) fn optional<T: CallbackView>(
 ) -> wasmtime::Result<Option<Handle>> {
     callback.map(|callback| retain(store, callback)).transpose()
 }
+
+/// Retain a borrowed authored value with destruction deferred until Store quiescence.
+pub(crate) fn retain_object<T: CallbackView>(
+    store: &mut T,
+    object: &Resource<Callback>,
+) -> wasmtime::Result<Handle> {
+    let id = store.ctx().table.get(object)?.id;
+    let admission = store.api().admission();
+    store
+        .callbacks()
+        .retain_object(id, admission)
+        .map_err(wasmtime::Error::msg)
+}

@@ -224,10 +224,6 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionFuture<'a, String>;
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
-    /// Registers JSON provider data.
-    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()>;
-    /// Unregisters a provider.
-    fn unregister_provider(&self, name: &str) -> ExtensionResult<()>;
     /// Starts a compaction on the supplied context.
     fn compact(
         &self,

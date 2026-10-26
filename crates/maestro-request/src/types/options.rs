@@ -170,3 +170,35 @@ impl<C: Default, T> Default for SimpleStreamOptions<C, T> {
         }
     }
 }
+
+/// Original callback options without conversion between raw and simple policies.
+#[derive(Clone)]
+pub enum StreamOptionsInput<C, O, T> {
+    /// Common controls, open provider fields and retained opaque objects.
+    Raw(ProviderStreamOptions<C, O>),
+    /// Common controls with reasoning, budgets and tool selection.
+    Simple(SimpleStreamOptions<C, T>),
+}
+
+impl<C, O, T> StreamOptionsInput<C, O, T> {
+    /// Borrow the common controls without changing the supplied variant.
+    #[must_use]
+    pub fn common(&self) -> &C {
+        match self {
+            Self::Raw(options) => &options.common,
+            Self::Simple(options) => &options.common,
+        }
+    }
+}
+
+impl<C, O, T> From<ProviderStreamOptions<C, O>> for StreamOptionsInput<C, O, T> {
+    fn from(options: ProviderStreamOptions<C, O>) -> Self {
+        Self::Raw(options)
+    }
+}
+
+impl<C, O, T> From<SimpleStreamOptions<C, T>> for StreamOptionsInput<C, O, T> {
+    fn from(options: SimpleStreamOptions<C, T>) -> Self {
+        Self::Simple(options)
+    }
+}

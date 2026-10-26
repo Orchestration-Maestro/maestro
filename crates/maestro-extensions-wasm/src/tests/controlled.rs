@@ -2079,6 +2079,7 @@ impl Imports for Controlled {
         resource: &Reader,
         name: &str,
         config: &str,
+        _stream: Option<&Self::Callback>,
     ) -> ExtensionResult<()> {
         resource.data.unit(
             "registerProvider",
@@ -2350,7 +2351,12 @@ impl Imports for Controlled {
         Ok(())
     }
 
-    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()> {
+    fn register_provider(
+        &self,
+        name: &str,
+        config: &str,
+        _stream: Option<&Self::Callback>,
+    ) -> ExtensionResult<()> {
         self.observed
             .borrow_mut()
             .log(format!("provider register {name} {config}"));

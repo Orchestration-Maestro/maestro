@@ -292,6 +292,7 @@ impl host::HostModelRegistry for State {
         this: Resource<Reader>,
         name: String,
         config: String,
+        _stream: Option<Resource<super::host::Identity>>,
     ) -> wasmtime::Result<Resource<super::host::Route>> {
         let result = self
             .table

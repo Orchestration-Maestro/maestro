@@ -1012,6 +1012,7 @@ impl host::Host for State {
         &mut self,
         name: String,
         config: String,
+        _stream: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));
