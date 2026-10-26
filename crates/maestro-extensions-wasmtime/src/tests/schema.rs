@@ -15,6 +15,7 @@ fn events() -> EventBus<Local> {
 
 #[test]
 fn schema_identity_cache_matches_actual_captures_and_retires_without_admission() {
+    let (_owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
     let (pump, admission) = Pump::new();
     let registry = pump.registry();
     let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
@@ -31,7 +32,7 @@ fn schema_identity_cache_matches_actual_captures_and_retires_without_admission()
             handle.clone(),
         )],
         &registry,
-        &events(),
+        &api,
     );
     let node = schema.remove("").unwrap();
     assert_eq!(registry.schema_origin(&node).unwrap().id(), id);
@@ -63,7 +64,7 @@ fn schema_identity_cache_matches_actual_captures_and_retires_without_admission()
             handle,
         )],
         &registry,
-        &events(),
+        &api,
     );
     assert_eq!(
         registry.resources.borrow().identities.len(),
@@ -263,6 +264,8 @@ fn routed_base_conversion_preserves_null_replacements_and_diagnostics() {
                 let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
                 let id = callbacks.allocate().unwrap().id;
                 let handle = callbacks.retain(id, admission).unwrap();
+                let (_owner, api) =
+                    super::api::api(maestro_extensions::create_extension_runtime::<Local>());
                 let mut schema = code(
                     vec![(
                         String::new(),
@@ -273,7 +276,7 @@ fn routed_base_conversion_preserves_null_replacements_and_diagnostics() {
                         handle,
                     )],
                     &registry,
-                    &events(),
+                    &api,
                 );
                 let base = schema.remove("").unwrap().base.unwrap();
                 drop(incoming);

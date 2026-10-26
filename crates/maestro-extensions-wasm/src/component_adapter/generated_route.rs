@@ -57,9 +57,7 @@ fn start(route: &host::ImportRoute, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
-        host::LocalCall::AuthFallback(call) => host::LocalResult::AuthFallback(
-            super::super::auth_storage::invoke_fallback(call.target, &call.provider),
-        ),
+        host::LocalCall::AuthFallback(call) => auth_fallback(&call),
         host::LocalCall::AuthBackend(call) => return backend(call),
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
@@ -116,6 +114,14 @@ fn dispatch(call: host::LocalCall) -> Running {
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))
+}
+
+/// Invoke the retained credential fallback through its original author adapter.
+fn auth_fallback(call: &host::LocalAuthFallback) -> host::LocalResult {
+    host::LocalResult::AuthFallback(super::super::auth_storage::invoke_fallback(
+        call.target,
+        &call.provider,
+    ))
 }
 
 /// Runs one nested synchronous callback prefix.

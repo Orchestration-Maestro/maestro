@@ -5,6 +5,8 @@ use std::sync::mpsc::Sender;
 type Reply<T> = Sender<Result<T, String>>;
 /// One typed operation on the currently borrowed JSON operand.
 pub(crate) enum Request {
+    /// Invoke a retained node against the operand on its original native stack.
+    Invoke(crate::local_resources::schema::Invocation),
     /// Inspect one selected JSON kind.
     Kind(String, Reply<Option<JsonKind>>),
     /// Read one selected JSON value.
@@ -20,11 +22,16 @@ pub(crate) enum Request {
 }
 impl Request {
     /// Apply one operation to the operand still borrowed by its caller.
-    pub(crate) fn answer(self, value: &mut serde_json::Value) {
+    pub(crate) fn answer(
+        self,
+        value: &mut serde_json::Value,
+        registry: &crate::local_resources::Registry,
+    ) {
         #[cfg(test)]
         self.measure();
         let mut node = crate::schema_node::JsonNode(value);
         match self {
+            Self::Invoke(call) => call.answer(registry, node.0),
             Self::Kind(path, reply) => {
                 let _ = reply.send(Ok(node.kind(&path)));
             }
@@ -49,6 +56,7 @@ impl Request {
     pub(crate) fn reject(self) {
         let error = "extension JSON operand ended".to_owned();
         match self {
+            Self::Invoke(call) => call.reject(),
             Self::Kind(_, r) => {
                 let _ = r.send(Err(error));
             }

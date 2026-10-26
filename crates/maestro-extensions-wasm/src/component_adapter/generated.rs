@@ -121,9 +121,23 @@ impl Imports for Generated {
             listing
                 .schemas
                 .into_iter()
-                .map(|b| (b.tool, b.pointer, b.handler))
+                .map(|b| (b.tool, b.pointer, b.handler, b.shape, b.local))
                 .collect(),
         ))
+    }
+
+    fn schema_invoke(
+        &self,
+        callback: &Self::Callback,
+        operation: host::SchemaOperation,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        let invocation = callback.schema_invoke(operation, node, path);
+        route::drive(&invocation).map_err(crate::schema_code::DiagnosticErrorInfo::error)?;
+        invocation
+            .schema_result()
+            .map_err(crate::schema_error::from_wire)
     }
 
     fn callback_emit(

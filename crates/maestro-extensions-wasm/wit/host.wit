@@ -92,9 +92,8 @@ interface host {
         delete: func(path: string, key: string) -> result<_, string>;
         splice: func(path: string, range: tuple<u32, u32>, values: list<string>) -> result<list<string>, string>;
     }
-    /// Bindings belong to their own tool and contain only this guest's callbacks.
-    /// Foreign tool records carry only schema data.
-    record schema-binding { tool: u32, pointer: string, handler: callback }
+    /// Independently retained callbacks, with author affinity and their original shape.
+    record schema-binding { tool: u32, pointer: string, handler: callback, shape: schema-shape, local: bool }
     /// Opaque metadata with independently retained executable annotations.
     record tool-listing { metadata: string, schemas: list<schema-binding> }
     /// Host-owned identity of one guest closure.
@@ -102,7 +101,8 @@ interface host {
         constructor();
         /// Stable key of this identity, equal for the owner handle and every borrow.
         id: func() -> u32;
-
+        /// Invoke a foreign node through the current synchronous native import route.
+        schema-invoke: func(operation: schema-operation, node: borrow<json-node>, path: string) -> import-route;
     }
 
     /// Independently retained author value, never encoded as JSON.
@@ -270,6 +270,8 @@ interface host {
         resume: func(value: local-result);
         /// Releases the native caller once the nested call's prefix ran; its result follows.
         defer: func() -> local-settlement;
+        /// Take a completed schema import's original structured result.
+        schema-result: func() -> result<string, diagnostic-error-info>;
     }
     /// A nested call whose prefix ran and whose result the guest delivers later.
     resource local-settlement { finish: func(value: local-result); }
