@@ -312,7 +312,29 @@ pub(crate) trait WidgetHost {
     fn raw_key_hint(&self, key: &str, description: &str) -> ExtensionResult<String>;
     /// The live theme's editor styles.
     fn editor_theme(&self) -> ExtensionResult<super::EditorTheme>;
+    /// The toolkit editor on a lent terminal.
+    fn editor(
+        &self,
+        tui: &super::TUI,
+        theme: &super::EditorTheme,
+        options: super::EditorOptions,
+    ) -> ExtensionResult<(Widget, Rc<dyn super::EditorPort>)>;
+    /// The application's custom editor on a lent terminal.
+    fn custom_editor(
+        &self,
+        tui: &super::TUI,
+        theme: &super::EditorTheme,
+        keybindings: &super::KeybindingsManager,
+        options: super::EditorOptions,
+    ) -> ExtensionResult<CustomEditorParts>;
 }
+
+/// A custom editor's widget, editor requests and custom editor requests.
+pub(crate) type CustomEditorParts = (
+    Widget,
+    Rc<dyn super::EditorPort>,
+    Rc<dyn super::CustomEditorPort>,
+);
 
 /// The host that builds widgets.
 ///

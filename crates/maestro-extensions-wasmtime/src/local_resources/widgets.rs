@@ -1,9 +1,10 @@
 //! Host widgets, lent styles and lent highlighting, served on the local owner.
 use super::{Capability, Registry, pump::State};
 use crate::guest_calls::paints::{Failure, HighlightFn};
+use crate::widget_markdown::{highlighting, role};
 use crate::widget_reads::{
     HighlighterEndpoint, Lent, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint,
-    WidgetMessage, highlighting, role,
+    WidgetMessage,
 };
 use maestro_extensions::widgets::BorderColor;
 use std::rc::Rc;
@@ -69,6 +70,17 @@ impl Registry {
         keybindings: maestro_extensions::widgets::ExtensionKeybindings,
     ) -> Result<std::sync::Arc<super::Lease>, String> {
         self.insert(Capability::Keybindings(keybindings))
+    }
+
+    /// The manager behind a keybindings resource.
+    pub(crate) fn keybindings_manager(
+        &self,
+        keys: &crate::keys_reads::KeysEndpoint,
+    ) -> Result<maestro_extensions::KeybindingsManager, String> {
+        match self.capability(keys.0.id).as_deref() {
+            Some(Capability::Keybindings(keys)) => Ok(keys.manager.clone()),
+            _ => Err("extension keybindings resource ended".to_owned()),
+        }
     }
 
     /// The widget behind a widget resource.

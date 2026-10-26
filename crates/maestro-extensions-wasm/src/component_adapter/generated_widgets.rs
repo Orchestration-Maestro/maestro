@@ -5,9 +5,10 @@ use std::rc::Rc;
 use super::{Generated, route};
 use crate::bindings::maestro::extension::host;
 use crate::component_adapter::{
-    Builder, ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme,
-    KeyHint, KeybindingsAnswer, KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef,
-    SettingRef, SettingsStyles, StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
+    Builder, ChildKey, ChildRef, EditorAnswer, EditorRequest, EditorStyles, HandlerSlot,
+    HighlightRef, HostMarkdownTheme, HostSettingsTheme, KeyHint, KeybindingsAnswer,
+    KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles,
+    StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
 };
 use crate::types::ExtensionResult;
 use crate::{
@@ -20,7 +21,7 @@ pub(super) fn widget_host() -> Rc<dyn crate::WidgetHost> {
 }
 
 /// The wire form of a styling operand.
-fn style<'a>(style: &StyleRef<'a, Generated>) -> host::StyleSource<'a> {
+pub(super) fn style<'a>(style: &StyleRef<'a, Generated>) -> host::StyleSource<'a> {
     match *style {
         StyleRef::Host(style) => host::StyleSource::Host(style),
         StyleRef::Authored(callback) => host::StyleSource::Authored(callback),
@@ -209,19 +210,7 @@ impl WidgetImports for Generated {
         (min, max, truncate): LayoutRef<'_, Self>,
     ) -> ExtensionResult<host::Widget> {
         let items: Vec<_> = items.iter().map(select_item).collect();
-        let mut styles = theme.iter().map(style);
-        let mut next = || {
-            styles
-                .next()
-                .ok_or_else(|| "a selection list style is missing".to_owned())
-        };
-        let theme = host::SelectListStyles {
-            selected_prefix: next()?,
-            selected_text: next()?,
-            description: next()?,
-            scroll_info: next()?,
-            no_match: next()?,
-        };
+        let theme = super::editors::select_styles(&theme)?;
         let layout = host::SelectLayout {
             min_primary_column_width: min,
             max_primary_column_width: max,
@@ -318,8 +307,48 @@ impl WidgetImports for Generated {
             HandlerSlot::Cancel => host::HandlerSlot::Cancel,
             HandlerSlot::SelectionChange => host::HandlerSlot::SelectionChange,
             HandlerSlot::Abort => host::HandlerSlot::Abort,
+            HandlerSlot::Submit => host::HandlerSlot::Submit,
+            HandlerSlot::Change => host::HandlerSlot::Change,
+            HandlerSlot::Escape => host::HandlerSlot::Escape,
+            HandlerSlot::CtrlD => host::HandlerSlot::CtrlD,
+            HandlerSlot::PasteImage => host::HandlerSlot::PasteImage,
+            HandlerSlot::ExtensionShortcut => host::HandlerSlot::ExtensionShortcut,
         };
         widget.set_handler(slot, handler)
+    }
+    fn new_editor(
+        &self,
+        tui: &host::Tui,
+        theme: EditorStyles<'_, Self>,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<host::Widget> {
+        let (theme, options) = super::editors::wire(&theme, options)?;
+        host::new_editor(tui, &theme, options)
+    }
+    fn new_custom_editor(
+        &self,
+        tui: &host::Tui,
+        theme: EditorStyles<'_, Self>,
+        keybindings: &host::KeybindingsManager,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<host::Widget> {
+        let (theme, options) = super::editors::wire(&theme, options)?;
+        host::new_custom_editor(tui, &theme, keybindings, options)
+    }
+    fn widget_editor(
+        &self,
+        widget: &host::Widget,
+        request: EditorRequest<'_, Self>,
+    ) -> ExtensionResult<EditorAnswer> {
+        super::editors::request(widget, request)
+    }
+    fn widget_on_action(
+        &self,
+        widget: &host::Widget,
+        action: &str,
+        handler: &host::Callback,
+    ) -> ExtensionResult<()> {
+        widget.on_action(action, handler)
     }
     fn widget_update_value(
         &self,
@@ -456,6 +485,9 @@ fn event(event: host::WidgetEvent) -> WidgetEvent<Generated> {
         }
         host::WidgetEvent::Row((text, selected)) => WidgetEvent::Row(text, selected),
         host::WidgetEvent::Submenu((value, done)) => WidgetEvent::Submenu(value, done),
+        host::WidgetEvent::Text(text) => WidgetEvent::Text(text),
+        host::WidgetEvent::Notice => WidgetEvent::Notice,
+        host::WidgetEvent::Shortcut(data) => WidgetEvent::Shortcut(data),
     }
 }
 
@@ -470,6 +502,7 @@ pub(super) fn invoke_widget(
     Ok(match answer {
         WidgetAnswer::Done => host::WidgetAnswer::Done,
         WidgetAnswer::Text(text) => host::WidgetAnswer::Text(text),
+        WidgetAnswer::Consumed(consumed) => host::WidgetAnswer::Consumed(consumed),
         WidgetAnswer::Component(component) => host::WidgetAnswer::Component(
             crate::component_adapter::callbacks::Identity::<Generated>::new(&Generated)
                 .transfer(component),

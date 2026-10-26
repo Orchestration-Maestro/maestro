@@ -244,8 +244,10 @@ fn plan(
     width: u32,
     parts: &mut Vec<Part>,
 ) -> Result<(), String> {
-    if let Some(list) = super::widget_lists::render(observed, key, width) {
-        parts.extend(list);
+    let special = super::widget_lists::render(observed, key, width)
+        .or_else(|| super::widget_editors::render(observed, key, width));
+    if let Some(special) = special {
+        parts.extend(special);
         return Ok(());
     }
     let widget = widget(observed, key)?;

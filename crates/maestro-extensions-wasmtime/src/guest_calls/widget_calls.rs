@@ -55,6 +55,12 @@ pub(crate) enum Event {
     Row(String, bool),
     /// A submenu's current value and closer.
     Submenu(String, SubmenuDoneEndpoint),
+    /// An editor's submitted or changed text.
+    Text(String),
+    /// An editor key or action.
+    Notice,
+    /// Input offered to an editor's interceptor.
+    Shortcut(String),
 }
 
 /// The wire form of an event.
@@ -85,6 +91,15 @@ pub(crate) enum WireEvent {
     /// A submenu's current value and transferred closer.
     #[component(name = "submenu")]
     Submenu((String, Resource<SubmenuDoneEndpoint>)),
+    /// An editor's submitted or changed text.
+    #[component(name = "text")]
+    Text(String),
+    /// An editor key or action.
+    #[component(name = "notice")]
+    Notice,
+    /// Input offered to an editor's interceptor.
+    #[component(name = "shortcut")]
+    Shortcut(String),
 }
 
 impl Event {
@@ -101,6 +116,9 @@ impl Event {
             Self::Submenu(value, done) => {
                 WireEvent::Submenu((value.clone(), table.push(done.clone())?))
             }
+            Self::Text(text) => WireEvent::Text(text.clone()),
+            Self::Notice => WireEvent::Notice,
+            Self::Shortcut(data) => WireEvent::Shortcut(data.clone()),
         })
     }
 }
@@ -118,6 +136,9 @@ pub(crate) enum Answer {
     /// A built component's transferred identity.
     #[component(name = "component")]
     Component(Resource<super::Callback>),
+    /// Whether an interceptor consumed its input.
+    #[component(name = "consumed")]
+    Consumed(bool),
 }
 
 /// What an authored widget callback answered, with a component kept as a native owner.
@@ -128,6 +149,8 @@ pub(crate) enum Answered {
     Text(String),
     /// A built component.
     Component(Handle),
+    /// Whether an interceptor consumed its input.
+    Consumed(bool),
 }
 
 /// Keeps a transferred component of an answer as a native owner.
@@ -138,6 +161,7 @@ pub(crate) fn answered<T: crate::callback_imports::CallbackView>(
     Ok(match answer {
         Answer::Done => Answered::Done,
         Answer::Text(text) => Answered::Text(text),
+        Answer::Consumed(consumed) => Answered::Consumed(consumed),
         Answer::Component(component) => {
             Answered::Component(crate::callback_imports::transferred(store, component)?)
         }

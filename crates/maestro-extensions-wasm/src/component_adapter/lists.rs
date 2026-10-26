@@ -33,6 +33,10 @@ pub(crate) enum WidgetHandler {
     Row(RowStyle),
     /// Builds a submenu.
     Submenu(Submenu),
+    /// Receives an editor's text.
+    Text(crate::TextHandler),
+    /// Intercepts an editor's input.
+    Shortcut(crate::EditorShortcut),
 }
 
 /// A host row style kept by its facade.
@@ -281,8 +285,15 @@ pub(crate) fn invoke_widget<I: WidgetImports>(
             WidgetHandler::Select(handler),
             WidgetEvent::Select(item) | WidgetEvent::SelectionChange(item),
         ) => handler(&item, emitter).map(|()| WidgetAnswer::Done),
-        (WidgetHandler::Notice(handler), WidgetEvent::Cancel | WidgetEvent::Abort) => {
-            handler(emitter).map(|()| WidgetAnswer::Done)
+        (
+            WidgetHandler::Notice(handler),
+            WidgetEvent::Cancel | WidgetEvent::Abort | WidgetEvent::Notice,
+        ) => handler(emitter).map(|()| WidgetAnswer::Done),
+        (WidgetHandler::Text(handler), WidgetEvent::Text(text)) => {
+            handler(&text, emitter).map(|()| WidgetAnswer::Done)
+        }
+        (WidgetHandler::Shortcut(handler), WidgetEvent::Shortcut(data)) => {
+            handler(&data, emitter).map(WidgetAnswer::Consumed)
         }
         (WidgetHandler::Change(handler), WidgetEvent::Change(id, value)) => {
             handler(&id, &value, emitter).map(|()| WidgetAnswer::Done)

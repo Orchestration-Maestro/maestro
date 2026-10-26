@@ -8,15 +8,17 @@
 use serde_json::json;
 
 use super::controlled::Controlled;
+use super::widget_editors;
 use super::widget_host::{self, Build, CODE, Change, Child, Paint, Part, ROLES};
 use super::widget_keys::{self, Answer as KeysAnswer, Request as KeysRequest};
 use super::widget_lists::{self, Call, Event, List, Setting};
 use crate::component_adapter::renderers::with_emitter;
 use crate::component_adapter::{
-    ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme, Imports,
-    KeyHint, KeybindingsAnswer, KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef,
-    SettingRef, SettingsStyles, StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
-    authored_component, invoke_highlight, invoke_style, invoke_widget,
+    ChildKey, ChildRef, EditorAnswer, EditorRequest, EditorStyles, HandlerSlot, HighlightRef,
+    HostMarkdownTheme, HostSettingsTheme, Imports, KeyHint, KeybindingsAnswer, KeybindingsRequest,
+    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle,
+    WidgetAnswer, WidgetEvent, WidgetImports, authored_component, invoke_highlight, invoke_style,
+    invoke_widget,
 };
 use crate::types::ExtensionResult;
 
@@ -247,8 +249,14 @@ impl WidgetImports for Controlled {
         ))
     }
     fn widget_handle_input(&self, widget: &Widget, data: &str) -> ExtensionResult<()> {
-        let calls = widget_lists::input(&mut self.observe(), widget.0, data)?;
-        self.calls(widget.0, calls)
+        let mut observed = self.observe();
+        let calls = if widget_editors::is_editor(&observed, widget.0) {
+            widget_editors::input(&mut observed, widget.0, data)
+        } else {
+            widget_lists::input(&mut observed, widget.0, data)
+        };
+        drop(observed);
+        self.calls(widget.0, calls?)
     }
     fn widget_set_filter(&self, widget: &Widget, filter: &str) -> ExtensionResult<()> {
         let mut observed = self.observe();
@@ -287,12 +295,7 @@ impl WidgetImports for Controlled {
         slot: HandlerSlot,
         handler: Option<&super::controlled::Callback>,
     ) -> ExtensionResult<()> {
-        let slot = match slot {
-            HandlerSlot::Select => "select",
-            HandlerSlot::Cancel => "cancel",
-            HandlerSlot::SelectionChange => "selectionChange",
-            HandlerSlot::Abort => "abort",
-        };
+        let slot = super::widget_editors::slot_name(slot);
         let handler = handler.map(|handler| self.callback_id(handler));
         let mut observed = self.observe();
         observed.log(format!(
@@ -300,12 +303,58 @@ impl WidgetImports for Controlled {
             widget.0,
             handler.is_some()
         ));
-        let list = widget_lists::list(&mut observed, widget.0)?;
+        let handlers = if widget_editors::is_editor(&observed, widget.0) {
+            &mut widget_editors::editor(&mut observed, widget.0)?.handlers
+        } else {
+            &mut widget_lists::list(&mut observed, widget.0)?.handlers
+        };
         match handler {
-            Some(handler) => list.handlers.insert(slot, handler),
-            None => list.handlers.remove(slot),
+            Some(handler) => handlers.insert(slot, handler),
+            None => handlers.remove(slot),
         };
         Ok(())
+    }
+    fn new_editor(
+        &self,
+        _: &super::controlled::Tui,
+        theme: EditorStyles<'_, Self>,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<Widget> {
+        Ok(self.build_editor(&theme, None, options))
+    }
+    fn new_custom_editor(
+        &self,
+        _: &super::controlled::Tui,
+        theme: EditorStyles<'_, Self>,
+        keybindings: &Keybindings,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<Widget> {
+        Ok(self.build_editor(&theme, Some(keybindings.0), options))
+    }
+    fn widget_editor(
+        &self,
+        widget: &Widget,
+        request: EditorRequest<'_, Self>,
+    ) -> ExtensionResult<EditorAnswer> {
+        match self.editor_request(request) {
+            widget_editors::Request::Edit(text, insert) => {
+                let calls = widget_editors::edit(&mut self.observe(), widget.0, &text, insert)?;
+                self.calls(widget.0, calls).map(|()| EditorAnswer::Done)
+            }
+            request => {
+                let answer = widget_editors::request(&mut self.observe(), widget.0, request)?;
+                Ok(editor_answer(answer))
+            }
+        }
+    }
+    fn widget_on_action(
+        &self,
+        widget: &Widget,
+        action: &str,
+        handler: &super::controlled::Callback,
+    ) -> ExtensionResult<()> {
+        let handler = self.callback_id(handler);
+        widget_editors::on_action(&mut self.observe(), widget.0, action, handler)
     }
     fn widget_update_value(&self, widget: &Widget, id: &str, value: &str) -> ExtensionResult<()> {
         let mut observed = self.observe();
@@ -545,13 +594,20 @@ impl Controlled {
             }
             Event::Row(text, selected) => WidgetEvent::Row(text, selected),
             Event::Submenu(_, value) => WidgetEvent::Submenu(value, SubmenuDone(key)),
+            Event::Text(text) => WidgetEvent::Text(text),
+            Event::Notice => WidgetEvent::Notice,
+            Event::Shortcut(data) => WidgetEvent::Shortcut(data),
         }
     }
 
     /// Makes each nested call an input of the list under `key` makes.
     fn calls(&self, key: u32, calls: Vec<Call>) -> ExtensionResult<()> {
-        for call in calls {
+        let mut calls = std::collections::VecDeque::from(calls);
+        while let Some(call) = calls.pop_front() {
             match call {
+                Call::Widget(id, Event::Shortcut(data)) => {
+                    calls.extend(self.shortcut(key, id, &data)?);
+                }
                 Call::Widget(id, event) => {
                     let index = match &event {
                         Event::Submenu(index, _) => Some(*index),
@@ -566,6 +622,17 @@ impl Controlled {
             }
         }
         Ok(())
+    }
+
+    /// Offers input to an editor's interceptor and returns the calls the input makes after it.
+    fn shortcut(&self, key: u32, id: u32, data: &str) -> ExtensionResult<Vec<Call>> {
+        let event = Self::widget_event(key, Event::Shortcut(data.to_owned()));
+        match self.widget_call(id, event)? {
+            WidgetAnswer::Consumed(false) => {
+                widget_editors::proceed(&mut self.observe(), key, data)
+            }
+            _ => Ok(Vec::new()),
+        }
     }
 
     /// Opens the submenu a setting's callback answered with.
@@ -631,5 +698,77 @@ fn keys_answer(answer: KeysAnswer) -> KeybindingsAnswer {
         KeysAnswer::Definition(definition) => KeybindingsAnswer::Definition(definition),
         KeysAnswer::Conflicts(conflicts) => KeybindingsAnswer::Conflicts(conflicts),
         KeysAnswer::Config(config) => KeybindingsAnswer::Config(config),
+    }
+}
+
+impl Controlled {
+    /// Records an editor widget and keeps its state.
+    fn build_editor(
+        &self,
+        theme: &EditorStyles<'_, Self>,
+        keys: Option<u32>,
+        options: crate::EditorOptions,
+    ) -> Widget {
+        let border = self.paint(&theme.border);
+        let list: Vec<_> = theme
+            .select_list
+            .iter()
+            .map(|style| self.paint(style))
+            .collect();
+        let options = (options.padding_x, options.autocomplete_max_visible);
+        let operands = widget_editors::operands(&border, &list, keys, options);
+        let kind = if keys.is_some() {
+            "customEditor"
+        } else {
+            "editor"
+        };
+        let widget = self.build_widget(Build {
+            kind,
+            operands,
+            ..Build::default()
+        });
+        let mut editor = widget_editors::Editor::new(border, options);
+        editor.keys = keys;
+        widget_editors::keep(&mut self.observe(), widget.0, editor);
+        widget
+    }
+
+    /// The owned form of an editor request that makes no nested call.
+    fn editor_request(&self, request: EditorRequest<'_, Self>) -> widget_editors::Request {
+        use widget_editors::Request;
+        match request {
+            EditorRequest::SetBorderColor(color) => Request::SetBorderColor(self.paint(&color)),
+            EditorRequest::SetText(text) => Request::Edit(text.to_owned(), false),
+            EditorRequest::InsertTextAtCursor(text) => Request::Edit(text.to_owned(), true),
+            EditorRequest::GetText => Request::GetText,
+            EditorRequest::GetExpandedText => Request::GetExpandedText,
+            EditorRequest::GetLines => Request::GetLines,
+            EditorRequest::GetCursor => Request::GetCursor,
+            EditorRequest::AddToHistory(text) => Request::AddToHistory(text.to_owned()),
+            EditorRequest::GetPaddingX => Request::GetPaddingX,
+            EditorRequest::SetPaddingX(padding) => Request::SetPaddingX(padding),
+            EditorRequest::GetAutocompleteMaxVisible => Request::GetAutocompleteMaxVisible,
+            EditorRequest::SetAutocompleteMaxVisible(max) => {
+                Request::SetAutocompleteMaxVisible(max)
+            }
+            EditorRequest::GetDisableSubmit => Request::GetDisableSubmit,
+            EditorRequest::SetDisableSubmit(disabled) => Request::SetDisableSubmit(disabled),
+            EditorRequest::IsShowingAutocomplete => Request::IsShowingAutocomplete,
+            EditorRequest::GetFocused => Request::GetFocused,
+            EditorRequest::SetFocused(focused) => Request::SetFocused(focused),
+        }
+    }
+}
+
+/// The adapter form of an editor answer.
+fn editor_answer(answer: widget_editors::Answer) -> EditorAnswer {
+    use widget_editors::Answer;
+    match answer {
+        Answer::Done => EditorAnswer::Done,
+        Answer::Text(text) => EditorAnswer::Text(text),
+        Answer::Lines(lines) => EditorAnswer::Lines(lines),
+        Answer::Cursor(line, col) => EditorAnswer::Cursor(line, col),
+        Answer::Number(number) => EditorAnswer::Number(number),
+        Answer::Flag(flag) => EditorAnswer::Flag(flag),
     }
 }

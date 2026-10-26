@@ -229,6 +229,11 @@ impl EditorComponent for CustomEditor {
         EditorComponent::set_autocomplete_max_visible(&self.editor, max_visible)
     }
 }
+impl maestro_app::ExtensionEditor for CustomEditor {
+    fn editor(&self) -> &Editor {
+        &self.editor
+    }
+}
 impl CustomEditorComponent for CustomEditor {
     fn action_handlers(&self) -> ActionHandlers {
         CustomEditor::action_handlers(self)

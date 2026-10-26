@@ -86,6 +86,14 @@ fn manager(observed: &mut Observed, key: u32) -> &mut Manager {
     })
 }
 
+/// Whether the manager under `key` binds `id` to the key `data`, without a record.
+pub fn binds(observed: &mut Observed, key: u32, id: &str, data: &str) -> bool {
+    manager(observed, key)
+        .keys(id)
+        .iter()
+        .any(|bound| bound == data)
+}
+
 /// The keys of `keys`, without repetitions.
 fn listed(keys: &KeybindingKeys) -> Vec<String> {
     let keys = match keys {

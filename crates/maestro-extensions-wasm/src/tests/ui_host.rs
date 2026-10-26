@@ -110,6 +110,9 @@ pub enum Nested {
     Dispose,
     /// A widget factory, whose component the host shows under this key.
     Factory(String),
+    /// The interceptor of an input of the editor under this key; input it did not consume
+    /// continues.
+    Shortcut(u32, String),
 }
 
 /// Host state the UI requests are served from.
@@ -143,6 +146,8 @@ pub struct Bank {
     pub lists: super::widget_lists::Lists,
     /// Keybindings managers.
     pub keys: super::widget_keys::Managers,
+    /// The editors among the widgets.
+    pub widget_editors: super::widget_editors::Editors,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -632,7 +637,9 @@ impl State {
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
             )
             | (Nested::Invalidate, host::LocalResult::Unit(Err(error)))
-            | (Nested::Widget(..), host::LocalResult::Widget(Err(error))) => Ok(Some(error)),
+            | (Nested::Widget(..) | Nested::Shortcut(..), host::LocalResult::Widget(Err(error))) => {
+                Ok(Some(error))
+            }
             (Nested::Widget(key, Some(index)), host::LocalResult::Widget(Ok(answer))) => {
                 if let host::WidgetAnswer::Component(component) = answer {
                     let id = self.table.get(&component)?.0;

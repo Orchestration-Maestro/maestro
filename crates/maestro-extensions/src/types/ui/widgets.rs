@@ -1,9 +1,9 @@
 //! The host capability that builds the extension widgets whose look depends on the host.
 use maestro_theme::Theme;
 use maestro_tui::{
-    Cancellation, Component, Container, EditorTheme, KeybindingsConfig, KeybindingsManager,
-    Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme, SettingsListTheme, TUI,
-    editor_component::BorderColor, tui::ComponentHandle,
+    Cancellation, Component, Container, Editor, EditorOptions, EditorTheme, KeybindingsConfig,
+    KeybindingsManager, Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme,
+    SettingsListTheme, TUI, editor_component::BorderColor, tui::ComponentHandle,
 };
 
 /// A keybindings manager an extension holds, with the reload of an application manager that
@@ -27,6 +27,12 @@ pub trait ExtensionLoader: Component {
     fn dispose(&self);
     /// The rows the loader renders, which an extension may extend.
     fn rows(&self) -> &Container;
+}
+
+/// The application's custom editor, as an extension holds it.
+pub trait ExtensionEditor: super::editor::CustomEditorComponent {
+    /// The toolkit editor it extends, for the editor operations beyond the editor component's.
+    fn editor(&self) -> &Editor;
 }
 
 /// Builds the widgets whose look depends on the host: Markdown laid out for its terminal, the
@@ -89,4 +95,12 @@ pub trait ExtensionWidgets {
     /// # Errors
     /// Returns the theme's failure, such as a theme that is not published yet.
     fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String>;
+    /// The application's custom editor on `tui`, intercepting the actions `keybindings` binds.
+    fn custom_editor(
+        &self,
+        tui: &TUI,
+        theme: EditorTheme,
+        keybindings: KeybindingsManager,
+        options: EditorOptions,
+    ) -> Rc<dyn ExtensionEditor>;
 }

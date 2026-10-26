@@ -71,6 +71,9 @@ port! {
 pub struct KeybindingsManager {
     /// The owner.
     port: Rc<dyn KeybindingsPort>,
+    /// The host resource behind the manager, which an editor can pass back.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    host: Option<Rc<dyn std::any::Any>>,
 }
 impl KeybindingsManager {
     /// A manager of the application's keybindings with `user_bindings`, reloading from
@@ -105,7 +108,15 @@ impl KeybindingsManager {
     /// A manager the host keeps as `owner`.
     #[cfg(any(test, target_arch = "wasm32"))]
     pub(crate) fn lent<P: KeybindingsPort + 'static>(owner: Rc<P>) -> Self {
-        Self { port: owner }
+        Self {
+            port: owner.clone(),
+            host: Some(owner),
+        }
+    }
+    /// The host resource behind this manager, when the host keeps it as a `P`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
+        self.host.clone()?.downcast().ok()
     }
 }
 

@@ -314,6 +314,46 @@ fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles()
 }
 
 #[test]
+fn extension_widget_host_builds_the_application_custom_editor() {
+    use maestro_app::ExtensionWidgets;
+    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let host = maestro_chat::ExtensionWidgetHost::new(
+        live,
+        highlighter,
+        TerminalImage::new(|_| None, || 1),
+    );
+    let runtime = ManualRuntime::new();
+    let tui = writer(&runtime);
+    let keybindings = host.keybindings(Vec::new(), None).manager;
+    let options = maestro_tui::EditorOptions {
+        padding_x: Some(2.0),
+        autocomplete_max_visible: None,
+    };
+    let editor = host.custom_editor(&tui, host.editor_theme(), keybindings, options);
+    assert_eq!(
+        editor.editor().get_padding_x().to_bits(),
+        2.0_f64.to_bits(),
+        "the options reach the editor"
+    );
+    let interrupted = Rc::new(Cell::new(0));
+    let seen = interrupted.clone();
+    let handler: Rc<dyn Fn()> = Rc::new(move || seen.set(seen.get() + 1));
+    editor
+        .action_handlers()
+        .borrow_mut()
+        .insert("app.interrupt".to_owned(), handler);
+    editor.input_handler().unwrap().handle_input("\u{1b}");
+    assert_eq!(
+        interrupted.get(),
+        1,
+        "the application's interrupt action runs"
+    );
+    editor.input_handler().unwrap().handle_input("x");
+    assert_eq!(editor.get_text(), "x", "other input edits");
+}
+
+#[test]
 fn border_returns_painter_output_without_preserving_rule_glyphs() {
     let state = published::unpublished();
     let border = DynamicBorder::new(state.theme(), Some(Rc::new(|text| text.replace('─', "="))));

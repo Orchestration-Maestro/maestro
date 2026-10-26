@@ -5,6 +5,8 @@ use maestro_extensions::{
 };
 use std::rc::Rc;
 
+mod editor;
+
 /// Binds a prompt reader without replacing command-specific operations.
 pub fn bind_prompt(runner: &ExtensionRunner<Local>, prompt: &'static str) {
     runner
@@ -111,6 +113,23 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
     }
     fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String> {
         Ok(format!("[{key}] {description}"))
+    }
+    fn custom_editor(
+        &self,
+        tui: &maestro_tui::TUI,
+        theme: maestro_tui::EditorTheme,
+        keybindings: maestro_tui::KeybindingsManager,
+        options: maestro_tui::EditorOptions,
+    ) -> Rc<dyn maestro_extensions::widgets::ExtensionEditor> {
+        Rc::new(editor::CustomEditor {
+            editor: maestro_tui::Editor::new(tui, theme, options),
+            keybindings,
+            handlers: Rc::default(),
+            escape: std::cell::RefCell::default(),
+            ctrl_d: std::cell::RefCell::default(),
+            paste_image: std::cell::RefCell::default(),
+            extension: std::cell::RefCell::default(),
+        })
     }
 }
 

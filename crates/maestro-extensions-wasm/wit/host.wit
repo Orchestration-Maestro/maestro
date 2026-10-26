@@ -375,11 +375,36 @@ interface host {
     variant widget-event {
         select(select-item), cancel, selection-change(select-item), change(tuple<string, string>),
         abort, truncate(truncate-context), row(tuple<string, bool>), submenu(tuple<string, submenu-done>),
+        /// An editor's submitted or changed text.
+        text(string),
+        /// An editor key or action without operands.
+        notice,
+        /// Input an editor offers its shortcut interceptor first.
+        shortcut(string),
     }
-    /// What an authored widget callback answers: nothing, text, or a component's identity.
-    variant widget-answer { done, text(string), component(callback) }
+    /// What an authored widget callback answers: nothing, text, a component's identity, or
+    /// whether a shortcut consumed its input.
+    variant widget-answer { done, text(string), component(callback), consumed(bool) }
     /// The widget handler an authored callback replaces.
-    enum handler-slot { select, cancel, selection-change, abort }
+    enum handler-slot {
+        select, cancel, selection-change, abort, submit, change, escape, ctrl-d, paste-image,
+        extension-shortcut,
+    }
+    /// Editor options; an absent member keeps the editor's default.
+    record editor-options { padding-x: option<f64>, autocomplete-max-visible: option<f64> }
+    /// Editor styles as operands.
+    record editor-styles { border-color: style-source, select-list: select-list-styles }
+    /// A request on an editor that makes no call back into this instance.
+    variant editor-request {
+        get-text, get-expanded-text, get-lines, get-cursor, add-to-history(string),
+        get-padding-x, set-padding-x(f64), get-autocomplete-max-visible,
+        set-autocomplete-max-visible(f64), get-disable-submit, set-disable-submit(bool),
+        is-showing-autocomplete, get-focused, set-focused(bool), set-border-color(style-source),
+    }
+    /// What an editor request answers.
+    variant editor-answer {
+        done, text(string), lines(list<string>), cursor(tuple<u32, u32>), number(f64), flag(bool),
+    }
     /// A toolkit or application widget the host built for this extension.
     resource widget {
         /// Renders rows at a width; the host may call back into this instance first.
@@ -414,7 +439,19 @@ interface host {
         signal: func() -> result<abort-signal, string>;
         /// Stops a loader's animation without cancelling it.
         dispose: func() -> result<_, string>;
+        /// One request on an editor.
+        editor: func(request: editor-request) -> result<editor-answer, string>;
+        /// Replaces an editor's text; its change handler may run first.
+        set-editor-text: func(text: string) -> import-route;
+        /// Inserts text at an editor's cursor; its change handler may run first.
+        insert-editor-text: func(text: string) -> import-route;
+        /// Replaces the handler of an application action of a custom editor, keeping its place.
+        on-action: func(action: string, handler: borrow<callback>) -> result<_, string>;
     }
+    /// The toolkit editor on a lent terminal.
+    new-editor: func(tui: borrow<tui>, theme: editor-styles, options: editor-options) -> result<widget, string>;
+    /// The application's custom editor on a lent terminal with a keybindings manager.
+    new-custom-editor: func(tui: borrow<tui>, theme: editor-styles, keybindings: borrow<keybindings-manager>, options: editor-options) -> result<widget, string>;
     /// Wrapped text between padding, over an optional row background.
     new-text: func(text: string, padding-x: u32, padding-y: u32, background: option<style-source>) -> result<widget, string>;
     /// Children between padding, over an optional row background.

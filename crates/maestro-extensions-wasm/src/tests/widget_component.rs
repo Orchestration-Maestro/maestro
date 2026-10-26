@@ -71,7 +71,7 @@ impl RenderRoute {
 
 impl State {
     /// The paint a styling operand names.
-    fn paint(&self, style: &host::StyleSource) -> wasmtime::Result<Paint> {
+    pub(super) fn paint(&self, style: &host::StyleSource) -> wasmtime::Result<Paint> {
         Ok(match style {
             host::StyleSource::Host(style) => Paint::Host(self.table.get(style)?.0.clone()),
             host::StyleSource::Authored(callback) => Paint::Authored(self.table.get(callback)?.0),
@@ -249,10 +249,54 @@ impl host::HostWidget for State {
         data: String,
     ) -> wasmtime::Result<Resource<Route>> {
         let key = self.table.get(&this)?.0;
-        match widget_lists::input(&mut self.observed, key, &data) {
+        let calls = if super::widget_editors::is_editor(&self.observed, key) {
+            super::widget_editors::input(&mut self.observed, key, &data)
+        } else {
+            widget_lists::input(&mut self.observed, key, &data)
+        };
+        match calls {
             Ok(calls) => self.list_route(key, calls),
             Err(error) => self.routed(Err(error)),
         }
+    }
+    fn editor(
+        &mut self,
+        this: Resource<WidgetResource>,
+        request: host::EditorRequest,
+    ) -> wasmtime::Result<Result<host::EditorAnswer, String>> {
+        let key = self.table.get(&this)?.0;
+        let request = self.editor_request(request)?;
+        let answer = super::widget_editors::request(&mut self.observed, key, request);
+        Ok(answer.map(super::editor_component::wire_answer))
+    }
+    fn set_editor_text(
+        &mut self,
+        this: Resource<WidgetResource>,
+        text: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.edit_route(&this, &text, false)
+    }
+    fn insert_editor_text(
+        &mut self,
+        this: Resource<WidgetResource>,
+        text: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.edit_route(&this, &text, true)
+    }
+    fn on_action(
+        &mut self,
+        this: Resource<WidgetResource>,
+        action: String,
+        handler: Resource<Identity>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        let handler = self.table.get(&handler)?.0;
+        Ok(super::widget_editors::on_action(
+            &mut self.observed,
+            key,
+            &action,
+            handler,
+        ))
     }
     fn set_filter(
         &mut self,
@@ -304,12 +348,7 @@ impl host::HostWidget for State {
         handler: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Result<(), String>> {
         let key = self.table.get(&this)?.0;
-        let slot = match slot {
-            host::HandlerSlot::Select => "select",
-            host::HandlerSlot::Cancel => "cancel",
-            host::HandlerSlot::SelectionChange => "selectionChange",
-            host::HandlerSlot::Abort => "abort",
-        };
+        let slot = super::widget_editors::slot_name(super::editor_component::slot(slot));
         let handler = handler
             .map(|handler| self.table.get(&handler).map(|identity| identity.0))
             .transpose()?;
@@ -317,13 +356,19 @@ impl host::HostWidget for State {
             "widget {key} setHandler {slot} {}",
             handler.is_some()
         ));
-        let list = match widget_lists::list(&mut self.observed, key) {
-            Ok(list) => list,
+        let handlers = if super::widget_editors::is_editor(&self.observed, key) {
+            super::widget_editors::editor(&mut self.observed, key)
+                .map(|editor| &mut editor.handlers)
+        } else {
+            widget_lists::list(&mut self.observed, key).map(|list| &mut list.handlers)
+        };
+        let handlers = match handlers {
+            Ok(handlers) => handlers,
             Err(error) => return Ok(Err(error)),
         };
         match handler {
-            Some(handler) => list.handlers.insert(slot, handler),
-            None => list.handlers.remove(slot),
+            Some(handler) => handlers.insert(slot, handler),
+            None => handlers.remove(slot),
         };
         Ok(Ok(()))
     }
@@ -568,6 +613,9 @@ impl State {
             Event::Submenu(_, value) => {
                 host::WidgetEvent::Submenu((value, self.push(SubmenuDoneResource(key))?))
             }
+            Event::Text(text) => host::WidgetEvent::Text(text),
+            Event::Notice => host::WidgetEvent::Notice,
+            Event::Shortcut(data) => host::WidgetEvent::Shortcut(data),
         };
         Ok(host::LocalCall::Widget(host::LocalWidget {
             target,
@@ -577,10 +625,32 @@ impl State {
     }
 
     /// The route of the nested calls an input of the list under `key` makes.
-    fn list_route(&mut self, key: u32, calls: Vec<Call>) -> wasmtime::Result<Resource<Route>> {
+    pub(super) fn list_route(
+        &mut self,
+        key: u32,
+        calls: Vec<Call>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let steps = self.steps(key, calls)?;
+        self.push(Route {
+            steps,
+            running: None,
+            result: Some(Ok(())),
+        })
+    }
+
+    /// The nested calls of `calls` for the widget under `key`, each with what it settles.
+    pub(super) fn steps(
+        &mut self,
+        key: u32,
+        calls: Vec<Call>,
+    ) -> wasmtime::Result<VecDeque<(host::LocalCall, Nested)>> {
         let mut steps = VecDeque::new();
         for call in calls {
             let step = match call {
+                Call::Widget(target, Event::Shortcut(data)) => (
+                    self.widget_call(target, key, Event::Shortcut(data.clone()))?,
+                    Nested::Shortcut(key, data),
+                ),
                 Call::Widget(target, event) => {
                     let index = match &event {
                         Event::Submenu(index, _) => Some(*index),
@@ -602,11 +672,7 @@ impl State {
             };
             steps.push_back(step);
         }
-        self.push(Route {
-            steps,
-            running: None,
-            result: Some(Ok(())),
-        })
+        Ok(steps)
     }
 
     /// Records a list widget, keeps its state and lends it.

@@ -21,8 +21,9 @@ use maestro_extensions_wasm::{
     get_select_list_theme, get_settings_list_theme,
 };
 use maestro_extensions_wasm::{
-    KeybindingDefinition, KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_editor_theme,
-    get_keybindings, key_hint, key_text, raw_key_hint,
+    CustomEditor, Editor, EditorOptions, EditorTheme, KeybindingDefinition, KeybindingKeys,
+    KeybindingsConfig, KeybindingsManager, get_editor_theme, get_keybindings, key_hint, key_text,
+    raw_key_hint,
 };
 use std::rc::Rc;
 
@@ -51,6 +52,10 @@ enum Kept {
     Loader(BorderedLoader),
     /// A keybindings manager.
     Keys(KeybindingsManager),
+    /// The host editor.
+    Editor(Editor),
+    /// The application's custom editor.
+    Custom(CustomEditor),
 }
 
 impl Kept {
@@ -71,6 +76,8 @@ impl Kept {
                 name: "keys".to_owned(),
                 widgets: Vec::new(),
             }),
+            Self::Editor(editor) => editor.into(),
+            Self::Custom(editor) => editor.into(),
         }
     }
 
@@ -88,6 +95,8 @@ impl Kept {
             Self::Settings(widget) => widget.render(width),
             Self::Loader(widget) => widget.render(width),
             Self::Keys(_) => Err("a keybindings manager renders nothing".to_owned()),
+            Self::Editor(editor) => editor.render(width),
+            Self::Custom(editor) => editor.render(width),
         }
     }
 
@@ -105,6 +114,8 @@ impl Kept {
             Self::Settings(widget) => widget.invalidate(),
             Self::Loader(widget) => widget.invalidate(),
             Self::Keys(_) => Ok(()),
+            Self::Editor(editor) => editor.invalidate(),
+            Self::Custom(editor) => editor.invalidate(),
         }
     }
 }
@@ -497,6 +508,45 @@ pub enum Step {
         /// Text.
         text: String,
     },
+    /// Shows a widget whose factory builds an editor on the lent terminal, a custom editor
+    /// when it names a kept keybindings manager.
+    Editor {
+        /// Name to keep it under.
+        name: String,
+        /// The kept keybindings manager of a custom editor.
+        #[serde(default)]
+        keys: Option<String>,
+        /// `host` or `authored` styles.
+        theme: String,
+        /// Side padding and completion rows.
+        #[serde(default)]
+        options: (Option<f64>, Option<f64>),
+    },
+    /// One request on a kept editor.
+    Edit {
+        /// Kept name.
+        name: String,
+        /// The request.
+        op: String,
+        /// Text of a change or history entry.
+        #[serde(default)]
+        text: Option<String>,
+        /// Number of a padding or completion rows change.
+        #[serde(default)]
+        number: Option<f64>,
+        /// Flag of a submission or focus change.
+        #[serde(default)]
+        flag: Option<bool>,
+    },
+    /// Replaces the handler of an application action of a kept custom editor.
+    Action {
+        /// Kept name.
+        name: String,
+        /// The action.
+        action: String,
+        /// Label the handler records.
+        label: String,
+    },
     /// Applies a host settings row style of a role.
     ApplyRow {
         /// Role.
@@ -837,6 +887,8 @@ fn list_steps(step: Step) -> ExtensionResult<Value> {
                 Kept::Select(list) => list.handle_input(&data)?,
                 Kept::Settings(list) => list.handle_input(&data)?,
                 Kept::Loader(loader) => loader.handle_input(&data)?,
+                Kept::Editor(editor) => editor.handle_input(&data)?,
+                Kept::Custom(editor) => editor.handle_input(&data)?,
                 _ => return Err(format!("{name} takes no input")),
             }
             Ok(json!(true))
@@ -1002,7 +1054,161 @@ fn keys_steps(step: Step) -> ExtensionResult<Value> {
                 theme.select_list.selected_text.apply(&text)?
             ]))
         }
+        step => editor_steps(step),
+    }
+}
+
+/// Shows a widget whose factory builds an editor and keeps it under `name`.
+fn editor(
+    name: String,
+    keys: Option<String>,
+    theme: &str,
+    (padding_x, autocomplete_max_visible): (Option<f64>, Option<f64>),
+) -> ExtensionResult<Value> {
+    let ui = UI.with_borrow(Clone::clone).ok_or("the script has no UI")?;
+    let manager = match keys {
+        Some(keys) => match kept(&keys)? {
+            Kept::Keys(manager) => Some(manager),
+            _ => return Err(format!("{keys} is no keybindings manager")),
+        },
+        None => None,
+    };
+    let theme = if theme == "host" {
+        get_editor_theme()?
+    } else {
+        EditorTheme {
+            border_color: style("border")?,
+            select_list: select_theme(theme)?,
+        }
+    };
+    let options = EditorOptions {
+        padding_x,
+        autocomplete_max_visible,
+    };
+    let factory: ComponentFactory = Rc::new(move |tui, _, _| {
+        let editor = match &manager {
+            Some(manager) => Kept::Custom(CustomEditor::new(&tui, &theme, manager, options)?),
+            None => Kept::Editor(Editor::new(&tui, &theme, options)?),
+        };
+        let component = editor.component();
+        KEPT.with_borrow_mut(|kept| kept.insert(name.clone(), editor));
+        Ok(ExtensionComponent {
+            component,
+            dispose: None,
+        })
+    });
+    ui.set_widget_factory("editor", factory, None)?;
+    Ok(json!(true))
+}
+
+/// The editor operations of the editor kept under `name`.
+fn edited(name: &str) -> ExtensionResult<Editor> {
+    match kept(name)? {
+        Kept::Editor(editor) => Ok(editor),
+        Kept::Custom(editor) => Ok((*editor).clone()),
+        _ => Err(format!("{name} is no editor")),
+    }
+}
+
+/// The custom editor kept under `name`.
+fn custom(name: &str) -> ExtensionResult<CustomEditor> {
+    match kept(name)? {
+        Kept::Custom(editor) => Ok(editor),
+        _ => Err(format!("{name} is no custom editor")),
+    }
+}
+
+/// Sends one request to an editor.
+fn edit(
+    editor: &Editor,
+    op: &str,
+    (text, number, flag): (Option<String>, Option<f64>, Option<bool>),
+) -> ExtensionResult<Value> {
+    let text = text.unwrap_or_default();
+    let number = number.unwrap_or_default();
+    let flag = flag.unwrap_or_default();
+    Ok(match op {
+        "getText" => json!(editor.get_text()?),
+        "setText" => json!(editor.set_text(&text)?),
+        "getExpandedText" => json!(editor.get_expanded_text()?),
+        "getLines" => json!(editor.get_lines()?),
+        "getCursor" => json!(editor.get_cursor()?),
+        "insertText" => json!(editor.insert_text_at_cursor(&text)?),
+        "addToHistory" => json!(editor.add_to_history(&text)?),
+        "getPaddingX" => json!(editor.get_padding_x()?),
+        "setPaddingX" => json!(editor.set_padding_x(number)?),
+        "getAutocompleteMaxVisible" => json!(editor.get_autocomplete_max_visible()?),
+        "setAutocompleteMaxVisible" => json!(editor.set_autocomplete_max_visible(number)?),
+        "disableSubmit" => json!(editor.disable_submit()?),
+        "setDisableSubmit" => json!(editor.set_disable_submit(flag)?),
+        "isShowingAutocomplete" => json!(editor.is_showing_autocomplete()?),
+        "focused" => json!(editor.focused()?),
+        "setFocused" => json!(editor.set_focused(flag)?),
+        "setBorderColor" => json!(editor.set_border_color(&style(&text)?)?),
+        _ => return Err(format!("unknown editor request {op}")),
+    })
+}
+
+/// Builds, changes and reads editors.
+fn editor_steps(step: Step) -> ExtensionResult<Value> {
+    match step {
+        Step::Editor {
+            name,
+            keys,
+            theme,
+            options,
+        } => editor(name, keys, &theme, options),
+        Step::Edit {
+            name,
+            op,
+            text,
+            number,
+            flag,
+        } => edit(&edited(&name)?, &op, (text, number, flag)),
+        Step::Action {
+            name,
+            action,
+            label,
+        } => {
+            let handler = Rc::new(move |_: CallbackEmitter<'_>| {
+                record(label.clone());
+                Ok(())
+            });
+            custom(&name)?.on_action(&action, handler)?;
+            Ok(json!(true))
+        }
         step => children(step).map(|()| json!(true)),
+    }
+}
+
+/// Replaces or removes the `slot` handler of the editor under `name`.
+fn on_editor(name: &str, slot: &str, label: Option<String>) -> ExtensionResult<()> {
+    let text = label.clone().map(|label| {
+        Rc::new(move |text: &str, _: CallbackEmitter<'_>| {
+            record(format!("{label} {text}"));
+            Ok(())
+        }) as maestro_extensions_wasm::TextHandler
+    });
+    let notice = label.clone().map(|label| {
+        Rc::new(move |_: CallbackEmitter<'_>| {
+            record(label.clone());
+            Ok(())
+        }) as maestro_extensions_wasm::WidgetNotice
+    });
+    let shortcut = label.map(|label| {
+        Rc::new(move |data: &str, _: CallbackEmitter<'_>| {
+            record(format!("{label} {data}"));
+            Ok(data == "ctrl+k" || data == "\u{b}")
+        }) as maestro_extensions_wasm::EditorShortcut
+    });
+    match slot {
+        "submit" => edited(name)?.set_on_submit(text),
+        "change" => edited(name)?.set_on_change(text),
+        "escape" => custom(name)?.set_on_escape(notice),
+        "ctrlD" => custom(name)?.set_on_ctrl_d(notice),
+        "pasteImage" => custom(name)?.set_on_paste_image(notice),
+        "shortcut" => custom(name)?.set_on_extension_shortcut(shortcut),
+        _ => Err(format!("{name} has no {slot} handler")),
     }
 }
 
@@ -1059,6 +1265,7 @@ fn bordered(name: &str) -> ExtensionResult<BorderedLoader> {
 
 /// Replaces or removes the `slot` handler of the list or loader under `name`.
 fn on(name: &str, slot: &str, label: Option<String>) -> ExtensionResult<()> {
+    let label_of = label.clone();
     let item = label.clone().map(|label| {
         Rc::new(move |item: &SelectItem, _: CallbackEmitter<'_>| {
             record(format!("{label} {}", item.value));
@@ -1076,6 +1283,7 @@ fn on(name: &str, slot: &str, label: Option<String>) -> ExtensionResult<()> {
         (Kept::Select(list), "cancel") => list.set_on_cancel(notice),
         (Kept::Select(list), "change") => list.set_on_selection_change(item),
         (Kept::Loader(loader), "abort") => loader.set_on_abort(notice),
+        (Kept::Editor(_) | Kept::Custom(_), _) => on_editor(name, slot, label_of),
         _ => Err(format!("{name} has no {slot} handler")),
     }
 }

@@ -34,8 +34,12 @@ pub trait ComponentView {
 
 #[macro_use]
 mod widgets;
+mod editors;
 mod keys;
 mod lists;
+pub use editors::{
+    CustomEditor, CustomEditorPort, Editor, EditorOptions, EditorPort, EditorShortcut, TextHandler,
+};
 pub use keys::{
     EditorTheme, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
     KeybindingsConfig, KeybindingsManager, KeybindingsPort, get_editor_theme, get_keybindings,
@@ -55,7 +59,9 @@ pub use widgets::{
     Style, Text, TextDecoration, get_markdown_theme,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
-pub(crate) use widgets::{Supplied, Widget as HostWidgetHandle, WidgetHost, WidgetPort};
+pub(crate) use widgets::{
+    CustomEditorParts, Supplied, Widget as HostWidgetHandle, WidgetHost, WidgetPort,
+};
 
 /// Independently retained component; clones share the authored view.
 #[derive(Clone)]

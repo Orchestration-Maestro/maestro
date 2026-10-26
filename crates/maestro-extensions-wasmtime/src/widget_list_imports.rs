@@ -9,7 +9,7 @@ use crate::{
         ListBuild, ListRequest, RowPaint, RowStyleEndpoint, SettingOperand, SettingsPaints, Slot,
         SubmenuDoneEndpoint,
     },
-    widget_reads::{Build, Request, StyleEndpoint, WidgetEndpoint, WidgetMessage},
+    widget_reads::{Build, Paint, Request, StyleEndpoint, WidgetEndpoint, WidgetMessage},
 };
 use wasmtime::{
     StoreContextMut,
@@ -19,7 +19,7 @@ use wasmtime::{
 /// Selection list styles as the guest sends them.
 #[derive(ComponentType, Lift)]
 #[component(record)]
-struct SelectListStyles {
+pub(crate) struct SelectListStyles {
     /// The selected row's prefix.
     #[component(name = "selected-prefix")]
     selected_prefix: StyleSource,
@@ -34,6 +34,22 @@ struct SelectListStyles {
     /// The no-match notice.
     #[component(name = "no-match")]
     no_match: StyleSource,
+}
+
+impl SelectListStyles {
+    /// The paints of the styles in field order, retaining authored ones.
+    pub(crate) fn paints<T: CallbackView>(&self, store: &mut T) -> wasmtime::Result<Vec<Paint>> {
+        [
+            &self.selected_prefix,
+            &self.selected_text,
+            &self.description,
+            &self.scroll_info,
+            &self.no_match,
+        ]
+        .into_iter()
+        .map(|style| paint(store, style))
+        .collect()
+    }
 }
 
 /// Primary column layout as the guest sends it.
@@ -119,6 +135,41 @@ enum HandlerSlot {
     /// A loader's abort.
     #[component(name = "abort")]
     Abort,
+    /// An editor's submission.
+    #[component(name = "submit")]
+    Submit,
+    /// An editor's change.
+    #[component(name = "change")]
+    Change,
+    /// A custom editor's interrupt.
+    #[component(name = "escape")]
+    Escape,
+    /// A custom editor's empty-editor exit.
+    #[component(name = "ctrl-d")]
+    CtrlD,
+    /// A custom editor's image paste.
+    #[component(name = "paste-image")]
+    PasteImage,
+    /// A custom editor's input interceptor.
+    #[component(name = "extension-shortcut")]
+    ExtensionShortcut,
+}
+
+impl From<HandlerSlot> for Slot {
+    fn from(slot: HandlerSlot) -> Self {
+        match slot {
+            HandlerSlot::Select => Self::Select,
+            HandlerSlot::Cancel => Self::Cancel,
+            HandlerSlot::SelectionChange => Self::SelectionChange,
+            HandlerSlot::Abort => Self::Abort,
+            HandlerSlot::Submit => Self::Submit,
+            HandlerSlot::Change => Self::Change,
+            HandlerSlot::Escape => Self::Escape,
+            HandlerSlot::CtrlD => Self::CtrlD,
+            HandlerSlot::PasteImage => Self::PasteImage,
+            HandlerSlot::ExtensionShortcut => Self::ExtensionShortcut,
+        }
+    }
 }
 
 /// The lent selection list styles.
@@ -187,16 +238,7 @@ fn constructors<T: CallbackView + 'static>(
         |mut store: StoreContextMut<'_, T>,
          (items, max_visible, theme, layout): (Vec<Item>, u32, SelectListStyles, SelectLayout)| {
             let store = store.data_mut();
-            let styles = [
-                &theme.selected_prefix,
-                &theme.selected_text,
-                &theme.description,
-                &theme.scroll_info,
-                &theme.no_match,
-            ]
-            .into_iter()
-            .map(|style| paint(store, style))
-            .collect::<wasmtime::Result<_>>()?;
+            let styles = theme.paints(store)?;
             let truncate = layout
                 .truncate_primary
                 .as_ref()
@@ -371,12 +413,7 @@ fn methods<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmt
                 .as_ref()
                 .map(|handler| retain(store.data_mut(), handler))
                 .transpose()?;
-            let slot = match slot {
-                HandlerSlot::Select => Slot::Select,
-                HandlerSlot::Cancel => Slot::Cancel,
-                HandlerSlot::SelectionChange => Slot::SelectionChange,
-                HandlerSlot::Abort => Slot::Abort,
-            };
+            let slot = Slot::from(slot);
             let request = |reply| Request::List(ListRequest::SetHandler(slot, handler, reply));
             Ok((widget(store.data_mut(), &this)?.read(request),))
         },

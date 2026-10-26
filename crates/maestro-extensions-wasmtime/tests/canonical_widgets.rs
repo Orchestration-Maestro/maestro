@@ -588,3 +588,106 @@ fn canonical_keybindings_reach_the_host_managers_hints_and_editor_styles() {
         assert_eq!(outcomes, expected);
     });
 }
+
+#[test]
+fn canonical_editors_reach_the_toolkit_editor_and_the_application_actions() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = create_event_bus_for::<Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let ui = published_ui();
+        runner.set_ui_context(Some(maestro_extensions::ExtensionUIContext::new(
+            ui.clone(),
+        )));
+        let edit = |op: &str, key: &str, value: serde_json::Value| {
+            let mut step = json!({ "do": "edit", "name": "e", "op": op });
+            step[key] = value;
+            step
+        };
+        let steps = json!([
+            { "do": "editor", "name": "e", "theme": "authored", "options": [2, 7] },
+            { "do": "on", "name": "e", "slot": "change", "label": "changed" },
+            { "do": "on", "name": "e", "slot": "submit", "label": "sent" },
+            edit("setText", "text", json!("hi")),
+            { "do": "input", "name": "e", "data": "!" },
+            edit("getLines", "text", json!(null)),
+            edit("insertText", "text", json!("\nyo")),
+            edit("getCursor", "text", json!(null)),
+            { "do": "input", "name": "e", "data": "\r" },
+            edit("getText", "text", json!(null)),
+            edit("setPaddingX", "number", json!(3.7)),
+            edit("getPaddingX", "text", json!(null)),
+            edit("setAutocompleteMaxVisible", "number", json!(50)),
+            edit("getAutocompleteMaxVisible", "text", json!(null)),
+            edit("setDisableSubmit", "flag", json!(true)),
+            edit("disableSubmit", "text", json!(null)),
+            edit("setFocused", "flag", json!(true)),
+            edit("focused", "text", json!(null)),
+            edit("isShowingAutocomplete", "text", json!(null)),
+            { "do": "render", "name": "e", "width": 8 },
+            { "do": "views" },
+        ]);
+        let outcomes = script(&runner, &steps).await;
+        let (done, unit) = (ok(json!(true)), ok(json!(null)));
+        let rule = "border(─)".repeat(8);
+        let mut expected = vec![done.clone(); 3];
+        expected.extend([unit.clone(), done.clone(), ok(json!(["hi!"])), unit.clone()]);
+        expected.extend([ok(json!([1, 2])), done, ok(json!("")), unit.clone()]);
+        expected.extend([ok(json!(3.0)), unit.clone(), ok(json!(20.0)), unit.clone()]);
+        expected.extend([ok(json!(true)), unit, ok(json!(true)), ok(json!(false))]);
+        let cursor = "   \u{1b}_maestro:c\u{7}\u{1b}[7m \u{1b}[0m    ";
+        expected.push(ok(json!([rule, cursor, rule])));
+        let changes = ["changed hi", "changed hi!", "changed hi!\nyo", "changed "];
+        let mut calls = changes.to_vec();
+        calls.push("sent hi!\nyo");
+        expected.push(ok(json!(calls)));
+        assert_eq!(outcomes, expected);
+        custom_editor(&runner).await;
+        drop(runner);
+        bus.clear();
+    });
+}
+
+/// A custom editor offers input to its interceptor, its interrupt handler and its actions.
+async fn custom_editor(runner: &ExtensionRunner<Local>) {
+    let keys = json!([
+        ["app.interrupt", "escape", "Interrupt"],
+        ["app.demo", "ctrl+x", "Demo"]
+    ]);
+    let custom = json!([
+        { "do": "keybindings", "name": "k", "source": "definitions", "definitions": keys },
+        { "do": "editor", "name": "c", "keys": "k", "theme": "host" },
+        { "do": "action", "name": "c", "action": "app.demo", "label": "demo" },
+        { "do": "input", "name": "c", "data": "\u{18}" },
+        { "do": "on", "name": "c", "slot": "escape", "label": "escape" },
+        { "do": "input", "name": "c", "data": "\u{1b}" },
+        { "do": "on", "name": "c", "slot": "shortcut", "label": "short" },
+        { "do": "input", "name": "c", "data": "\u{b}" },
+        { "do": "input", "name": "c", "data": "z" },
+        { "do": "action", "name": "c", "action": "app.demo", "label": "demo2" },
+        { "do": "input", "name": "c", "data": "\u{18}" },
+        { "do": "edit", "name": "c", "op": "getText" },
+        { "do": "views" },
+    ]);
+    let outcomes = script(runner, &custom).await;
+    let mut expected = vec![ok(json!(true)); 11];
+    expected.push(ok(json!("z")));
+    let calls = [
+        "demo",
+        "escape",
+        "short \u{b}",
+        "short z",
+        "short \u{18}",
+        "demo2",
+    ];
+    expected.push(ok(json!(calls)));
+    assert_eq!(
+        outcomes, expected,
+        "a consumed shortcut stops; a replaced action keeps its place"
+    );
+}

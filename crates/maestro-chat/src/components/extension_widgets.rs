@@ -1,7 +1,10 @@
 //! The host widgets an extension builds, over the toolkit and application widgets.
 use super::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
+use super::custom_editor::CustomEditor;
 use super::dynamic_border::DynamicBorder;
-use maestro_app::{ExtensionKeybindings, ExtensionLoader, ExtensionWidgets, KeybindingsManager};
+use maestro_app::{
+    ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets, KeybindingsManager,
+};
 use maestro_theme::{
     LiveTheme, SyntaxHighlighter, Theme, get_editor_theme, get_markdown_theme,
     get_select_list_theme, get_settings_list_theme,
@@ -98,6 +101,15 @@ impl ExtensionWidgets for ExtensionWidgetHost {
     }
     fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String> {
         maestro_app::raw_key_hint(key, description, &self.theme).map_err(|error| error.to_string())
+    }
+    fn custom_editor(
+        &self,
+        tui: &TUI,
+        theme: EditorTheme,
+        keybindings: maestro_tui::KeybindingsManager,
+        options: maestro_tui::EditorOptions,
+    ) -> Rc<dyn ExtensionEditor> {
+        Rc::new(CustomEditor::new(tui, theme, keybindings, options))
     }
 }
 

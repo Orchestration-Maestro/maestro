@@ -24,6 +24,9 @@ mod widgets;
 #[path = "generated_keys.rs"]
 mod keys;
 
+#[path = "generated_editors.rs"]
+mod editors;
+
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;

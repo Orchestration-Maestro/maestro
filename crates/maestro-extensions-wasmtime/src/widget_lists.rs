@@ -116,6 +116,18 @@ pub(crate) enum Slot {
     SelectionChange,
     /// A loader's abort.
     Abort,
+    /// An editor's submission.
+    Submit,
+    /// An editor's change.
+    Change,
+    /// A custom editor's interrupt.
+    Escape,
+    /// A custom editor's empty-editor exit.
+    CtrlD,
+    /// A custom editor's image paste.
+    PasteImage,
+    /// A custom editor's input interceptor.
+    ExtensionShortcut,
 }
 
 /// One request on a list or loader.
@@ -174,7 +186,7 @@ pub(crate) struct Binding<'a> {
 
 impl Binding<'_> {
     /// Calls an authored callback, keeping its failure.
-    fn call(&self, handle: &Handle, event: Event) -> Option<Answered> {
+    pub(crate) fn call(&self, handle: &Handle, event: Event) -> Option<Answered> {
         match handle.widget(self.registry, self.events, event) {
             Ok(answer) => Some(answer),
             Err(error) => {
@@ -204,7 +216,7 @@ impl Binding<'_> {
     }
 
     /// An authored notice handler.
-    fn notice(&self, handle: Handle, event: fn() -> Event) -> Rc<dyn Fn()> {
+    pub(crate) fn notice(&self, handle: Handle, event: fn() -> Event) -> Rc<dyn Fn()> {
         let (registry, events, failure) = self.owned();
         Rc::new(move || {
             let binding = Binding {
@@ -217,7 +229,7 @@ impl Binding<'_> {
     }
 
     /// Owned copies of the binding, for a retained callback.
-    fn owned(&self) -> (Registry, EventBus<Local>, Failure) {
+    pub(crate) fn owned(&self) -> (Registry, EventBus<Local>, Failure) {
         (
             self.registry.clone(),
             self.events.clone(),

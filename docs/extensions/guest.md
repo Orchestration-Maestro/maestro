@@ -496,6 +496,15 @@ without a file keeps its bindings on `reload`. `key_text`, `key_hint` and `raw_k
 format keybinding hints with the host's keybindings and live theme, and `get_editor_theme`
 lends the live editor styles.
 
+`Editor::new` builds the host's multiline editor on a lent terminal, with an `EditorTheme` and
+`EditorOptions`; `CustomEditor::new` builds the application's editor with a keybindings
+manager. An editor reads and replaces its text, lines, cursor, history, padding, completion
+rows, submission and focus, and takes submission and change handlers; replacing or inserting
+text runs the change handler first. A custom editor also offers input to its
+`set_on_extension_shortcut` interceptor, which consumes the input by answering `true`, then
+runs its interrupt, exit and image-paste handlers and the `on_action` handlers of the
+application actions its manager binds; replacing an action keeps its place.
+
 ### Themes and tool expansion
 
 `theme` returns the UI's live theme, which reads the host's later selections.

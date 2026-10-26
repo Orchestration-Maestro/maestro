@@ -562,6 +562,18 @@ impl host::HostImportRoute for State {
     }
     fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
         let nested = self.table.get_mut(&this)?.running.take();
+        if let Some(super::ui_host::Nested::Shortcut(key, data)) = &nested
+            && let host::LocalResult::Widget(Ok(host::WidgetAnswer::Consumed(false))) = &value
+        {
+            let continued = super::widget_editors::proceed(&mut self.observed, *key, data);
+            match continued {
+                Ok(calls) => {
+                    let steps = self.steps(*key, calls)?;
+                    self.table.get_mut(&this)?.steps.extend(steps);
+                }
+                Err(error) => self.table.get_mut(&this)?.result = Some(Err(error)),
+            }
+        }
         let failure = match nested {
             Some(nested) => self.settle_nested(nested, value)?,
             None => None,
@@ -672,6 +684,24 @@ impl host::Host for State {
     ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
         let callbacks = (self.table.get(&on_change)?.0, self.table.get(&on_cancel)?.0);
         self.build_settings_list((items, max_visible), &theme, callbacks, enable_search)
+    }
+    fn new_editor(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: host::EditorStyles,
+        options: host::EditorOptions,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_editor(&theme, None, options)
+    }
+    fn new_custom_editor(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: host::EditorStyles,
+        keybindings: Resource<super::widget_component::KeybindingsResource>,
+        options: host::EditorOptions,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let keys = self.table.get(&keybindings)?.0;
+        self.build_editor(&theme, Some(keys), options)
     }
     fn new_bordered_loader(
         &mut self,

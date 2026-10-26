@@ -48,6 +48,7 @@ mod exec_records;
 mod finite_records;
 #[macro_use]
 mod fixtures;
+mod editor_component;
 mod editor_ui;
 mod guest_family;
 mod hello_example;
@@ -100,6 +101,7 @@ mod trigger_compact_example;
 pub(crate) mod ui_host;
 pub(crate) mod widget_component;
 mod widget_controlled;
+pub(crate) mod widget_editors;
 pub(crate) mod widget_host;
 pub(crate) mod widget_keys;
 pub(crate) mod widget_lists;

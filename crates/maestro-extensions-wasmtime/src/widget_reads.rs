@@ -1,10 +1,10 @@
 //! Host widgets an extension built, served on the local owner over the toolkit widgets.
 use crate::guest_calls::Handle;
-use crate::guest_calls::paints::{Failure, HighlightFn};
+use crate::guest_calls::paints::Failure;
 use crate::local_resources::{Lease, Message, Registry};
 use maestro_extensions::widgets::{
-    BorderColor, Box as Boxed, Container, DefaultTextStyle, ExtensionWidgets, Markdown,
-    MarkdownOptions, MarkdownTheme, Spacer, Text, TextDecoration,
+    Box as Boxed, Container, ExtensionWidgets, Markdown, MarkdownOptions, Spacer, Text,
+    TextDecoration,
 };
 use maestro_extensions::{ComponentHandle, EventBus, Local};
 use std::{cell::RefCell, rc::Rc, sync::Arc, sync::mpsc::Sender};
@@ -64,6 +64,8 @@ pub(crate) enum Build {
     Border(Option<Paint>),
     /// A selection list, settings list or loader.
     List(crate::widget_lists::ListBuild),
+    /// An editor or custom editor.
+    Editor(crate::widget_editors::EditorBuild),
 }
 
 /// A child to add.
@@ -104,6 +106,8 @@ pub(crate) enum Request {
     Input(String, Reply<()>),
     /// A request only a list or loader takes.
     List(crate::widget_lists::ListRequest),
+    /// A request only an editor takes.
+    Editor(crate::widget_editors::EditorRequest),
 }
 
 /// A message for the widgets of one extension.
@@ -182,6 +186,8 @@ enum Kind {
     Plain(ComponentHandle),
     /// A selection list, settings list or loader.
     List(crate::widget_lists::ListKind),
+    /// An editor or custom editor.
+    Editor(crate::widget_editors::EditorKind),
 }
 
 /// One host widget, the failure its authored functions report and its authored children.
@@ -207,6 +213,7 @@ impl Widget {
             Kind::Markdown(widget) => widget.clone(),
             Kind::Plain(widget) => widget.clone(),
             Kind::List(list) => list.component(),
+            Kind::Editor(editor) => editor.component(),
         }
     }
 
@@ -223,6 +230,11 @@ impl Widget {
                 .map(|paint| registry.paint(paint, &failure))
                 .transpose()
         };
+        let binding = crate::widget_lists::Binding {
+            registry,
+            events: &events,
+            failure: &failure,
+        };
         let kind = match build {
             Build::Text(text, (x, y), bg) => {
                 Kind::Text(Rc::new(Text::new(text, width(x)?, width(y)?, paint(bg)?)))
@@ -233,24 +245,20 @@ impl Widget {
             Build::Container => Kind::Container(Rc::new(Container::new())),
             Build::Spacer(lines) => Kind::Spacer(Rc::new(Spacer::new(width(lines)?))),
             Build::Border(color) => Kind::Plain(widgets.dynamic_border(paint(color)?)),
-            Build::List(list) => {
-                let binding = crate::widget_lists::Binding {
-                    registry,
-                    events: &events,
-                    failure: &failure,
-                };
-                Kind::List(crate::widget_lists::ListKind::build(
-                    list, &binding, widgets,
-                )?)
-            }
+            Build::List(list) => Kind::List(crate::widget_lists::ListKind::build(
+                list, &binding, widgets,
+            )?),
+            Build::Editor(editor) => Kind::Editor(crate::widget_editors::EditorKind::build(
+                editor, &binding, widgets,
+            )?),
             Build::Markdown(text, padding, styles, base) => {
-                let theme = markdown_theme(registry, styles, &failure)?;
+                let theme = crate::widget_markdown::markdown_theme(registry, styles, &failure)?;
                 let options = MarkdownOptions {
                     clean_content: false,
                     padding_x: width(padding.0)?,
                     padding_y: width(padding.1)?,
                     default_text_style: base
-                        .map(|base| base_style(registry, base, &failure))
+                        .map(|base| crate::widget_markdown::base_style(registry, base, &failure))
                         .transpose()?,
                 };
                 Kind::Markdown(widgets.markdown(text, options, Rc::new(theme)))
@@ -308,17 +316,24 @@ impl Widget {
                 let _ = reply.send(self.input(&data));
             }
             Request::List(request) => match &self.kind {
-                Kind::List(list) => {
-                    let binding = crate::widget_lists::Binding {
-                        registry,
-                        events: &self.events,
-                        failure: &self.failure,
-                    };
-                    list.answer(request, &binding);
-                }
+                Kind::List(list) => list.answer(request, &self.binding(registry)),
+                Kind::Editor(editor) => editor.answer_list(request, &self.binding(registry)),
                 _ => request.reject("the widget is no list"),
             },
+            Request::Editor(request) => match &self.kind {
+                Kind::Editor(editor) => editor.answer(request, &self.binding(registry)),
+                _ => request.reject("the widget is no editor"),
+            },
             request => self.children(request, registry),
+        }
+    }
+
+    /// What the widget's authored callbacks are bound to.
+    fn binding<'a>(&'a self, registry: &'a Registry) -> crate::widget_lists::Binding<'a> {
+        crate::widget_lists::Binding {
+            registry,
+            events: &self.events,
+            failure: &self.failure,
         }
     }
 
@@ -455,6 +470,7 @@ impl Request {
             | Self::Clear(reply)
             | Self::Input(_, reply) => drop(reply.send(Err(error.to_owned()))),
             Self::List(request) => request.reject(error),
+            Self::Editor(request) => request.reject(error),
         }
     }
 }
@@ -462,74 +478,6 @@ impl Request {
 /// A count from the wire as the toolkit's count.
 fn width(value: u32) -> Result<usize, String> {
     usize::try_from(value).map_err(|error| error.to_string())
-}
-
-/// Markdown styles from their operands.
-fn markdown_theme(
-    registry: &Registry,
-    styles: Styles,
-    failure: &Failure,
-) -> Result<MarkdownTheme, String> {
-    let mut roles = styles.roles.into_iter().map(|paint| {
-        let style = registry.paint(paint, failure)?;
-        Ok::<_, String>(Box::new(move |text: &str| style(text)) as Box<dyn Fn(&str) -> String>)
-    });
-    let mut next = || {
-        roles
-            .next()
-            .unwrap_or_else(|| Err("a Markdown style is missing".to_owned()))
-    };
-    let highlight = match styles.highlight {
-        Some(Highlighting::Host(highlighter)) => Some(registry.highlighter(&highlighter)?),
-        Some(Highlighting::Authored(handle)) => {
-            Some(handle.highlight(registry.clone(), failure.clone()))
-        }
-        None => None,
-    };
-    Ok(MarkdownTheme {
-        heading: next()?,
-        link: next()?,
-        link_url: next()?,
-        code: next()?,
-        code_block: next()?,
-        code_block_border: next()?,
-        quote: next()?,
-        quote_border: next()?,
-        hr: next()?,
-        list_bullet: next()?,
-        bold: next()?,
-        italic: next()?,
-        strikethrough: next()?,
-        underline: next()?,
-        highlight_code: highlight.map(|highlight| {
-            Box::new(move |code: &str, lang: Option<&str>| highlight(code, lang))
-                as Box<HighlightFn>
-        }),
-        code_block_indent: styles.indent,
-    })
-}
-
-/// Markdown's base style from its operands.
-fn base_style(
-    registry: &Registry,
-    base: BaseStyle,
-    failure: &Failure,
-) -> Result<DefaultTextStyle, String> {
-    let boxed = |paint: Option<Paint>| {
-        paint
-            .map(|paint| {
-                let style: BorderColor = registry.paint(paint, failure)?;
-                Ok::<_, String>(
-                    Box::new(move |text: &str| style(text)) as Box<dyn Fn(&str) -> String>
-                )
-            })
-            .transpose()
-    };
-    Ok(DefaultTextStyle {
-        color: boxed(base.color)?,
-        bg_color: boxed(base.bg)?,
-        decorations: base.decorations,
-    })
 }
 
 /// Store-safe identity of one host widget.
@@ -585,41 +533,3 @@ impl HighlighterEndpoint {
 
 /// The lent Markdown styles in field order, and the lent highlighting.
 pub(crate) type LentTheme = (Vec<StyleEndpoint>, HighlighterEndpoint);
-
-/// The style the toolkit calls for one role of a shared Markdown theme.
-pub(crate) fn role(theme: &Rc<MarkdownTheme>, index: usize) -> BorderColor {
-    let theme = theme.clone();
-    Rc::new(move |text: &str| {
-        let roles: [&dyn Fn(&str) -> String; 14] = [
-            &theme.heading,
-            &theme.link,
-            &theme.link_url,
-            &theme.code,
-            &theme.code_block,
-            &theme.code_block_border,
-            &theme.quote,
-            &theme.quote_border,
-            &theme.hr,
-            &theme.list_bullet,
-            &theme.bold,
-            &theme.italic,
-            &theme.strikethrough,
-            &theme.underline,
-        ];
-        roles
-            .get(index)
-            .map_or_else(|| text.to_owned(), |role| role(text))
-    })
-}
-
-/// The highlighting the toolkit calls for a shared Markdown theme; without one, code rows stay
-/// as they are.
-pub(crate) fn highlighting(theme: &Rc<MarkdownTheme>) -> Rc<HighlightFn> {
-    let theme = theme.clone();
-    Rc::new(
-        move |code: &str, lang: Option<&str>| match &theme.highlight_code {
-            Some(highlight) => highlight(code, lang),
-            None => code.lines().map(str::to_owned).collect(),
-        },
-    )
-}

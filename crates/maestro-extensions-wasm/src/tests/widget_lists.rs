@@ -40,6 +40,12 @@ pub enum Event {
     Row(String, bool),
     /// A submenu to open for the setting at this index with its current value.
     Submenu(usize, String),
+    /// An editor's submitted or changed text.
+    Text(String),
+    /// An editor key or action.
+    Notice,
+    /// Input offered to an editor's interceptor.
+    Shortcut(String),
 }
 
 /// One nested call an input makes.

@@ -15,6 +15,7 @@ pub(crate) mod renderers;
 pub(crate) use event_bus::events;
 pub(crate) mod bash;
 mod contexts;
+mod editors;
 mod signals;
 #[cfg(test)]
 pub(crate) use signals::signal;
@@ -40,9 +41,10 @@ pub(crate) use lists::invoke_widget;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
 pub(crate) use widget_imports::{
-    ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme, KeyHint,
-    KeybindingsAnswer, KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef, SettingRef,
-    SettingsStyles, StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
+    ChildKey, ChildRef, EditorAnswer, EditorRequest, EditorStyles, HandlerSlot, HighlightRef,
+    HostMarkdownTheme, HostSettingsTheme, KeyHint, KeybindingsAnswer, KeybindingsRequest,
+    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle,
+    WidgetAnswer, WidgetEvent, WidgetImports,
 };
 #[cfg(test)]
 pub(crate) use widgets::authored_component;

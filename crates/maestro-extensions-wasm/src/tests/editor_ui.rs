@@ -200,3 +200,175 @@ async fn hints(driver: &mut impl Driver) -> Result<(), String> {
 fn keybinding_hints_and_editor_styles_come_from_the_host() -> Result<(), String> {
     on_both_adapters!(hints)
 }
+
+/// The authored handler calls a script made so far, forgotten once read.
+async fn views(driver: &mut impl Driver) -> Result<Value, String> {
+    let (answers, _) = answers(driver, json!([{ "do": "views" }])).await?;
+    Ok(answers[0].clone())
+}
+
+/// One request on the editor kept as `name`.
+fn edit(name: &str, op: &str, operand: Option<(&str, Value)>) -> Value {
+    let mut step = json!({ "do": "edit", "name": name, "op": op });
+    if let Some((key, value)) = operand {
+        step[key] = value;
+    }
+    step
+}
+
+/// The host editor script.
+fn host_editor_steps() -> Value {
+    json!([
+        { "do": "editor", "name": "e", "theme": "host", "options": [2, 7] },
+        { "do": "render", "name": "e", "width": 10 },
+        { "do": "on", "name": "e", "slot": "change", "label": "changed" },
+        { "do": "on", "name": "e", "slot": "submit", "label": "sent" },
+        edit("e", "setText", Some(("text", json!("hi")))),
+        { "do": "input", "name": "e", "data": "!" },
+        edit("e", "getLines", None),
+        edit("e", "insertText", Some(("text", json!("\nyo")))),
+        edit("e", "getCursor", None),
+        edit("e", "getExpandedText", None),
+        { "do": "input", "name": "e", "data": "enter" },
+        edit("e", "getText", None),
+        edit("e", "setDisableSubmit", Some(("flag", json!(true)))),
+        { "do": "input", "name": "e", "data": "enter" },
+        edit("e", "disableSubmit", None),
+        edit("e", "setPaddingX", Some(("number", json!(3.7)))),
+        edit("e", "getPaddingX", None),
+        edit("e", "setAutocompleteMaxVisible", Some(("number", json!(50)))),
+        edit("e", "getAutocompleteMaxVisible", None),
+        edit("e", "isShowingAutocomplete", None),
+        edit("e", "setFocused", Some(("flag", json!(true)))),
+        edit("e", "focused", None),
+        edit("e", "addToHistory", Some(("text", json!("old")))),
+        edit("e", "setBorderColor", Some(("text", json!("b")))),
+        { "do": "render", "name": "e", "width": 4 },
+    ])
+}
+
+/// The host editor keeps its text, cursor, history, options and focus, runs its change and
+/// submission handlers and paints its border with a lent or authored style.
+async fn host_editor(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let from = driver.transcript().len();
+    let steps = host_editor_steps();
+    let (answers, _) = answers(driver, steps).await?;
+    let (done, unit) = (json!(true), Value::Null);
+    let expected = vec![
+        done.clone(),
+        json!(["<borderMuted>edit|10", ""]),
+        done.clone(),
+        done.clone(),
+        unit.clone(),
+        done.clone(),
+        json!(["hi!"]),
+        unit.clone(),
+        json!([1, 2]),
+        json!("hi!\nyo"),
+        done.clone(),
+        json!(""),
+        unit.clone(),
+        done,
+        json!(true),
+        unit.clone(),
+        json!(3.0),
+        unit.clone(),
+        json!(20.0),
+        json!(false),
+        unit.clone(),
+        json!(true),
+        unit.clone(),
+        unit,
+        json!(["b(edit|4)", ""]),
+    ];
+    assert_eq!(answers, expected);
+    let calls = json!([
+        "changed hi",
+        "changed hi!",
+        "changed hi!\nyo",
+        "sent hi!\nyo"
+    ]);
+    assert_eq!(views(driver).await?, calls);
+    let built = driver.transcript()[from..]
+        .iter()
+        .any(|line| line.contains("new editor") && line.contains(r#""paddingX":2.0"#));
+    assert!(built, "{:?}", &driver.transcript()[from..]);
+    operate(
+        driver,
+        json!({ "op": "widgets", "steps": [{ "do": "forget" }] }),
+    )
+    .await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn host_editor_keeps_text_options_and_handlers() -> Result<(), String> {
+    on_both_adapters!(host_editor)
+}
+
+/// The application's custom editor offers input to its interceptor, then its special keys and
+/// application actions, before editing.
+async fn custom_editor(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let input = |data: &str| json!({ "do": "input", "name": "c", "data": data });
+    let on =
+        |slot: &str, label: &str| json!({ "do": "on", "name": "c", "slot": slot, "label": label });
+    let action = |action: &str, label: &str| json!({ "do": "action", "name": "c", "action": action, "label": label });
+    let steps = json!([
+        { "do": "keybindings", "name": "k", "source": "new" },
+        { "do": "editor", "name": "c", "keys": "k", "theme": "authored" },
+        action("app.demo", "demo"),
+        action("app.interrupt", "interrupt"),
+        input("f1"),
+        input("esc"),
+        on("escape", "escape"),
+        input("esc"),
+        input("ctrl+d"),
+        on("ctrlD", "exit"),
+        input("ctrl+d"),
+        on("pasteImage", "paste"),
+        input("ctrl+v"),
+        on("shortcut", "short"),
+        input("ctrl+k"),
+        input("f1"),
+        action("app.demo", "demo2"),
+        input("f1"),
+        on("change", "changed"),
+        input("z"),
+        { "do": "render", "name": "c", "width": 6 },
+        edit("c", "getText", None),
+    ]);
+    let (answers, _) = answers(driver, steps).await?;
+    let mut expected = vec![json!(true); 20];
+    expected.extend([json!(["border(edit|6)", "z"]), json!("z")]);
+    assert_eq!(answers, expected);
+    let calls = json!([
+        "demo",
+        "interrupt",
+        "escape",
+        "exit",
+        "paste",
+        "short ctrl+k",
+        "short f1",
+        "demo",
+        "short f1",
+        "demo2",
+        "short z",
+        "changed z"
+    ]);
+    assert_eq!(views(driver).await?, calls);
+    operate(
+        driver,
+        json!({ "op": "widgets", "steps": [{ "do": "forget" }] }),
+    )
+    .await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn custom_editor_offers_input_to_shortcuts_and_actions_first() -> Result<(), String> {
+    on_both_adapters!(custom_editor)
+}

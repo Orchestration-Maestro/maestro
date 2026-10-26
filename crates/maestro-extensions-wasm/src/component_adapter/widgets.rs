@@ -81,23 +81,27 @@ fn with_style<I: WidgetImports, T>(
 }
 
 /// One host widget with the authored components added to it.
-struct HostWidget<I: WidgetImports> {
+pub(super) struct HostWidget<I: WidgetImports> {
     /// The host the widget belongs to.
-    imports: I,
+    pub(super) imports: I,
     /// The host resource.
-    widget: I::Widget,
+    pub(super) widget: I::Widget,
     /// Authored children with the identity each was added under, in insertion order.
     guests: RefCell<Vec<(Component, u32)>>,
 }
 
 impl<I: WidgetImports> HostWidget<I> {
-    /// Retains a built widget.
-    fn retain(imports: &I, widget: I::Widget) -> Widget {
-        Widget::new(Rc::new(Self {
+    /// Keeps a built widget.
+    pub(super) fn shared(imports: &I, widget: I::Widget) -> Rc<Self> {
+        Rc::new(Self {
             imports: imports.clone(),
             widget,
             guests: RefCell::default(),
-        }))
+        })
+    }
+    /// Retains a built widget.
+    fn retain(imports: &I, widget: I::Widget) -> Widget {
+        Widget::new(Self::shared(imports, widget))
     }
 }
 
@@ -459,6 +463,26 @@ impl<I: WidgetImports> WidgetHost for Builder<I> {
     }
     fn editor_theme(&self) -> ExtensionResult<crate::EditorTheme> {
         self.lent_editor_theme()
+    }
+    fn editor(
+        &self,
+        tui: &crate::TUI,
+        theme: &crate::EditorTheme,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<(Widget, Rc<dyn crate::EditorPort>)> {
+        let widget = HostWidget::shared(&self.0, self.build_editor(tui, theme, None, options)?);
+        Ok((Widget::new(widget.clone()), widget))
+    }
+    fn custom_editor(
+        &self,
+        tui: &crate::TUI,
+        theme: &crate::EditorTheme,
+        keybindings: &crate::KeybindingsManager,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<crate::tui::CustomEditorParts> {
+        let built = self.build_editor(tui, theme, Some(keybindings), options)?;
+        let widget = HostWidget::shared(&self.0, built);
+        Ok((Widget::new(widget.clone()), widget.clone(), widget))
     }
 }
 

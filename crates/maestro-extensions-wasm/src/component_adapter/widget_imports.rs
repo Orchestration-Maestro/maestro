@@ -244,6 +244,34 @@ pub(crate) trait WidgetImports: Imports {
     fn key_hint(&self, hint: KeyHint<'_>) -> ExtensionResult<String>;
     /// Lends the live theme's editor border and selection list styles in field order.
     fn get_editor_theme(&self) -> ExtensionResult<(Self::Style, Vec<Self::Style>)>;
+    /// Builds the toolkit editor on a lent terminal.
+    fn new_editor(
+        &self,
+        tui: &Self::Tui,
+        theme: EditorStyles<'_, Self>,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<Self::Widget>;
+    /// Builds the application's custom editor on a lent terminal.
+    fn new_custom_editor(
+        &self,
+        tui: &Self::Tui,
+        theme: EditorStyles<'_, Self>,
+        keybindings: &Self::Keybindings,
+        options: crate::EditorOptions,
+    ) -> ExtensionResult<Self::Widget>;
+    /// One request on an editor, running the nested calls the host makes first.
+    fn widget_editor(
+        &self,
+        widget: &Self::Widget,
+        request: EditorRequest<'_, Self>,
+    ) -> ExtensionResult<EditorAnswer>;
+    /// Replaces the handler of a custom editor's application action.
+    fn widget_on_action(
+        &self,
+        widget: &Self::Widget,
+        action: &str,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<()>;
 }
 
 /// A settings row styling operand: a host row style, or the identity of an authored one.
@@ -301,6 +329,12 @@ pub(crate) enum WidgetEvent<I: WidgetImports> {
     Row(String, bool),
     /// A submenu opens with the current value and its closer.
     Submenu(String, I::SubmenuDone),
+    /// An editor's submitted or changed text.
+    Text(String),
+    /// An editor key or action.
+    Notice,
+    /// Input offered to an editor's interceptor.
+    Shortcut(String),
 }
 
 /// What an authored widget callback answers.
@@ -311,6 +345,8 @@ pub(crate) enum WidgetAnswer {
     Text(String),
     /// A built component.
     Component(crate::Component),
+    /// Whether an interceptor consumed its input.
+    Consumed(bool),
 }
 
 /// The widget handler an authored callback replaces.
@@ -324,6 +360,80 @@ pub(crate) enum HandlerSlot {
     SelectionChange,
     /// A loader's abort.
     Abort,
+    /// An editor's submission.
+    Submit,
+    /// An editor's change.
+    Change,
+    /// A custom editor's interrupt.
+    Escape,
+    /// A custom editor's empty-editor exit.
+    CtrlD,
+    /// A custom editor's image paste.
+    PasteImage,
+    /// A custom editor's input interceptor.
+    ExtensionShortcut,
+}
+
+/// Editor styles as operands: the border, and the completion list in field order.
+pub(crate) struct EditorStyles<'a, I: WidgetImports> {
+    /// The border.
+    pub(crate) border: StyleRef<'a, I>,
+    /// The completion list.
+    pub(crate) select_list: Vec<StyleRef<'a, I>>,
+}
+
+/// One request on an editor.
+pub(crate) enum EditorRequest<'a, I: WidgetImports> {
+    /// The text.
+    GetText,
+    /// Replaces the text.
+    SetText(&'a str),
+    /// The expanded text.
+    GetExpandedText,
+    /// The lines.
+    GetLines,
+    /// The cursor.
+    GetCursor,
+    /// Inserts text at the cursor.
+    InsertTextAtCursor(&'a str),
+    /// Adds text to the history.
+    AddToHistory(&'a str),
+    /// The side padding.
+    GetPaddingX,
+    /// Replaces the side padding.
+    SetPaddingX(f64),
+    /// The completion rows.
+    GetAutocompleteMaxVisible,
+    /// Replaces the completion rows.
+    SetAutocompleteMaxVisible(f64),
+    /// Whether submission is disabled.
+    GetDisableSubmit,
+    /// Disables or enables submission.
+    SetDisableSubmit(bool),
+    /// Whether the completion list shows.
+    IsShowingAutocomplete,
+    /// Whether the editor has the focus.
+    GetFocused,
+    /// Gives or takes the focus.
+    SetFocused(bool),
+    /// Replaces the border style.
+    SetBorderColor(StyleRef<'a, I>),
+}
+
+/// What an editor request answers.
+pub(crate) enum EditorAnswer {
+    /// Nothing.
+    Done,
+    /// Text.
+    Text(String),
+    /// Lines.
+    Lines(Vec<String>),
+    /// A line and column.
+    Cursor(u32, u32),
+    /// A number.
+    Number(f64),
+    /// A flag.
+    Flag(bool),
 }
 
 /// The live theme's settings list styles as the host lends them.
