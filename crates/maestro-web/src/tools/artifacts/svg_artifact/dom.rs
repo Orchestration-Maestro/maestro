@@ -47,7 +47,7 @@ impl State {
         image.set_filename(artifact.source.filename().into());
         let regions = Regions::mount(view, &image, &source, &artifact.toggle)?;
         regions.show(artifact.toggle.mode())?;
-        *artifact.body.borrow_mut() = Rc::downgrade(&regions);
+        preview::publish(&artifact.body, &regions);
         Ok(Rc::new(Self {
             source: RefCell::new(source),
             image: RefCell::new(image),
@@ -152,9 +152,9 @@ impl DomContent for SvgArtifact {
             .and_then(|owner| owner.downcast_ref::<Mounted>())
             .ok_or_else(|| ToolUiError::Presentation("SVG body is not mounted".into()))?
             .0;
-        state.regions.bind(&self.toggle);
+        preview::publish(&self.body, &state.regions);
+        state.regions.bind(&self.toggle, view)?;
         *state.view.borrow_mut() = view.clone();
-        *self.body.borrow_mut() = Rc::downgrade(&state.regions);
         state
             .source
             .borrow_mut()

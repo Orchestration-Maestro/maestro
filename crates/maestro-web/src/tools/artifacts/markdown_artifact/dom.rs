@@ -26,7 +26,7 @@ impl DomContent for MarkdownArtifact {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let body = Regions::mount(view, &self.preview, &self.source, &self.toggle)?;
         body.show(self.toggle.mode())?;
-        *self.body.borrow_mut() = Rc::downgrade(&body);
+        preview::publish(&self.body, &body);
         Ok(DomRoot {
             node: body.node.clone().into(),
             owner: Some(Box::new(body)),
@@ -38,8 +38,8 @@ impl DomContent for MarkdownArtifact {
             .as_ref()
             .and_then(|owner| owner.downcast_ref::<Rc<Regions>>())
             .ok_or_else(|| ToolUiError::Presentation("Markdown body is not mounted".into()))?;
-        *self.body.borrow_mut() = Rc::downgrade(body);
-        body.bind(&self.toggle);
+        preview::publish(&self.body, body);
+        body.bind(&self.toggle, view)?;
         body.update(view, &self.preview, &self.source)?;
         body.show(self.toggle.mode())
     }

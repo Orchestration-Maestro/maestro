@@ -54,6 +54,7 @@ fn paint(
         *body = Some(artifact.mount(view)?);
     }
     if let Some(body) = body.as_ref()
+        && !body.node.is_same_node(Some(root.as_ref()))
         && !body
             .node
             .parent_node()
@@ -92,11 +93,54 @@ struct RootOwner {
     mounted: Placement,
     /// Latest caller operands read by source property updates.
     view: View,
+    /// Accessors overriding a directly mounted format's body-local source property.
+    source: Option<SourceBinding>,
 }
 impl Drop for RootOwner {
     fn drop(&mut self) {
+        self.source.take();
         self.mounted.take();
     }
+}
+/// Restore the element's own accessors before releasing the shared-controller callbacks.
+struct SourceBinding {
+    /// Non-owning native element.
+    root: Link,
+    /// Original body-local property, still retained by the custom element.
+    descriptor: js_sys::Object,
+    /// Controller-backed callbacks retained for the mounted root's lifetime.
+    _callbacks: (Getter, Setter),
+}
+impl Drop for SourceBinding {
+    fn drop(&mut self) {
+        if let Some(root) = dom::live(&self.root) {
+            let _ = js_sys::Reflect::define_property(&root, &"content".into(), &self.descriptor);
+        }
+    }
+}
+/// Bind a directly mounted format's source property to the same controller as typed updates.
+fn direct(controller: &Controller, view: &DomView) -> Result<DomRoot, ToolUiError> {
+    let body = controller.borrow().mount(view)?;
+    let node = body.node.unchecked_ref::<web_sys::HtmlElement>().clone();
+    let descriptor = js_sys::Reflect::get_own_property_descriptor(&node, &"content".into())
+        .map_err(|error| ToolUiError::native(&error))?
+        .unchecked_into();
+    let mounted = Rc::new(RefCell::new(Some(body)));
+    let current = Rc::new(RefCell::new(view.clone()));
+    let callbacks = source(&node, controller, &mounted, &current);
+    let binding = SourceBinding {
+        root: Link::new(&node),
+        descriptor,
+        _callbacks: callbacks,
+    };
+    Ok(DomRoot {
+        node: node.into(),
+        owner: Some(Box::new(RootOwner {
+            mounted,
+            view: current,
+            source: Some(binding),
+        })),
+    })
 }
 /// Construct one source element from an already selected format owner.
 pub(in crate::tools::artifacts) fn mount(
@@ -107,7 +151,7 @@ pub(in crate::tools::artifacts) fn mount(
         *controller.borrow(),
         NativeArtifact::Html(_) | NativeArtifact::Svg(_) | NativeArtifact::Pdf(_)
     ) {
-        return controller.borrow().mount(view);
+        return direct(controller, view);
     }
     let mounted: Placement = Rc::default();
     let current = Rc::new(RefCell::new(view.clone()));
@@ -129,6 +173,7 @@ pub(in crate::tools::artifacts) fn mount(
         owner: Some(Box::new(RootOwner {
             mounted,
             view: current,
+            source: None,
         })),
     })
 }

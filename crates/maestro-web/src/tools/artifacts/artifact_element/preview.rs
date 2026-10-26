@@ -15,14 +15,48 @@ use std::{
 use wasm_bindgen::closure::Closure;
 use web_sys::Element;
 
-/// Non-owning link to the most recently published body.
-pub(crate) type LastBody = Rc<RefCell<Weak<Regions>>>;
+/// Non-owning body and header registrations retained across native placements.
+pub(crate) type LastBody = Rc<RefCell<BodyLink>>;
+/// A controller's latest body and its independently mounted headers.
+#[derive(Default)]
+pub(crate) struct BodyLink {
+    /// Most recently mounted or updated regions.
+    body: Weak<Regions>,
+    /// Independent controls, which may be mounted before the body.
+    headers: Vec<Weak<DomRoot>>,
+}
+impl BodyLink {
+    /// Read the currently published regions without retaining a native placement.
+    fn upgrade(&self) -> Option<Rc<Regions>> {
+        self.body.upgrade()
+    }
+    /// Read live headers only while this link still targets the supplied body.
+    fn live_headers(&mut self, body: &Regions) -> Vec<Rc<DomRoot>> {
+        if !std::ptr::eq(self.body.as_ptr(), body) {
+            return Vec::new();
+        }
+        self.headers.retain(|header| header.strong_count() > 0);
+        self.headers.iter().filter_map(Weak::upgrade).collect()
+    }
+}
+/// Publish a placement without losing headers constructed before it or an earlier placement.
+pub(crate) fn publish(last: &LastBody, body: &Rc<Regions>) {
+    last.borrow_mut().body = Rc::downgrade(body);
+    let link = Rc::downgrade(last);
+    let mut links = body.links.borrow_mut();
+    links.retain(|link| link.strong_count() > 0);
+    if !links.iter().any(|existing| existing.ptr_eq(&link)) {
+        links.push(link);
+    }
+}
 /// Two retained placements, neither replaced by selecting the other.
 pub(crate) struct Regions {
     /// Scrollable containing root.
     pub(crate) node: Element,
     /// Selection of the controller that last updated this body.
     selection: RefCell<PreviewCodeToggle>,
+    /// Weak controller links published for this body.
+    links: RefCell<Vec<Weak<RefCell<BodyLink>>>>,
     /// Preview placement.
     preview: DomRoot,
     /// Source placement.
@@ -56,6 +90,7 @@ impl Regions {
         Ok(Rc::new(Self {
             node,
             selection: RefCell::new(toggle.shared()),
+            links: RefCell::default(),
             preview,
             source,
             preview_region,
@@ -73,9 +108,26 @@ impl Regions {
         source.update(&self.source, view)
     }
     /// Retarget subsequent header actions to the controller that now owns this body.
-    pub(crate) fn bind(&self, toggle: &PreviewCodeToggle) {
+    pub(crate) fn bind(
+        &self,
+        toggle: &PreviewCodeToggle,
+        view: &DomView,
+    ) -> Result<(), ToolUiError> {
         let previous = self.selection.replace(toggle.shared());
         drop(previous);
+        let links: Vec<_> = self
+            .links
+            .borrow()
+            .iter()
+            .filter_map(Weak::upgrade)
+            .collect();
+        for link in links {
+            let headers = link.borrow_mut().live_headers(self);
+            for header in headers {
+                toggle.update(&header, view)?;
+            }
+        }
+        Ok(())
     }
     /// Show the chosen region without disturbing native selection or scrolling.
     pub(crate) fn show(&self, mode: ViewMode) -> Result<(), ToolUiError> {
@@ -104,16 +156,22 @@ pub(crate) fn header(
         .class_list()
         .add_1("maestro-artifact-preview-header")
         .map_err(|error| ToolUiError::native(&error))?;
-    let toggle = toggle.shared();
-    let control = toggle.mount(view)?;
+    let control = Rc::new(toggle.mount(view)?);
+    body.borrow_mut().headers.push(Rc::downgrade(&control));
     let body = Rc::clone(body);
-    let changed = Closure::<dyn Fn()>::new(move || {
-        let mounted = body.borrow().upgrade();
-        if let Some(mounted) = mounted {
-            // A native event has no error channel; a failed change keeps the previous region.
-            let _ = mounted.show(toggle.mode());
-        }
-    });
+    let changed =
+        Closure::<dyn Fn(web_sys::CustomEvent)>::new(move |event: web_sys::CustomEvent| {
+            let mode = match event.detail().as_string().as_deref() {
+                Some("preview") => ViewMode::Preview,
+                Some("code") => ViewMode::Code,
+                _ => return,
+            };
+            let mounted = body.borrow().upgrade();
+            if let Some(mounted) = mounted {
+                // A native event has no error channel; a failed change keeps the previous region.
+                let _ = mounted.show(mode);
+            }
+        });
     let event = EventSubscription::new(control.node.clone().into(), "mode-change", changed)
         .map_err(|e| ToolUiError::native(&e))?;
     header
