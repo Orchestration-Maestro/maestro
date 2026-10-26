@@ -2,7 +2,7 @@
 name: Cleanup 17 browser proof
 on:
   push:
-    branches: [ci/cleanup17-proof-1]
+    branches: ["ci/cleanup17-proof-*"]
 permissions:
   contents: read
 jobs:

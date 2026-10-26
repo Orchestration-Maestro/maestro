@@ -79,6 +79,8 @@
     "artifacts_panel_dom_exposes_the_live_native_element"
   ],
   "contributions": [
+    "tool_rows_dispatch_borrowed_argument_root_values",
+    "tool_rows_keep_root_specific_default_input_sections",
     "native_optional_tools_artifacts_and_diff_replay_existing_corpus",
     "mounted_content_keeps_one_root_while_its_content_type_stays",
     "mounted_content_replaces_the_root_when_the_content_type_changes",
@@ -216,8 +218,6 @@
     "streaming_container_snapshots_latest_nested_message",
     "streaming_container_clear_allows_next_response_first_frame",
     "streaming_container_branches_keep_real_assistant_controls",
-    "tool_rows_dispatch_borrowed_argument_root_values",
-    "tool_rows_keep_root_specific_default_input_sections",
     "dom_dialog_closed_content_has_no_live_handling",
     "dom_dialog_close_routes_share_one_owned_notification",
     "dom_dialog_escape_notifies_each_open_owner_once",
