@@ -2,8 +2,8 @@
 use super::reader_host::{Data as Replies, Reader};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 /// Supplied usage, without integer conversion.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -98,13 +98,13 @@ impl Bank {
             self.data = state;
         }
         if let Some(data) = c.registry {
-            self.registry = Reader(Arc::new(Mutex::new(data)));
+            self.registry = Reader::from_data(data);
         }
         if let Some(data) = c.registry_update {
             *self.registry.0.lock().unwrap() = data;
         }
         if let Some(data) = c.model {
-            self.model = Reader(Arc::new(Mutex::new(data)));
+            self.model = Reader::from_data(data);
         }
         if let Some(data) = c.model_update {
             *self.model.0.lock().unwrap() = data;

@@ -6,9 +6,15 @@ use maestro_extensions_wasm::{
 };
 use serde_json::json;
 
+#[path = "../../examples/context_bridge/credentials/state.rs"]
+mod credential_state;
+#[path = "../../examples/context_bridge/providers.rs"]
+mod providers;
+
 /// Runs one named provider scenario.
 pub fn dispatch(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<()>> {
     match args {
+        "provider-shared-register" => Some(register_shared(api)),
         "provider records" => Some(records(api)),
         "provider nonfinite" => Some(nonfinite(api)),
         _ => None,
@@ -102,4 +108,48 @@ fn model(id: &str, input: Vec<ModelInput>) -> ProviderModelConfig {
         headers: None,
         compat: None,
     }
+}
+
+/// Installs the same author observers that run through the production component loader.
+fn register_shared(api: &ExtensionAPI) -> ExtensionResult<()> {
+    use maestro_extensions_wasm::CommandOptions;
+    use std::rc::Rc;
+    providers::factory(api)?;
+    let host = api.clone();
+    api.register_command(
+        "provider-shared",
+        CommandOptions {
+            description: None,
+            get_argument_completions: None,
+            handler: Rc::new(move |args, context| {
+                let api = host.clone();
+                Box::pin(async move {
+                    let input: serde_json::Value =
+                        serde_json::from_str(&args).map_err(|error| error.to_string())?;
+                    if let Some(control) = input.get("control") {
+                        api.append_entry("catalog-control", Some(control.clone()))?;
+                    }
+                    if let Some(control) = input.get("readers") {
+                        api.append_entry("reader-control", Some(control.clone()))?;
+                    }
+                    let request = input["request"].as_str().ok_or("missing shared request")?;
+                    let answer = if let Some(request) = request.strip_prefix("credential callbacks")
+                    {
+                        credential_state::composition(&api, request.trim_start()).await
+                    } else if request == "credential state" {
+                        credential_state::control(&api).await
+                    } else {
+                        providers::command(&api, &context, request).await
+                    };
+                    api.append_entry(
+                        "provider-answer",
+                        Some(match answer {
+                            Ok(value) => json!({"ok":value}),
+                            Err(error) => json!({"error":error}),
+                        }),
+                    )
+                })
+            }),
+        },
+    )
 }
