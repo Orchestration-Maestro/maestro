@@ -90,7 +90,7 @@ impl Harness {
         let bus = TracedBus::new();
         let loads = (0..POOL).map(|index| {
             load_extension_from_factory(
-                artifact_factory(path.clone()),
+                artifact_factory(path.clone(), "installed-component-host".into()),
                 "/work".into(),
                 bus.controller.for_extension(),
                 runtime.clone(),
