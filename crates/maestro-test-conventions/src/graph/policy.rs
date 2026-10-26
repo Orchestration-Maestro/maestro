@@ -8,7 +8,7 @@ pub(crate) struct Rule {
 /// Scoped crate names paired with their permitted direct dependencies.
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-path", &[]),
-    ("maestro-cancellation", &[]),
+    ("maestro-cancellation", &["maestro-listeners"]),
     ("maestro-request", &["maestro-json"]),
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),

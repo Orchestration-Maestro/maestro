@@ -56,11 +56,24 @@ pub(super) async fn loaded_in(
     ExtensionRunner<Local>,
     EventBus<Local>,
 ) {
+    loaded_at(events, session, "/fixture").await
+}
+
+/// Supplies the factory's captured directory independently of the callback context.
+pub(super) async fn loaded_at(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let runtime = create_extension_runtime::<Local>();
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
         artifact_factory(path.clone()),
-        "/fixture".into(),
+        cwd.into(),
         events.clone(),
         runtime.clone(),
         Some(path),

@@ -44,6 +44,7 @@ mod documents;
 mod event_transport;
 mod event_values;
 mod example_support;
+mod exec_records;
 mod finite_records;
 #[macro_use]
 mod fixtures;
@@ -87,6 +88,7 @@ mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
+mod signal_callbacks;
 mod stream_events;
 mod system_prompt_header_example;
 pub(crate) mod theme_host;
@@ -569,6 +571,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]model-registry.get-api-key-and-headers",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "call",
             "event-emit",
             "get-all-tools",
             "register-tool",
@@ -1053,6 +1056,7 @@ fn assert_async_exports(contract: &Contract) {
             "component-invalidate",
             "component-render",
             "component-wants-key-release",
+            "invoke-abort",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",

@@ -7,11 +7,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
-    AbortSignal, CommandOptions, CompactionResult, ExtensionAPI, ExtensionCommandContext,
-    ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionHandler,
-    ExtensionResult, InputEventResult, InputTransform, NewSessionCommandData,
-    NewSessionCommandOptions, Presence, SessionBeforeCompactEvent, SessionBeforeCompactResult,
-    SessionEvent, SignalPort,
+    AbortListener, AbortSignal, CommandOptions, CompactionResult, ExtensionAPI,
+    ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture, ExtensionHandler, ExtensionResult, InputEventResult, InputTransform,
+    NewSessionCommandData, NewSessionCommandOptions, Presence, SessionBeforeCompactEvent,
+    SessionBeforeCompactResult, SessionEvent, SignalPort, Subscription, SubscriptionPort,
 };
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
@@ -367,6 +367,15 @@ struct Live;
 impl SignalPort for Live {
     fn aborted(&self) -> bool {
         false
+    }
+    fn subscribe(&self, _listener: AbortListener) -> ExtensionResult<Subscription> {
+        Ok(Subscription::new(Rc::new(Live)))
+    }
+}
+
+impl SubscriptionPort for Live {
+    fn unsubscribe(&self) -> ExtensionResult<()> {
+        Ok(())
     }
 }
 

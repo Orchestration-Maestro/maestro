@@ -3789,6 +3789,7 @@ name = "maestro-cancellation"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-listeners",
  "tokio",
 ]
 

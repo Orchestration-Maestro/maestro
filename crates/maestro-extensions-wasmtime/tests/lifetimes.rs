@@ -159,8 +159,8 @@ fn diagnostics(errors: &[String], fault: bool, expected: &str) {
     }
 }
 
-/// Signals release of the original bus reporter after all native consumers finish.
-struct Released(Option<tokio::sync::oneshot::Sender<()>>);
+/// Signals the release of the closure that captures it, once its last owner drops it.
+pub(super) struct Released(pub(super) Option<tokio::sync::oneshot::Sender<()>>);
 impl Drop for Released {
     fn drop(&mut self) {
         let _ = self.0.take().unwrap().send(());
@@ -168,7 +168,7 @@ impl Drop for Released {
 }
 
 /// Retains the teardown signal in the original error reporter, independently of its controller.
-fn observed_reporter(
+pub(super) fn observed_reporter(
     errors: &Rc<RefCell<Vec<String>>>,
 ) -> (
     maestro_extensions::ErrorReporter<Local>,

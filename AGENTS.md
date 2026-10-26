@@ -189,12 +189,13 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
   Removal returns ownership to the caller, and traversal sees the collection as it
-  is. Models, the toolkit, agent, application, extensions and the
-  terminal adapter may depend on it; they keep their own borrowing, locking and
-  settlement policy.
+  is. Models, the toolkit, agent, application, extensions, the
+  terminal adapter and cancellation may depend on it; they keep their own
+  borrowing, locking and settlement policy.
   Its storage reclaims retired registrations while no traversal runs.
-- `maestro-cancellation` owns cooperative cancellation below layer 0, with no
-  internal dependencies. Only models and the toolkit may depend directly on it.
+- `maestro-cancellation` owns cooperative cancellation below layer 0. Its only
+  internal dependency is `maestro-listeners`, for synchronous abort observers.
+  Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`

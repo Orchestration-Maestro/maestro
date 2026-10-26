@@ -324,7 +324,7 @@ from the optional foundation utility described below.
 |---|---|---|---|
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
-| `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
+| `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
@@ -397,8 +397,9 @@ command so a credential never reaches a diagnostic, and the loader keeps the
 modification/cache decision. FTPS, uploads, active FTP and public client options are not
 part of that caller.
 
-`maestro-cancellation` owns cooperative cancellation below layer 0, with no
-internal dependencies. Only models and the terminal toolkit may depend on it.
+`maestro-cancellation` owns cooperative cancellation below layer 0. Its only
+internal dependency is `maestro-listeners`, which keeps the synchronous abort
+observers of each signal. Only models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
@@ -538,8 +539,8 @@ position, while removing and re-registering it moves it to the last position.
 A caller may instead admit every registration as its own entry, as an
 event-emitter listener list keeps them; each removal operation then removes its
 own registration. Traversal sees the collection as it is at each step. Models,
-the terminal toolkit, the agent, the application, the extension runtime and the
-terminal adapter may depend on it.
+the terminal toolkit, the agent, the application, the extension runtime, the
+terminal adapter and the cancellation leaf may depend on it.
 Each caller keeps its own borrowing, locking, delivery and settlement policy:
 the leaf holds no lock, runs no callback under its own borrow and returns removed
 ownership to the caller. Its storage is a flat ordered list plus an identity

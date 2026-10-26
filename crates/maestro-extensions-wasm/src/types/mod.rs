@@ -32,12 +32,12 @@ pub use api::{
     FlagType, FlagValue, ShortcutHandler, ShortcutOptions,
 };
 pub use context::{
-    AbortSignal, CommandContextPort, CompactOptions, CompactionComplete, CompactionError,
-    ContextPort, ContextUsage, ExtensionCommandContext, ExtensionContext, ExtensionUIContext,
-    ExtensionUIContextPort, ExtensionWidgetOptions, ForkData, ForkOptions, NavigateTreeOptions,
-    NewSessionCommandOptions, NotificationType, ReplacedSessionContext, ReplacedSessionContextPort,
-    SetupSession, SignalPort, SwitchSessionOptions, WidgetPlacement, WithSession,
-    WorkingIndicatorOptions,
+    AbortListener, AbortSignal, CommandContextPort, CompactOptions, CompactionComplete,
+    CompactionError, ContextPort, ContextUsage, ExtensionCommandContext, ExtensionContext,
+    ExtensionUIContext, ExtensionUIContextPort, ExtensionWidgetOptions, ForkData, ForkOptions,
+    NavigateTreeOptions, NewSessionCommandOptions, NotificationType, ReplacedSessionContext,
+    ReplacedSessionContextPort, SetupSession, SignalPort, SwitchSessionOptions, WidgetPlacement,
+    WithSession, WorkingIndicatorOptions,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use event_data::EventData;
