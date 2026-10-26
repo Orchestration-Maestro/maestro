@@ -185,6 +185,7 @@ thread_local! {
 /// Admits optional constructor controls without affecting ordinary component setup.
 pub(super) fn factory(api: &ExtensionAPI) -> Result<(), String> {
     use maestro_extensions_wasm::{AuthStorage, FlagOptions, FlagType, FlagValue};
+    factory_operations(api)?;
     for (name, type_) in [
         ("catalog-construction", FlagType::Boolean),
         ("constructor-auth-path", FlagType::String),
@@ -235,4 +236,32 @@ async fn factory_result() -> Result<Value, String> {
     Ok(
         json!({"models":models,"stored":catalog.auth_storage()?.get("constructor-provider")?,"key":catalog.get_api_key_for_provider("constructor-provider").await?}),
     )
+}
+
+/// Applies literal provider operations while the facade is still loading.
+fn factory_operations(api: &ExtensionAPI) -> Result<(), String> {
+    use maestro_extensions_wasm::{FlagOptions, FlagType, FlagValue};
+    api.register_flag(
+        "provider-operations",
+        FlagOptions {
+            description: None,
+            type_: FlagType::String,
+            default: None,
+        },
+    )?;
+    let Some(FlagValue::String(text)) = api.get_flag("provider-operations")? else {
+        return Ok(());
+    };
+    let operations: Vec<Value> = serde_json::from_str(&text).map_err(|error| error.to_string())?;
+    for operation in operations {
+        let name = operation["name"].as_str().ok_or("missing provider name")?;
+        if let Some(config) = operation.get("config") {
+            let config =
+                serde_json::from_value(config.clone()).map_err(|error| error.to_string())?;
+            api.register_provider(name, config)?;
+        } else {
+            api.unregister_provider(name)?;
+        }
+    }
+    Ok(())
 }

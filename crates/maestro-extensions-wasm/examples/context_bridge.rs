@@ -32,6 +32,9 @@ mod json_boundary;
 mod prefixes;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/provider_controls.rs"]
+mod provider_controls;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/providers.rs"]
 mod providers;
 #[cfg(target_arch = "wasm32")]
@@ -160,7 +163,7 @@ fn command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        if args.starts_with("credential ") || args == "provider catalog" {
+        if args.starts_with("credential ") || args.starts_with("provider ") {
             return Err(credential_command(&api, &context, &args).await?.to_string());
         }
         if args == "clock wait" {
@@ -360,6 +363,9 @@ async fn credential_command(
     context: &maestro_extensions_wasm::ExtensionContext,
     request: &str,
 ) -> Result<serde_json::Value, String> {
+    if let Some(text) = request.strip_prefix("provider control ") {
+        return provider_controls::control(api, context, text).await;
+    }
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }

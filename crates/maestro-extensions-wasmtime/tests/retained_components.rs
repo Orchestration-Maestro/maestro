@@ -89,6 +89,22 @@ pub(super) async fn loaded_with_runtime(
     ExtensionRunner<Local>,
     EventBus<Local>,
 ) {
+    let result = unbound_with_runtime(events, session, cwd, runtime).await;
+    support::bind_prompt(&result.1, "renderer barrier");
+    result
+}
+
+/// Loads factories without binding so callers can observe individual flush diagnostics.
+pub(super) async fn unbound_with_runtime(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
         artifact_factory(path.clone()),
@@ -106,7 +122,6 @@ pub(super) async fn loaded_with_runtime(
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
-    support::bind_prompt(&runner, "renderer barrier");
     (owner, runner, events)
 }
 
