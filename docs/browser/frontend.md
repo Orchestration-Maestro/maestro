@@ -86,9 +86,10 @@ command below.
 
 ## Input, timers and dialogs
 
-[Browser input, timers and dialogs](components.md) reuse the attachment content host for
-native editing, owned callbacks and dialog reading/semantic controls. The retained browser `Input` is
-distinct from the terminal toolkit input.
+[Browser input, timers and dialogs](components.md) mount native fields and dialogs as page
+content, including the model picker, the provider and key dialogs, the settings dialog, the saved
+session list and the storage permission request. The browser `Input` is distinct from the terminal
+toolkit input.
 
 ## Sandbox messages
 
@@ -153,9 +154,9 @@ maestro-button-<variant> maestro-button-<size>` classes followed by the
 caller's `class_name`, an optional title and a spinning loader while loading.
 Disabled and loading buttons refuse activation. Each variant paints from the
 pack: `default` on the accent color, `destructive` on the error color,
-`outline` with a border, `secondary` on the panel color, `ghost` without a
-background and `link` in the accent color. Only `outline` carries a border
-width, so every other variant measures its padding and glyph alone.
+`outline` with a border, `secondary` on the panel color inside a border-colored
+ring, `ghost` without a background and `link` in the accent color. Only `outline`
+carries a border width, so every other variant measures its padding and glyph alone.
 
 ## Contributions
 

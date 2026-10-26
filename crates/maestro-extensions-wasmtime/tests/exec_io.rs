@@ -642,17 +642,26 @@ fn exec_term_resistance_uses_existing_escalation() {
         let fields =
             json!({"args":["-c", STUBBORN, "", "partial-out", "partial-err"], "signal":"relay"});
         let (execution, mut socket) = started(&runner, &fields).await;
-        signal.abort();
-        let aborted = tokio::time::Instant::now();
-        let mut answer = [0; 1];
-        socket.read_exact(&mut answer).await.unwrap();
-        assert_eq!(&answer, b"T", "terminated, still running");
-        // The escalation starts between the abort and the answer.
-        let escalation = std::time::Duration::from_secs(5);
-        let answered = tokio::time::Instant::now();
         tokio::time::pause();
-        assert_running_until(&execution, &socket, aborted + escalation).await;
-        assert_ended_by(socket, answered + escalation).await;
+        let aborted = tokio::time::Instant::now();
+        signal.abort();
+        let mut answer = [0; 1];
+        // Keep virtual time still until the real child acknowledges TERM.
+        loop {
+            tokio::select! {
+                biased;
+                result = socket.read_exact(&mut answer) => {
+                    result.unwrap();
+                    break;
+                }
+                () = tokio::task::yield_now() => {}
+            }
+        }
+        assert_eq!(&answer, b"T", "terminated, still running");
+        // The clock stood still from the abort, so the escalation ends exactly five seconds later.
+        let escalation = aborted + std::time::Duration::from_secs(5);
+        assert_running_until(&execution, &socket, escalation).await;
+        assert_ended_by(socket, escalation).await;
         let result = execution.await.unwrap();
         assert_eq!(
             result,
