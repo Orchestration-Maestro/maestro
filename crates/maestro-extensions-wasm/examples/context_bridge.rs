@@ -366,12 +366,16 @@ async fn credential_command(
     if let Some(text) = request.strip_prefix("provider control ") {
         return provider_controls::control(api, context, text).await;
     }
+    if let Some(request) = request.strip_prefix("credential lifetime ") {
+        return credentials::lifetime(api, request);
+    }
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }
     match request {
         "credential fallback" => credentials::fallback(api).await,
         "credential backend" => credentials::backend(api),
+        "credential state" => credentials::state(api).await,
         _ => providers::command(api, context, request).await,
     }
 }

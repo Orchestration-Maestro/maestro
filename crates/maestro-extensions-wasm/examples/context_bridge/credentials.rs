@@ -10,6 +10,20 @@ use maestro_extensions_wasm::{
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
+#[path = "credentials/lifetime.rs"]
+mod lifetime;
+#[path = "credentials/state.rs"]
+mod state;
+
+/// Observes accepted native state under independent backend failure phases.
+pub(super) async fn state(api: &ExtensionAPI) -> ExtensionResult<Value> {
+    state::control(api).await
+}
+
+/// Routes separately admitted resolver operations through the same author callbacks.
+pub(super) fn lifetime(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
+    lifetime::control(api, request)
+}
 
 /// Raw text retained by the author's backend, not a host-owned credential snapshot.
 struct Backend(Rc<RefCell<Option<String>>>);

@@ -1202,3 +1202,193 @@ fn replay_cases() -> [(Value, Value, Value); 6] {
         ),
     ]
 }
+
+#[test]
+fn credential_fallback_reentry_and_replacement_keep_lifetime() {
+    super::components::local(async {
+        let (_owner, runner) = loaded().await;
+        assert_eq!(
+            observe(&runner, "credential lifetime create").await,
+            json!(true)
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime counts").await,
+            json!([])
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime replace").await,
+            json!(true)
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime counts").await,
+            json!([[1, true]])
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime release").await,
+            json!("released")
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime counts").await,
+            json!([[1, true], [2, true]])
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime counts").await,
+            json!([[1, true], [2, true]])
+        );
+    });
+}
+
+#[test]
+fn provider_request_auth_uses_shared_credential_owner() {
+    if std::env::var_os("MAESTRO_PROVIDER_AUTH_CHILD").is_none() {
+        for key in ["", "environment-key"] {
+            let output = maestro_test_process::TestProcess::current(
+                "provider_request_auth_uses_shared_credential_owner",
+            )
+            .unwrap()
+            .env_clear()
+            .env("MAESTRO_PROVIDER_AUTH_CHILD", "1")
+            .env(
+                "MAESTRO_CONTEXT_COMPONENT",
+                std::env::var_os("MAESTRO_CONTEXT_COMPONENT").unwrap(),
+            )
+            .env("OPENAI_API_KEY", key)
+            .output()
+            .unwrap();
+            assert!(
+                output.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    }
+    super::components::local(async {
+        let (session, _) = super::session::runner_session("/provider-auth");
+        let native = session.model_registry.clone();
+        let mut model = native.get_all().read().unwrap()[0].read().unwrap().clone();
+        model.provider = "openai".into();
+        model.id = "not-catalog-admitted".into();
+        model.headers =
+            Some(serde_json::from_value(json!({"x-model":"literal","x-common":"model"})).unwrap());
+        assert!(native.find(&model.provider, &model.id).is_none());
+        let bus = super::components::TracedBus::new();
+        let (_owner, runner, _) =
+            super::retained_components::loaded_in(bus.controller.for_extension(), session).await;
+        let input = json!({"op":"register","provider":"openai","model":model,"config":{"apiKey":"configured-key","headers":{"x-common":"provider"},"authHeader":true}});
+        provider_call(&runner, input.clone()).await;
+        request_key_tiers(&runner, &native, &input).await;
+        request_empty_and_fallback(&runner, &native, input).await;
+    });
+}
+
+/// Checks keys at the consuming guest boundary, including a model absent from the catalog.
+async fn request_key_tiers(
+    runner: &ExtensionRunner<Local>,
+    native: &maestro_catalog::ModelRegistry,
+    input: &Value,
+) {
+    let environment = std::env::var("OPENAI_API_KEY").unwrap();
+    let ambient = if environment.is_empty() {
+        "configured-key"
+    } else {
+        &environment
+    };
+    let auth = native.auth_storage();
+    let mut inspect = input.clone();
+    inspect["op"] = json!("inspect");
+    assert_request_key(&provider_call(runner, inspect.clone()).await, ambient);
+    auth.set(
+        "openai",
+        maestro_extensions::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+            key: "stored-key".into(),
+        }),
+    );
+    assert_request_key(&provider_call(runner, inspect.clone()).await, "stored-key");
+    auth.set_runtime_api_key("openai", "runtime-key");
+    assert_request_key(&provider_call(runner, inspect.clone()).await, "runtime-key");
+    auth.set_runtime_api_key("openai", "");
+    assert_request_key(&provider_call(runner, inspect.clone()).await, "stored-key");
+    auth.set(
+        "openai",
+        serde_json::from_value(
+            json!({"type":"oauth","refresh":"r","access":"a","expires":4_102_444_800_000_i64}),
+        )
+        .unwrap(),
+    );
+    auth.set_runtime_api_key("openai", "runtime-with-oauth");
+    let answer = provider_call(runner, inspect.clone()).await;
+    assert_request_key(&answer, "runtime-with-oauth");
+    assert_eq!(answer["oauth"], json!(true));
+    auth.remove("openai");
+    auth.remove_runtime_api_key("openai");
+    assert_request_key(&provider_call(runner, inspect).await, ambient);
+}
+
+/// Empty configured keys count as configured but do not supply request keys or status.
+async fn request_empty_and_fallback(
+    runner: &ExtensionRunner<Local>,
+    native: &maestro_catalog::ModelRegistry,
+    mut input: Value,
+) {
+    input["provider"] = json!("auth-no-environment");
+    input["model"]["provider"] = input["provider"].clone();
+    input["config"]["apiKey"] = json!("");
+    let answer = provider_call(runner, input.clone()).await;
+    assert_eq!(answer["configured"], json!(true));
+    assert_eq!(answer["status"], json!({"configured":false}));
+    assert_eq!(answer["key"], Value::Null);
+    assert_eq!(
+        answer["auth"],
+        json!({"ok":false,"error":"No API key found for \"auth-no-environment\""})
+    );
+    input["op"] = json!("inspect");
+    native
+        .auth_storage()
+        .set_fallback_resolver(|_| Ok(Some("fallback-key".into())));
+    let answer = provider_call(runner, input.clone()).await;
+    assert_eq!(answer["credentialKeys"], json!(["fallback-key", null]));
+    assert_eq!(answer["key"], Value::Null);
+    assert_eq!(
+        answer["status"],
+        json!({"configured":false,"source":"fallback","label":"custom provider config"})
+    );
+    assert_eq!(answer["auth"]["ok"], json!(false));
+    input["op"] = json!("register");
+    input["config"]["authHeader"] = json!(false);
+    let answer = provider_call(runner, input).await;
+    assert_eq!(
+        answer["auth"],
+        json!({"ok":true,"apiKey":null,"headers":{"x-model":"literal","x-common":"provider"}})
+    );
+}
+
+/// Exact headers and selected key must agree, not merely report configured presence.
+fn assert_request_key(answer: &Value, key: &str) {
+    assert_eq!(answer["key"], json!(key));
+    assert_eq!(answer["configured"], json!(true));
+    assert_eq!(
+        answer["auth"],
+        json!({"ok":true,"apiKey":key,"headers":{"x-model":"literal","x-common":"provider","Authorization":format!("Bearer {key}")}})
+    );
+}
+
+#[test]
+fn credentials_retained_owner_forwards_state_errors_and_key_precedence() {
+    super::components::local(async {
+        let (_owner, runner) = loaded().await;
+        let answer = observe(&runner, "credential state").await;
+        assert_eq!(
+            answer,
+            json!({
+                "accepted":{"list":["old","new"],"all":{"old":{"type":"api_key","key":"original"},"new":{"type":"api_key","key":"accepted"}},"has":true,"stored":{"type":"api_key","key":"accepted"},"key":"accepted"},
+                "retained":["new"], "errors":["write-first","acquire-second","reload-third"],"drained":[],
+                "raw":r#"{"old":{"type":"api_key","key":"original"}}"#,
+                "recovered":["old"],"logout":[],
+                "precedence":{"keys":["fallback","runtime","stored","stored","fallback",null],
+                    "empty":{"has":true,"status":{"configured":false,"source":"runtime","label":"--api-key"},"key":"fallback"},"errors":[]}
+            })
+        );
+    });
+}

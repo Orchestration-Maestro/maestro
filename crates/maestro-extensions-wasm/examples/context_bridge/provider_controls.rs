@@ -76,6 +76,14 @@ async fn inspect(catalog: &ModelRegistry, provider: &str, input: &Value) -> Resu
         }
         None => models.first().cloned(),
     };
+    let configured = model
+        .as_ref()
+        .map(|model| catalog.has_configured_auth(model.clone()))
+        .transpose()?;
+    let oauth = model
+        .as_ref()
+        .map(|model| catalog.is_using_oauth(model.clone()))
+        .transpose()?;
     let auth = match model {
         Some(model) => Some(match catalog.get_api_key_and_headers(model).await? {
             maestro_extensions_wasm::ResolvedRequestAuth::Ok { api_key, headers } => {
@@ -87,8 +95,18 @@ async fn inspect(catalog: &ModelRegistry, provider: &str, input: &Value) -> Resu
         }),
         None => None,
     };
+    let credentials = catalog.auth_storage()?;
+    let included = credentials.get_api_key(provider, None).await?;
+    let excluded = credentials
+        .get_api_key(
+            provider,
+            Some(maestro_extensions_wasm::GetApiKeyOptions {
+                include_fallback: Some(false),
+            }),
+        )
+        .await?;
     Ok(
-        json!({"models":models, "label":catalog.get_provider_display_name(provider)?,
+        json!({"models":models, "configured":configured,"oauth":oauth,"credentialKeys":[included,excluded],"label":catalog.get_provider_display_name(provider)?,
         "key":catalog.get_api_key_for_provider(provider).await?, "status":catalog.get_provider_auth_status(provider)?,
         "auth":auth, "loadError":catalog.get_error()?}),
     )

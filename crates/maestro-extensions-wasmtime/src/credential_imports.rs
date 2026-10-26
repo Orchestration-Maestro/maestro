@@ -167,7 +167,8 @@ fn add_callbacks<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap("[method]auth-storage.set-fallback-resolver", |mut store: StoreContextMut<'_, T>, (resource, handler): (Resource<Endpoint>, Resource<crate::guest_calls::Callback>)| {
         let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
         let handler = crate::callback_imports::retain(store.data_mut(), &handler)?;
-        let route = endpoint.route(|reply| Request::Fallback(handler, endpoint.0.clone(), reply));
+        let owner = store.data().api().0.clone();
+        let route = endpoint.route(|reply| Request::Fallback(handler, owner, reply));
         Ok((crate::import_route::push(store.data_mut(), route)?,))
     })?;
     host.func_wrap(
