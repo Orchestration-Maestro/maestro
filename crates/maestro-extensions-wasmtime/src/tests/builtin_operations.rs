@@ -98,7 +98,7 @@ fn builtin_read_options_preserve_reverse_operations() {
     });
 }
 
-/// A failing replacement stops the native read before any later observation.
+/// Ready and pending failures stop at their stage; cancellation wins over pending work.
 #[test]
 fn builtin_read_operation_failures_stop_at_the_reached_stage() {
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -106,31 +106,130 @@ fn builtin_read_operation_failures_stop_at_the_reached_stage() {
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
         let runner = super::builtin_author::loaded().await;
-        let command = runner.get_command("bridge-observe").unwrap().command;
-        for (failure, stages) in [
-            ("access", vec!["access"]),
-            ("mime", vec!["access", "mime"]),
-            ("read", vec!["access", "mime", "read"]),
-        ] {
-            let request = json!({"detect":true,"mime":null,"bytes":[],"fail":failure});
-            let result = (command.handler)(
-                format!("builtin-custom-read {request}"),
-                runner.create_command_context(),
-            )
-            .await
-            .unwrap_err()
-            .to_string();
-            let observed: serde_json::Value = serde_json::from_str(&result).unwrap();
-            let calls: Vec<_> = stages
-                .into_iter()
-                .map(|stage| json!([stage, "/virtual/雪.bin"]))
-                .collect();
-            assert_eq!(
-                observed,
-                json!({"error":format!("refused {failure} 雪"),"calls":calls,"prepares":false})
-            );
+        for stage in ["access", "mime", "read"] {
+            for mode in ["ready", "pending", "preabort", "pending-abort"] {
+                observe_read_failure(&runner, stage, mode).await;
+            }
         }
     });
+}
+
+/// Observes cancellation through an arbitrary author port, not a sampled aborted Boolean.
+async fn observe_read_failure(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    stage: &str,
+    mode: &str,
+) {
+    let signal = read_signal(runner);
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let request = json!({"detect":true,"mime":null,"bytes":[],"fail":stage,
+        "gate":mode.starts_with("pending").then_some(stage),
+        "signal":match mode { "preabort" => Some("preaborted"), "pending-abort" => Some("relay"), _ => None }});
+    let result = if mode.starts_with("pending") {
+        let (started, release) = read_gate(runner);
+        let waiting = Box::pin((command.handler)(
+            format!("builtin-custom-read {request}"),
+            runner.create_command_context(),
+        ));
+        let waiting = match futures_util::future::select(waiting, started).await {
+            futures_util::future::Either::Left(_) => {
+                panic!("read completed before the {stage} operation gate")
+            }
+            futures_util::future::Either::Right((started, waiting)) => {
+                started.unwrap();
+                waiting
+            }
+        };
+        if mode == "pending-abort" {
+            signal.abort();
+        }
+        release.send(()).unwrap();
+        waiting.await
+    } else {
+        (command.handler)(
+            format!("builtin-custom-read {request}"),
+            runner.create_command_context(),
+        )
+        .await
+    };
+    let observed: serde_json::Value =
+        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    assert_eq!(
+        observed["error"],
+        json!(native_read_failure(&request, signal, mode).await)
+    );
+    assert_eq!(
+        observed,
+        expected_read_failure(stage, mode),
+        "{stage}/{mode}"
+    );
+}
+
+/// Gives the author a native signal it must wrap through its own signal port.
+fn read_signal(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+) -> maestro_extensions::Cancellation {
+    let signal = maestro_extensions::Cancellation::new();
+    let selected = signal.clone();
+    runner
+        .bind_core(
+            <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::unbound_actions(
+            ),
+            maestro_extensions::ExtensionContextActions {
+                get_signal: std::rc::Rc::new(move || Ok(Some(selected.clone()))),
+                ..Default::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
+    signal
+}
+
+/// Checks final read errors against the native wrapper; diagnostic codes remain native data.
+async fn native_read_failure(
+    request: &serde_json::Value,
+    signal: maestro_extensions::Cancellation,
+    mode: &str,
+) -> String {
+    if mode == "preabort" {
+        signal.abort();
+    }
+    let error = native_read_outcome(request, None, Some(signal))
+        .await
+        .unwrap_err();
+    if !mode.ends_with("abort") {
+        assert_eq!(
+            error.code,
+            Some(maestro_extensions::DiagnosticCode::Number(17.0))
+        );
+    }
+    error.to_string()
+}
+
+/// Literal reached stages and public read errors for each cancellation phase.
+fn expected_read_failure(stage: &str, mode: &str) -> serde_json::Value {
+    let mut stages = Vec::new();
+    if mode != "preabort" {
+        for reached in ["access", "mime", "read"] {
+            stages.push(json!([reached, "/virtual/雪.bin"]));
+            if reached == stage {
+                break;
+            }
+        }
+    }
+    let error = if mode.ends_with("abort") {
+        "Operation aborted".into()
+    } else {
+        format!("refused {stage} 雪")
+    };
+    let mut expected = json!({"error":error,"calls":stages,"prepares":false});
+    if mode == "pending-abort" {
+        expected["notified"] = json!(1);
+    }
+    if mode == "preabort" {
+        expected["notified"] = json!(0);
+    }
+    expected
 }
 
 /// Supplies the same observations to the actual native factory used as the comparator.
@@ -322,11 +421,21 @@ async fn native_read_case(
     request: &serde_json::Value,
     model: Option<maestro_extensions::Model>,
 ) -> serde_json::Value {
+    native_read_outcome(request, model, None).await.unwrap()
+}
+
+/// Invokes the native wrapper without flattening its structured error first.
+async fn native_read_outcome(
+    request: &serde_json::Value,
+    model: Option<maestro_extensions::Model>,
+    signal: Option<maestro_extensions::Cancellation>,
+) -> Result<serde_json::Value, maestro_extensions::DiagnosticErrorInfo> {
     let options = maestro_extensions::ReadToolOptions {
         auto_resize_images: request["resize"].as_bool(),
         operations: Some(std::sync::Arc::new(ReadCase {
             bytes: serde_json::from_value(request["bytes"].clone()).unwrap(),
             mime: request["mime"].as_str().map(str::to_owned),
+            fail: request["fail"].as_str().map(str::to_owned),
         })),
     };
     let definition = maestro_extensions::local::create_read_tool_definition::<ReadModel>(
@@ -338,26 +447,44 @@ async fn native_read_case(
             as maestro_extensions::local::ToolContextFactory<ReadModel>
     });
     let tool = maestro_extensions::local::wrap_tool_definition(definition, factory);
-    let result = (tool.execute)("comparator".into(), json!({"path":"雪.bin"}), None, None)
-        .await
-        .unwrap();
-    serde_json::to_value(result).unwrap()
+    let result =
+        (tool.execute)("comparator".into(), json!({"path":"雪.bin"}), signal, None).await?;
+    Ok(serde_json::to_value(result).unwrap())
 }
 
 /// Native callback responses preserve the exact original bytes.
 struct ReadCase {
     bytes: Vec<u8>,
     mime: Option<String>,
+    fail: Option<String>,
+}
+impl ReadCase {
+    /// Supplies the same authored diagnostic to the native read, without any guest transport.
+    fn answer<T>(
+        &self,
+        stage: &str,
+        value: T,
+    ) -> Result<T, maestro_extensions::DiagnosticErrorInfo> {
+        if self.fail.as_deref() == Some(stage) {
+            return Err(maestro_extensions::DiagnosticErrorInfo {
+                name: Some("ReadFailure".into()),
+                message: format!("refused {stage} 雪"),
+                stack: Some("authored stack".into()),
+                code: Some(maestro_extensions::DiagnosticCode::Number(17.0)),
+            });
+        }
+        Ok(value)
+    }
 }
 impl maestro_extensions::ReadOperations for ReadCase {
     fn access(&self, _: String) -> ReadFuture<()> {
-        Box::pin(std::future::ready(Ok(())))
+        Box::pin(std::future::ready(self.answer("access", ())))
     }
     fn read_file(&self, _: String) -> ReadFuture<Vec<u8>> {
-        Box::pin(std::future::ready(Ok(self.bytes.clone())))
+        Box::pin(std::future::ready(self.answer("read", self.bytes.clone())))
     }
     fn detect_image_mime_type(&self, _: String) -> ReadFuture<Option<String>> {
-        Box::pin(std::future::ready(Ok(self.mime.clone())))
+        Box::pin(std::future::ready(self.answer("mime", self.mime.clone())))
     }
 }
 /// Context supplied to the native comparator, independent of the extension runner.

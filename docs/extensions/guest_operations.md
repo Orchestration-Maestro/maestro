@@ -66,7 +66,13 @@ access. Supplying `ReadOperations` replaces only these observations:
 Callbacks return `OperationFuture` with `DiagnosticErrorInfo` failures. The native
 owner resolves paths against the construction directory, checks cancellation,
 orders the observations, decodes text and applies image policy. The active model
-is read from the execution context, not captured during construction.
+is read from the supplied execution context, not captured during construction or
+replaced by a later runner binding. Image fitting is independent of model image
+support: a text-only model adds the native warning without disabling fitting.
+
+A pre-aborted signal starts no file observation. An abort while an observation
+is pending settles as `Operation aborted`; a later callback failure cannot replace
+that outcome. Caller-defined signal ports retain their subscription for the call.
 
 The definition and its callbacks may outlive the factory call and the callback
 that constructed it. Keep the returned definition or its callback clones for as
