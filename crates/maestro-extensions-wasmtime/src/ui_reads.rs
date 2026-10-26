@@ -219,6 +219,8 @@ type Answer<T> = tokio::sync::oneshot::Sender<Result<T, String>>;
 
 /// One dialog on the original UI, with the reply its answer settles.
 pub(crate) enum Dialog {
+    /// Shows a custom component on the original native UI until it closes.
+    Custom(crate::custom_reads::Request, Answer<()>),
     /// Shows a selector over ordered literal choices.
     Select(String, Vec<String>, Answer<Option<String>>),
     /// Asks for confirmation of a literal message.
@@ -245,12 +247,19 @@ impl DialogRequest {
         self,
         ui: &ExtensionUIContext,
         signal: Option<maestro_extensions::Cancellation>,
+        registry: &crate::local_resources::Registry,
     ) -> crate::local_resources::Work {
         let opts = Some(maestro_extensions::ExtensionUIDialogOptions {
             signal,
             timeout: self.timeout,
         });
         match self.dialog {
+            Dialog::Custom(request, reply) => match request.start(ui, registry) {
+                Ok(custom) => settle(custom, reply),
+                Err(error) => Box::pin(async move {
+                    let _ = reply.send(Err(error));
+                }),
+            },
             Dialog::Select(title, options, reply) => settle(ui.select(title, options, opts), reply),
             Dialog::Confirm(title, message, reply) => {
                 settle(ui.confirm(title, message, opts), reply)
@@ -270,6 +279,7 @@ impl DialogRequest {
                 reply.send(Err(error)).is_ok()
             }
             Dialog::Confirm(.., reply) => reply.send(Err(error)).is_ok(),
+            Dialog::Custom(_, reply) => reply.send(Err(error)).is_ok(),
         };
     }
 }

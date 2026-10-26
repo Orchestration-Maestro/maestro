@@ -142,6 +142,35 @@ A factory's `TUI::full_redraws` reads the original host frame writer's count on
 every call. Clones retain the same host capability after the factory returns;
 releasing the last clone releases that capability, not the host terminal.
 
+The other `TUI` methods forward to that same frame writer. `add_child`,
+`remove_child`, `clear`, `invalidate` and `render` work on the writer's own
+components, which may be host widgets or authored components. `set_focus` and
+`show_overlay` accept either kind; an authored component keeps one host identity
+per `TUI` value, so focusing the component an overlay shows moves focus to that
+overlay. `show_overlay` returns an `OverlayHandle`. The hardware-cursor and
+clear-on-shrink flags, `hide_overlay`, `has_overlay`, `start`, `stop` and
+`request_render` call the host operation of the same name.
+
+`add_input_listener` takes a `TerminalInputHandler` and returns a `Subscription`;
+`remove_input_listener` removes the listener added as that same handler.
+`set_on_debug` replaces or removes the callback for the debug key. These callbacks
+cannot report a failure while the host runs them: a failed listener consumes its
+input chunk, and the next request on the frame writer returns the first failure.
+
+`TUI::terminal` returns the `Terminal` the writer draws on. Its methods read the
+live size and the Kitty keyboard protocol flag, write output, move and show or hide
+the cursor, clear, set the title and progress indicator, and start or stop the
+terminal. `drain_input` resolves once the host's drain finishes; `None` keeps the
+terminal's default limits. `start` takes an input `TextHandler` and a resize
+`WidgetNotice`; their failures surface like those of input listeners.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `tui.writer` | `TUI` as a container widget | Lends the original frame writer once per `TUI` value; it keeps the authored components it lent. |
+| `widget.writer`, `writer-request`, `terminal-request` | `TUI` and `TUI::terminal` methods | One request per operation; focus, overlay and visibility requests may call back into the guest. |
+| `widget.add-input-listener` | `TUI::add_input_listener` | The host keeps the listener until its subscription is unsubscribed. |
+| `widget.drain-input` | `Terminal::drain_input` | The host owns the drain future until it settles. |
+
 ### Authored focus
 
 A `ComponentView` can return `Some(self)` from `focusable` when it implements
@@ -193,6 +222,37 @@ record. A replacement preserves the record's executable visibility policy.
 Dropping a guest alias releases that capability, not another native owner's
 reference to the record.
 
+`set_visible` replaces or removes the record's visibility check. The host runs it at
+each render with the terminal's columns and rows; placement replacements keep it.
+A failed or trapped check counts as hidden for that render. Once a custom component
+uses the record, the host reports each such failure as an extension error for the
+`overlay.visible` event, attributed to the extension that set the check, and goes on
+rendering.
+
 | Protocol value | Native counterpart | Ownership |
 | --- | --- | --- |
 | `overlay-options` | `Rc<RefCell<maestro_tui::OverlayOptions>>` | Retains one shared record; `get`/`set` carry only placement, not executable code. |
+| `overlay-options.set-visible` | `OverlayOptions::visible` | The host keeps the authored check until it is replaced or the record is dropped. |
+| `overlay-handle` | `Rc<RefCell<Box<dyn OverlayHandle>>>` | Shares the shown overlay's handle; dropping it does not hide the overlay. |
+
+## Custom components
+
+`ExtensionUIContext::custom` shows the component a `CustomFactory` builds and
+resolves to the first value passed to its `CustomDone`, or `None` when the host
+closes the component without one. The value stays in the guest, so it need not
+be serializable. A factory returns `CustomFactoryOutcome::Ready` with the
+component, or `Async` with a future that owns its captures; only custom factories
+may build asynchronously.
+
+`CustomUIOptions` keeps absent fields absent. With `overlay` set, the host shows the
+component as an overlay. `overlay_options` is a shared `OverlayOptionsHandle` or an
+`OverlayOptionsResolver` that the host calls after the component is built. With
+neither, the host uses the component's own `width`. After the overlay is shown, the
+host calls `on_handle` with its `OverlayHandle`. The handle's `hide`, `set_hidden`,
+`is_hidden`, `focus`, `unfocus` and `is_focused` forward to the host's handle.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `extension-ui-context.custom`, `custom-ui-options` | `ExtensionUIContextPort::custom_component`, `CustomUIOptions` | The factory, resolver and handle callback live until the custom operation ends. |
+| `custom-close` | `CustomClose` | Closes the component; only the first accepted close commits the guest's value. |
+| `invoke-custom-factory`, `invoke-custom-future` | `CustomComponentFactory`, `CustomFactoryOutcome` | The factory prefix borrows its emission frame; an asynchronous future owns its captures. |

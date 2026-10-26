@@ -53,15 +53,26 @@ impl Handle {
     ) -> TerminalInputHandler {
         api.ui_callback(move |data: String, emitter| {
             let emitter = registry.emitter(emitter.frame())?;
-            let decision = self.0.endpoint.synchronous(&registry, |reply| {
-                Ok(Call::TerminalInput(Input {
-                    handler: self.clone(),
-                    data,
-                    emitter,
-                    reply,
-                }))
-            });
-            decision.map(decided).map_err(EventError::from)
+            self.decide(&registry, emitter, data)
+                .map_err(EventError::from)
         })
+    }
+
+    /// Asks the authored listener about one chunk within a native callback's own frame.
+    pub(crate) fn decide(
+        &self,
+        registry: &Registry,
+        emitter: EmitterEndpoint,
+        data: String,
+    ) -> Result<InputListenerResult, String> {
+        let decision = self.0.endpoint.synchronous(registry, |reply| {
+            Ok(Call::TerminalInput(Input {
+                handler: self.clone(),
+                data,
+                emitter,
+                reply,
+            }))
+        });
+        decision.map(decided)
     }
 }

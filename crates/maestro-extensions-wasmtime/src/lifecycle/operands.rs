@@ -47,6 +47,7 @@ impl Call {
                 reply: call.reply,
             }),
             call @ (Self::Factory(_)
+            | Self::Custom(_)
             | Self::ToolRender(_)
             | Self::Paint(_)
             | Self::Widget(_)
@@ -70,6 +71,7 @@ impl Call {
 fn ui(call: Call, completion: &Completion) -> Call<Callback> {
     match call {
         Call::Factory(call) => Call::Factory(factory(call, completion)),
+        Call::Custom(call) => Call::Custom(call.map(|handler| completion.callback(handler))),
         Call::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
         Call::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
         Call::Widget(call) => Call::Widget(widget(call, completion)),

@@ -739,7 +739,19 @@ enum Operation {
     /// Reads and replaces one retained overlay options owner.
     OverlayOptions,
     /// Runs an immediately ready or asynchronous custom factory.
-    Custom { asynchronous: bool },
+    Custom {
+        /// Whether the factory returns a future.
+        asynchronous: bool,
+    },
+    /// Shows a custom overlay with static or resolved placement.
+    CustomOverlay {
+        /// Whether a resolver supplies the placement.
+        resolved: bool,
+    },
+    /// Shows a widget that drives the frame writer its factory received.
+    WriterFactory,
+    /// Drains the input of the last driver widget's terminal.
+    WriterDrain,
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -891,6 +903,7 @@ fn factories(
 ) -> ExtensionResult<()> {
     match operation {
         Operation::TuiFactory => super::tui_author::install(&ctx.ui()?),
+        Operation::WriterFactory => super::writer_author::install(&ctx.ui()?),
         Operation::HostEditorFocus => super::focus_author::install_editors(&ctx.ui()?),
         Operation::WidgetFactory {
             key,
@@ -932,6 +945,22 @@ fn factories(
     }
 }
 
+/// Runs a custom component, reads and replaces retained overlay placement, or drains the
+/// frame writer's terminal.
+async fn custom(ctx: &ExtensionContext, operation: Operation) -> ExtensionResult<String> {
+    match operation {
+        Operation::OverlayOptions => super::overlay_author::options(),
+        Operation::WriterDrain => super::writer_author::drain().await,
+        Operation::Custom { asynchronous } => {
+            super::custom_author::run(&ctx.ui()?, asynchronous).await
+        }
+        Operation::CustomOverlay { resolved } => {
+            super::custom_overlay_author::run(&ctx.ui()?, resolved).await
+        }
+        _ => Err("expected a custom component operation".into()),
+    }
+}
+
 /// Runs one operation and reports its outcome.
 async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> ExtensionResult<()> {
     let operation: Operation = serde_json::from_str(text).map_err(|error| error.to_string())?;
@@ -957,19 +986,18 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                     .map(Some),
             )
         }
-        Operation::OverlayOptions => {
-            caught(super::overlay_author::options().map(|value| Some(json!(value))))
+        operation @ (Operation::OverlayOptions
+        | Operation::Custom { .. }
+        | Operation::CustomOverlay { .. }
+        | Operation::WriterDrain) => {
+            caught(custom(ctx, operation).await.map(|value| Some(json!(value))))
         }
-        Operation::Custom { asynchronous } => caught(
-            super::custom_author::run(&ctx.ui()?, asynchronous)
-                .await
-                .map(|value| Some(json!(value))),
-        ),
         Operation::FocusContract => caught(focus_probe(ctx)),
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
         Operation::DropKept => drop_kept(),
         operation @ (Operation::HostEditorFocus
         | Operation::TuiFactory
+        | Operation::WriterFactory
         | Operation::WidgetFactory { .. }
         | Operation::FactoryCapabilities { .. }
         | Operation::KeptWidget { .. }

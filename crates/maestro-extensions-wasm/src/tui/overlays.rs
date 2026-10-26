@@ -6,6 +6,7 @@
 )]
 use crate::ExtensionResult;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
 
 /// Point of the viewport an overlay is anchored to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,12 +92,19 @@ pub struct OverlayOptions {
     pub non_capturing: Option<bool>,
 }
 
+/// Decides at each render whether an overlay shows, given the terminal's columns and rows.
+///
+/// A failure is reported as an extension error and hides the overlay for that check.
+pub type OverlayVisible = Rc<dyn Fn(u32, u32) -> ExtensionResult<bool>>;
+
 /// Reads and writes the host's shared placement record.
 pub(crate) trait OverlayOptionsPort {
     /// Reads current placement.
     fn get(&self) -> ExtensionResult<OverlayOptions>;
     /// Replaces placement without changing visibility policy.
     fn set(&self, options: OverlayOptions) -> ExtensionResult<()>;
+    /// Replaces or removes the visibility check.
+    fn set_visible(&self, visible: Option<OverlayVisible>) -> ExtensionResult<()>;
 }
 
 /// Retained host options; clones share the original native record.
@@ -120,5 +128,44 @@ impl OverlayOptionsHandle {
     /// Returns the host's rejection.
     pub fn set(&self, options: OverlayOptions) -> ExtensionResult<()> {
         self.0.function.set(options)
+    }
+    /// Replaces or removes the visibility check the host runs at each render; placement
+    /// replacements keep it.
+    /// # Errors
+    /// Returns the host's rejection.
+    pub fn set_visible(&self, visible: Option<OverlayVisible>) -> ExtensionResult<()> {
+        self.0.function.set_visible(visible)
+    }
+}
+
+port! {
+    /// Requests to the host about one shown overlay.
+    OverlayHandlePort for OverlayHandle via port {
+        /// Removes the overlay for good.
+        fn hide() -> ();
+        /// Hides or shows the overlay again.
+        fn set_hidden(hidden: bool) -> ();
+        /// Whether the overlay is temporarily hidden.
+        fn is_hidden() -> bool;
+        /// Focuses the overlay and brings it to the front.
+        fn focus() -> ();
+        /// Returns focus to the previous target.
+        fn unfocus() -> ();
+        /// Whether the overlay has focus.
+        fn is_focused() -> bool;
+    }
+}
+
+/// A shown overlay; clones share the host's handle.
+#[derive(Clone)]
+pub struct OverlayHandle {
+    /// The host's handle.
+    port: Rc<dyn OverlayHandlePort>,
+}
+impl OverlayHandle {
+    /// Retains the supplied host capability.
+    #[must_use]
+    pub fn new(port: Rc<dyn OverlayHandlePort>) -> Self {
+        Self { port }
     }
 }

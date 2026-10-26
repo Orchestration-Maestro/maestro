@@ -61,16 +61,7 @@ pub async fn run(ui: &ExtensionUIContext, asynchronous: bool) -> ExtensionResult
                     return Ok(CustomFactoryOutcome::Ready(built));
                 }
                 Ok(CustomFactoryOutcome::Async(Box::pin(async move {
-                    let mut yielded = false;
-                    std::future::poll_fn(|context| {
-                        if yielded {
-                            return Poll::Ready(());
-                        }
-                        yielded = true;
-                        context.waker().wake_by_ref();
-                        Poll::Pending
-                    })
-                    .await;
+                    yield_once().await;
                     Ok(built)
                 })))
             }),
@@ -85,4 +76,18 @@ pub async fn run(ui: &ExtensionUIContext, asynchronous: bool) -> ExtensionResult
         "custom ready done"
     }
     .into())
+}
+
+/// Forces a continuation beyond its first poll without a timer or a borrowed emitter.
+async fn yield_once() {
+    let mut yielded = false;
+    std::future::poll_fn(|context| {
+        if yielded {
+            return Poll::Ready(());
+        }
+        yielded = true;
+        context.waker().wake_by_ref();
+        Poll::Pending
+    })
+    .await;
 }

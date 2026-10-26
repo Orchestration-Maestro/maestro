@@ -212,3 +212,132 @@ fn canonical_overlay_options_retain_the_native_placement_owner() {
         bus.clear();
     });
 }
+
+/// Delivers `command` to the driver widget and returns the row it answers.
+fn run(driver: &maestro_extensions::ComponentHandle, command: &str) -> String {
+    driver
+        .input_handler()
+        .unwrap()
+        .try_handle_input(command)
+        .unwrap();
+    last(driver)
+}
+
+/// The driver widget's last row.
+fn last(driver: &maestro_extensions::ComponentHandle) -> String {
+    driver.try_render(40).unwrap().last().cloned().unwrap()
+}
+
+/// Frame writer components, flags, overlays and focus reach the original frame writer.
+fn frame(ui: &Ui, driver: &maestro_extensions::ComponentHandle) {
+    assert_eq!(run(driver, "children"), r#"rows ["child"]"#);
+    assert_eq!(
+        maestro_extensions::Component::try_render(&ui.tui, 20).unwrap(),
+        ["child"]
+    );
+    assert_eq!(run(driver, "clear"), "rows []");
+    assert_eq!(run(driver, "settings"), "cursor true shrink true");
+    assert!(ui.tui.get_show_hardware_cursor() && ui.tui.get_clear_on_shrink());
+    assert_eq!(run(driver, "overlay"), "overlay true focused true");
+    assert!(ui.tui.has_overlay());
+    assert_eq!(run(driver, "focus"), "focus false true");
+    assert_eq!(run(driver, "hide"), "overlay false");
+    assert!(!ui.tui.has_overlay());
+}
+
+/// Terminal requests write their exact bytes and read the live size.
+fn terminal(
+    driver: &maestro_extensions::ComponentHandle,
+    terminal: &super::recording_terminal::RecordingTerminal,
+) {
+    let bytes = Rc::new(RefCell::new(Vec::new()));
+    let tapped = bytes.clone();
+    terminal.set_tap(move |data| tapped.borrow_mut().push(data.to_owned()));
+    assert_eq!(run(driver, "terminal"), "terminal 40x12 kitty true");
+    assert_eq!(
+        *bytes.borrow(),
+        [
+            "literal",
+            "\x1b[2A",
+            "\x1b[?25l",
+            "\x1b[?25h",
+            "\x1b[K",
+            "\x1b[J",
+            "\x1b[2J\x1b[H",
+            "\x1b]0;title\x07",
+            "\x1b]9;4;3\x07",
+        ]
+    );
+    terminal.resize(50, 9);
+    assert_eq!(run(driver, "terminal"), "terminal 50x9 kitty true");
+}
+
+/// Input listeners and the debug key see terminal input while the frame writer runs.
+fn input(
+    ui: &Ui,
+    driver: &maestro_extensions::ComponentHandle,
+    terminal: &super::recording_terminal::RecordingTerminal,
+) {
+    assert_eq!(run(driver, "start"), "started");
+    assert_eq!(run(driver, "listen"), "listening");
+    terminal.send_input("x");
+    assert_eq!(last(driver), "listener x");
+    assert_eq!(run(driver, "debug"), "debug set");
+    terminal.send_input("\x1b[100;6u");
+    let rows = driver.try_render(40).unwrap();
+    assert_eq!(
+        rows[rows.len() - 2..],
+        ["listener \x1b[100;6u", "debug key"]
+    );
+    assert_eq!(run(driver, "unlisten"), "not listening");
+    terminal.send_input("x");
+    assert_eq!(last(driver), "not listening");
+    let redraws = ui.tui.full_redraws();
+    assert_eq!(run(driver, "render"), "render requested");
+    ui.tui.render_pending_frame().unwrap();
+    assert!(ui.tui.full_redraws() > redraws);
+    assert_eq!(run(driver, "stop"), "stopped");
+    assert_eq!(terminal.events(), ["start", "stop"]);
+}
+
+#[test]
+fn canonical_tui_writer_forwards_frame_and_terminal_requests() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let (tui, recording) = super::canonical_ui::screen();
+        let ui = Rc::new(Ui {
+            tui,
+            shown: RefCell::default(),
+        });
+        runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        for (command, answer) in [
+            ("ui writer", "writer shown"),
+            ("ui writer-drain", "drained"),
+        ] {
+            assert_eq!(
+                handler(command.into(), runner.create_command_context())
+                    .await
+                    .unwrap_err()
+                    .to_string(),
+                answer
+            );
+        }
+        let driver = ui.shown.borrow().as_ref().unwrap().component.clone();
+        frame(&ui, &driver);
+        terminal(&driver, &recording);
+        input(&ui, &driver, &recording);
+        bus.clear();
+    });
+}

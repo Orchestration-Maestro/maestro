@@ -45,6 +45,7 @@ impl Call {
             Self::Synchronous(call) => attach(&call.completion, completion),
             Self::TerminalInput(call) => attach(&call.reply, completion),
             Self::Factory(call) => attach(&call.reply, completion),
+            Self::Custom(call) => attach_custom(call, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
             Self::Widget(call) => attach(&call.reply, completion),
             Self::EditorFactory(call) => attach(&call.reply, completion),
@@ -84,6 +85,14 @@ impl Call {
             }
             Self::Finished => {}
         }
+    }
+}
+
+/// Attaches completion to a custom factory prefix's or continuation's reply.
+fn attach_custom(call: &crate::guest_calls::custom::Invocation, completion: &Completion) {
+    match call {
+        crate::guest_calls::custom::Invocation::Prefix(call) => attach(&call.reply, completion),
+        crate::guest_calls::custom::Invocation::Future(_, reply) => attach(reply, completion),
     }
 }
 

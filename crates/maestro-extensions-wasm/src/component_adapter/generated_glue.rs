@@ -197,6 +197,30 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
     }
 
+    fn invoke_custom_factory(
+        handler: &host::Callback,
+        input: host::CustomInput,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::CustomBuilt>> {
+        let lent = super::super::custom::Lent {
+            tui: input.tui,
+            theme: input.theme,
+            keybindings: input.keybindings,
+            close: input.close,
+        };
+        std::future::ready(
+            Exports::new(Generated)
+                .invoke_custom_factory(handler.id(), lent, emitter)
+                .map(|outcome| super::super::custom::transfer(&Generated, outcome)),
+        )
+    }
+    async fn invoke_custom_future(
+        handler: &host::Callback,
+    ) -> ExtensionResult<host::FactoryComponent> {
+        super::super::custom::invoke_custom_future(handler.id())
+            .await
+            .map(|built| super::super::factories::transfer(&Generated, built))
+    }
     fn invoke_component_factory(
         handler: &host::Callback,
         tui: host::Tui,
@@ -316,7 +340,11 @@ impl<E: Extension> Guest for Glue<E> {
         event: host::WidgetEvent,
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<host::WidgetAnswer>> {
-        std::future::ready(super::widgets::invoke_widget(handler.id(), event, emitter))
+        std::future::ready(super::widget_events::invoke_widget(
+            handler.id(),
+            event,
+            emitter,
+        ))
     }
 
     fn invoke_terminal_input(

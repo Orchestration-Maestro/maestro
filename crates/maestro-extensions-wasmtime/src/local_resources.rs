@@ -283,8 +283,12 @@ enum Capability {
     Style(maestro_extensions::widgets::BorderColor),
     /// The lent host highlighting.
     Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
-    /// Shared native overlay placement.
-    OverlayOptions(Rc<RefCell<maestro_extensions::widgets::OverlayOptions>>),
+    /// Shared native overlay placement and its bound error reporter.
+    OverlayOptions(overlays::Placement),
+    /// A shown overlay's native handle, shared with the host.
+    OverlayHandle(overlays::SharedHandle),
+    /// Original custom-component close operation.
+    CustomClose(maestro_extensions::types::CustomClose),
     /// Original terminal lent to a component factory.
     Tui(maestro_extensions::TUI),
     /// A lent settings row style.

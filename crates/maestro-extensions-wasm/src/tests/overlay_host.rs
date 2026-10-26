@@ -53,7 +53,40 @@ impl host::HostOverlayOptions for State {
     ) -> wasmtime::Result<Result<(), String>> {
         Ok(self.table.get(&this)?.set(&encoded))
     }
+    fn share(&mut self, this: Resource<Options>) -> wasmtime::Result<Resource<Options>> {
+        let shared = self.table.get(&this)?.clone();
+        self.push(shared)
+    }
+    fn set_visible(
+        &mut self,
+        _: Resource<Options>,
+        visible: Option<Resource<super::host::Identity>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.observed
+            .log(format!("overlay visible {}", visible.is_some()));
+        Ok(Ok(()))
+    }
     fn drop(&mut self, this: Resource<Options>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+/// A shown overlay; the component test host shows none.
+pub struct Handle;
+impl host::HostOverlayHandle for State {
+    fn request(
+        &mut self,
+        _: Resource<Handle>,
+        _: host::OverlayRequest,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::default(),
+            running: None,
+            result: Some(Err("no overlay is shown in the component test host".into())),
+            rows: None,
+        })
+    }
+    fn drop(&mut self, this: Resource<Handle>) -> wasmtime::Result<()> {
         self.release(this)
     }
 }

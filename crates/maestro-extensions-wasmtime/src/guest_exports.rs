@@ -11,6 +11,7 @@ use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
 mod credentials;
+pub(crate) mod custom;
 mod editors;
 pub(crate) mod events;
 mod factories;
@@ -75,6 +76,8 @@ pub(crate) struct Exports {
     terminal: terminal::Exports,
     /// Actual component factory export.
     factories: factories::Exports,
+    /// Actual custom prefix and owned continuation exports.
+    custom: custom::Exports,
     /// Authored styling and highlighting exports.
     paints: paints::Exports,
     /// Authored widget callback export.
@@ -156,6 +159,7 @@ impl Exports {
             tools,
             terminal,
             factories,
+            custom: custom::Exports::new(store, instance, &guest)?,
             paints,
             widgets,
             editors,
@@ -197,6 +201,7 @@ impl Exports {
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
             call @ (Call::TerminalInput(_)
             | Call::Factory(_)
+            | Call::Custom(_)
             | Call::ToolRender(_)
             | Call::Paint(_)
             | Call::Widget(_)
@@ -257,6 +262,7 @@ impl Exports {
         match call {
             Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
             Call::Factory(call) => self.factories.invoke(accessor, call).await,
+            Call::Custom(call) => self.custom.invoke(accessor, call).await,
             Call::ToolRender(call) => self.factories.render(accessor, call).await,
             Call::Paint(call) => self.paints.invoke(accessor, call).await,
             Call::Widget(call) => self.widgets.invoke(accessor, call).await,

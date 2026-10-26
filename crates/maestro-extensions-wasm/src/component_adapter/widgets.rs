@@ -102,6 +102,13 @@ impl<I: WidgetImports> HostWidget<I> {
             change: RefCell::default(),
         })
     }
+    /// The identity `component` was added under, when it is an authored child.
+    pub(super) fn guest(&self, component: &Component) -> Option<u32> {
+        let guests = self.guests.borrow();
+        guests
+            .iter()
+            .find_map(|(added, id)| added.same(component).then_some(*id))
+    }
     /// Retains a built widget.
     fn retain(imports: &I, widget: I::Widget) -> Widget {
         Widget::new(Self::shared(imports, widget))

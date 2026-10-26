@@ -9,6 +9,7 @@
 
 mod callbacks;
 mod compaction;
+pub(crate) mod custom;
 mod event_bus;
 pub(crate) mod renderers;
 #[cfg(test)]
@@ -35,7 +36,7 @@ mod imports;
 mod keys;
 mod lists;
 mod model_registry;
-mod overlays;
+pub(crate) mod overlays;
 mod providers;
 mod schema;
 mod session;
@@ -46,6 +47,7 @@ mod tools;
 mod ui;
 mod widget_imports;
 mod widgets;
+mod writer;
 #[cfg(test)]
 pub(crate) use editor_factories::keep_editor;
 pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, CurrentFactory, LentEditor};
@@ -59,8 +61,8 @@ pub(crate) use tools::ToolCapabilities;
 pub(crate) use widget_imports::{
     ChildKey, ChildRef, EditorAnswer, EditorRequest, EditorStyles, HandlerSlot, HighlightRef,
     HostMarkdownTheme, HostSettingsTheme, KeyHint, KeybindingsAnswer, KeybindingsRequest,
-    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle,
-    WidgetAnswer, WidgetEvent, WidgetImports,
+    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TerminalRequest,
+    TextStyle, WidgetAnswer, WidgetEvent, WidgetImports, WriterAnswer, WriterRequest, WriterTarget,
 };
 #[cfg(test)]
 pub(crate) use widgets::authored_component;

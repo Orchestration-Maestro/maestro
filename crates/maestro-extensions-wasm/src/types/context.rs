@@ -118,6 +118,8 @@ port! {
         fn set_tools_expanded(expanded: bool) -> ();
     }
     owned {
+        /// Shows a custom component until its host accepts closing it.
+        fn custom_component(factory: crate::CustomComponentFactory, options: Option<crate::CustomUIOptions>) -> ();
         /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.
         fn select(
             title: String,

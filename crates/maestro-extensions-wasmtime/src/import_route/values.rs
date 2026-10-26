@@ -23,6 +23,10 @@ pub(crate) enum Value {
     Credentials(crate::credential_reads::Endpoint),
     /// Independently retained catalog.
     Catalog(crate::catalog_reads::Endpoint),
+    /// A terminal dimension.
+    Count(u32),
+    /// A shown overlay's handle.
+    Overlay(crate::overlay_reads::HandleEndpoint),
 }
 /// A result transferred to the guest through the same resource table.
 #[derive(ComponentType, Lower)]
@@ -58,6 +62,12 @@ pub(super) enum Transferred {
     /// Independently retained catalog.
     #[component(name = "catalog")]
     Catalog(Resource<crate::catalog_reads::Endpoint>),
+    /// A terminal dimension.
+    #[component(name = "count")]
+    Count(u32),
+    /// A shown overlay's handle.
+    #[component(name = "overlay")]
+    Overlay(Resource<crate::overlay_reads::HandleEndpoint>),
 }
 impl Value {
     /// Transfers one actual result, without reducing non-unit success to unit.
@@ -76,6 +86,8 @@ impl Value {
             Self::EditorAnswer(answer) => Transferred::EditorAnswer(answer.transfer(table)?),
             Self::Credentials(value) => Transferred::Credentials(table.push(value)?),
             Self::Catalog(value) => Transferred::Catalog(table.push(value)?),
+            Self::Count(value) => Transferred::Count(value),
+            Self::Overlay(value) => Transferred::Overlay(table.push(value)?),
         })
     }
 }

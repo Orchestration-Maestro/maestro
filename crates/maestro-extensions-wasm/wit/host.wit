@@ -165,6 +165,8 @@ interface host {
     record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
     /// One nested same-instance component factory.
     record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
+    /// One nested custom factory prefix with owned capabilities.
+    record local-custom-factory { target: u32, input: custom-input, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// One nested same-instance text styling.
@@ -251,6 +253,8 @@ interface host {
         tail(u32),
         bash(local-bash),
         factory(local-factory),
+        custom-factory(local-custom-factory),
+        custom-future(u32),
         tool-render(local-tool-render),
         style(local-style),
         highlight(local-highlight),
@@ -277,6 +281,7 @@ interface host {
         tool(result<string, string>),
         bash(result<option<f64>, string>),
         factory(result<factory-component, string>),
+        custom-factory(result<custom-built, string>),
         tool-render(result<tool-rendered, string>),
         style(result<string, string>),
         highlight(result<list<string>, string>),
@@ -291,6 +296,10 @@ interface host {
         unit, boolean(bool), text(string), lines(list<string>), completion(completion-result),
         trigger(option<bool>), editor(built-editor), editor-answer(foreign-editor-answer),
         credentials(auth-storage), catalog(model-registry),
+        /// A terminal dimension.
+        count(u32),
+        /// The handle of an overlay the request showed.
+        overlay(overlay-handle),
     }
     variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
@@ -375,17 +384,62 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// Closes one custom component; only the first accepted close returns true.
+    resource custom-close { close: func() -> import-route; }
+    /// Original capabilities lent to a custom factory prefix.
+    record custom-input { tui: tui, theme: theme, keybindings: keybindings-manager, close: custom-close }
+    /// A completed prefix or an independently owned future.
+    variant custom-built { ready(factory-component), pending(callback) }
+    /// Overlay placement retained as supplied, or resolved by an authored callback at show.
+    variant overlay-options-source { placement(borrow<overlay-options>), resolver(borrow<callback>) }
+    /// Presentation operands preserve their optional absence.
+    record custom-ui-options {
+        overlay: option<bool>,
+        overlay-options: option<overlay-options-source>,
+        /// Receives the overlay's handle once it is shown.
+        on-handle: option<borrow<callback>>,
+    }
     /// Shared placement on the native options owner; executable visibility stays separate.
     resource overlay-options {
         get: func() -> result<string, string>;
         set: func(placement: string) -> result<_, string>;
+        /// Another owner of the same native record.
+        share: func() -> overlay-options;
+        /// Replaces or removes the authored visibility check the host runs at each render.
+        set-visible: func(visible: option<borrow<callback>>) -> result<_, string>;
     }
+    /// One operation on a shown overlay.
+    variant overlay-request { hide, set-hidden(bool), is-hidden, focus, unfocus, is-focused }
+    /// A shown overlay; requests may call back into this instance while focus moves.
+    resource overlay-handle { request: func(request: overlay-request) -> import-route; }
     /// Creates one retained placement owner from its plain record.
     new-overlay-options: func(placement: string) -> result<overlay-options, string>;
     /// Terminal handle lent to a component factory.
     resource tui {
         /// The original frame writer's count of full redraws.
         full-redraws: func() -> result<u64, string>;
+        /// The frame writer as a container widget that also takes frame-writer requests.
+        writer: func() -> result<widget, string>;
+    }
+    /// What focus or an overlay goes to: a host widget, an authored component lent now, or the
+    /// identity an authored component was lent under before.
+    variant writer-target { widget(borrow<widget>), component(borrow<callback>), lent(u32) }
+    /// One request on the terminal a frame writer draws on.
+    variant terminal-request {
+        stop, write(string), columns, rows, kitty-protocol-active, move-by(s64), hide-cursor,
+        show-cursor, clear-line, clear-from-cursor, clear-screen, set-title(string),
+        set-progress(bool),
+    }
+    /// One request on a frame writer; focus, overlay and visibility requests may call back into
+    /// this instance.
+    variant writer-request {
+        get-show-hardware-cursor, set-show-hardware-cursor(bool), get-clear-on-shrink,
+        set-clear-on-shrink(bool), set-focus(option<writer-target>),
+        show-overlay(tuple<writer-target, option<borrow<overlay-options>>>), hide-overlay,
+        has-overlay, start, stop, request-render(bool), set-on-debug(option<borrow<callback>>),
+        terminal(terminal-request),
+        /// Starts the terminal with authored input and resize callbacks.
+        terminal-start(tuple<borrow<callback>, borrow<callback>>),
     }
     /// A host text styling function.
     resource style { apply: func(text: string) -> result<string, string>; }
@@ -463,10 +517,19 @@ interface host {
         notice,
         /// Input an editor offers its shortcut interceptor first.
         shortcut(string),
+        /// An overlay's visibility check at these terminal columns and rows.
+        visible(tuple<u32, u32>),
+        /// A custom overlay's handle after it is shown.
+        overlay-handle(overlay-handle),
+        /// A custom overlay asks for its placement.
+        overlay-options,
     }
-    /// What an authored widget callback answers: nothing, text, a component's identity, or
-    /// whether a shortcut consumed its input.
-    variant widget-answer { done, text(string), component(callback), consumed(bool) }
+    /// What an authored widget callback answers: nothing, text, a component's identity,
+    /// whether a shortcut consumed its input, whether an overlay is visible, or placement.
+    variant widget-answer {
+        done, text(string), component(callback), consumed(bool), visible(bool),
+        overlay-options(overlay-options),
+    }
     /// The widget handler an authored callback replaces.
     enum handler-slot {
         select, cancel, selection-change, abort, submit, change, escape, ctrl-d, paste-image,
@@ -538,6 +601,13 @@ interface host {
         /// One editor operation on an editor another extension's factory built; the editor may
         /// call back into this instance first.
         foreign-editor: func(request: foreign-editor-request) -> import-route;
+        /// One request on a frame writer widget.
+        writer: func(request: writer-request) -> import-route;
+        /// Adds a frame writer's input listener; unsubscribing removes it.
+        add-input-listener: func(listener: borrow<callback>) -> result<subscription, string>;
+        /// Discards pending terminal input of a frame writer, as its terminal defaults or within
+        /// these milliseconds.
+        drain-input: async func(max-ms: option<f64>, idle-ms: option<f64>) -> result<_, string>;
     }
     /// The toolkit editor on a lent terminal.
     new-editor: func(tui: borrow<tui>, theme: editor-styles, options: editor-options) -> result<widget, string>;
@@ -704,6 +774,8 @@ interface host {
     record theme-set-result { success: bool, error: option<string> }
     /// Independently retained opaque UI capability.
     resource extension-ui-context {
+        /// Shows the component a custom factory builds, until the host closes it.
+        custom: async func(factory: borrow<callback>, options: option<custom-ui-options>) -> result<_, string>;
         notify: func(message: string, kind: option<notification-type>) -> import-route;
         set-status: func(key: string, text: option<string>) -> import-route;
         set-working-message: func(message: option<string>) -> import-route;

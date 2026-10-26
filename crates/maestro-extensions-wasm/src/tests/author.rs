@@ -53,6 +53,8 @@ mod stacked_provider_author;
 use super::registration_fixture;
 #[path = "custom_author.rs"]
 pub(crate) mod custom_author;
+#[path = "custom_overlay_author.rs"]
+pub(crate) mod custom_overlay_author;
 #[path = "focus_author.rs"]
 pub(crate) mod focus_author;
 #[path = "nested_schema_fixture.rs"]
@@ -73,6 +75,8 @@ pub(crate) mod tui_author;
 pub(crate) mod ui_author;
 #[path = "widget_author.rs"]
 mod widget_author;
+#[path = "writer_author.rs"]
+pub(crate) mod writer_author;
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {

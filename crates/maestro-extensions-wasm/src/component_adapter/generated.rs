@@ -26,6 +26,15 @@ pub(crate) mod model_streams;
 #[path = "generated_widgets.rs"]
 mod widgets;
 
+#[path = "generated_overlays.rs"]
+mod overlays;
+
+#[path = "generated_widget_events.rs"]
+mod widget_events;
+
+#[path = "generated_writer.rs"]
+mod writer;
+
 #[path = "generated_keys.rs"]
 mod keys;
 
@@ -333,19 +342,35 @@ impl Imports for Generated {
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
+    type CustomClose = host::CustomClose;
+    fn custom_close(&self, close: &host::CustomClose) -> ExtensionResult<bool> {
+        overlays::close(close)
+    }
+    fn ui_custom<'a>(
+        &'a self,
+        resource: &'a host::ExtensionUiContext,
+        factory: &'a host::Callback,
+        options: Option<super::custom::CustomOptionsRef<'a, Self>>,
+    ) -> ExtensionFuture<'a, ()> {
+        overlays::custom(resource, factory, options)
+    }
     type OverlayOptions = host::OverlayOptions;
-    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<host::OverlayOptions> {
-        host::new_overlay_options(encoded)
+    forward_resources! { functions {
+        new_overlay_options(encoded: &str) -> ExtensionResult<host::OverlayOptions> => host::new_overlay_options;
+    } }
+    forward_resources! {
+        overlay_options_get(options: &host::OverlayOptions) -> ExtensionResult<String> => get();
+        overlay_options_set(options: &host::OverlayOptions, encoded: &str) -> ExtensionResult<()> => set(encoded);
+        overlay_options_share(options: &host::OverlayOptions) -> host::OverlayOptions => share();
+        overlay_options_set_visible(options: &host::OverlayOptions, visible: Option<&host::Callback>) -> ExtensionResult<()> => set_visible(visible);
     }
-    fn overlay_options_get(&self, options: &host::OverlayOptions) -> ExtensionResult<String> {
-        options.get()
-    }
-    fn overlay_options_set(
+    type OverlayHandle = host::OverlayHandle;
+    fn overlay_handle_request(
         &self,
-        options: &host::OverlayOptions,
-        encoded: &str,
-    ) -> ExtensionResult<()> {
-        options.set(encoded)
+        handle: &host::OverlayHandle,
+        request: super::overlays::OverlayRequest,
+    ) -> ExtensionResult<Option<bool>> {
+        overlays::request(handle, request)
     }
     type Tui = host::Tui;
     fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {

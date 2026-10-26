@@ -53,6 +53,7 @@ pub(crate) mod stream_host;
 mod tui_ui;
 #[macro_use]
 mod fixtures;
+pub(crate) mod custom_host;
 pub(crate) mod editor_component;
 mod editor_driver;
 pub(crate) mod editor_host;
@@ -120,6 +121,8 @@ pub(crate) mod widget_keys;
 pub(crate) mod widget_lists;
 mod with_deps_example;
 mod working_message_example;
+mod writer_controlled;
+mod writer_ui;
 
 use std::future::Future;
 
@@ -610,6 +613,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]command-context.wait-for-idle",
             "[method]completion-provider.get-suggestions",
             "[method]extension-ui-context.confirm",
+            "[method]extension-ui-context.custom",
             "[method]extension-ui-context.editor",
             "[method]extension-ui-context.input",
             "[method]extension-ui-context.select",
@@ -617,6 +621,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]model-registry.get-api-key-for-provider",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "[method]widget.drain-input",
             "call",
             "event-emit",
             "get-all-tools",
@@ -1115,6 +1120,8 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-compaction-error",
             "invoke-completion",
             "invoke-component-factory",
+            "invoke-custom-factory",
+            "invoke-custom-future",
             "invoke-dispose",
             "invoke-editor",
             "invoke-editor-factory",

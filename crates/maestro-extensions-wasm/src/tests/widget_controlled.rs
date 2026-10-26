@@ -80,6 +80,9 @@ impl Controlled {
     }
 }
 
+/// The answer of an input listener request; listeners are exercised on the native host.
+const NO_WRITER: &str = "the controlled host keeps no input listeners";
+
 impl WidgetImports for Controlled {
     fn global_theme(&self) -> ExtensionResult<super::controlled::Theme> {
         Ok(self.theme("dark"))
@@ -550,6 +553,35 @@ impl WidgetImports for Controlled {
     }
     fn widget_clear(&self, widget: &Widget) -> ExtensionResult<()> {
         self.change(widget, Change::Clear)
+    }
+    fn tui_writer(&self, _: &super::controlled::Tui) -> ExtensionResult<Widget> {
+        self.new_container()
+    }
+    fn widget_writer(
+        &self,
+        widget: &Widget,
+        request: crate::component_adapter::WriterRequest<'_, Self>,
+    ) -> ExtensionResult<crate::component_adapter::WriterAnswer<Self>> {
+        Ok(self.writer_request(widget, &request))
+    }
+    fn widget_add_input_listener(
+        &self,
+        widget: &Widget,
+        listener: &super::controlled::Callback,
+    ) -> ExtensionResult<super::bus_host::Subscription> {
+        let line = format!("writer {} addInputListener {}", widget.0, listener.id);
+        self.observe().log(line);
+        Err(NO_WRITER.to_owned())
+    }
+    fn widget_drain_input<'a>(
+        &'a self,
+        _: &'a Widget,
+        max_ms: Option<f64>,
+        idle_ms: Option<f64>,
+    ) -> crate::ExtensionFuture<'a, ()> {
+        let line = format!("writer drainInput {max_ms:?} {idle_ms:?}");
+        self.observe().log(line);
+        Box::pin(std::future::ready(Ok(())))
     }
     fn style_apply(&self, style: &Style, text: &str) -> ExtensionResult<String> {
         Ok(widget_host::apply(&mut self.observe(), &style.0, text))

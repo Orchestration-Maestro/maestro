@@ -243,7 +243,35 @@ impl State {
     }
 }
 
+/// The answer of a frame writer request; the frame writer is exercised on the native host.
+const NO_WRITER: &str = "the component test host lends no frame writer";
+
+impl host::HostWidgetWithStore<State> for super::host::Imports {
+    async fn drain_input(
+        _: &wasmtime::component::Accessor<State, Self>,
+        _: Resource<WidgetResource>,
+        _: Option<f64>,
+        _: Option<f64>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(std::future::ready(Err(NO_WRITER.to_owned())).await)
+    }
+}
+
 impl host::HostWidget for State {
+    fn writer(
+        &mut self,
+        _: Resource<WidgetResource>,
+        _: host::WriterRequest,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.routed(Err(NO_WRITER.to_owned()))
+    }
+    fn add_input_listener(
+        &mut self,
+        _: Resource<WidgetResource>,
+        _: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Subscription>, String>> {
+        Ok(Err(NO_WRITER.to_owned()))
+    }
     fn handle_input(
         &mut self,
         this: Resource<WidgetResource>,

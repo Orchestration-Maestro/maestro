@@ -103,6 +103,7 @@ kinds! {
         CredentialFallback(crate::FallbackResolver),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),
+        CustomFactory(crate::CustomComponentFactory),
         ComponentExpansion(crate::ComponentExpansionHandler),
         ToolRenderCall(crate::ToolRenderCall),
         ToolRenderResult(crate::ToolRenderResult),
@@ -124,6 +125,7 @@ kinds! {
     }
     once {
         Abort(crate::AbortListener),
+        CustomFuture(crate::ExtensionFuture<'static, crate::ExtensionComponent>),
         WithSession(WithSession),
         Setup(crate::SetupSession),
         Tail(crate::ExtensionFuture<'static, ()>),

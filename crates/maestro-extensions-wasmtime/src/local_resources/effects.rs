@@ -151,6 +151,14 @@ impl Registry {
         let remove = ui
             .on_terminal_input(listener)
             .map_err(|error| error.to_string())?;
+        self.ui_subscription(remove)
+    }
+
+    /// Retains the explicit remover of a terminal input listener.
+    pub(crate) fn ui_subscription(
+        &self,
+        remove: Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>,
+    ) -> Result<SubscriptionEndpoint, String> {
         self.insert(Capability::UiSubscription(remove))
             .map(SubscriptionEndpoint)
     }
