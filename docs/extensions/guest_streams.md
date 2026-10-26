@@ -130,3 +130,11 @@ created inside the component still retain their original local message handles.
 
 Registering a guest provider for native callers is a separate capability. These
 invocation functions do not add a second provider registry or transport client.
+
+Returned model streams retain their original hooks and arbitrary caller signal
+storage after the initiating command and registration are released. Cancellation
+subscriptions keep that caller storage alive until they are removed, including
+for caller-defined signal ports. Producer completion releases its own captures;
+final stream aliases do not cancel the producer. Capture destructors may reenter
+stream creation outside callback-storage borrows, and final containing-owner
+release still shuts down the component normally.

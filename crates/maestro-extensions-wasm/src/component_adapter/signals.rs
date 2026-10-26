@@ -55,6 +55,8 @@ pub(super) struct Mirror<I: Imports> {
     native: Option<Rc<I::Signal>>,
     /// The caller-signal listener that aborts it.
     listening: Listening,
+    /// Keep arbitrary caller-local signal storage alive until its listener is removed.
+    _caller: Option<AbortSignal>,
 }
 
 impl<I: Imports> Mirror<I> {
@@ -73,7 +75,11 @@ impl<I: Imports> Mirror<I> {
                 })
                 .transpose()?,
         );
-        let mirror = Self { native, listening };
+        let mirror = Self {
+            native,
+            listening,
+            _caller: caller.cloned(),
+        };
         if caller.is_some_and(AbortSignal::aborted)
             && let Some(native) = mirror.signal()
         {

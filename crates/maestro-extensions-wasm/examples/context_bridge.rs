@@ -81,6 +81,10 @@ mod model_hook_gates;
 #[path = "context_bridge/model_finite.rs"]
 mod model_finite;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_lifetimes.rs"]
+mod model_lifetimes;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -192,6 +196,10 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(request) = args.strip_prefix("model-retained ") {
+        let result = model_lifetimes::start(&api, &context, request);
+        return Box::pin(async move { Err(result?) });
+    }
     if let Some(request) = args.strip_prefix("model-selected-signal ") {
         let request = request.to_owned();
         return Box::pin(async move { Err(model_hook_gates::signals(&request, context).await?) });

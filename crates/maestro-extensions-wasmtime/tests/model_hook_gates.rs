@@ -21,6 +21,16 @@ fn hook_failures_end_the_provider_stream_once() {
     run_cases(&["payload-failure", "response-failure"]);
 }
 
+#[test]
+fn response_hook_precedes_stream_body_consumption() {
+    run_cases(&["keep"]);
+}
+
+#[test]
+fn awaited_hooks_gate_the_same_pending_invocation() {
+    run_cases(&["replace"]);
+}
+
 /// Each case owns a new containing component and the same raw/simple native protocol routes.
 fn run_cases(actions: &[&str]) {
     let runtime = tokio::runtime::Builder::new_current_thread()
