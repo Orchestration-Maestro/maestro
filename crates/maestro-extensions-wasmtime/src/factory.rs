@@ -31,7 +31,7 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks);
+            let state = lifecycle::State::new(endpoint, callbacks, &path);
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {

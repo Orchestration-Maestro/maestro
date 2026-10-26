@@ -123,7 +123,11 @@ impl Exports {
         match call {
             Call::Start(reply) => {
                 let result = self.start.call_concurrent(accessor, ()).await?.0;
-                result.map_err(wasmtime::Error::msg)?;
+                // The authored message answers the load before the failed Store is torn down.
+                if let Err(message) = result {
+                    let _ = reply.send(Err(message.clone()));
+                    return Err(wasmtime::Error::msg(message));
+                }
                 let _ = reply.send(Ok(()));
             }
             Call::Finished => {

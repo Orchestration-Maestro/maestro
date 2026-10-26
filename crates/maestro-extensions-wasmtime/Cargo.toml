@@ -23,6 +23,8 @@ maestro-catalog = { path = "../maestro-catalog" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-models = { path = "../maestro-models" }
 maestro-session = { path = "../maestro-session" }
+maestro-test-directory.workspace = true
+maestro-test-process = { path = "../maestro-test-process" }
 maestro-theme = { path = "../maestro-theme" }
 
 [[test]]
