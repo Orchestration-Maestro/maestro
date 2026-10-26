@@ -462,6 +462,9 @@ async fn credential_command(
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }
+    if let Some(operation) = request.strip_prefix("credential oauth reverse ") {
+        return oauth::reverse(api, operation).await;
+    }
     if let Some(mode) = request.strip_prefix("credential oauth storage ") {
         return oauth::storage(api, context, mode).await;
     }
@@ -477,7 +480,7 @@ async fn credential_command(
         "credential oauth pending create" => oauth::pending_create(context),
         "credential oauth pending complete" => oauth::pending_complete().await,
         "credential oauth providers" => oauth::providers(context),
-        "credential oauth registration" => oauth::registration(api).await,
+        "credential oauth registration" => oauth::registration(api, context).await,
         "credential oauth operations" => oauth::operations(context).await,
         "credential oauth retain" | "credential oauth key" | "credential oauth release" => {
             oauth::retained(context, request.trim_start_matches("credential oauth "))

@@ -69,6 +69,9 @@ pub type OAuthSelectCallback =
     Rc<dyn Fn(OAuthSelectPrompt) -> ExtensionFuture<'static, Option<String>>>;
 
 /// Interaction supplied by the caller of an authorization flow.
+///
+/// A registered implementation may retain this record or an input future after login ends.
+/// Native callback captures stay alive until their final guest alias is released.
 #[derive(Clone)]
 pub struct OAuthLoginCallbacks {
     /// Publishes the authorization URL synchronously.

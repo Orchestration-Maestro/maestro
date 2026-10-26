@@ -151,3 +151,7 @@ pub use login::storage;
 #[path = "oauth/registration.rs"]
 mod registration;
 pub(super) use registration::run as registration;
+
+#[path = "oauth/reverse.rs"]
+mod reverse;
+pub(super) use reverse::run as reverse;

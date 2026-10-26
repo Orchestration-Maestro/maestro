@@ -146,6 +146,19 @@ fn oauth_refresh_outlives_its_initiating_guest_handle() {
 }
 
 mod login;
+mod reverse;
+
+#[test]
+fn oauth_guest_registration_modifies_models_and_registers_facade() {
+    super::components::local(async {
+        let bus = super::components::TracedBus::new();
+        let (_owner, runner, _) =
+            super::retained_components::loaded_on(bus.controller.for_extension()).await;
+        let result = call(&runner, "registration").await;
+        assert_eq!(result["models"], json!(["https://guest.invalid/modified"]));
+        assert_eq!(result["facade"], "guest-computed:facade:r");
+    });
+}
 
 #[test]
 fn oauth_guest_registration_computes_owned_keys_and_refreshes() {
@@ -156,6 +169,7 @@ fn oauth_guest_registration_computes_owned_keys_and_refreshes() {
         assert_eq!(
             call(&runner, "registration").await,
             json!({
+                "models":["https://guest.invalid/modified"], "facade":"guest-computed:facade:r",
                 "id":"guest-computed", "name":" Guest account ", "server":false,
                 "key":"guest-computed:a:r", "rotatedKey":"guest-computed:a-rotated:r",
                 "loggedIn":{"type":"oauth","refresh":"r","access":"code","expires":0.0,

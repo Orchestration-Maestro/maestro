@@ -646,7 +646,10 @@ callback-server value remain as authored. The native catalog retains the actual
 guest implementation, including independently owned login and refresh futures,
 synchronous computed keys and optional model transformation. Login receives the
 original native interaction through retained capabilities, preserving callback
-presence, synchronous notifications, awaited input and live cancellation.
+presence, synchronous notifications, awaited input and live cancellation. The guest
+may keep the callback record or an input future after login ends; its last alias
+releases the original native captures. Pending input leaves the host available,
+and synchronous native notifications may reenter the same guest implementation.
 
 Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
