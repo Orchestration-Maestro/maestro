@@ -71,7 +71,7 @@ elif kind == 'process':
     relative = 'crates/maestro-process/src/child_process/raw/tests.rs'
     (path / relative).parent.mkdir(parents=True, exist_ok=True)
     (path / relative).write_text(source(relative))
-    (path / 'crates/maestro-process/src/child_process/raw.rs').write_text('#[cfg(test)]\nmod tests;\n')
+    (path / 'crates/maestro-process/src/child_process/raw.rs').write_text('use std::{io, process::Stdio, rc::Rc};\nuse super::OutputStream;\n#[cfg(test)]\nmod tests;\n')
     red(path, 'raw_read_failure_keeps_prefix_and_sibling_controls', 'maestro-process', ['--lib'], 'RawChild')
     relative = 'crates/maestro-process/tests/raw_children.rs'
     (path / relative).write_text(source(relative))
