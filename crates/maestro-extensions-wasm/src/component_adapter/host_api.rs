@@ -11,6 +11,9 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String> {
+        self.0.native_format_size(bytes)
+    }
     fn native_frontmatter(
         &self,
         content: &str,

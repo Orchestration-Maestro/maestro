@@ -62,3 +62,24 @@ order. YAML parsing remains entirely native.
 `strip_frontmatter` parses before returning the body. Both operations preserve
 native parser causes and coordinates. Ordinary text is not trimmed; a present
 header selects the native trimmed body and newline normalization.
+
+## Conversation and output
+
+`convert_to_llm` delegates application-message projection to the native session
+owner. `compaction::utils::serialize_conversation` uses its existing transcript
+serializer, including tool-result clipping and argument JSON spelling.
+
+`tools::truncate` provides head and tail selection with complete accounting,
+scalar-aware line clipping and size formatting. Missing limits select the host's
+defaults: 2000 lines, 51200 bytes and 500 line characters. Size formatting accepts
+the native floating-point domain, including signed zero and nonfinite values.
+
+## Paths and installation identity
+
+`tools::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
+native host's home and filesystem, not the component's environment. They keep
+the native authored-path policy and existing-spelling fallback order.
+
+`config::version(&api)` reads the application installation identity supplied at
+host composition. It does not use the component package version. Native hosts
+supply this value to `artifact_factory(path, installation_version)`.

@@ -47,6 +47,7 @@ pub use event_bus::{
 pub mod footer_data_provider;
 /// Native helper delegation used by component adapters.
 #[doc(hidden)]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod helpers;
 mod loader;
 /// Owned registration records and callback types.

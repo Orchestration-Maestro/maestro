@@ -72,7 +72,7 @@ pub(super) async fn loaded_at(
     let runtime = create_extension_runtime::<Local>();
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone()),
+        artifact_factory(path.clone(), "installed-component-host".into()),
         cwd.into(),
         events.clone(),
         runtime.clone(),
@@ -431,7 +431,7 @@ fn foreign_component_listener_prefixes_run_after_the_current_renderer_returns() 
         );
         let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
         let owner = load_extension_from_factory(
-            artifact_factory(path.clone()),
+            artifact_factory(path.clone(), "installed-component-host".into()),
             "/fixture".into(),
             bus.clone(),
             create_extension_runtime::<Local>(),
@@ -441,7 +441,7 @@ fn foreign_component_listener_prefixes_run_after_the_current_renderer_returns() 
         .unwrap();
         let runner = other_runner(&owner);
         let _foreign = load_extension_from_factory(
-            artifact_factory(path.clone()),
+            artifact_factory(path.clone(), "installed-component-host".into()),
             "/foreign".into(),
             controller.for_extension(),
             create_extension_runtime::<Local>(),

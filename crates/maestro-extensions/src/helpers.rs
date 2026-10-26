@@ -1,13 +1,25 @@
 //! Ordinary component helper operands delegate to their existing domain owners.
 use serde::{Serialize, de::DeserializeOwned};
+mod conversation;
 mod fuzzy;
 mod keys;
+mod paths;
+mod tools;
 
 /// Dispatches a synchronous helper without retaining any operands.
 ///
 /// # Errors
 /// Returns malformed operands or the native owner's failure unchanged.
 pub fn call(operation: &str, data: &str) -> Result<String, String> {
+    if operation.starts_with("conversation.") {
+        return conversation::call(operation, data);
+    }
+    if operation.starts_with("paths.") {
+        return paths::call(operation, data);
+    }
+    if operation.starts_with("tools.") {
+        return tools::call(operation, data);
+    }
     if operation.starts_with("fuzzy.") {
         return fuzzy::call(operation, data);
     }
@@ -110,3 +122,6 @@ fn columns(operation: &str, data: &str) -> Result<String, String> {
 
 /// Complete native metadata model, not a JSON number projection.
 pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter};
+
+/// Native size formatting over the complete floating-point argument domain.
+pub use maestro_tools::format_size;

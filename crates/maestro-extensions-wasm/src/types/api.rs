@@ -48,6 +48,9 @@ pub struct CommandOptions {
 port! {
     /// Registrations and ordinary actions a host provides; each method forwards one request.
     ExtensionHost for ExtensionAPI via 0 {
+        /// Formats a native byte count without narrowing its floating-point domain.
+        #[doc(hidden)]
+        fn native_format_size(bytes: f64) -> String;
         /// Reads complete typed metadata through the installed host.
         #[doc(hidden)]
         fn native_frontmatter(content: &str) -> crate::bindings::maestro::extension::host::FrontmatterDocument;

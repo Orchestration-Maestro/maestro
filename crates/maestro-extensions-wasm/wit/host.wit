@@ -2,6 +2,8 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Formats a native floating-point byte count without a JSON-number boundary.
+    native-format-size: func(bytes: f64) -> result<string, string>;
     /// Preorder metadata values, with container lengths and numbers kept outside JSON.
     variant frontmatter-token { null, boolean(bool), number(f64), text(string), sequence(u32), mapping(list<string>) }
     record frontmatter-document { values: list<frontmatter-token>, body: string }

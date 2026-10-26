@@ -18,12 +18,18 @@ pub use autocomplete::*;
 mod event_bus;
 pub use event_bus::*;
 mod bash_executor;
-mod tools;
+pub mod tools;
 pub use bash_executor::*;
-pub use tools::*;
+pub use tools::{
+    BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations, BashToolDetails,
+    BashToolInput, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, EditToolDetails, EditToolInput,
+    FindToolDetails, FindToolInput, GrepToolDetails, GrepToolInput, LsToolDetails, LsToolInput,
+    ReadToolDetails, ReadToolInput, ReplaceEdit, TruncationLimit, TruncationOptions,
+    TruncationResult, WriteToolInput, format_size, truncate_head, truncate_line, truncate_tail,
+};
 #[doc(hidden)]
 pub mod bindings;
-mod compaction;
+pub mod compaction;
 mod exec;
 pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
@@ -51,6 +57,8 @@ pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};
 /// Native metadata parsing with complete typed values.
 pub mod frontmatter;
 pub use frontmatter::{parse_frontmatter, strip_frontmatter};
+/// Native application installation identity.
+pub mod config;
 mod tui;
 mod types;
 pub use tui::*;
@@ -59,7 +67,8 @@ mod theme;
 pub use theme::*;
 
 pub use agent::*;
-pub use compaction::*;
+pub use compaction::utils::serialize_conversation;
+pub use compaction::{CompactionPreparation, CompactionResult, CompactionSettings, FileOperations};
 #[cfg(target_arch = "wasm32")]
 #[doc(hidden)]
 pub use component_adapter::Glue;

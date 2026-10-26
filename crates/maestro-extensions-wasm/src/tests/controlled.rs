@@ -518,6 +518,10 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
+        serde_json::from_str(&self.observe().actions.record_for("format_size")?)
+            .map_err(|error| error.to_string())
+    }
     fn native_frontmatter(
         &self,
         content: &str,

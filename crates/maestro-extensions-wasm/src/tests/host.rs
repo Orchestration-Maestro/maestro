@@ -603,6 +603,13 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn native_format_size(&mut self, _bytes: f64) -> wasmtime::Result<Result<String, String>> {
+        Ok(self
+            .observed
+            .actions
+            .record_for("format_size")
+            .and_then(|value| serde_json::from_str(&value).map_err(|error| error.to_string())))
+    }
     fn native_frontmatter(
         &mut self,
         content: String,

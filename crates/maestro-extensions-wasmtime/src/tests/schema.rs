@@ -126,9 +126,12 @@ async fn growth_runner() -> (
     let native = maestro_extensions::create_extension_runtime::<Local>();
     let (owner, api) = super::api::api(native.clone());
     eprintln!("growth: factory start");
-    crate::factory::artifact_factory(std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap())(api)
-        .await
-        .unwrap();
+    crate::factory::artifact_factory(
+        std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap(),
+        "installed-component-host".into(),
+    )(api)
+    .await
+    .unwrap();
     eprintln!("growth: factory done");
     let runner = maestro_extensions::ExtensionRunner::<Local>::new(
         Rc::new(std::sync::RwLock::new(vec![owner.clone()])),

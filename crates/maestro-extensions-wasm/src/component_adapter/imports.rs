@@ -35,6 +35,8 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Formats all floating-point byte counts directly.
+    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String>;
     /// Reads metadata numbers without passing them through JSON.
     fn native_frontmatter(
         &self,

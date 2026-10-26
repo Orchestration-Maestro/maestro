@@ -2,15 +2,34 @@
 use wasmtime::{StoreContextMut, component::LinkerInstance};
 
 /// Installs ordinary helper calls on the canonical host interface.
-pub(crate) fn add_to_linker<T: 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+pub(crate) fn add_to_linker(
+    host: &mut LinkerInstance<'_, crate::lifecycle::State>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "native-format-size",
+        |_store: StoreContextMut<'_, crate::lifecycle::State>, (bytes,): (f64,)| {
+            Ok((Ok::<_, String>(maestro_extensions::helpers::format_size(
+                bytes,
+            )),))
+        },
+    )?;
     host.func_wrap(
         "native-frontmatter",
-        |_store: StoreContextMut<'_, T>, (content,): (String,)| Ok((metadata(&content),)),
+        |_store: StoreContextMut<'_, crate::lifecycle::State>, (content,): (String,)| {
+            Ok((metadata(&content),))
+        },
     )?;
     host.func_wrap(
         "native-helper",
-        |_store: StoreContextMut<'_, T>, (operation, data): (String, String)| {
-            Ok((maestro_extensions::helpers::call(&operation, &data),))
+        |store: StoreContextMut<'_, crate::lifecycle::State>,
+         (operation, data): (String, String)| {
+            let value = if operation == "version" {
+                serde_json::to_string(&store.data().installation_version)
+                    .map_err(|error| error.to_string())
+            } else {
+                maestro_extensions::helpers::call(&operation, &data)
+            };
+            Ok((value,))
         },
     )
 }

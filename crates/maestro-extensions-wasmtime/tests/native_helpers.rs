@@ -107,8 +107,59 @@ fn helper_adapter_swaps_without_author_changes() {
     check("helper_adapter_swaps_without_author_changes");
 }
 
+#[test]
+fn helper_tool_truncation_keeps_all_accounting() {
+    check("helper_tool_truncation_keeps_all_accounting");
+}
+
+#[test]
+fn helper_line_truncation_keeps_default_and_flag() {
+    check("helper_line_truncation_keeps_default_and_flag");
+}
+
+#[test]
+fn helper_size_display_keeps_unit_boundaries() {
+    check("helper_size_display_keeps_unit_boundaries");
+}
+
+#[test]
+fn helper_truncation_defaults_come_from_host() {
+    check("helper_truncation_defaults_come_from_host");
+}
+
+#[test]
+fn helper_paths_use_native_expansion_and_resolution() {
+    check("helper_paths_use_native_expansion_and_resolution");
+}
+
+#[test]
+fn helper_read_path_uses_existing_spelling() {
+    check("helper_read_path_uses_existing_spelling");
+}
+
+#[test]
+fn helper_conversation_conversion_keeps_each_role() {
+    check("helper_conversation_conversion_keeps_each_role");
+}
+
+#[test]
+fn helper_conversation_serialization_keeps_text_and_tools() {
+    check("helper_conversation_serialization_keeps_text_and_tools");
+}
+
+#[test]
+fn helper_version_reads_installation_identity() {
+    check("helper_version_reads_installation_identity");
+}
+
 /// Executes every recorded row of one behavior through the unchanged author fixture.
 fn check(name: &str) {
+    if (name.starts_with("helper_paths_") || name == "helper_read_path_uses_existing_spelling")
+        && isolate_paths(name)
+    {
+        return;
+    }
+    let scratch = path_fixture();
     if name.starts_with("helper_key") && maestro_test_process::run_alone(name).unwrap() {
         return;
     }
@@ -118,7 +169,7 @@ fn check(name: &str) {
         let runtime = create_extension_runtime::<Local>();
         let path = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
         let owner = load_extension_from_factory(
-            artifact_factory(path.clone()),
+            artifact_factory(path.clone(), "installed-component-host".into()),
             "/helpers".into(),
             bus.controller.for_extension(),
             runtime.clone(),
@@ -138,6 +189,12 @@ fn check(name: &str) {
             serde_json::from_str(include_str!("fixtures/helper_corpus.json")).unwrap();
         let mut count = 0;
         for row in rows.iter().filter(|row| row["test"] == name) {
+            let mut row = row.clone();
+            expand(
+                &mut row,
+                scratch.path().to_str().unwrap(),
+                &std::env::var("HOME").unwrap_or_default(),
+            );
             let result = handler(row.to_string(), runner.create_command_context())
                 .await
                 .unwrap_err()
@@ -156,4 +213,55 @@ fn check(name: &str) {
         bus.controller.clear();
         maestro_tui::set_kitty_protocol_active(original);
     });
+}
+
+/// Runs directory observations under a supplied host home, absent from the guest environment.
+fn isolate_paths(name: &str) -> bool {
+    let home = maestro_test_directory::Scratch::new().unwrap();
+    let component = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
+    let home_text = home.path().to_str().unwrap().to_owned();
+    maestro_test_process::run_per_environment(name, [home_text], |home| {
+        std::collections::BTreeMap::from([
+            ("HOME", home.clone()),
+            ("USERPROFILE", home.clone()),
+            ("MAESTRO_HELPER_COMPONENT", component.clone()),
+        ])
+    })
+    .unwrap()
+    .is_none()
+}
+/// Expands only named fixture placeholders, leaving authored path spellings intact.
+fn expand(value: &mut Value, root: &str, home: &str) {
+    match value {
+        Value::String(text) => *text = text.replace("${ROOT}", root).replace("${HOME}", home),
+        Value::Array(items) => {
+            for item in items {
+                expand(item, root, home);
+            }
+        }
+        Value::Object(entries) => {
+            for item in entries.values_mut() {
+                expand(item, root, home);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Existing spelling candidates live only in this exclusive disposable root.
+fn path_fixture() -> maestro_test_directory::Scratch {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    for name in [
+        "g’e\u{301}",
+        "café.txt",
+        "space name",
+        "shot 10\u{202f}AM.png",
+        "shot 10\u{202f}pm.png",
+        "decompose\u{301}.png",
+        "capture d’écran.png",
+        "de\u{301}cran d’écran.png",
+    ] {
+        std::fs::write(scratch.path().join(name), b"fixture").unwrap();
+    }
+    scratch
 }

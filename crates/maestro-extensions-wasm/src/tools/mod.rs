@@ -19,5 +19,8 @@ mod find;
 pub use find::*;
 mod ls;
 pub use ls::*;
-mod truncate;
+pub mod truncate;
 pub use truncate::*;
+
+/// Native authored-path operations.
+pub mod path_utils;

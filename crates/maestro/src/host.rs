@@ -4,6 +4,7 @@ use maestro_app::configuration::{
     version_check::VersionCheckOptions,
 };
 use maestro_cli::{MainOptions, packages::PackageCommandContext, startup::main::MainHost};
+use maestro_extensions_wasmtime::artifact_factory;
 use maestro_theme::{ThemeState, supports_color};
 use std::{
     cell::{Cell, RefCell},
@@ -133,9 +134,10 @@ async fn startup(
         missing_cwd: crate::presentations::missing_cwd(Rc::clone(&local), Rc::clone(themes)),
         local: Rc::clone(&local),
         module_loader: Rc::new(|path: &str| {
-            Box::pin(std::future::ready(Ok(Some(
-                maestro_extensions_wasmtime::artifact_factory(path.to_owned()),
-            ))))
+            Box::pin(std::future::ready(Ok(Some(artifact_factory(
+                path.to_owned(),
+                config::VERSION.into(),
+            )))))
         }),
         modes: crate::modes::launchers(Rc::clone(&local), themes, Rc::clone(&export)),
         stdin: &mut stdin,

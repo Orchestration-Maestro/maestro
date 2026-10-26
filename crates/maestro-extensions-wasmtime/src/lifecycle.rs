@@ -77,6 +77,8 @@ pub(crate) struct State {
     table: ResourceTable,
     /// The original registration facade's endpoint, not a reconstructed API.
     api: Endpoint,
+    /// Application installation identity supplied at factory composition.
+    pub(crate) installation_version: String,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
     /// The original retained pub.
@@ -86,8 +88,14 @@ impl State {
     /// Constructs the one instance state before canonical linking.
     ///
     /// The instance reads `path`, the artifact it is loaded from, as `MAESTRO_EXTENSION_PATH`.
-    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> Self {
+    pub(crate) fn new(
+        api: Endpoint,
+        callbacks: Callbacks,
+        path: &str,
+        installation_version: String,
+    ) -> Self {
         Self {
+            installation_version,
             wasi: wasmtime_wasi::WasiCtxBuilder::new()
                 .env("MAESTRO_EXTENSION_PATH", path)
                 .build(),

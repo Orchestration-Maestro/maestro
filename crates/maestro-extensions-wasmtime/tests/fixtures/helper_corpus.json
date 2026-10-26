@@ -369,8 +369,92 @@
         "length": 4
       },
       "whitespace": true,
-      "punctuation": true
-    }
+      "punctuation": true,
+      "background": {
+        "value": "\u001b[44mx   \u001b[0m",
+        "calls": [
+          "x   "
+        ]
+      },
+      "fuzzy": {
+        "ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "calls": [],
+        "identity": true
+      },
+      "metadata": {
+        "frontmatter": {
+          "kind": "mapping",
+          "value": [
+            [
+              "x",
+              {
+                "kind": "number",
+                "value": {
+                  "$number": "NaN"
+                }
+              }
+            ],
+            [
+              "y",
+              {
+                "kind": "number",
+                "value": {
+                  "$number": "Infinity"
+                }
+              }
+            ],
+            [
+              "z",
+              {
+                "kind": "number",
+                "value": {
+                  "$number": "-Infinity"
+                }
+              }
+            ]
+          ]
+        },
+        "body": "body"
+      },
+      "path": "${ROOT}/café.txt",
+      "key": "ctrl+x",
+      "version": "installed-component-host",
+      "transcript": "[User]: hello",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1.0
+        }
+      ],
+      "truncation": {
+        "content": "",
+        "truncated": false,
+        "truncatedBy": null,
+        "totalLines": 1.0,
+        "totalBytes": 0.0,
+        "outputLines": 1.0,
+        "outputBytes": 0.0,
+        "lastLinePartial": false,
+        "firstLineExceedsLimit": false,
+        "maxLines": 2000.0,
+        "maxBytes": 51200.0
+      },
+      "wrapped": [
+        "abc",
+        "def"
+      ],
+      "slice": {
+        "text": "b",
+        "width": 1
+      }
+    },
+    "cwd": "${ROOT}"
   },
   {
     "test": "helper_wrap_preserves_styled_spaces",
@@ -3287,5 +3371,1890 @@
       },
       "body": "body"
     }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "",
+      {}
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 1.0,
+      "totalBytes": 0.0,
+      "outputLines": 1.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "",
+      {}
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 1.0,
+      "totalBytes": 0.0,
+      "outputLines": 1.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 2
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a\nb",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 2
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "b\nc",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "é中",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 5.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": true,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "é中",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "中",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": true,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a\nb",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a\nb",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "abc",
+      {
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": true,
+      "maxLines": 2000.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "abc",
+      {
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "c",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": true,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 1,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 1,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "b",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 1,
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 1,
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "c",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 3,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 3.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 3,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "c",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 3.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 0.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 0.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": true,
+      "maxLines": 2000.0,
+      "maxBytes": 0.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": true,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 0.0
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "abcdef",
+      3
+    ],
+    "context": {},
+    "ok": {
+      "text": "abc... [truncated]",
+      "wasTruncated": true
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "é中",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "text": "é... [truncated]",
+      "wasTruncated": true
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "text": "abc",
+      "wasTruncated": false
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "abc",
+      0
+    ],
+    "context": {},
+    "ok": {
+      "text": "... [truncated]",
+      "wasTruncated": true
+    }
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      0
+    ],
+    "context": {},
+    "ok": "0B"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1023
+    ],
+    "context": {},
+    "ok": "1023B"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1024
+    ],
+    "context": {},
+    "ok": "1.0KB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1048575
+    ],
+    "context": {},
+    "ok": "1024.0KB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1048576
+    ],
+    "context": {},
+    "ok": "1.0MB"
+  },
+  {
+    "test": "helper_truncation_defaults_come_from_host",
+    "operation": "tr.constants",
+    "args": [],
+    "context": {},
+    "ok": {
+      "lines": 2000,
+      "bytes": 51200,
+      "grep": 500
+    }
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "@foo"
+    ],
+    "context": {},
+    "ok": "foo"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "@foo",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/foo"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "~/file"
+    ],
+    "context": {},
+    "ok": "${HOME}/file"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "~/file",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${HOME}/file"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "a/../b"
+    ],
+    "context": {},
+    "ok": "a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "/tmp/a/../b"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "/tmp/a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "a b"
+    ],
+    "context": {},
+    "ok": "a b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "a b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/a b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "~",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${HOME}"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "@/tmp/a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "~"
+    ],
+    "context": {},
+    "ok": "${HOME}"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "@foo",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/foo"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "~/file",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${HOME}/file"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/b"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "/tmp/a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "a b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/a b"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "café.txt",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/café.txt"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "café.txt",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/café.txt"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "space name",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/space name"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "missing",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/missing"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "shot 10 AM.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/shot 10 AM.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "decomposé.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/decomposé.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "capture d'écran.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/capture d’écran.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "décran d'écran.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/décran d'écran.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "shot 10 pm.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}/shot 10 pm.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "g'é",
+      "${ROOT}"
+    ],
+    "ok": "${ROOT}/g’é"
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": 0.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "plan"
+            },
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "path": "a"
+              }
+            }
+          ],
+          "timestamp": 1.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2.0
+        },
+        {
+          "role": "bashExecution",
+          "command": "echo hi",
+          "output": "hi",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 3.0
+        },
+        {
+          "role": "custom",
+          "customType": "note",
+          "content": "custom",
+          "display": true,
+          "timestamp": 4.0
+        },
+        {
+          "role": "branchSummary",
+          "summary": "branch",
+          "fromId": "x",
+          "timestamp": 5.0
+        },
+        {
+          "role": "compactionSummary",
+          "summary": "compact",
+          "tokensBefore": 5,
+          "timestamp": 6.0
+        },
+        {
+          "role": "other",
+          "data": "ignored"
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": "hi",
+        "timestamp": 0.0
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "plan"
+          },
+          {
+            "type": "text",
+            "text": "hello"
+          },
+          {
+            "type": "toolCall",
+            "id": "t",
+            "name": "read",
+            "arguments": {
+              "path": "a"
+            }
+          }
+        ],
+        "timestamp": 1.0,
+        "api": "openai-responses",
+        "provider": "controlled-provider",
+        "model": "controlled-model",
+        "stopReason": "stop",
+        "usage": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0,
+          "totalTokens": 0.0,
+          "cost": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0
+          }
+        }
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "t",
+        "toolName": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "isError": false,
+        "timestamp": 2.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `echo hi`\n```\nhi\n```"
+          }
+        ],
+        "timestamp": 3.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "custom"
+          }
+        ],
+        "timestamp": 4.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>"
+          }
+        ],
+        "timestamp": 5.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+          }
+        ],
+        "timestamp": 6.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "",
+          "exitCode": null,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n(no output)"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 9,
+          "cancelled": true,
+          "truncated": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n```\nx\n```\n\n(command cancelled)"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 9,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n```\nx\n```\n\nCommand exited with code 9"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": true,
+          "timestamp": 0.0,
+          "fullOutputPath": "/fixture/output"
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n```\nx\n```\n\n[Output truncated. Full output: /fixture/output]"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 0.0,
+          "excludeFromContext": true
+        }
+      ]
+    ],
+    "context": {},
+    "ok": []
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": 0.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "plan"
+            },
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "path": "a"
+              }
+            }
+          ],
+          "timestamp": 1.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Ran `echo hi`\n```\nhi\n```"
+            }
+          ],
+          "timestamp": 3.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "custom"
+            }
+          ],
+          "timestamp": 4.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>"
+            }
+          ],
+          "timestamp": 5.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+            }
+          ],
+          "timestamp": 6.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[User]: hi\n\n[Assistant thinking]: plan\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      []
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[... 1 more characters truncated]"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[... 3000 more characters truncated]"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": null
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=null)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": "text"
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=\"text\")"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": 0
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=0)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": false
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=false)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": {
+                  "1": 1,
+                  "2": 2,
+                  "z": 1
+                }
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value={\"1\":1,\"2\":2,\"z\":1})"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": [
+                  1,
+                  2
+                ]
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=[1,2])"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": -0.0
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=0)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ],
+          "timestamp": 0.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[User]: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n\n[Assistant]: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "visible"
+            }
+          ],
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[User]: visible"
+  },
+  {
+    "test": "helper_version_reads_installation_identity",
+    "operation": "config.VERSION",
+    "args": [],
+    "context": {},
+    "ok": "installed-component-host"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      {
+        "$number": "NaN"
+      }
+    ],
+    "ok": "NaNMB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      {
+        "$number": "Infinity"
+      }
+    ],
+    "ok": "InfinityMB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      {
+        "$number": "-Infinity"
+      }
+    ],
+    "ok": "-InfinityB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      -0.0
+    ],
+    "ok": "0B"
   }
 ]
