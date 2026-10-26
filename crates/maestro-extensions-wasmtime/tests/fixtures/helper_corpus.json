@@ -421,7 +421,7 @@
         },
         "body": "body"
       },
-      "path": "${ROOT}/café.txt",
+      "path": "${ROOT}${SEP}café.txt",
       "key": "ctrl+x",
       "version": "installed-component-host",
       "transcript": "[User]: hello",
@@ -3978,7 +3978,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/foo"
+    "ok": "${ROOT}${SEP}foo"
   },
   {
     "test": "helper_paths_use_native_expansion_and_resolution",
@@ -4016,7 +4016,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/b"
+    "ok": "${ROOT}${SEP}b"
   },
   {
     "test": "helper_paths_use_native_expansion_and_resolution",
@@ -4054,7 +4054,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/a b"
+    "ok": "${ROOT}${SEP}a b"
   },
   {
     "test": "helper_paths_use_native_expansion_and_resolution",
@@ -4103,7 +4103,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/foo"
+    "ok": "${ROOT}${SEP}foo"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4123,7 +4123,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/b"
+    "ok": "${ROOT}${SEP}b"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4143,7 +4143,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/a b"
+    "ok": "${ROOT}${SEP}a b"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4153,7 +4153,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/café.txt"
+    "ok": "${ROOT}${SEP}café.txt"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4163,7 +4163,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/café.txt"
+    "ok": "${ROOT}${SEP}café.txt"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4173,7 +4173,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/space name"
+    "ok": "${ROOT}${SEP}space name"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4183,7 +4183,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/missing"
+    "ok": "${ROOT}${SEP}missing"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4193,7 +4193,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/shot 10 AM.png"
+    "ok": "${ROOT}${SEP}shot 10 AM.png"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4203,7 +4203,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/decomposé.png"
+    "ok": "${ROOT}${SEP}decomposé.png"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4213,7 +4213,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/capture d’écran.png"
+    "ok": "${ROOT}${SEP}capture d’écran.png"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4223,7 +4223,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/décran d’écran.png"
+    "ok": "${ROOT}${SEP}décran d’écran.png"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4233,7 +4233,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/shot 10 pm.png"
+    "ok": "${ROOT}${SEP}shot 10 pm.png"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",
@@ -4242,7 +4242,7 @@
       "g'é",
       "${ROOT}"
     ],
-    "ok": "${ROOT}/g’é"
+    "ok": "${ROOT}${SEP}g’é"
   },
   {
     "test": "helper_conversation_conversion_keeps_each_role",
