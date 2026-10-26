@@ -224,6 +224,9 @@ pub(super) struct LocalFallback {
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Original OAuth interaction.
+    #[component(name = "oauth")]
+    OAuth(credentials::LocalOAuth),
     /// Authored backend and still-borrowed native update.
     #[component(name = "auth-backend")]
     AuthBackend(LocalBackend),
@@ -302,6 +305,9 @@ pub(super) enum LocalCall {
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Original OAuth interaction result.
+    #[component(name = "oauth")]
+    OAuth(Result<Option<String>, String>),
     /// Exact optional fallback value or authored error.
     #[component(name = "auth-fallback")]
     AuthFallback(Result<Option<String>, String>),
@@ -364,6 +370,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::OAuth(call) => credentials::oauth(table, call)?,
         Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
@@ -515,6 +522,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::OAuth(call), LocalResult::OAuth(value)) => {
+            let _ = call.reply.send(value);
+        }
         (Call::Credential(call), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {

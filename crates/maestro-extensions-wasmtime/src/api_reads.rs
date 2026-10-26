@@ -18,7 +18,7 @@ pub(crate) enum Request {
     RegisterProvider(
         String,
         String,
-        Option<crate::guest_calls::Handle>,
+        crate::provider_registration::Callbacks,
         Reply<()>,
     ),
     /// Removes every queued occurrence or the bound provider.
@@ -63,8 +63,8 @@ impl ApiRequest for Request {
     /// Calls the real API after the pump releases its capability-table borrow.
     fn answer(self, api: &ExtensionAPI<Local>, registry: &crate::local_resources::Registry) {
         match self {
-            Self::RegisterProvider(name, config, stream, reply) => {
-                let result = crate::provider_registration::config(&config, stream, registry)
+            Self::RegisterProvider(name, config, callbacks, reply) => {
+                let result = crate::provider_registration::config(&config, callbacks, registry)
                     .and_then(|config| {
                         api.register_provider(name, config)
                             .map_err(|e| e.to_string())

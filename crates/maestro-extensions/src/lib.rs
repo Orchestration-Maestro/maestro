@@ -61,12 +61,14 @@ pub use maestro_catalog::{
 };
 pub use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, AssistantMessageEventStreamPort, Base,
-    BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Invoke,
-    OAuthError, ParameterSchema, PayloadHookInput, ProviderCall, ProviderExecution,
-    ProviderInvocation, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
-    SchemaCallback, SchemaCode, SchemaNode, SharedAssistantMessage, SimpleStreamOptions,
-    StopReason, StreamFunction, StreamOptions, StreamOptionsInput, Threaded,
-    faux_assistant_message, schema_transport, stream_for, stream_simple_for,
+    BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Fetch,
+    Invoke, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthLoginCallbacks,
+    OAuthPrompt, OAuthProviderHandle, OAuthProviderInterface, OAuthSelectPrompt, ParameterSchema,
+    PayloadHookInput, ProviderCall, ProviderExecution, ProviderInvocation, ProviderResponse,
+    ProviderSpawner, ProviderStreamOptions, Refinement, SchemaCallback, SchemaCode, SchemaNode,
+    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamFunction, StreamOptions,
+    StreamOptionsInput, Threaded, faux_assistant_message, schema_transport, stream_for,
+    stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;

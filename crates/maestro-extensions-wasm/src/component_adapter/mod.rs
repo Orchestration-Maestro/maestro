@@ -15,7 +15,7 @@ pub(crate) mod renderers;
 pub(crate) use event_bus::events;
 pub(crate) mod bash;
 mod contexts;
-mod provider_streams;
+mod provider_registration;
 mod signals;
 pub(crate) mod streams;
 #[cfg(target_arch = "wasm32")]
@@ -31,6 +31,7 @@ mod generated;
 mod host_api;
 mod imports;
 mod model_registry;
+pub(crate) mod oauth;
 mod schema;
 mod session;
 mod setup;
@@ -50,6 +51,8 @@ pub use generated::Glue;
 #[cfg(test)]
 pub(crate) use imports::Dialog;
 pub(crate) use imports::Imports;
+#[cfg(test)]
+pub(crate) use imports::ProviderRegistration;
 #[cfg(test)]
 pub(crate) use imports::ToolCallbacks;
 

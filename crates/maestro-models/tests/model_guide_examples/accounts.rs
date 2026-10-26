@@ -37,8 +37,11 @@ impl OAuthProviderInterface for Account {
     fn name(&self) -> &'static str {
         "Guide account"
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
     fn refresh_token(
         &self,

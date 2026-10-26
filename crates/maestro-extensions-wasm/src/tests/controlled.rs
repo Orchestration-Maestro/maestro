@@ -518,6 +518,75 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type OAuthProvider = Reader;
+    fn credentials_oauth_providers(&self, owner: &Reader) -> ExtensionResult<Vec<Reader>> {
+        owner.data.oauth_providers().map(|providers| {
+            providers
+                .into_iter()
+                .map(|data| Reader {
+                    data,
+                    _lease: Lease::new(&self.observed),
+                })
+                .collect()
+        })
+    }
+    fn oauth_info(&self, provider: &Reader) -> ExtensionResult<String> {
+        provider.data.string("oauth_info")
+    }
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Reader,
+        handler: &'a Self::Callback,
+        _controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            super::super::component_adapter::oauth::invoke(
+                handler.id,
+                crate::bindings::maestro::extension::host::OauthCallback::Progress,
+                "controlled login",
+                None,
+            )
+            .await?;
+            provider
+                .data
+                .optional("oauth_login", &[])?
+                .ok_or_else(|| "missing OAuth login result".into())
+        })
+    }
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Reader,
+        provider: String,
+        _handler: &'a Self::Callback,
+        _controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move { owner.data.unit("login", &[json!(provider)]) })
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Reader,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            provider
+                .data
+                .optional("oauth_refresh", &[serde_json::json!(credentials)])?
+                .ok_or_else(|| "missing OAuth refresh result".into())
+        })
+    }
+    fn oauth_models(&self, provider: &Reader, data: &str) -> ExtensionResult<String> {
+        provider
+            .data
+            .optional("oauth_models", &[serde_json::json!(data)])?
+            .ok_or_else(|| "missing OAuth model result".into())
+    }
+    fn oauth_key(&self, provider: &Reader, credentials: &str) -> ExtensionResult<String> {
+        provider
+            .data
+            .optional("oauth_key", &[serde_json::json!(credentials)])?
+            .ok_or_else(|| "missing OAuth key".into())
+    }
+
     fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
         serde_json::from_str(&self.observe().actions.record_for("format_size")?)
             .map_err(|error| error.to_string())
@@ -2079,7 +2148,7 @@ impl Imports for Controlled {
         resource: &Reader,
         name: &str,
         config: &str,
-        _stream: Option<&Self::Callback>,
+        _callbacks: crate::component_adapter::ProviderRegistration<'_, Self::Callback>,
     ) -> ExtensionResult<()> {
         resource.data.unit(
             "registerProvider",
@@ -2355,7 +2424,7 @@ impl Imports for Controlled {
         &self,
         name: &str,
         config: &str,
-        _stream: Option<&Self::Callback>,
+        _callbacks: crate::component_adapter::ProviderRegistration<'_, Self::Callback>,
     ) -> ExtensionResult<()> {
         self.observed
             .borrow_mut()

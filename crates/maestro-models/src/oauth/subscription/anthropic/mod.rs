@@ -2,6 +2,7 @@
 mod callback;
 mod exchange;
 use crate::oauth::native;
+use std::borrow::Cow;
 #[cfg(test)]
 mod tests;
 
@@ -215,8 +216,11 @@ impl OAuthProviderInterface for AnthropicOAuthProvider {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         refresh_anthropic_token(credentials.refresh, fetch)
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
     }
 }
 

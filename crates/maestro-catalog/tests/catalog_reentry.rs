@@ -527,7 +527,7 @@ impl maestro_models::OAuthProviderInterface for Account {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_models::OAuthCredentials,
-    ) -> Result<&'a str, maestro_models::OAuthError> {
+    ) -> Result<std::borrow::Cow<'a, str>, maestro_models::OAuthError> {
         (self.key_effect)();
         self.inner.get_api_key(credentials)
     }

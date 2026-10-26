@@ -67,3 +67,9 @@ mod tests;
 
 #[cfg(test)]
 use tests::context_actions;
+
+mod oauth_callbacks;
+mod oauth_imports;
+mod oauth_interaction;
+mod oauth_reads;
+mod oauth_registration;
