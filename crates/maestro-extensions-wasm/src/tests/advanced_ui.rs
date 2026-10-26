@@ -650,3 +650,49 @@ async fn timeouts(driver: &mut impl Driver) -> Result<(), String> {
 fn dialog_timeout_is_forwarded_without_guest_policy() -> Result<(), String> {
     on_both_adapters!(timeouts)
 }
+
+/// Runs one dialog through the context of `route` and returns the author's answer with the
+/// acquisition keys the host's receipts name.
+async fn routed_dialog(
+    driver: &mut impl Driver,
+    route: &str,
+    call: &Value,
+) -> Result<(Value, Vec<usize>), String> {
+    let from = driver.transcript().len();
+    let operation = json!({ "op": "dialog", "call": call }).to_string();
+    if route == "event" {
+        driver.deliver_input("event ui", &operation).await?;
+    } else {
+        driver.run_plain_command("ui", &operation).await?;
+    }
+    let keys = receipts(&driver.transcript()[from..])
+        .iter()
+        .map(|seen| seen.key)
+        .collect();
+    Ok((answer(driver, "entry ui-answer ")?, keys))
+}
+
+/// Event and command contexts each acquire the UI of the binding current at acquisition.
+async fn dialog_owners(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let call = json!({ "op": "select", "title": "Pick", "options": ["a", "b"] });
+    for (binding, route, decision) in [(1, "event", "a"), (2, "command", "b"), (3, "event", "b")] {
+        let control = json!({ "op": "control", "binding": binding, "answer": decision });
+        assert_eq!(operate(driver, control).await?, json!("controlled"));
+        let (answer, keys) = routed_dialog(driver, route, &call).await?;
+        assert_eq!(answer, json!({ "ok": decision }), "{route} dialog answer");
+        assert_eq!(
+            keys,
+            [binding],
+            "the {route} dialog reached binding {binding}"
+        );
+    }
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0, "no UI resource stays lent");
+    Ok(())
+}
+
+#[test]
+fn each_context_acquires_the_selected_ui_owner() -> Result<(), String> {
+    on_both_adapters!(dialog_owners)
+}
