@@ -115,6 +115,14 @@ A rejected hook ends the already-started provider stream with one terminal error
 and EOF, preserving the supplied error text. It does not become a setup rejection.
 A response-hook failure releases the native body without polling it.
 
+The content-generation adapter consumes the signal selected by the payload hook.
+Preserving or replacing it lets only that signal cancel a pending transport;
+removing it leaves the transport running even if the original signal is aborted.
+The provider still uses the original signal for its final message policy, so a
+completed body can produce an aborted result after the original signal was aborted.
+Signal relays use the existing synchronous callback continuation, including when
+preserving a signal causes an abort listener to invoke another listener in the same guest.
+
 Invoked model events use the existing shared-record JSON codec. A decoded event
 is an observation, not a live cross-component object reference; later native
 partial-message edits do not modify an earlier decoded event. Authored streams

@@ -259,7 +259,7 @@ interface host {
     resource abort-signal {
         retain: func() -> abort-signal;
         aborted: func() -> bool;
-        abort: func() -> result<_, string>;
+        abort: func() -> import-route;
     }
     /// Creates an independently owned cancellation signal.
     new-signal: func() -> result<abort-signal, string>;

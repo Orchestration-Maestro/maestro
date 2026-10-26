@@ -192,6 +192,10 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(request) = args.strip_prefix("model-selected-signal ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(model_hook_gates::signals(&request, context).await?) });
+    }
     if let Some(request) = args.strip_prefix("model-hook-gates ") {
         let request = request.to_owned();
         return Box::pin(async move { Err(model_hook_gates::command(&request, context).await?) });

@@ -267,8 +267,9 @@ impl host::HostAbortSignal for State {
         self.push(Flag(signal))
     }
 
-    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Result<(), String>> {
-        Ok(self.abort(this.rep()).map_err(|error| error.to_string()))
+    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Resource<Route>> {
+        let result = self.abort(this.rep()).map_err(|error| error.to_string());
+        self.routed(result)
     }
 
     fn aborted(&mut self, this: Resource<Flag>) -> wasmtime::Result<bool> {
