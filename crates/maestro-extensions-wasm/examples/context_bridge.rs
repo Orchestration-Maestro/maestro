@@ -19,6 +19,9 @@ mod api;
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/credentials.rs"]
+mod credentials;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/exec.rs"]
 mod exec;
 #[cfg(target_arch = "wasm32")]
@@ -27,6 +30,13 @@ mod json_boundary;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/prefixes.rs"]
 mod prefixes;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/provider_controls.rs"]
+mod provider_controls;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/providers.rs"]
+mod providers;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
@@ -93,20 +103,8 @@ mod model_protocol_routes;
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        api.register_flag(
-            "fail-start",
-            maestro_extensions_wasm::FlagOptions {
-                description: None,
-                type_: maestro_extensions_wasm::FlagType::Boolean,
-                default: None,
-            },
-        )?;
-        if matches!(
-            api.get_flag("fail-start")?,
-            Some(maestro_extensions_wasm::FlagValue::Boolean(true))
-        ) {
-            return Err("guest startup failure".into());
-        }
+        check_start(&api)?;
+        providers::factory(&api)?;
         register_listeners(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
@@ -252,6 +250,9 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if args.starts_with("credential ") || args.starts_with("provider ") {
+            return Err(credential_command(&api, &context, &args).await?.to_string());
+        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
@@ -443,4 +444,48 @@ impl Drop for ReleaseTrap {
             std::arch::wasm32::unreachable();
         }
     }
+}
+
+/// Selects credential and provider observations without changing the ordinary command routes.
+#[cfg(target_arch = "wasm32")]
+async fn credential_command(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionContext,
+    request: &str,
+) -> Result<serde_json::Value, String> {
+    if let Some(text) = request.strip_prefix("provider control ") {
+        return provider_controls::control(api, context, text).await;
+    }
+    if let Some(request) = request.strip_prefix("credential lifetime ") {
+        return credentials::lifetime(api, context, request);
+    }
+    if let Some(request) = request.strip_prefix("credential pending ") {
+        return credentials::pending(api, request).await;
+    }
+    match request {
+        "credential fallback" => credentials::fallback(api).await,
+        "credential backend" => credentials::backend(api),
+        "credential state" => credentials::state(api).await,
+        _ => providers::command(api, context, request).await,
+    }
+}
+
+/// Preserves the caller-controlled startup failure before any callback registration.
+#[cfg(target_arch = "wasm32")]
+fn check_start(api: &ExtensionAPI) -> Result<(), String> {
+    api.register_flag(
+        "fail-start",
+        maestro_extensions_wasm::FlagOptions {
+            description: None,
+            type_: maestro_extensions_wasm::FlagType::Boolean,
+            default: None,
+        },
+    )?;
+    if matches!(
+        api.get_flag("fail-start")?,
+        Some(maestro_extensions_wasm::FlagValue::Boolean(true))
+    ) {
+        return Err("guest startup failure".into());
+    }
+    Ok(())
 }

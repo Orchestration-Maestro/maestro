@@ -158,7 +158,8 @@ mod native {
     /// # Panics
     /// Panics if the configuration guard is poisoned.
     pub fn callback(config: &SharedHandle<RwLock<ProviderConfigInput>>, message: &'static str) {
-        config.write().unwrap().stream_simple = Some(SharedHandle::new(FailedProvider(message)));
+        config.write().unwrap().callbacks.stream_simple =
+            Some(SharedHandle::new(FailedProvider(message)));
     }
     /// Invoke the current protocol through the raw public callback.
     /// # Panics

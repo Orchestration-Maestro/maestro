@@ -24,6 +24,8 @@ mod bus_author;
 mod catalog_author;
 #[path = "compaction_author.rs"]
 mod compaction_author;
+#[path = "provider_author.rs"]
+mod provider_author;
 #[path = "reader_author.rs"]
 mod reader_author;
 #[path = "registration_author.rs"]
@@ -904,7 +906,7 @@ fn register_helpers(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<()
     match args {
         "setup-register" => Some(setup_author::register(api)),
         "replacement-register" => Some(replacement_author::register(api)),
-        _ => None,
+        _ => provider_author::dispatch(api, args),
     }
 }
 

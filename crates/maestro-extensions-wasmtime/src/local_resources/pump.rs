@@ -89,6 +89,7 @@ impl Pump {
             routes: RefCell::default(),
             worker: RefCell::default(),
         });
+        super::credential_scope::register(Rc::downgrade(&state));
         (
             Self { state },
             Admission {
@@ -187,6 +188,11 @@ impl State {
             Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
+            Message::LockUpdate(_, _, reply) => {
+                let _ = reply.send(Err("extension lock update ended".into()));
+            }
+            Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
+            Message::EndLockUpdate(id) => self.end_lock_update(id),
             Message::SchemaListing(id, reply) => {
                 let _ = reply.send(self.schema_listing(id));
             }
@@ -205,6 +211,9 @@ impl State {
             Message::Auth(id, model, reply, admission) => {
                 self.start_auth(id, *model, reply, admission);
             }
+            Message::ProviderKey(id, provider, reply, admission) => {
+                self.start_provider_key(id, provider, reply, admission);
+            }
             Message::NewSignal(reply) => {
                 let _ = reply.send(self.registry.signal(Cancellation::new()));
             }
@@ -212,15 +221,12 @@ impl State {
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
-            Message::Catalog(id, request) => self.catalog(id, request),
-            Message::Node(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::Node(node)) = capability.as_deref() {
-                    node.answer(request, &self.registry);
-                } else {
-                    request.reject("extension tree node resource ended");
-                }
+            Message::Credentials(id, request) => self.credentials(id, request),
+            Message::CredentialKey(id, request, reply, admission) => {
+                self.start_credential_key(id, request, reply, admission);
             }
+            Message::Catalog(id, request) => self.catalog(id, request),
+            Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, admission) => {
                 self.start_replaced(id, request, admission);
             }
@@ -231,21 +237,20 @@ impl State {
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
-            Message::Release(id) => {
-                let removed = self.registry.resources.borrow_mut().entries.remove(&id);
-                drop(removed);
-            }
+            Message::Release(id) => self.release(id),
         }
     }
 
-    /// Read the original catalog outside its capability-table borrow.
-    fn catalog(&self, id: u64, request: crate::catalog_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
-            request.answer(catalog);
-        } else {
-            request.reject("extension catalog resource ended");
-        }
+    /// Releases an ended lock update outside its frame-table borrow.
+    fn end_lock_update(&self, id: u64) {
+        let frame = self.synchronous.async_frames.borrow_mut().remove(&id);
+        drop(frame);
+    }
+
+    /// Releases a resource outside its capability-table borrow.
+    fn release(&self, id: u64) {
+        let removed = self.registry.resources.borrow_mut().entries.remove(&id);
+        drop(removed);
     }
 
     /// Reads the original live history independently of guarded contexts.
@@ -504,3 +509,5 @@ impl Drop for State {
         drop(entries);
     }
 }
+
+mod catalog;

@@ -8,13 +8,14 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod model_streams;
 mod signals;
 pub(crate) mod stream_reads;
-mod synchronous;
+pub(crate) mod synchronous;
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -24,6 +25,16 @@ pub(crate) type Work = std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>;
 pub(crate) enum Message {
     /// Completes an admitted synchronous guest call through this same receiver.
     Completed(u64, Result<(), String>),
+    /// Calls a synchronous update still borrowed on its native caller's stack.
+    LockUpdate(
+        u64,
+        Option<String>,
+        std::sync::mpsc::Sender<Result<Option<String>, String>>,
+    ),
+    /// Calls a Send update still borrowed by its native pending future.
+    AsyncLockUpdate(u64, credential_scope::AsyncRequest),
+    /// Retires the async operand only when its actual native future ends.
+    EndLockUpdate(u64),
     /// The original retained Json.
     Json(u64, crate::schema_reads::Request),
     /// Live declarations with their original schema callback identities.
@@ -76,6 +87,15 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
     ),
+    /// Uses independently retained accepted credentials.
+    Credentials(u64, crate::credential_reads::Request),
+    /// Resolves a key while retaining the original owner through settlement.
+    CredentialKey(
+        u64,
+        (String, Option<bool>),
+        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
+        Admission,
+    ),
     /// Reads the original live catalog, not a captured descriptor list.
     Catalog(u64, crate::catalog_reads::Request),
     /// Resolves credentials using the caller's effects without blocking other requests.
@@ -83,6 +103,13 @@ pub(crate) enum Message {
         u64,
         Box<Model>,
         tokio::sync::oneshot::Sender<Result<ResolvedRequestAuth, String>>,
+        Admission,
+    ),
+    /// Resolves a key through the original catalog's credential and config owners.
+    ProviderKey(
+        u64,
+        String,
+        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
     /// Reads one retained node of an already-built tree.
@@ -128,6 +155,10 @@ pub(crate) struct Lease {
 }
 
 impl Lease {
+    /// Provides the original Send endpoint for pump-thread credential callbacks.
+    pub(crate) fn requests(&self) -> &UnboundedSender<Message> {
+        &self.requests
+    }
     /// Retains this original owner's admission for a native callback or its work.
     pub(crate) fn admission(&self) -> Admission {
         Admission {
@@ -168,9 +199,9 @@ impl Lease {
 
     /// Sends a request whose native code may call back into this instance; the guest
     /// drives the returned route until the request's own result arrives.
-    pub(crate) fn route(
+    pub(crate) fn route<T: Into<crate::import_route::Value> + Send + 'static>(
         &self,
-        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<(), String>>) -> Message,
+        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<T, String>>) -> Message,
     ) -> crate::import_route::Route {
         let (reply, response) = std::sync::mpsc::channel();
         let (nested, route) = crate::import_route::Route::new(response);
@@ -209,6 +240,11 @@ enum Capability {
     History(Rc<RefCell<dyn ReadonlySessionManager>>),
     /// Original writable setup capability, not a copied or reconstructed history.
     Writer(Rc<RefCell<maestro_extensions::SessionManager>>),
+    /// Original credentials and their request-time effects.
+    Credentials(
+        Arc<maestro_extensions::AuthStorage>,
+        maestro_extensions::ConfigValues,
+    ),
     /// Original independently retained catalog.
     Catalog(SharedHandle<ModelRegistry>),
     /// A captured node, independent of the reader that produced its tree.
@@ -269,6 +305,31 @@ pub(crate) struct Registry {
 }
 
 impl Registry {
+    /// Selects the retained credentials only when the supplied lease belongs to this pump.
+    pub(crate) fn credential_owner(
+        &self,
+        endpoint: &crate::credential_reads::Endpoint,
+    ) -> Result<
+        (
+            Arc<maestro_extensions::AuthStorage>,
+            maestro_extensions::ConfigValues,
+        ),
+        String,
+    > {
+        if !self.owns(&endpoint.0) {
+            return Err("extension credential resource belongs to another host".into());
+        }
+        match self.capability(endpoint.0.id).as_deref() {
+            Some(Capability::Credentials(auth, effects)) => Ok((auth.clone(), effects.clone())),
+            _ => Err("extension credential resource ended".into()),
+        }
+    }
+    /// Checks provenance without relying on registry-local resource identities.
+    pub(crate) fn owns(&self, lease: &Lease) -> bool {
+        self.requests
+            .upgrade()
+            .is_some_and(|requests| requests.same_channel(&lease.requests))
+    }
     /// Clones one original capability without holding a table borrow during native calls.
     fn capability(&self, id: u64) -> Option<Rc<Capability>> {
         self.resources.borrow().entries.get(&id).cloned()
@@ -360,6 +421,16 @@ impl Registry {
     ) -> Result<crate::catalog_reads::Endpoint, String> {
         self.insert(Capability::Catalog(catalog))
             .map(crate::catalog_reads::Endpoint)
+    }
+
+    /// Retains accepted credentials together with their original request-time effects.
+    pub(crate) fn credentials(
+        &self,
+        owner: Arc<maestro_extensions::AuthStorage>,
+        effects: maestro_extensions::ConfigValues,
+    ) -> Result<crate::credential_reads::Endpoint, String> {
+        self.insert(Capability::Credentials(owner, effects))
+            .map(crate::credential_reads::Endpoint)
     }
 
     /// Retains a captured node without keeping the guarded context or reader alive.

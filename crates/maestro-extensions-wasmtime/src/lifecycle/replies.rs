@@ -138,8 +138,24 @@ impl Replies {
         value: Option<&mut serde_json::Value>,
         start: impl FnOnce(Reply<T>, crate::schema_reads::Endpoint) -> Result<(), String>,
     ) -> Result<T, String> {
+        self.synchronous_operand(
+            registry,
+            value.map_or(
+                crate::local_resources::synchronous::Operand::None,
+                crate::local_resources::synchronous::Operand::Json,
+            ),
+            start,
+        )
+    }
+    /// Borrows one typed native operand until the original guest invocation settles.
+    pub(crate) fn synchronous_operand<T: Send + 'static>(
+        &self,
+        registry: &crate::local_resources::Registry,
+        operand: crate::local_resources::synchronous::Operand<'_>,
+        start: impl FnOnce(Reply<T>, crate::schema_reads::Endpoint) -> Result<(), String>,
+    ) -> Result<T, String> {
         let (sender, result) = std::sync::mpsc::channel();
-        registry.invoke_sync(value, |completion, node| {
+        registry.invoke_scoped(operand, |completion, node| {
             let reply = self.register(move |value| {
                 let _ = sender.send(value);
                 completion.complete(Ok(()));
