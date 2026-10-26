@@ -174,6 +174,7 @@ impl State {
     pub(super) fn widgets(&self, message: WidgetMessage) {
         let registry = &self.registry;
         match message {
+            WidgetMessage::FullRedraws(id, reply) => self.full_redraws(id, &reply),
             WidgetMessage::New(api, build, reply) => {
                 let events = match registry.capability(api).as_deref() {
                     Some(Capability::Api(api)) => Ok(api.events.clone()),
@@ -224,6 +225,17 @@ impl State {
             }
             WidgetMessage::Provider(id, request) => self.provider(id, request),
         }
+    }
+
+    /// Reads the original frame writer's redraw counter.
+    fn full_redraws(&self, id: u64, reply: &crate::widget_reads::Reply<u64>) {
+        let result = match self.registry.capability(id).as_deref() {
+            Some(Capability::Tui(tui)) => {
+                u64::try_from(tui.full_redraws()).map_err(|error| error.to_string())
+            }
+            _ => Err("extension terminal resource ended".to_owned()),
+        };
+        let _ = reply.send(result);
     }
 
     /// Applies a lent style or runs the lent highlighting.

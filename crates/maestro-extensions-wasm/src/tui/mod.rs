@@ -130,14 +130,17 @@ impl Component {
 
 port! {
     /// Requests to the terminal a factory received.
-    TuiPort for TUI via _port {}
+    TuiPort for TUI via port {
+        /// The host frame writer's current count of full redraws.
+        fn full_redraws() -> u64;
+    }
 }
 
 /// The terminal a component factory received; clones share its host owner.
 #[derive(Clone)]
 pub struct TUI {
     /// The owner of this capability, kept while the author holds the terminal.
-    _port: Rc<dyn TuiPort>,
+    port: Rc<dyn TuiPort>,
     /// The host resource behind a terminal the host lent, which a widget can pass back.
     #[cfg(any(test, target_arch = "wasm32"))]
     host: Option<Rc<dyn std::any::Any>>,
@@ -147,7 +150,7 @@ impl TUI {
     #[must_use]
     pub fn new(port: Rc<dyn TuiPort>) -> Self {
         Self {
-            _port: port,
+            port,
             #[cfg(any(test, target_arch = "wasm32"))]
             host: None,
         }
@@ -156,7 +159,7 @@ impl TUI {
     #[cfg(any(test, target_arch = "wasm32"))]
     pub(crate) fn supplied<P: TuiPort + 'static>(port: Rc<P>) -> Self {
         Self {
-            _port: port.clone(),
+            port: port.clone(),
             host: Some(port),
         }
     }

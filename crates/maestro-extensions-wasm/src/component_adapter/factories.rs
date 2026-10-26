@@ -10,11 +10,17 @@ use crate::{
 
 /// Host terminal behind the facade.
 pub(super) struct Terminal<I: Imports> {
+    /// The adapter serving this terminal.
+    pub(super) imports: I,
     /// The lent host terminal.
     pub(super) tui: I::Tui,
 }
 
-impl<I: Imports> TuiPort for Terminal<I> {}
+impl<I: Imports> TuiPort for Terminal<I> {
+    fn full_redraws(&self) -> ExtensionResult<u64> {
+        self.imports.tui_full_redraws(&self.tui)
+    }
+}
 
 /// What a factory's host lends it: the terminal, the live theme and, for a footer, its
 /// metadata.
@@ -68,7 +74,10 @@ impl<I: Imports> Exports<I> {
         lent: Lent<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<ExtensionComponent> {
-        let tui = TUI::supplied(Rc::new(Terminal::<I> { tui: lent.tui }));
+        let tui = TUI::supplied(Rc::new(Terminal::<I> {
+            imports: self.imports.clone(),
+            tui: lent.tui,
+        }));
         let theme = super::theme::theme(self.imports.clone(), lent.theme);
         let Some(footer) = lent.footer else {
             let factory = callbacks::find::<ComponentFactory>(handler)?;

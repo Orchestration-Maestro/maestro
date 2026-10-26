@@ -323,6 +323,9 @@ impl Imports for Generated {
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
     type Tui = host::Tui;
+    fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {
+        tui.full_redraws()
+    }
     type Invalidator = host::ToolInvalidator;
     fn register_tool(
         &self,

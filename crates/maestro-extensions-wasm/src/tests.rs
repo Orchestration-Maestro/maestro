@@ -50,6 +50,7 @@ mod example_support;
 mod exec_records;
 mod finite_records;
 pub(crate) mod stream_host;
+mod tui_ui;
 #[macro_use]
 mod fixtures;
 mod editor_component;

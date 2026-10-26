@@ -514,6 +514,8 @@ pub trait Imports: Clone + 'static {
 
     /// Terminal handle lent to a component factory.
     type Tui: 'static;
+    /// Reads the original frame writer's full redraw count.
+    fn tui_full_redraws(&self, tui: &Self::Tui) -> ExtensionResult<u64>;
     /// Redraw capability of one tool row.
     type Invalidator: 'static;
     /// Redraws the tool row behind `invalidator`.

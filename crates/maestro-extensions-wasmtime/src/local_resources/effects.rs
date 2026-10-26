@@ -70,6 +70,15 @@ pub(crate) struct TuiEndpoint {
     pub(super) lease: Arc<Lease>,
 }
 
+impl TuiEndpoint {
+    /// Reads the original frame writer, without keeping a second counter.
+    pub(crate) fn full_redraws(&self) -> Result<u64, String> {
+        self.lease.request(|id, reply| {
+            Message::Widgets(crate::widget_reads::WidgetMessage::FullRedraws(id, reply))
+        })
+    }
+}
+
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
 #[derive(Clone)]
 pub(crate) struct EmitterEndpoint(Arc<Lease>);

@@ -129,3 +129,9 @@ this record does not install an overlay or choose its layout.
 
 Disposal, component removal and final callback release remain separate effects.
 Neither calling expansion nor dropping its handle invokes disposal.
+
+### Retained frame writer
+
+A factory's `TUI::full_redraws` reads the original host frame writer's count on
+every call. Clones retain the same host capability after the factory returns;
+releasing the last clone releases that capability, not the host terminal.

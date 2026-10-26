@@ -20,6 +20,10 @@ pub(super) fn observe(
     api: &ExtensionAPI,
     args: &str,
 ) -> ExtensionResult<String> {
+    if args == "ui tui" {
+        super::tui_author::install(&context.ui()?)?;
+        return Ok("terminal shown".into());
+    }
     if let Some(operation) = args.strip_prefix("editor ") {
         return editor(context, operation);
     }

@@ -61,6 +61,8 @@ mod shell_author;
 mod theme_author;
 #[path = "tool_author.rs"]
 mod tool_author;
+#[path = "tui_author.rs"]
+pub(crate) mod tui_author;
 #[path = "ui_author.rs"]
 pub(crate) mod ui_author;
 #[path = "widget_author.rs"]

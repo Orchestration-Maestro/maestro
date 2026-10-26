@@ -373,7 +373,10 @@ interface host {
         interval-ms: option<f64>,
     }
     /// Terminal handle lent to a component factory.
-    resource tui;
+    resource tui {
+        /// The original frame writer's count of full redraws.
+        full-redraws: func() -> result<u64, string>;
+    }
     /// A host text styling function.
     resource style { apply: func(text: string) -> result<string, string>; }
     /// The host's code highlighting.

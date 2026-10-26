@@ -112,6 +112,8 @@ pub(crate) enum Request {
 
 /// A message for the widgets of one extension.
 pub(crate) enum WidgetMessage {
+    /// The full redraw count of the original frame writer.
+    FullRedraws(u64, Reply<u64>),
     /// A request on the widget with this identity.
     Request(u64, Request),
     /// Builds a widget for the extension whose API has this identity.

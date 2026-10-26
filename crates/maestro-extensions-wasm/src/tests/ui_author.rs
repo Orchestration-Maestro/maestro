@@ -730,6 +730,8 @@ enum Operation {
         /// Whether completion was explicitly requested.
         force: Option<bool>,
     },
+    /// Installs a retained terminal view.
+    TuiFactory,
     /// Runs a host widget script.
     Widgets {
         /// The steps, in order.
@@ -852,6 +854,12 @@ fn caught(result: ExtensionResult<Option<Value>>) -> Value {
     }
 }
 
+/// Drops the author's retained aliases without removing the host's components.
+fn drop_kept() -> Value {
+    drop(ALIASES.take());
+    json!("dropped")
+}
+
 /// Renders every kept component alias with a silent emitter.
 fn render_kept(width: u32) -> ExtensionResult<Value> {
     let aliases = ALIASES.with_borrow(Clone::clone);
@@ -869,6 +877,7 @@ fn factories(
     operation: Operation,
 ) -> ExtensionResult<()> {
     match operation {
+        Operation::TuiFactory => super::tui_author::install(&ctx.ui()?),
         Operation::WidgetFactory {
             key,
             label,
@@ -935,11 +944,9 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             )
         }
         Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
-        Operation::DropKept => {
-            drop(ALIASES.take());
-            json!("dropped")
-        }
-        operation @ (Operation::WidgetFactory { .. }
+        Operation::DropKept => drop_kept(),
+        operation @ (Operation::TuiFactory
+        | Operation::WidgetFactory { .. }
         | Operation::FactoryCapabilities { .. }
         | Operation::KeptWidget { .. }
         | Operation::Footer { .. }

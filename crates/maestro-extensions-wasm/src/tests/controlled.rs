@@ -1411,6 +1411,10 @@ impl Imports for Controlled {
 
     type Ui = Ui;
     type Tui = Tui;
+    fn tui_full_redraws(&self, _: &Tui) -> ExtensionResult<u64> {
+        self.observe().log("tui fullRedraws");
+        Ok(17)
+    }
     type Invalidator = Invalidator;
     fn invalidate(&self, invalidator: &Invalidator) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();

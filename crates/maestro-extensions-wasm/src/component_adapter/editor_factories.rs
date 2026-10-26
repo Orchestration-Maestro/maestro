@@ -114,7 +114,10 @@ impl<I: super::providers::EditorImports> Exports<I> {
         lent: LentEditor<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<EditorFactoryOutcome> {
-        let tui = TUI::supplied(Rc::new(Terminal::<I> { tui: lent.tui }));
+        let tui = TUI::supplied(Rc::new(Terminal::<I> {
+            imports: self.imports.clone(),
+            tui: lent.tui,
+        }));
         let theme = super::keys::editor_theme(&self.imports, lent.theme)?;
         let keybindings = super::keys::lend(&self.imports, lent.keybindings);
         let factory = callbacks::find::<EditorFactory>(handler)?;

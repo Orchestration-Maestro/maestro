@@ -1228,6 +1228,10 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
 }
 
 impl host::HostTui for State {
+    fn full_redraws(&mut self, _: Resource<Tui>) -> wasmtime::Result<Result<u64, String>> {
+        self.observed.log("tui fullRedraws");
+        Ok(Ok(17))
+    }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)
     }

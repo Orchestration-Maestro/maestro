@@ -72,6 +72,8 @@ mod ui;
 mod theme;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "../src/tests/tui_author.rs"]
+mod tui_author;
 #[path = "../src/tests/widget_author.rs"]
 mod widget_author;
 
