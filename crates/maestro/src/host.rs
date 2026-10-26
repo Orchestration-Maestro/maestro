@@ -10,7 +10,7 @@ use std::{
     error::Error,
     io::{self, IsTerminal, Write},
     rc::Rc,
-    time::Instant,
+    time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::task::LocalSet;
 
@@ -114,8 +114,14 @@ async fn startup(
         offline,
         export,
     } = effects;
-    let start = Instant::now();
-    let now = || start.elapsed().as_secs_f64() * 1000.0;
+    let now = || {
+        (SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs_f64()
+            * 1000.0)
+            .floor()
+    };
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
     let files =
         maestro_cli::input::file_processor::NativeFileArgumentOperations::new(supports_color());

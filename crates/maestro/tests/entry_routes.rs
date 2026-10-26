@@ -25,6 +25,36 @@ fn shipped_root_runs_version_and_help_without_placeholder() {
     assert!(String::from_utf8_lossy(&ordinary.stderr).contains("No models available"));
 }
 
+#[test]
+fn shipped_root_reports_whole_millisecond_timings() {
+    let root = Root::new();
+    root.models("http://127.0.0.1:1/v1");
+    let output = root
+        .command(&[
+            "--mode",
+            "rpc",
+            "--provider",
+            "startup",
+            "--model",
+            "controlled",
+        ])
+        .env("MAESTRO_TIMING", "1")
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(output.status.success(), "{stderr}");
+    assert!(stderr.contains("--- Startup Timings ---"), "{stderr}");
+    let samples: Vec<_> = stderr
+        .lines()
+        .filter_map(|line| line.strip_suffix("ms"))
+        .collect();
+    assert!(samples.len() > 1, "{stderr}");
+    for sample in samples {
+        let (_, milliseconds) = sample.rsplit_once(": ").unwrap();
+        assert!(milliseconds.parse::<u64>().is_ok(), "{sample}");
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn shipped_root_forwards_arguments_and_process_setup() {
