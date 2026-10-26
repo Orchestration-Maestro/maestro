@@ -8,7 +8,8 @@
 /// Declares a port trait and the facade methods that forward to it from one list.
 ///
 /// Ordinary methods return `ExtensionResult<T>`; the optional infallible block returns directly.
-/// An asynchronous block adds trait declarations with explicit facade implementations.
+/// An asynchronous block adds trait declarations with explicit facade implementations; an
+/// owned block adds forwarded operations whose futures own their operands.
 /// The facade reaches its port through the
 /// field `$access`. An optional `errors` string describes fallible delegated operations.
 macro_rules! port {
@@ -22,6 +23,7 @@ macro_rules! port {
             )*
         }
         $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident<$lifetime:lifetime>($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
+        $(owned { $( $(#[$owned_meta:meta])* fn $owned:ident($($owned_arg:ident: $owned_ty:ty),*) -> $owned_ret:ty; )* })?
         $(infallible {
             $( $(#[$infallible_meta:meta])* fn $infallible:ident() -> $value:ty; )*
         })?
@@ -29,6 +31,13 @@ macro_rules! port {
         $(#[$port_meta])*
         pub trait $port {
             $($( $(#[$async_meta])* fn $async_method<$lifetime>(&$lifetime self $(, $async_arg: $async_ty)*) -> ExtensionFuture<$lifetime, $async_ret>; )*)?
+            $($(
+                $(#[$owned_meta])*
+                ///
+                /// The future owns its operands and resolves to the host's message when the
+                /// host rejects the request.
+                fn $owned(&self $(, $owned_arg: $owned_ty)*) -> ExtensionFuture<'static, $owned_ret>;
+            )*)?
             $($( $(#[$infallible_meta])* fn $infallible(&self) -> $value; )*)?
             $(
                 $(#[$meta])*
@@ -40,6 +49,16 @@ macro_rules! port {
         }
 
         impl $facade {
+            $($(
+                $(#[$owned_meta])*
+                ///
+                /// The future owns its operands and resolves to the host's message when the
+                /// host rejects the request.
+                #[must_use]
+                pub fn $owned(&self $(, $owned_arg: $owned_ty)*) -> ExtensionFuture<'static, $owned_ret> {
+                    self.$access.$owned($($owned_arg),*)
+                }
+            )*)?
             $($( $(#[$infallible_meta])*
                 #[must_use]
                 pub fn $infallible(&self) -> $value { self.$access.$infallible() }
@@ -82,6 +101,11 @@ macro_rules! forward_resources {
     (routed { $($name:ident($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) => $method:ident($($value:expr),* $(,)?);)* }) => {
         $(fn $name(&self, $resource: $resource_ty $(, $arg: $ty)*) -> ExtensionResult<()> {
             route::drive(&$resource.$method($($value),*))
+        })*
+    };
+    (asynchronous { $($name:ident<$lt:lifetime>($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) -> $ret:ty => $method:ident($($value:expr),* $(,)?);)* }) => {
+        $(fn $name<$lt>(&$lt self, $resource: &$lt $resource_ty $(, $arg: $ty)*) -> ExtensionFuture<$lt, $ret> {
+            Box::pin($resource.$method($($value),*))
         })*
     };
     (functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path;)* }) => {

@@ -10,6 +10,14 @@ use crate::{
 /// Per-tool executable annotations returned beside the metadata document.
 pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 
+/// Optional operands of one dialog, each absent unless the author supplied it.
+pub struct Dialog<'a, S> {
+    /// Host signal that dismisses the dialog.
+    pub signal: Option<&'a S>,
+    /// Caller milliseconds, unchanged.
+    pub timeout: Option<f64>,
+}
+
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
 ///
@@ -544,6 +552,37 @@ pub trait Imports: Clone + 'static {
     fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
     /// Reads the host editor's current text.
     fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Forwards a selector with its ordered options.
+    fn ui_select<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        options: Vec<String>,
+        dialog: Dialog<'a, Self::Signal>,
+    ) -> ExtensionFuture<'a, Option<String>>;
+    /// Forwards a confirmation request.
+    fn ui_confirm<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        message: String,
+        dialog: Dialog<'a, Self::Signal>,
+    ) -> ExtensionFuture<'a, bool>;
+    /// Forwards a one-line input request with its optional placeholder.
+    fn ui_input<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        placeholder: Option<String>,
+        dialog: Dialog<'a, Self::Signal>,
+    ) -> ExtensionFuture<'a, Option<String>>;
+    /// Forwards a multi-line editor request with its optional prefilled text.
+    fn ui_editor<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        prefill: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>>;
     /// Forwards the corresponding host capability call.
     fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool>;
     /// Forwards the corresponding host capability call.

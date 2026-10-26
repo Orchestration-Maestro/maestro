@@ -8,6 +8,7 @@ use maestro_extensions_wasm::{
     ExtensionContext, ExtensionResult, ExtensionWidgetOptions, NotificationType, WidgetPlacement,
     WorkingIndicatorOptions,
 };
+use serde_json::{Value, json};
 
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
 pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
@@ -42,6 +43,28 @@ pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult
     )?;
     ui.set_title(if clear { "" } else { " literal title " })?;
     Ok("UI forwarded".into())
+}
+
+/// Shows the dialog `request` names on the originally acquired UI and returns its answer.
+pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> ExtensionResult<String> {
+    let request: Value = serde_json::from_str(request).map_err(|error| error.to_string())?;
+    let text = |key: &str| request[key].as_str().map(str::to_owned);
+    let title = text("title").unwrap_or_default();
+    let ui = context.ui()?;
+    let answer = match request["method"].as_str() {
+        Some("select") => {
+            let options = serde_json::from_value(request["options"].clone());
+            let options = options.map_err(|error| error.to_string())?;
+            json!(ui.select(title, options, None).await?)
+        }
+        Some("confirm") => {
+            let message = text("message").unwrap_or_default();
+            json!(ui.confirm(title, message, None).await?)
+        }
+        Some("input") => json!(ui.input(title, text("placeholder"), None).await?),
+        _ => json!(ui.editor(title, text("prefill")).await?),
+    };
+    Ok(answer.to_string())
 }
 
 /// Reads and edits the originally acquired UI without interpreting the supplied text.

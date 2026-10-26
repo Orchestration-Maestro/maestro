@@ -82,6 +82,37 @@ port! {
         /// Reads the host editor's current text.
         fn get_editor_text() -> String;
     }
+    owned {
+        /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.
+        fn select(
+            title: String,
+            options: Vec<String>,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> Option<String>;
+        /// Asks for confirmation and resolves to `false` on dismissal.
+        fn confirm(
+            title: String,
+            message: String,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> bool;
+        /// Reads one line and resolves to `None` on dismissal.
+        fn input(
+            title: String,
+            placeholder: Option<String>,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> Option<String>;
+        /// Reads several lines and resolves to `None` on dismissal.
+        fn editor(title: String, prefill: Option<String>) -> Option<String>;
+    }
+}
+
+/// Options of a dialog, forwarded without choosing host defaults.
+#[derive(Clone, Default)]
+pub struct ExtensionUIDialogOptions {
+    /// Dismisses the dialog when aborted; it stays retained after the dialog returns.
+    pub signal: Option<AbortSignal>,
+    /// Milliseconds before the host dismisses the dialog, passed to it unchanged.
+    pub timeout: Option<f64>,
 }
 use std::fmt;
 use std::ops::Deref;

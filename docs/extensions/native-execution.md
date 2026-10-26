@@ -36,7 +36,8 @@ Calls into other components are unaffected.
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,
 status, working-row, indicator, hidden-thinking-label, widget and title requests
-without choosing presentation defaults. Credential commands belong to the supplied
+without choosing presentation defaults. Dialogs run on the originally acquired UI
+and keep the component free while they wait. Credential commands belong to the supplied
 context's model catalog, not the component factory.
 
 When the component's factory returns an error, loading fails with that message as

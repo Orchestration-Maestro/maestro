@@ -202,6 +202,9 @@ fn command(
         if let Some(answer) = schema::command(&api, &args) {
             return Err(answer?.to_string());
         }
+        if let Some(request) = args.strip_prefix("dialog ") {
+            return Err(ui::dialog(&context, request).await?);
+        }
         if args == "ui imports" || args == "ui clear" || args.starts_with("editor ") {
             return Err(ui::observe(&context, &args)?);
         }

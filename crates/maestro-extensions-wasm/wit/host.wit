@@ -277,6 +277,14 @@ interface host {
         paste-to-editor: func(text: string) -> import-route;
         set-editor-text: func(text: string) -> import-route;
         get-editor-text: func() -> result<string, string>;
+        /// Resolves to the chosen option, or none on dismissal.
+        select: async func(title: string, options: list<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
+        /// Resolves to false on dismissal.
+        confirm: async func(title: string, message: string, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<bool, string>;
+        /// Resolves to the entered line, or none on dismissal.
+        input: async func(title: string, placeholder: option<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
+        /// Resolves to the edited text, or none on dismissal.
+        editor: async func(title: string, prefill: option<string>) -> result<option<string>, string>;
     }
     /// Resolved credentials, retaining key and header presence.
     record request-auth {

@@ -3,19 +3,35 @@
 use std::rc::Rc;
 
 use super::callbacks::Scoped;
-use super::imports::Imports;
+use super::imports::{Dialog, Imports};
 use super::session::reader;
 use super::{model_registry::registry, session::decode};
 use crate::{
-    ContextUsage, ExtensionUIContext, ExtensionUIContextPort, ExtensionWidgetOptions, Model,
-    ModelRegistry, NotificationType, ReadonlySessionManager, WorkingIndicatorOptions,
+    ContextUsage, ExtensionUIContext, ExtensionUIContextPort, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, Model, ModelRegistry, NotificationType, ReadonlySessionManager,
+    WorkingIndicatorOptions,
 };
 /// Independently retained UI resource.
 struct Ui<I: Imports> {
     /// The host the capability belongs to.
     imports: I,
-    /// The retained host capability.
-    resource: I::Ui,
+    /// The retained host capability, shared with the dialogs it has open.
+    resource: Rc<I::Ui>,
+}
+
+impl<I: Imports> Ui<I> {
+    /// Owned copies of the host and its capability for a dialog that outlives this borrow.
+    fn owned(&self) -> (I, Rc<I::Ui>) {
+        (self.imports.clone(), Rc::clone(&self.resource))
+    }
+}
+
+/// The dialog operands the host receives.
+fn dialog<'a, S>(opts: Option<ExtensionUIDialogOptions>) -> Dialog<'a, S> {
+    Dialog {
+        signal: None,
+        timeout: opts.and_then(|opts| opts.timeout),
+    }
 }
 
 impl<I: Imports> ExtensionUIContextPort for Ui<I> {
@@ -62,6 +78,53 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     }
     fn get_editor_text(&self) -> ExtensionResult<String> {
         self.imports.ui_get_editor_text(&self.resource)
+    }
+    fn select(
+        &self,
+        title: String,
+        options: Vec<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionFuture<'static, Option<String>> {
+        let (imports, resource) = self.owned();
+        Box::pin(async move {
+            imports
+                .ui_select(&resource, title, options, dialog(opts))
+                .await
+        })
+    }
+    fn confirm(
+        &self,
+        title: String,
+        message: String,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionFuture<'static, bool> {
+        let (imports, resource) = self.owned();
+        Box::pin(async move {
+            imports
+                .ui_confirm(&resource, title, message, dialog(opts))
+                .await
+        })
+    }
+    fn input(
+        &self,
+        title: String,
+        placeholder: Option<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionFuture<'static, Option<String>> {
+        let (imports, resource) = self.owned();
+        Box::pin(async move {
+            imports
+                .ui_input(&resource, title, placeholder, dialog(opts))
+                .await
+        })
+    }
+    fn editor(
+        &self,
+        title: String,
+        prefill: Option<String>,
+    ) -> ExtensionFuture<'static, Option<String>> {
+        let (imports, resource) = self.owned();
+        Box::pin(async move { imports.ui_editor(&resource, title, prefill).await })
     }
 }
 use crate::bindings::maestro::extension::session::SessionChangeResult;
@@ -113,7 +176,7 @@ macro_rules! context_port {
             fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
                 Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
                     imports: self.imports.clone(),
-                    resource: self.imports.$ui(&self.context)?,
+                    resource: Rc::new(self.imports.$ui(&self.context)?),
                 })))
             }
             fn has_ui(&self) -> ExtensionResult<bool> {

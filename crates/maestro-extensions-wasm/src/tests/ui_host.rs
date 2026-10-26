@@ -11,10 +11,10 @@ use std::str::FromStr;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::host::State;
+use super::host::{Flag, State};
 use super::observed::Observed;
 use crate::bindings::host_side::maestro::extension::host;
-use wasmtime::component::Resource;
+use wasmtime::component::{Accessor, Resource};
 
 /// Host type of the retained UI capability.
 pub struct Ui(pub(super) usize);
@@ -32,6 +32,8 @@ pub struct Bank {
     message: Option<String>,
     /// Editor text each binding keeps.
     editors: HashMap<usize, String>,
+    /// Decision the next dialog answers with; absent dismisses it.
+    answer: Option<Value>,
 }
 
 /// A supplied refusal and the method it is limited to.
@@ -52,6 +54,8 @@ struct Control {
     method: Option<String>,
     /// Identity of the binding later acquisitions resolve.
     binding: Option<usize>,
+    /// Decision the next dialog answers with; absent dismisses it.
+    answer: Option<Value>,
 }
 
 impl Bank {
@@ -61,6 +65,7 @@ impl Bank {
         if let Some(binding) = control.binding {
             self.binding = binding;
         }
+        self.answer = control.answer;
         self.error = control.error.map(|message| Refusal {
             method: control.method,
             message,
@@ -117,6 +122,21 @@ pub fn set_editor_text(observed: &mut Observed, key: usize, text: &str) -> Resul
 pub fn get_editor_text(observed: &mut Observed, key: usize) -> Result<String, String> {
     call(observed, key, "getEditorText", &json!([]))?;
     Ok(observed.ui.editors.get(&key).cloned().unwrap_or_default())
+}
+
+/// The decision supplied for the dialog that is settling.
+pub fn decision(observed: &mut Observed) -> Value {
+    observed.ui.answer.take().unwrap_or(Value::Null)
+}
+
+/// The text a dialog decision chooses; any other decision dismisses the dialog.
+pub fn chosen(decision: &Value) -> Option<String> {
+    decision.as_str().map(str::to_owned)
+}
+
+/// Whether a decision confirms; any other decision is a dismissal.
+pub fn confirmed(decision: &Value) -> bool {
+    decision.as_bool().unwrap_or(false)
 }
 
 /// Supplied widget options; an absent record keeps the host default.
@@ -229,6 +249,25 @@ pub fn receipts(lines: &[String]) -> Vec<Receipt> {
 }
 
 impl State {
+    /// Whether a lent dialog signal is aborted, or null without one.
+    fn flag_state(&self, signal: Option<&Resource<Flag>>) -> wasmtime::Result<Value> {
+        signal.map_or(Ok(Value::Null), |signal| {
+            let flag = &self.table.get(signal)?.0;
+            Ok(json!(flag.load(std::sync::atomic::Ordering::SeqCst)))
+        })
+    }
+
+    /// Records one dialog made through `this`, returning its supplied rejection.
+    fn ui_dialog(
+        &mut self,
+        this: &Resource<Ui>,
+        method: &str,
+        operands: &Value,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(this)?.0;
+        Ok(call(&mut self.observed, key, method, operands))
+    }
+
     /// Records one retained UI request made through `this`.
     fn ui_call(
         &mut self,
@@ -356,5 +395,89 @@ impl host::HostExtensionUiContext for State {
 
     fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {
         self.release(this)
+    }
+}
+
+/// Records one dialog, waits while the host holds it pending, then answers its decision.
+async fn settled(
+    accessor: &Accessor<State, super::host::Imports>,
+    recorded: wasmtime::Result<Result<(), String>>,
+) -> wasmtime::Result<Result<Value, String>> {
+    if let Err(error) = recorded? {
+        return Ok(Err(error));
+    }
+    let hold = accessor.with(|mut access| access.get().observed.take_hold());
+    super::observed::pause(hold).await;
+    Ok(Ok(
+        accessor.with(|mut access| decision(&mut access.get().observed))
+    ))
+}
+
+impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
+    async fn select(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        title: String,
+        options: Vec<String>,
+        signal: Option<Resource<Flag>>,
+        timeout: Option<f64>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let recorded = accessor.with(|mut access| {
+            let state = access.get();
+            let signal = state.flag_state(signal.as_ref())?;
+            let operands = json!([title, options, signal, timeout]);
+            state.ui_dialog(&this, "select", &operands)
+        });
+        let answer = settled(accessor, recorded).await?;
+        Ok(answer.map(|decision| chosen(&decision)))
+    }
+
+    async fn confirm(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        title: String,
+        message: String,
+        signal: Option<Resource<Flag>>,
+        timeout: Option<f64>,
+    ) -> wasmtime::Result<Result<bool, String>> {
+        let recorded = accessor.with(|mut access| {
+            let state = access.get();
+            let signal = state.flag_state(signal.as_ref())?;
+            let operands = json!([title, message, signal, timeout]);
+            state.ui_dialog(&this, "confirm", &operands)
+        });
+        let answer = settled(accessor, recorded).await?;
+        Ok(answer.map(|decision| confirmed(&decision)))
+    }
+
+    async fn input(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        title: String,
+        placeholder: Option<String>,
+        signal: Option<Resource<Flag>>,
+        timeout: Option<f64>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let recorded = accessor.with(|mut access| {
+            let state = access.get();
+            let signal = state.flag_state(signal.as_ref())?;
+            let operands = json!([title, placeholder, signal, timeout]);
+            state.ui_dialog(&this, "input", &operands)
+        });
+        let answer = settled(accessor, recorded).await?;
+        Ok(answer.map(|decision| chosen(&decision)))
+    }
+
+    async fn editor(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        title: String,
+        prefill: Option<String>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let operands = json!([title, prefill]);
+        let recorded =
+            accessor.with(|mut access| access.get().ui_dialog(&this, "editor", &operands));
+        let answer = settled(accessor, recorded).await?;
+        Ok(answer.map(|decision| chosen(&decision)))
     }
 }

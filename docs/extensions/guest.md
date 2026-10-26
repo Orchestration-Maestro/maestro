@@ -404,6 +404,24 @@ anything it retains. Clones of the facade share the acquired resource, so a hand
 kept past its callback keeps reading that resource, and a second acquisition stays
 independent. Widget factories remain outside this interface.
 
+### Dialogs
+
+`select`, `confirm`, `input` and `editor` ask the host for an answer and return a
+future that owns its operands, so it may outlive the handle that started it:
+
+| Method | Request | Dismissal |
+| --- | --- | --- |
+| `select` | A title and the ordered choices, repetitions and empty entries included. | `None` |
+| `confirm` | A title and a message. | `false` |
+| `input` | A title and an optional placeholder. | `None` |
+| `editor` | A title and optional prefilled text. | `None` |
+
+`ExtensionUIDialogOptions::timeout` reaches the host's dialog as the supplied
+milliseconds, without a guest timer or a changed value. An absent placeholder or
+prefill stays distinct from an empty one, and an empty answer stays distinct from a
+dismissal. A host rejection resolves to its message; it is never turned into a
+dismissal.
+
 The component example's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction
 content whose opaque details depend on those live query results. Summary formatting

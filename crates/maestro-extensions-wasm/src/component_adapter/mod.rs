@@ -38,6 +38,8 @@ pub(crate) use exports::{Capabilities, Exports};
 pub(crate) use exports::{EventOutcome, outcome};
 #[cfg(target_arch = "wasm32")]
 pub use generated::Glue;
+#[cfg(test)]
+pub(crate) use imports::Dialog;
 pub(crate) use imports::Imports;
 
 pub(crate) use imports::ToolListing;

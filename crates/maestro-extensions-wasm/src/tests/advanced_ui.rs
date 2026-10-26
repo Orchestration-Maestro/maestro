@@ -376,3 +376,110 @@ async fn replacement(driver: &mut impl Driver) -> Result<(), String> {
 fn retained_theme_observes_palette_and_metadata_replacement() -> Result<(), String> {
     on_both_adapters!(replacement)
 }
+
+/// Supplies the host's next dialog decision, runs one dialog through a fresh acquisition,
+/// checks the one host request it made and returns the author's answer.
+async fn asked(
+    driver: &mut impl Driver,
+    call: &Value,
+    decision: &Value,
+    receipt: (&str, &Value),
+) -> Result<Value, String> {
+    let control = json!({ "op": "control", "answer": decision });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    let from = driver.transcript().len();
+    let answer = operate(driver, json!({ "op": "dialog", "call": call })).await?;
+    let seen = receipts(&driver.transcript()[from..]);
+    assert_eq!(seen.len(), 1, "exactly one host request for {call}");
+    assert_eq!(seen[0].method, receipt.0, "method of {call}");
+    same(&seen[0].operands, receipt.1);
+    Ok(answer)
+}
+
+/// Each selector choice list keeps its order, repetitions, empty entries and literal text,
+/// and an empty choice stays distinct from a dismissal.
+async fn selections(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = [
+        (
+            "Pick",
+            json!(["a", "b", "a"]),
+            json!("b"),
+            json!({ "ok": "b" }),
+        ),
+        ("", json!([]), Value::Null, json!({ "ok": null })),
+        (
+            "選択 雪",
+            json!(["雪 \u{feff}", "", "line\r\nnext"]),
+            json!(""),
+            json!({ "ok": "" }),
+        ),
+    ];
+    for (title, options, decision, expected) in rows {
+        let call = json!({ "op": "select", "title": title, "options": options });
+        let operands = json!([title, options, null, null]);
+        let answer = asked(driver, &call, &decision, ("select", &operands)).await?;
+        assert_eq!(answer, expected, "selector {title:?} answered {decision}");
+    }
+    Ok(())
+}
+
+/// A confirmation keeps an empty message and resolves a dismissal to false.
+async fn confirmations(driver: &mut impl Driver) -> Result<(), String> {
+    for (message, decision, expected) in [
+        ("", json!(true), true),
+        ("Proceed?\nnow 雪", json!(false), false),
+        ("Proceed?", Value::Null, false),
+    ] {
+        let call = json!({ "op": "confirm", "title": "Sure", "message": message });
+        let operands = json!(["Sure", message, null, null]);
+        let answer = asked(driver, &call, &decision, ("confirm", &operands)).await?;
+        assert_eq!(answer, json!({ "ok": expected }), "confirmation {decision}");
+    }
+    Ok(())
+}
+
+/// An absent placeholder or prefill stays distinct from an empty one, and each answer or
+/// dismissal returns unchanged.
+async fn texts(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = [
+        (json!(null), json!("typed 雪"), json!({ "ok": "typed 雪" })),
+        (json!(""), Value::Null, json!({ "ok": null })),
+        (json!("a\r\nb"), json!(""), json!({ "ok": "" })),
+    ];
+    for (supplied, decision, expected) in rows {
+        let call = json!({ "op": "input", "title": "Name", "placeholder": supplied });
+        let operands = json!(["Name", supplied, null, null]);
+        let answer = asked(driver, &call, &decision, ("input", &operands)).await?;
+        assert_eq!(answer, expected, "input with placeholder {supplied}");
+        let call = json!({ "op": "editor", "title": "Edit", "prefill": supplied });
+        let operands = json!(["Edit", supplied]);
+        let answer = asked(driver, &call, &decision, ("editor", &operands)).await?;
+        assert_eq!(answer, expected, "editor with prefill {supplied}");
+    }
+    Ok(())
+}
+
+/// The literal inputs of every dialog reach the host, and its answer, dismissal or rejection
+/// returns unchanged.
+async fn dialog_inputs(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    selections(driver).await?;
+    confirmations(driver).await?;
+    texts(driver).await?;
+    let control = json!({ "op": "control", "error": "dialog 雪\nrefused" });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    let call = json!({ "op": "select", "title": "Pick", "options": ["a"] });
+    assert_eq!(
+        operate(driver, json!({ "op": "dialog", "call": call })).await?,
+        json!({ "error": "dialog 雪\nrefused" }),
+        "a rejection is not a dismissal"
+    );
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0, "no UI resource stays lent");
+    Ok(())
+}
+
+#[test]
+fn dialog_requests_preserve_owned_inputs() -> Result<(), String> {
+    on_both_adapters!(dialog_inputs)
+}

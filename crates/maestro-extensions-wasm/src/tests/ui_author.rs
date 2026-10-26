@@ -150,6 +150,52 @@ pub enum Call {
     GetEditorText,
 }
 
+/// One dialog request.
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "camelCase")]
+pub enum Dialog {
+    /// Shows a selector.
+    Select {
+        /// Literal title.
+        title: String,
+        /// Ordered literal choices.
+        options: Vec<String>,
+    },
+    /// Asks for confirmation.
+    Confirm {
+        /// Literal title.
+        title: String,
+        /// Literal message.
+        message: String,
+    },
+    /// Reads one line.
+    Input {
+        /// Literal title.
+        title: String,
+        /// Literal placeholder, or none.
+        #[serde(default)]
+        placeholder: Option<String>,
+    },
+    /// Reads several lines.
+    Editor {
+        /// Literal title.
+        title: String,
+        /// Literal prefilled text, or none.
+        #[serde(default)]
+        prefill: Option<String>,
+    },
+}
+
+/// Runs one dialog through the supplied handle and returns its answer.
+pub async fn ask(ui: &ExtensionUIContext, dialog: Dialog) -> ExtensionResult<Value> {
+    Ok(match dialog {
+        Dialog::Select { title, options } => json!(ui.select(title, options, None).await?),
+        Dialog::Confirm { title, message } => json!(ui.confirm(title, message, None).await?),
+        Dialog::Input { title, placeholder } => json!(ui.input(title, placeholder, None).await?),
+        Dialog::Editor { title, prefill } => json!(ui.editor(title, prefill).await?),
+    })
+}
+
 /// One probe operation around a fresh acquisition and its callbacks.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase")]
@@ -158,6 +204,11 @@ enum Operation {
     Acquire {
         /// The request.
         call: Call,
+    },
+    /// Shows a dialog through a freshly acquired handle.
+    Dialog {
+        /// The dialog.
+        call: Dialog,
     },
     /// Registers the bus listener through one acquisition, which reports its owner once.
     Observe,
@@ -179,6 +230,9 @@ enum Operation {
         /// Identity of the binding later acquisitions resolve.
         #[serde(default)]
         binding: Option<usize>,
+        /// Decision the host's next dialog answers with.
+        #[serde(default)]
+        answer: Option<Value>,
     },
 }
 
@@ -228,16 +282,21 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
     let operation: Operation = serde_json::from_str(text).map_err(|error| error.to_string())?;
     let answer = match operation {
         Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
+        Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
         Operation::Observe => observe(api, ctx)?,
         Operation::Compact => compact(api, ctx)?,
         Operation::Emit { channel, input } => {
             api.events().emit(&channel, input).await?;
             json!("emitted")
         }
-        Operation::Control { error, binding } => {
+        Operation::Control {
+            error,
+            binding,
+            answer,
+        } => {
             api.append_entry(
                 "ui-control",
-                Some(json!({ "error": error, "binding": binding })),
+                Some(json!({ "error": error, "binding": binding, "answer": answer })),
             )?;
             json!("controlled")
         }

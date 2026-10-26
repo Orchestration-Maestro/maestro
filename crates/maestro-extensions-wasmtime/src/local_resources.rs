@@ -8,6 +8,7 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+mod dialogs;
 pub(crate) mod effects;
 mod signals;
 mod synchronous;
@@ -90,6 +91,8 @@ pub(crate) enum Message {
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
+    /// Admits one dialog on the originally acquired UI.
+    Dialog(u64, crate::ui_reads::DialogRequest, Admission),
     /// Reads or edits the independently retained live renderer theme.
     Theme(u64, crate::theme_reads::Request),
     /// Final release of an independently retained capability.

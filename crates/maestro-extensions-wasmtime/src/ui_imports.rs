@@ -1,11 +1,12 @@
 //! Canonical UI imports delegate through the existing typed local request pump.
 use crate::{
+    local_resources::SignalEndpoint,
     read_imports::{ReadEndpoint, add_routed_operand, operand},
-    ui_reads::{Endpoint, Request},
+    ui_reads::{Dialog, Endpoint, Request},
 };
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Resource},
+    component::{Accessor, ComponentType, Lift, LinkerInstance, Resource},
 };
 use wasmtime_wasi::WasiView;
 
@@ -48,6 +49,7 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
         },
     )?;
     editor(host)?;
+    dialogs(host)?;
     notification(host)?;
     status(host)?;
     widget(host)
@@ -74,6 +76,75 @@ fn editor<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::
         crate::read_imports::resource::<T, Endpoint>,
     )
 }
+
+/// The original UI and dialog signal named by a dialog's borrowed resources.
+fn dialog_owners<T: WasiView + 'static>(
+    accessor: &Accessor<T>,
+    resource: &Resource<Endpoint>,
+    signal: Option<&Resource<SignalEndpoint>>,
+) -> wasmtime::Result<(Endpoint, Option<SignalEndpoint>)> {
+    accessor.with(|mut access| {
+        let table = &access.get().ctx().table;
+        let signal = signal
+            .map(|signal| table.get(signal).cloned())
+            .transpose()?;
+        Ok((table.get(resource)?.clone(), signal))
+    })
+}
+
+/// Forwards each dialog with its literal operands, signal and timeout to the original UI.
+fn dialogs<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.select",
+        |accessor, (resource, title, options, signal, timeout): DialogOperands<Vec<String>>| {
+            Box::pin(async move {
+                let (ui, signal) = dialog_owners(accessor, &resource, signal.as_ref())?;
+                let select = |reply| Dialog::Select(title, options, reply);
+                Ok((ui.dialog(select, signal, timeout).await,))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.confirm",
+        |accessor, (resource, title, message, signal, timeout): DialogOperands<String>| {
+            Box::pin(async move {
+                let (ui, signal) = dialog_owners(accessor, &resource, signal.as_ref())?;
+                let confirm = |reply| Dialog::Confirm(title, message, reply);
+                Ok((ui.dialog(confirm, signal, timeout).await,))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.input",
+        |accessor,
+         (resource, title, placeholder, signal, timeout): DialogOperands<Option<String>>| {
+            Box::pin(async move {
+                let (ui, signal) = dialog_owners(accessor, &resource, signal.as_ref())?;
+                let input = |reply| Dialog::Input(title, placeholder, reply);
+                Ok((ui.dialog(input, signal, timeout).await,))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]extension-ui-context.editor",
+        |accessor, (resource, title, prefill): (Resource<Endpoint>, String, Option<String>)| {
+            Box::pin(async move {
+                let (ui, _) = dialog_owners(accessor, &resource, None)?;
+                let editor = |reply| Dialog::Editor(title, prefill, reply);
+                Ok((ui.dialog(editor, None, None).await,))
+            })
+        },
+    )
+}
+
+/// A dialog's UI, title, own operand, borrowed signal and timeout.
+type DialogOperands<O> = (
+    Resource<Endpoint>,
+    String,
+    O,
+    Option<Resource<SignalEndpoint>>,
+    Option<f64>,
+);
 
 /// Forwards severity without replacing an omitted value with a default.
 fn notification<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {

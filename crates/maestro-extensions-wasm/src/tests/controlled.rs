@@ -14,8 +14,9 @@ use super::observed::{Observed, Session, pause};
 use super::setup_host::document;
 use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
-use crate::component_adapter::{Exports, Imports};
+use crate::component_adapter::{Dialog, Exports, Imports};
 use crate::types::{ExtensionFuture, ExtensionResult};
+use serde_json::json;
 
 /// A cancellation flag the test controls.
 #[derive(Clone, Default)]
@@ -315,6 +316,32 @@ fn ui_call(
 ) -> ExtensionResult<()> {
     super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)
 }
+/// Records one dialog through the controlled host, waits while it is held pending, then
+/// answers its supplied decision.
+async fn ui_dialog(
+    observed: &Rc<RefCell<Observed>>,
+    key: usize,
+    method: &str,
+    operands: &serde_json::Value,
+) -> ExtensionResult<serde_json::Value> {
+    super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)?;
+    let hold = observed.borrow_mut().take_hold();
+    pause(hold).await;
+    Ok(super::ui_host::decision(&mut observed.borrow_mut()))
+}
+
+/// Dialog operands followed by whether the lent signal is aborted, or null, and the timeout.
+fn dialog_operands(leading: serde_json::Value, dialog: &Dialog<'_, Signal>) -> serde_json::Value {
+    let mut operands = leading;
+    if let Some(operands) = operands.as_array_mut() {
+        let aborted = dialog
+            .signal
+            .map(|signal| signal.flag.0.load(std::sync::atomic::Ordering::SeqCst));
+        operands.extend([json!(aborted), json!(dialog.timeout)]);
+    }
+    operands
+}
+
 impl Controlled {
     /// Probe the consumed slot while its owning command still retains the identity.
     async fn repeat_continuation(&self, id: u32) {
@@ -1077,6 +1104,57 @@ impl Imports for Controlled {
     }
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
+    fn ui_select<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        options: Vec<String>,
+        dialog: Dialog<'a, Signal>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        let operands = dialog_operands(json!([title, options]), &dialog);
+        Box::pin(async move {
+            let decision = ui_dialog(&self.observed, resource.key, "select", &operands).await?;
+            Ok(super::ui_host::chosen(&decision))
+        })
+    }
+    fn ui_confirm<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        message: String,
+        dialog: Dialog<'a, Signal>,
+    ) -> ExtensionFuture<'a, bool> {
+        let operands = dialog_operands(json!([title, message]), &dialog);
+        Box::pin(async move {
+            let decision = ui_dialog(&self.observed, resource.key, "confirm", &operands).await?;
+            Ok(super::ui_host::confirmed(&decision))
+        })
+    }
+    fn ui_input<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        placeholder: Option<String>,
+        dialog: Dialog<'a, Signal>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        let operands = dialog_operands(json!([title, placeholder]), &dialog);
+        Box::pin(async move {
+            let decision = ui_dialog(&self.observed, resource.key, "input", &operands).await?;
+            Ok(super::ui_host::chosen(&decision))
+        })
+    }
+    fn ui_editor<'a>(
+        &'a self,
+        resource: &'a Ui,
+        title: String,
+        prefill: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        let operands = json!([title, prefill]);
+        Box::pin(async move {
+            let decision = ui_dialog(&self.observed, resource.key, "editor", &operands).await?;
+            Ok(super::ui_host::chosen(&decision))
+        })
     }
     type Registry = Reader;
     type Reader = Reader;

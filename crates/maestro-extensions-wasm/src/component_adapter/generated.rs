@@ -3,6 +3,7 @@
 
 use std::{future::Future, marker::PhantomData};
 
+use super::imports::Dialog;
 use super::tools::ToolCapabilities;
 use super::{Capabilities, Exports, Imports, release};
 use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
@@ -212,25 +213,6 @@ impl Imports for Generated {
             options.map(|()| host::SwitchSessionOptions { with_session }),
         ))
     }
-    fn reload<'a>(&'a self, context: &'a Self::CommandContext) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.reload())
-    }
-    fn replaced_send_message<'a>(
-        &'a self,
-        context: &'a Self::ReplacedContext,
-        message: String,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.send_message(message, options))
-    }
-    fn replaced_send_user_message<'a>(
-        &'a self,
-        target: &'a Self::ReplacedContext,
-        content: String,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(target.send_user_message(content, options))
-    }
 
     type Writer = host::SessionManager;
 
@@ -253,6 +235,17 @@ impl Imports for Generated {
         Box::pin(host::event_emit(channel, data))
     }
     type Ui = host::ExtensionUiContext;
+
+    forward_resources! { asynchronous {
+        ui_select<'a>(resource: Self::Ui, title: String, options: Vec<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => select(title, options, dialog.signal, dialog.timeout);
+        ui_confirm<'a>(resource: Self::Ui, title: String, message: String, dialog: Dialog<'a, Self::Signal>) -> bool => confirm(title, message, dialog.signal, dialog.timeout);
+        ui_input<'a>(resource: Self::Ui, title: String, placeholder: Option<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => input(title, placeholder, dialog.signal, dialog.timeout);
+        ui_editor<'a>(resource: Self::Ui, title: String, prefill: Option<String>) -> Option<String> => editor(title, prefill);
+        reload<'a>(context: Self::CommandContext) -> () => reload();
+        wait_for_idle<'a>(context: Self::CommandContext) -> () => wait_for_idle();
+        replaced_send_message<'a>(context: Self::ReplacedContext, message: String, options: Option<String>) -> () => send_message(message, options);
+        replaced_send_user_message<'a>(target: Self::ReplacedContext, content: String, options: Option<String>) -> () => send_user_message(content, options);
+    } }
     type Registry = host::ModelRegistry;
 
     fn registry_get_api_key_and_headers<'a>(
@@ -288,10 +281,6 @@ impl Imports for Generated {
     fn new_callback(&self) -> (u32, host::Callback) {
         let handle = host::Callback::new();
         (handle.id(), handle)
-    }
-
-    fn wait_for_idle<'a>(&'a self, context: &'a host::CommandContext) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.wait_for_idle())
     }
 
     fn new_session<'a>(
