@@ -106,6 +106,12 @@ previous payload. Returning a signal keeps cancellation; returning a different
 signal replaces it, and returning no signal removes it. Opaque author controls
 stay retained values, not native HTTP clients.
 
+The streaming chat adapter waits for payload selection before request dispatch.
+A hook can edit, replace, add or delete payload fields; the selected JSON reaches
+the HTTP peer. Its response hook finishes before the first body poll or start event.
+While either hook is pending, native event and result observations remain pending.
+Cancellation raised during the payload hook still controls that same invocation.
+
 Invoked model events use the existing shared-record JSON codec. A decoded event
 is an observation, not a live cross-component object reference; later native
 partial-message edits do not modify an earlier decoded event. Authored streams
