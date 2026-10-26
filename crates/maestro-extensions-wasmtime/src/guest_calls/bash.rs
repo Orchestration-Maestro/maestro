@@ -3,13 +3,13 @@ use super::{Call, Handle};
 use crate::lifecycle::replies::Reply;
 use crate::local_resources::{Registry, SignalEndpoint, bash_output};
 use maestro_extensions::{BashError, BashExecOptions, BashExecResult, BashOperations, Local};
-use wasmtime::component::{ComponentType, Lower};
+use wasmtime::component::{ComponentType, Lift, Lower};
 
 /// Actual Local-family borrowed output operand.
 type LocalOptions<'a> = BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>;
 
 /// Literal canonical execution operands, with no process policy added at the boundary.
-#[derive(ComponentType, Lower, Clone)]
+#[derive(ComponentType, Lift, Lower, Clone)]
 #[component(record)]
 pub(crate) struct BashRequest {
     /// Exact authored shell command.

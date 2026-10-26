@@ -11,10 +11,10 @@ use maestro_app::{
     UserBashEvent, UserBashEventResult,
 };
 use maestro_tui::TUI;
-use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
+use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc};
 
 /// The callable operations an extension supplies for one shell command.
-type ShellOperations = Arc<dyn BashOperations + Send + Sync>;
+pub(super) type ShellOperations = Rc<dyn BashOperations<maestro_app::Local>>;
 
 /// The shell command a submission selected, which an extension cannot rewrite.
 #[derive(Clone, Copy)]
@@ -244,8 +244,7 @@ impl InteractiveMode {
 
 /// Runs `command` through `options`, delivering every chunk to `row` before it completes.
 ///
-/// The session's callback is sendable while the row and the terminal are local, so the
-/// chunks cross on a channel this runtime drains. A row whose update fails ends the
+/// Queued chunks reach the row before command completion. A row whose update fails ends
 /// delivery and reports through the runtime's error route.
 ///
 /// # Errors

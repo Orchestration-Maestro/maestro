@@ -3,6 +3,13 @@
 /// Declares native factories without creating a second adapter trait.
 macro_rules! builtin_tool_imports {
     () => {
+        /// Retains the original native local shell backend.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_local_bash_operations(
+            &self,
+            shell_path: Option<String>,
+        ) -> ExtensionResult<crate::BashOperations>;
         /// Constructs the original context-free shell executable.
         /// # Errors
         /// Returns native construction or resource admission failures.

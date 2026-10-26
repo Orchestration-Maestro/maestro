@@ -14,6 +14,7 @@ pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
+pub(crate) mod local_bash;
 pub(crate) mod model_streams;
 mod rendering;
 pub(crate) mod schema;
@@ -240,6 +241,8 @@ enum Capability {
     Stream(crate::local_resources::stream_reads::Owner),
     /// Original typed native definition behind the component's tool resource.
     Builtin(Rc<dyn crate::builtin_tools::Definition>),
+    /// Original native local backend, retained independently of a returned guest operation.
+    LocalBash(Rc<dyn maestro_extensions::BashOperations<maestro_extensions::Local>>),
     /// Original row context, including its environment and shared state.
     NativeRow(crate::native_renders::Row),
     /// Original native component, not a guest proxy.

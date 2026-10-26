@@ -18,6 +18,12 @@ interface host {
         render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>, update: option<borrow<callback>>) -> result<string, string>;
     }
+    /// Original native local backend, independent of the factory facade and its callers.
+    resource local-bash-operations {
+        exec: async func(request: bash-request, signal: option<borrow<abort-signal>>, on-data: borrow<callback>) -> result<option<f64>, string>;
+    }
+    /// Retains local shell configuration without starting a process.
+    create-local-bash-operations: func(shell-path: option<string>) -> result<local-bash-operations, string>;
     /// Independent controls of the original local shell factory.
     record bash-tool-controls { command-prefix: option<string>, shell-path: option<string> }
     /// Retains the native shell definition and independently optional replacement callbacks.

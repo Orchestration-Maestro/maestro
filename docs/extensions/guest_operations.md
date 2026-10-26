@@ -187,6 +187,31 @@ fn register_shell(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
 }
 ```
 
+## Run raw local shell operations
+
+`ExtensionAPI::create_local_bash_operations(shell_path)` retains the native local
+backend. Construction starts no process. The application's binary directory and
+the optional executable reach that backend without a second shell implementation.
+
+Its `exec(command, cwd, options)` callback receives owned operands. `on_data`
+receives raw stdout and stderr bytes: no UTF-8 decoding, ANSI stripping, binary
+filtering or newline conversion runs in the guest. A failing raw observer is
+reported through the native event bus; execution still settles normally.
+
+The optional signal stays live until execution ends, including when operations
+outlive the event that returned them. An absent signal remains absent. Positive
+`timeout` values are seconds; absent and nonpositive values add no deadline.
+Exit status, cancellation, timeouts and process cleanup remain native-owned.
+
+Return these operations from a `user_bash` handler to replace interactive shell
+execution. The session accepts Local operations and applies its usual output
+sanitization before recording and painting them. Direct `exec` calls still receive
+raw bytes. Supplying the same operations to `BashToolOptions` retains the native
+tool's truncation, artifact and status formatting.
+
+The executable [local shell author example](../../crates/maestro-extensions-wasm/examples/local_shell_component.rs)
+shows direct execution and interactive interception through the same facade.
+
 ## Replace search observations
 
 `create_find_tool` / `create_find_tool_definition` and `create_grep_tool` /

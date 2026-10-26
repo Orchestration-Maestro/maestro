@@ -35,6 +35,26 @@ pub struct Update;
 
 /// Native tool resources are created only by the production runtime, not this fixture.
 pub enum BuiltinTool {}
+/// Local shell operations exist only on the production host.
+pub enum LocalBashOperations {}
+impl host::HostLocalBashOperations for State {
+    fn drop(&mut self, _: Resource<LocalBashOperations>) -> wasmtime::Result<()> {
+        wasmtime::bail!("local shell operations require the production host")
+    }
+}
+impl host::HostLocalBashOperationsWithStore<State> for Imports {
+    fn exec(
+        _: &Accessor<State, Self>,
+        _: Resource<LocalBashOperations>,
+        _: host::BashRequest,
+        _: Option<Resource<Flag>>,
+        _: Resource<Identity>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<Option<f64>, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "local shell operations require the production host"
+        )))
+    }
+}
 /// Queue futures exist only on the production host.
 pub enum FileMutation {}
 impl host::HostFileMutation for State {
@@ -724,6 +744,12 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn create_local_bash_operations(
+        &mut self,
+        _: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<LocalBashOperations>, String>> {
+        wasmtime::bail!("local shell operations require the production host")
+    }
     fn with_file_mutation_queue(
         &mut self,
         _: String,

@@ -15,7 +15,7 @@ use std::rc::Rc;
 /// Shell constructors retain the existing synchronous and returned-operation transports.
 #[path = "bash.rs"]
 mod bash;
-pub(super) use bash::{bash, executable_bash};
+pub(super) use bash::{bash, executable_bash, local_operations};
 
 /// Retains the original native queue future until the guest callback settles or is dropped.
 pub(super) fn with_file_mutation_queue(

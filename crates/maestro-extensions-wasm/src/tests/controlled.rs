@@ -594,6 +594,12 @@ impl Imports for Controlled {
     ) -> ExtensionResult<crate::ToolDefinition> {
         Err("built-in tools require the production host".into())
     }
+    fn create_local_bash_operations(
+        &self,
+        _: Option<String>,
+    ) -> ExtensionResult<crate::BashOperations> {
+        Err("local shell operations require the production host".into())
+    }
     fn create_bash_tool(
         &self,
         _: String,

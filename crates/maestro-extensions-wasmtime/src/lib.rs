@@ -32,6 +32,7 @@ mod history_imports;
 mod history_reads;
 mod import_route;
 mod lifecycle;
+mod local_bash_imports;
 mod local_resources;
 mod model_calls;
 mod model_imports;

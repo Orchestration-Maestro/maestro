@@ -37,6 +37,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.native-component": crate::tests::host::NativeComponent,
             "maestro:extension/host.file-mutation": crate::tests::host::FileMutation,
             "maestro:extension/host.builtin-tool": crate::tests::host::BuiltinTool,
+            "maestro:extension/host.local-bash-operations": crate::tests::host::LocalBashOperations,
             "maestro:extension/host.bash-output": crate::tests::shell_host::Receiver,
             "maestro:extension/host.theme": crate::tests::renderer_host::Theme,
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,

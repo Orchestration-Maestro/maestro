@@ -78,6 +78,8 @@ port! {
         fn register_flag(name: &str, options: FlagOptions) -> ();
         /// Reads the host-resolved value of a flag.
         fn get_flag(name: &str) -> Option<FlagValue>;
+        /// Retains the native local shell backend without starting a process.
+        fn create_local_bash_operations(shell_path: Option<String>) -> crate::BashOperations;
         /// Constructs a context-free executable from the original native shell factory.
         fn create_bash_tool(cwd: String, options: crate::BashToolOptions) -> crate::Tool;
         /// Constructs a native shell definition with owned operations and interception.

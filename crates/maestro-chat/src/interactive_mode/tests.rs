@@ -1250,8 +1250,7 @@ fn startup_callback_registration_does_not_retain_the_mode() {
     );
 }
 
-/// The operations an extension supplies for a shell command.
-pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations + Send + Sync>;
+use super::bash::ShellOperations;
 
 /// The failures the mode's work reported.
 pub(super) type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;

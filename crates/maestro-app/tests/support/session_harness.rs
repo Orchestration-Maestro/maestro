@@ -1632,18 +1632,17 @@ impl ScriptedShell {
     }
 }
 
-impl maestro_tools::BashOperations for ScriptedShell {
+impl maestro_tools::BashOperations<Local> for ScriptedShell {
     fn exec<'a>(
         &'a self,
         command: &'a str,
         cwd: &'a str,
-        options: maestro_tools::BashExecOptions<'a>,
+        options: maestro_tools::BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>,
     ) -> std::pin::Pin<
         Box<
             dyn std::future::Future<
                     Output = Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
-                > + Send
-                + 'a,
+                > + 'a,
         >,
     > {
         Box::pin(async move {

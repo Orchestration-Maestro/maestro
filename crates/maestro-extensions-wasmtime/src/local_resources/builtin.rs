@@ -311,6 +311,19 @@ impl State {
 
 /// Native built-in operations share the original pump's admission and result owners.
 pub(crate) enum Operation {
+    /// Constructs an independently retained original local backend.
+    LocalShell(
+        u64,
+        Option<String>,
+        std::sync::mpsc::Sender<Result<super::local_bash::Endpoint, String>>,
+    ),
+    /// Executes local raw-byte operations through the original request pump.
+    LocalExec(
+        u64,
+        super::local_bash::Execution,
+        tokio::sync::oneshot::Sender<Result<Option<f64>, String>>,
+        Admission,
+    ),
     /// Creates and retains an original typed native definition.
     Create(
         Factory,
@@ -340,6 +353,12 @@ impl State {
     /// Dispatches one native built-in operation without adding another request receiver.
     pub(super) fn builtin_operation(&self, operation: Operation) {
         match operation {
+            Operation::LocalShell(api, shell_path, reply) => {
+                let _ = reply.send(self.registry.local_shell(api, shell_path));
+            }
+            Operation::LocalExec(id, execution, reply, admission) => {
+                self.local_exec(id, execution, reply, admission);
+            }
             Operation::Create(factory, reply) => {
                 let _ = reply.send(self.registry.create_builtin(factory));
             }

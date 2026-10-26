@@ -15,6 +15,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Endpoint>(host, "builtin-tool")?;
     super::mutation_imports::add_to_linker(host)?;
+    super::local_bash_imports::add_to_linker(host)?;
     add_bash_factory(host)?;
     add_factories(host)?;
     crate::read_imports::add_read(

@@ -13,6 +13,12 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_local_bash_operations(
+        &self,
+        shell_path: Option<String>,
+    ) -> ExtensionResult<crate::BashOperations> {
+        self.0.create_local_bash_operations(shell_path)
+    }
     fn create_bash_tool(
         &self,
         cwd: String,
