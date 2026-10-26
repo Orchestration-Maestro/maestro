@@ -324,7 +324,7 @@ pub(super) enum LocalResult {
     Key(Result<bool, String>),
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
-    Prepared(Result<String, String>),
+    Prepared(Result<crate::guest_exports::tools::PreparedArguments, String>),
     /// The terminal input listener's decision or its error.
     #[component(name = "terminal-input")]
     TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),

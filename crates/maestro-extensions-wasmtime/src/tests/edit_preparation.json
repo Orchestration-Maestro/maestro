@@ -13,6 +13,15 @@
           "newText": "b"
         }
       ]
+    },
+    "retained": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ]
     }
   },
   {
@@ -30,6 +39,11 @@
           "newText": "b"
         }
       ]
+    },
+    "retained": {
+      "path": "f",
+      "oldText": "a",
+      "newText": "b"
     }
   },
   {
@@ -57,6 +71,17 @@
           "newText": "d"
         }
       ]
+    },
+    "retained": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ],
+      "oldText": "c",
+      "newText": "d"
     }
   },
   {
@@ -66,6 +91,10 @@
       "edits": "{bad"
     },
     "expected": {
+      "path": "f",
+      "edits": "{bad"
+    },
+    "retained": {
       "path": "f",
       "edits": "{bad"
     }
@@ -79,6 +108,10 @@
     "expected": {
       "path": "f",
       "edits": "{}"
+    },
+    "retained": {
+      "path": "f",
+      "edits": "{}"
     }
   },
   {
@@ -90,37 +123,47 @@
     "expected": {
       "path": "f",
       "edits": []
+    },
+    "retained": {
+      "path": "f",
+      "edits": []
     }
   },
   {
     "id": "prepare-null_args",
     "input": null,
-    "expected": null
+    "expected": null,
+    "retained": null
   },
   {
     "id": "prepare-false_args",
     "input": false,
-    "expected": false
+    "expected": false,
+    "retained": false
   },
   {
     "id": "prepare-true_args",
     "input": true,
-    "expected": true
+    "expected": true,
+    "retained": true
   },
   {
     "id": "prepare-number_args",
     "input": 0,
-    "expected": 0
+    "expected": 0,
+    "retained": 0
   },
   {
     "id": "prepare-text_args",
     "input": "raw",
-    "expected": "raw"
+    "expected": "raw",
+    "retained": "raw"
   },
   {
     "id": "prepare-array_args",
     "input": [],
-    "expected": []
+    "expected": [],
+    "retained": []
   },
   {
     "id": "prepare-missing_edits",
@@ -128,6 +171,9 @@
       "path": "f"
     },
     "expected": {
+      "path": "f"
+    },
+    "retained": {
       "path": "f"
     }
   },
@@ -138,6 +184,10 @@
       "edits": null
     },
     "expected": {
+      "path": "f",
+      "edits": null
+    },
+    "retained": {
       "path": "f",
       "edits": null
     }
@@ -151,6 +201,10 @@
     "expected": {
       "path": "f",
       "edits": false
+    },
+    "retained": {
+      "path": "f",
+      "edits": false
     }
   },
   {
@@ -160,6 +214,10 @@
       "edits": 0
     },
     "expected": {
+      "path": "f",
+      "edits": 0
+    },
+    "retained": {
       "path": "f",
       "edits": 0
     }
@@ -173,6 +231,10 @@
     "expected": {
       "path": "f",
       "edits": {}
+    },
+    "retained": {
+      "path": "f",
+      "edits": {}
     }
   },
   {
@@ -184,6 +246,10 @@
     "expected": {
       "path": "f",
       "edits": ""
+    },
+    "retained": {
+      "path": "f",
+      "edits": ""
     }
   },
   {
@@ -193,6 +259,10 @@
       "edits": "[]"
     },
     "expected": {
+      "path": "f",
+      "edits": []
+    },
+    "retained": {
       "path": "f",
       "edits": []
     }
@@ -212,6 +282,11 @@
           "newText": ""
         }
       ]
+    },
+    "retained": {
+      "path": "f",
+      "oldText": "",
+      "newText": ""
     }
   },
   {
@@ -222,6 +297,11 @@
       "newText": null
     },
     "expected": {
+      "path": "f",
+      "oldText": "a",
+      "newText": null
+    },
+    "retained": {
       "path": "f",
       "oldText": "a",
       "newText": null
@@ -247,6 +327,17 @@
           "newText": "d"
         }
       ]
+    },
+    "retained": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ],
+      "oldText": "c",
+      "newText": "d"
     }
   }
 ]

@@ -111,8 +111,9 @@ pub(super) fn executable_edit(
 /// Uses the original native transformation synchronously, without validating or executing.
 fn prepare(tool: Rc<host::BuiltinTool>) -> crate::PrepareArguments {
     Rc::new(move |args, _| {
-        let text = tool.prepare(&encode_value(&args)?)?;
-        super::super::session::decode(&text)
+        let result = tool.prepare(&encode_value(args)?)?;
+        *args = super::super::session::decode(&result.retained)?;
+        super::super::session::decode(&result.prepared?)
     })
 }
 

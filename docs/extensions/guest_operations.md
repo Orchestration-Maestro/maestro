@@ -102,7 +102,13 @@ remaining stages but cannot undo an effect that already completed.
 ## Replace edit effects
 
 `create_edit_tool` and `create_edit_tool_definition` retain the native edit's
-argument preparation. `EditToolOptions::operations` optionally supplies
+argument preparation. Its callback accepts `&mut Value`: parsing string-valued
+`edits` updates retained assistant arguments, while folding a legacy `oldText` /
+`newText` pair changes only the returned preparation. Validation uses that returned
+value; saved history and later model requests keep the retained form. Preparation
+performs no file observations or writes.
+
+`EditToolOptions::operations` optionally supplies
 `EditOperations`: `access(absolute_path)`, `read_file(absolute_path)` returning
 original bytes, and `write_file(absolute_path, content)` receiving the native
 replacement text. Omitting operations uses the local filesystem.

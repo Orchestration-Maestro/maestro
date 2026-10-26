@@ -88,7 +88,12 @@ async fn routed_preparation<E: std::fmt::Debug + 'static>(
             panic!("missing nested preparation")
         };
         assert_eq!(args, r#"{"nested":true}"#);
-        reply.send(Ok(r#"{"nested":"prepared"}"#.into())).unwrap();
+        reply
+            .send(Ok(crate::guest_exports::tools::PreparedArguments {
+                retained: args,
+                prepared: Ok(r#"{"nested":"prepared"}"#.into()),
+            }))
+            .unwrap();
     })
     .await;
     assert_eq!(nested.unwrap(), json!({"nested":"prepared"}));
@@ -110,7 +115,12 @@ fn invoke(mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>) {
         json!({"before":true})
     );
     drop(emitter);
-    reply.send(Ok("{\"prepared\":true}".into())).unwrap();
+    reply
+        .send(Ok(crate::guest_exports::tools::PreparedArguments {
+            retained: args,
+            prepared: Ok("{\"prepared\":true}".into()),
+        }))
+        .unwrap();
     let call = loop {
         match incoming.blocking_recv().unwrap() {
             Call::Release(_) => {}

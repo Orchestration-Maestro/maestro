@@ -8,7 +8,7 @@ use crate::{
 use wasmtime::{
     Store,
     component::{
-        Accessor, ComponentExportIndex, ComponentType, Instance, Lower, Resource, TypedFunc,
+        Accessor, ComponentExportIndex, ComponentType, Instance, Lift, Lower, Resource, TypedFunc,
     },
 };
 use wasmtime_wasi::WasiView;
@@ -36,14 +36,24 @@ pub(crate) struct Capabilities {
     pub(crate) update: Option<Resource<ToolUpdate>>,
 }
 
-/// Exact canonical preparation signature, returning an argument document.
+/// Retained mutations remain independent of the prepared value or callback failure.
+#[derive(ComponentType, Lift, Lower, Debug)]
+#[component(record)]
+pub(crate) struct PreparedArguments {
+    /// Original arguments after the callback's in-place changes.
+    pub(crate) retained: String,
+    /// Returned preparation or the callback's original failure.
+    pub(crate) prepared: Result<String, String>,
+}
+
+/// Exact canonical preparation signature, returning both argument observations.
 type Prepare = TypedFunc<
     (
         Resource<Callback>,
         String,
         Resource<crate::local_resources::effects::EmitterEndpoint>,
     ),
-    (Result<String, String>,),
+    (Result<PreparedArguments, String>,),
 >;
 /// Canonical asynchronous tool execution signature.
 type Execute = TypedFunc<(Resource<Callback>, Invocation, Capabilities), (Result<String, String>,)>;
@@ -123,7 +133,7 @@ impl Exports {
         handler: &Callback,
         args: String,
         emitter: crate::local_resources::effects::EmitterEndpoint,
-    ) -> wasmtime::Result<Result<String, String>> {
+    ) -> wasmtime::Result<Result<PreparedArguments, String>> {
         let (callback, emitter) = arguments(accessor, handler, emitter)?;
         let result = self
             .prepare

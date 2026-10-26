@@ -107,7 +107,7 @@ impl host::HostBuiltinTool for State {
         &mut self,
         _: Resource<BuiltinTool>,
         _: String,
-    ) -> wasmtime::Result<Result<String, String>> {
+    ) -> wasmtime::Result<Result<host::PreparedArguments, String>> {
         wasmtime::bail!("built-in tools require the production host")
     }
     fn drop(&mut self, _: Resource<BuiltinTool>) -> wasmtime::Result<()> {

@@ -128,3 +128,69 @@ impl Observations {
         Ok(())
     }
 }
+
+/// Registers both preparation projections with observable effects on the real native bus.
+pub(super) fn register(api: &ExtensionAPI, request: &str) -> ExtensionResult<()> {
+    let request: serde_json::Value =
+        serde_json::from_str(request).map_err(|error| error.to_string())?;
+    let options = EditToolOptions {
+        operations: Some(registration_operations(api.events())),
+    };
+    let mut definition = api.create_edit_tool_definition("/virtual".into(), options)?;
+    if request["executable"] == true {
+        let tool = api.create_edit_tool("/virtual".into(), EditToolOptions::default())?;
+        definition.prepare_arguments = tool.prepare_arguments;
+    }
+    if request["prepareFailure"] == true {
+        let prepare = definition
+            .prepare_arguments
+            .take()
+            .ok_or("missing edit preparation")?;
+        definition.prepare_arguments = Some(Rc::new(move |args, emitter| {
+            prepare(args, emitter)?;
+            Err("authored preparation failed".into())
+        }));
+    }
+    definition.metadata.name = "builtin-edit".into();
+    api.register_tool(definition)
+}
+
+/// Supplies byte observations whose complete reached effects are visible to the native caller.
+fn registration_operations(events: maestro_extensions_wasm::EventBus) -> EditOperations {
+    let access = events;
+    let read = access.clone();
+    let write = access.clone();
+    EditOperations {
+        access: Rc::new(move |path| {
+            let events = access.clone();
+            Box::pin(async move {
+                events
+                    .emit("builtin-edit-effect", serde_json::json!(["access", path]))
+                    .await
+                    .map_err(maestro_extensions_wasm::DiagnosticErrorInfo::error)
+            })
+        }),
+        read_file: Rc::new(move |path| {
+            let events = read.clone();
+            Box::pin(async move {
+                events
+                    .emit("builtin-edit-effect", serde_json::json!(["read", path]))
+                    .await
+                    .map_err(maestro_extensions_wasm::DiagnosticErrorInfo::error)?;
+                Ok(b"a\nc\n".to_vec())
+            })
+        }),
+        write_file: Rc::new(move |path, content| {
+            let events = write.clone();
+            Box::pin(async move {
+                events
+                    .emit(
+                        "builtin-edit-effect",
+                        serde_json::json!(["write", path, content]),
+                    )
+                    .await
+                    .map_err(maestro_extensions_wasm::DiagnosticErrorInfo::error)
+            })
+        }),
+    }
+}

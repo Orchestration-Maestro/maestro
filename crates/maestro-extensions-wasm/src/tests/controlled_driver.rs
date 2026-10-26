@@ -490,11 +490,11 @@ impl Driver for ControlledDriver {
         handler: u32,
         args: &str,
     ) -> impl Future<Output = Result<String, String>> {
-        std::future::ready(self.exports().invoke_prepare(
-            handler,
-            args,
-            &super::bus_host::Emitter { key: 0 },
-        ))
+        std::future::ready(
+            self.exports()
+                .invoke_prepare(handler, args, &super::bus_host::Emitter { key: 0 })
+                .and_then(|result| result.prepared),
+        )
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         Ok(id)

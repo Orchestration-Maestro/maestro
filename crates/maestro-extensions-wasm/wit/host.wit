@@ -2,10 +2,12 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Retained argument mutations and the independently returned preparation.
+    record prepared-arguments { retained: string, prepared: result<string, string> }
     /// An original native definition, retained independently of the factory and its callback.
     resource builtin-tool {
         metadata: func() -> result<string, string>;
-        prepare: func(args: string) -> result<string, string>;
+        prepare: func(args: string) -> result<prepared-arguments, string>;
         render-call: func(args: option<string>, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>) -> result<string, string>;
@@ -287,7 +289,7 @@ interface host {
         render(result<list<string>, string>),
         unit(result<_, string>),
         key(result<bool, string>),
-        prepared(result<string, string>),
+        prepared(result<prepared-arguments, string>),
         terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),

@@ -67,9 +67,8 @@ impl Call {
                 }
                 RegisteredCall::Completion(_, _, reply) => attach(reply, completion),
             },
-            Self::Tool(ToolCall::Prepare { reply, .. } | ToolCall::Execute { reply, .. }) => {
-                attach(reply, completion);
-            }
+            Self::Tool(ToolCall::Prepare { reply, .. }) => attach(reply, completion),
+            Self::Tool(ToolCall::Execute { reply, .. }) => attach(reply, completion),
             Self::Release(release) => {
                 if let Some(reply) = &release.completion {
                     attach(reply, completion);

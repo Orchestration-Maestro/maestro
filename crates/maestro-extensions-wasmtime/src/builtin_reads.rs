@@ -14,7 +14,10 @@ pub(crate) enum Request {
     /// Complete native metadata, including schema conversions.
     Metadata(Sender<Result<String, String>>),
     /// Native argument preparation, without execution or validation.
-    Prepare(String, Sender<Result<String, String>>),
+    Prepare(
+        String,
+        Sender<Result<crate::guest_exports::tools::PreparedArguments, String>>,
+    ),
 }
 impl Request {
     /// Uses the native definition after leaving the capability-table borrow.
@@ -24,20 +27,37 @@ impl Request {
                 let _ = reply.send(definition.metadata());
             }
             Self::Prepare(args, reply) => {
-                let result = crate::writer_reads::decode(&args)
-                    .and_then(|args| definition.prepare(args))
-                    .and_then(|args| {
-                        serde_json::to_string(&args).map_err(|error| error.to_string())
-                    });
+                let result = prepare_arguments(definition, &args);
                 let _ = reply.send(result);
             }
         }
     }
     /// Settles a request whose original owner has ended.
     pub(crate) fn reject(self, error: &str) {
-        let (Self::Metadata(reply) | Self::Prepare(_, reply)) = self;
-        let _ = reply.send(Err(error.to_owned()));
+        match self {
+            Self::Metadata(reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+            Self::Prepare(_, reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+        }
     }
+}
+
+/// Carries the original mutation even when preparation itself returns a failure.
+fn prepare_arguments(
+    definition: &dyn builtin_tools::Definition,
+    document: &str,
+) -> Result<crate::guest_exports::tools::PreparedArguments, String> {
+    let mut args = crate::writer_reads::decode(document)?;
+    let prepared = definition
+        .prepare(&mut args)
+        .and_then(|value| serde_json::to_string(&value).map_err(|error| error.to_string()));
+    Ok(crate::guest_exports::tools::PreparedArguments {
+        retained: serde_json::to_string(&args).map_err(|error| error.to_string())?,
+        prepared,
+    })
 }
 
 /// Owned execution operands; capability identities never enter the JSON document.

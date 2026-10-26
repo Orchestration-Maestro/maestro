@@ -858,3 +858,279 @@ async fn native_edit_success() -> serde_json::Value {
     .unwrap();
     serde_json::to_value(result).unwrap()
 }
+
+/// Reached edit effects observed through the original native event bus.
+type EditCalls = std::rc::Rc<std::cell::RefCell<Vec<serde_json::Value>>>;
+
+/// Preparation keeps native mutation separate from validation, execution and saved replay.
+#[test]
+fn builtin_edit_preparation_precedes_validation_and_replay() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let (runner, events) = super::builtin_author::loaded_with_events().await;
+        let runner = std::rc::Rc::new(runner);
+        let calls = EditCalls::default();
+        let observed = calls.clone();
+        let _subscription = events.on(
+            "builtin-edit-effect",
+            std::rc::Rc::new(move |data, _| {
+                observed.borrow_mut().push((*data).clone());
+                Ok(None)
+            }),
+        );
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("edit_preparation.json")).unwrap();
+        assert_eq!(cases.len(), 22);
+        for executable in [false, true] {
+            let registered = register_edit(&runner, json!({"executable":executable})).await;
+            for case in &cases {
+                check_edit_preparation(&runner, &registered, &calls, case).await;
+            }
+            check_edit_prepare_failure(&runner, &calls, executable).await;
+        }
+    });
+}
+
+/// Obtains the actual registration that the compiled author admits through the facade.
+async fn register_edit(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    request: serde_json::Value,
+) -> maestro_extensions::types::RegisteredTool<maestro_extensions::Local> {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    (command.handler)(
+        format!("builtin-register-edit {request}"),
+        runner.create_command_context(),
+    )
+    .await
+    .unwrap();
+    runner
+        .get_all_registered_tools()
+        .into_iter()
+        .find(|tool| tool.definition.name() == "builtin-edit")
+        .unwrap()
+}
+
+/// Validates returned arguments while history keeps exactly the source-recorded mutation.
+async fn check_edit_preparation(
+    runner: &std::rc::Rc<maestro_extensions::ExtensionRunner<maestro_extensions::Local>>,
+    registered: &maestro_extensions::types::RegisteredTool<maestro_extensions::Local>,
+    calls: &EditCalls,
+    case: &serde_json::Value,
+) {
+    calls.borrow_mut().clear();
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    let mut retained = case["input"].clone();
+    let prepared = (tool.prepare_arguments.as_ref().unwrap())(&mut retained).unwrap();
+    let id = case["id"].as_str().unwrap();
+    assert_eq!(prepared, case["expected"], "{id}");
+    assert_eq!(retained, case["retained"], "{id}");
+    assert!(
+        calls.borrow().is_empty(),
+        "preparation executed effects: {id}"
+    );
+    replay_edit_arguments(&retained, &case["retained"]);
+    let call = maestro_models::ToolCall {
+        id: "edit".into(),
+        name: "builtin-edit".into(),
+        arguments: prepared,
+        thought_signature: None,
+    };
+    let checked = maestro_models::validate_tool_arguments(&tool.definition, &call);
+    assert_eq!(checked.is_ok(), edit_schema_valid(id), "{id}: {checked:?}");
+    let Ok(arguments) = checked else {
+        assert!(
+            calls.borrow().is_empty(),
+            "schema failure executed effects: {id}"
+        );
+        return;
+    };
+    let result = (tool.execute)("edit".into(), arguments, None, None).await;
+    let written = prepared_edit_content(id);
+    assert_eq!(result.is_ok(), written.is_some(), "{id}: {result:?}");
+    if let Some(written) = written {
+        assert_eq!(
+            *calls.borrow(),
+            vec![
+                json!(["access", "/virtual/f"]),
+                json!(["read", "/virtual/f"]),
+                json!(["write", "/virtual/f", written])
+            ],
+            "{id}"
+        );
+    } else {
+        assert!(
+            !calls.borrow().iter().any(|call| call[0] == "write"),
+            "{id}"
+        );
+    }
+}
+
+/// The corpus's complete schemas admit these argument classes, including empty edit lists.
+fn edit_schema_valid(id: &str) -> bool {
+    matches!(
+        id,
+        "string_edits"
+            | "legacy"
+            | "mixed"
+            | "empty"
+            | "prepare-array_string_edits"
+            | "prepare-legacy_empty"
+            | "prepare-mixed_string_legacy"
+    )
+}
+
+/// Literal results from replacing the independent original a/c lines.
+fn prepared_edit_content(id: &str) -> Option<&'static str> {
+    match id {
+        "string_edits" | "legacy" => Some("b\nc\n"),
+        "mixed" | "prepare-mixed_string_legacy" => Some("b\nd\n"),
+        _ => None,
+    }
+}
+
+/// A callback failure retains preceding in-place mutations without executing any effect.
+async fn check_edit_prepare_failure(
+    runner: &std::rc::Rc<maestro_extensions::ExtensionRunner<maestro_extensions::Local>>,
+    calls: &EditCalls,
+    executable: bool,
+) {
+    calls.borrow_mut().clear();
+    let registered = register_edit(
+        runner,
+        json!({"executable":executable,"prepareFailure":true}),
+    )
+    .await;
+    let tool = maestro_extensions::wrap_registered_tool(&registered, runner.clone());
+    let mut retained = json!({"path":"f","edits":"[{\"oldText\":\"a\",\"newText\":\"b\"}]"});
+    let error = (tool.prepare_arguments.as_ref().unwrap())(&mut retained).unwrap_err();
+    assert_eq!(error.to_string(), "authored preparation failed");
+    let expected = json!({"path":"f","edits":[{"oldText":"a","newText":"b"}]});
+    assert_eq!(retained, expected);
+    assert!(calls.borrow().is_empty());
+    replay_edit_arguments(&retained, &expected);
+}
+
+/// Saves the retained assistant call, then projects the session into the next model request.
+fn replay_edit_arguments(retained: &serde_json::Value, expected: &serde_json::Value) {
+    let mut session = maestro_session::SessionManager::in_memory(Some("/edit-replay")).unwrap();
+    session.append_message(json!({"role":"assistant","content":[{"type":"toolCall","id":"edit","name":"builtin-edit","arguments":retained}],"api":"fixture","provider":"fixture","model":"fixture","stopReason":"toolUse","timestamp":1,"usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}}})).unwrap();
+    let history = session.build_session_context().unwrap();
+    assert_eq!(history.messages[0]["content"][0]["arguments"], *expected);
+    let messages: Vec<maestro_models::Message> = history
+        .messages
+        .into_iter()
+        .map(|message| serde_json::from_value(message).unwrap())
+        .collect();
+    let model = super::model_support::model("fixture");
+    let request = maestro_models::transform_messages(&messages, &model.read().unwrap(), None);
+    let maestro_models::Message::Assistant(assistant) = &request[0] else {
+        panic!("assistant replay absent")
+    };
+    let maestro_models::AssistantContent::ToolCall(call) = &assistant.content[0] else {
+        panic!("edit replay absent")
+    };
+    assert_eq!(call.arguments, *expected);
+}
+
+/// Matching uses the original snapshot; failed matches never write and BOM/CRLF survive.
+#[test]
+fn builtin_edit_callbacks_preserve_snapshot_and_file_bytes() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for executable in [false, true] {
+            for (source, edits, written) in [
+                ("one\ntwo\nthree\n",json!([{"oldText":"one","newText":"two"},{"oldText":"two","newText":"TWO"}]),Some("two\nTWO\nthree\n")),
+                ("one\ntwo\n",json!([{"oldText":"one\ntwo","newText":"new"},{"oldText":"two","newText":"TWO"}]),None),
+                ("one\ntwo\n",json!([{"oldText":"one","newText":"ONE"},{"oldText":"missing","newText":"new"}]),None),
+                ("one\none\n",json!([{"oldText":"one","newText":"ONE"}]),None),
+                ("\u{feff}one\r\ntwo\r\n",json!([{"oldText":"one","newText":"new\nsecond"}]),Some("\u{feff}new\r\nsecond\r\ntwo\r\n")),
+                ("first\nsecond\n",json!([{"oldText":"second","newText":"SECOND"}]),Some("first\nSECOND\n")),
+            ] {
+                observe_snapshot_edit(&runner, executable, (source, edits, written)).await;
+            }
+        }
+    });
+}
+
+/// Observes ordered callbacks and complete native result/error records for one snapshot.
+async fn observe_snapshot_edit(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+    (source, edits, written): (&str, serde_json::Value, Option<&str>),
+) {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let args = json!({"path":"雪.txt","edits":edits});
+    let request = json!({"bytes":source.as_bytes(),"args":args,"executable":executable});
+    let result = (command.handler)(
+        format!("builtin-custom-edit {request}"),
+        runner.create_command_context(),
+    )
+    .await;
+    let observed: serde_json::Value =
+        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let mut calls = vec![
+        json!(["access", "/virtual/雪.txt"]),
+        json!(["read", "/virtual/雪.txt"]),
+    ];
+    if let Some(written) = written {
+        calls.push(json!(["write", "/virtual/雪.txt"]));
+        calls.push(json!(["written", written]));
+    }
+    let mut expected = json!({"calls":calls});
+    match native_snapshot_edit(source, args, written).await {
+        Ok(result) => {
+            assert_eq!(
+                result["details"]["firstChangedLine"],
+                if source.starts_with("first") { 2 } else { 1 }
+            );
+            expected["result"] = result;
+        }
+        Err(error) => expected["error"] = json!(error),
+    }
+    assert_eq!(observed, expected, "{request}");
+}
+
+/// Independent literal file bytes and the sole permitted successful replacement.
+struct SnapshotEdit {
+    source: Vec<u8>,
+    written: Option<String>,
+}
+impl maestro_extensions::EditOperations for SnapshotEdit {
+    fn access(&self, _: String) -> ReadFuture<()> {
+        Box::pin(std::future::ready(Ok(())))
+    }
+    fn read_file(&self, _: String) -> ReadFuture<Vec<u8>> {
+        Box::pin(std::future::ready(Ok(self.source.clone())))
+    }
+    fn write_file(&self, _: String, content: String) -> ReadFuture<()> {
+        assert_eq!(Some(content), self.written, "unexpected native write");
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+
+/// Compares the complete native diff and error rather than duplicating message templates.
+async fn native_snapshot_edit(
+    source: &str,
+    args: serde_json::Value,
+    written: Option<&str>,
+) -> Result<serde_json::Value, String> {
+    let definition = maestro_extensions::local::create_edit_tool_definition::<()>(
+        "/virtual".into(),
+        maestro_extensions::EditToolOptions {
+            operations: Some(std::sync::Arc::new(SnapshotEdit {
+                source: source.as_bytes().to_vec(),
+                written: written.map(str::to_owned),
+            })),
+        },
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    let result = (tool.execute)("native-snapshot".into(), args, None, None)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(serde_json::to_value(result).unwrap())
+}

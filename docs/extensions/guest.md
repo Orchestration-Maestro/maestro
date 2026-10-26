@@ -98,8 +98,11 @@ completion matching.
 ## Tools
 
 `ToolDefinition` combines `ToolMetadata`, optional synchronous `prepare_arguments` and
-asynchronous `execute`. Preparation receives one JSON value and a callback-scoped `CallbackEmitter`; its returned
-value can be passed to execution. The emitter forwards synchronous emission during preparation. The adapter does not perform argument validation or schedule tools.
+asynchronous `execute`. Preparation receives `&mut Value` and a callback-scoped
+`CallbackEmitter`. In-place changes remain in the retained assistant arguments,
+including when the callback fails. The returned value is separate: the tool caller
+validates it before execution. The emitter forwards synchronous emission during
+preparation. The adapter does not perform argument validation or schedule tools.
 Execution receives the invocation ID, arguments, ordinary context and optional signal
 and progress callback. A progress callback sends one `AgentToolResult` synchronously;
 execution returns its final `AgentToolResult`. Callback failures retain their supplied messages.

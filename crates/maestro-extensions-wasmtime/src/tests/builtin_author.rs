@@ -4,6 +4,14 @@ use std::{rc::Rc, sync::RwLock};
 
 /// Loads the shared author artifact with the real native registration and context owners.
 pub(super) async fn loaded() -> ExtensionRunner<Local> {
+    loaded_with_events().await.0
+}
+
+/// Keeps the real native event bus available for observing authored effects.
+pub(super) async fn loaded_with_events() -> (
+    ExtensionRunner<Local>,
+    maestro_extensions::EventBusController<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let runtime = create_extension_runtime::<Local>();
     let events = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
@@ -16,11 +24,12 @@ pub(super) async fn loaded() -> ExtensionRunner<Local> {
     )
     .await
     .unwrap();
-    ExtensionRunner::<Local>::new(
+    let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(vec![owner])),
         runtime,
         super::session::runner_session("/builtin-caller").0,
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
-    )
+    );
+    (runner, events)
 }

@@ -18,7 +18,7 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
             description: None,
             get_argument_completions: None,
             handler: Rc::new(move |args, _| {
-                let result = edit.prepare(&args);
+                let result = edit.prepare(&args).and_then(|result| result.prepared);
                 Box::pin(async move { Err(result?) })
             }),
         },
@@ -31,6 +31,9 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(request) = args.strip_prefix("builtin-register-edit ") {
+        return Some(super::builtin_edit::register(api, request));
+    }
     if let Some(request) = args.strip_prefix("builtin-custom-edit ") {
         let result = super::builtin_edit::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));

@@ -23,7 +23,7 @@ pub(crate) trait Definition {
     /// Serializes metadata through the shared schema transport.
     fn metadata(&self) -> Result<String, String>;
     /// Invokes native argument preparation before any execution.
-    fn prepare(&self, args: Value) -> Result<Value, String>;
+    fn prepare(&self, args: &mut Value) -> Result<Value, String>;
     /// Projects the original callbacks without retaining a second executable record.
     fn renderers(&self) -> Result<maestro_extensions::ToolRendererBinding, String>;
     /// Executes through the existing typed wrapper, retaining this definition for the call.
@@ -81,15 +81,15 @@ where
             &definition.definition.parameters,
         )
     }
-    fn prepare(&self, mut args: Value) -> Result<Value, String> {
+    fn prepare(&self, args: &mut Value) -> Result<Value, String> {
         let prepare = self
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .prepare_arguments
             .clone();
         match prepare {
-            Some(prepare) => prepare(&mut args).map_err(|error| error.to_string()),
-            None => Ok(args),
+            Some(prepare) => prepare(args).map_err(|error| error.to_string()),
+            None => Ok(args.clone()),
         }
     }
     fn execute(self: Rc<Self>, invocation: Invocation, model: Option<Arc<Model>>) -> Work {

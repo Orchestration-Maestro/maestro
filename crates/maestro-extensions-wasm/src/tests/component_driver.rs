@@ -684,7 +684,7 @@ impl Driver for ComponentDriver {
             .table
             .delete(emitter)
             .map_err(|e| e.to_string())?;
-        result
+        result.and_then(|result| result.prepared)
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         started(&mut self.harness)

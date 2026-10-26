@@ -35,8 +35,9 @@ interface guest {
     /// Executes returned shell operations kept under one callback identity.
     bash-exec: async func(handler: borrow<callback>, request: bash-request, resources: bash-capabilities) -> result<option<f64>, string>;
 
+    use host.{prepared-arguments};
     /// Synchronously prepares arguments.
-    invoke-prepare: async func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<string, string>;
+    invoke-prepare: async func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<prepared-arguments, string>;
     /// Runs a synchronous listener prefix.
     invoke-listener: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Awaits an independently retained listener tail.

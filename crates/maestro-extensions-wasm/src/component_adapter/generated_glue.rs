@@ -273,7 +273,7 @@ impl<E: Extension> Guest for Glue<E> {
         handler: &host::Callback,
         args: String,
         emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<String>> {
+    ) -> impl Future<Output = ExtensionResult<host::PreparedArguments>> {
         std::future::ready(Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter))
     }
     fn invoke_listener(
