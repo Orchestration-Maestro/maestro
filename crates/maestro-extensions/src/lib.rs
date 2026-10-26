@@ -134,4 +134,4 @@ pub use maestro_tools::types::local;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
-pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager};
+pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

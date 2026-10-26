@@ -48,6 +48,13 @@ impl SubscriptionEndpoint {
 /// Live theme endpoint retained independently of its renderer.
 pub(crate) use crate::theme_reads::Endpoint as ThemeEndpoint;
 
+/// Terminal lent to one component factory; it keeps the native terminal while the guest holds it.
+#[derive(Clone)]
+pub(crate) struct TuiEndpoint {
+    /// Releases the retained terminal with the last holder.
+    _lease: Arc<Lease>,
+}
+
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
 #[derive(Clone)]
 pub(crate) struct EmitterEndpoint(Arc<Lease>);
@@ -122,6 +129,12 @@ impl Registry {
             .map_err(|error| error.to_string())?;
         self.insert(Capability::UiSubscription(remove))
             .map(SubscriptionEndpoint)
+    }
+
+    /// Retains the native terminal lent to one component factory.
+    pub(crate) fn tui(&self, tui: maestro_extensions::TUI) -> Result<TuiEndpoint, String> {
+        self.insert(Capability::Tui { _owner: tui })
+            .map(|lease| TuiEndpoint { _lease: lease })
     }
 
     /// Retains the native theme supplied to one renderer invocation.

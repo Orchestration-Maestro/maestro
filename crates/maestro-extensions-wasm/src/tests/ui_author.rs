@@ -11,10 +11,11 @@ use std::rc::{Rc, Weak};
 
 use maestro_extensions_wasm::{
     AbortListener, AbortSignal, CallbackEmitter, CallbackEmitterPort, CommandOptions,
-    CompactOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionResult,
-    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, NotificationType,
-    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, ThemeSelection,
-    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
+    CompactOptions, Component, ComponentDisposer, ComponentFactory, ComponentView, ExtensionAPI,
+    ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult, ExtensionUIContext,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, NotificationType, SignalPort, Subscription,
+    SubscriptionPort, TerminalInputResult, Theme, ThemeSelection, ThemeSetResult, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -152,6 +153,57 @@ pub enum Call {
     },
     /// Reads the host editor's text.
     GetEditorText,
+}
+
+/// Records the release of a factory widget's captures through the author's API.
+struct Capture(ExtensionAPI, String);
+
+impl Drop for Capture {
+    fn drop(&mut self) {
+        let _ = self.0.append_entry("widget-released", Some(json!(self.1)));
+    }
+}
+
+/// A factory widget that renders its label and the width it was given.
+struct LabelView {
+    /// Widget label.
+    label: String,
+    /// The theme the factory received, kept with the view.
+    _theme: Theme,
+    /// Released with the view.
+    _capture: Capture,
+}
+
+impl ComponentView for LabelView {
+    fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        Ok(vec![format!("{} {width}", self.label)])
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+/// A factory that logs each build and, when asked, each disposal of the widget it builds.
+fn label_factory(api: &ExtensionAPI, label: String, dispose: bool) -> ComponentFactory {
+    let log = api.clone();
+    Rc::new(move |_tui, theme, _emitter| {
+        log.append_entry("widget-factory", Some(json!(label)))?;
+        let disposal = dispose.then(|| {
+            let (log, label) = (log.clone(), label.clone());
+            Rc::new(move |_: CallbackEmitter<'_>| {
+                log.append_entry("widget-dispose", Some(json!(label)))
+            }) as ComponentDisposer
+        });
+        let view = LabelView {
+            label: label.clone(),
+            _theme: theme,
+            _capture: Capture(log.clone(), label.clone()),
+        };
+        Ok(ExtensionComponent {
+            component: Component::new(view),
+            dispose: disposal,
+        })
+    })
 }
 
 /// One theme or tool expansion request.
@@ -514,6 +566,19 @@ enum Operation {
         /// The request.
         call: ThemeCall,
     },
+    /// Shows a labelled factory widget through a fresh acquisition.
+    WidgetFactory {
+        /// Widget key.
+        key: String,
+        /// Label the widget renders.
+        label: String,
+        /// Requested placement.
+        #[serde(default)]
+        placement: Option<Placement>,
+        /// Whether the widget has a disposal.
+        #[serde(default)]
+        dispose: bool,
+    },
     /// Adds a labelled terminal input listener through a fresh acquisition.
     Listen {
         /// Listener label.
@@ -609,6 +674,22 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
         Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
         Operation::Theme { call } => caught(themes(&ctx.ui()?, call).map(Some)),
+        Operation::WidgetFactory {
+            key,
+            label,
+            placement,
+            dispose,
+        } => {
+            let options = placement.map(|placement| ExtensionWidgetOptions {
+                placement: Some(placement.into()),
+            });
+            let factory = label_factory(api, label, dispose);
+            caught(
+                ctx.ui()?
+                    .set_widget_factory(&key, factory, options)
+                    .map(|()| None),
+            )
+        }
         Operation::Listen { label } => caught(listen(ctx, label).map(Some)),
         Operation::Unlisten { label } => caught(stop_listening(&label, true).map(Some)),
         Operation::Forget { label } => caught(stop_listening(&label, false).map(Some)),

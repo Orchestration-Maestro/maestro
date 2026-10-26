@@ -609,3 +609,95 @@ fn canonical_themes_and_tool_expansion_reach_the_original_ui() {
         bus.clear();
     });
 }
+
+/// Application widgets build each factory as soon as it is set, like the interactive mode.
+struct Widgets {
+    /// The terminal factories receive.
+    tui: maestro_tui::TUI,
+    /// The theme factories receive.
+    theme: maestro_theme::LiveTheme,
+    /// The component each key shows.
+    shown: RefCell<Vec<(String, maestro_extensions::types::ExtensionComponent)>>,
+}
+impl ExtensionUIContextPort for Widgets {
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        self.theme.clone()
+    }
+    fn set_widget(
+        &self,
+        key: String,
+        content: Option<WidgetContent>,
+        _options: Option<ExtensionWidgetOptions>,
+    ) -> Result<(), EventError> {
+        let removed = self.shown.borrow_mut().drain(..).collect::<Vec<_>>();
+        for (_, widget) in removed {
+            if let Some(dispose) = widget.dispose {
+                dispose.call(())?;
+            }
+        }
+        if let Some(WidgetContent::Factory(factory)) = content {
+            let built = factory.call((self.tui.clone(), self.theme.clone()))?;
+            self.shown.borrow_mut().push((key, built));
+        }
+        Ok(())
+    }
+}
+
+#[test]
+fn canonical_widget_factories_build_render_and_dispose_through_the_component() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let terminal = super::recording_terminal::RecordingTerminal::new(40, 12);
+        let tui = maestro_tui::TUI::new(
+            terminal.handle(),
+            super::manual_runtime::ManualRuntime::new().handle(),
+            maestro_tui::TerminalImage::default(),
+            Some(false),
+        );
+        let ui = Rc::new(Widgets {
+            tui,
+            theme: maestro_theme::LiveTheme::default(),
+            shown: RefCell::default(),
+        });
+        runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        let flag = |name: &str| owner.read().unwrap().flags.contains_key(name);
+        for label in ["A", "B"] {
+            let shown = handler(
+                format!("ui widget {label}"),
+                runner.create_command_context(),
+            )
+            .await
+            .unwrap_err()
+            .to_string();
+            assert_eq!(shown, "widget shown");
+            let lines = ui.shown.borrow()[0].1.component.try_render(17).unwrap();
+            assert_eq!(
+                lines,
+                [format!("{label} 17")],
+                "the factory's component renders"
+            );
+        }
+        assert!(
+            flag("disposed-A"),
+            "replacing A ran its disposal inside the setter"
+        );
+        assert!(!flag("disposed-B"));
+        let removed = ui.shown.borrow_mut().pop().unwrap().1;
+        removed.dispose.unwrap().call(()).unwrap();
+        assert!(flag("disposed-B"));
+        drop(removed.component);
+        bus.clear();
+    });
+}

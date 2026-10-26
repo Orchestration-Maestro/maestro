@@ -206,7 +206,7 @@ fn command(
             return Err(ui::dialog(&context, request).await?);
         }
         if args.starts_with("ui ") || args.starts_with("editor ") {
-            return Err(ui::observe(&context, &args)?);
+            return Err(ui::observe(&context, &api, &args)?);
         }
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());

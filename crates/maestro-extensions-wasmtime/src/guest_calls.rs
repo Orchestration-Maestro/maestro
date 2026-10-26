@@ -16,6 +16,7 @@ use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
 pub(crate) mod events;
+pub(crate) mod factories;
 pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
@@ -58,6 +59,8 @@ pub(crate) enum Call<H = Handle> {
     Schema(schema::Invocation<H>),
     /// Delivers one chunk of terminal input to an authored listener.
     TerminalInput(terminal::Input<H>),
+    /// Builds one component with the terminal and theme the native owner lent.
+    Factory(factories::FactoryCall<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.
@@ -361,6 +364,9 @@ pub(crate) enum SynchronousKind {
     /// Native abort observer; its export takes no data.
     #[component(name = "abort")]
     Abort,
+    /// Native component disposal; its export takes no data.
+    #[component(name = "dispose")]
+    Dispose,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.

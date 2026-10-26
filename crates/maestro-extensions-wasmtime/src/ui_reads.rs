@@ -40,6 +40,14 @@ pub(crate) enum Request {
     GetEditorText(Sender<Result<String, String>>),
     /// Looks up, selects or reports themes and tool expansion on the original UI.
     Theme(crate::ui_themes::ThemeRequest),
+    /// Shows the component an authored factory builds under one widget key.
+    WidgetFactory(
+        String,
+        crate::guest_calls::Handle,
+        crate::api_reads::Endpoint,
+        Option<ExtensionWidgetOptions>,
+        Reply,
+    ),
     /// Adds an authored terminal input listener under the original extension.
     OnTerminalInput(
         crate::guest_calls::Handle,
@@ -62,6 +70,16 @@ impl Request {
             }
             Self::Theme(request) => {
                 request.answer(ui, registry);
+                return;
+            }
+            Self::WidgetFactory(key, factory, api, options, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory = factory.component_factory(registry.clone(), &api);
+                    let content = Some(WidgetContent::Factory(factory));
+                    ui.set_widget(key, content, options)
+                        .map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
                 return;
             }
             Self::Notify(message, kind, reply) => (ui.notify(message, kind), reply),
@@ -95,7 +113,8 @@ impl Request {
                 let _ = reply.send(Err(error.to_owned()));
             }
             Self::Theme(request) => request.reject(error),
-            Self::Notify(_, _, reply)
+            Self::WidgetFactory(.., reply)
+            | Self::Notify(_, _, reply)
             | Self::Status(_, _, reply)
             | Self::WorkingMessage(_, reply)
             | Self::WorkingVisible(_, reply)

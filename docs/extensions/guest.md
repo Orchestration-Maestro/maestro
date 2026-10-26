@@ -402,7 +402,16 @@ with the host.
 A request borrows its text and lines only for the synchronous call; the host owns
 anything it retains. Clones of the facade share the acquired resource, so a handle
 kept past its callback keeps reading that resource, and a second acquisition stays
-independent. Widget factories remain outside this interface.
+independent.
+
+`set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
+factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
+and returns an `ExtensionComponent`: the component and an optional disposal. The host
+runs the disposal of the widget a key already shows before it runs the new factory, and
+both finish before the setter returns. `set_widget` with lines or `None` disposes a
+factory widget under the same key too. The factory's captures stay usable while the
+host shows the component and are released after the host removes it. A factory error
+is the setter's error.
 
 ### Themes and tool expansion
 

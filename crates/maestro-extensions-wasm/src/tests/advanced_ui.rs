@@ -1043,3 +1043,109 @@ async fn border_colors(driver: &mut impl Driver) -> Result<(), String> {
 fn theme_border_helpers_forward_every_level() -> Result<(), String> {
     on_both_adapters!(border_colors)
 }
+
+/// The receipts, factory and disposal effects and answer lines of the transcript since
+/// `from`; when a host releases a removed widget's captures is its own choice.
+fn widget_events(driver: &impl Driver, from: usize) -> Vec<String> {
+    driver.transcript()[from..]
+        .iter()
+        .filter(|line| {
+            line.starts_with("ui ")
+                || line.starts_with("entry widget-factory")
+                || line.starts_with("entry widget-dispose")
+                || line.starts_with("entry ui-answer")
+        })
+        .cloned()
+        .collect()
+}
+
+/// Shows a labelled factory widget and returns what happened, in order.
+async fn show_widget(
+    driver: &mut impl Driver,
+    label: &str,
+    placement: Option<&str>,
+    dispose: bool,
+) -> Result<Vec<String>, String> {
+    let from = driver.transcript().len();
+    let operation = json!({ "op": "widgetFactory", "key": "w", "label": label,
+        "placement": placement, "dispose": dispose });
+    operate(driver, operation).await?;
+    Ok(widget_events(driver, from))
+}
+
+/// The lines one factory widget operation records, in order.
+fn shown(placement: &str, disposed: Option<&str>, built: &str) -> Vec<String> {
+    let mut lines = vec![format!("ui 0 setWidgetFactory [\"w\",\"{placement}\"]")];
+    lines.extend(disposed.map(|label| format!("entry widget-dispose \"{label}\"")));
+    lines.push(format!("entry widget-factory \"{built}\""));
+    lines.push("entry ui-answer {\"ok\":true}".to_owned());
+    lines
+}
+
+/// Replacing a widget disposes the old one before the new factory runs and before the setter
+/// returns, whether it keeps or moves its placement.
+async fn widget_replacement(driver: &mut impl Driver) -> Result<(), String> {
+    assert_eq!(
+        show_widget(driver, "A", None, true).await?,
+        shown("AboveEditor", None, "A")
+    );
+    assert_eq!(
+        show_widget(driver, "B", None, true).await?,
+        shown("AboveEditor", Some("A"), "B")
+    );
+    let moved = show_widget(driver, "C", Some("belowEditor"), false).await?;
+    assert_eq!(moved, shown("BelowEditor", Some("B"), "C"));
+    assert_eq!(
+        driver.widget("w", 24).await?,
+        ["C 24"],
+        "the factory's capture stays usable"
+    );
+    assert_eq!(
+        show_widget(driver, "D", None, true).await?,
+        shown("AboveEditor", None, "D")
+    );
+    Ok(())
+}
+
+/// Removal disposes the widget and clears its key, and captures release only after removal.
+async fn widget_removal(driver: &mut impl Driver) -> Result<(), String> {
+    let from = driver.transcript().len();
+    let remove = json!({ "op": "acquire", "call": { "op": "setWidget", "key": "w" } });
+    operate(driver, remove).await?;
+    let removed = widget_events(driver, from);
+    assert_eq!(
+        removed[1..],
+        [
+            "entry widget-dispose \"D\"",
+            "entry ui-answer {\"ok\":true}"
+        ]
+    );
+    assert!(
+        driver.widget("w", 24).await.is_err(),
+        "removal clears the key"
+    );
+    driver.release_all().await;
+    let transcript = driver.transcript();
+    for label in ["A", "B", "C", "D"] {
+        let position = |line: String| transcript.iter().position(|it| *it == line);
+        let released = position(format!("entry widget-released \"{label}\""));
+        let built = position(format!("entry widget-factory \"{label}\""));
+        assert!(
+            released > built,
+            "{label} releases its capture after it was replaced"
+        );
+    }
+    Ok(())
+}
+
+/// Factory widgets keep their replacement, disposal and release order on both adapters.
+async fn widget_factories(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    widget_replacement(driver).await?;
+    widget_removal(driver).await
+}
+
+#[test]
+fn widget_factory_disposes_before_new_factory_returns() -> Result<(), String> {
+    on_both_adapters!(widget_factories)
+}

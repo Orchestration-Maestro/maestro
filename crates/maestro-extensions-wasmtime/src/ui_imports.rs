@@ -51,6 +51,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     )?;
     editor(host)?;
     dialogs(host)?;
+    widget_factory(host)?;
     notification(host)?;
     status(host)?;
     widget(host)
@@ -164,6 +165,31 @@ type DialogOperands<O> = (
     Option<Resource<SignalEndpoint>>,
     Option<f64>,
 );
+
+/// Shows the component an authored factory builds, which the native owner may build before
+/// the import returns.
+fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "[method]extension-ui-context.set-widget-factory",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, key, factory, options): (
+            Resource<Endpoint>,
+            String,
+            Resource<Callback>,
+            Option<WidgetOptions>,
+        )| {
+            let factory = crate::callback_imports::retain(store.data_mut(), &factory)?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let options = options.map(Into::into);
+            let route =
+                endpoint.route(|reply| Request::WidgetFactory(key, factory, api, options, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
+    )
+}
 
 /// Forwards severity without replacing an omitted value with a default.
 fn notification<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {

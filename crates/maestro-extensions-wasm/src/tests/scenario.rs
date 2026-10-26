@@ -140,6 +140,8 @@ pub trait Driver {
     fn previous_signal(&mut self) -> &mut Option<usize>;
     /// Repeats release through a fresh borrow of an existing identity.
     async fn repeat_release(&mut self, handler: u32) -> Result<(), String>;
+    /// Renders the factory widget the host shows under `key`, or reports that it shows none.
+    async fn widget(&mut self, key: &str, width: u32) -> Result<Vec<String>, String>;
     /// Delivers one terminal input chunk to every live terminal input listener in
     /// registration order and returns each listener's answer.
     async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String>;

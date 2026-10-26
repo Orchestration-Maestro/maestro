@@ -20,6 +20,27 @@ use wasmtime::component::{Accessor, Resource};
 /// Host type of the retained UI capability.
 pub struct Ui(pub(super) usize);
 
+/// Host type of the terminal lent to a component factory.
+pub struct Tui;
+
+/// One factory widget the host shows.
+pub struct WidgetSlot {
+    /// Widget key.
+    pub key: String,
+    /// Host handle of the built component.
+    pub component: u32,
+    /// Identity of the component's disposal, when it has one.
+    pub dispose: Option<u32>,
+}
+
+/// What the result of a nested call the host made settles.
+pub enum Nested {
+    /// A widget's disposal.
+    Dispose,
+    /// A widget factory, whose component the host shows under this key.
+    Factory(String),
+}
+
 /// Host state the UI requests are served from.
 #[derive(Default)]
 pub struct Bank {
@@ -37,6 +58,8 @@ pub struct Bank {
     answer: Option<Value>,
     /// Recorded palette the UI's live theme reads; absent reads the dark palette.
     theme: Option<String>,
+    /// Factory widgets in the order they were shown.
+    pub widgets: Vec<WidgetSlot>,
     /// Whether tool output is expanded.
     tools: bool,
 }
@@ -348,6 +371,59 @@ pub fn receipts(lines: &[String]) -> Vec<Receipt> {
 }
 
 impl State {
+    /// Removes every widget under `key` from both placements, queues each component for
+    /// release and returns the disposals the guest runs first.
+    fn take_widgets(
+        &mut self,
+        key: &str,
+    ) -> wasmtime::Result<std::collections::VecDeque<(host::LocalCall, Nested)>> {
+        let (removed, kept) = std::mem::take(&mut self.observed.ui.widgets)
+            .into_iter()
+            .partition(|slot| slot.key == key);
+        self.observed.ui.widgets = kept;
+        let mut steps = std::collections::VecDeque::new();
+        for slot in removed {
+            let name = format!("widget {} {}", slot.key, slot.component);
+            self.observed.register(name, slot.component);
+            let Some(target) = slot.dispose else { continue };
+            let dispose = host::LocalSynchronous {
+                target,
+                kind: host::LocalKind::Dispose,
+                data: String::new(),
+                emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+            };
+            steps.push_back((host::LocalCall::Synchronous(dispose), Nested::Dispose));
+        }
+        Ok(steps)
+    }
+
+    /// Shows a built widget, or returns the failure that ends its operation.
+    pub(super) fn settle_nested(
+        &mut self,
+        nested: Nested,
+        value: host::LocalResult,
+    ) -> wasmtime::Result<Option<String>> {
+        match (nested, value) {
+            (Nested::Factory(key), host::LocalResult::Factory(Ok(built))) => {
+                let dispose = built
+                    .dispose
+                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
+                    .transpose()?;
+                self.observed.ui.widgets.push(WidgetSlot {
+                    key,
+                    component: built.component.rep(),
+                    dispose,
+                });
+                Ok(None)
+            }
+            (
+                _,
+                host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
+            ) => Ok(Some(error)),
+            _ => Ok(None),
+        }
+    }
+
     /// Records one theme request made through `this` and answers it from the host's state.
     fn ui_themed(
         &mut self,
@@ -470,11 +546,47 @@ impl host::HostExtensionUiContext for State {
         let options = options.map(|options| WidgetOptions {
             placement: options.placement.map(variant),
         });
-        self.ui_call(
-            &this,
-            "setWidget",
-            &widget(&key, content.as_deref(), options),
-        )
+        let operands = widget(&key, content.as_deref(), options);
+        let ukey = self.table.get(&this)?.0;
+        if let Err(error) = call(&mut self.observed, ukey, "setWidget", &operands) {
+            return self.routed(Err(error));
+        }
+        let steps = self.take_widgets(&key)?;
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            result: Some(Ok(())),
+        })
+    }
+
+    fn set_widget_factory(
+        &mut self,
+        this: Resource<Ui>,
+        key: String,
+        factory: Resource<super::host::Identity>,
+        options: Option<host::ExtensionWidgetOptions>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let placement = options
+            .and_then(|options| options.placement)
+            .map_or_else(|| "AboveEditor".to_owned(), variant);
+        let ukey = self.table.get(&this)?.0;
+        let operands = json!([key, placement]);
+        if let Err(error) = call(&mut self.observed, ukey, "setWidgetFactory", &operands) {
+            return self.routed(Err(error));
+        }
+        let mut steps = self.take_widgets(&key)?;
+        let factory = host::LocalFactory {
+            target: self.table.get(&factory)?.0,
+            tui: self.push(Tui)?,
+            theme: self.push(Theme("dark".to_owned()))?,
+            emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+        };
+        steps.push_back((host::LocalCall::Factory(factory), Nested::Factory(key)));
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            result: Some(Ok(())),
+        })
     }
 
     fn set_title(
@@ -684,5 +796,11 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
             accessor.with(|mut access| access.get().ui_dialog(&this, "editor", &operands));
         let answer = settled(accessor, recorded, &this, None).await?;
         Ok(answer.map(|decision| chosen(&decision)))
+    }
+}
+
+impl host::HostTui for State {
+    fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
+        self.release(this)
     }
 }

@@ -174,6 +174,60 @@ impl Drop for Theme {
 pub struct Controlled {
     /// What the host observed.
     observed: Rc<RefCell<Observed>>,
+    /// Components factory widgets built, by the handle their slots name.
+    widgets: Rc<RefCell<std::collections::HashMap<u32, crate::ExtensionComponent>>>,
+}
+
+/// Terminal lent to a component factory, with a counted lifetime.
+pub struct Tui {
+    /// Counted owner.
+    _lease: Lease,
+}
+
+impl Controlled {
+    /// Removes every widget under `key` from both placements, running each disposal before
+    /// the component is released.
+    fn take_widgets(&self, key: &str) -> ExtensionResult<()> {
+        let removed: Vec<_> = {
+            let mut observed = self.observed.borrow_mut();
+            let (removed, kept) = std::mem::take(&mut observed.ui.widgets)
+                .into_iter()
+                .partition(|slot| slot.key == key);
+            observed.ui.widgets = kept;
+            removed
+        };
+        for slot in removed {
+            let built = self.widgets.borrow_mut().remove(&slot.component);
+            let dispose = built.as_ref().and_then(|built| built.dispose.clone());
+            dispose.map_or(Ok(()), |dispose| self.dispose(&dispose))?;
+            drop(built);
+        }
+        Ok(())
+    }
+
+    /// Runs one widget disposal with a lent emitter.
+    fn dispose(&self, dispose: &crate::ComponentDisposer) -> ExtensionResult<()> {
+        let emitter = super::bus_host::Emitter { key: 0 };
+        crate::component_adapter::renderers::with_emitter(self, &emitter, |emitter| {
+            dispose(emitter)
+        })
+    }
+
+    /// The component the factory widget under `key` shows.
+    pub fn widget(&self, key: &str) -> Option<crate::Component> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .widgets
+            .iter()
+            .find(|slot| slot.key == key)
+            .map(|slot| slot.component)?;
+        self.widgets
+            .borrow()
+            .get(&slot)
+            .map(|built| built.component.clone())
+    }
 }
 
 impl Controlled {
@@ -1031,6 +1085,7 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    type Tui = Tui;
     fn ui_notify(
         &self,
         resource: &Ui,
@@ -1112,7 +1167,44 @@ impl Imports for Controlled {
             resource.key,
             "setWidget",
             &super::ui_host::widget(key, content, options),
-        )
+        )?;
+        self.take_widgets(key)
+    }
+    fn ui_set_widget_factory(
+        &self,
+        resource: &Ui,
+        key: &str,
+        factory: &Callback,
+        options: Option<crate::ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()> {
+        let placement = options
+            .and_then(|options| options.placement)
+            .map_or_else(|| "AboveEditor".to_owned(), super::ui_host::variant);
+        let operands = json!([key, placement]);
+        ui_call(&self.observed, resource.key, "setWidgetFactory", &operands)?;
+        self.take_widgets(key)?;
+        let tui = Tui {
+            _lease: Lease::new(&self.observed),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let built = Exports::new(self.clone()).invoke_component_factory(
+            factory.id,
+            tui,
+            self.theme("dark"),
+            &emitter,
+        )?;
+        let handle = self.observed.borrow_mut().next_identity();
+        self.widgets.borrow_mut().insert(handle, built);
+        self.observed
+            .borrow_mut()
+            .ui
+            .widgets
+            .push(super::ui_host::WidgetSlot {
+                key: key.to_owned(),
+                component: handle,
+                dispose: None,
+            });
+        Ok(())
     }
     fn ui_set_title(&self, resource: &Ui, title: &str) -> ExtensionResult<()> {
         ui_call(

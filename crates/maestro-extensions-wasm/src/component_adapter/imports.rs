@@ -488,6 +488,8 @@ pub trait Imports: Clone + 'static {
     /// The label timestamp retained by this node.
     fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
 
+    /// Terminal handle lent to a component factory.
+    type Tui: 'static;
     /// Independently owned host capability.
     type Ui: 'static;
     /// Independently owned host capability.
@@ -551,6 +553,14 @@ pub trait Imports: Clone + 'static {
         resource: &Self::Ui,
         key: &str,
         content: Option<&[String]>,
+        options: Option<ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the factory of one widget, which the host may run before answering.
+    fn ui_set_widget_factory(
+        &self,
+        resource: &Self::Ui,
+        key: &str,
+        factory: &Self::Callback,
         options: Option<ExtensionWidgetOptions>,
     ) -> ExtensionResult<()>;
     /// Forwards the terminal title.

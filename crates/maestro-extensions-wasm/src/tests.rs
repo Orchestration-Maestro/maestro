@@ -1065,6 +1065,8 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-compaction-complete",
             "invoke-compaction-error",
             "invoke-completion",
+            "invoke-component-factory",
+            "invoke-dispose",
             "invoke-event",
             "invoke-listener",
             "invoke-prepare",

@@ -73,6 +73,13 @@ port! {
             content: Option<&[String]>,
             options: Option<ExtensionWidgetOptions>,
         ) -> ();
+        /// Shows the component `factory` builds under one key; the host disposes the widget it
+        /// replaces first, and removing the key goes through `set_widget`.
+        fn set_widget_factory(
+            key: &str,
+            factory: crate::ComponentFactory,
+            options: Option<ExtensionWidgetOptions>,
+        ) -> ();
         /// Sets the terminal title.
         fn set_title(title: &str) -> ();
         /// Pastes literal text into the host editor through its paste handling.

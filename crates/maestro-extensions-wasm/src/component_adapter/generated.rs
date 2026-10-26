@@ -73,6 +73,7 @@ impl Imports for Generated {
         ui_paste_to_editor(resource: &Self::Ui, text: &str) => paste_to_editor(text);
         ui_set_editor_text(resource: &Self::Ui, text: &str) => set_editor_text(text);
         ui_set_title(resource: &Self::Ui, title: &str) => set_title(title);
+        ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
@@ -215,6 +216,7 @@ impl Imports for Generated {
         Box::pin(host::event_emit(channel, data))
     }
     type Ui = host::ExtensionUiContext;
+    type Tui = host::Tui;
 
     forward_resources! { asynchronous {
         ui_select<'a>(resource: Self::Ui, title: String, options: Vec<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => select(title, options, dialog.signal, dialog.timeout);
@@ -266,6 +268,12 @@ impl Imports for Generated {
         let handle = host::Callback::new();
         (handle.id(), handle)
     }
+}
+
+/// Transfers a factory's component and disposal to the host as their identities.
+fn built(built: crate::ExtensionComponent) -> host::FactoryComponent {
+    let (component, dispose) = super::factories::transfer(&Generated, built);
+    host::FactoryComponent { component, dispose }
 }
 
 /// Entry type of an extension component: serves the generated exports for `E`.
@@ -394,6 +402,27 @@ impl<E: Extension> Guest for Glue<E> {
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<()>> {
         std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
+    }
+
+    fn invoke_component_factory(
+        handler: &host::Callback,
+        tui: host::Tui,
+        theme: host::Theme,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::FactoryComponent>> {
+        let exports = Exports::new(Generated);
+        std::future::ready(
+            exports
+                .invoke_component_factory(handler.id(), tui, theme, emitter)
+                .map(built),
+        )
+    }
+
+    fn invoke_dispose(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_dispose(handler.id(), emitter))
     }
 
     fn invoke_terminal_input(

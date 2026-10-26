@@ -349,6 +349,24 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn widget(
+        &mut self,
+        key: &str,
+        width: u32,
+    ) -> impl Future<Output = Result<Vec<String>, String>> {
+        let rendered = self
+            .host
+            .widget(key)
+            .ok_or_else(|| format!("no widget {key}"))
+            .and_then(|component| {
+                let call = super::renderer_host::Call::Render(width);
+                super::renderer_host::invoke(&component, call, &self.host, 0)
+            });
+        std::future::ready(rendered.and_then(|reply| match reply {
+            super::renderer_host::Reply::Lines(lines) => Ok(lines),
+            _ => Err("expected rendered lines".to_owned()),
+        }))
+    }
     fn terminal_input(
         &mut self,
         data: &str,

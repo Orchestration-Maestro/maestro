@@ -88,6 +88,11 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
                 .map_err(crate::schema_error::to_wire),
         ),
+        host::LocalCall::Factory(call) => host::LocalResult::Factory(
+            exports
+                .invoke_component_factory(call.target, call.tui, call.theme, &call.emitter)
+                .map(super::built),
+        ),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
@@ -111,6 +116,7 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
             exports.invoke_compaction_error(call.target, call.data.clone(), &call.emitter)
         }
         host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
+        host::LocalKind::Dispose => exports.invoke_dispose(call.target, &call.emitter),
     }
 }
 

@@ -112,10 +112,12 @@ interface host {
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
     /// What a terminal input listener decided; absent members leave the input as it is.
     record terminal-input-result { consume: option<bool>, data: option<string> }
+    /// One nested same-instance component factory.
+    record local-factory { target: u32, tui: tui, theme: theme, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.
@@ -175,6 +177,7 @@ interface host {
         with-session(local-continuation),
         tail(u32),
         bash(local-bash),
+        factory(local-factory),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -190,6 +193,7 @@ interface host {
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
         bash(result<option<f64>, string>),
+        factory(result<factory-component, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-step { invoke(local-call), done(result<_, string>) }
@@ -274,6 +278,10 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// Terminal handle lent to a component factory.
+    resource tui;
+    /// A component a factory built, with the disposal the host calls when it removes it.
+    record factory-component { component: callback, dispose: option<callback> }
     /// One available theme; a theme without a file has no path.
     record theme-info { name: string, path: option<string> }
     /// Whether a theme selection applied, with the host's message when it did not.
@@ -287,6 +295,8 @@ interface host {
         set-working-indicator: func(options: option<working-indicator-options>) -> import-route;
         set-hidden-thinking-label: func(label: option<string>) -> import-route;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> import-route;
+        /// Shows the component a factory builds; the host disposes the widget it replaces first.
+        set-widget-factory: func(key: string, factory: borrow<callback>, options: option<extension-widget-options>) -> import-route;
         set-title: func(title: string) -> import-route;
         paste-to-editor: func(text: string) -> import-route;
         set-editor-text: func(text: string) -> import-route;

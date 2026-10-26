@@ -43,6 +43,7 @@ impl Call {
             },
             Self::Synchronous(call) => attach(&call.completion, completion),
             Self::TerminalInput(call) => attach(&call.reply, completion),
+            Self::Factory(call) => attach(&call.reply, completion),
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),

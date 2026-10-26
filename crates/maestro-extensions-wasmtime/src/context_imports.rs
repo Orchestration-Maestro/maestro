@@ -62,6 +62,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     add_resource::<T, UiEndpoint>(host, "extension-ui-context")?;
     add_resource::<T, SignalEndpoint>(host, "abort-signal")?;
+    add_resource::<T, crate::local_resources::effects::TuiEndpoint>(host, "tui")?;
     host.func_wrap(
         "[method]abort-signal.aborted",
         |mut store: StoreContextMut<'_, T>, (resource,): (Resource<SignalEndpoint>,)| {

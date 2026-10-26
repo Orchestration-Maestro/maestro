@@ -215,6 +215,11 @@ enum Capability {
     UiSubscription(Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
+    /// Original terminal lent to a component factory.
+    Tui {
+        /// Ownership alone crosses the opaque canonical terminal resource.
+        _owner: maestro_extensions::TUI,
+    },
 }
 
 /// Local entries and their monotonic identities.

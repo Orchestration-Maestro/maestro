@@ -70,6 +70,20 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
         self.imports
             .ui_set_widget(&self.resource, key, content, options)
     }
+    fn set_widget_factory(
+        &self,
+        key: &str,
+        factory: crate::ComponentFactory,
+        options: Option<ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()> {
+        let identity = Identity::new(&self.imports);
+        identity.stage(factory);
+        let result =
+            self.imports
+                .ui_set_widget_factory(&self.resource, key, &identity.handle, options);
+        identity.settle(result.is_ok());
+        result
+    }
     fn set_title(&self, title: &str) -> ExtensionResult<()> {
         self.imports.ui_set_title(&self.resource, title)
     }

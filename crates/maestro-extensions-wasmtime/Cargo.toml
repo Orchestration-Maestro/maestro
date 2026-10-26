@@ -26,6 +26,7 @@ maestro-session = { path = "../maestro-session" }
 maestro-test-directory.workspace = true
 maestro-test-process = { path = "../maestro-test-process" }
 maestro-theme = { path = "../maestro-theme" }
+maestro-tui = { path = "../maestro-tui" }
 
 [[test]]
 name = "integration"

@@ -66,3 +66,39 @@ impl Component {
         self.0.invalidate(emitter)
     }
 }
+
+port! {
+    /// Requests to the terminal a factory received.
+    TuiPort for TUI via _port {}
+}
+
+/// The terminal a component factory received; clones share its host owner.
+#[derive(Clone)]
+pub struct TUI {
+    /// The owner of this capability, kept while the author holds the terminal.
+    _port: Rc<dyn TuiPort>,
+}
+impl TUI {
+    /// Retains the supplied host capability.
+    #[must_use]
+    pub fn new(port: Rc<dyn TuiPort>) -> Self {
+        Self { _port: port }
+    }
+}
+
+/// Disposal the host runs once when it removes a component, with callback-scoped emission.
+pub type ComponentDisposer = Rc<dyn for<'a> Fn(CallbackEmitter<'a>) -> ExtensionResult<()>>;
+
+/// A component a factory built, with its optional disposal.
+#[derive(Clone)]
+pub struct ExtensionComponent {
+    /// The component the host shows.
+    pub component: Component,
+    /// Runs once when the host removes the component.
+    pub dispose: Option<ComponentDisposer>,
+}
+
+/// Builds a component from the terminal and the live theme, synchronously.
+pub type ComponentFactory = Rc<
+    dyn for<'a> Fn(TUI, crate::Theme, CallbackEmitter<'a>) -> ExtensionResult<ExtensionComponent>,
+>;

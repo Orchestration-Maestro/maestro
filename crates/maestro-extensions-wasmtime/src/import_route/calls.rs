@@ -67,6 +67,20 @@ pub(super) struct LocalKey {
     emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested component factory.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalFactory {
+    /// Authored identity of the factory.
+    target: u32,
+    /// Original terminal, transferred.
+    tui: Resource<crate::local_resources::effects::TuiEndpoint>,
+    /// Original live theme, transferred.
+    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
 /// Owned operands of one nested terminal input chunk.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -262,6 +276,9 @@ pub(super) enum LocalCall {
     /// An execution of returned shell operations.
     #[component(name = "bash")]
     Bash(LocalBash),
+    /// A component factory.
+    #[component(name = "factory")]
+    Factory(LocalFactory),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -304,6 +321,9 @@ pub(super) enum LocalResult {
     /// Optional exit status, or the authored error.
     #[component(name = "bash")]
     Bash(Result<Option<f64>, String>),
+    /// The built component identities, or the authored error.
+    #[component(name = "factory")]
+    Factory(Result<crate::guest_calls::factories::Built, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -334,6 +354,12 @@ pub(super) fn lower(
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::Factory(call) => LocalCall::Factory(LocalFactory {
+            target: call.handler.id,
+            tui: table.push(call.tui.clone())?,
+            theme: table.push(call.theme.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::TerminalInput(call) => LocalCall::TerminalInput(LocalTerminalInput {
@@ -509,6 +535,13 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             let _ = call.reply.send(Ok(value));
         }
         (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::Factory(call), LocalResult::Factory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
+                Err(error) => Err(error),
+            };
             let _ = call.reply.send(value);
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {

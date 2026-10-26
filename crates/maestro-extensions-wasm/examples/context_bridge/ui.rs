@@ -5,15 +5,20 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    AbortSignal, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, NotificationType, Subscription, TerminalInputResult, ThemeSelection,
-    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
+    AbortSignal, CallbackEmitter, Component, ComponentDisposer, ComponentFactory, ComponentView,
+    ExtensionAPI, ExtensionComponent, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, FlagOptions, FlagType, NotificationType, Subscription,
+    TerminalInputResult, ThemeSelection, ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
-pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
+pub(super) fn observe(
+    context: &ExtensionContext,
+    api: &ExtensionAPI,
+    args: &str,
+) -> ExtensionResult<String> {
     if let Some(operation) = args.strip_prefix("editor ") {
         return editor(context, operation);
     }
@@ -22,6 +27,9 @@ pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult
     }
     if let Some(request) = args.strip_prefix("ui theme ") {
         return themes(context, request);
+    }
+    if let Some(label) = args.strip_prefix("ui widget ") {
+        return widget(context, api, label);
     }
     let clear = args == "ui clear";
     let ui = context.ui()?;
@@ -80,6 +88,50 @@ pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> Extensi
         _ => json!(ui.editor(title, text("prefill")).await?),
     };
     Ok(answer.to_string())
+}
+
+/// A factory widget that renders its label and width, and keeps a capture released with it.
+struct Labelled {
+    /// The label it renders.
+    label: String,
+    /// Released with the component.
+    _capture: super::signals::Released,
+}
+
+impl ComponentView for Labelled {
+    fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        Ok(vec![format!("{} {width}", self.label)])
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Ok(())
+    }
+}
+
+/// Shows a factory widget whose disposal registers the flag `disposed-<label>` and whose
+/// component registers `released-<label>` once it is released.
+fn widget(context: &ExtensionContext, api: &ExtensionAPI, label: &str) -> ExtensionResult<String> {
+    let (api, label) = (api.clone(), label.to_owned());
+    let factory: ComponentFactory = Rc::new(move |_, _, _| {
+        let (owner, named) = (api.clone(), label.clone());
+        let dispose: ComponentDisposer = Rc::new(move |_| {
+            let flag = FlagOptions {
+                description: None,
+                type_: FlagType::Boolean,
+                default: None,
+            };
+            owner.register_flag(&format!("disposed-{named}"), flag)
+        });
+        let capture = super::signals::Released(api.clone(), label.clone());
+        Ok(ExtensionComponent {
+            component: Component::new(Labelled {
+                label: label.clone(),
+                _capture: capture,
+            }),
+            dispose: Some(dispose),
+        })
+    });
+    context.ui()?.set_widget_factory("bridge", factory, None)?;
+    Ok("widget shown".into())
 }
 
 /// Runs the theme or tool expansion request `request` names and returns its answer as JSON.
