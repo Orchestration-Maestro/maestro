@@ -141,17 +141,17 @@ fn windows_child_kill_leaves_grandchild_running() {
             let (parent, mut grandchild) = children(&listener, child.pid().unwrap());
             assert!(signal_pid(-i32::try_from(child.pid().unwrap()).unwrap(), signal).is_err());
             assert!(child.kill(signal).unwrap());
-            let status = child.wait().await.unwrap();
-            assert!(!status.success());
-            assert_eq!(status.code(), None);
-            assert_eq!(status.signal(), Some(signal.unwrap_or("SIGTERM")));
             grandchild.0.write_all(&[1]).unwrap();
             let mut alive = [0];
             grandchild.0.read_exact(&mut alive).unwrap();
             assert_eq!(&alive, b"A");
-            assert!(!child.kill(None).unwrap());
             grandchild.0.write_all(&[2]).unwrap();
             assert_eq!(grandchild.0.read(&mut [0]).unwrap(), 0);
+            let status = child.wait().await.unwrap();
+            assert!(!status.success());
+            assert_eq!(status.code(), None);
+            assert_eq!(status.signal(), Some(signal.unwrap_or("SIGTERM")));
+            assert!(!child.kill(None).unwrap());
             drop(parent);
             collector.await.unwrap();
         }
