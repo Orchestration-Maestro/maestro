@@ -54,6 +54,8 @@ impl Call {
                 path: call.path,
                 reply: call.reply,
             }),
+            Self::Grep(call) => Call::Grep(grep(call, completion)),
+            Self::Find(call) => Call::Find(find(call, completion)),
             Self::Edit(call) => Call::Edit(crate::guest_calls::edit::Invocation {
                 handler: completion.callback(call.handler),
                 operation: call.operation,
@@ -276,6 +278,31 @@ fn event(
         event: call.event,
         context: call.context,
         signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original grep observation beside its releasable admission.
+fn grep(
+    call: crate::guest_calls::grep::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::grep::Invocation<Callback> {
+    crate::guest_calls::grep::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+/// Transfers the original find observation beside its releasable admission.
+fn find(
+    call: crate::guest_calls::find::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::find::Invocation<Callback> {
+    crate::guest_calls::find::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
         reply: call.reply,
     }
 }

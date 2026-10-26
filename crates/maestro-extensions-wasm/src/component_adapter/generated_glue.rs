@@ -212,6 +212,20 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(rendered.map(super::rendered_row))
     }
 
+    fn invoke_grep(
+        handler: &host::Callback,
+        operation: host::GrepOperation,
+        path: String,
+    ) -> impl Future<Output = Result<host::GrepOutput, host::DiagnosticErrorInfo>> {
+        super::super::tools::grep::invoke(handler.id(), operation, path)
+    }
+    fn invoke_find(
+        handler: &host::Callback,
+        operation: host::FindOperation,
+        path: String,
+    ) -> impl Future<Output = Result<host::FindOutput, host::DiagnosticErrorInfo>> {
+        super::super::tools::find::invoke(handler.id(), operation, path)
+    }
     fn invoke_edit(
         handler: &host::Callback,
         operation: host::EditOperation,

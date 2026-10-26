@@ -1134,3 +1134,379 @@ async fn native_snapshot_edit(
         .map_err(|error| error.to_string())?;
     Ok(serde_json::to_value(result).unwrap())
 }
+
+/// The compiled author forwards glob operands and native result/error selection unchanged.
+#[test]
+fn builtin_find_callbacks_receive_pattern_root_ignore_and_limit() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for executable in [false, true] {
+            find_cases(&runner, executable).await;
+        }
+    });
+}
+
+/// Runs the supplied limit, path, result and failure domains on one execution projection.
+async fn find_cases(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+) {
+    for limit in [
+        None,
+        Some(json!(null)),
+        Some(json!(0)),
+        Some(json!(2)),
+        Some(json!(1000)),
+    ] {
+        let mut args = json!({"pattern":"**/雪*.rs","path":"雪"});
+        if let Some(limit) = limit {
+            args["limit"] = limit;
+        }
+        for paths in [
+            json!([]),
+            json!(["b.rs", "/virtual/雪/a.rs", "b.rs"]),
+            json!(["x".repeat(52000)]),
+        ] {
+            let request = json!({"args":args,"exists":true,"paths":paths,"executable":executable});
+            observe_find(runner, request).await;
+        }
+    }
+    for args in [
+        json!({"pattern":"*.rs"}),
+        json!({"pattern":"*.rs","path":""}),
+    ] {
+        observe_find(
+            runner,
+            json!({"args":args,"exists":true,"paths":["a.rs"],"executable":executable}),
+        )
+        .await;
+    }
+    observe_find(runner, json!({"args":{"pattern":"*","path":"雪"},"exists":false,"paths":[],"executable":executable})).await;
+    for stage in ["exists", "glob"] {
+        for pending in [false, true] {
+            observe_find(
+                runner,
+                json!({"args":{"pattern":"*","path":"雪"},"exists":true,"paths":[],
+                        "fail":stage,"gate":pending.then_some(stage),"executable":executable}),
+            )
+            .await;
+        }
+    }
+}
+
+/// Records reached effects only after the owning call and any gated callback have completed.
+async fn observe_find(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    request: serde_json::Value,
+) {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let waiting = Box::pin((command.handler)(
+        format!("builtin-custom-find {request}"),
+        runner.create_command_context(),
+    ));
+    let result = if request["gate"].is_string() {
+        let (started, release) = read_gate(runner);
+        let waiting = match futures_util::future::select(waiting, started).await {
+            futures_util::future::Either::Left(_) => {
+                panic!("find completed before the operation gate")
+            }
+            futures_util::future::Either::Right((started, waiting)) => {
+                started.unwrap();
+                waiting
+            }
+        };
+        release.send(()).unwrap();
+        waiting.await
+    } else {
+        waiting.await
+    };
+    let observed: serde_json::Value =
+        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let root = if request["args"]["path"] == "雪" {
+        "/virtual/雪"
+    } else {
+        "/virtual"
+    };
+    let mut calls = vec![json!(["exists", root])];
+    if request["exists"] == true && request["fail"] != "exists" {
+        calls.push(json!(["glob",request["args"]["pattern"],root,
+            {"ignore":["**/node_modules/**","**/.git/**"],"limit":request["args"]["limit"].as_f64().unwrap_or(1000.0)}]));
+    }
+    let expected = native_find(&request).await;
+    assert_eq!(observed["calls"], json!(calls));
+    match expected {
+        Ok(result) => assert_eq!(observed, json!({"calls":calls,"result":result})),
+        Err(error) => assert_eq!(observed, json!({"calls":calls,"error":error})),
+    }
+}
+
+/// Independent native comparator, without any guest result or operand conversion.
+struct FindAnswer(serde_json::Value);
+impl maestro_extensions::FindOperations for FindAnswer {
+    fn exists(&self, _: String) -> ReadFuture<bool> {
+        let result = self
+            .answer("exists")
+            .map(|()| self.0["exists"].as_bool().unwrap());
+        Box::pin(std::future::ready(result))
+    }
+    fn glob(
+        &self,
+        _: String,
+        _: String,
+        _: maestro_extensions::FindGlobOptions,
+    ) -> ReadFuture<Vec<String>> {
+        let result = self
+            .answer("glob")
+            .map(|()| serde_json::from_value(self.0["paths"].clone()).unwrap());
+        Box::pin(std::future::ready(result))
+    }
+}
+impl FindAnswer {
+    /// Supplies the same authored error without reusing the reverse adapter.
+    fn answer(&self, stage: &str) -> Result<(), maestro_extensions::DiagnosticErrorInfo> {
+        if self.0["fail"] == stage {
+            Err(maestro_extensions::DiagnosticErrorInfo {
+                name: Some("FindFailure".into()),
+                message: format!("refused {stage} 雪"),
+                stack: None,
+                code: Some(maestro_extensions::DiagnosticCode::Number(17.0)),
+            })
+        } else {
+            Ok(())
+        }
+    }
+}
+/// Runs the individual native owner as the comparison boundary for delegated messages.
+async fn native_find(request: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let definition = maestro_extensions::local::create_find_tool_definition::<()>(
+        "/virtual".into(),
+        maestro_extensions::FindToolOptions {
+            operations: Some(std::sync::Arc::new(FindAnswer(request.clone()))),
+        },
+        std::sync::Arc::new(maestro_extensions::ToolsManager::new(
+            "/unused".into(),
+            None,
+        )),
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    let result = (tool.execute)("native-find".into(), request["args"].clone(), None, None)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+/// Real ripgrep matches remain native while ready and pending callbacks supply context.
+#[test]
+fn builtin_grep_callbacks_preserve_native_search_and_context() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let file = scratch.path().join("雪.txt");
+        std::fs::write(&file, "before\nneedle\nafter\n").unwrap();
+        let manager = std::sync::Arc::new(
+            maestro_extensions::ToolsManager::new(scratch.path().display().to_string(), None)
+                .with_offline(Some(true)),
+        );
+        let runner = super::builtin_author::loaded_with_tool_services(
+            maestro_extensions::ToolConstruction {
+                tools_manager: manager.clone(),
+                bin_dir: scratch.path().display().to_string(),
+            },
+        )
+        .await
+        .0;
+        for executable in [false, true] {
+            for request in grep_cases(scratch.path(), &file, executable) {
+                observe_grep(&runner, &manager, request).await;
+            }
+        }
+    });
+}
+
+/// Supplies actual file/directory roots and independent authored context text.
+fn grep_cases(
+    root: &std::path::Path,
+    file: &std::path::Path,
+    executable: bool,
+) -> Vec<serde_json::Value> {
+    let mut cases = Vec::new();
+    for directory in [false, true] {
+        for context in [0, 1] {
+            let args = json!({"pattern":"needle","path":if directory {root} else {file},"context":context});
+            let base = json!({"cwd":root,"args":args,"custom":true,"directory":directory,"text":"authored before\nauthored needle\nauthored after\n","executable":executable});
+            cases.extend(grep_outcomes(&base));
+        }
+    }
+    cases
+}
+/// Ready and pending callbacks exercise only phases the native owner reaches.
+fn grep_outcomes(base: &serde_json::Value) -> Vec<serde_json::Value> {
+    let mut cases = vec![base.clone()];
+    for stage in ["directory", "read"] {
+        if stage == "read" && base["args"]["context"] == 0 {
+            continue;
+        }
+        for pending in [false, true] {
+            let mut request = base.clone();
+            request["fail"] = json!(stage);
+            request["gate"] = json!(pending.then_some(stage));
+            cases.push(request);
+        }
+    }
+    cases
+}
+
+/// Uses the real operation completion witness instead of timing a pending callback.
+async fn observe_grep(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    manager: &std::sync::Arc<maestro_extensions::ToolsManager>,
+    request: serde_json::Value,
+) {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let waiting = Box::pin((command.handler)(
+        format!("builtin-custom-grep {request}"),
+        runner.create_command_context(),
+    ));
+    let result = if request["gate"].is_string() {
+        let (started, release) = read_gate(runner);
+        let waiting = match futures_util::future::select(waiting, started).await {
+            futures_util::future::Either::Left(_) => {
+                panic!("grep completed before the operation gate")
+            }
+            futures_util::future::Either::Right((started, waiting)) => {
+                started.unwrap();
+                waiting
+            }
+        };
+        release.send(()).unwrap();
+        waiting.await
+    } else {
+        waiting.await
+    };
+    let observed: serde_json::Value =
+        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let mut calls = vec![json!([
+        "directory",
+        request["args"]["path"],
+        "/builtin-caller"
+    ])];
+    if request["args"]["context"] == 1 && request["fail"] != "directory" {
+        let path = std::path::Path::new(request["cwd"].as_str().unwrap()).join("雪.txt");
+        calls.push(json!(["read", path, "/builtin-caller"]));
+    }
+    let definition = maestro_extensions::local::create_grep_tool_definition::<()>(
+        request["cwd"].as_str().unwrap().into(),
+        maestro_extensions::GrepToolOptions {
+            operations: Some(std::sync::Arc::new(GrepAnswer(request.clone()))),
+        },
+        manager.clone(),
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    let expected = (tool.execute)("native-grep".into(), request["args"].clone(), None, None).await;
+    match expected {
+        Ok(result) => assert_eq!(
+            observed,
+            json!({"calls":calls,"result":serde_json::to_value(result).unwrap()})
+        ),
+        Err(error) => assert_eq!(observed, json!({"calls":calls,"error":error.to_string()})),
+    }
+}
+/// Independent native callback values used only by the comparator.
+struct GrepAnswer(serde_json::Value);
+impl maestro_extensions::GrepOperations for GrepAnswer {
+    fn is_directory(&self, _: String) -> ReadFuture<bool> {
+        let result = if self.0["fail"] == "directory" {
+            Err(maestro_extensions::DiagnosticErrorInfo::error(
+                "refused directory 雪",
+            ))
+        } else {
+            Ok(self.0["directory"].as_bool().unwrap())
+        };
+        Box::pin(std::future::ready(result))
+    }
+    fn read_file(&self, _: String) -> ReadFuture<String> {
+        let result = if self.0["fail"] == "read" {
+            Err(maestro_extensions::DiagnosticErrorInfo::error(
+                "refused read 雪",
+            ))
+        } else {
+            Ok(self.0["text"].as_str().unwrap().into())
+        };
+        Box::pin(std::future::ready(result))
+    }
+}
+
+/// A broken managed program, then the real ripgrep, proves the supplied manager is consumed.
+#[test]
+fn builtin_grep_uses_application_tool_services() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime,async {
+        let scratch=maestro_test_directory::Scratch::new().unwrap();
+        let bin=scratch.path().join("app-bin");
+        std::fs::create_dir(&bin).unwrap();
+        let binary=format!("rg{}",std::env::consts::EXE_SUFFIX);
+        let source=std::env::split_paths(&std::env::var_os("PATH").unwrap()).map(|dir|dir.join(&binary)).find(|path|path.is_file()).expect("ripgrep is installed for native search tests");
+        let installed=bin.join(binary);
+        std::fs::write(&installed,"not an executable").unwrap();
+        let file=scratch.path().join("雪.txt");
+        std::fs::write(&file,"before\nneedle\nafter\n").unwrap();
+        let manager=std::sync::Arc::new(maestro_extensions::ToolsManager::new(bin.display().to_string(),None).with_offline(Some(true)));
+        assert_eq!(manager.get_tool_path(maestro_extensions::SearchTool::Rg).await,Some(installed.display().to_string()));
+        let runner=super::builtin_author::loaded_with_tool_services(maestro_extensions::ToolConstruction {
+            tools_manager:manager.clone(),bin_dir:bin.display().to_string(),
+        }).await.0;
+        let command=runner.get_command("bridge-observe").unwrap().command;
+        for valid in [false,true] {
+            if valid {std::fs::copy(&source,&installed).unwrap();}
+            for executable in [false,true] {
+                let request=json!({"cwd":scratch.path().to_str(),"args":{"pattern":"needle","path":file},"custom":false,"directory":false,"text":"","executable":executable});
+                let response=(command.handler)(format!("builtin-custom-grep {request}"),runner.create_command_context()).await;
+                let observed:serde_json::Value=serde_json::from_str(&response.unwrap_err().to_string()).unwrap();
+                let tool=maestro_extensions::local::wrap_tool_definition(maestro_extensions::local::create_grep_tool_definition::<()>(scratch.path().display().to_string(),maestro_extensions::GrepToolOptions::default(),manager.clone()),None);
+                let expected=(tool.execute)("native-managed".into(),request["args"].clone(),None,None).await;
+                assert_managed_grep(&observed, expected, valid);
+            }
+        }
+    });
+}
+
+/// Checks complete delegated failure records and the successful native search text.
+fn assert_managed_grep(
+    observed: &serde_json::Value,
+    expected: Result<
+        maestro_extensions::AgentToolResult<serde_json::Value>,
+        maestro_extensions::DiagnosticErrorInfo,
+    >,
+    valid: bool,
+) {
+    if valid {
+        assert_eq!(
+            *observed,
+            json!({"calls":[],"result":serde_json::to_value(expected.unwrap()).unwrap()})
+        );
+        assert_eq!(
+            observed["result"],
+            json!({"content":[{"type":"text","text":"雪.txt:2: needle"}]})
+        );
+    } else {
+        assert_eq!(
+            *observed,
+            json!({"calls":[],"error":expected.unwrap_err().to_string()})
+        );
+        assert!(
+            observed["error"]
+                .as_str()
+                .unwrap()
+                .starts_with("Failed to run ripgrep:")
+        );
+    }
+}

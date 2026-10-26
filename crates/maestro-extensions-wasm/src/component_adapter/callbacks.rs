@@ -101,6 +101,8 @@ kinds! {
         Read(crate::ReadOperations),
         Write(crate::WriteOperations),
         Edit(crate::EditOperations),
+        Find(crate::FindOperations),
+        Grep(crate::GrepOperations),
         Schema(crate::schema_code::Handler),
         CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
         CredentialFallback(crate::FallbackResolver),

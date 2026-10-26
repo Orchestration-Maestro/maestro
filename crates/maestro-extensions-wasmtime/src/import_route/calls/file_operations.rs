@@ -36,3 +36,63 @@ pub(in crate::import_route) struct LocalEdit {
     /// Exact absolute target.
     pub(super) path: String,
 }
+
+/// Original operation operands of a nested file search.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in crate::import_route) struct LocalFind {
+    /// Original guest effect identity.
+    pub(super) target: u32,
+    /// Requested find observation and glob constraints.
+    pub(super) operation: crate::guest_calls::find::Operation,
+    /// Exact absolute target.
+    pub(super) path: String,
+}
+
+/// Original operation operands of a nested content search.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in crate::import_route) struct LocalGrep {
+    /// Original guest effect identity.
+    pub(super) target: u32,
+    /// Requested content search observation.
+    pub(super) operation: crate::guest_calls::grep::Operation,
+    /// Exact absolute target.
+    pub(super) path: String,
+}
+
+/// Marshals original typed file observations without entering authored code.
+pub(super) fn lower(
+    call: &crate::guest_calls::Call<crate::guest_calls::Callback>,
+) -> wasmtime::Result<super::LocalCall> {
+    use super::LocalCall;
+    use crate::guest_calls::Call;
+    Ok(match call {
+        Call::Grep(call) => LocalCall::Grep(LocalGrep {
+            target: call.handler.id,
+            operation: call.operation,
+            path: call.path.clone(),
+        }),
+        Call::Find(call) => LocalCall::Find(LocalFind {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            path: call.path.clone(),
+        }),
+        Call::Edit(call) => LocalCall::Edit(LocalEdit {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            path: call.path.clone(),
+        }),
+        Call::Write(call) => LocalCall::Write(LocalWrite {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            path: call.path.clone(),
+        }),
+        Call::Read(call) => LocalCall::Read(LocalRead {
+            target: call.handler.id,
+            operation: call.operation,
+            path: call.path.clone(),
+        }),
+        _ => return Err(wasmtime::format_err!("extension call cannot run nested")),
+    })
+}

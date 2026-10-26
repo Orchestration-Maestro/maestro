@@ -22,6 +22,12 @@ mod builtin;
 #[path = "context_bridge/builtin_edit.rs"]
 mod builtin_edit;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_find.rs"]
+mod builtin_find;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_grep.rs"]
+mod builtin_grep;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_read.rs"]
 mod builtin_read;
 #[cfg(target_arch = "wasm32")]

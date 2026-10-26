@@ -119,6 +119,34 @@ display string. In particular, edit access formats a supplied text or numeric
 at their reached stage. Matching, validation, diff construction, BOM and line-ending
 policy remain with the [native edit owner](../tools-edit.md).
 
+## Replace search observations
+
+`create_find_tool` / `create_find_tool_definition` and `create_grep_tool` /
+`create_grep_tool_definition` return the native factories' executable and
+registerable forms. Construction does not inspect files or acquire programs.
+See [search tools](../tools-search.md) for native search and output behavior.
+
+`FindToolOptions::operations` supplies `exists(absolute_root)` and
+`glob(pattern, absolute_root, FindGlobOptions)`. Glob options retain the ordered
+ignore patterns and effective floating-point limit. Return ordered relative or
+absolute paths; the native finder resolves them and selects output and notices.
+
+`GrepToolOptions::operations` supplies `is_directory(absolute_root)` and
+`read_file(absolute_file)` returning context text. Matching still uses native
+ripgrep, including when these observations are replaced. Root errors and unreadable
+context retain the native search owner's handling.
+
+All four callbacks return `OperationFuture` with `DiagnosticErrorInfo` on failure.
+The host retains them independently of the constructor and invokes them without a
+callback-table borrow. Omitted operations select native filesystem access.
+
+Native applications install `ToolConstruction` with `set_tool_construction`
+before loading extension factories. It carries the same `Arc<ToolsManager>` and
+binary directory used by the application's own tools. The SDK supplies these
+services during resource loading and retains them on reload; the component runtime
+never discovers a default directory or creates another manager. An unconfigured
+host returns a construction error.
+
 ## Native helpers
 
 Terminal text operations in `maestro_extensions_wasm::utils` receive an

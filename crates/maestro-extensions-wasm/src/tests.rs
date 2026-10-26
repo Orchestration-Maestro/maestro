@@ -1098,6 +1098,8 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-dispose",
             "invoke-edit",
             "invoke-event",
+            "invoke-find",
+            "invoke-grep",
             "invoke-listener",
             "invoke-model-hook",
             "invoke-prepare",

@@ -38,6 +38,14 @@ pub(super) async fn command(
         let result = super::builtin_edit::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));
     }
+    if let Some(request) = args.strip_prefix("builtin-custom-grep ") {
+        let result = super::builtin_grep::execute(api, context.clone(), request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    if let Some(request) = args.strip_prefix("builtin-custom-find ") {
+        let result = super::builtin_find::execute(api, context.clone(), request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(request) = args.strip_prefix("builtin-custom-write ") {
         let result = super::builtin_write::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));

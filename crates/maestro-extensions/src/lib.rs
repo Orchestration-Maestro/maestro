@@ -99,6 +99,8 @@ pub mod runner;
 pub use runner::ExtensionRunner;
 
 pub use loader::CatalogConstruction;
+#[cfg(not(target_arch = "wasm32"))]
+pub use loader::ToolConstruction;
 pub use loader::runtime::create_extension_runtime;
 pub use maestro_models::{
     Cancellation, Local, Model, ModelThinkingLevel, SharedHandle, ToolInfo,
@@ -148,11 +150,18 @@ pub mod local {
     pub use maestro_tools::edit::local::create_edit_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::read::local::create_read_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::find::local::create_find_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::grep::local::create_grep_tool_definition;
     pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     pub use maestro_tools::types::local::*;
     #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::write::local::create_write_tool_definition;
 }
+/// Native glob constraints forwarded to replacement find operations.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::search::find::FindGlobOptions;
 /// Retained native definitions accepted by the tools-owned execution wrapper.
 pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
@@ -161,8 +170,9 @@ pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperatio
 /// Native file configuration and the model observation a read definition consumes.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
-    EditOperations, EditToolOptions, ReadContext, ReadOperations, ReadToolOptions,
-    ToolRendererBinding, WriteOperations, WriteToolOptions,
+    EditOperations, EditToolOptions, FindOperations, FindToolOptions, GrepOperations,
+    GrepToolOptions, ReadContext, ReadOperations, ReadToolOptions, SearchTool, ToolRendererBinding,
+    ToolsManager, WriteOperations, WriteToolOptions,
 };
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{

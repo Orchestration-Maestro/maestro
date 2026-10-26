@@ -82,6 +82,9 @@ pub struct ExtensionActions<E: ExtensionExecution = Threaded> {
 pub struct ExtensionRuntime<E: ExtensionExecution = Threaded> {
     /// Application-supplied constructor defaults, installed before factory loading.
     pub(crate) construction: RwLock<Option<crate::CatalogConstruction>>,
+    /// Application-supplied native search and shell construction owners.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) tool_construction: RwLock<Option<crate::ToolConstruction>>,
     /// Flag values and the registration activity guard.
     pub(crate) state: ExtensionRuntimeState,
     /// The bound operations; not-initialized until a runner binds.

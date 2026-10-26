@@ -31,6 +31,38 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl Imports for Generated {
+    fn create_grep_tool(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_grep(&cwd, options)
+    }
+
+    fn create_grep_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::grep(&cwd, options)
+    }
+
+    fn create_find_tool(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_find(&cwd, options)
+    }
+
+    fn create_find_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::find(&cwd, options)
+    }
+
     fn create_edit_tool(
         &self,
         cwd: String,

@@ -11,6 +11,10 @@ use std::{
 pub(crate) enum Factory {
     /// Read with its independently selected image policy.
     Read(String, Option<bool>, Option<crate::guest_calls::Handle>),
+    /// Content search using the application search services.
+    Grep(u64, String, Option<crate::guest_calls::Handle>),
+    /// Find using the application's original search manager.
+    Find(u64, String, Option<crate::guest_calls::Handle>),
     /// Edit with native argument preparation and file operations.
     Edit(String, Option<crate::guest_calls::Handle>),
     /// Write through native ordering and independently retained effects.
@@ -20,6 +24,8 @@ impl Registry {
     /// Constructs the original typed definition and gives it an independent resource lease.
     pub(super) fn create_builtin(&self, factory: Factory) -> Result<Endpoint, String> {
         let definition: Rc<dyn crate::builtin_tools::Definition> = match factory {
+            Factory::Grep(api, cwd, operations) => self.grep(api, cwd, operations)?,
+            Factory::Find(api, cwd, operations) => self.find(api, cwd, operations)?,
             Factory::Read(cwd, auto_resize_images, operations) => Rc::new(RwLock::new(
                 maestro_extensions::local::create_read_tool_definition::<
                     crate::builtin_tools::Context,
@@ -64,7 +70,78 @@ impl Registry {
         self.insert(Capability::Builtin(definition)).map(Endpoint)
     }
 }
+impl Registry {
+    /// Constructs the original grep definition on the application-owned manager.
+    fn grep(
+        &self,
+        api: u64,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Rc<dyn crate::builtin_tools::Definition>, String> {
+        let services = self.tool_construction(api)?;
+        Ok(Rc::new(RwLock::new(
+            maestro_extensions::local::create_grep_tool_definition::<crate::builtin_tools::Context>(
+                cwd,
+                maestro_extensions::GrepToolOptions {
+                    operations: operations.map(|owner| {
+                        Arc::new(crate::guest_calls::grep::Operations(owner))
+                            as Arc<dyn maestro_extensions::GrepOperations>
+                    }),
+                },
+                services.tools_manager,
+            ),
+        )))
+    }
+    /// Constructs the original find definition on the application-owned manager.
+    fn find(
+        &self,
+        api: u64,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Rc<dyn crate::builtin_tools::Definition>, String> {
+        let services = self.tool_construction(api)?;
+        Ok(Rc::new(RwLock::new(
+            maestro_extensions::local::create_find_tool_definition::<crate::builtin_tools::Context>(
+                cwd,
+                maestro_extensions::FindToolOptions {
+                    operations: operations.map(|owner| {
+                        Arc::new(crate::guest_calls::find::Operations(owner))
+                            as Arc<dyn maestro_extensions::FindOperations>
+                    }),
+                },
+                services.tools_manager,
+            ),
+        )))
+    }
+    /// Reads application-supplied factory services outside the capability-table borrow.
+    fn tool_construction(&self, api: u64) -> Result<maestro_extensions::ToolConstruction, String> {
+        match self.capability(api).as_deref() {
+            Some(Capability::Api(api)) => api.tool_construction(),
+            _ => Err("extension API resource ended".into()),
+        }
+    }
+}
 impl crate::api_reads::Endpoint {
+    /// Retains native content search with the original facade's services.
+    pub(crate) fn create_grep(
+        &self,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Endpoint, String> {
+        self.0.request(|id, reply| {
+            Message::BuiltinOperation(Operation::Create(Factory::Grep(id, cwd, operations), reply))
+        })
+    }
+    /// Retains a finder using services from the original native facade.
+    pub(crate) fn create_find(
+        &self,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Endpoint, String> {
+        self.0.request(|id, reply| {
+            Message::BuiltinOperation(Operation::Create(Factory::Find(id, cwd, operations), reply))
+        })
+    }
     /// Retains a native read without retaining the API or selecting a callback context.
     pub(crate) fn create_read(
         &self,

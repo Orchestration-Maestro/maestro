@@ -134,6 +134,62 @@ fn native_edit(
     Ok(Rc::new(tool?))
 }
 
+/// Constructs the original find definition with native renderers and output selection.
+pub(super) fn find(cwd: &str, options: crate::FindToolOptions) -> ExtensionResult<ToolDefinition> {
+    definition(native_find(cwd, options)?, false)
+}
+/// Retains the same native finder without a caller context requirement.
+pub(super) fn executable_find(
+    cwd: &str,
+    options: crate::FindToolOptions,
+) -> ExtensionResult<crate::Tool> {
+    executable(native_find(cwd, options)?)
+}
+/// Admits original observations under the existing callback rollback owner.
+fn native_find(
+    cwd: &str,
+    options: crate::FindToolOptions,
+) -> ExtensionResult<Rc<host::BuiltinTool>> {
+    let operations = options.operations.map(|operations| {
+        let identity = Identity::new(&Generated);
+        identity.stage(operations);
+        identity
+    });
+    let tool = host::create_find_tool(cwd, operations.as_ref().map(|identity| &identity.handle));
+    if let Some(identity) = operations {
+        identity.settle(tool.is_ok());
+    }
+    Ok(Rc::new(tool?))
+}
+
+/// Constructs the original content search definition over retained observations.
+pub(super) fn grep(cwd: &str, options: crate::GrepToolOptions) -> ExtensionResult<ToolDefinition> {
+    definition(native_grep(cwd, options)?, false)
+}
+/// Retains the same original content search without a caller context requirement.
+pub(super) fn executable_grep(
+    cwd: &str,
+    options: crate::GrepToolOptions,
+) -> ExtensionResult<crate::Tool> {
+    executable(native_grep(cwd, options)?)
+}
+/// Admits original filesystem observations without acquiring search programs.
+fn native_grep(
+    cwd: &str,
+    options: crate::GrepToolOptions,
+) -> ExtensionResult<Rc<host::BuiltinTool>> {
+    let operations = options.operations.map(|operations| {
+        let identity = Identity::new(&Generated);
+        identity.stage(operations);
+        identity
+    });
+    let tool = host::create_grep_tool(cwd, operations.as_ref().map(|identity| &identity.handle));
+    if let Some(identity) = operations {
+        identity.settle(tool.is_ok());
+    }
+    Ok(Rc::new(tool?))
+}
+
 /// Reads the original shared schema transport without converting it to JSON text.
 fn metadata(tool: &host::BuiltinTool) -> ExtensionResult<crate::ToolMetadata> {
     let (mut metadata, parameters): (crate::ToolMetadata, _) =

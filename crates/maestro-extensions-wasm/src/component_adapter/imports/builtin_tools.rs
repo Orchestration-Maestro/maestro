@@ -3,6 +3,38 @@
 /// Declares native factories without creating a second adapter trait.
 macro_rules! builtin_tool_imports {
     () => {
+        /// Constructs the original context-free content search.
+        /// # Errors
+        /// Returns construction or resource admission failures.
+        fn create_grep_tool(
+            &self,
+            cwd: String,
+            options: crate::GrepToolOptions,
+        ) -> ExtensionResult<crate::Tool>;
+        /// Constructs the original content search definition.
+        /// # Errors
+        /// Returns construction or resource admission failures.
+        fn create_grep_tool_definition(
+            &self,
+            cwd: String,
+            options: crate::GrepToolOptions,
+        ) -> ExtensionResult<crate::ToolDefinition>;
+        /// Constructs an original context-free native finder.
+        /// # Errors
+        /// Returns construction or resource admission failures.
+        fn create_find_tool(
+            &self,
+            cwd: String,
+            options: crate::FindToolOptions,
+        ) -> ExtensionResult<crate::Tool>;
+        /// Constructs the original find definition with retained effects.
+        /// # Errors
+        /// Returns construction or resource admission failures.
+        fn create_find_tool_definition(
+            &self,
+            cwd: String,
+            options: crate::FindToolOptions,
+        ) -> ExtensionResult<crate::ToolDefinition>;
         /// Constructs the native edit executable with original argument preparation.
         /// # Errors
         /// Returns native construction or resource admission failures.

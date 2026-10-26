@@ -83,11 +83,19 @@ fn add_factories<T: CallbackView + 'static>(
     add_mutating_factories(host)
 }
 
-/// Installs mutating constructors with the same retained-effect signature.
+/// Installs constructors sharing the optional retained-effect signature.
 fn add_mutating_factories<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     for (name, create) in [
+        (
+            "create-grep-tool",
+            crate::api_reads::Endpoint::create_grep as MutationFactory,
+        ),
+        (
+            "create-find-tool",
+            crate::api_reads::Endpoint::create_find as MutationFactory,
+        ),
         (
             "create-write-tool",
             crate::api_reads::Endpoint::create_write as MutationFactory,
@@ -128,7 +136,7 @@ type ExecutionArgs = (
     Option<Resource<SignalEndpoint>>,
 );
 
-/// Native mutating constructor signature shared by write and edit.
+/// Constructor signature shared by factories with optional replacement effects.
 type MutationFactory = fn(
     &crate::api_reads::Endpoint,
     String,

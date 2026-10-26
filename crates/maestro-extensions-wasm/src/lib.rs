@@ -23,8 +23,9 @@ pub use bash_executor::*;
 pub use tools::{
     BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations, BashToolDetails,
     BashToolInput, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, DetectImageMimeType, EditOperations,
-    EditToolDetails, EditToolInput, EditToolOptions, FindToolDetails, FindToolInput,
-    GrepToolDetails, GrepToolInput, LsToolDetails, LsToolInput, OperationFuture, ReadOperations,
+    EditToolDetails, EditToolInput, EditToolOptions, FindGlobOptions, FindOperations,
+    FindToolDetails, FindToolInput, FindToolOptions, GrepOperations, GrepToolDetails,
+    GrepToolInput, GrepToolOptions, LsToolDetails, LsToolInput, OperationFuture, ReadOperations,
     ReadToolDetails, ReadToolInput, ReadToolOptions, ReplaceEdit, TruncationLimit,
     TruncationOptions, TruncationResult, WriteOperations, WriteToolInput, WriteToolOptions,
     format_size, truncate_head, truncate_line, truncate_tail,

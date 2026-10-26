@@ -13,6 +13,38 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_grep_tool(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_grep_tool(cwd, options)
+    }
+
+    fn create_grep_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_grep_tool_definition(cwd, options)
+    }
+
+    fn create_find_tool(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_find_tool(cwd, options)
+    }
+
+    fn create_find_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_find_tool_definition(cwd, options)
+    }
+
     fn create_edit_tool(
         &self,
         cwd: String,

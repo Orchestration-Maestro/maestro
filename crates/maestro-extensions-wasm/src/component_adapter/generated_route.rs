@@ -203,6 +203,12 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
+            host::LocalCall::Grep(call) => host::LocalResult::Grep(
+                super::super::tools::grep::invoke(call.target, call.operation, call.path).await,
+            ),
+            host::LocalCall::Find(call) => host::LocalResult::Find(
+                super::super::tools::find::invoke(call.target, call.operation, call.path).await,
+            ),
             host::LocalCall::Edit(call) => host::LocalResult::Edit(
                 super::super::tools::edit::invoke(call.target, call.operation, call.path).await,
             ),

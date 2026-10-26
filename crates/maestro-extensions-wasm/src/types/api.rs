@@ -90,6 +90,14 @@ port! {
         fn create_edit_tool(cwd: String, options: crate::EditToolOptions) -> crate::Tool;
         /// Constructs a native edit definition with retained effects and renderers.
         fn create_edit_tool_definition(cwd: String, options: crate::EditToolOptions) -> ToolDefinition;
+        /// Constructs a context-free native finder over retained observations.
+        fn create_find_tool(cwd: String, options: crate::FindToolOptions) -> crate::Tool;
+        /// Constructs a native find definition without acquiring programs or observing files.
+        fn create_find_tool_definition(cwd: String, options: crate::FindToolOptions) -> ToolDefinition;
+        /// Constructs a native grep executable without a caller context requirement.
+        fn create_grep_tool(cwd: String, options: crate::GrepToolOptions) -> crate::Tool;
+        /// Constructs a native grep definition over the application's search manager.
+        fn create_grep_tool_definition(cwd: String, options: crate::GrepToolOptions) -> ToolDefinition;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.

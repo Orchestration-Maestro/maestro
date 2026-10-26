@@ -18,6 +18,8 @@ pub(crate) mod bash;
 pub(crate) mod edit;
 pub(crate) mod events;
 pub(crate) mod factories;
+pub(crate) mod find;
+pub(crate) mod grep;
 pub(crate) mod read;
 pub(crate) mod write;
 pub(crate) use events::EventCall;
@@ -58,6 +60,10 @@ pub(crate) enum Call<H = Handle> {
     Read(read::Invocation<H>),
     /// Invokes one retained guest file effect.
     Write(write::Invocation<H>),
+    /// Invokes one retained guest content search observation.
+    Grep(grep::Invocation<H>),
+    /// Invokes one retained guest file search observation.
+    Find(find::Invocation<H>),
     /// Invokes one retained guest edit effect.
     Edit(edit::Invocation<H>),
     /// Invokes setup with the original writable session.

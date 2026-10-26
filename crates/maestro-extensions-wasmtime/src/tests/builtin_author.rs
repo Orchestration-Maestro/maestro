@@ -12,8 +12,26 @@ pub(super) async fn loaded_with_events() -> (
     ExtensionRunner<Local>,
     maestro_extensions::EventBusController<Local>,
 ) {
+    loaded_with_tool_services(maestro_extensions::ToolConstruction {
+        tools_manager: std::sync::Arc::new(
+            maestro_extensions::ToolsManager::new("/unused-builtin-bin".into(), None)
+                .with_offline(Some(true)),
+        ),
+        bin_dir: "/unused-builtin-bin".into(),
+    })
+    .await
+}
+
+/// Supplies the same application-owned tool services before the compiled factory runs.
+pub(super) async fn loaded_with_tool_services(
+    services: maestro_extensions::ToolConstruction,
+) -> (
+    ExtensionRunner<Local>,
+    maestro_extensions::EventBusController<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let runtime = create_extension_runtime::<Local>();
+    runtime.set_tool_construction(services);
     let events = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
     let owner = maestro_extensions::load_extension_from_factory(
         crate::artifact_factory(path.clone(), "builtin-test-version".into()),

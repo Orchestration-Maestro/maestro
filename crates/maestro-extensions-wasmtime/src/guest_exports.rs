@@ -76,6 +76,16 @@ pub(crate) struct Exports {
         crate::guest_calls::edit::Operation,
         crate::guest_calls::read::Output,
     >,
+    /// Original content search observations and failures.
+    grep: file_operations::Export<
+        crate::guest_calls::grep::Operation,
+        crate::guest_calls::grep::Output,
+    >,
+    /// Original glob observations and structured failures.
+    find: file_operations::Export<
+        crate::guest_calls::find::Operation,
+        crate::guest_calls::find::Output,
+    >,
     /// Actual concrete event export.
     events: events::Exports,
     /// Actual preparation and execution exports.
@@ -149,6 +159,8 @@ impl Exports {
             read: typed(store, instance, &guest, "invoke-read")?,
             write: typed(store, instance, &guest, "invoke-write")?,
             edit: typed(store, instance, &guest, "invoke-edit")?,
+            find: typed(store, instance, &guest, "invoke-find")?,
+            grep: typed(store, instance, &guest, "invoke-grep")?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -184,7 +196,12 @@ impl Exports {
             Call::Renderer(call) => self.renderers.create(accessor, call).await?,
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
-            call @ (Call::Bash(_) | Call::Read(_) | Call::Write(_) | Call::Edit(_)) => {
+            call @ (Call::Bash(_)
+            | Call::Read(_)
+            | Call::Write(_)
+            | Call::Edit(_)
+            | Call::Find(_)
+            | Call::Grep(_)) => {
                 self.io(accessor, call).await?;
             }
             call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
@@ -406,6 +423,36 @@ fn arguments<T: WasiView + 'static, V: Send + 'static>(
 }
 
 impl Exports {
+    /// Enters original content and path observations through their typed exports.
+    async fn search<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::Grep(call) => {
+                file_operations::invoke(
+                    &self.grep,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Find(call) => {
+                file_operations::invoke(
+                    &self.find,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            _ => wasmtime::bail!("extension search call has no export"),
+        }
+    }
     /// Enters retained asynchronous operations through their original guest exports.
     async fn io<T: crate::callback_imports::CallbackView + 'static>(
         &self,
@@ -414,6 +461,7 @@ impl Exports {
     ) -> wasmtime::Result<()> {
         match call {
             Call::Bash(call) => self.bash.invoke(accessor, call).await,
+            call @ (Call::Grep(_) | Call::Find(_)) => self.search(accessor, call).await,
             Call::Edit(call) => {
                 file_operations::invoke(
                     &self.edit,

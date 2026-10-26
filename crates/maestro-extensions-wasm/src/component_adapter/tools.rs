@@ -8,6 +8,10 @@ use std::rc::Rc;
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod edit;
 #[cfg(target_arch = "wasm32")]
+pub(crate) mod find;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod grep;
+#[cfg(target_arch = "wasm32")]
 pub(crate) mod read;
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod write;
