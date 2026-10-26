@@ -146,6 +146,7 @@ fn oauth_refresh_outlives_its_initiating_guest_handle() {
 }
 
 mod login;
+mod oauth_callback;
 mod reverse;
 
 #[test]

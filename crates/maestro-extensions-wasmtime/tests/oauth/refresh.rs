@@ -86,26 +86,35 @@ pub(super) struct Server {
 impl Server {
     /// Accepts exactly one request with no service credentials.
     pub(super) fn new() -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let url = format!("http://{}/token", listener.local_addr().unwrap());
-        let thread = std::thread::spawn(move || {
-            let (mut peer, _) = listener.accept().unwrap();
-            let mut request = Vec::new();
-            let mut byte = [0];
-            while !request.ends_with(b"\r\n\r\n") {
-                peer.read_exact(&mut byte).unwrap();
-                request.push(byte[0]);
-            }
-            let request = String::from_utf8(request).unwrap();
-            assert!(request.starts_with("GET /token HTTP/1.1\r\n"));
+        let mut server = Self::serve(1, |headers, body| {
+            assert!(headers.starts_with("GET /token HTTP/1.1\r\n"));
             assert!(
-                request
+                headers
                     .to_ascii_lowercase()
                     .contains("authorization: bearer literal-refresh\r\n")
             );
-            let body = r#"{"token":"proxy-ep=proxy.controlled.example;native-token","expires_at":4102444800}"#;
-            write!(peer, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
-            peer.flush().unwrap();
+            assert!(body.is_empty());
+            r#"{"token":"proxy-ep=proxy.controlled.example;native-token","expires_at":4102444800}"#
+                .into()
+        });
+        server.url.push_str("/token");
+        server
+    }
+    /// Serves the finite requests made by the original native authorization algorithms.
+    pub(super) fn serve(
+        count: usize,
+        response: impl Fn(&str, &[u8]) -> String + Send + 'static,
+    ) -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let thread = std::thread::spawn(move || {
+            for _ in 0..count {
+                let (mut peer, _) = listener.accept().unwrap();
+                let (headers, request) = read_request(&mut peer);
+                let body = response(&headers, &request);
+                write!(peer, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+                peer.flush().unwrap();
+            }
         });
         Self { url, thread }
     }
@@ -113,4 +122,26 @@ impl Server {
     pub(super) fn finish(self) {
         self.thread.join().unwrap();
     }
+}
+
+/// Reads the actual content-length-framed request, including authorization-code bodies.
+fn read_request(peer: &mut std::net::TcpStream) -> (String, Vec<u8>) {
+    let mut request = Vec::new();
+    let mut byte = [0];
+    while !request.ends_with(b"\r\n\r\n") {
+        peer.read_exact(&mut byte).unwrap();
+        request.push(byte[0]);
+    }
+    let headers = String::from_utf8(request).unwrap();
+    let length = headers
+        .lines()
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.eq_ignore_ascii_case("content-length")
+                .then(|| value.trim().parse().unwrap())
+        })
+        .unwrap_or(0);
+    let mut body = vec![0; length];
+    peer.read_exact(&mut body).unwrap();
+    (headers, body)
 }

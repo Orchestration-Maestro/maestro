@@ -462,6 +462,9 @@ async fn credential_command(
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }
+    if let Some(id) = request.strip_prefix("credential oauth builtin ") {
+        return oauth::builtin(api, context, id).await;
+    }
     if let Some(operation) = request.strip_prefix("credential oauth reverse ") {
         return oauth::reverse(api, operation).await;
     }

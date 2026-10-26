@@ -66,7 +66,7 @@ pub fn run<'a>(
 }
 
 /// Supplies each callback in its original synchronous, awaited or optional form.
-fn callbacks(
+pub(super) fn callbacks(
     api: &ExtensionAPI,
     context: &ExtensionContext,
     events: Events,
@@ -132,12 +132,14 @@ fn auth(registry: ModelRegistry, events: Events, fail: bool) -> OAuthAuthCallbac
 /// Awaited input announces its first pending poll and resumes only on explicit acknowledgment.
 fn prompt(api: &ExtensionAPI, events: Events, mode: &str) -> OAuthPromptCallback {
     let (pending, fail, bus) = (mode == "pending", mode == "prompt-error", api.events());
+    let text = if mode == "builtin" {
+        ""
+    } else {
+        " Literal answer "
+    };
     Rc::new(move |prompt| {
         events.borrow_mut().push(json!(["prompt", prompt]));
-        let (bus, result) = (
-            bus.clone(),
-            answer(fail, "prompt", " Literal answer ".into()),
-        );
+        let (bus, result) = (bus.clone(), answer(fail, "prompt", text.into()));
         Box::pin(async move {
             if pending {
                 wait(&bus).await?;

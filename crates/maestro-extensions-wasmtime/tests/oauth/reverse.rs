@@ -124,6 +124,7 @@ fn oauth_guest_login_preserves_native_optional_callbacks_errors_and_reentry() {
             );
         }
         errors(&provider).await;
+        assert_eq!(super::call(&runner, "reverse release").await, true);
         maestro_models::unregister_oauth_provider("guest-reverse");
     });
 }

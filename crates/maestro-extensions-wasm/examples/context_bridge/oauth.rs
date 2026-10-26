@@ -155,3 +155,7 @@ pub(super) use registration::run as registration;
 #[path = "oauth/reverse.rs"]
 mod reverse;
 pub(super) use reverse::run as reverse;
+
+#[path = "oauth/builtin.rs"]
+mod builtin;
+pub(super) use builtin::run as builtin;
