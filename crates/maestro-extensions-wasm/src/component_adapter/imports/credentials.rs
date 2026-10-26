@@ -3,6 +3,34 @@
 /// Declares the credential family without creating a second adapter trait.
 macro_rules! credential_imports {
     () => {
+        /// Independently retained native OAuth implementation.
+        type OAuthProvider: 'static;
+        /// Lists callable implementations rather than data-only descriptors.
+        fn credentials_oauth_providers(
+            &self,
+            owner: &Self::Credentials,
+        ) -> ExtensionResult<Vec<Self::OAuthProvider>>;
+        /// Reads the literal identifier, label and optional callback-server metadata.
+        fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String>;
+        /// Awaits the original provider's refresh operation.
+        fn oauth_refresh<'a>(
+            &'a self,
+            provider: &'a Self::OAuthProvider,
+            credentials: String,
+        ) -> ExtensionFuture<'a, String>;
+        /// Reads an optional transformed descriptor list, encoded as JSON.
+        fn oauth_models(
+            &self,
+            provider: &Self::OAuthProvider,
+            data: &str,
+        ) -> ExtensionResult<String>;
+        /// Converts open credentials using the retained provider implementation.
+        fn oauth_key(
+            &self,
+            provider: &Self::OAuthProvider,
+            credentials: &str,
+        ) -> ExtensionResult<String>;
+
         /// Invocation-local native lock update, never a serialized resource identity.
         type LockUpdate: 'static;
         /// Calls the actual still-borrowed native update.

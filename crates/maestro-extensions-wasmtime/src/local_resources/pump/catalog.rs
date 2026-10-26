@@ -61,7 +61,7 @@ impl State {
     pub(super) fn credentials(&self, id: u64, request: crate::credential_reads::Request) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Credentials(owner, _)) = capability.as_deref() {
-            request.answer(owner);
+            request.answer(owner, &self.registry);
         } else {
             request.reject("extension credential resource ended");
         }
@@ -86,5 +86,50 @@ impl State {
         } else {
             request.reject("extension tree node resource ended");
         }
+    }
+}
+
+impl State {
+    /// Calls an OAuth implementation outside the capability-table borrow.
+    pub(super) fn oauth_provider(&self, id: u64, request: crate::oauth_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::OAuthProvider(provider)) = capability.as_deref() {
+            request.answer(provider);
+        } else {
+            request.reject();
+        }
+    }
+}
+
+impl State {
+    /// Keeps the selected implementation through refresh completion without another registry lookup.
+    pub(super) fn start_oauth_refresh(
+        &self,
+        id: u64,
+        data: String,
+        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
+        admission: Admission,
+    ) {
+        let capability = self.registry.capability(id);
+        let Some(Capability::OAuthProvider(provider)) = capability.as_deref() else {
+            let _ = reply.send(Err("extension OAuth provider resource ended".into()));
+            return;
+        };
+        let provider = provider.clone();
+        self.admit(
+            Box::pin(async move {
+                let result = async {
+                    let credentials = crate::writer_reads::decode(&data)?;
+                    let refreshed = provider
+                        .refresh_token(credentials, None)
+                        .await
+                        .map_err(|error| error.to_string())?;
+                    serde_json::to_string(&refreshed).map_err(|error| error.to_string())
+                }
+                .await;
+                let _ = reply.send(result);
+            }),
+            admission,
+        );
     }
 }

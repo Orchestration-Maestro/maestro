@@ -549,10 +549,17 @@ impl State {
         &mut self,
         result: Result<(), String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        self.routed_value(result.map(|()| host::RouteValue::Unit))
+    }
+    /// Preserves a non-unit routed result for a controlled resource operation.
+    pub(super) fn routed_value(
+        &mut self,
+        result: Result<host::RouteValue, String>,
+    ) -> wasmtime::Result<Resource<Route>> {
         self.push(Route {
             steps: std::collections::VecDeque::new(),
             running: None,
-            result: Some(result.map(|()| host::RouteValue::Unit)),
+            result: Some(result),
         })
     }
 }

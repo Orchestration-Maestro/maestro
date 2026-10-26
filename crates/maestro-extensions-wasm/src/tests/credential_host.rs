@@ -7,6 +7,22 @@ use crate::bindings::host_side::maestro::extension::host;
 use serde_json::json;
 use wasmtime::component::{Accessor, Resource};
 impl host::HostAuthStorage for State {
+    fn get_oauth_providers(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Vec<Resource<Reader>>, String>> {
+        let result = self
+            .table
+            .get(&this)?
+            .oauth_providers()
+            .and_then(|providers| {
+                providers
+                    .into_iter()
+                    .map(|provider| self.push(provider).map_err(|error| error.to_string()))
+                    .collect()
+            });
+        Ok(result)
+    }
     fn set_fallback_resolver(
         &mut self,
         this: Resource<Reader>,
@@ -187,6 +203,57 @@ impl host::HostAuthLockUpdateWithStore<State> for Imports {
                 .table
                 .get(&this)?
                 .optional("lock_update_async", &[json!(current)]))
+        }))
+    }
+}
+
+impl host::HostOauthProvider for State {
+    fn modify_models(
+        &mut self,
+        this: Resource<Reader>,
+        data: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .optional("oauth_models", &[json!(data)])
+            .and_then(|value| value.ok_or_else(|| "missing OAuth model result".into()));
+        self.routed_value(result.map(host::RouteValue::Text))
+    }
+
+    fn info(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.table.get(&this)?.string("oauth_info"))
+    }
+    fn get_api_key(
+        &mut self,
+        this: Resource<Reader>,
+        credentials: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .optional("oauth_key", &[json!(credentials)])
+            .and_then(|value| value.ok_or_else(|| "missing OAuth key".into()));
+        self.routed_value(result.map(host::RouteValue::Text))
+    }
+    fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl host::HostOauthProviderWithStore<State> for Imports {
+    fn refresh_token(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        credentials: String,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(accessor.with(|mut access| {
+            Ok(access
+                .get()
+                .table
+                .get(&this)?
+                .optional("oauth_refresh", &[json!(credentials)])
+                .and_then(|value| value.ok_or_else(|| "missing OAuth refresh result".into())))
         }))
     }
 }

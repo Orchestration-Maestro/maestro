@@ -28,6 +28,34 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl Imports for Generated {
+    type OAuthProvider = host::OauthProvider;
+    fn credentials_oauth_providers(
+        &self,
+        owner: &Self::Credentials,
+    ) -> ExtensionResult<Vec<Self::OAuthProvider>> {
+        owner.get_oauth_providers()
+    }
+    fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String> {
+        provider.info()
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.refresh_token(credentials))
+    }
+    fn oauth_models(&self, provider: &Self::OAuthProvider, data: &str) -> ExtensionResult<String> {
+        route::text(&provider.modify_models(data))
+    }
+    fn oauth_key(
+        &self,
+        provider: &Self::OAuthProvider,
+        credentials: &str,
+    ) -> ExtensionResult<String> {
+        route::text(&provider.get_api_key(credentials))
+    }
+
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
         registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);

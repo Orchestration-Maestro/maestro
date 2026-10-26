@@ -8,6 +8,8 @@ type Reply<T> = Sender<Result<T, String>>;
 
 /// Operations on the original accepted credential state.
 pub(crate) enum Request {
+    /// Returns the native implementations in registration order.
+    Providers(Reply<Vec<crate::oauth_reads::Endpoint>>),
     /// Replaces only this owner's selected fallback callback.
     Fallback(
         crate::guest_calls::Handle,
@@ -46,6 +48,9 @@ impl Request {
     /// Returns an owner failure without stranding a waiting import.
     pub(crate) fn reject(self, error: &str) {
         match self {
+            Self::Providers(reply) => {
+                send(&reply, Err::<Vec<crate::oauth_reads::Endpoint>, _>(error));
+            }
             Self::Fallback(_, _, reply)
             | Self::Runtime(_, _, reply)
             | Self::RemoveRuntime(_, reply)
@@ -63,8 +68,9 @@ impl Request {
     }
 
     /// Calls the native credential algorithms outside the resource-table borrow.
-    pub(crate) fn answer(self, owner: &AuthStorage) {
+    pub(crate) fn answer(self, owner: &AuthStorage, registry: &crate::local_resources::Registry) {
         match self {
+            Self::Providers(reply) => send(&reply, providers(owner, registry)),
             Self::Fallback(handler, requests, reply) => {
                 owner.set_fallback_resolver(handler.fallback(requests));
                 send(&reply, Ok::<_, String>(()));
@@ -119,6 +125,18 @@ impl Request {
             }
         }
     }
+}
+
+/// Retains each implementation in the order the credential owner supplies.
+fn providers(
+    owner: &AuthStorage,
+    registry: &crate::local_resources::Registry,
+) -> Result<Vec<crate::oauth_reads::Endpoint>, String> {
+    owner
+        .get_oauth_providers()
+        .into_iter()
+        .map(|provider| registry.oauth_provider(provider))
+        .collect()
 }
 
 /// Encodes the existing shared record without a smaller intermediate projection.

@@ -518,6 +518,46 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type OAuthProvider = Reader;
+    fn credentials_oauth_providers(&self, owner: &Reader) -> ExtensionResult<Vec<Reader>> {
+        owner.data.oauth_providers().map(|providers| {
+            providers
+                .into_iter()
+                .map(|data| Reader {
+                    data,
+                    _lease: Lease::new(&self.observed),
+                })
+                .collect()
+        })
+    }
+    fn oauth_info(&self, provider: &Reader) -> ExtensionResult<String> {
+        provider.data.string("oauth_info")
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Reader,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            provider
+                .data
+                .optional("oauth_refresh", &[serde_json::json!(credentials)])?
+                .ok_or_else(|| "missing OAuth refresh result".into())
+        })
+    }
+    fn oauth_models(&self, provider: &Reader, data: &str) -> ExtensionResult<String> {
+        provider
+            .data
+            .optional("oauth_models", &[serde_json::json!(data)])?
+            .ok_or_else(|| "missing OAuth model result".into())
+    }
+    fn oauth_key(&self, provider: &Reader, credentials: &str) -> ExtensionResult<String> {
+        provider
+            .data
+            .optional("oauth_key", &[serde_json::json!(credentials)])?
+            .ok_or_else(|| "missing OAuth key".into())
+    }
+
     type LockUpdate = Reader;
     fn lock_update(
         &self,

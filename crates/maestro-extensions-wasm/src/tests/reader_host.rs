@@ -106,6 +106,16 @@ impl Reader {
             None => Ok(reply),
         }
     }
+    /// Returns independently retained provider fixtures selected by this credential owner.
+    pub fn oauth_providers(&self) -> Result<Vec<Self>, String> {
+        let providers: Vec<Data> =
+            serde_json::from_value(self.reply("get_oauth_providers", &[])?.value)
+                .map_err(|error| error.to_string())?;
+        Ok(providers
+            .into_iter()
+            .map(|data| Self(Arc::new(Mutex::new(data))))
+            .collect())
+    }
     /// The queries the guest made, in call order.
     pub fn queries(&self) -> Vec<Query> {
         self.0.lock().unwrap().queries.clone()

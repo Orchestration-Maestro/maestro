@@ -57,6 +57,8 @@ port! {
         fn set(provider: &str, credential: AuthCredential) -> ();
         /// Removes one provider credential.
         fn remove(provider: &str) -> ();
+        /// Returns callable OAuth providers in native registration order.
+        fn get_oauth_providers() -> Vec<Rc<dyn crate::OAuthProviderInterface>>;
         /// Lists all stored provider names in insertion order.
         fn list() -> Vec<String>;
         /// Checks stored presence, including untyped entries.

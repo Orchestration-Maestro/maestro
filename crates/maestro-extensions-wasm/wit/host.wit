@@ -422,7 +422,15 @@ interface host {
     /// Resolution outcome, separate from an import failure.
     variant resolved-request-auth { ok(request-auth), error(string) }
     /// Independently retained accepted credentials and their original backend.
+    /// Independently retained native OAuth implementation.
+    resource oauth-provider {
+        info: func() -> result<string, string>;
+        get-api-key: func(credentials: string) -> import-route;
+        refresh-token: async func(credentials: string) -> result<string, string>;
+        modify-models: func(data: string) -> import-route;
+    }
     resource auth-storage {
+        get-oauth-providers: func() -> result<list<oauth-provider>, string>;
         set-fallback-resolver: func(resolver: borrow<callback>) -> import-route;
         set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;
         remove-runtime-api-key: func(provider: string) -> result<_, string>;

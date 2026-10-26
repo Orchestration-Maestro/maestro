@@ -214,13 +214,15 @@ impl State {
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
-            Message::NewSignal(reply) => {
-                let _ = reply.send(self.registry.signal(Cancellation::new()));
-            }
+            Message::NewSignal(reply) => self.new_signal(&reply),
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
+            Message::OAuthRefresh(id, data, reply, admission) => {
+                self.start_oauth_refresh(id, data, reply, admission);
+            }
+            Message::OAuthProvider(id, request) => self.oauth_provider(id, request),
             Message::Credentials(id, request) => self.credentials(id, request),
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
@@ -239,6 +241,11 @@ impl State {
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Creates cancellation on its original local resource owner.
+    fn new_signal(&self, reply: &std::sync::mpsc::Sender<Result<super::SignalEndpoint, String>>) {
+        let _ = reply.send(self.registry.signal(Cancellation::new()));
     }
 
     /// Releases an ended lock update outside its frame-table borrow.

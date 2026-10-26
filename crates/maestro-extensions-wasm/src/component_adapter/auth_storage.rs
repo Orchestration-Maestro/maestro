@@ -63,6 +63,13 @@ impl<I: Imports> AuthStoragePort for Owner<I> {
     fn remove(&self, provider: &str) -> ExtensionResult<()> {
         self.imports.credentials_remove(&self.resource, provider)
     }
+    fn get_oauth_providers(&self) -> ExtensionResult<Vec<Rc<dyn crate::OAuthProviderInterface>>> {
+        self.imports
+            .credentials_oauth_providers(&self.resource)?
+            .into_iter()
+            .map(|resource| super::oauth::provider(self.imports.clone(), resource))
+            .collect()
+    }
     fn list(&self) -> ExtensionResult<Vec<String>> {
         self.imports.credentials_list(&self.resource)
     }

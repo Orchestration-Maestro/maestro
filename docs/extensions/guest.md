@@ -411,6 +411,25 @@ host, including from synchronous credential and catalog metadata reads. Callback
 resources stay typed; their identities are never placed in JSON. Callable provider
 stream and OAuth fields remain separate from the provider data record.
 
+### Native OAuth providers
+
+`AuthStorage::get_oauth_providers()` returns callable native implementations in
+registration order. Each retained `OAuthProviderInterface` exposes its literal
+`id`, login `name` and optional `uses_callback_server` value. An absent value is
+not changed to false. Removing a provider from the native registry does not
+replace an already retained implementation; its final guest alias releases it.
+
+`get_api_key` and `modify_models` are synchronous. `refresh_token` awaits the
+native token exchange without adding an expiry decision or persisting the
+returned credentials. Its future retains the provider after the initiating
+handler and facade are released. `modify_models` returns `None` when the provider has no
+modifier. The guest forwards complete credentials and model descriptors,
+including open credential fields, and rejects authored nonfinite numbers before
+encoding them. Provider failures retain their messages.
+
+These methods reuse the native OAuth algorithms. The guest does not yet expose
+login interaction callbacks or OAuth-bearing provider registration.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from

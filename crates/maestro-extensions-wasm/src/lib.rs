@@ -32,6 +32,8 @@ mod loader;
 mod messages;
 mod slash_commands;
 pub use slash_commands::*;
+mod oauth;
+pub use oauth::*;
 mod auth_storage;
 pub use auth_storage::*;
 mod model_registry;

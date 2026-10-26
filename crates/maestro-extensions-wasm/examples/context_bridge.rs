@@ -28,6 +28,9 @@ mod exec;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/oauth.rs"]
+mod oauth;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/prefixes.rs"]
 mod prefixes;
 
@@ -294,11 +297,8 @@ fn context_command(
                 std::arch::wasm32::unreachable();
             }
         }
-        Err(format!(
-            "command:{args}|{}|{}",
-            context.cwd()?,
-            context.get_system_prompt()?
-        ))
+        let (cwd, prompt) = (context.cwd()?, context.get_system_prompt()?);
+        Err(format!("command:{args}|{cwd}|{prompt}"))
     })
 }
 
@@ -451,6 +451,13 @@ async fn credential_command(
         return credentials::pending(api, request).await;
     }
     match request {
+        "credential oauth pending create" => oauth::pending_create(context),
+        "credential oauth pending complete" => oauth::pending_complete().await,
+        "credential oauth providers" => oauth::providers(context),
+        "credential oauth operations" => oauth::operations(context).await,
+        "credential oauth retain" | "credential oauth key" | "credential oauth release" => {
+            oauth::retained(context, request.trim_start_matches("credential oauth "))
+        }
         "credential fallback" => credentials::fallback(api).await,
         "credential backend" => credentials::backend(api),
         "credential state" => credentials::state(api).await,

@@ -30,6 +30,7 @@ mod generated;
 mod host_api;
 mod imports;
 mod model_registry;
+mod oauth;
 mod schema;
 mod session;
 mod setup;
