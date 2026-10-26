@@ -21,6 +21,9 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
             return;
         };
         supply_defaults(&session);
+        if !self.root.is_connected() {
+            return;
+        }
         let weak = Rc::downgrade(self);
         let listener: maestro_app::AgentListener<BrowserMessages<C>, Local> =
             Rc::new(move |event, _| {

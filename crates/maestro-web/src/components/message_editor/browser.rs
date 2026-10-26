@@ -1,5 +1,9 @@
 //! Native editor nodes, rendering and the text, key and control listeners.
-use super::{MessageEditorProps, THINKING_LEVELS, can_send, level_value};
+use super::{
+    MessageEditorProps, THINKING_LEVELS, can_send,
+    controls::{icon_button, level_menu, model_control, send_control},
+    level_value,
+};
 use crate::{
     AttachmentTile, SharedAttachment,
     browser::{
@@ -7,7 +11,6 @@ use crate::{
         event_subscription::EventSubscription,
         timer::{Timer, frame},
     },
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
     dom::{DomView, MountedContent, icon, report},
     tools::types::ToolUiError,
 };
@@ -39,8 +42,10 @@ pub(super) struct Editor {
     value: RefCell<String>,
     /// Current attachments in display order.
     pub(super) attachments: RefCell<Vec<SharedAttachment>>,
-    /// Whether chosen, dropped or pasted files are loading.
-    pub(super) processing: Cell<bool>,
+    /// File slots reserved by batches that are still loading.
+    pub(super) pending_files: Cell<usize>,
+    /// Draft generation, advanced by every text or attachment edit.
+    pub(super) revision: Cell<u64>,
     /// Whether files are dragged over the editor.
     pub(super) dragging: Cell<bool>,
     /// Bordered card.
@@ -113,6 +118,9 @@ impl MessageEditor {
     /// Returns a localization or native failure.
     pub fn set_value(&self, value: &str) -> Result<(), ToolUiError> {
         self.state.value.replace(value.to_owned());
+        self.state
+            .revision
+            .set(self.state.revision.get().wrapping_add(1));
         self.state.render()
     }
     /// The current attachments.
@@ -125,8 +133,15 @@ impl MessageEditor {
     /// Returns a localization, attachment or native failure.
     pub fn set_attachments(&self, attachments: Vec<SharedAttachment>) -> Result<(), ToolUiError> {
         self.state.attachments.replace(attachments);
+        self.state
+            .revision
+            .set(self.state.revision.get().wrapping_add(1));
         self.state.show_tiles()?;
         self.state.render()
+    }
+    /// The generation of the current text and attachments.
+    pub(crate) fn revision(&self) -> u64 {
+        self.state.revision.get()
     }
     /// Move keyboard focus to the text field.
     pub fn focus(&self) {
@@ -162,7 +177,8 @@ impl Editor {
             props: RefCell::new(props),
             value: RefCell::default(),
             attachments: RefCell::default(),
-            processing: Cell::new(false),
+            pending_files: Cell::new(0),
+            revision: Cell::new(0),
             dragging: Cell::new(false),
             overlay,
             tiles,
@@ -249,6 +265,7 @@ impl Editor {
     fn edited(&self) {
         let value = self.textarea.value();
         self.value.replace(value.clone());
+        self.revision.set(self.revision.get().wrapping_add(1));
         let on_input = self.props.borrow().on_input.clone();
         if let Some(on_input) = on_input {
             on_input(value);
@@ -277,7 +294,7 @@ impl Editor {
         can_send(
             &self.value.borrow(),
             self.attachments.borrow().len(),
-            self.processing.get(),
+            self.pending_files.get() > 0,
         )
     }
     /// Pass the untrimmed text and the attachments to the current send callback.
@@ -339,9 +356,11 @@ impl Editor {
     }
     /// Report the current attachment list.
     pub(super) fn files_changed(&self) {
+        self.revision.set(self.revision.get().wrapping_add(1));
         let on_change = self.props.borrow().on_files_change.clone();
         if let Some(on_change) = on_change {
-            on_change(self.attachments.borrow().clone());
+            let attachments = self.attachments.borrow().clone();
+            on_change(attachments);
         }
     }
     /// Mount one removable tile per attachment, in order.
@@ -379,6 +398,13 @@ impl Editor {
         self.textarea
             .set_placeholder(&i18n.text("Type a message...")?);
         self.picker.set_accept(&props.accepted_types);
+        for (control, label) in [
+            (&self.attach, "Attach files"),
+            (&self.send, "Send"),
+            (&self.abort, "Abort"),
+        ] {
+            control.set_title(&i18n.text(label)?);
+        }
         let dragging = self.dragging.get();
         self.root
             .class_list()
@@ -400,7 +426,7 @@ impl Editor {
     }
     /// Show the controls the operands call for, keeping a control in place while it stays.
     fn render_controls(&self, props: &MessageEditorProps) {
-        let processing = self.processing.get();
+        let processing = self.pending_files.get() > 0;
         let reasoning = props
             .current_model
             .as_ref()
@@ -480,77 +506,4 @@ fn arrange(group: &Element, nodes: &[&Element]) {
         list.push(node);
     }
     group.replace_children_with_node(&list);
-}
-/// A ghost square button showing the catalog icon `name`.
-fn icon_button(
-    document: &web_sys::Document,
-    name: &str,
-    class: &str,
-) -> Result<HtmlButtonElement, ToolUiError> {
-    let glyph = icon(document, name, "")?;
-    button(
-        document,
-        &ButtonProps {
-            variant: ButtonVariant::Ghost,
-            size: ButtonSize::Icon,
-            class_name: class,
-            ..ButtonProps::default()
-        },
-        &[glyph.into()],
-    )
-    .map_err(|error| host_error(&error).into())
-}
-/// The Send control, its arrow turned to point up and right.
-fn send_control(document: &web_sys::Document) -> Result<HtmlButtonElement, ToolUiError> {
-    let send = icon_button(document, "Send", "maestro-editor-send")?;
-    if let Some(glyph) = send.first_element_child() {
-        glyph
-            .class_list()
-            .add_1("maestro-editor-send-glyph")
-            .map_err(|error| host_error(&error))?;
-    }
-    Ok(send)
-}
-/// The model control and the label holding the model identifier.
-fn model_control(
-    document: &web_sys::Document,
-) -> Result<(HtmlButtonElement, Element), ToolUiError> {
-    let label = element(document, "span", "maestro-editor-model-id")?;
-    let glyph = icon(document, "Sparkles", "")?;
-    let model = button(
-        document,
-        &ButtonProps {
-            variant: ButtonVariant::Ghost,
-            size: ButtonSize::Sm,
-            class_name: "maestro-editor-model",
-            ..ButtonProps::default()
-        },
-        &[glyph.into(), label.clone().into()],
-    )
-    .map_err(|error| host_error(&error))?;
-    Ok((model, label))
-}
-/// The reasoning level menu with its localized options.
-fn level_menu(view: &DomView) -> Result<HtmlSelectElement, ToolUiError> {
-    let document = &view.document;
-    let menu: HtmlSelectElement = element(
-        document,
-        "select",
-        "maestro-select maestro-select-sm maestro-editor-level",
-    )?
-    .unchecked_into();
-    for (level, label) in THINKING_LEVELS
-        .iter()
-        .zip(["Off", "Minimal", "Low", "Medium", "High"])
-    {
-        let option = element(document, "option", "")?;
-        option
-            .set_attribute("value", level_value(level))
-            .map_err(|error| host_error(&error))?;
-        option.set_text_content(Some(&view.i18n.text(label)?));
-        append(&menu, &option)?;
-    }
-    menu.set_attribute("aria-label", &view.i18n.text("Thinking")?)
-        .map_err(|error| host_error(&error))?;
-    Ok(menu)
 }

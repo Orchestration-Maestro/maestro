@@ -458,6 +458,11 @@ pub async fn prompt_dialog_settles_once_for_every_close_route() {
     );
     assert_eq!(text(&find(&shown, "h2")), "Title");
     assert_eq!(text(&find(&shown, "p")), "Message");
+    let tree = crate::contributions_support::driver("driverAria", ".maestro-dialog-content input")
+        .await
+        .as_string()
+        .unwrap();
+    assert!(tree.contains("textbox \"Message\""), "{tree}");
     type_text(" more").await;
     press("Enter").await;
     assert_eq!(answered(pending).await.as_deref(), Some("seed more"));

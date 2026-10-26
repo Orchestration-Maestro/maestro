@@ -7,7 +7,7 @@ use crate::{
     browser::{attachment_content::browser::host_error, event_subscription::EventSubscription},
     components::{
         button::{ButtonProps, ButtonVariant, button},
-        input::{Input, InputProps, InputType},
+        input::{Input, InputProps, InputType, unique_id},
     },
     dom::DomView,
     tools::types::ToolUiError,
@@ -99,6 +99,7 @@ impl PromptDialog {
                 class_name: String::new(),
             },
         )?;
+        label_field(&prompt.input, &header, message)?;
         let footer = dialog_footer(document, &nodes, "")?;
         let content = dialog_content(
             document,
@@ -172,4 +173,18 @@ fn activate(prompt: &Weak<Prompt>, confirm: bool) {
         let outcome = confirm.then(|| prompt.input.input().value());
         prompt.finish(outcome);
     }
+}
+
+/// Name the field from the prompt text, falling back to its title for an empty message.
+fn label_field(input: &Input, header: &web_sys::Element, message: &str) -> Result<(), ToolUiError> {
+    let label = header
+        .query_selector(if message.is_empty() { "h2" } else { "p" })
+        .map_err(|error| host_error(&error))?
+        .ok_or_else(|| ToolUiError::Presentation("Missing prompt label".into()))?;
+    let id = unique_id("maestro-prompt-label");
+    label.set_id(&id);
+    input
+        .input()
+        .set_attribute("aria-labelledby", &id)
+        .map_err(|error| host_error(&error).into())
 }

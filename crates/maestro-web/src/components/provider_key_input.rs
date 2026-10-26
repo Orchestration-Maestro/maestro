@@ -7,7 +7,7 @@ use crate::{
     },
     components::{
         button::{ButtonProps, ButtonSize, button},
-        input::{Input, InputProps, InputType},
+        input::{Input, InputProps, InputType, unique_id},
     },
     dom::{DomContent, DomRoot, DomView, report},
     tools::types::ToolUiError,
@@ -94,7 +94,7 @@ impl DomContent for ProviderKeyInput {
         let document = &view.document;
         let root = element(document, "div", "maestro-key-input")?;
         let heading = element(document, "div", "maestro-key-heading")?;
-        let name = element(document, "span", "maestro-key-provider")?;
+        let name = element(document, "label", "maestro-key-provider")?;
         let status = element(document, "span", "")?;
         let invalid = element(document, "span", "maestro-badge maestro-badge-destructive")?;
         append(&heading, &name)?;
@@ -156,7 +156,12 @@ impl KeyInput {
     fn bind(self: &Rc<Self>) -> Result<(), ToolUiError> {
         let weak = Rc::downgrade(self);
         let typed = weak.clone();
+        let id = unique_id("maestro-provider-key");
+        self.name
+            .set_attribute("for", &id)
+            .map_err(|error| host_error(&error))?;
         let props = InputProps {
+            id,
             input_type: InputType::Password,
             class_name: "maestro-grow".into(),
             on_input: Some(Rc::new(move |_| {

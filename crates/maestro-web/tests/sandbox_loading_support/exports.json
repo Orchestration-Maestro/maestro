@@ -238,7 +238,13 @@
     "theme_toggle_is_named_and_keyboard_operable",
     "theme_toggle_replays_all_recorded_cycles",
     "theme_toggle_tracks_system_changes_only_in_system_mode",
-    "agent_interface_empty_keys_prompt_without_sending"
+    "agent_interface_empty_keys_prompt_without_sending",
+    "message_editor_actions_have_accessible_names",
+    "message_editor_attachment_callbacks_allow_reentry",
+    "message_editor_overlapping_batches_respect_the_limit",
+    "message_editor_waits_for_every_attachment_batch",
+    "agent_interface_pending_admission_preserves_newer_drafts",
+    "agent_interface_detach_reconnect_keeps_draft_and_subscription"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

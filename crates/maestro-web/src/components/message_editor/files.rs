@@ -87,14 +87,15 @@ impl Editor {
             return;
         }
         let max_files = self.props.borrow().max_files;
-        if files.len() + self.attachments.borrow().len() > max_files {
+        if files.len() + self.pending_files.get() + self.attachments.borrow().len() > max_files {
             self.alert(&format!("Maximum {max_files} files allowed"));
             if origin == Origin::Picker {
                 self.picker.set_value("");
             }
             return;
         }
-        self.processing.set(true);
+        self.pending_files
+            .set(self.pending_files.get() + files.len());
         report(self.render());
         wasm_bindgen_futures::spawn_local(loaded(Rc::downgrade(self), files, origin));
     }
@@ -140,6 +141,7 @@ impl Editor {
 }
 /// Load `files` in order while the editor exists, then append the loaded ones and report them.
 async fn loaded(editor: std::rc::Weak<Editor>, files: Vec<File>, origin: Origin) {
+    let reserved = files.len();
     let mut added = Vec::new();
     for file in files {
         let Some(current) = editor.upgrade() else {
@@ -152,10 +154,12 @@ async fn loaded(editor: std::rc::Weak<Editor>, files: Vec<File>, origin: Origin)
     let Some(editor) = editor.upgrade() else {
         return;
     };
+    editor
+        .pending_files
+        .set(editor.pending_files.get() - reserved);
     editor.attachments.borrow_mut().extend(added);
     report(editor.show_tiles());
     editor.files_changed();
-    editor.processing.set(false);
     if origin == Origin::Picker {
         editor.picker.set_value("");
     }

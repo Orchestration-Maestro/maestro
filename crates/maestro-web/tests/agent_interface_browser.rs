@@ -510,3 +510,130 @@ async fn cost_action(interface: &AgentInterface, clicks: &Rc<RefCell<u32>>) {
     press("Enter").await;
     assert_eq!(*clicks.borrow(), 2);
 }
+
+/// A pending pre-send hook never clears a newer text or attachment draft, even after an undo.
+#[wasm_bindgen]
+pub async fn agent_interface_pending_admission_preserves_newer_drafts(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let app = storage("agent-pending");
+    app.provider_keys.set("anthropic", "sk-test").await.unwrap();
+    let fetch = Fetch::install(
+        (0..3)
+            .map(|_| (200, "text/event-stream", completed_reply()))
+            .collect(),
+    );
+    let session = session(haiku(), Vec::new());
+    let (interface, _parent) = mounted(props(&session, &Rc::default(), vec![]), 400);
+    let interface = Rc::new(interface);
+    for draft in ["new text", "hello", "undo"] {
+        let (release, send) = pending_send(&interface, &session).await;
+        interface.set_input(draft, vec![note("new.txt")]).unwrap();
+        if draft == "undo" {
+            interface.set_input("hello", vec![note("old.txt")]).unwrap();
+        }
+        let expected = interface.editor().value();
+        let expected_attachment = interface.editor().attachments()[0]
+            .read()
+            .unwrap()
+            .file_name
+            .clone();
+        release.send(()).unwrap();
+        wasm_bindgen_futures::JsFuture::from(send).await.unwrap();
+        assert_eq!(
+            interface.editor().value(),
+            expected,
+            "a newer draft survives admission"
+        );
+        assert_eq!(
+            interface.editor().attachments()[0]
+                .read()
+                .unwrap()
+                .file_name,
+            expected_attachment
+        );
+    }
+    assert_eq!(fetch.requests().len(), 3);
+}
+
+/// Removing a retained view releases session rendering and reattachment binds it once.
+#[wasm_bindgen]
+pub async fn agent_interface_detach_reconnect_keeps_draft_and_subscription(
+    import: js_sys::Function,
+) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    let app = storage("agent-detach");
+    app.provider_keys.set("anthropic", "sk-test").await.unwrap();
+    let _fetch = Fetch::install(vec![(200, "text/event-stream", completed_reply())]);
+    let session = session(haiku(), Vec::new());
+    let (interface, parent) = mounted(props(&session, &Rc::default(), vec![]), 400);
+    interface
+        .set_input("keep draft", vec![note("keep.txt")])
+        .unwrap();
+    frames(&page, 2).await;
+    interface.root().remove();
+    session
+        .prompt(maestro_app::PromptInput::Text {
+            text: "elsewhere".into(),
+            images: Vec::new(),
+        })
+        .await
+        .unwrap();
+    let rows = || {
+        interface
+            .root()
+            .query_selector_all(".maestro-message-list > *")
+            .unwrap()
+            .length()
+    };
+    assert_eq!(
+        rows(),
+        0,
+        "a detached view no longer renders session events"
+    );
+    for _ in 0..2 {
+        parent.append_child(interface.root()).unwrap();
+        frames(&page, 2).await;
+        assert_eq!(rows(), 2, "reconnect refreshes the transcript");
+        assert_eq!(interface.editor().value(), "keep draft");
+        assert_eq!(interface.editor().attachments().len(), 1);
+        interface.root().remove();
+    }
+}
+
+/// Hold one send at its pre-send hook, returning its release and completion.
+async fn pending_send(
+    interface: &Rc<AgentInterface>,
+    session: &Rc<BrowserSession>,
+) -> (tokio::sync::oneshot::Sender<()>, js_sys::Promise) {
+    let (release, pending) = tokio::sync::oneshot::channel();
+    let (entered, entering) = tokio::sync::oneshot::channel();
+    let entered = Rc::new(RefCell::new(Some(entered)));
+    let pending = Rc::new(RefCell::new(Some(pending)));
+    interface
+        .update(AgentInterfaceProps {
+            on_before_send: Some(Rc::new(move || {
+                let pending = pending.borrow_mut().take().unwrap();
+                entered.borrow_mut().take().unwrap().send(()).unwrap();
+                Box::pin(async move {
+                    pending.await.unwrap();
+                    Ok(())
+                })
+            })),
+            ..props(session, &Rc::default(), vec![])
+        })
+        .unwrap();
+    interface.set_input("hello", vec![note("old.txt")]).unwrap();
+    let sending = Rc::clone(interface);
+    let send = wasm_bindgen_futures::future_to_promise(async move {
+        sending
+            .send_message("hello", sending.editor().attachments())
+            .await
+            .unwrap();
+        Ok(wasm_bindgen::JsValue::UNDEFINED)
+    });
+    entering.await.unwrap();
+    (release, send)
+}

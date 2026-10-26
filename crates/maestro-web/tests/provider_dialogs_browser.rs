@@ -112,6 +112,11 @@ pub async fn provider_key_input_tests_with_current_proxy_before_saving(import: j
         "an empty masked entry cannot be saved"
     );
     field.focus().unwrap();
+    let tree = crate::contributions_support::driver("driverAria", ".maestro-key-input input")
+        .await
+        .as_string()
+        .unwrap();
+    assert!(tree.contains("textbox \"anthropic\""), "{tree}");
     type_text("sk-ant-oat-1").await;
     assert!(!save.disabled());
     save.click();

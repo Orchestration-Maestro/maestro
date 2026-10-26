@@ -518,3 +518,136 @@ async fn controls(page: &JsValue, editor: &MessageEditor, calls: &Rc<Calls>) {
         .unwrap();
     assert_eq!(*calls.levels.borrow(), [ThinkingLevel::High]);
 }
+
+/// All icon-only editor actions have names in the browser accessibility tree.
+#[wasm_bindgen]
+pub async fn message_editor_actions_have_accessible_names(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let editor = mounted(MessageEditorProps::default());
+    for (selector, label) in [
+        (".maestro-editor-attach", "Attach files"),
+        (".maestro-editor-send", "Send"),
+        (".maestro-editor-abort", "Abort"),
+    ] {
+        if label == "Abort" {
+            editor
+                .update(MessageEditorProps {
+                    is_streaming: true,
+                    ..MessageEditorProps::default()
+                })
+                .unwrap();
+        }
+        let tree = crate::contributions_support::driver("driverAria", selector)
+            .await
+            .as_string()
+            .unwrap();
+        assert!(tree.contains(&format!("button \"{label}\"")), "{tree}");
+    }
+}
+
+/// Attachment notifications may replace the editor's attachments without a runtime borrow panic.
+#[wasm_bindgen]
+pub async fn message_editor_attachment_callbacks_allow_reentry(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    let editor = Rc::new(mounted(MessageEditorProps::default()));
+    let weak = Rc::downgrade(&editor);
+    let called = Rc::new(Cell::new(false));
+    let seen = Rc::clone(&called);
+    editor
+        .update(MessageEditorProps {
+            on_files_change: Some(Rc::new(move |_| {
+                weak.upgrade().unwrap().set_attachments(Vec::new()).unwrap();
+                seen.set(true);
+            })),
+            ..MessageEditorProps::default()
+        })
+        .unwrap();
+    choose(&editor, &texts("one", 1));
+    idle(&page, &editor).await;
+    assert!(called.get());
+    assert!(editor.attachments().is_empty());
+}
+
+/// A file whose array-buffer read waits for the returned release operation.
+fn held_file(
+    name: &str,
+) -> (
+    web_sys::File,
+    js_sys::Function,
+    wasm_bindgen::closure::Closure<dyn Fn() -> js_sys::Promise>,
+) {
+    let file = file(name, "text/plain", b"note");
+    let mut release = None;
+    let promise = js_sys::Promise::new(&mut |resolve, _| release = Some(resolve));
+    let read = wasm_bindgen::closure::Closure::new(move || promise.clone());
+    js_sys::Reflect::set(&file, &"arrayBuffer".into(), read.as_ref()).unwrap();
+    (file, release.unwrap(), read)
+}
+/// Complete a held file with a small text payload.
+fn release_file(release: &js_sys::Function) {
+    release
+        .call1(
+            &JsValue::UNDEFINED,
+            &js_sys::Uint8Array::from(b"note".as_slice()).buffer(),
+        )
+        .unwrap();
+}
+
+/// Pending batches reserve their full count before another drop can be admitted.
+#[wasm_bindgen]
+pub async fn message_editor_overlapping_batches_respect_the_limit(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    let prompts = Prompts::install(vec![]);
+    let editor = mounted(MessageEditorProps::default());
+    let (held, release, _read) = held_file("held.txt");
+    let mut first = texts("first", 5);
+    first.insert(0, held);
+    choose(&editor, &first);
+    settled().await;
+    dispatch(
+        editor.root(),
+        "DragEvent",
+        "drop",
+        "dataTransfer",
+        &transfer(&texts("second", 6)),
+    );
+    assert_eq!(prompts.messages(), ["Maximum 10 files allowed"]);
+    release_file(&release);
+    idle(&page, &editor).await;
+    assert_eq!(editor.attachments().len(), 6);
+}
+
+/// Completing one admitted batch cannot enable Send while another is still loading.
+#[wasm_bindgen]
+pub async fn message_editor_waits_for_every_attachment_batch(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    let editor = mounted(MessageEditorProps::default());
+    editor.set_value("draft").unwrap();
+    let (first, release_first, _read_first) = held_file("first.txt");
+    let (second, release_second, _read_second) = held_file("second.txt");
+    choose(&editor, &[first]);
+    dispatch(
+        editor.root(),
+        "DragEvent",
+        "drop",
+        "dataTransfer",
+        &transfer(&[second]),
+    );
+    settled().await;
+    release_file(&release_first);
+    until(&page, || editor.attachments().len() == 1).await;
+    let send: HtmlButtonElement = find(editor.root(), ".maestro-editor-send").unchecked_into();
+    assert!(send.disabled(), "the second batch is still loading");
+    assert!(has(editor.root(), ".maestro-editor-spinner"));
+    release_file(&release_second);
+    idle(&page, &editor).await;
+    assert!(!send.disabled());
+    assert_eq!(names(&editor.attachments()), ["first.txt", "second.txt"]);
+}

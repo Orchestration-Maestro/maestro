@@ -20,7 +20,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
     /// provider with neither a stored key nor a stored custom provider key of that name asks
     /// `on_api_key_required` first; a refusal, or no such callback, keeps the draft. The
     /// pre-send hook runs next, and its failure also keeps the draft. Only then is the draft
-    /// cleared and the prompt started.
+    /// cleared if it has not changed during admission, and the prompt started.
     /// # Errors
     /// Returns a missing session, a failed pre-send hook or the prompt's failure.
     pub async fn send_message(
@@ -48,6 +48,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         if !can_send(input, attachments.len(), false) || streaming {
             return Ok(());
         }
+        let revision = self.editor.revision();
         let session = self
             .session()
             .ok_or_else(|| ToolUiError::Presentation("No session set on AgentInterface".into()))?;
@@ -69,8 +70,10 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
                 .await
                 .map_err(|error| ToolUiError::Presentation(error.message))?;
         }
-        self.editor.set_value("")?;
-        self.editor.set_attachments(Vec::new())?;
+        if self.editor.revision() == revision {
+            self.editor.set_value("")?;
+            self.editor.set_attachments(Vec::new())?;
+        }
         let mut follow = self.follow.get();
         follow.enabled = true;
         self.follow.set(follow);

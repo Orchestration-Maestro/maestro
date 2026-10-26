@@ -1,5 +1,5 @@
 //! Native session view nodes, rendering and reader-follow.
-use super::{AgentInterfaceProps, BrowserSession, Follow, usage_totals};
+use super::{AgentInterfaceProps, BrowserSession, Follow, connection, usage_totals};
 use crate::{
     MessageList, SharedAttachment, StreamingMessageContainer,
     browser::{
@@ -7,7 +7,7 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::message_editor::{MessageEditor, MessageEditorProps},
-    dom::{DomContent, DomRoot, DomView, MountedContent},
+    dom::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
     utils::format::format_usage,
 };
@@ -39,7 +39,7 @@ pub(super) struct Session<C: CustomAgentMessages + 'static> {
     /// Last supplied operands.
     pub(super) props: RefCell<AgentInterfaceProps<C>>,
     /// The element the caller places.
-    root: Element,
+    pub(super) root: Element,
     /// Shown without a session.
     empty: Element,
     /// Transcript and input column, shown with a session.
@@ -88,8 +88,21 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
     /// Returns a localization, icon or native failure.
     pub fn new(view: &Rc<DomView>, props: AgentInterfaceProps<C>) -> Result<Self, ToolUiError> {
         crate::dom::install_styles(view).map_err(|error| host_error(&error))?;
-        let state = Rc::new(Session::build(view, props)?);
-        state.bind()?;
+        let connection = Rc::default();
+        let state = Rc::new(Session::build(view, props, &connection)?);
+        let weak = Rc::downgrade(&state);
+        connection.replace(Some(Rc::new(move |connected| {
+            let Some(state) = weak.upgrade() else {
+                return;
+            };
+            if connected {
+                report(state.bind());
+                state.subscribe();
+                report(state.render());
+            } else {
+                state.disconnect();
+            }
+        })));
         state.bind_editor();
         state.subscribe();
         state.render()?;
@@ -145,17 +158,18 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
 }
 impl<C: CustomAgentMessages + 'static> Drop for AgentInterface<C> {
     fn drop(&mut self) {
-        self.state.unsubscribe();
-        if let Some((observer, _)) = self.state.observation.take() {
-            observer.disconnect();
-        }
+        self.state.disconnect();
     }
 }
 impl<C: CustomAgentMessages + 'static> Session<C> {
     /// Create every node once.
-    fn build(view: &Rc<DomView>, props: AgentInterfaceProps<C>) -> Result<Self, ToolUiError> {
+    fn build(
+        view: &Rc<DomView>,
+        props: AgentInterfaceProps<C>,
+        connection: &connection::Connection,
+    ) -> Result<Self, ToolUiError> {
         let document = &view.document;
-        let root = element(document, "div", "maestro-agent")?;
+        let root = connection::root(document, connection)?;
         let empty = element(document, "div", "maestro-agent-empty")?;
         let layout = element(document, "div", "maestro-agent-layout")?;
         let scroll = element(document, "div", "maestro-agent-scroll")?;
@@ -242,6 +256,16 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         observer.observe(&self.content);
         self.observation.replace(Some((observer, resized)));
         Ok(())
+    }
+    /// Release native observations and subscriptions while retaining the draft and nodes.
+    fn disconnect(&self) {
+        self.unsubscribe();
+        let listeners = self.listeners.take();
+        let observation = self.observation.take();
+        if let Some((observer, _)) = &observation {
+            observer.disconnect();
+        }
+        drop((listeners, observation));
     }
     /// Record one scroll observation, with fractional offsets.
     fn scrolled(&self) {
