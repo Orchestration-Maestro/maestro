@@ -36,7 +36,10 @@ impl Completion {
     }
     /// Moves callback strength out of the task's actual invocation operands.
     pub(super) fn callback(&self, handle: Handle) -> Callback {
-        let callback = Callback { id: handle.id() };
+        let callback = Callback {
+            id: handle.id(),
+            schema: None,
+        };
         self.retain(handle);
         callback
     }
