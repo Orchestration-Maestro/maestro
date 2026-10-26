@@ -64,6 +64,15 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
     ),
+    /// Uses independently retained accepted credentials.
+    Credentials(u64, crate::credential_reads::Request),
+    /// Resolves a key while retaining the original owner through settlement.
+    CredentialKey(
+        u64,
+        (String, Option<bool>),
+        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
+        Admission,
+    ),
     /// Reads the original live catalog, not a captured descriptor list.
     Catalog(u64, crate::catalog_reads::Request),
     /// Resolves credentials using the caller's effects without blocking other requests.
@@ -71,6 +80,13 @@ pub(crate) enum Message {
         u64,
         Box<Model>,
         tokio::sync::oneshot::Sender<Result<ResolvedRequestAuth, String>>,
+        Admission,
+    ),
+    /// Resolves a key through the original catalog's credential and config owners.
+    ProviderKey(
+        u64,
+        String,
+        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
     /// Reads one retained node of an already-built tree.
@@ -189,6 +205,11 @@ enum Capability {
     History(Rc<RefCell<dyn ReadonlySessionManager>>),
     /// Original writable setup capability, not a copied or reconstructed history.
     Writer(Rc<RefCell<maestro_extensions::SessionManager>>),
+    /// Original credentials and their request-time effects.
+    Credentials(
+        Arc<maestro_extensions::AuthStorage>,
+        maestro_extensions::ConfigValues,
+    ),
     /// Original independently retained catalog.
     Catalog(SharedHandle<ModelRegistry>),
     /// A captured node, independent of the reader that produced its tree.
@@ -320,6 +341,16 @@ impl Registry {
     ) -> Result<crate::catalog_reads::Endpoint, String> {
         self.insert(Capability::Catalog(catalog))
             .map(crate::catalog_reads::Endpoint)
+    }
+
+    /// Retains accepted credentials together with their original request-time effects.
+    pub(crate) fn credentials(
+        &self,
+        owner: Arc<maestro_extensions::AuthStorage>,
+        effects: maestro_extensions::ConfigValues,
+    ) -> Result<crate::credential_reads::Endpoint, String> {
+        self.insert(Capability::Credentials(owner, effects))
+            .map(crate::credential_reads::Endpoint)
     }
 
     /// Retains a captured node without keeping the guarded context or reader alive.

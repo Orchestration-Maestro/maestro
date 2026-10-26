@@ -147,3 +147,17 @@ path joining belongs to [maestro-path](../crates/maestro-path/src/lib.rs).
 See the [crate example](../crates/maestro-credentials/README.md) for a controlled
 adapter. Browser callers supply their own operations; the native adapter is absent
 from browser builds.
+
+## Extension credential handles
+
+A guest acquires `AuthStorage` through `ModelRegistry::auth_storage()` or wraps a
+supplied `AuthStoragePort`. Clones share the acquired owner, independently of the
+context or catalog handle. Stored reads and changes, runtime overrides, reload,
+logout, authentication metadata and drainable errors use the native credential
+algorithms above. Key resolution retains the original owner and command effects
+until it settles. Host and record-decoding failures are recoverable
+`ExtensionResult` errors; persistence failures still drain from the owner.
+
+Guest file and memory constructors, raw-text backend callbacks and fallback
+resolver installation are not exposed yet. Native constructors and backends are
+unchanged.

@@ -1,5 +1,5 @@
 //! Canonical catalog imports preserve current descriptors and exact lookup operands.
-use crate::read_imports::ReadEndpoint;
+use crate::read_imports::{ReadEndpoint, add_operand, add_read, operand, resource};
 use crate::{
     catalog_reads::{Endpoint, Request},
     context_imports::add_resource,
@@ -15,6 +15,9 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_resource::<T, Endpoint>(host, "model-registry")?;
+    add_metadata(host)?;
+    add_mutations(host)?;
+    add_provider_key(host)?;
     for (method, request) in [
         ("get-all", Request::All as fn(_) -> _),
         ("get-available", Request::Available),
@@ -88,4 +91,79 @@ impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
             maestro_extensions::ResolvedRequestAuth::Error { error } => Self::Error(error),
         }
     }
+}
+
+/// Links current metadata and model-authentication predicates.
+fn add_metadata<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    add_read(
+        host,
+        "[method]model-registry.get-error",
+        Request::Error,
+        resource::<T, Endpoint>,
+    )?;
+    for (name, request) in [
+        ("get-provider-auth-status", Request::Status as fn(_, _) -> _),
+        ("get-provider-display-name", Request::Display),
+    ] {
+        add_operand(
+            host,
+            &format!("[method]model-registry.{name}"),
+            request,
+            operand::<T, Endpoint, String>,
+        )?;
+    }
+    for (name, request) in [
+        (
+            "has-configured-auth",
+            Request::HasConfiguredAuth as fn(_, _) -> _,
+        ),
+        ("is-using-oauth", Request::IsUsingOAuth),
+    ] {
+        add_operand(
+            host,
+            &format!("[method]model-registry.{name}"),
+            request,
+            operand::<T, Endpoint, String>,
+        )?;
+    }
+    Ok(())
+}
+/// Mutates this catalog directly, never the extension's registration queue.
+fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    add_read(
+        host,
+        "[method]model-registry.refresh",
+        Request::Refresh,
+        resource::<T, Endpoint>,
+    )?;
+    add_operand(
+        host,
+        "[method]model-registry.unregister-provider",
+        Request::Unregister,
+        operand::<T, Endpoint, String>,
+    )?;
+    host.func_wrap(
+        "[method]model-registry.register-provider",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, name, config): (Resource<Endpoint>, String, String)| {
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            Ok((endpoint.read(|reply| Request::Register(name, config, reply)),))
+        },
+    )
+}
+/// Resolves the provider key on the original local catalog without blocking other requests.
+fn add_provider_key<T: WasiView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap_concurrent(
+        "[method]model-registry.get-api-key-for-provider",
+        |accessor, (resource, provider): (Resource<Endpoint>, String)| {
+            Box::pin(async move {
+                let endpoint = accessor.with(|mut access| {
+                    Ok::<_, wasmtime::Error>(access.get().ctx().table.get(&resource)?.clone())
+                })?;
+                Ok((endpoint.provider_key(provider).await,))
+            })
+        },
+    )
 }

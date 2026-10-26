@@ -20,6 +20,8 @@ mod route;
 struct Generated;
 
 impl Imports for Generated {
+    type Credentials = host::AuthStorage;
+
     type JsonNode = host::JsonNode;
     fn get_all_tools(&self) -> ExtensionResult<super::ToolListing<Self::Callback>> {
         let listing = host::get_all_tools()?;
@@ -101,6 +103,20 @@ impl Imports for Generated {
         json_splice(node: &Self::JsonNode, path: &str, range: (u32, u32), values: &[String]) -> ExtensionResult<Vec<String>> => splice(path, range, values);
         callback_id(callback: &Self::Callback) -> u32 => id();
         unsubscribe(subscription: &Self::Subscription) -> ExtensionResult<()> => unsubscribe();
+        registry_auth_storage(resource: &Self::Registry) -> ExtensionResult<Self::Credentials> => auth_storage();
+        credentials_set_runtime_api_key(resource: &Self::Credentials, provider: &str, key: &str) -> ExtensionResult<()> => set_runtime_api_key(provider, key);
+        credentials_remove_runtime_api_key(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => remove_runtime_api_key(provider);
+        credentials_reload(resource: &Self::Credentials) -> ExtensionResult<()> => reload();
+        credentials_get(resource: &Self::Credentials, provider: &str) -> ExtensionResult<Option<String>> => get(provider);
+        credentials_set(resource: &Self::Credentials, provider: &str, credential: &str) -> ExtensionResult<()> => set(provider, credential);
+        credentials_remove(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => remove(provider);
+        credentials_list(resource: &Self::Credentials) -> ExtensionResult<Vec<String>> => list();
+        credentials_has(resource: &Self::Credentials, provider: &str) -> ExtensionResult<bool> => has(provider);
+        credentials_has_auth(resource: &Self::Credentials, provider: &str) -> ExtensionResult<bool> => has_auth(provider);
+        credentials_get_auth_status(resource: &Self::Credentials, provider: &str) -> ExtensionResult<String> => get_auth_status(provider);
+        credentials_get_all(resource: &Self::Credentials) -> ExtensionResult<String> => get_all();
+        credentials_drain_errors(resource: &Self::Credentials) -> ExtensionResult<String> => drain_errors();
+        credentials_logout(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => logout(provider);
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
         aborted(signal: &host::AbortSignal) -> bool => aborted();
@@ -279,6 +295,14 @@ impl Imports for Generated {
         })
     }
 
+    fn credentials_get_api_key<'a>(
+        &'a self,
+        resource: &'a Self::Credentials,
+        provider: String,
+        include_fallback: Option<bool>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(resource.get_api_key(provider, include_fallback))
+    }
     fn registry_get_api_key_for_provider<'a>(
         &'a self,
         resource: &'a Self::Registry,

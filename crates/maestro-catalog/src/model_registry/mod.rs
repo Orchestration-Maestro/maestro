@@ -172,6 +172,11 @@ impl ModelRegistry {
         self.upsert_registered_provider(provider_name, config);
         Ok(())
     }
+    /// Borrows the credential-command effects supplied at construction.
+    #[must_use]
+    pub fn config_values(&self) -> &ConfigValues {
+        &self.config_values
+    }
     /// Borrow the platform credential owner supplied at construction.
     #[must_use]
     pub fn auth_storage(&self) -> &SharedHandle<AuthStorage> {

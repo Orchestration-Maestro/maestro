@@ -48,7 +48,10 @@ pub mod footer_data_provider;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
-pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
+pub use maestro_catalog::{AuthCredential, AuthStorage, AuthStorageData};
+pub use maestro_catalog::{
+    ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
+};
 pub use maestro_models::{
     Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
 };

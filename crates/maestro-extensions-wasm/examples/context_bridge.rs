@@ -28,6 +28,9 @@ mod json_boundary;
 #[path = "context_bridge/prefixes.rs"]
 mod prefixes;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/providers.rs"]
+mod providers;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
 #[cfg(target_arch = "wasm32")]
@@ -165,6 +168,9 @@ fn command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if args.starts_with("credential ") || args == "provider catalog" {
+            return Err(providers::command(&api, &context, &args).await?.to_string());
+        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());

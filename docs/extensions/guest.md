@@ -367,6 +367,18 @@ same host catalog. Models and provider data are checked for nonfinite numbers
 before the call; `AuthStatus` and `AuthSource` are the
 [shared credential records](../records.md#credential-records).
 
+`ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
+copied credentials. Its `AuthStorage` handle can outlive the creating callback.
+Reads, runtime key overrides, stored credential changes, reload, logout and error
+draining reach that same owner. `get_api_key` uses its original credential-command
+effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
+remain in `drain_errors` rather than rolling back accepted state.
+
+The guest currently acquires credentials from a catalog or wraps a supplied
+`AuthStoragePort`. File and memory constructors, authored raw-text backends and
+fallback resolver callbacks are not exposed yet. Callable provider stream and
+OAuth fields remain separate from the provider data record.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from

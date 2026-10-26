@@ -20,6 +20,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_values(host)?;
+    add_providers(host)?;
     for (name, request) in [
         ("append-entry", Request::Append as fn(_, _, _) -> _),
         ("send-message", Request::SendMessage),
@@ -184,4 +185,23 @@ impl From<FlagOptions> for types::ExtensionFlagOptions {
             default: options.default.map(types::FlagValue::from),
         }
     }
+}
+
+/// Links individual provider mutations to their original registration facade.
+fn add_providers<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "register-provider",
+        |store: StoreContextMut<'_, T>, (name, config): (String, String)| {
+            Ok((store
+                .data()
+                .api()
+                .read(|reply| Request::RegisterProvider(name, config, reply)),))
+        },
+    )?;
+    crate::read_imports::add_operand(
+        host,
+        "unregister-provider",
+        Request::UnregisterProvider,
+        |store, (name,)| Ok((store.api().clone(), name)),
+    )
 }

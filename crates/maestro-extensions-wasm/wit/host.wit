@@ -285,8 +285,27 @@ interface host {
     }
     /// Resolution outcome, separate from an import failure.
     variant resolved-request-auth { ok(request-auth), error(string) }
+    /// Independently retained accepted credentials and their original backend.
+    resource auth-storage {
+        set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;
+        remove-runtime-api-key: func(provider: string) -> result<_, string>;
+        reload: func() -> result<_, string>;
+        get: func(provider: string) -> result<option<string>, string>;
+        set: func(provider: string, credential: string) -> result<_, string>;
+        remove: func(provider: string) -> result<_, string>;
+        %list: func() -> result<list<string>, string>;
+        has: func(provider: string) -> result<bool, string>;
+        has-auth: func(provider: string) -> result<bool, string>;
+        get-auth-status: func(provider: string) -> result<string, string>;
+        get-all: func() -> result<string, string>;
+        drain-errors: func() -> result<string, string>;
+        logout: func(provider: string) -> result<_, string>;
+        get-api-key: async func(provider: string, include-fallback: option<bool>) -> result<option<string>, string>;
+    }
+
     /// Independently retained host catalog.
     resource model-registry {
+        auth-storage: func() -> result<auth-storage, string>;
         get-all: func() -> result<string, string>;
         get-available: func() -> result<string, string>;
         find: func(provider: string, model-id: string) -> result<option<string>, string>;

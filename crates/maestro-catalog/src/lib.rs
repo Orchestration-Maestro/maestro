@@ -1,8 +1,10 @@
 //! Local model catalog loading and composition.
 mod model_registry;
-pub use maestro_credentials::ConfigValueOperations;
 /// Clear the shared credentials command cache.
 pub use maestro_credentials::clear_config_value_cache as clear_api_key_cache;
+pub use maestro_credentials::{
+    AuthCredential, AuthStorage, AuthStorageData, ConfigValueOperations,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use model_registry::NativeModelFileOperations;
 pub use model_registry::{

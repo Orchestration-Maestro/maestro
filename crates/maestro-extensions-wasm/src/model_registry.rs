@@ -12,6 +12,8 @@ port! {
     /// Host queries available through a retained catalog.
     ModelRegistryPort for ModelRegistry via 0 {
         errors "Returns the host failure or selected-record decoding error.";
+        /// Returns the same credential owner this catalog uses.
+        fn auth_storage() -> crate::AuthStorage;
         /// Returns the supplied model list.
         fn get_all() -> Vec<Model>;
         /// Returns the supplied configured-auth list.

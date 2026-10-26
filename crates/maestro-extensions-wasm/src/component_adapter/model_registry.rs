@@ -24,6 +24,12 @@ pub(super) fn registry<I: Imports>(imports: I, resource: I::Registry) -> ModelRe
     ModelRegistry::new(Rc::new(Registry { imports, resource }))
 }
 impl<I: Imports> ModelRegistryPort for Registry<I> {
+    fn auth_storage(&self) -> ExtensionResult<crate::AuthStorage> {
+        self.imports
+            .registry_auth_storage(&self.resource)
+            .map(|resource| super::auth_storage::storage(self.imports.clone(), resource))
+    }
+
     fn get_all(&self) -> ExtensionResult<Vec<Model>> {
         decode(&self.imports.registry_get_all(&self.resource)?)
     }

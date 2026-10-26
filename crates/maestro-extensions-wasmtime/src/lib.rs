@@ -9,6 +9,8 @@ mod command_reads;
 mod compact_calls;
 mod context_imports;
 mod context_reads;
+mod credential_imports;
+mod credential_reads;
 mod effect_imports;
 mod event_imports;
 mod event_reads;

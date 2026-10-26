@@ -332,6 +332,116 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type Credentials = Reader;
+    fn registry_auth_storage(&self, resource: &Reader) -> ExtensionResult<Reader> {
+        Ok(Reader {
+            data: resource.data.clone(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn credentials_set_runtime_api_key(
+        &self,
+        resource: &Reader,
+        provider: &str,
+        key: &str,
+    ) -> ExtensionResult<()> {
+        resource.data.unit(
+            "set_runtime_api_key",
+            &[serde_json::json!(provider), serde_json::json!(key)],
+        )
+    }
+    fn credentials_remove_runtime_api_key(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<()> {
+        resource
+            .data
+            .unit("remove_runtime_api_key", &[serde_json::json!(provider)])
+    }
+    fn credentials_reload(&self, resource: &Reader) -> ExtensionResult<()> {
+        resource.data.unit("reload", &[])
+    }
+    fn credentials_get(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<Option<String>> {
+        resource.data.record("get", &[serde_json::json!(provider)])
+    }
+    fn credentials_set(
+        &self,
+        resource: &Reader,
+        provider: &str,
+        credential: &str,
+    ) -> ExtensionResult<()> {
+        resource.data.unit(
+            "set",
+            &[serde_json::json!(provider), serde_json::json!(credential)],
+        )
+    }
+    fn credentials_remove(&self, resource: &Reader, provider: &str) -> ExtensionResult<()> {
+        resource.data.unit("remove", &[serde_json::json!(provider)])
+    }
+    fn credentials_list(&self, resource: &Reader) -> ExtensionResult<Vec<String>> {
+        serde_json::from_str(
+            &resource
+                .data
+                .record("list", &[])?
+                .ok_or("missing credential list")?,
+        )
+        .map_err(|error| error.to_string())
+    }
+    fn credentials_has(&self, resource: &Reader, provider: &str) -> ExtensionResult<bool> {
+        resource.data.flag("has", &[serde_json::json!(provider)])
+    }
+    fn credentials_has_auth(&self, resource: &Reader, provider: &str) -> ExtensionResult<bool> {
+        resource
+            .data
+            .flag("has_auth", &[serde_json::json!(provider)])
+    }
+    fn credentials_get_auth_status(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("get_auth_status", &[serde_json::json!(provider)])?
+            .ok_or("missing credential record".into())
+    }
+    fn credentials_get_all(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("get_all", &[])?
+            .ok_or("missing credential record".into())
+    }
+    fn credentials_drain_errors(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("drain_errors", &[])?
+            .ok_or("missing credential record".into())
+    }
+    fn credentials_logout(&self, resource: &Reader, provider: &str) -> ExtensionResult<()> {
+        resource.data.unit("logout", &[serde_json::json!(provider)])
+    }
+    fn credentials_get_api_key<'a>(
+        &'a self,
+        resource: &'a Reader,
+        provider: String,
+        include_fallback: Option<bool>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move {
+            resource.data.optional(
+                "get_api_key",
+                &[
+                    serde_json::json!(provider),
+                    serde_json::json!(include_fallback),
+                ],
+            )
+        })
+    }
+
     type BashOutput = super::shell_host::NativeReceiver;
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
         self.observe().shell.outputs[output.id].data(bytes)

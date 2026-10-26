@@ -181,6 +181,14 @@ use super::host::{Imports, State};
 use crate::bindings::host_side::maestro::extension::host;
 use wasmtime::component::{Accessor, Resource};
 impl host::HostModelRegistry for State {
+    fn auth_storage(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Resource<Reader>, String>> {
+        let reader = self.table.get(&this)?.clone();
+        Ok(Ok(self.push(reader)?))
+    }
+
     fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self
             .table

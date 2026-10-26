@@ -193,3 +193,16 @@ after the preceding callback. See [credential resolution](credentials.md#stored-
 OAuth metadata, the shared mutable
 `BUILT_IN_PROVIDER_DISPLAY_NAMES` table, then the provider ID. Empty names are
 present values.
+
+## Extension catalogs
+
+The native component host forwards provider registration and removal through the
+extension's existing runtime. Registration before binding uses its queue; direct
+mutations through a retained `ModelRegistry` use that catalog instead. Catalog
+refresh, authentication metadata, display names and request authentication reach
+the original native owner.
+
+`ModelRegistry::auth_storage` in the guest returns the same credentials the
+catalog uses. Its retained handle also keeps the catalog's credential-command
+effects, available to native adapters through `config_values()`. A key changed
+through that handle is visible to later catalog requests.

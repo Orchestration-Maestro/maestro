@@ -575,6 +575,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_eq!(
         names(&contract.imports, true),
         [
+            "[method]auth-storage.get-api-key",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
@@ -1094,3 +1095,5 @@ fn assert_async_exports(contract: &Contract) {
 }
 
 mod tool_record_views;
+
+mod credential_host;

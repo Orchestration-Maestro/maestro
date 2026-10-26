@@ -1,0 +1,137 @@
+//! Provider catalog observations through the author facade.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
+use maestro_extensions_wasm::{ExtensionAPI, ExtensionContext, ModelRegistry, ProviderConfig};
+use serde_json::{Value, json};
+
+/// A complete provider record with one model and request authentication.
+fn config(id: &str) -> Result<ProviderConfig, String> {
+    serde_json::from_value(json!({
+        "name":" Literal provider ", "baseUrl":"https://provider.invalid", "apiKey":"literal-key",
+        "api":"openai-completions", "headers":{"x-test":"literal"}, "authHeader":true,
+        "models":[{"id":id,"name":id,"reasoning":false,"input":["text"],
+        "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":128,"maxTokens":16}]
+    })).map_err(|error| error.to_string())
+}
+
+/// Lists only the fixture's model identities in native order.
+fn ids(catalog: &ModelRegistry) -> Result<Vec<String>, String> {
+    Ok(catalog
+        .get_all()?
+        .into_iter()
+        .filter(|model| model.provider == "author-provider")
+        .map(|model| model.id)
+        .collect())
+}
+
+/// Registers, resolves, replaces, reloads and removes through one retained native catalog.
+pub(super) async fn observe(
+    api: &ExtensionAPI,
+    context: &ExtensionContext,
+) -> Result<Value, String> {
+    let catalog = context.model_registry()?;
+    api.register_provider("author-provider", config("first")?)?;
+    let before = ids(&catalog)?;
+    let model = catalog
+        .find("author-provider", "first")?
+        .ok_or("missing registered model")?;
+    let label = catalog.get_provider_display_name("author-provider")?;
+    let key = catalog.get_api_key_for_provider("author-provider").await?;
+    let configured = catalog.has_configured_auth(model.clone())?;
+    let status = catalog.get_provider_auth_status("author-provider")?;
+    let oauth = catalog.is_using_oauth(model.clone())?;
+    let auth = match catalog.get_api_key_and_headers(model).await? {
+        maestro_extensions_wasm::ResolvedRequestAuth::Ok { api_key, headers } => {
+            json!({"ok":true,"apiKey":api_key,"headers":headers})
+        }
+        maestro_extensions_wasm::ResolvedRequestAuth::Error { error } => {
+            json!({"ok":false,"error":error})
+        }
+    };
+    catalog.register_provider("author-provider", config("second")?)?;
+    let replaced = ids(&catalog)?;
+    catalog.refresh()?;
+    let refreshed = ids(&catalog)?;
+    let error = catalog.get_error()?;
+    api.unregister_provider("author-provider")?;
+    let removed = ids(&catalog)?.is_empty();
+    Ok(
+        json!({"label":label,"key":key,"configured":configured,"status":status,"oauth":oauth,
+        "before":before,"replaced":replaced,"refreshed":refreshed,"removed":removed,
+        "error":error,"auth":auth}),
+    )
+}
+
+thread_local! {
+    /// Independently retained credentials, not the context that returned them.
+    static CREDENTIALS: std::cell::RefCell<Option<maestro_extensions_wasm::AuthStorage>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Mutates credentials after catalog acquisition and keeps them beyond this callback.
+pub(super) async fn credentials(
+    context: &ExtensionContext,
+    retained: bool,
+) -> Result<Value, String> {
+    if retained {
+        let owner = CREDENTIALS
+            .with(|slot| slot.borrow().clone())
+            .ok_or("missing retained credentials")?;
+        return Ok(json!(owner.get_api_key("author-credential", None).await?));
+    }
+    let catalog = context.model_registry()?;
+    let owner = catalog.auth_storage()?;
+    owner.set("author-credential", stored_key())?;
+    owner.set_runtime_api_key("author-credential", "runtime-key")?;
+    let runtime = catalog
+        .get_api_key_for_provider("author-credential")
+        .await?;
+    if runtime.as_deref() != Some("runtime-key") {
+        return Err("runtime key not shared".into());
+    }
+    owner.remove_runtime_api_key("author-credential")?;
+    let result = json!({"key":catalog.get_api_key_for_provider("author-credential").await?,
+        "stored":owner.get("author-credential")?,"listed":owner.list()?,
+        "has":owner.has("author-credential")?,"auth":owner.has_auth("author-credential")?,
+        "status":owner.get_auth_status("author-credential")?,"errors":owner.drain_errors()?});
+    let all = owner.get_all()?;
+    if all.len() != 1 || !all.contains_key("author-credential") {
+        return Err("typed credential view detached".into());
+    }
+    owner.reload()?;
+    owner.remove("author-credential")?;
+    if owner.has("author-credential")? || owner.get("author-credential")?.is_some() {
+        return Err("credential removal did not reach owner".into());
+    }
+    owner.set("author-credential", stored_key())?;
+    owner.logout("author-credential")?;
+    if !owner.list()?.is_empty() {
+        return Err("logout did not remove stored credential".into());
+    }
+    owner.set("author-credential", stored_key())?;
+    CREDENTIALS.with(|slot| slot.replace(Some(owner)));
+    Ok(result)
+}
+
+/// The stored key used to compare catalog and retained-owner reads.
+fn stored_key() -> maestro_extensions_wasm::AuthCredential {
+    maestro_extensions_wasm::AuthCredential::ApiKey(maestro_extensions_wasm::ApiKeyCredential {
+        key: "!checkpoint-credential".into(),
+    })
+}
+
+/// Selects the provider and credential observations used by the native host tests.
+pub(super) async fn command(
+    api: &ExtensionAPI,
+    context: &ExtensionContext,
+    request: &str,
+) -> Result<Value, String> {
+    match request {
+        "provider catalog" => observe(api, context).await,
+        "credential owner" => credentials(context, false).await,
+        "credential retained" => credentials(context, true).await,
+        _ => Err("unknown provider fixture request".into()),
+    }
+}
