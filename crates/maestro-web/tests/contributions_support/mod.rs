@@ -271,3 +271,17 @@ pub(crate) fn select(node: &Node, selector: &str) -> Element {
         .unwrap()
         .unwrap_or_else(|| panic!("missing {selector}"))
 }
+/// Whether `element` holds the page focus.
+pub(crate) fn focused(element: &Element) -> bool {
+    document()
+        .active_element()
+        .is_some_and(|active| active.is_same_node(Some(element)))
+}
+/// The disclosure button of a collapsible tool header row, absent from a plain header.
+pub(crate) fn disclosure(header: &Node) -> Option<HtmlElement> {
+    header
+        .unchecked_ref::<Element>()
+        .query_selector(":scope > button.maestro-tool-chevron")
+        .unwrap()
+        .map(wasm_bindgen::JsCast::unchecked_into)
+}

@@ -1,6 +1,10 @@
-//! Browser-owned count projection and retained difference nodes.
+//! Browser-owned count projection, retained difference nodes and their page content.
 use super::Normalized;
-use crate::browser::attachment_content;
+use crate::{
+    browser::attachment_content,
+    dom::{DomContent, DomRoot, DomView},
+    tools::types::ToolUiError,
+};
 use std::{cell::RefCell, rc::Rc};
 
 /// Browser counts derived from the same input used by retained equality.
@@ -26,22 +30,19 @@ pub(super) fn prepare(input: Rc<Normalized>) -> Lines {
         removed,
     }
 }
-/// Mount literal rows and the optional title/count header.
-pub(super) fn mount(
+/// Build literal rows and the optional title/count header.
+fn build(
     document: &web_sys::Document,
-    lines: &Rc<Lines>,
-) -> Result<attachment_content::ReadingRoot, attachment_content::AttachmentHostError> {
+    lines: &Lines,
+) -> Result<Mounted, attachment_content::AttachmentHostError> {
     use attachment_content::browser::{append, element};
     let root = element(
         document,
         "div",
         &format!("maestro-diff {}", lines.input.class_name),
     )?;
-    let style = element(document, "style", "")?;
-    style.set_text_content(Some(include_str!("../diff.css")));
-    append(&root, &style)?;
     let mut mounted = Mounted {
-        root: root.clone(),
+        root,
         header: None,
         scroll: element(document, "div", "maestro-diff-scroll")?,
         title: None,
@@ -49,33 +50,41 @@ pub(super) fn mount(
         rows: Vec::new(),
     };
     mount_header(document, lines, &mut mounted)?;
-
     for _ in &lines.input.rows {
         let line = element(document, "pre", "")?;
         append(&mounted.scroll, &line)?;
         mounted.rows.push(line);
     }
-    append(&root, &mounted.scroll)?;
+    append(&mounted.root, &mounted.scroll)?;
     mounted.update(lines);
-    let lines = Rc::clone(lines);
-    let mounted = Rc::new(RefCell::new(mounted));
-    Ok(attachment_content::ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        element: root,
-        slots: vec![],
-        owner: Some(Box::new(Rc::clone(&mounted))),
-        commit: Some(Box::new(move |previous| {
-            if let Some(previous) = previous
-                .owner
-                .as_ref()
-                .and_then(|owner| owner.downcast_ref::<Rc<RefCell<Mounted>>>())
-            {
-                previous.borrow_mut().reconcile(&mounted.borrow(), &lines)?;
-            }
-            Ok(())
-        })),
-    })
+    Ok(mounted)
+}
+/// The shown input and its retained nodes.
+type Shown = RefCell<(Rc<super::Normalized>, Mounted)>;
+impl DomContent for super::DiffContent {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
+        crate::dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        let mounted = build(&view.document, &prepare(Rc::clone(&self.0)))?;
+        Ok(DomRoot {
+            node: mounted.root.clone().into(),
+            owner: Some(Box::new(Shown::new((Rc::clone(&self.0), mounted)))),
+        })
+    }
+    fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
+        let shown = root
+            .owner
+            .as_ref()
+            .and_then(|owner| owner.downcast_ref::<Shown>())
+            .ok_or_else(|| ToolUiError::Presentation("Missing difference state".into()))?;
+        let (input, mounted) = &mut *shown.borrow_mut();
+        if **input == *self.0 {
+            return Ok(());
+        }
+        let lines = prepare(Rc::clone(&self.0));
+        mounted.reconcile(&build(&view.document, &lines)?, &lines)?;
+        *input = Rc::clone(&self.0);
+        Ok(())
+    }
 }
 
 /// Build the optional title and semantically colored count spans.

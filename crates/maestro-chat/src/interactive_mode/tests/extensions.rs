@@ -1,6 +1,8 @@
 //! Extension shortcut selection, dispatch and ownership through the editor's first
 //! interceptor.
 
+mod autocomplete;
+
 use super::{Setup, World, isolated};
 use maestro_app::{
     Extension, ExtensionFactory, ExtensionShortcut, Local, ReadonlySessionManager, strip_ansi,
@@ -10,7 +12,7 @@ use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 
 /// The loaded extension owners of `world`, in load order.
-fn owners(world: &World) -> Vec<Rc<RwLock<Extension<Local>>>> {
+pub(super) fn owners(world: &World) -> Vec<Rc<RwLock<Extension<Local>>>> {
     world
         .mode
         .runtime_host
@@ -22,7 +24,7 @@ fn owners(world: &World) -> Vec<Rc<RwLock<Extension<Local>>>> {
 }
 
 /// An extension factory that registers nothing until the test adds shortcuts.
-fn idle() -> ExtensionFactory<Local> {
+pub(super) fn idle() -> ExtensionFactory<Local> {
     Rc::new(|_| Box::pin(std::future::ready(Ok(()))))
 }
 
@@ -45,7 +47,10 @@ fn built(directory: &Path, further: Vec<(String, ExtensionFactory<Local>)>) -> W
 }
 
 /// Registers `shortcut` on `owner` under the owner's own path.
-fn register(owner: &Rc<RwLock<Extension<Local>>>, mut shortcut: ExtensionShortcut<Local>) {
+pub(super) fn register(
+    owner: &Rc<RwLock<Extension<Local>>>,
+    mut shortcut: ExtensionShortcut<Local>,
+) {
     shortcut.extension_path = owner.read().unwrap().path.clone();
     let key = shortcut.shortcut.clone();
     owner

@@ -19,8 +19,15 @@ use crate::bindings::host_side::maestro::extension::session::{
 };
 use crate::bindings::host_side::maestro::extension::{host, session};
 
+/// Snapshot key and registration-ordered callback identities in the author-only host.
+type ListenerSnapshot = (u32, Vec<Option<u32>>);
+
 /// Host identity of one guest closure.
-pub struct Identity(u32);
+pub struct Identity(
+    pub(crate) u32,
+    pub(crate) Option<super::schema_host::Origin>,
+);
+pub use super::schema_host::JsonNode;
 /// Cancellation flag.
 pub struct Flag(pub std::sync::Arc<std::sync::atomic::AtomicBool>);
 /// Progress resource owned by one execution.
@@ -93,6 +100,8 @@ pub struct State {
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
     pub(super) guest: Option<Guest>,
+    /// The originating instance associated with the current import projection.
+    pub(super) schema_origin: Option<Arc<OnceLock<Guest>>>,
 }
 
 impl WasiView for State {
@@ -105,6 +114,59 @@ impl WasiView for State {
 }
 
 impl State {
+    /// Records literal emission data and retains this fixture's all-local listener list.
+    fn snapshot_listeners(
+        &mut self,
+        emitter: &Resource<super::bus_host::Emitter>,
+        channel: &str,
+        data: &str,
+    ) -> wasmtime::Result<Result<ListenerSnapshot, String>> {
+        let key = self.table.get(emitter)?.key;
+        if key != 0 {
+            self.observed.bus.renderer_emissions.push((
+                key,
+                channel.into(),
+                serde_json::from_str(data)?,
+            ));
+        }
+        let handlers = match self.observed.bus.emit(channel, data) {
+            Ok(handlers) => handlers,
+            Err(error) => return Ok(Err(error)),
+        };
+        let id = u32::try_from(self.observed.bus.snapshots.len())?;
+        let tags = handlers
+            .iter()
+            .map(|id| {
+                self.table
+                    .get(&borrow(*id))
+                    .map(|identity| Some(identity.0))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.observed.bus.snapshots.push(Some(handlers));
+        Ok(Ok((id, tags)))
+    }
+    /// Provides an independently owned emitter resource for one local prefix.
+    fn begin_local_listener(
+        &mut self,
+        emitter: &Resource<super::bus_host::Emitter>,
+        snapshot: u32,
+        index: u32,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Emitter>, String>> {
+        let valid = self
+            .observed
+            .bus
+            .snapshots
+            .get(snapshot as usize)
+            .and_then(Option::as_ref)
+            .and_then(|entries| entries.get(index as usize))
+            .is_some();
+        if !valid {
+            return Ok(Err("snapshot entry ended".into()));
+        }
+        let key = self.table.get(emitter)?.key;
+        Ok(Ok(self.table.push(super::bus_host::Emitter { key })?))
+    }
+
     /// A state with no registrations, reading the host's own wall clock.
     fn new() -> Self {
         Self::with_clock(None)
@@ -122,6 +184,7 @@ impl State {
             table: ResourceTable::new(),
             observed: Observed::default(),
             guest: None,
+            schema_origin: None,
         }
     }
 
@@ -153,7 +216,7 @@ impl session::Host for State {}
 impl host::HostCallback for State {
     fn new(&mut self) -> wasmtime::Result<Resource<Identity>> {
         let identity = self.observed.next_identity();
-        Ok(self.table.push(Identity(identity))?)
+        Ok(self.table.push(Identity(identity, None))?)
     }
 
     fn id(&mut self, this: Resource<Identity>) -> wasmtime::Result<u32> {
@@ -188,9 +251,10 @@ impl host::HostToolUpdate for State {
         &mut self,
         _this: Resource<Update>,
         partial: String,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let value: serde_json::Value = serde_json::from_str(&partial)?;
-        Ok(self.observed.update(&partial, &value["details"]))
+        let result = self.observed.update(&partial, &value["details"]);
+        self.routed(result)
     }
     fn drop(&mut self, this: Resource<Update>) -> wasmtime::Result<()> {
         self.release(this)
@@ -198,6 +262,10 @@ impl host::HostToolUpdate for State {
 }
 
 impl host::HostAbortSignal for State {
+    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.abort(this.rep()).map_err(|error| error.to_string()))
+    }
+
     fn aborted(&mut self, this: Resource<Flag>) -> wasmtime::Result<bool> {
         Ok(self
             .table
@@ -280,13 +348,13 @@ macro_rules! context_methods {
             let flag = self.observed.catalog.flag.clone();
             Ok(Ok(flag.map(|flag| self.push(Flag(flag))).transpose()?))
         }
-        fn abort(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<(), String>> {
+        fn abort(&mut self, this: Resource<$kind>) -> wasmtime::Result<Resource<Route>> {
             let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
-                return Ok(Err(e));
+                return self.routed(Err(e));
             }
             self.observed.log("context abort");
-            Ok(Ok(()))
+            self.routed(Ok(()))
         }
         fn has_pending_messages(
             &mut self,
@@ -298,13 +366,13 @@ macro_rules! context_methods {
             }
             Ok(Ok(self.observed.catalog.data.queued))
         }
-        fn shutdown(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<(), String>> {
+        fn shutdown(&mut self, this: Resource<$kind>) -> wasmtime::Result<Resource<Route>> {
             let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
-                return Ok(Err(e));
+                return self.routed(Err(e));
             }
             self.observed.log("context shutdown");
-            Ok(Ok(()))
+            self.routed(Ok(()))
         }
         fn get_context_usage(
             &mut self,
@@ -336,24 +404,28 @@ macro_rules! context_methods {
         fn compact(
             &mut self,
             this: Resource<$kind>,
-            instructions: Option<String>,
+            instructions: Option<host::CompactionData>,
             complete: Option<Resource<Identity>>,
             error: Option<Resource<Identity>>,
-        ) -> wasmtime::Result<Result<(), String>> {
+        ) -> wasmtime::Result<Resource<Route>> {
             if let Err(error) = self.observed.actions.check() {
-                return Ok(Err(error));
+                return self.routed(Err(error));
             }
             let cwd = match self.table.get(&this)?.0.cwd() {
                 Ok(cwd) => cwd,
-                Err(error) => return Ok(Err(error)),
+                Err(error) => return self.routed(Err(error)),
             };
             self.observed.log(format!("compact binding {cwd}"));
-            Ok(super::action_host::compact(
+            let result = super::action_host::compact(
                 &mut self.observed,
-                instructions.as_deref(),
+                instructions
+                    .as_ref()
+                    .and_then(|data| data.custom_instructions.as_deref()),
                 complete.map(|c| c.rep()),
                 error.map(|c| c.rep()),
-            ))
+                instructions.is_some(),
+            );
+            self.routed(result)
         }
         fn cwd(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<String, String>> {
             Ok(self.table.get(&this)?.0.cwd())
@@ -437,20 +509,107 @@ impl host::HostSubscription for State {
         Ok(())
     }
 }
-impl host::HostTheme for State {
-    fn drop(&mut self, this: Resource<super::renderer_host::Theme>) -> wasmtime::Result<()> {
-        let key = self.table.get(&this)?.0.clone();
-        self.observed.log(format!("theme-drop {key}"));
-        self.release(this)
-    }
-}
 impl host::HostCallbackEmitter for State {
     fn drop(&mut self, this: Resource<super::bus_host::Emitter>) -> wasmtime::Result<()> {
         self.table.delete(this)?;
         Ok(())
     }
 }
+/// A host operation the test host completed before returning it; it makes no nested call.
+pub struct Route(Option<Result<(), String>>);
+
+/// A deferred nested call; the test host never makes one.
+pub struct Settlement;
+
+impl host::HostLocalSettlement for State {
+    fn finish(&mut self, _: Resource<Settlement>, _: host::LocalResult) -> wasmtime::Result<()> {
+        Ok(())
+    }
+    fn drop(&mut self, this: Resource<Settlement>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl State {
+    /// Returns a routed import's result through its completed route.
+    pub(super) fn routed(
+        &mut self,
+        result: Result<(), String>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.push(Route(Some(result)))
+    }
+}
+
+impl host::HostImportRoute for State {
+    fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
+        let result = self.table.get_mut(&this)?.0.take();
+        Ok(host::RouteStep::Done(result.unwrap_or(Ok(()))))
+    }
+    fn resume(&mut self, _: Resource<Route>, _: host::LocalResult) -> wasmtime::Result<()> {
+        Ok(())
+    }
+    fn defer(&mut self, _: Resource<Route>) -> wasmtime::Result<Resource<Settlement>> {
+        self.push(Settlement)
+    }
+    fn drop(&mut self, this: Resource<Route>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
 impl host::Host for State {
+    fn callback_emit(
+        &mut self,
+        emitter: Resource<super::bus_host::Emitter>,
+        channel: String,
+        data: String,
+    ) -> wasmtime::Result<Result<(u32, Vec<Option<u32>>), String>> {
+        self.snapshot_listeners(&emitter, &channel, &data)
+    }
+    fn callback_begin_local(
+        &mut self,
+        emitter: Resource<super::bus_host::Emitter>,
+        snapshot: u32,
+        index: u32,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Emitter>, String>> {
+        self.begin_local_listener(&emitter, snapshot, index)
+    }
+    fn callback_end_local(
+        &mut self,
+        _: Resource<super::bus_host::Emitter>,
+        error: Option<String>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        if let Some(error) = error {
+            self.observed.log(format!("listener error: {error}"));
+        }
+        self.routed(Ok(()))
+    }
+    fn callback_segment(
+        &mut self,
+        _: Resource<super::bus_host::Emitter>,
+        _: u32,
+        start: u32,
+        end: u32,
+    ) -> wasmtime::Result<Resource<Route>> {
+        if start == end {
+            return self.routed(Ok(()));
+        }
+        self.routed(Err("author fixture has only guest-local listeners".into()))
+    }
+    fn callback_end_snapshot(
+        &mut self,
+        _: Resource<super::bus_host::Emitter>,
+        snapshot: u32,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(self
+            .observed
+            .bus
+            .snapshots
+            .get_mut(snapshot as usize)
+            .and_then(Option::take)
+            .map(drop)
+            .ok_or_else(|| "snapshot ended".into()))
+    }
+
     fn register_message_renderer(
         &mut self,
         custom_type: String,
@@ -471,43 +630,46 @@ impl host::Host for State {
         &mut self,
         message: String,
         options: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "sendMessage",
             &serde_json::json!([
                 super::action_host::document(Some(&message)),
                 super::action_host::document(options.as_deref())
             ]),
-        ))
+        );
+        self.routed(result)
     }
     fn send_user_message(
         &mut self,
         content: String,
         options: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "sendUserMessage",
             &serde_json::json!([
                 super::action_host::document(Some(&content)),
                 super::action_host::document(options.as_deref())
             ]),
-        ))
+        );
+        self.routed(result)
     }
-    fn set_session_name(&mut self, name: String) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    fn set_session_name(&mut self, name: String) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setSessionName",
             &serde_json::json!([name]),
-        ))
+        );
+        self.routed(result)
     }
     fn set_label(
         &mut self,
         entry_id: String,
         label: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setLabel",
             &serde_json::json!([
@@ -517,24 +679,24 @@ impl host::Host for State {
                     |v| serde_json::json!({"present":true,"value":v})
                 )
             ]),
-        ))
+        );
+        self.routed(result)
     }
-    fn set_active_tools(
-        &mut self,
-        tool_names: Vec<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    fn set_active_tools(&mut self, tool_names: Vec<String>) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setActiveTools",
             &serde_json::json!([tool_names]),
-        ))
+        );
+        self.routed(result)
     }
-    fn set_thinking_level(&mut self, level: String) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    fn set_thinking_level(&mut self, level: String) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setThinkingLevel",
             &serde_json::json!([serde_json::from_str::<serde_json::Value>(&level).unwrap()]),
-        ))
+        );
+        self.routed(result)
     }
     fn get_session_name(&mut self) -> wasmtime::Result<Result<Option<String>, String>> {
         Ok(self
@@ -547,9 +709,6 @@ impl host::Host for State {
         Ok(self.observed.actions.check().and_then(|()| {
             serde_json::from_value(self.observed.actions.value.clone()).map_err(|e| e.to_string())
         }))
-    }
-    fn get_all_tools(&mut self) -> wasmtime::Result<Result<String, String>> {
-        Ok(self.observed.actions.record())
     }
     fn get_commands(&mut self) -> wasmtime::Result<Result<String, String>> {
         Ok(self.observed.actions.record())
@@ -570,6 +729,25 @@ impl host::Host for State {
                     .map_err(wasmtime::Error::msg)?;
                 Ok(Ok(self.table.push(subscription)?))
             }
+            Err(error) => Ok(Err(error)),
+        }
+    }
+    fn new_signal(&mut self) -> wasmtime::Result<Result<Resource<Flag>, String>> {
+        Ok(Ok(self.push(Flag(Arc::default()))?))
+    }
+
+    fn signal_subscribe(
+        &mut self,
+        signal: Resource<Flag>,
+        listener: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Subscription>, String>> {
+        let key = Arc::as_ptr(&self.table.get(&signal)?.0).addr();
+        match self
+            .observed
+            .bus
+            .on(&format!("abort {key}"), listener.rep())
+        {
+            Ok(subscription) => Ok(Ok(self.table.push(subscription)?)),
             Err(error) => Ok(Err(error)),
         }
     }
@@ -665,29 +843,18 @@ impl host::Host for State {
         }))
     }
 
-    fn register_tool(
-        &mut self,
-        metadata: String,
-        prepare: Option<Resource<Identity>>,
-        execute: Resource<Identity>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(self
-            .observed
-            .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep()))
-    }
-
     fn append_entry(
         &mut self,
         custom_type: String,
         data: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {
-            return Ok(Err(error));
+            return self.routed(Err(error));
         }
         self.observed.entry(&custom_type, data.as_deref());
-        Ok(Ok(()))
+        self.routed(Ok(()))
     }
 }
 
@@ -772,10 +939,17 @@ impl host::HostCommandContextWithStore<State> for Imports {
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,
         id: String,
-        callback: Option<Resource<Identity>>,
+        options: Option<host::SwitchSessionOptions>,
     ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
         super::replacement_host::binding(accessor, &this)?;
-        super::replacement_host::command(accessor, "switchSession", &id, None, callback).await
+        super::replacement_host::command(
+            accessor,
+            "switchSession",
+            &id,
+            options.as_ref().map(|_| "{}"),
+            options.and_then(|options| options.with_session),
+        )
+        .await
     }
     async fn reload(
         accessor: &Accessor<State, Self>,
@@ -806,16 +980,21 @@ impl host::HostCommandContextWithStore<State> for Imports {
     async fn new_session(
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,
-        data: NewSessionCommandData,
+        data: Option<NewSessionCommandData>,
         setup: Option<Resource<Identity>>,
         with_session: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
-        let parent = data.parent_session.as_deref().unwrap_or("none");
+        let parent = data
+            .as_ref()
+            .and_then(|data| data.parent_session.as_deref())
+            .unwrap_or("none");
         let hold = accessor.with(|mut a| {
             super::setup_host::command_start(
                 &mut a.get().observed,
-                data.parent_session.as_deref(),
+                data.as_ref()
+                    .and_then(|data| data.parent_session.as_deref()),
                 (setup.is_some(), with_session.is_some()),
+                data.is_some(),
             )
         });
         pause(hold).await;
@@ -909,7 +1088,7 @@ pub async fn notify_compaction(
             &mut harness.store,
             (
                 borrow(handler),
-                payload,
+                payload.to_owned(),
                 Resource::new_borrow(emitter.rep()),
             ),
         )
@@ -940,6 +1119,14 @@ pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Compon
         .get_or_init(|| super::build::compile(path).map_err(|error| error.to_string()))
         .as_ref()
         .map_err(|message| wasmtime::format_err!("{message}"))
+}
+
+/// Build the existing test host's import wiring for one component instance.
+fn component_linker(engine: &Engine) -> wasmtime::Result<Linker<State>> {
+    let mut linker = Linker::new(engine);
+    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
+    Ok(linker)
 }
 
 impl Harness {
@@ -991,12 +1178,13 @@ impl Harness {
         component: &Component,
         state: State,
     ) -> wasmtime::Result<Self> {
-        let mut linker = Linker::new(engine);
-        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
-        Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
+        let origin = Arc::new(OnceLock::new());
+        let linker = component_linker(engine)?;
         let mut store = Store::new(engine, state);
         let extension = Extension::instantiate_async(&mut store, component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
+        let _ = origin.set(exports.clone());
+        store.data_mut().schema_origin = Some(origin);
         store.data_mut().guest = Some(exports.clone());
         let started = exports.clone();
         reported(
@@ -1005,6 +1193,24 @@ impl Harness {
                 .await??,
         )?;
         Ok(Self { store, exports })
+    }
+
+    /// Start another author instance using the same host resources and store.
+    pub async fn add_instance(&mut self, path: &Path) -> wasmtime::Result<Guest> {
+        let (_, component) = compiled(path)?;
+        let origin = Arc::new(OnceLock::new());
+        let linker = component_linker(self.store.engine())?;
+        let extension = Extension::instantiate_async(&mut self.store, component, &linker).await?;
+        let exports = extension.maestro_extension_guest().clone();
+        let _ = origin.set(exports.clone());
+        self.store.data_mut().schema_origin = Some(origin);
+        self.store.data_mut().guest = Some(exports.clone());
+        reported(
+            self.store
+                .run_concurrent(async |accessor| exports.call_start(accessor).await)
+                .await??,
+        )?;
+        Ok(exports)
     }
 
     /// The table key a callback was registered under.
@@ -1044,7 +1250,7 @@ impl Harness {
     /// A fresh identity the component never registered. The host keeps it and only lends
     /// borrows of it, so it is not counted as handed to the extension.
     pub fn identity(&mut self, id: u32) -> wasmtime::Result<u32> {
-        Ok(self.store.data_mut().table.push(Identity(id))?.rep())
+        Ok(self.store.data_mut().table.push(Identity(id, None))?.rep())
     }
 
     /// A fresh replacement context in `cwd`.
@@ -1088,10 +1294,23 @@ impl Harness {
 
     /// Asks the component to release the callback at table key `rep`.
     pub async fn release(&mut self, rep: u32) -> wasmtime::Result<()> {
-        self.exports
+        let origin = self.store.data().table.get(&borrow(rep))?.1.clone();
+        let guest = match origin {
+            Some(super::schema_host::Origin::Guest(origin)) => origin
+                .get()
+                .cloned()
+                .ok_or_else(|| wasmtime::format_err!("schema origin is unavailable"))?,
+            None => self.exports.clone(),
+        };
+        let function = guest
             .func_release()
-            .call_async(&mut self.store, (borrow(rep),))
-            .await
+            .func()
+            .typed::<(Resource<Identity>,), ()>(&self.store)?;
+        self.store
+            .run_concurrent(async |accessor| {
+                function.call_concurrent(accessor, (borrow(rep),)).await
+            })
+            .await?
     }
 }
 
@@ -1112,6 +1331,59 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    async fn call(
+        accessor: &Accessor<State, Self>,
+        operation: String,
+        data: String,
+        _signal: Option<Resource<Flag>>,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let data: serde_json::Value = serde_json::from_str(&data)?;
+        let started = accessor.with(|mut access| {
+            super::action_host::action(&mut access.get().observed, &operation, &data)
+        });
+        if let Err(error) = started {
+            return Ok(Err(error));
+        }
+        let hold = accessor.with(|mut access| access.get().observed.take_hold());
+        pause(hold).await;
+        Ok(accessor.with(|mut access| access.get().observed.actions.record()))
+    }
+
+    fn register_tool(
+        accessor: &Accessor<State, Self>,
+        metadata: String,
+        prepare: Option<Resource<Identity>>,
+        execute: Resource<Identity>,
+        schemas: Vec<(String, Resource<Identity>)>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Resource<Route>>> {
+        std::future::ready(accessor.with(|mut access| {
+            let state = access.get();
+            let name = super::schema_host::tool_name(&metadata)?;
+            state.observed.schemas.retain(|(tool, _, _)| tool != &name);
+            for (pointer, handler) in schemas {
+                state.table.get_mut(&handler)?.1 = state
+                    .schema_origin
+                    .clone()
+                    .map(super::schema_host::Origin::Guest);
+                state
+                    .observed
+                    .schemas
+                    .push((name.clone(), pointer, handler.rep()));
+            }
+            let result =
+                state
+                    .observed
+                    .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
+            state.routed(result)
+        }))
+    }
+
+    async fn get_all_tools(
+        accessor: &Accessor<State, Self>,
+    ) -> wasmtime::Result<Result<host::ToolListing, String>> {
+        super::schema_host::get_all_tools(accessor).await
+    }
+
     async fn set_model(
         accessor: &Accessor<State, Self>,
         model: String,
@@ -1148,11 +1420,15 @@ impl host::HostWithStore<State> for Imports {
         let emitter = accessor
             .with(|mut access| access.get().table.push(super::bus_host::Emitter { key: 0 }))?;
         let result =
-            Self::callback_emit(accessor, Resource::new_borrow(emitter.rep()), channel, data).await;
+            Self::emit_listeners(accessor, Resource::new_borrow(emitter.rep()), channel, data)
+                .await;
         accessor.with(|mut access| access.get().table.delete(emitter))?;
         result
     }
-    async fn callback_emit(
+}
+
+impl Imports {
+    async fn emit_listeners(
         accessor: &Accessor<State, Self>,
         emitter: Resource<super::bus_host::Emitter>,
         channel: String,

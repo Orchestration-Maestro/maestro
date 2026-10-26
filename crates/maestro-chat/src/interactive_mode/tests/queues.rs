@@ -1446,6 +1446,18 @@ async fn rejection_case(directory: &Path, operation: Operation, expected: Value)
         }
     })
     .await;
+    // The bound error listener shows the input handler's failure first, attributed to its
+    // extension.
+    let heading = "Extension \"<inline>\" error: refused input";
+    let shown = painted(
+        &world.themes.theme().get().unwrap(),
+        &[format!(" @error@{heading}\x1b[39m")],
+    )
+    .remove(0);
+    expected.chat.insert(
+        0,
+        format!("{shown}{}", " ".repeat(80 - heading.chars().count() - 1)),
+    );
     let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
@@ -1653,7 +1665,7 @@ impl Interrupt {
 const HELD_RELEASE: &str = "held-release";
 
 /// A started mode whose shell waits for the release file.
-async fn held_shell(directory: &Path) -> World {
+pub(super) async fn held_shell(directory: &Path) -> World {
     let release = directory.join(HELD_RELEASE);
     let _ = std::fs::remove_file(&release);
     let script = scripted(
@@ -1669,7 +1681,7 @@ async fn held_shell(directory: &Path) -> World {
 
 /// Submits the held shell command and returns the command it admitted once the session
 /// runs it.
-fn start_held(world: &World) -> LocalFuture {
+pub(super) fn start_held(world: &World) -> LocalFuture {
     submit(&world.mode, HELD);
     let mut admitted = world.runtime.take_futures();
     assert_eq!(admitted.len(), 1, "the submission admits one command");
@@ -1687,7 +1699,7 @@ fn start_held(world: &World) -> LocalFuture {
 
 /// Waits for the held shell's own command to finish, which its release or its cancellation
 /// settles.
-async fn until_settled(command: LocalFuture) {
+pub(super) async fn until_settled(command: LocalFuture) {
     command.await.expect("the held shell settles");
 }
 

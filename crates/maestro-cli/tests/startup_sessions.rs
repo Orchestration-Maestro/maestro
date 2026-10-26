@@ -126,16 +126,6 @@ fn path(value: &std::path::Path) -> &str {
     value.to_str().expect("authored path")
 }
 
-/// Set a stored history's modification time to a whole epoch second.
-fn set_modified(path: &str, seconds: u64) {
-    std::fs::File::options()
-        .write(true)
-        .open(path)
-        .expect("an open history")
-        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds))
-        .expect("a set modification time");
-}
-
 #[test]
 fn explicit_foreign_fork_copies_in_without_confirming() {
     let scratch = Scratch::new().unwrap();
@@ -194,8 +184,8 @@ fn session_operation_precedence_is_explicit() {
     let session_dir = scratch.path().join("sessions");
     let first = startup::stored_history(&session_dir, "first", "first-1", path(&cwd));
     let second = startup::stored_history(&session_dir, "second", "second-2", path(&cwd));
-    set_modified(&first, 1_000_000);
-    set_modified(&second, 2_000_000);
+    startup::set_modified(&first, 1_000_000);
+    startup::set_modified(&second, 2_000_000);
     let here = (path(&cwd), path(&agent_dir), path(&session_dir));
 
     let cases: Vec<(Vec<&str>, SessionSelection)> = vec![

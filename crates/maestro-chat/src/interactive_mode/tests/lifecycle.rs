@@ -32,9 +32,11 @@ fn watched(directory: &Path, progress: bool) -> (World, Rc<RecordingWatcher>) {
     assert_eq!(watcher.paths().len(), 2);
     assert_eq!(Path::new(&watcher.paths()[0]).file_name().unwrap(), ".git");
     assert!(watcher.paths()[1].ends_with("custom"));
-    world.host.set_before_session_invalidate(Some(Rc::new(|| {
-        panic!("presentation stop must not dispose the application runtime");
-    })));
+    world.host.set_before_session_invalidate(Some(Rc::new(
+        || -> Result<(), maestro_app::EventError> {
+            panic!("presentation stop must not dispose the application runtime");
+        },
+    )));
     (world, watcher)
 }
 
@@ -327,10 +329,12 @@ pub(super) fn replace_effects(
 ) -> Rc<InteractiveMode> {
     let mut mode = Rc::try_unwrap(mode).unwrap_or_else(|_| panic!("unique mode"));
     mode.lifecycle.effects = effects;
-    Rc::new_cyclic(|this| {
+    let mode = Rc::new_cyclic(|this| {
         mode.this = this.clone();
         mode
-    })
+    });
+    super::super::extensions::bind_runtime_hooks(&mode);
+    mode
 }
 
 /// Signal callbacks whose ownership the controlled native registration keeps.
@@ -339,7 +343,7 @@ type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
 /// Observable process effects without touching the real process.
 pub(super) struct Effects {
     /// Wall time the clear action observes.
-    now: Cell<i64>,
+    pub(super) now: Cell<i64>,
     /// Effects in invocation order.
     pub(super) events: Rc<RefCell<Vec<String>>>,
     /// The currently registered callbacks, shared with their remover.
@@ -607,7 +611,10 @@ async fn failure_shutdown(directory: &Path, phase: &str) {
     let seen = Rc::clone(&invalidated);
     rig.world
         .host
-        .set_before_session_invalidate(Some(Rc::new(move || seen.set(true))));
+        .set_before_session_invalidate(Some(Rc::new(move || {
+            seen.set(true);
+            Ok(())
+        })));
     select_failure(&rig, phase);
     let mut shutdown = rig.world.mode.shutdown();
     let error = super::typed::poll(&mut shutdown)

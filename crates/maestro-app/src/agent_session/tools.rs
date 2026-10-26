@@ -26,7 +26,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
 
     /// Every registered tool with its description, schema and source.
     #[must_use]
-    pub fn get_all_tools(&self) -> Vec<ToolInfo> {
+    pub fn get_all_tools(
+        &self,
+    ) -> Vec<ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>>> {
         self.state
             .borrow()
             .tool_definitions

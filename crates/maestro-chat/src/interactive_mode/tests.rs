@@ -3,11 +3,18 @@ mod actions;
 mod authentication;
 mod autocomplete;
 mod bash;
+mod bindings;
+mod commands;
 mod debug;
 mod events;
+mod extension_custom;
+mod extension_editors;
+mod extension_replacements;
+mod extension_reset;
 mod extension_ui;
 mod extension_widgets;
 mod extensions;
+mod hotkeys;
 mod info;
 mod lifecycle;
 mod models;
@@ -18,12 +25,15 @@ mod models;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod navigation;
 mod notices;
 mod progress;
 mod prompts;
 mod queues;
+mod reload;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod settings;
 mod share;
 mod suspend;
 mod transcript;
@@ -176,7 +186,7 @@ pub(super) fn isolated_output(
         .unwrap()
         .env_clear()
         .case(case)
-        .shell_setup(setup)
+        .shell_setup("/bin/bash", setup)
         .temp_dir(root.join("tmp"))
         .nocapture()
         .single_threaded()
@@ -186,6 +196,9 @@ pub(super) fn isolated_output(
         .expect("child starts");
     Some(output)
 }
+
+/// A controlled replacement for one resource reload.
+type ReloadOperation = Box<dyn Fn() -> Pin<Box<dyn Future<Output = io::Result<()>>>>>;
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
 /// successive prompt templates, context files and loaded extensions, and changing the
@@ -207,6 +220,8 @@ pub(super) struct ForwardingLoader {
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
     /// The getters read, in order.
     pub(super) calls: RefCell<Vec<&'static str>>,
+    /// A controlled reload operation, when supplied by a witness.
+    pub(super) on_reload: RefCell<Option<ReloadOperation>>,
 }
 
 /// The diagnostics a loader reports beside its skills, prompt templates and themes.
@@ -286,6 +301,7 @@ impl ForwardingLoader {
             extensions: extensions
                 .or_else(|| loaded.then(|| Rc::new(load(paths, errors, &commands)))),
             calls: RefCell::default(),
+            on_reload: RefCell::default(),
         }
     }
 }
@@ -401,6 +417,10 @@ impl ResourceLoader<Local> for ForwardingLoader {
         self.inner.extend_resources(paths)
     }
     fn reload(&self) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+        self.calls.borrow_mut().push("reload");
+        if let Some(reload) = self.on_reload.borrow().as_ref() {
+            return reload();
+        }
         self.inner.reload()
     }
 }
@@ -1231,7 +1251,7 @@ fn startup_callback_registration_does_not_retain_the_mode() {
 }
 
 /// The operations an extension supplies for a shell command.
-pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations>;
+pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations + Send + Sync>;
 
 /// The failures the mode's work reported.
 pub(super) type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
@@ -1296,6 +1316,20 @@ pub(super) fn on_tasks<T>(body: impl Future<Output = T>) -> T {
 /// Submits `text` through the editor's installed submission.
 pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
+}
+
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
+///
+/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
+/// caller runs it: such work, like a running shell command's output, can end only after the
+/// caller's later steps.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    let mut work = runtime.take_futures();
+    let command = work.pop().expect("the input handed over its work");
+    for earlier in work {
+        maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
+    }
+    command.await.err().into_iter().collect()
 }
 
 /// Waits until `path` exists, yielding so the work that creates it runs.
@@ -1501,6 +1535,31 @@ mod dispatch;
 struct Watched {
     /// Whether each theme watch is still open, in creation order.
     open: RefCell<Vec<Rc<Cell<bool>>>>,
+    /// The listener of each theme watch, in creation order.
+    listeners: RefCell<Vec<WatchListener>>,
+    /// The debounced reload the latest watch timer holds.
+    reload: WatchReload,
+}
+
+impl Watched {
+    /// Deliver `changed` to the latest watch's listener, as the watched directory would.
+    fn announce(&self, changed: Option<&str>) {
+        let listener = self
+            .listeners
+            .borrow()
+            .last()
+            .cloned()
+            .expect("a theme watch is open");
+        listener(changed.map(str::to_owned));
+    }
+
+    /// Run the reload the latest watch timer retained, as the debounce would.
+    fn reload(&self) {
+        let reload = self.reload.borrow_mut().take();
+        if let Some(reload) = reload {
+            reload();
+        }
+    }
 }
 
 /// One open theme watch.
@@ -1508,6 +1567,9 @@ struct Handle {
     /// Set once the watch closes.
     closed: Rc<Cell<bool>>,
 }
+
+/// The listener of one open theme watch.
+type WatchListener = Rc<dyn Fn(Option<String>)>;
 
 impl ThemeWatcher for Handle {
     fn close(&mut self) -> io::Result<()> {
@@ -1522,31 +1584,39 @@ impl Drop for Handle {
     }
 }
 
-/// A scheduled theme reload that never runs.
-struct Pending;
+/// The debounced reload a theme watch timer retains.
+type WatchReload = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
+
+/// A scheduled theme reload, kept until its watch is cancelled or the test runs it.
+struct Pending {
+    /// The reload this timer owns.
+    reload: WatchReload,
+}
 
 impl ThemeReloadTimer for Pending {
-    fn cancel(&mut self) {}
+    fn cancel(&mut self) {
+        self.reload.borrow_mut().take();
+    }
 }
 
 impl ThemeWatchOperations for Watched {
     fn watch(
         &self,
         _path: &str,
-        _listener: Rc<dyn Fn(Option<String>)>,
+        listener: WatchListener,
         _on_error: Rc<dyn Fn()>,
     ) -> io::Result<Box<dyn ThemeWatcher>> {
         let closed = Rc::new(Cell::new(false));
         self.open.borrow_mut().push(Rc::clone(&closed));
+        self.listeners.borrow_mut().push(listener);
         Ok(Box::new(Handle { closed }))
     }
 
-    fn schedule(
-        &self,
-        _delay: Duration,
-        _callback: Box<dyn FnOnce()>,
-    ) -> Box<dyn ThemeReloadTimer> {
-        Box::new(Pending)
+    fn schedule(&self, _delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn ThemeReloadTimer> {
+        *self.reload.borrow_mut() = Some(callback);
+        Box::new(Pending {
+            reload: Rc::clone(&self.reload),
+        })
     }
 }
 
@@ -1736,14 +1806,28 @@ fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
                 .unwrap();
             drop(manager);
             seed_replaced_session(&world);
+            let shell = Rc::new(BashExecutionComponent::new(
+                "old".to_owned(),
+                maestro_tui::TUI::clone(&world.mode.ui),
+                world.themes.theme(),
+                false,
+            ));
+            world
+                .mode
+                .pending_shells
+                .borrow_mut()
+                .push(Rc::clone(&shell));
+            *world.mode.active_shell.borrow_mut() = Some(shell);
             world.mode.render_current_session_state().unwrap();
             assert_eq!(
                 (
                     world.mode.compaction_queued_messages.borrow().is_empty(),
                     world.mode.streaming.borrow().is_none(),
+                    world.mode.pending_shells.borrow().is_empty(),
+                    active(&world).is_none(),
                 ),
-                (true, true),
-                "the replaced session's queued input and active stream are discarded"
+                (true, true, true, true),
+                "the replaced session's queued input, stream and shell rows are discarded"
             );
             let rows = world.mode.chat_container.render(100);
             assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");

@@ -28,11 +28,11 @@ fn guest_reexports_preserve_message_wire_and_presence() {
         serde_json::to_value(shell).unwrap(),
         json!({"role":"bashExecution","command":"command","output":"output","cancelled":false,"truncated":true,"fullOutputPath":null,"timestamp":1.0,"excludeFromContext":false})
     );
-    let custom: maestro_request::messages::CustomMessage<String> = CustomMessage {
+    let custom: maestro_request::messages::CustomMessage<crate::JsonText> = CustomMessage {
         custom_type: "kind".into(),
         content: crate::UserContent::Text("text".into()),
         display: false,
-        details: Presence::Present("details".into()),
+        details: Presence::Present(json!("details").to_string().into()),
         timestamp: 2.0,
     };
     assert_eq!(
@@ -86,7 +86,10 @@ fn direct_record_decoding() {
     }
     for (details, expected) in [
         (Value::Null, Presence::Null),
-        (json!("value"), Presence::Present("value".into())),
+        (
+            json!("value"),
+            Presence::Present(json!("value").to_string().into()),
+        ),
     ] {
         let mut input = base.clone();
         input["details"] = details;
@@ -95,7 +98,10 @@ fn direct_record_decoding() {
     }
     let positional: CustomMessage =
         serde_json::from_value(json!(["kind", "text", false, "value", 2.0])).unwrap();
-    assert_eq!(positional.details, Presence::Present("value".into()));
+    assert_eq!(
+        positional.details,
+        Presence::Present(json!("value").to_string().into())
+    );
     let mut input = base.clone();
     let mut nested = json!("unread");
     for _ in 0..150 {
@@ -105,14 +111,9 @@ fn direct_record_decoding() {
     let record: CustomMessage = serde_json::from_str(&input.to_string()).unwrap();
     assert_eq!(record.custom_type, "kind");
     assert!(serde_json::from_str::<CustomMessage>(r#"{"customType":"kind","customType":"duplicate","content":"text","display":false,"timestamp":2}"#).is_err());
-    for (field, wrong) in [
-        ("content", json!(true)),
-        ("details", json!({"object":true})),
-    ] {
-        let mut input = base.clone();
-        input[field] = wrong;
-        assert!(serde_json::from_value::<CustomMessage>(input).is_err());
-    }
+    let mut input = base;
+    input["content"] = json!(true);
+    assert!(serde_json::from_value::<CustomMessage>(input).is_err());
 }
 
 /// Typed details do not require Default during decoding.

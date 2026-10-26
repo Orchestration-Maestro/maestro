@@ -5,8 +5,9 @@
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
-    AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
+    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, EventError, KeybindingsManager,
+    ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,
+    ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
@@ -22,21 +23,27 @@ mod actions;
 mod authentication;
 mod autocomplete;
 mod bash;
+mod command_context_actions;
+mod commands;
 mod compaction_queue;
 mod debug;
 mod dispatch;
 mod events;
 mod extensions;
+mod hotkeys;
 mod info;
 mod key_display;
 mod lifecycle;
 mod models;
+mod navigation;
 mod notices;
 mod progress;
 mod queues;
+mod reload;
 mod replay;
 mod resources;
 mod selectors;
+mod settings;
 mod share;
 mod startup;
 mod submit;
@@ -57,6 +64,7 @@ type StatusLine = (Rc<dyn Component>, Rc<Text>);
 /// The assistant row a response streams into and the message it shows.
 type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
+pub use authentication::is_api_key_login_provider;
 pub use maestro_app::presentation_data::mode_dispatch::InteractiveModeOptions;
 
 /// The retained interactive presentation over the current session.
@@ -95,8 +103,14 @@ pub struct InteractiveMode {
     widget_container_below: Rc<Container>,
     /// The container the editor is added through.
     editor_container: Rc<Container>,
-    /// The input editor.
+    /// The default input editor, which keeps the application's actions and callbacks.
     editor: Rc<CustomEditor>,
+    /// The current editor, the extension editor factory and the completion provider.
+    editor_state: extension_ui::editor::EditorState,
+    /// The extension custom views that have not settled.
+    custom_views: extension_ui::custom::CustomViews,
+    /// The latest extension dialog of each kind.
+    dialogs: extension_ui::dialogs::DialogSlots,
     /// The keybindings the editor reads, and the configured keys extension shortcuts use.
     keybindings: KeybindingsManager,
     /// The footer.
@@ -115,8 +129,12 @@ pub struct InteractiveMode {
     pending_events: RefCell<VecDeque<maestro_app::AgentSessionEvent>>,
     /// Whether the one initialization continuation is still delivering events.
     event_initialization_pending: Cell<bool>,
-    /// The expandable startup help, absent when startup is quiet.
-    built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
+    /// The built-in header, absent until the header is built.
+    built_in_header: RefCell<Option<maestro_tui::tui::ComponentHandle>>,
+    /// The extension header shown in place of the built-in one.
+    custom_header: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
+    /// The extension footer shown in place of the built-in one.
+    custom_footer: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
     tool_environment: Rc<ToolRenderEnvironment>,
     /// Whether tool output and summaries, and with them the startup text, are expanded.
@@ -129,6 +147,8 @@ pub struct InteractiveMode {
     pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// Wall time of the latest unpaired interrupt press on the empty editor.
+    last_escape_time: Cell<i64>,
     /// The shell row that is still producing output, when one is attached.
     active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
     /// Shell rows shown in the pending area until the next ordinary submission.
@@ -137,6 +157,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// The selected search program for file completion, absent until startup prepares it.
     fd_path: RefCell<Option<String>>,
+    /// Bound factories in registration order, including repeated handles.
+    autocomplete_provider_wrappers: RefCell<Vec<AutocompleteProviderFactory>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -166,16 +188,11 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
-        let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
+        let (tool_environment, ui) = create_presentation(&session, terminal, themes.theme())?;
         let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
-        let footer_data_provider = FooterDataProvider::new(
-            session.session_manager().borrow().get_cwd().to_owned(),
-            operations.clone(),
-        );
-        let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
+        let (footer, footer_data_provider) = create_footer(&session, &operations, themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
-        Ok(Rc::new_cyclic(|this| Self {
+        let mode = Rc::new_cyclic(|this| Self {
             shutdown_requested: Cell::new(false),
             this: this.clone(),
             lifecycle: lifecycle::LifecycleState::default(),
@@ -193,6 +210,9 @@ impl InteractiveMode {
             widget_container_above: Rc::new(Container::new()),
             widget_container_below: Rc::new(Container::new()),
             editor_container,
+            editor_state: extension_ui::editor::EditorState::new(editor.clone()),
+            custom_views: Rc::default(),
+            dialogs: extension_ui::dialogs::DialogSlots::default(),
             editor,
             keybindings: keys,
             footer,
@@ -204,13 +224,17 @@ impl InteractiveMode {
             pending_events: RefCell::default(),
             event_initialization_pending: Cell::new(false),
             built_in_header: RefCell::default(),
+            custom_header: RefCell::default(),
+            custom_footer: RefCell::default(),
             tool_environment,
             fd_path: RefCell::default(),
+            autocomplete_provider_wrappers: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            last_escape_time: Cell::new(0),
             active_shell: RefCell::default(),
             pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
@@ -220,24 +244,24 @@ impl InteractiveMode {
             unsubscribe: RefCell::default(),
             working: working::WorkingState::default(),
             streaming: RefCell::default(),
-        }))
+        });
+        extensions::bind_runtime_hooks(&mode);
+        Ok(mode)
     }
 
     /// Installs lifecycle handlers, selects unseen release history, prepares search
-    /// programs and completion, then builds the header,
-    /// adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, lists the loaded resources with their diagnostics, shows selected
-    /// history once and replays the session; theme changes then refresh the editor
-    /// border, and theme and branch
-    /// changes request fresh frames.
+    /// programs, then builds the header, adds every container in order, focuses the
+    /// editor, binds the transcript shortcuts, installs editor submission and the global
+    /// debug key, starts the terminal, binds the current session as `rebind_current_session`
+    /// does and replays the session; theme changes then refresh the editor border, and
+    /// theme and branch changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
     /// Returns a failure of lifecycle registration, the managed binary directory, the
-    /// header's theme colours, terminal start, resource listing, replay or catalog refresh.
+    /// header's theme colours, terminal start, session binding, replay or catalog refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -245,7 +269,6 @@ impl InteractiveMode {
         self.register_signal_handlers()?;
         *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
         self.prepare_search_tools().await?;
-        self.setup_autocomplete_provider();
         self.build_header()?;
         self.render_widgets();
         for child in [
@@ -260,17 +283,17 @@ impl InteractiveMode {
             self.ui.add_child(child.clone());
         }
         self.ui.add_child(self.footer.clone());
-        self.ui.set_focus(Some(self.editor.clone()));
+        self.ui
+            .set_focus(Some(self.current_editor() as Rc<dyn Component>));
         self.setup_key_handlers();
         self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
         self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
-        self.subscribe_to_agent();
-        self.update_terminal_title()?;
-        let runner = self.runtime_host.session().extension_runner();
-        self.setup_extension_shortcuts(&runner);
+        self.rebind_current_session().await?;
+        self.render_initial_messages()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -285,25 +308,22 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
-            show_diagnostics_when_quiet: true,
-            ..resources::ShowLoadedResourcesOptions::default()
-        })?;
-        self.show_startup_notices_if_needed()?;
-        self.render_initial_messages()?;
         self.update_available_provider_count()
     }
 
-    /// Clears the transcript and the pending-message rows, then replays the current session
-    /// with the initial replay's footer, history and compaction effects.
+    /// Clears the transcript, the pending-message rows and the shell rows waiting there, then
+    /// replays the current session with the initial replay's footer, history and compaction
+    /// effects.
     ///
     /// # Errors
     /// Returns the failure of reading the session context, of a stored record, of a row's
     /// rendering or of the published theme.
-    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+    pub fn render_current_session_state(&self) -> Result<(), EventError> {
         self.chat_container.clear();
         self.pending_messages_container.clear();
         self.compaction_queued_messages.borrow_mut().clear();
+        self.pending_shells.borrow_mut().clear();
+        drop(self.active_shell.take());
         drop(self.streaming.take());
         self.render_initial_messages()
     }
@@ -342,6 +362,20 @@ fn tool_environment(
         ),
         terminal_image: TerminalImage::default(),
     }))
+}
+
+/// Builds the transcript environment and frame writer with shared image support.
+///
+/// # Errors
+/// Returns the failure of the transcript environment.
+fn create_presentation(
+    session: &AgentSession,
+    terminal: (TerminalHandle, Rc<dyn TuiRuntime>),
+    theme: LiveTheme,
+) -> Result<(Rc<ToolRenderEnvironment>, Rc<TUI>), Box<dyn Error>> {
+    let environment = tool_environment(terminal.1.clone(), theme)?;
+    let ui = create_ui(session, terminal, environment.terminal_image.clone());
+    Ok((environment, ui))
 }
 
 /// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies,
@@ -404,25 +438,30 @@ fn create_editor(
     ))
 }
 
-/// Builds the footer over the session, its metadata and the published theme.
+/// Builds the footer metadata over the session's directory and `operations`, then the
+/// footer over the session, that metadata and the published theme.
 ///
 /// # Errors
 /// Returns the failure of the collator reading the locale environment.
 fn create_footer(
-    session: Rc<AgentSession>,
-    data: &FooterDataProvider,
+    session: &Rc<AgentSession>,
+    operations: &Rc<dyn FooterOperations>,
     theme: LiveTheme,
-) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
+) -> Result<(Rc<FooterComponent>, FooterDataProvider), Box<dyn Error>> {
+    let data = FooterDataProvider::new(
+        session.session_manager().borrow().get_cwd().to_owned(),
+        operations.clone(),
+    );
     let auto_compact = session.auto_compaction_enabled();
     let footer = Rc::new(FooterComponent::new(
-        session,
+        session.clone(),
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
     ));
     footer.set_auto_compact_enabled(auto_compact);
-    Ok(footer)
+    Ok((footer, data))
 }
 
 /// Registers loaded themes, selects the configured theme, then reads thinking visibility.

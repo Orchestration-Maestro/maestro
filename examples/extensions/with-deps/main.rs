@@ -92,7 +92,7 @@ fn duration_tool() -> ExtensionResult<ToolDefinition> {
                         "{} = {rendered} milliseconds",
                         params.duration
                     )))],
-                    details: Presence::Present(json!({}).to_string()),
+                    details: Presence::Present(json!({}).to_string().into()),
                     terminate: Presence::Missing,
                 })
             })

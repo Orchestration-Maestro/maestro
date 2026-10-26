@@ -90,7 +90,8 @@ impl InteractiveMode {
                 self.ui.request_render(false);
             }
             AgentSessionEvent::SessionInfoChanged { .. } => {
-                self.update_terminal_title()?;
+                self.update_terminal_title()
+                    .map_err(|error| -> Box<dyn Error> { error })?;
                 self.ui.request_render(false);
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
@@ -248,9 +249,12 @@ impl InteractiveMode {
     /// Returns the failure of a row's rendering or of the published theme.
     fn handle_message_start(&self, message: &NativeAgentMessage) -> Result<(), Box<dyn Error>> {
         match message {
-            AgentMessage::Custom(_) => self.add_message_to_chat(message, false)?,
+            AgentMessage::Custom(_) => self
+                .add_message_to_chat(message, false)
+                .map_err(|error| -> Box<dyn Error> { error })?,
             AgentMessage::User(_) => {
-                self.add_message_to_chat(message, false)?;
+                self.add_message_to_chat(message, false)
+                    .map_err(|error| -> Box<dyn Error> { error })?;
                 self.update_pending_messages_display()?;
             }
             AgentMessage::Assistant(message) => {
@@ -444,7 +448,9 @@ impl InteractiveMode {
         &self,
         call: ToolCall,
     ) -> Result<Rc<ToolExecutionComponent>, Box<dyn Error>> {
-        let row = self.render_tool_call(&call.id, &call.name, Some(call.arguments))?;
+        let row = self
+            .render_tool_call(&call.id, &call.name, Some(call.arguments))
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.pending_tools
             .borrow_mut()
             .insert(call.id, Rc::clone(&row));
@@ -480,7 +486,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the invalid stored name or the terminal's title-writing failure.
-    pub(super) fn update_terminal_title(&self) -> Result<(), Box<dyn Error>> {
+    pub(super) fn update_terminal_title(&self) -> Result<(), maestro_app::EventError> {
         let title = {
             let session = self.runtime_host.session();
             let manager = session.session_manager().borrow();

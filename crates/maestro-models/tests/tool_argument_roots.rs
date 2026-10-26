@@ -126,7 +126,7 @@ fn validation_preserves_recorded_root_outcomes() {
 /// Both public validation operations report the original root, in order.
 #[test]
 fn root_validation_keeps_original_diagnostics() {
-    let text_tool = Tool {
+    let text_tool: Tool = Tool {
         name: "text".into(),
         description: String::new(),
         parameters: json!({"type": "object"}).into(),
@@ -139,7 +139,7 @@ fn root_validation_keeps_original_diagnostics() {
     };
 
     assert_eq!(
-        validate_tool_call(&[], &call("missing", json!({"q": 1})))
+        validate_tool_call::<()>(&[], &call("missing", json!({"q": 1})))
             .expect_err("an unknown tool is rejected")
             .message,
         "Tool \"missing\" not found"
@@ -175,7 +175,7 @@ fn root_validation_keeps_original_diagnostics() {
         );
     }
 
-    let number = Tool {
+    let number: Tool = Tool {
         name: "number".into(),
         description: String::new(),
         parameters: json!({"type": "number", "minimum": 100}).into(),

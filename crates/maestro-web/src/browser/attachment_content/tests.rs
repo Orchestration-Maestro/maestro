@@ -36,7 +36,7 @@ fn native_content_borders_belong_to_visible_owners() {
             fit == ImageFit::Cover
         );
     }
-    let record = std::rc::Rc::new(std::cell::RefCell::new(crate::Attachment {
+    let record = std::sync::Arc::new(std::sync::RwLock::new(crate::Attachment {
         id: "id".into(),
         r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
         file_name: "file".into(),

@@ -14,3 +14,5 @@ mod native_completion;
 mod native_runtime;
 mod terminal_lifecycle;
 mod terminal_output;
+mod windows_console;
+mod windows_pipe;

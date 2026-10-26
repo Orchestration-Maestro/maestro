@@ -172,20 +172,7 @@ impl Harness {
             Rc::new(|_| panic!("dispatch does not replace a runtime")),
         ));
         let recorder = Rc::new(Recorder::default());
-        let (interactive, rpc) = (Rc::clone(&recorder), Rc::clone(&recorder));
-        let launchers = ModeLaunchers {
-            interactive: Rc::new(move |runtime, options| {
-                interactive.call("factory")?;
-                *interactive.runtime.borrow_mut() = Some(runtime);
-                *interactive.options.borrow_mut() = Some(options);
-                Ok(interactive.clone())
-            }),
-            rpc: Rc::new(move |runtime| {
-                *rpc.runtime.borrow_mut() = Some(runtime);
-                let result = rpc.call("rpc");
-                Box::pin(async move { Ok(result?) })
-            }),
-        };
+        let launchers = launchers(&recorder);
         let themes = presenters::theme(std::path::Path::new(&runtime.cwd()));
         Self {
             fixture,
@@ -241,6 +228,24 @@ impl Harness {
             .unwrap();
     }
 }
+/// Presentations that record their construction, runtime and lifecycle into `recorder`.
+pub fn launchers(recorder: &Rc<Recorder>) -> ModeLaunchers {
+    let (interactive, rpc) = (Rc::clone(recorder), Rc::clone(recorder));
+    ModeLaunchers {
+        interactive: Rc::new(move |runtime, options| {
+            interactive.call("factory")?;
+            *interactive.runtime.borrow_mut() = Some(runtime);
+            *interactive.options.borrow_mut() = Some(options);
+            Ok(interactive.clone())
+        }),
+        rpc: Rc::new(move |runtime| {
+            *rpc.runtime.borrow_mut() = Some(runtime);
+            let result = rpc.call("rpc");
+            Box::pin(async move { Ok(result?) })
+        }),
+    }
+}
+
 /// A prepared request with no prompt or captured scope.
 pub fn request(app_mode: AppMode) -> ModeDispatch {
     ModeDispatch {

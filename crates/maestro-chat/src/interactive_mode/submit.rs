@@ -5,6 +5,7 @@ use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{ImageContent, PromptOptions, is_whitespace_scalar};
 use maestro_tui::EditorComponent;
+use maestro_tui::tui::LocalFuture;
 use std::{
     error::Error,
     future::{Future, pending},
@@ -43,52 +44,96 @@ impl InteractiveMode {
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
-            let text = text.trim_matches(is_whitespace_scalar);
-            let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
-                return;
-            };
-            if text == "/quit" {
-                mode.editor.set_text("");
-                mode.spawn_shutdown();
-                return;
+            if let Some(mode) = mode.upgrade() {
+                mode.handle_editor_submit(text);
             }
-            if let Some((command, exclude_from_context)) = selected_shell_command(text) {
-                mode.submit_shell_command(text, command, exclude_from_context);
-                return;
-            }
-            if text == "/logout" {
-                mode.report(mode.show_logout_selector());
-                mode.editor.set_text("");
-                return;
-            }
-            if mode.runs_command(text) || mode.runs_model_command(text) {
-                return;
-            }
-            match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
-                Ok(false) => {}
-                queued => return mode.report(queued.map(drop)),
-            }
-            mode.flush_pending_bash_components();
-            let waiting = mode.on_input_callback.borrow_mut().take();
-            if let Some(waiting) = waiting {
-                // A dropped waiter no longer wants the text; history still records it.
-                drop(waiting.send(text.to_owned()));
-            }
-            mode.editor.add_to_history(text);
         })));
+    }
+
+    /// Handles submitted text through the current editor, keeping original call failures.
+    fn handle_editor_submit(self: &Rc<Self>, text: &str) {
+        let text = text.trim_matches(is_whitespace_scalar);
+        if text.is_empty() {
+            return;
+        }
+        if text == "/quit" {
+            if let Err(error) = self.current_editor().try_set_text("") {
+                return self.report(Err(error));
+            }
+            self.spawn_shutdown();
+            return;
+        }
+        if let Some((command, exclude_from_context)) = selected_shell_command(text) {
+            self.submit_shell_command(text, command, exclude_from_context);
+            return;
+        }
+        if text == "/login" {
+            self.report(self.show_login_auth_type_selector());
+            self.report(
+                self.current_editor()
+                    .try_set_text("")
+                    .map_err(|error| -> Box<dyn Error> { error }),
+            );
+            return;
+        }
+        if text == "/logout" {
+            self.report(self.show_logout_selector());
+            self.report(
+                self.current_editor()
+                    .try_set_text("")
+                    .map_err(|error| -> Box<dyn Error> { error }),
+            );
+            return;
+        }
+        if self.runs_navigation_command(text)
+            || self.runs_command(text)
+            || self.runs_session_command(text)
+            || self.runs_model_command(text)
+        {
+            return;
+        }
+        match self.submit_queued_input(text, UserMessageDelivery::Steer) {
+            Ok(false) => {}
+            queued => return self.report(queued.map(drop)),
+        }
+        self.flush_pending_bash_components();
+        let waiting = self.on_input_callback.borrow_mut().take();
+        if let Some(waiting) = waiting {
+            // A dropped waiter no longer wants the text; history still records it.
+            drop(waiting.send(text.to_owned()));
+        }
+        if let Err(error) = self.current_editor().try_add_to_history(text) {
+            self.report(Err(error));
+        }
     }
 
     /// Runs the session command `text` names, handing a failure beyond the transcript to
     /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/import" || text.starts_with("/import ") {
+            let mode = Rc::clone(self);
+            let text = text.to_owned();
+            self.tool_environment
+                .runtime
+                .spawn_local(Box::pin(async move {
+                    mode.handle_import_command(&text).await?;
+                    mode.clear_editor();
+                    Ok(())
+                }));
+            return true;
+        }
         let share = text == "/share";
         if !share && text != "/copy" {
             let result = if text == "/name" || text.starts_with("/name ") {
                 self.handle_name_command(text)
+            } else if text == "/settings" {
+                self.show_settings_selector()
             } else if text == "/session" {
                 self.handle_session_command()
             } else if text == "/debug" {
                 self.handle_debug_command()
+            } else if text == "/hotkeys" {
+                self.handle_hotkeys_command()
             } else if text == "/changelog" {
                 self.handle_changelog_command()
             } else if text == "/export" || text.starts_with("/export ") {
@@ -113,6 +158,61 @@ impl InteractiveMode {
                 mode.clear_editor();
                 settled
             }));
+        true
+    }
+
+    /// Opens the fork, tree or saved-session panel, or starts a clone, without delivering a
+    /// prompt.
+    fn runs_navigation_command(self: &Rc<Self>, text: &str) -> bool {
+        match text {
+            "/fork" => self.report(self.show_user_message_selector()),
+            "/tree" => self.report(self.show_tree_selector(None)),
+            "/resume" => self.report(self.show_session_selector()),
+            "/clone" => {
+                if let Err(error) = self.current_editor().try_set_text("") {
+                    self.report(Err(error));
+                    return true;
+                }
+                let mode = Rc::clone(self);
+                self.tool_environment
+                    .runtime
+                    .spawn_local(Box::pin(async move { mode.handle_clone_command().await }));
+            }
+            _ => return false,
+        }
+        self.report(
+            self.current_editor()
+                .try_set_text("")
+                .map_err(|error| -> Box<dyn Error> { error }),
+        );
+        true
+    }
+
+    /// Starts `/new`, `/reload`, or `/compact` with its instructions when matched, after
+    /// clearing the editor, and says whether `text` was handled as a command.
+    fn runs_session_command(self: &Rc<Self>, text: &str) -> bool {
+        let work: LocalFuture = if text == "/new" {
+            Box::pin(Rc::clone(self).handle_clear_command())
+        } else if text == "/reload" {
+            let mode = Rc::clone(self);
+            Box::pin(async move {
+                mode.handle_reload_command()
+                    .await
+                    .map_err(|error| error as Box<dyn Error>)
+            })
+        } else if text == "/compact" || text.starts_with("/compact ") {
+            let instructions = text
+                .strip_prefix("/compact ")
+                .map(|rest| rest.trim_matches(is_whitespace_scalar).to_owned());
+            Box::pin(Rc::clone(self).handle_compact_command(instructions))
+        } else {
+            return false;
+        };
+        if let Err(error) = self.current_editor().try_set_text("") {
+            self.report(Err(error));
+            return true;
+        }
+        self.tool_environment.runtime.spawn_local(work);
         true
     }
 
@@ -172,6 +272,7 @@ impl InteractiveMode {
         {
             self.show_warning(message)?;
         }
+        self.check_subscription_warning(None);
         let first = self
             .options
             .initial_message

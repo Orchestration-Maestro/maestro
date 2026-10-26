@@ -9,7 +9,7 @@ use crate::{
 use maestro_app::agent_session::CycleDirection;
 use maestro_app::{EventError, Local};
 use maestro_theme::ThemeError;
-use maestro_tui::{Component, EditorComponent};
+use maestro_tui::Component;
 use std::{any::Any, error::Error, rc::Rc};
 
 /// A mode operation an editor shortcut runs.
@@ -34,6 +34,9 @@ impl InteractiveMode {
         self.on_action("app.thinking.cycle", |mode| mode.cycle_thinking_level());
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
+        self.on_action("app.session.tree", |mode| mode.show_tree_selector(None));
+        self.on_action("app.session.fork", Self::show_user_message_selector);
+        self.on_action("app.session.resume", Self::show_session_selector);
         self.on_action("app.model.select", |mode| mode.show_model_selector(None));
         self.on_action("app.tools.expand", |mode| {
             mode.toggle_tool_output_expansion()
@@ -42,6 +45,11 @@ impl InteractiveMode {
             mode.toggle_thinking_block_visibility()
         });
         self.on_action("app.editor.external", |mode| mode.open_external_editor());
+        self.on_action("app.session.new", |mode| {
+            let work = Box::pin(Rc::clone(mode).handle_clear_command());
+            mode.tool_environment.runtime.spawn_local(work);
+            Ok(())
+        });
         self.setup_editor_callbacks();
     }
 
@@ -68,16 +76,21 @@ impl InteractiveMode {
             .map_err(|error| -> Box<dyn Error> { error })
     }
 
-    /// Applies `expanded` to the startup help and every expandable chat row, walking
+    /// Applies `expanded` to the active header and every expandable chat row, walking
     /// the child array held when the walk starts, then requests a frame.
     ///
     /// # Errors
-    /// Returns the failure of a tool row's native formatting or of a text rendering.
+    /// Returns the failure of the extension header's expansion, of a tool row's native
+    /// formatting or of a text rendering.
     pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), EventError> {
         self.tool_output_expanded.set(expanded);
-        let header = self.built_in_header.borrow().clone();
-        if let Some(header) = header {
-            header.set_expanded(expanded)?;
+        let custom = self.custom_header.borrow().clone();
+        if let Some(custom) = custom {
+            if let Some(set_expanded) = &custom.set_expanded {
+                set_expanded.call(expanded)?;
+            }
+        } else if let Some(header) = self.built_in_header.borrow().clone() {
+            set_expanded(header.as_ref(), expanded)?;
         }
         for child in self.chat_container.walk() {
             set_expanded(child.as_ref(), expanded)?;
@@ -101,7 +114,7 @@ impl InteractiveMode {
             let level = self.runtime_host.session().thinking_level();
             theme.get_thinking_border_color(thinking_text(&level).0)
         };
-        self.editor.set_border_color(color);
+        self.current_editor().set_border_color(color);
         self.ui.request_render(false);
         Ok(())
     }
@@ -119,7 +132,8 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .set_hide_thinking_block(hide);
-        self.rebuild_chat_from_messages()?;
+        self.rebuild_chat_from_messages()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let streaming = self.streaming.borrow().clone();
         if let Some((component, message)) = streaming {
             component.set_hide_thinking_block(hide);
@@ -132,11 +146,11 @@ impl InteractiveMode {
     }
 }
 
-/// Expands or collapses `child` when it is one of the expandable chat rows.
+/// Expands or collapses `child` when it is one of the expandable rows.
 ///
 /// # Errors
 /// Returns the failure of a tool row's native formatting or of a text rendering.
-fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), EventError> {
+pub(super) fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), EventError> {
     let child: &dyn Any = child;
     if let Some(row) = child.downcast_ref::<ToolExecutionComponent>() {
         row.set_expanded(expanded)?;

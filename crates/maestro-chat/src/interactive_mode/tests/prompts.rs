@@ -60,11 +60,11 @@ pub(super) async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>
 }
 
 /// A mode whose sessions answer through the scripted provider without retrying.
-struct Scripted {
+pub(super) struct Scripted {
     /// The mode and its runtime.
-    world: World,
+    pub(super) world: World,
     /// The scripted provider.
-    provider: FauxProviderRegistration,
+    pub(super) provider: FauxProviderRegistration,
     /// Makes the next credential lookup find no key, so the session refuses that prompt.
     refuse: Arc<AtomicBool>,
     /// What the application input hook saw of each prompt.
@@ -120,7 +120,7 @@ impl<E: ProviderExecution> Invoke<E, ProviderCall<E, StreamOptionsInput<E>>> for
 
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
-    fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
+    pub(super) fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
         let hook: HookLog = Rc::default();
         let world = Setup {
             options,
@@ -167,7 +167,7 @@ impl Scripted {
     }
 
     /// Makes `session` answer through the provider without retrying.
-    fn adopt(&self, session: &AgentSession) {
+    pub(super) fn adopt(&self, session: &AgentSession) {
         session.set_auto_retry_enabled(false);
         session.state().write().unwrap().model =
             Arc::new(RwLock::new(self.provider.models[0].clone()));
@@ -183,7 +183,7 @@ impl Scripted {
     }
 
     /// Unregisters the provider and disposes of the current session.
-    fn finish(&self) {
+    pub(super) fn finish(&self) {
         self.world.host.session().dispose();
         self.provider.unregister();
     }
@@ -861,4 +861,71 @@ async fn measure(directory: &Path, size: Size, work: Work) {
         "the linear bound rejects a rescanning traversal"
     );
     assert_eq!(admitted, texts);
+}
+
+#[test]
+fn startup_subscription_check_is_started_between_fallback_and_prompts() {
+    isolated(
+        "startup_subscription_check_is_started_between_fallback_and_prompts",
+        startup_subscription_check,
+    );
+}
+
+/// Observes warning admission before the first prompt, without awaiting its completion.
+async fn startup_subscription_check(directory: &Path) {
+    let scripted = Scripted::new(
+        directory,
+        InteractiveModeOptions {
+            model_fallback_message: Some("controlled fallback".into()),
+            initial_message: Some("first prompt".into()),
+            ..Default::default()
+        },
+    );
+    let world = &scripted.world;
+    super::start(world).await;
+    assert!(world.runtime.drain_futures().is_empty());
+    let model = world.host.session().model();
+    let mut selected = model.read().unwrap().clone();
+    selected.provider = "anthropic".into();
+    world.host.session().state().write().unwrap().model = Arc::new(RwLock::new(selected));
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("anthropic", "sk-ant-oat-controlled");
+    scripted.provider.set_responses(vec![answer(None)]);
+    let observed = Rc::new(Cell::new(None));
+    let seen = observed.clone();
+    let mode = Rc::downgrade(&world.mode);
+    let runtime = world.runtime.clone();
+    let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::Agent(event) = event
+            && matches!(*event.read().unwrap(), maestro_app::AgentEvent::AgentStart)
+        {
+            let mode = mode.upgrade().unwrap();
+            seen.set(Some((
+                super::actions::shows(&mode.chat_container, "controlled fallback"),
+                mode.anthropic_subscription_warning_shown.get(),
+                runtime.futures(),
+            )));
+        }
+    }));
+    let mut run = pin!(world.mode.run());
+    until_waiting(&world.mode, run.as_mut()).await;
+    assert_eq!(
+        observed.get(),
+        Some((true, false, 4)),
+        "fallback is shown and the independent check is admitted before the first prompt"
+    );
+    assert_eq!(scripted.provider.state.call_count(), 1);
+    assert!(world.runtime.drain_futures().is_empty());
+    assert!(world.mode.anthropic_subscription_warning_shown.get());
+    let rows = maestro_app::strip_ansi(&world.mode.chat_container.render(1000).join("\n")).unwrap();
+    assert_eq!(
+        rows.matches("Anthropic subscription auth is active.")
+            .count(),
+        1
+    );
+    unsubscribe();
+    scripted.finish();
 }

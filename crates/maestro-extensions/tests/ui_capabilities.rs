@@ -16,16 +16,17 @@ use local_support::{
 use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
-    CustomFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionCollection, ExtensionComponent,
-    ExtensionShortcutOptions, ExtensionUIContextPort, ExtensionUIFuture, FooterFactory,
-    NotificationType, OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource,
-    RegisteredCommandOptions, ThemeSelection, ThemeSetResult, WidgetContent,
+    CustomFactory, CustomFactoryOutcome, CustomUIOptions, EditorFactoryOutcome,
+    ExtensionCollection, ExtensionComponent, ExtensionShortcutOptions, ExtensionUIContextPort,
+    ExtensionUIFuture, FooterFactory, NotificationType, OverlayHandleCallback,
+    OverlayOptionsResolver, OverlayOptionsSource, RegisteredCommandOptions, ThemeSelection,
+    ThemeSetResult, WidgetContent,
 };
 use maestro_extensions::{
     AutocompleteProviderFactory, CallbackEmitter, EditorFactory, EventError, ExtensionAPI,
-    ExtensionRunner, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
-    MessageRenderOptions, MessageRenderer, TerminalInputHandler, WidgetPlacement,
-    WorkingIndicatorOptions,
+    ExtensionRunner, ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ReplacedSessionContext,
+    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 use maestro_models::{Cancellation, Local, UserContent};
 use maestro_session::Presence;
@@ -45,7 +46,7 @@ use std::{
     cell::{Cell, RefCell},
     future::Future,
     pin::Pin,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::{Arc, RwLock},
 };
 use tokio::sync::oneshot;
@@ -275,6 +276,57 @@ fn runner_with_fallback_of(
     other
 }
 
+/// A replacement-session context reads its own runner's host, not its creator's.
+fn replacement_context_reads_its_own_runner(
+    owners: &ExtensionCollection<Local>,
+    creator: &ExtensionRunner<Local>,
+) {
+    let fresh = runner(owners);
+    fresh.set_ui_context(Some(Named::install("r").0));
+    let replaced = ReplacedSessionContext::new(
+        fresh.create_command_context(),
+        Rc::new(|_, _| Box::pin(async { Ok(()) })),
+        Rc::new(|_, _| Box::pin(async { Ok(()) })),
+    );
+    let ui = replaced.ui().unwrap();
+    ui.set_editor_text("replacement".into()).unwrap();
+    assert_eq!(
+        creator.get_ui_context().get_editor_text().unwrap(),
+        "second"
+    );
+    fresh.set_ui_context(None);
+    assert_eq!(replaced.ui().unwrap().get_editor_text().unwrap(), "");
+    assert_eq!(ui.get_editor_text().unwrap(), "replacement");
+}
+
+/// An acquired handle's aliases keep its host until the last one drops.
+fn last_alias_releases_host(handle: Ui, released: &Weak<Named>) {
+    let alias = handle.clone();
+    drop(handle);
+    assert!(released.upgrade().is_some());
+    drop(alias);
+    assert!(released.upgrade().is_none());
+}
+
+/// A borrowed binding serves its host only while another owner retains it.
+fn borrowed_binding_does_not_retain_its_host(runner: &ExtensionRunner<Local>) {
+    let (installed, host) = Named::install("c");
+    let released = Rc::downgrade(&host);
+    runner.set_ui_context_binding(Some(ExtensionUIContextBinding::borrowed(&installed)));
+    drop(installed);
+    let acquired = runner.get_ui_context();
+    drop(host);
+    acquired.set_editor_text("borrowed".into()).unwrap();
+    assert!(runner.has_ui());
+    assert_eq!(
+        runner.get_ui_context().get_editor_text().unwrap(),
+        "borrowed"
+    );
+    last_alias_releases_host(acquired, &released);
+    assert!(!runner.has_ui());
+    assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
+}
+
 #[test]
 fn retained_ui_handles_keep_old_hosts_after_rebinding() {
     local(async {
@@ -284,13 +336,19 @@ fn retained_ui_handles_keep_old_hosts_after_rebinding() {
         let released = Rc::downgrade(&host);
         drop(host);
         runner.set_ui_context(Some(first));
-        let old = runner.get_ui_context();
+        let (event, command) = (runner.create_context(), runner.create_command_context());
+        let old = event.ui().unwrap();
+        let old_command = command.ui().unwrap();
         runner.set_ui_context(Some(Named::install("b").0));
         let current = runner.get_ui_context();
         old.set_editor_text("first".into()).unwrap();
         current.set_editor_text("second".into()).unwrap();
         assert_eq!(old.get_editor_text().unwrap(), "first");
+        assert_eq!(old_command.get_editor_text().unwrap(), "first");
         assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "second");
+        assert_eq!(event.ui().unwrap().get_editor_text().unwrap(), "second");
+        assert_eq!(command.ui().unwrap().get_editor_text().unwrap(), "second");
+        replacement_context_reads_its_own_runner(&owners, &runner);
         let choice = old.select("t".into(), vec!["x".into()], None).await;
         assert_eq!(choice.unwrap().as_deref(), Some("a:t:x"));
         let choice = current.select("t".into(), vec!["x".into()], None).await;
@@ -298,11 +356,9 @@ fn retained_ui_handles_keep_old_hosts_after_rebinding() {
         runner.set_ui_context(None);
         assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
         assert_eq!(old.get_editor_text().unwrap(), "first");
-        let alias = old.clone();
-        drop(old);
-        assert!(released.upgrade().is_some());
-        drop(alias);
-        assert!(released.upgrade().is_none());
+        drop(old_command);
+        last_alias_releases_host(old, &released);
+        borrowed_binding_does_not_retain_its_host(&runner);
     });
 }
 
@@ -633,6 +689,8 @@ fn input_factory(
         Ok(ExtensionComponent {
             component: input,
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -1257,7 +1315,7 @@ impl Editors {
         let theme = get_editor_theme(LiveTheme::default());
         factory
             .call((self.tui.clone(), theme, self.keys.clone()))
-            .map(Some)
+            .map(|built| Some(built.editor()))
     }
 }
 impl ExtensionUIContextPort for Editors {
@@ -1301,7 +1359,7 @@ fn vim_factory(
             let editor: Rc<dyn EditorComponent<Signal = Cancellation>> =
                 Rc::new(Editor::new(&tui, theme, EditorOptions::default()));
             *captured.borrow_mut() = Some(keys);
-            Ok(editor)
+            Ok(EditorFactoryOutcome::Editor(editor))
         },
     )
 }
@@ -1410,6 +1468,8 @@ fn branch_footer(api: &ExtensionAPI<Local>, trace: &Trace, kept: &Rc<Kept>) -> F
             Ok(ExtensionComponent {
                 component: Rc::new(Input::new()),
                 dispose: None,
+                set_expanded: None,
+                width: None,
             })
         },
     )
@@ -1702,6 +1762,8 @@ fn traced_component(
             mark(&trace, "disposed");
             Ok(())
         })),
+        set_expanded: None,
+        width: None,
     }
 }
 
@@ -1798,6 +1860,8 @@ async fn completed<T: 'static>(api: &ExtensionAPI<Local>, ui: &Ui, value: T) -> 
             Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                 component: Rc::new(Input::new()),
                 dispose: None,
+                set_expanded: None,
+                width: None,
             }))
         },
     );

@@ -220,8 +220,8 @@ pub trait Driver {
     /// Runs the command that starts a new session; its continuation waits for idle, and the
     /// wait is held until the driver saw it pending.
     async fn command(&mut self, args: &str) -> Result<(), String>;
-    /// Releases every registered callback in registration order, including the ones that
-    /// releasing registers.
+    /// Drops every retained component, then releases every registered callback in
+    /// registration order, including the ones that releasing registers.
     async fn release_all(&mut self);
     /// Releases the callback registered as `name`; whether there was one.
     async fn release(&mut self, name: &str) -> bool;

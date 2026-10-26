@@ -1,5 +1,11 @@
-//! Removing saved provider credentials through the installed `/logout` command.
+//! Signing in and removing saved provider credentials through the installed `/login`
+//! and `/logout` commands.
 
+mod completion;
+mod navigation;
+mod subscription;
+
+use super::actions::install;
 use super::models::{
     editor, editor_focused, refuse_availability, refuse_refresh, register_configured,
     replace_session, replaceable, scope, shows_only, submit_held,
@@ -7,7 +13,10 @@ use super::models::{
 use super::typed::{poll, recalled, submit, waiting};
 use super::{World, isolated, started_with};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
-use crate::{AuthSelectorProvider, AuthType, OAuthSelectorComponent};
+use crate::{
+    AuthSelectorProvider, AuthType, ExtensionSelectorComponent, LoginDialogComponent,
+    OAuthSelectorComponent,
+};
 use maestro_app::{
     AuthCredential, AuthStorage, BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials,
     OAuthError, OAuthProviderInterface, ReadonlyFooterDataProvider, SharedHandle,
@@ -65,15 +74,182 @@ fn count(world: &World) -> f64 {
         .get_available_provider_count()
 }
 
-/// The credential picker the editor container shows, if it shows one.
-fn picker(world: &World) -> Option<Rc<OAuthSelectorComponent>> {
+/// The panel of type `T` the editor container shows alone, if it shows one.
+fn shown_as<T: Any>(world: &World) -> Option<Rc<T>> {
     let shown = world.mode.editor_container.children().borrow().clone();
     let [panel] = shown.as_slice() else {
         return None;
     };
-    (Rc::clone(panel) as Rc<dyn Any>)
-        .downcast::<OAuthSelectorComponent>()
-        .ok()
+    (Rc::clone(panel) as Rc<dyn Any>).downcast::<T>().ok()
+}
+
+/// The credential picker the editor container shows, if it shows one.
+fn picker(world: &World) -> Option<Rc<OAuthSelectorComponent>> {
+    shown_as(world)
+}
+
+/// The sign-in method choice or a subscription's choice, if one is shown.
+fn chooser(world: &World) -> Option<Rc<ExtensionSelectorComponent>> {
+    shown_as(world)
+}
+
+/// The sign-in dialog the editor container shows.
+fn dialog(world: &World) -> Rc<LoginDialogComponent> {
+    shown_as(world).expect("the sign-in dialog is shown")
+}
+
+/// The rows the editor container shows, read wide enough to keep each notice whole.
+fn panel_rows(world: &World) -> String {
+    world.mode.editor_container.render(WIDE).join("\n")
+}
+
+/// Replaces the browser openers with ones that do nothing, so an authorization link
+/// opens no browser.
+fn quiet_browser(directory: &Path) {
+    for name in ["xdg-open", "open"] {
+        install(directory, name, "#!/bin/sh\n");
+    }
+}
+
+/// Runs the terminal runtime's work until it waits, expecting no unhandled failure.
+fn settle(world: &World) {
+    let errors = world.runtime.drain_futures();
+    assert!(errors.is_empty(), "no unhandled failure: {errors:?}");
+}
+
+/// Submits `/login` and chooses the sign-in method for `kind`.
+fn choose_method(world: &World, kind: AuthType) {
+    submit_held(world, "/login");
+    assert!(chooser(world).is_some(), "the method choice is shown");
+    if kind == AuthType::ApiKey {
+        world.terminal.send_input("\x1b[B");
+    }
+    world.terminal.send_input("\r");
+}
+
+/// Chooses `id` among the providers offered for `kind` and runs the sign-in it starts
+/// until it waits.
+fn choose_provider(world: &World, kind: AuthType, id: &str) {
+    let options = world.mode.get_login_provider_options(Some(kind)).unwrap();
+    let position = options
+        .iter()
+        .position(|option| option.id == id)
+        .expect("the provider is offered");
+    assert!(picker(world).is_some(), "the provider picker is shown");
+    for _ in 0..position {
+        world.terminal.send_input("\x1b[B");
+    }
+    world.terminal.send_input("\r");
+    settle(world);
+}
+
+/// Signs in to `id` with `kind` through the installed command until the sign-in waits.
+fn sign_in_to(world: &World, kind: AuthType, id: &str) {
+    choose_method(world, kind);
+    choose_provider(world, kind, id);
+}
+
+/// Pastes `text` into the focused input, submits it and runs the work that follows.
+fn answer(world: &World, text: &str) {
+    world
+        .terminal
+        .send_input(&format!("\x1b[200~{text}\x1b[201~"));
+    world.terminal.send_input("\r");
+    settle(world);
+}
+
+/// What a scripted subscription does when asked to sign in.
+type Script =
+    Arc<dyn Fn(OAuthCallbacks) -> BoxFuture<Result<OAuthCredentials, OAuthError>> + Send + Sync>;
+
+/// A subscription whose sign-in runs a test script.
+struct Scripted {
+    /// The display name.
+    name: String,
+    /// Whether it also accepts a pasted redirect.
+    server: Option<bool>,
+    /// The sign-in.
+    script: Script,
+}
+
+impl OAuthProviderInterface for Scripted {
+    fn id(&self) -> &'static str {
+        "scripted"
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn uses_callback_server(&self) -> Option<bool> {
+        self.server
+    }
+    fn login(
+        &self,
+        callbacks: OAuthCallbacks,
+        _: Option<Fetch>,
+    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
+        (self.script)(callbacks)
+    }
+    fn refresh_token(
+        &self,
+        _: OAuthCredentials,
+        _: Option<Fetch>,
+    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
+        Box::pin(std::future::ready(Err(refused())))
+    }
+    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+        Ok(&credentials.access)
+    }
+}
+
+/// Registers the subscription `id`, named `name`, whose sign-in runs `script`.
+fn subscribe(
+    world: &World,
+    (id, name): (&str, &str),
+    server: Option<bool>,
+    script: impl Fn(OAuthCallbacks) -> BoxFuture<Result<OAuthCredentials, OAuthError>>
+    + Send
+    + Sync
+    + 'static,
+) {
+    let scripted = SharedHandle::new(Scripted {
+        name: name.to_owned(),
+        server,
+        script: Arc::new(script),
+    });
+    register_configured(world, id, &[], move |config| config.oauth = Some(scripted));
+}
+
+/// Subscription credentials whose key is `access`.
+fn signed(access: &str) -> OAuthCredentials {
+    OAuthCredentials {
+        access: access.to_owned(),
+        refresh: "refresh".to_owned(),
+        expires: 4_102_444_800_000.0,
+        extra: Map::default(),
+    }
+}
+
+/// The stored subscription key of `id`, if one is stored.
+fn stored_access(world: &World, id: &str) -> Option<String> {
+    match storage(world).get(id)? {
+        AuthCredential::OAuth(credentials) => Some(credentials.access),
+        AuthCredential::ApiKey(_) => None,
+    }
+}
+
+/// The stored API key of `id`, if one is stored.
+fn stored_key(world: &World, id: &str) -> Option<String> {
+    match storage(world).get(id)? {
+        AuthCredential::ApiKey(credential) => Some(credential.key),
+        AuthCredential::OAuth(_) => None,
+    }
+}
+
+/// Where the success text says credentials are saved.
+fn saved_path() -> String {
+    maestro_app::configuration::config::paths::get_auth_path(
+        &maestro_app::configuration::config::get_agent_dir().unwrap(),
+    )
 }
 
 /// Whether the editor alone is shown again.
@@ -106,7 +282,15 @@ fn position(world: &World, selected: &str) -> usize {
 /// Moves the picker to `position` with its own key bindings, confirms it and settles the
 /// removal it starts.
 fn select(world: &World, position: usize) {
-    let panel = picker(world).expect("the picker is shown");
+    select_on(
+        world,
+        &picker(world).expect("the picker is shown"),
+        position,
+    );
+}
+
+/// Moves `panel` to `position`, confirms it and settles the removal it starts.
+fn select_on(world: &World, panel: &OAuthSelectorComponent, position: usize) {
     for _ in 0..position {
         panel.handle_input("\x1b[B").unwrap();
     }
@@ -523,7 +707,8 @@ fn logout_selection_uses_current_session_with_captured_choice() {
             let world = replaceable(directory).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
-            open(&world);
+            // The replacement's extension UI reset puts the editor back in the panel's place.
+            let panel = open(&world);
             let captured = world.host.session();
             replace_session(&world);
             for entry in &input.replacement {
@@ -539,7 +724,7 @@ fn logout_selection_uses_current_session_with_captured_choice() {
                     oauth_only: false,
                 },
             );
-            select(&world, chosen);
+            select_on(&world, &panel, chosen);
             removed(&world, &expected);
             let original: Vec<String> = Arc::clone(captured.model_registry().auth_storage()).list();
             assert_eq!(

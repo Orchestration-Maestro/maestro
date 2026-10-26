@@ -76,6 +76,7 @@ use crate::Presence;
 pub use maestro_tool::types::ToolExecutionMode;
 use std::rc::Rc;
 /// Supplied tool output with guest field presence.
-pub type AgentToolResult = maestro_tool::types::AgentToolResult<Presence<String>, Presence<bool>>;
+pub type AgentToolResult =
+    maestro_tool::types::AgentToolResult<Presence<crate::JsonText>, Presence<bool>>;
 /// Synchronous delivery of a partial result.
 pub type AgentToolUpdateCallback = Rc<dyn Fn(AgentToolResult) -> ExtensionResult<()>>;
