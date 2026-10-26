@@ -1,6 +1,7 @@
 //! Pending body reads release admission without discarding the retained transport.
 use super::*;
 use std::{
+    collections::BTreeMap,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -18,7 +19,7 @@ fn cancelled_pending_body_read_retains_the_stream() {
             HttpResponse {
                 status: 200,
                 status_text: "OK".into(),
-                headers: Default::default(),
+                headers: BTreeMap::new(),
                 body: Box::pin(futures_util::stream::poll_fn(move |_| {
                     if producer.load(Ordering::SeqCst) {
                         Poll::Ready(bytes.take().map(Ok))

@@ -34,10 +34,12 @@ jobs:
           capped mise exec -- just check 2>&1 | tee proof-logs/fix-r1-check.log
           git diff --exit-code -- crates docs | tee proof-logs/fix-r1-format-diff.log
       - name: Guest-target Clippy
+        if: ${{ !cancelled() }}
         run: |
           set -o pipefail
           capped mise exec -- cargo clippy --locked -p maestro-extensions-wasm --target wasm32-wasip2 --example native_io_component -- -D warnings 2>&1 | tee proof-logs/fix-r1-guest-clippy.log
       - name: Selected package suites
+        if: ${{ !cancelled() }}
         run: |
           set -o pipefail
           capped mise exec -- cargo nextest run --locked -p maestro-app -p maestro-process -p maestro-extensions-wasm -p maestro-extensions-wasmtime -p maestro --no-fail-fast 2>&1 | tee proof-logs/fix-r1-packages-green.log
