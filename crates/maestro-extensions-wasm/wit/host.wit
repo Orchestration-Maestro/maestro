@@ -97,6 +97,42 @@ interface host {
 
     }
 
+    /// Independently retained author value, never encoded as JSON.
+    resource stream-value {
+        constructor(value: callback);
+        id: func() -> u32;
+    }
+    /// Original model invocation buffer, without a second event queue.
+    resource assistant-stream {
+        push: func(event: string) -> result<_, string>;
+        end: func(value: option<string>) -> result<_, string>;
+        next: async func() -> result<option<string>, string>;
+        %result: async func() -> result<string, string>;
+    }
+    /// Non-data invocation operands retained independently of the initiating callback.
+    record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
+    /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
+    model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Native phase calling an awaited authored hook.
+    enum model-hook { payload, response }
+    /// Selected payload and optional original or replacement cancellation.
+    record payload-selection { data: string, signal: option<abort-signal>, owner: option<callback> }
+    /// Host-buffered generic authored events and their independent final result.
+    resource event-stream {
+        push: func(value: stream-value) -> import-route;
+        end: func(value: option<stream-value>) -> import-route;
+        next: async func() -> result<option<stream-value>, string>;
+        %result: async func() -> result<stream-value, string>;
+    }
+    /// Create the native buffer with synchronous author callbacks.
+    new-event-stream: func(classifier: borrow<callback>, extractor: borrow<callback>) -> result<event-stream, string>;
+    /// Which synchronous author callback native admission requests.
+    enum stream-operation { classify, extract }
+    /// Typed result of one author callback.
+    variant stream-selection { complete(bool), extracted(stream-value) }
+    /// One synchronous callback on the original retained event.
+    record local-stream { target: u32, value: u32, operation: stream-operation }
+
     /// Explicit subscription remover.
     resource subscription { unsubscribe: func() -> result<_, string>; }
     /// Emission capability lent to a synchronous invocation.
@@ -185,6 +221,7 @@ interface host {
         terminal-input(local-terminal-input),
         synchronous(local-synchronous),
         schema(local-schema),
+        %stream(local-stream),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -208,6 +245,7 @@ interface host {
         terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
+        %stream(result<stream-selection, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
@@ -236,8 +274,9 @@ interface host {
 
     /// Host-owned cancellation flag.
     resource abort-signal {
+        retain: func() -> abort-signal;
         aborted: func() -> bool;
-        abort: func() -> result<_, string>;
+        abort: func() -> import-route;
     }
     /// Creates an independently owned cancellation signal.
     new-signal: func() -> result<abort-signal, string>;

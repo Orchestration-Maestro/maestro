@@ -20,6 +20,8 @@ pub(crate) mod object;
 mod providers;
 pub use providers::{ProviderConfig, ProviderModelConfig};
 mod selection_events;
+mod stream_options;
+pub use stream_options::*;
 mod session_events;
 mod tool_events;
 mod tool_results;

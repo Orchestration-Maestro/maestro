@@ -182,16 +182,17 @@ impl State {
     /// Answers one request with the native owner it names.
     fn dispatch(&self, message: Message) {
         match message {
+            Message::ModelStart(request) => request.answer(&self.registry),
+            Message::ModelStream(id, request) => self.model_stream_request(id, request),
+            Message::NewStream(request) => request.answer(&self.registry),
+            Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
             Message::LockUpdate(_, _, reply) => {
                 let _ = reply.send(Err("extension lock update ended".into()));
             }
             Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
-            Message::EndLockUpdate(id) => {
-                let frame = self.synchronous.async_frames.borrow_mut().remove(&id);
-                drop(frame);
-            }
+            Message::EndLockUpdate(id) => self.end_lock_update(id),
             Message::SchemaListing(id, reply) => {
                 let _ = reply.send(self.schema_listing(id));
             }
@@ -236,11 +237,20 @@ impl State {
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
-            Message::Release(id) => {
-                let removed = self.registry.resources.borrow_mut().entries.remove(&id);
-                drop(removed);
-            }
+            Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Releases an ended lock update outside its frame-table borrow.
+    fn end_lock_update(&self, id: u64) {
+        let frame = self.synchronous.async_frames.borrow_mut().remove(&id);
+        drop(frame);
+    }
+
+    /// Releases a resource outside its capability-table borrow.
+    fn release(&self, id: u64) {
+        let removed = self.registry.resources.borrow_mut().entries.remove(&id);
+        drop(removed);
     }
 
     /// Reads the original live history independently of guarded contexts.

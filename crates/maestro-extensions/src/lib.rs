@@ -56,8 +56,10 @@ pub use maestro_catalog::{
     ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
 };
 pub use maestro_models::{
-    Base, OAuthError, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode,
-    schema_transport,
+    AssistantMessageEventStream, Base, Context, EventStream, OAuthError, ParameterSchema,
+    PayloadHookInput, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
+    SchemaCallback, SchemaCode, SchemaNode, SimpleStreamOptions, StreamOptions, schema_transport,
+    stream_for, stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;

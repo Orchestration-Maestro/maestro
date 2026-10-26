@@ -63,6 +63,34 @@ mod theme;
 #[path = "context_bridge/schema.rs"]
 mod schema;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/streams.rs"]
+mod streams;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/stream_lifetimes.rs"]
+mod stream_lifetimes;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_streams.rs"]
+mod model_streams;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_completions.rs"]
+mod model_completions;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_hooks.rs"]
+mod model_hooks;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_hook_gates.rs"]
+mod model_hook_gates;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_finite.rs"]
+mod model_finite;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -158,6 +186,53 @@ fn listener_tail(
 /// Uses independently supplied native command contexts and controllable pending operations.
 #[cfg(target_arch = "wasm32")]
 fn command(
+    args: String,
+    context: maestro_extensions_wasm::ExtensionCommandContext,
+    api: ExtensionAPI,
+) -> ExtensionFuture<'static, ()> {
+    if let Some(request) = args.strip_prefix("model-selected-signal ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(model_hook_gates::signals(&request, context).await?) });
+    }
+    if let Some(request) = args.strip_prefix("model-hook-gates ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(model_hook_gates::command(&request, context).await?) });
+    }
+    if args == "model-finite" {
+        return Box::pin(async { Err(model_finite::command()?) });
+    }
+    if args == "model-signals" {
+        return Box::pin(async { Err(model_hooks::signals().await?) });
+    }
+    if args == "model-hooks" {
+        return Box::pin(async { Err(model_hooks::command().await?) });
+    }
+    if let Some(action) = args.strip_prefix("model-completions ") {
+        let action = action.to_owned();
+        return Box::pin(async move { Err(model_completions::command(&action).await?) });
+    }
+    if args == "model-errors" {
+        return Box::pin(async { Err(model_streams::errors().await?) });
+    }
+    if args == "model-streams" {
+        return Box::pin(async { Err(model_streams::command().await?) });
+    }
+    if let Some(action) = args.strip_prefix("stream-lifetime ") {
+        let action = action.to_owned();
+        return Box::pin(
+            async move { Err(stream_lifetimes::command(&api, &context, &action).await?) },
+        );
+    }
+    if let Some(request) = args.strip_prefix("stream ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(streams::command(&request).await?) });
+    }
+    context_command(args, context, api)
+}
+
+/// Dispatch context and registration observations unrelated to stream ownership.
+#[cfg(target_arch = "wasm32")]
+fn context_command(
     args: String,
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,

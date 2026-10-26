@@ -20,6 +20,7 @@ use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 mod credentials;
 mod ui;
 use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
+mod tool;
 
 /// Owned operands of one nested renderer call.
 #[derive(ComponentType, Lower)]
@@ -253,6 +254,9 @@ pub(super) enum LocalCall {
     /// A schema method against the original borrowed operand.
     #[component(name = "schema")]
     Schema(LocalSchema),
+    /// A synchronous authored-stream classifier or extractor.
+    #[component(name = "stream")]
+    Stream(crate::stream_calls::Local),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -319,6 +323,9 @@ pub(super) enum LocalResult {
     /// The schema result with every authored diagnostic field.
     #[component(name = "schema")]
     Schema(Result<String, crate::schema_wire::Error>),
+    /// Selected terminal classification or retained result.
+    #[component(name = "stream")]
+    Stream(Result<crate::stream_calls::WireSelection, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -364,6 +371,7 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
+        Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
@@ -447,7 +455,7 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
                     .transpose()?,
             },
         }),
-        Call::Tool(call) => tool(table, call)?,
+        Call::Tool(call) => tool::lower(table, call)?,
         Call::Setup(handler, writer, _) => LocalCall::Setup(LocalSetup {
             target: handler.id,
             writer: table.push(writer.clone())?,
@@ -473,42 +481,6 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
     })
 }
 
-/// Marshals one tool execution with its per-call capabilities.
-fn tool(table: &mut ResourceTable, call: &ToolCall<Callback>) -> wasmtime::Result<LocalCall> {
-    let ToolCall::Execute {
-        handler,
-        id,
-        params,
-        context,
-        signal,
-        update,
-        ..
-    } = call
-    else {
-        return Err(wasmtime::format_err!(
-            "extension preparation is synchronous"
-        ));
-    };
-    Ok(LocalCall::Tool(LocalTool {
-        target: handler.id,
-        invocation: ToolInvocation {
-            tool_call_id: id.clone(),
-            params: params.clone(),
-        },
-        resources: ToolResources {
-            ctx: table.push(Context(context.clone()))?,
-            signal: signal
-                .clone()
-                .map(|signal| table.push(signal))
-                .transpose()?,
-            update: update
-                .clone()
-                .map(|update| table.push(update))
-                .transpose()?,
-        },
-    }))
-}
-
 /// Delivers a nested call's own result to the native caller that asked for it.
 pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     store: &mut T,
@@ -516,18 +488,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
-        (
-            Call::Credential(crate::guest_calls::credentials::CredentialCall::Backend(call)),
-            LocalResult::Unit(value),
-        ) => {
-            let _ = call.reply.send(value);
-        }
-        (
-            Call::Credential(crate::guest_calls::credentials::CredentialCall::Fallback(call)),
-            LocalResult::AuthFallback(value),
-        ) => {
-            let _ = call.reply.send(value);
-        }
+        (Call::Credential(call), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component
@@ -548,6 +509,13 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
             let _ = reply.send(value);
+        }
+        (Call::Stream(call), LocalResult::Stream(value)) => {
+            let value = match value {
+                Ok(value) => Ok(value.retained(store)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
