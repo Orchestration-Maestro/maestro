@@ -146,6 +146,8 @@ pub mod local {
     pub use maestro_tools::read::local::create_read_tool_definition;
     pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     pub use maestro_tools::types::local::*;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::write::local::create_write_tool_definition;
 }
 /// Retained native definitions accepted by the tools-owned execution wrapper.
 pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
@@ -155,7 +157,8 @@ pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperatio
 /// Native file configuration and the model observation a read definition consumes.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
-    EditToolOptions, ReadContext, ReadOperations, ReadToolOptions, ToolRendererBinding,
+    EditOperations, EditToolOptions, ReadContext, ReadOperations, ReadToolOptions,
+    ToolRendererBinding, WriteOperations, WriteToolOptions,
 };
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{

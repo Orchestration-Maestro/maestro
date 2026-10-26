@@ -13,6 +13,34 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_edit_tool(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_edit_tool(cwd, options)
+    }
+    fn create_edit_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_edit_tool_definition(cwd, options)
+    }
+    fn create_write_tool(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_write_tool(cwd, options)
+    }
+    fn create_write_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_write_tool_definition(cwd, options)
+    }
     fn create_read_tool(
         &self,
         cwd: String,

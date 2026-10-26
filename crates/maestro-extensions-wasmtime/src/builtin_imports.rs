@@ -80,17 +80,43 @@ fn add_factories<T: CallbackView + 'static>(
             Ok((result,))
         },
     )?;
-    host.func_wrap(
-        "create-edit-tool",
-        |mut store: StoreContextMut<'_, T>, (cwd,): (String,)| {
-            let result = store.data().api().create_edit(cwd);
+    add_mutating_factories(host)
+}
+
+/// Installs mutating constructors with the same retained-effect signature.
+fn add_mutating_factories<T: CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    for (name, create) in [
+        (
+            "create-write-tool",
+            crate::api_reads::Endpoint::create_write as MutationFactory,
+        ),
+        (
+            "create-edit-tool",
+            crate::api_reads::Endpoint::create_edit as MutationFactory,
+        ),
+    ] {
+        let factory = move |mut store: StoreContextMut<'_, T>,
+                            (cwd, operations): (
+            String,
+            Option<Resource<crate::guest_calls::Callback>>,
+        )| {
+            let operations = operations
+                .as_ref()
+                .map(|operations| {
+                    crate::callback_imports::borrowed_object(store.data_mut(), operations)
+                })
+                .transpose()?;
+            let result = create(store.data().api(), cwd, operations);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
                 Err(error) => Err(error),
             };
             Ok((result,))
-        },
-    )?;
+        };
+        host.func_wrap(name, factory)?;
+    }
     Ok(())
 }
 /// Execution keeps its native tool and cancellation as separate typed resources.
@@ -101,3 +127,10 @@ type ExecutionArgs = (
     Option<String>,
     Option<Resource<SignalEndpoint>>,
 );
+
+/// Native mutating constructor signature shared by write and edit.
+type MutationFactory = fn(
+    &crate::api_reads::Endpoint,
+    String,
+    Option<crate::guest_calls::Handle>,
+) -> Result<Endpoint, String>;

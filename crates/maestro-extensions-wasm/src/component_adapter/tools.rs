@@ -6,7 +6,11 @@ use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExec
 use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]
+pub(crate) mod edit;
+#[cfg(target_arch = "wasm32")]
 pub(crate) mod read;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod write;
 
 /// Restore the shared schema owner with the guest callback representation.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {

@@ -80,3 +80,35 @@ long as they are needed; dropping the last consumer releases their native
 resources. These operations require the native component host and a
 `wasm32-wasip2` component. The in-process controlled adapter does not simulate
 native factories.
+
+## Replace write effects
+
+`ExtensionAPI::create_write_tool(cwd, options)` returns a context-free executable;
+`create_write_tool_definition(cwd, options)` returns a registerable definition with
+its native metadata and renderers. Neither constructor performs file work or reads
+a model. See [write](../tools-edit.md#write-tool) for native behavior.
+
+`WriteToolOptions::operations` optionally supplies `WriteOperations`:
+`mkdir(parent)` creates parents recursively, and `write_file(absolute_path, content)`
+receives the original string. Both return `OperationFuture<'static, ()>` with
+`DiagnosticErrorInfo` on failure. Omitting operations uses the local filesystem.
+
+The native owner resolves paths, waits for mkdir to succeed before starting write,
+and reports UTF-8 bytes, not characters. A failed mkdir starts no write. These
+calls use the same native per-file mutation queue as other file-changing tools.
+Pre-abort starts no effect; cancellation while an effect is pending stops the
+remaining stages but cannot undo an effect that already completed.
+
+## Replace edit effects
+
+`create_edit_tool` and `create_edit_tool_definition` retain the native edit's
+argument preparation. `EditToolOptions::operations` optionally supplies
+`EditOperations`: `access(absolute_path)`, `read_file(absolute_path)` returning
+original bytes, and `write_file(absolute_path, content)` receiving the native
+replacement text. Omitting operations uses the local filesystem.
+
+Callbacks return `OperationFuture` with the original `DiagnosticErrorInfo`, not a
+display string. In particular, edit access formats a supplied text or numeric
+`code`; without a code it keeps the original message. Read and write failures stop
+at their reached stage. Matching, validation, diff construction, BOM and line-ending
+policy remain with the [native edit owner](../tools-edit.md).

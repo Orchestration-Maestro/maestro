@@ -518,6 +518,34 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn create_edit_tool(
+        &self,
+        _: String,
+        _: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_edit_tool_definition(
+        &self,
+        _: String,
+        _: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_write_tool(
+        &self,
+        _: String,
+        _: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_write_tool_definition(
+        &self,
+        _: String,
+        _: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
     fn create_read_tool(
         &self,
         _: String,

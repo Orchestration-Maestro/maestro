@@ -12,7 +12,9 @@ pub(crate) enum Factory {
     /// Read with its independently selected image policy.
     Read(String, Option<bool>, Option<crate::guest_calls::Handle>),
     /// Edit with native argument preparation and file operations.
-    Edit(String),
+    Edit(String, Option<crate::guest_calls::Handle>),
+    /// Write through native ordering and independently retained effects.
+    Write(String, Option<crate::guest_calls::Handle>),
 }
 impl Registry {
     /// Constructs the original typed definition and gives it an independent resource lease.
@@ -32,10 +34,31 @@ impl Registry {
                     },
                 ),
             )),
-            Factory::Edit(cwd) => Rc::new(RwLock::new(
+            Factory::Write(cwd, operations) => Rc::new(RwLock::new(
+                maestro_extensions::local::create_write_tool_definition::<
+                    crate::builtin_tools::Context,
+                >(
+                    cwd,
+                    maestro_extensions::WriteToolOptions {
+                        operations: operations.map(|owner| {
+                            Arc::new(crate::guest_calls::write::Operations(owner))
+                                as Arc<dyn maestro_extensions::WriteOperations>
+                        }),
+                    },
+                ),
+            )),
+            Factory::Edit(cwd, operations) => Rc::new(RwLock::new(
                 maestro_extensions::local::create_edit_tool_definition::<
                     crate::builtin_tools::Context,
-                >(cwd, maestro_extensions::EditToolOptions::default()),
+                >(
+                    cwd,
+                    maestro_extensions::EditToolOptions {
+                        operations: operations.map(|owner| {
+                            Arc::new(crate::guest_calls::edit::Operations(owner))
+                                as Arc<dyn maestro_extensions::EditOperations>
+                        }),
+                    },
+                ),
             )),
         };
         self.insert(Capability::Builtin(definition)).map(Endpoint)
@@ -56,10 +79,24 @@ impl crate::api_reads::Endpoint {
             ))
         })
     }
-    /// Retains native edit preparation without requiring a context or accessing a file.
-    pub(crate) fn create_edit(&self, cwd: String) -> Result<Endpoint, String> {
+    /// Retains native write policy without performing its effects.
+    pub(crate) fn create_write(
+        &self,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Endpoint, String> {
         self.0.request(|_, reply| {
-            Message::BuiltinOperation(Operation::Create(Factory::Edit(cwd), reply))
+            Message::BuiltinOperation(Operation::Create(Factory::Write(cwd, operations), reply))
+        })
+    }
+    /// Retains native edit preparation without requiring a context or accessing a file.
+    pub(crate) fn create_edit(
+        &self,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Endpoint, String> {
+        self.0.request(|_, reply| {
+            Message::BuiltinOperation(Operation::Create(Factory::Edit(cwd, operations), reply))
         })
     }
 }

@@ -595,3 +595,266 @@ fn read_gate(
     ));
     (started, release)
 }
+
+/// Parent completion precedes original content; native UTF-8 counts and cancellation survive wrapping.
+#[test]
+fn builtin_write_operations_create_parents_before_writing() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for executable in [false, true] {
+            for (content, bytes) in [("", 0), ("a\0z", 3), ("é", 2), ("😀", 4), ("aé😀", 7)] {
+                observe_write(
+                    &runner,
+                    json!({"content":content,"executable":executable}),
+                    "ready",
+                    None,
+                )
+                .await;
+                assert_eq!(native_write_result(content).await, json!({"content":[{"type":"text","text":format!("Successfully wrote {bytes} bytes to parent/雪.txt")}]}));
+            }
+            observe_write_stages(&runner, executable).await;
+        }
+    });
+}
+
+/// Covers each reached effect without nesting the completion matrix in the content matrix.
+async fn observe_write_stages(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+) {
+    for stage in ["mkdir", "write"] {
+        observe_write(
+            runner,
+            json!({"content":"é😀\0","executable":executable}),
+            "pending",
+            Some(stage),
+        )
+        .await;
+        for mode in ["ready", "pending", "preabort", "pending-abort"] {
+            observe_write(
+                runner,
+                json!({"content":"é😀\0","executable":executable,"fail":stage}),
+                mode,
+                Some(stage),
+            )
+            .await;
+        }
+    }
+}
+
+/// Runs ready and gated effects through the real compiled author and arbitrary caller signal.
+async fn observe_write(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    mut request: serde_json::Value,
+    mode: &str,
+    stage: Option<&str>,
+) {
+    let signal = read_signal(runner);
+    request["gate"] = json!(mode.starts_with("pending").then_some(stage).flatten());
+    request["signal"] = json!(match mode {
+        "preabort" => Some("preaborted"),
+        "pending-abort" => Some("relay"),
+        _ => None,
+    });
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let work = Box::pin((command.handler)(
+        format!("builtin-custom-write {request}"),
+        runner.create_command_context(),
+    ));
+    let result = if mode.starts_with("pending") {
+        let (started, release) = read_gate(runner);
+        let waiting = match futures_util::future::select(work, started).await {
+            futures_util::future::Either::Left(_) => {
+                panic!("write completed before the {stage:?} operation gate")
+            }
+            futures_util::future::Either::Right((started, waiting)) => {
+                started.unwrap();
+                waiting
+            }
+        };
+        if mode == "pending-abort" {
+            signal.abort();
+        }
+        release.send(()).unwrap();
+        waiting.await
+    } else {
+        work.await
+    };
+    let observed: serde_json::Value =
+        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let mut calls = vec![];
+    if mode != "preabort" {
+        calls.push(json!(["mkdir", "/virtual/parent"]));
+        if request["fail"] != "mkdir" && !(mode == "pending-abort" && stage == Some("mkdir")) {
+            calls.push(json!([
+                "write",
+                "/virtual/parent/雪.txt",
+                request["content"],
+                true
+            ]));
+        }
+    }
+    let mut expected = json!({"calls":calls});
+    if mode.ends_with("abort") {
+        expected["error"] = json!("Operation aborted");
+        expected["notified"] = json!(u32::from(mode == "pending-abort"));
+    } else if let Some(stage) = request["fail"].as_str() {
+        expected["error"] = json!(format!("refused {stage} 雪"));
+    } else {
+        expected["result"] = native_write_result(request["content"].as_str().unwrap()).await;
+    }
+    assert_eq!(observed, expected, "{mode}: {request}");
+}
+
+/// Supplies no filesystem effects to the independent native result comparator.
+struct WriteAnswer;
+impl maestro_extensions::WriteOperations for WriteAnswer {
+    fn mkdir(&self, _: String) -> ReadFuture<()> {
+        Box::pin(std::future::ready(Ok(())))
+    }
+    fn write_file(&self, _: String, _: String) -> ReadFuture<()> {
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+/// Gets the complete result from the owning individual factory, not a guest output post-pass.
+async fn native_write_result(content: &str) -> serde_json::Value {
+    let tool = maestro_extensions::local::create_write_tool_definition::<()>(
+        "/virtual".into(),
+        maestro_extensions::WriteToolOptions {
+            operations: Some(std::sync::Arc::new(WriteAnswer)),
+        },
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(tool, None);
+    let result = (tool.execute)(
+        "native-write".into(),
+        json!({"path":"parent/雪.txt","content":content}),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    serde_json::to_value(result).unwrap()
+}
+
+/// Edit access consumes text/numeric codes before display; later failures keep their reached phase.
+#[test]
+fn builtin_operation_errors_keep_codes_and_messages() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for executable in [false, true] {
+            for (stage, code, error) in [
+                (
+                    "access",
+                    json!(null),
+                    "Could not edit file: 雪.txt. refused access 雪.",
+                ),
+                (
+                    "access",
+                    json!("EACCES"),
+                    "Could not edit file: 雪.txt. Error code: EACCES.",
+                ),
+                (
+                    "access",
+                    json!(17),
+                    "Could not edit file: 雪.txt. Error code: 17.",
+                ),
+                ("read", json!("EACCES"), "refused read 雪"),
+                ("write", json!(17), "refused write 雪"),
+                ("", json!(null), ""),
+            ] {
+                observe_edit_error(&runner, executable, (stage, code, error)).await;
+            }
+        }
+    });
+}
+
+/// Exercises both immediately-ready and positively observed pending callbacks.
+async fn observe_edit_error(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+    case: (&str, serde_json::Value, &str),
+) {
+    let (stage, code, error) = case;
+    for pending in [false, true] {
+        let request = json!({"bytes":b"one\ntwo\n","args":{"path":"雪.txt","edits":[{"oldText":"one","newText":"new"}]},"executable":executable,"fail":(!stage.is_empty()).then_some(stage),"code":code,"gate":pending.then_some(if stage.is_empty() { "access" } else { stage })});
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let gate = pending.then(|| read_gate(runner));
+        let work = Box::pin((command.handler)(
+            format!("builtin-custom-edit {request}"),
+            runner.create_command_context(),
+        ));
+        let result = if let Some((started, release)) = gate {
+            let waiting = match futures_util::future::select(work, started).await {
+                futures_util::future::Either::Left(_) => {
+                    panic!("edit completed before its {stage} operation gate")
+                }
+                futures_util::future::Either::Right((started, waiting)) => {
+                    started.unwrap();
+                    waiting
+                }
+            };
+            release.send(()).unwrap();
+            waiting.await
+        } else {
+            work.await
+        };
+        let observed: serde_json::Value =
+            serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        let mut calls = vec![json!(["access", "/virtual/雪.txt"])];
+        if stage != "access" {
+            calls.push(json!(["read", "/virtual/雪.txt"]));
+        }
+        if stage != "access" && stage != "read" {
+            calls.push(json!(["write", "/virtual/雪.txt"]));
+        }
+        if stage.is_empty() {
+            calls.push(json!(["written", "new\ntwo\n"]));
+            assert_eq!(
+                observed,
+                json!({"calls":calls,"result":native_edit_success().await})
+            );
+        } else {
+            assert_eq!(observed, json!({"calls":calls,"error":error}), "{request}");
+        }
+    }
+}
+
+/// Independent native effects for the complete successful edit result.
+struct EditAnswer;
+impl maestro_extensions::EditOperations for EditAnswer {
+    fn access(&self, _: String) -> ReadFuture<()> {
+        Box::pin(std::future::ready(Ok(())))
+    }
+    fn read_file(&self, _: String) -> ReadFuture<Vec<u8>> {
+        Box::pin(std::future::ready(Ok(b"one\ntwo\n".to_vec())))
+    }
+    fn write_file(&self, _: String, content: String) -> ReadFuture<()> {
+        assert_eq!(content, "new\ntwo\n");
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+/// Delegates the complete diff/result expectation to its actual native owner.
+async fn native_edit_success() -> serde_json::Value {
+    let definition = maestro_extensions::local::create_edit_tool_definition::<()>(
+        "/virtual".into(),
+        maestro_extensions::EditToolOptions {
+            operations: Some(std::sync::Arc::new(EditAnswer)),
+        },
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    let result = (tool.execute)(
+        "native-edit".into(),
+        json!({"path":"雪.txt","edits":[{"oldText":"one","newText":"new"}]}),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    serde_json::to_value(result).unwrap()
+}

@@ -59,6 +59,8 @@ impl Call {
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),
             Self::Read(call) => attach(&call.reply, completion),
+            Self::Write(call) => attach(&call.reply, completion),
+            Self::Edit(call) => attach(&call.reply, completion),
             Self::Registered(call) => match call {
                 RegisteredCall::Command(_, _, _, reply) | RegisteredCall::Shortcut(_, _, reply) => {
                     attach(reply, completion);

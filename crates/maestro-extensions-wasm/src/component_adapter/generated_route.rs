@@ -197,6 +197,12 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
+            host::LocalCall::Edit(call) => host::LocalResult::Edit(
+                super::super::tools::edit::invoke(call.target, call.operation, call.path).await,
+            ),
+            host::LocalCall::Write(call) => host::LocalResult::Write(
+                super::super::tools::write::invoke(call.target, call.operation, call.path).await,
+            ),
             host::LocalCall::Read(call) => host::LocalResult::Read(
                 super::super::tools::read::invoke(call.target, call.operation, call.path).await,
             ),

@@ -10,12 +10,17 @@ use std::rc::Rc;
 
 /// Constructs the native read with independently retained replacement observations.
 pub(super) fn read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<ToolDefinition> {
-    definition(native_read(cwd, options)?)
+    definition(native_read(cwd, options)?, true)
 }
 
 /// Projects only executable metadata and a context-free invocation onto the same owner.
 pub(super) fn executable_read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<crate::Tool> {
     let tool = native_read(cwd, options)?;
+    executable(tool)
+}
+
+/// Projects a context-free invocation from an original retained definition.
+fn executable(tool: Rc<host::BuiltinTool>) -> ExtensionResult<crate::Tool> {
     let metadata = metadata(&tool)?;
     Ok(crate::Tool {
         name: metadata.name,
@@ -49,6 +54,85 @@ fn native_read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<Rc<host::
     Ok(Rc::new(tool?))
 }
 
+/// Constructs the native write definition without observing a model or touching a file.
+pub(super) fn write(
+    cwd: &str,
+    options: crate::WriteToolOptions,
+) -> ExtensionResult<ToolDefinition> {
+    definition(native_write(cwd, options)?, false)
+}
+
+/// Uses the same original write owner without definition-only metadata.
+pub(super) fn executable_write(
+    cwd: &str,
+    options: crate::WriteToolOptions,
+) -> ExtensionResult<crate::Tool> {
+    executable(native_write(cwd, options)?)
+}
+
+/// Admits replacement effects with the existing callback identity and rollback owner.
+fn native_write(
+    cwd: &str,
+    options: crate::WriteToolOptions,
+) -> ExtensionResult<Rc<host::BuiltinTool>> {
+    let operations = options.operations.map(|operations| {
+        let identity = Identity::new(&Generated);
+        identity.stage(operations);
+        identity
+    });
+    let tool = host::create_write_tool(cwd, operations.as_ref().map(|identity| &identity.handle));
+    if let Some(identity) = operations {
+        identity.settle(tool.is_ok());
+    }
+    Ok(Rc::new(tool?))
+}
+
+/// Projects native edit preparation beside execution and the original renderer handles.
+pub(super) fn edit(cwd: &str, options: crate::EditToolOptions) -> ExtensionResult<ToolDefinition> {
+    let tool = native_edit(cwd, options)?;
+    let prepare = prepare(tool.clone());
+    let mut definition = definition(tool, false)?;
+    definition.prepare_arguments = Some(prepare);
+    Ok(definition)
+}
+
+/// Retains edit preparation without introducing a caller context requirement.
+pub(super) fn executable_edit(
+    cwd: &str,
+    options: crate::EditToolOptions,
+) -> ExtensionResult<crate::Tool> {
+    let tool = native_edit(cwd, options)?;
+    let prepare = prepare(tool.clone());
+    let mut executable = executable(tool)?;
+    executable.prepare_arguments = Some(prepare);
+    Ok(executable)
+}
+
+/// Uses the original native transformation synchronously, without validating or executing.
+fn prepare(tool: Rc<host::BuiltinTool>) -> crate::PrepareArguments {
+    Rc::new(move |args, _| {
+        let text = tool.prepare(&encode_value(&args)?)?;
+        super::super::session::decode(&text)
+    })
+}
+
+/// Admits the original edit effects under one existing callback identity.
+fn native_edit(
+    cwd: &str,
+    options: crate::EditToolOptions,
+) -> ExtensionResult<Rc<host::BuiltinTool>> {
+    let operations = options.operations.map(|operations| {
+        let identity = Identity::new(&Generated);
+        identity.stage(operations);
+        identity
+    });
+    let tool = host::create_edit_tool(cwd, operations.as_ref().map(|identity| &identity.handle));
+    if let Some(identity) = operations {
+        identity.settle(tool.is_ok());
+    }
+    Ok(Rc::new(tool?))
+}
+
 /// Reads the original shared schema transport without converting it to JSON text.
 fn metadata(tool: &host::BuiltinTool) -> ExtensionResult<crate::ToolMetadata> {
     let (mut metadata, parameters): (crate::ToolMetadata, _) =
@@ -57,23 +141,29 @@ fn metadata(tool: &host::BuiltinTool) -> ExtensionResult<crate::ToolMetadata> {
     Ok(metadata)
 }
 
-/// Projects read metadata and callbacks from its retained native definition.
-fn definition(tool: Rc<host::BuiltinTool>) -> ExtensionResult<ToolDefinition> {
+/// Projects original metadata and callbacks from a retained native definition.
+fn definition(tool: Rc<host::BuiltinTool>, reads_model: bool) -> ExtensionResult<ToolDefinition> {
     let metadata = metadata(&tool)?;
     Ok(ToolDefinition {
         metadata,
         prepare_arguments: None,
-        execute: execute(tool.clone()),
+        execute: execute(tool.clone(), reads_model),
         render_call: Some(call(tool.clone())),
         render_result: Some(result(tool)),
     })
 }
 
 /// Executes on the native owner with call-time model and arbitrary caller cancellation.
-fn execute(tool: Rc<host::BuiltinTool>) -> crate::ToolExecute {
+fn execute(tool: Rc<host::BuiltinTool>, reads_model: bool) -> crate::ToolExecute {
     Rc::new(move |id, args, signal, _update, context| {
         let tool = tool.clone();
-        Box::pin(async move { invoke(&tool, id, args, signal, || context.model()).await })
+        let context = reads_model.then_some(context);
+        Box::pin(async move {
+            invoke(&tool, id, args, signal, || {
+                context.map_or(Ok(None), |context| context.model())
+            })
+            .await
+        })
     })
 }
 

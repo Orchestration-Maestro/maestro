@@ -11,7 +11,7 @@ use std::rc::Rc;
 /// Constructs once in the author factory, then invokes that same native owner later.
 pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
     register_read(api)?;
-    let edit = Rc::new(host::create_edit_tool("/nonexistent-builtin-root")?);
+    let edit = Rc::new(host::create_edit_tool("/nonexistent-builtin-root", None)?);
     api.register_command(
         "builtin-prepare-edit",
         CommandOptions {
@@ -31,6 +31,14 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(request) = args.strip_prefix("builtin-custom-edit ") {
+        let result = super::builtin_edit::execute(api, context.clone(), request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    if let Some(request) = args.strip_prefix("builtin-custom-write ") {
+        let result = super::builtin_write::execute(api, context.clone(), request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(request) = args.strip_prefix("builtin-custom-read ") {
         let result = super::builtin_read::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));

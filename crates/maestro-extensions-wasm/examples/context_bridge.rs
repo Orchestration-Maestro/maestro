@@ -19,11 +19,17 @@ mod api;
 #[path = "context_bridge/builtin.rs"]
 mod builtin;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_edit.rs"]
+mod builtin_edit;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_read.rs"]
 mod builtin_read;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_render.rs"]
 mod builtin_render;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_write.rs"]
+mod builtin_write;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;

@@ -18,6 +18,8 @@ use crate::{
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
 mod credentials;
+mod file_operations;
+use file_operations::{LocalEdit, LocalRead, LocalWrite};
 mod ui;
 use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
 mod tool;
@@ -293,6 +295,12 @@ pub(super) enum LocalCall {
     /// A reverse read operation.
     #[component(name = "read")]
     Read(LocalRead),
+    /// A reverse write effect.
+    #[component(name = "write")]
+    Write(LocalWrite),
+    /// A reverse edit effect.
+    #[component(name = "edit")]
+    Edit(LocalEdit),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -350,6 +358,12 @@ pub(super) enum LocalResult {
     /// Original read observation or structured diagnostic.
     #[component(name = "read")]
     Read(Result<crate::guest_calls::read::Output, crate::schema_wire::Error>),
+    /// Original write completion or structured diagnostic.
+    #[component(name = "write")]
+    Write(Result<(), crate::schema_wire::Error>),
+    /// Original edit observation or structured diagnostic.
+    #[component(name = "edit")]
+    Edit(Result<crate::guest_calls::read::Output, crate::schema_wire::Error>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -449,6 +463,16 @@ fn registered(
 /// Marshals the remaining asynchronous callbacks with their original capabilities.
 fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::Edit(call) => LocalCall::Edit(LocalEdit {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            path: call.path.clone(),
+        }),
+        Call::Write(call) => LocalCall::Write(LocalWrite {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            path: call.path.clone(),
+        }),
         Call::Read(call) => LocalCall::Read(LocalRead {
             target: call.handler.id,
             operation: call.operation,
@@ -592,6 +616,12 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
         (Call::Tool(ToolCall::Execute { reply, .. }), LocalResult::Tool(value)) => {
             let _ = reply.send(value);
         }
+        (Call::Edit(call), LocalResult::Edit(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Write(call), LocalResult::Write(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
         (Call::Read(call), LocalResult::Read(value)) => {
             let _ = call.reply.send(Ok(value.map_err(Into::into)));
         }
@@ -605,16 +635,4 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
         }
     }
     Ok(())
-}
-
-/// Original operation operands of a nested file observation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalRead {
-    /// Original guest operations identity.
-    target: u32,
-    /// The requested observation.
-    operation: crate::guest_calls::read::Operation,
-    /// Exact absolute authored path.
-    path: String,
 }

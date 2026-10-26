@@ -212,6 +212,21 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(rendered.map(super::rendered_row))
     }
 
+    fn invoke_edit(
+        handler: &host::Callback,
+        operation: host::EditOperation,
+        path: String,
+    ) -> impl Future<Output = Result<host::ReadOutput, host::DiagnosticErrorInfo>> {
+        super::super::tools::edit::invoke(handler.id(), operation, path)
+    }
+    fn invoke_write(
+        handler: &host::Callback,
+        operation: host::WriteOperation,
+        path: String,
+    ) -> impl Future<Output = Result<(), host::DiagnosticErrorInfo>> {
+        super::super::tools::write::invoke(handler.id(), operation, path)
+    }
+
     fn invoke_read(
         handler: &host::Callback,
         operation: host::ReadOperation,

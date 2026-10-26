@@ -15,9 +15,11 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
+pub(crate) mod edit;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) mod read;
+pub(crate) mod write;
 pub(crate) use events::EventCall;
 pub(crate) mod credentials;
 pub(crate) mod registrations;
@@ -52,6 +54,10 @@ pub(crate) enum Call<H = Handle> {
     Bash(BashCall<H>),
     /// Invokes one retained guest file observation.
     Read(read::Invocation<H>),
+    /// Invokes one retained guest file effect.
+    Write(write::Invocation<H>),
+    /// Invokes one retained guest edit effect.
+    Edit(edit::Invocation<H>),
     /// Invokes setup with the original writable session.
     Setup(H, writer_reads::Endpoint, Reply<()>),
     /// Invokes a continuation with the actual replacement context.

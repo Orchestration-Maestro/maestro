@@ -15,6 +15,10 @@ mod credentials;
 #[macro_use]
 mod catalog;
 
+/// Built-in constructors declared on the same canonical import trait.
+#[macro_use]
+mod builtin_tools;
+
 /// Per-tool executable annotations returned beside the metadata document.
 pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
 
@@ -43,22 +47,7 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
-    /// Constructs an original native executable without selecting an extension context.
-    /// # Errors
-    /// Returns native construction or resource admission failures.
-    fn create_read_tool(
-        &self,
-        cwd: String,
-        options: crate::ReadToolOptions,
-    ) -> ExtensionResult<crate::Tool>;
-    /// Constructs the original native read definition with owned replacement observations.
-    /// # Errors
-    /// Returns native construction or resource admission failures.
-    fn create_read_tool_definition(
-        &self,
-        cwd: String,
-        options: crate::ReadToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition>;
+    builtin_tool_imports!();
     credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(

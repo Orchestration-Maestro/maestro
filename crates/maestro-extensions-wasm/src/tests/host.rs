@@ -701,9 +701,17 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn create_write_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
     fn create_edit_tool(
         &mut self,
         _: String,
+        _: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
         wasmtime::bail!("built-in tools require the production host")
     }

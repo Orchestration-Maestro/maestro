@@ -31,6 +31,34 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl Imports for Generated {
+    fn create_edit_tool(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_edit(&cwd, options)
+    }
+    fn create_edit_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::edit(&cwd, options)
+    }
+    fn create_write_tool(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_write(&cwd, options)
+    }
+    fn create_write_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::write(&cwd, options)
+    }
     fn create_read_tool(
         &self,
         cwd: String,

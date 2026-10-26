@@ -1096,6 +1096,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-completion",
             "invoke-component-factory",
             "invoke-dispose",
+            "invoke-edit",
             "invoke-event",
             "invoke-listener",
             "invoke-model-hook",
@@ -1111,6 +1112,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-tool",
             "invoke-tool-render",
             "invoke-with-session",
+            "invoke-write",
             "start"
         ],
         "every event, command and pending call is native async"

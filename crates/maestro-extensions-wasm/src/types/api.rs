@@ -73,6 +73,14 @@ port! {
         fn create_read_tool(cwd: String, options: crate::ReadToolOptions) -> crate::Tool;
         /// Constructs a retained native read definition without performing file work.
         fn create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ToolDefinition;
+        /// Constructs a retained native write executable without requiring a context.
+        fn create_write_tool(cwd: String, options: crate::WriteToolOptions) -> crate::Tool;
+        /// Constructs a native write definition without performing file work.
+        fn create_write_tool_definition(cwd: String, options: crate::WriteToolOptions) -> ToolDefinition;
+        /// Constructs a retained native edit executable with argument preparation.
+        fn create_edit_tool(cwd: String, options: crate::EditToolOptions) -> crate::Tool;
+        /// Constructs a native edit definition with retained effects and renderers.
+        fn create_edit_tool_definition(cwd: String, options: crate::EditToolOptions) -> ToolDefinition;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.

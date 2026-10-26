@@ -12,8 +12,10 @@ interface host {
     }
     /// Constructs the native read definition without performing file work.
     create-read-tool: func(cwd: string, auto-resize-images: option<bool>, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the native write definition over independently retained effects.
+    create-write-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
     /// Constructs the native edit definition without performing file work.
-    create-edit-tool: func(cwd: string) -> result<builtin-tool, string>;
+    create-edit-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
     /// Original native row context, including its rendering environment and typed state.
     resource native-row;
     /// Independently retained native component returned by a delegated renderer.
@@ -29,6 +31,12 @@ interface host {
     /// Byte-oriented read callback result; failures preserve their diagnostic fields.
     variant read-output { bytes(list<u8>), unit, mime(option<string>) }
     record local-read { target: u32, operation: read-operation, path: string }
+    /// Original content travels only with the write operation, not with mkdir.
+    variant write-operation { write-file(string), mkdir }
+    record local-write { target: u32, operation: write-operation, path: string }
+    /// Original edit effects retain structured access failures until native formatting.
+    variant edit-operation { read-file, write-file(string), access }
+    record local-edit { target: u32, operation: edit-operation, path: string }
     /// A native update borrowed only while the author's backend is running.
     resource auth-lock-update {
         update: func(current: option<string>) -> result<option<string>, string>;
@@ -261,6 +269,8 @@ interface host {
         factory(local-factory),
         tool-render(local-tool-render),
         read(local-read),
+        write(local-write),
+        edit(local-edit),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -281,6 +291,8 @@ interface host {
         factory(result<factory-component, string>),
         tool-render(result<tool-rendered, string>),
         read(result<read-output, diagnostic-error-info>),
+        write(result<_, diagnostic-error-info>),
+        edit(result<read-output, diagnostic-error-info>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-value { unit, boolean(bool), text(string), credentials(auth-storage), catalog(model-registry), component(native-component), lines(list<string>), key(bool) }

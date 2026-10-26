@@ -13,8 +13,8 @@ pub(crate) mod bash;
 mod credentials;
 pub(crate) mod events;
 mod factories;
+mod file_operations;
 mod model_hooks;
-mod read;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -65,7 +65,17 @@ pub(crate) struct Exports {
     /// Actual returned shell operation method.
     bash: bash::Exports,
     /// Actual reverse read operation export.
-    read: read::Exports,
+    read: file_operations::Export<
+        crate::guest_calls::read::Operation,
+        crate::guest_calls::read::Output,
+    >,
+    /// Actual reverse write effect export.
+    write: file_operations::Export<crate::guest_calls::write::Operation, ()>,
+    /// Original reverse edit effects and their diagnostic fields.
+    edit: file_operations::Export<
+        crate::guest_calls::edit::Operation,
+        crate::guest_calls::read::Output,
+    >,
     /// Actual concrete event export.
     events: events::Exports,
     /// Actual preparation and execution exports.
@@ -136,7 +146,9 @@ impl Exports {
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
             model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
-            read: read::Exports::new(store, instance, &guest)?,
+            read: typed(store, instance, &guest, "invoke-read")?,
+            write: typed(store, instance, &guest, "invoke-write")?,
+            edit: typed(store, instance, &guest, "invoke-edit")?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -172,7 +184,9 @@ impl Exports {
             Call::Renderer(call) => self.renderers.create(accessor, call).await?,
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
-            call @ (Call::Bash(_) | Call::Read(_)) => self.io(accessor, call).await?,
+            call @ (Call::Bash(_) | Call::Read(_) | Call::Write(_) | Call::Edit(_)) => {
+                self.io(accessor, call).await?;
+            }
             call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
                 self.invoke_value_callback(accessor, call).await?;
             }
@@ -389,7 +403,36 @@ impl Exports {
     ) -> wasmtime::Result<()> {
         match call {
             Call::Bash(call) => self.bash.invoke(accessor, call).await,
-            Call::Read(call) => self.read.invoke(accessor, call).await,
+            Call::Edit(call) => {
+                file_operations::invoke(
+                    &self.edit,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Read(call) => {
+                file_operations::invoke(
+                    &self.read,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Write(call) => {
+                file_operations::invoke(
+                    &self.write,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
             _ => Err(wasmtime::format_err!("extension operation has no export")),
         }
     }

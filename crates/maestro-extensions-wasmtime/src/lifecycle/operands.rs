@@ -39,13 +39,7 @@ impl Call {
                 emitter: call.emitter,
                 reply: call.reply,
             }),
-            Self::Event(call) => Call::Event(crate::guest_calls::EventCall {
-                handler: completion.callback(call.handler),
-                event: call.event,
-                context: call.context,
-                signal: call.signal,
-                reply: call.reply,
-            }),
+            Self::Event(call) => Call::Event(event(call, completion)),
             Self::Bash(call) => Call::Bash(crate::guest_calls::BashCall {
                 owner: completion.callback(call.owner),
                 request: call.request,
@@ -54,16 +48,22 @@ impl Call {
                 reply: call.reply,
             }),
             Self::Read(call) => Call::Read(read(call, completion)),
+            Self::Write(call) => Call::Write(crate::guest_calls::write::Invocation {
+                handler: completion.callback(call.handler),
+                operation: call.operation,
+                path: call.path,
+                reply: call.reply,
+            }),
+            Self::Edit(call) => Call::Edit(crate::guest_calls::edit::Invocation {
+                handler: completion.callback(call.handler),
+                operation: call.operation,
+                path: call.path,
+                reply: call.reply,
+            }),
             Self::Factory(call) => Call::Factory(factory(call, completion)),
             Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
             Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
-            Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
-                handler: completion.callback(call.handler),
-                kind: call.kind,
-                data: call.data,
-                emitter: call.emitter,
-                completion: call.completion,
-            }),
+            Self::Synchronous(call) => Call::Synchronous(synchronous(call, completion)),
         }
     }
 }
@@ -248,6 +248,34 @@ fn schema(
         operation: call.operation,
         node: call.node,
         emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers a synchronous prefix admission beside its original emitter frame.
+fn synchronous(
+    call: crate::guest_calls::Synchronous,
+    completion: &Completion,
+) -> crate::guest_calls::Synchronous<Callback> {
+    crate::guest_calls::Synchronous {
+        handler: completion.callback(call.handler),
+        kind: call.kind,
+        data: call.data,
+        emitter: call.emitter,
+        completion: call.completion,
+    }
+}
+
+/// Transfers an event admission beside its original supplied context and signal.
+fn event(
+    call: crate::guest_calls::EventCall,
+    completion: &Completion,
+) -> crate::guest_calls::EventCall<Callback> {
+    crate::guest_calls::EventCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        context: call.context,
+        signal: call.signal,
         reply: call.reply,
     }
 }
