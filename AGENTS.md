@@ -313,9 +313,10 @@ conventions check rejects `tracing`'s scoped subscriber functions and the
 its `Output` sink. See the
 [tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
 
-The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
-its domain owner. Native extensions may specialize it with the alias in
-`src/types/registration.rs`; renderer declarations retain their domain ownership.
+The guest may declare `ToolDefinition`, `ToolRenderContext` and `ToolRenderResultOptions`
+only in `src/types/tools.rs`, in addition to their domain owner. Native extensions may
+specialize `ToolDefinition` with the alias in `src/types/registration.rs`; elsewhere the
+renderer declarations retain their domain ownership.
 
 Bounded source/build checks enforce tool/selector ownership, direct runtime-engine
 and toolkit library placement, canonical guest-owned WIT inputs and planning-comment

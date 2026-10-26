@@ -270,8 +270,10 @@ fn check_declarations(
         let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
-        let guest_tool = name == "ToolDefinition"
-            && member.name == "maestro-extensions-wasm"
+        let guest_tool = matches!(
+            name.as_str(),
+            "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
+        ) && member.name == "maestro-extensions-wasm"
             && source.path == member.directory.join("src/types/tools.rs");
         let guest_metadata = name == "ToolInfo"
             && kind == "type"
