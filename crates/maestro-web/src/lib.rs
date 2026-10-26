@@ -16,6 +16,7 @@ pub use components::message_renderer_registry::{
 pub use components::messages::{
     AbortedMessage, AssistantMessage, ToolMessage, ToolMessageDebugView, UserMessage,
 };
+pub use components::streaming_message_container::StreamingMessageContainer;
 pub use components::thinking_block::ThinkingBlock;
 #[cfg(target_arch = "wasm32")]
 pub use dialogs::attachment_overlay::AttachmentOverlay;

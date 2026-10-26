@@ -9,6 +9,8 @@ pub mod message_list;
 pub mod message_renderer_registry;
 /// Retained transcript message rows.
 pub mod messages;
+/// The message being streamed, published once per frame.
+pub mod streaming_message_container;
 /// Retained reasoning disclosure.
 pub mod thinking_block;
 

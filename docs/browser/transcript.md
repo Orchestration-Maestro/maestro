@@ -129,6 +129,26 @@ keeps its root while it shows the same kind of row, so skipped entries before it
 do not move it; a different kind replaces the root, and positions past the last
 row are removed.
 
+## Streaming message
+
+`StreamingMessageContainer<C>` shows the assistant message a response is
+writing. `set_message(message, false)` keeps only the latest message and shows it
+on the next animation frame, as a copy of its content taken then: several writes
+in one frame show once, edits made before that frame are included, and later
+edits to the original do not change what was shown. `set_message(message, true)`
+shows the original message at once, so later edits appear on the next `update`.
+Clearing with `None` is immediate too. Either way, a frame queued earlier is
+retired and cannot show stale content, and the next deferred message shows on its
+own first frame. The frame comes from the shared cancel-on-drop browser timer.
+
+Only assistant messages are shown; user, result and caller-defined messages show
+nothing, as the message list shows them. The assistant row receives `tools`,
+`pending_tool_calls`, `tool_results_by_id`, `on_cost_click` and `is_streaming`;
+it never hides tool calls or pending calls. While `is_streaming` is set, a pulsing
+caret in the muted color follows the row, or stands alone before a message
+arrives. Updates keep the assistant row's root. A released root receives no
+later frames; mounting again shows the current message.
+
 ## Native copy controls
 
 `maestro_web::components::copy_button::CopyButton` retains a supplied
@@ -245,7 +265,6 @@ Tool-renderer listings use the same listing pipeline with literal input; see
 
 ## Provider-card continuation
 
-[Custom provider cards](components.md#custom-provider-cards) now mount as native
-page content independently of the transcript. Native attachment/message
-composition, list/streaming containers, the editor and complete chat composition
+[Custom provider cards](components.md#custom-provider-cards) mount as native page
+content independently of the transcript. The editor and complete chat composition
 remain separate continuation work; the card does not deliver those surfaces.

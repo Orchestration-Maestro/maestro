@@ -1,10 +1,10 @@
-//! Stable transcript history mounted as page content.
+//! Stable transcript history and the streaming message mounted as page content.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, text, view};
 use maestro_app::browser::components::messages::CustomAgentMessages as BrowserMessages;
 use maestro_app::{AgentMessage, CustomAgentMessages, JsonObject, ToolResultMessage};
 use maestro_web::{
-    MessageList, MessageRenderer,
+    MessageList, MessageRenderer, StreamingMessageContainer,
     dom::{DomContent, DomRoot, DomView},
     register_message_renderer, register_tool_renderer,
     tools::types::{
@@ -570,4 +570,286 @@ fn indexed_result(view: &DomView) {
     assert_eq!(seen[0].id.as_deref(), expected["retainedId"].as_str());
     assert_eq!(seen[0].details, Some(json!({"value": expected["details"]})));
     unmount(&root);
+}
+
+/// A streaming container mounted under the page body, with the page helpers.
+async fn streaming(
+    import_module: &js_sys::Function,
+) -> (
+    Rc<DomView>,
+    wasm_bindgen::JsValue,
+    StreamingMessageContainer<Notice>,
+    DomRoot,
+) {
+    let view = view();
+    let page = crate::contributions_support::page_module(import_module).await;
+    let container = StreamingMessageContainer::<Notice>::default();
+    let root = container.mount(&view).unwrap();
+    body().append_child(&root.node).unwrap();
+    (view, page, container, root)
+}
+/// An assistant entry showing `text`.
+fn says(text: &str) -> Entry {
+    assistant(json!([{"type":"text","text":text}]))
+}
+/// Replace the text of an assistant entry in place.
+fn edit(entry: &Entry, text: &str) {
+    let AgentMessage::Assistant(message) = entry else {
+        unreachable!()
+    };
+    if let Some(maestro_app::AssistantContent::Text(content)) =
+        message.write().unwrap().content.first_mut()
+    {
+        content.text = text.into();
+    }
+}
+/// The streamed assistant text, or all shown text when no assistant text is shown.
+fn shown(root: &DomRoot) -> String {
+    let node: &Element = root.node.unchecked_ref();
+    match node.query_selector(".maestro-markdown").unwrap() {
+        Some(markdown) => text(&markdown).trim().to_owned(),
+        None => text(node).trim().to_owned(),
+    }
+}
+/// Recorded stream case `id`.
+fn case(fixture: &Value, id: &str) -> Value {
+    (fixture["stream"].as_array().unwrap().iter())
+        .find(|row| row["id"] == id)
+        .unwrap()
+        .clone()
+}
+
+/// Deferred writes publish the latest message on the next frame as a snapshot taken then:
+/// edits before the frame show, later edits do not; immediate publication keeps the original
+/// message, whose later edits show on the next update; custom payloads need no serialization.
+#[wasm_bindgen]
+pub async fn streaming_container_snapshots_latest_nested_message(import_module: &js_sys::Function) {
+    use crate::contributions_support::frames;
+    let fixture = fixture();
+    let (view, page, container, root) = streaming(import_module).await;
+    let last = case(&fixture, "stream_last_pending");
+    for text in last["input"]["texts"].as_array().unwrap() {
+        container
+            .set_message(Some(says(text.as_str().unwrap())), false)
+            .unwrap();
+    }
+    assert_eq!(shown(&root), "", "nothing publishes before the frame");
+    frames(&page, 2).await;
+    assert_eq!(shown(&root), last["expected"]["text"]);
+    let nested = case(&fixture, "stream_nested_snapshot");
+    let entry = says(nested["input"]["initial"].as_str().unwrap());
+    container.set_message(Some(entry.clone()), false).unwrap();
+    edit(&entry, nested["input"]["beforeFrame"].as_str().unwrap());
+    frames(&page, 2).await;
+    let published = nested["expected"]["published"]["content"][0]["text"]
+        .as_str()
+        .unwrap();
+    assert_eq!(shown(&root), published);
+    edit(&entry, nested["input"]["afterFrame"].as_str().unwrap());
+    container.update(&root, &view).unwrap();
+    assert_eq!(shown(&root), published, "the published snapshot stays");
+    let immediate = case(&fixture, "stream_immediate_identity");
+    let entry = says("immediate");
+    container.set_message(Some(entry.clone()), true).unwrap();
+    assert_eq!(
+        shown(&root),
+        "immediate",
+        "immediate publication is synchronous"
+    );
+    edit(&entry, immediate["expected"]["text"].as_str().unwrap());
+    container.update(&root, &view).unwrap();
+    assert_eq!(shown(&root), immediate["expected"]["text"]);
+    container
+        .set_message(Some(notice("notice", "typed payload")), false)
+        .unwrap();
+    frames(&page, 2).await;
+    assert_eq!(
+        shown(&root),
+        "",
+        "a custom entry shows nothing in the stream"
+    );
+    unmount(&root);
+}
+
+/// Clearing is synchronous and retires queued work; the next response publishes on its own
+/// first frame; instances and released roots do not settle each other's work.
+#[wasm_bindgen]
+pub async fn streaming_container_clear_allows_next_response_first_frame(
+    import_module: &js_sys::Function,
+) {
+    use crate::contributions_support::frames;
+    let fixture = fixture();
+    let (view, page, container, root) = streaming(import_module).await;
+    container.set_message(None, false).unwrap();
+    container.set_message(Some(says("stale")), false).unwrap();
+    container.set_message(None, false).unwrap();
+    assert_eq!(shown(&root), "");
+    frames(&page, 2).await;
+    assert_eq!(shown(&root), "", "retired work cannot publish");
+    container
+        .set_message(Some(says("published")), false)
+        .unwrap();
+    frames(&page, 2).await;
+    assert_eq!(shown(&root), "published");
+    container.set_message(None, false).unwrap();
+    assert_eq!(shown(&root), "", "clearing is synchronous");
+    container.set_message(None, false).unwrap();
+    container
+        .set_message(Some(says("replacement")), true)
+        .unwrap();
+    assert_eq!(shown(&root), "replacement");
+    for id in [
+        "stream_next_turn_defect_false",
+        "stream_next_turn_defect_true",
+    ] {
+        let row = case(&fixture, id);
+        if row["input"]["queued"] == true {
+            container.set_message(Some(says("stale")), false).unwrap();
+        }
+        container.set_message(None, false).unwrap();
+        container
+            .set_message(Some(says("next turn")), false)
+            .unwrap();
+        frames(&page, 1).await;
+        let required = row["expected"]["required"]["content"][0]["text"]
+            .as_str()
+            .unwrap();
+        assert_eq!(shown(&root), required, "{id}");
+    }
+    independent(&view, &page, &container, &root).await;
+    unmount(&root);
+}
+
+/// A second instance publishes on its own while the first is cleared, and a released root is
+/// left alone while a remounted one publishes.
+async fn independent(
+    view: &DomView,
+    page: &wasm_bindgen::JsValue,
+    first: &StreamingMessageContainer<Notice>,
+    root: &DomRoot,
+) {
+    use crate::contributions_support::frames;
+    let second = StreamingMessageContainer::<Notice>::default();
+    let other = second.mount(view).unwrap();
+    body().append_child(&other.node).unwrap();
+    second.set_message(Some(says("second")), false).unwrap();
+    first.set_message(None, false).unwrap();
+    frames(page, 2).await;
+    assert_eq!(shown(&other), "second");
+    assert_eq!(shown(root), "");
+    unmount(&other);
+    second
+        .set_message(Some(says("after release")), false)
+        .unwrap();
+    drop(other);
+    frames(page, 2).await;
+    let remounted = second.mount(view).unwrap();
+    body().append_child(&remounted.node).unwrap();
+    assert_eq!(shown(&remounted), "after release");
+    second.set_message(Some(says("remounted")), false).unwrap();
+    frames(page, 2).await;
+    assert_eq!(shown(&remounted), "remounted");
+    unmount(&remounted);
+}
+
+/// Each recorded branch shows the assistant row, the pulse or nothing; assistant rows receive
+/// the container's current operands without hiding tool or pending calls, keep their root
+/// through updates and keep a keyboard-usable cost control.
+#[wasm_bindgen]
+pub async fn streaming_container_branches_keep_real_assistant_controls(
+    import_module: &js_sys::Function,
+) {
+    let fixture = fixture();
+    let (view, _page, mut container, root) = streaming(import_module).await;
+    assert_eq!(fixture["streamRender"].as_array().unwrap().len(), 12);
+    for row in fixture["streamRender"].as_array().unwrap() {
+        container.is_streaming = row["input"]["streaming"].as_bool().unwrap();
+        let entry = match row["input"]["role"].as_str() {
+            None => None,
+            Some("user") => Some(user("u")),
+            Some("user-with-attachments") => Some(attached("a")),
+            Some("toolResult") => Some(AgentMessage::ToolResult(result("r", json!(null)))),
+            Some("assistant") => Some(says("streamed")),
+            Some(other) => Some(notice(other, "n")),
+        };
+        container.set_message(entry, true).unwrap();
+        let expected = &row["expected"];
+        let node: &Element = root.node.unchecked_ref();
+        let has = |selector: &str| node.query_selector(selector).unwrap().is_some();
+        assert_eq!(
+            has(".maestro-assistant-row"),
+            expected["hasAssistant"] == true,
+            "{row}"
+        );
+        assert_eq!(
+            has(".maestro-stream-pulse"),
+            expected["hasPulse"] == true,
+            "{row}"
+        );
+        assert_eq!(
+            node.child_element_count() == 0,
+            expected["empty"] == true,
+            "{row}"
+        );
+    }
+    container.is_streaming = false;
+    container.set_message(None, true).unwrap();
+    assistant_operands(&view, &mut container, &root).await;
+    unmount(&root);
+}
+
+/// Current tools, results, pending calls and cost action reach the streamed assistant.
+async fn assistant_operands(
+    view: &DomView,
+    container: &mut StreamingMessageContainer<Notice>,
+    root: &DomRoot,
+) {
+    let probe = probe();
+    let clicks = Rc::new(Cell::new(0));
+    let counted = Rc::clone(&clicks);
+    container.on_cost_click = Some(Rc::new(move || counted.set(counted.get() + 1)));
+    container.pending_tool_calls = Some(Rc::new(HashSet::from(["waiting".to_owned()])));
+    container.tool_results_by_id = Some(Rc::new(std::collections::HashMap::from([(
+        "done".to_owned(),
+        result("done", json!("selected")),
+    )])));
+    container
+        .set_message(Some(calling(&["done", "waiting"])), true)
+        .unwrap();
+    let seen: Vec<_> = probe
+        .seen
+        .borrow()
+        .iter()
+        .map(|seen| (seen.id.clone(), seen.details.clone()))
+        .collect();
+    assert_eq!(
+        seen,
+        [(Some("done".into()), Some(json!("selected"))), (None, None)],
+        "pending calls stay shown"
+    );
+    let row = root
+        .node
+        .unchecked_ref::<Element>()
+        .query_selector(".maestro-assistant-row")
+        .unwrap()
+        .unwrap();
+    container.update(root, view).unwrap();
+    let kept = root
+        .node
+        .unchecked_ref::<Element>()
+        .query_selector(".maestro-assistant-row")
+        .unwrap()
+        .unwrap();
+    assert!(
+        kept.is_same_node(Some(&row)),
+        "updates keep the assistant root"
+    );
+    let usage: HtmlElement = row
+        .query_selector(".maestro-message-usage")
+        .unwrap()
+        .unwrap()
+        .unchecked_into();
+    usage.focus().unwrap();
+    crate::contributions_support::driver("driverPress", "Enter").await;
+    assert_eq!(clicks.get(), 1, "the cost control is keyboard-usable");
 }

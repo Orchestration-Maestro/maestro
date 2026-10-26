@@ -3271,5 +3271,243 @@
         "sameEnvelope": true
       }
     }
+  ],
+  "stream": [
+    {
+      "id": "stream_last_pending",
+      "input": {
+        "texts": [
+          "first",
+          "last"
+        ]
+      },
+      "expected": {
+        "text": "last"
+      }
+    },
+    {
+      "id": "stream_nested_snapshot",
+      "input": {
+        "initial": "initial",
+        "beforeFrame": "before frame",
+        "afterFrame": "after frame"
+      },
+      "expected": {
+        "published": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "before frame"
+            }
+          ]
+        },
+        "snapshotStable": true
+      }
+    },
+    {
+      "id": "stream_immediate_identity",
+      "input": {
+        "immediate": true
+      },
+      "expected": {
+        "sameIdentity": true,
+        "text": "live immediate"
+      }
+    },
+    {
+      "id": "stream_clear_retires_pending",
+      "input": {
+        "operations": [
+          "queue stale",
+          "clear",
+          "frame"
+        ]
+      },
+      "expected": {
+        "synchronous": null,
+        "after": null
+      }
+    },
+    {
+      "id": "stream_next_turn_defect_false",
+      "input": {
+        "queued": false,
+        "operations": [
+          "clear",
+          "queue next turn",
+          "frame"
+        ]
+      },
+      "expected": {
+        "reference": null,
+        "required": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "next turn"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "stream_next_turn_defect_true",
+      "input": {
+        "queued": true,
+        "operations": [
+          "clear",
+          "queue next turn",
+          "frame"
+        ]
+      },
+      "expected": {
+        "reference": null,
+        "required": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "next turn"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "streamRender": [
+    {
+      "input": {
+        "role": null,
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": null,
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": true,
+        "empty": false
+      }
+    },
+    {
+      "input": {
+        "role": "user",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "user",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "user-with-attachments",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "user-with-attachments",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "toolResult",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "toolResult",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "unregistered",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "unregistered",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "assistant",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": true,
+        "hasPulse": false,
+        "empty": false
+      }
+    },
+    {
+      "input": {
+        "role": "assistant",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": true,
+        "hasPulse": true,
+        "empty": false
+      }
+    }
   ]
 }
