@@ -39,6 +39,14 @@ impl PreviewCodeToggle {
             id: None,
         }
     }
+    /// Retain this selection without sharing a retained drawing identity.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn shared(&self) -> Self {
+        Self {
+            selection: Rc::clone(&self.selection),
+            id: None,
+        }
+    }
     /// The current selected presentation.
     #[must_use]
     pub fn mode(&self) -> ViewMode {

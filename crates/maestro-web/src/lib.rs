@@ -68,14 +68,14 @@ pub use maestro_app::browser::components::sandbox::{
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
 };
 pub mod tools;
-pub use tools::artifacts::artifact_element::ArtifactElement;
+pub use tools::artifacts::ArtifactElement;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
-/// Retained tabbed artifact views using the application-selected filename.
-pub use tools::artifacts::ArtifactsPanel;
 #[cfg(target_arch = "wasm32")]
-pub use tools::artifacts::html_artifact::HtmlArtifact;
+pub use tools::artifacts::HtmlArtifact;
+/// Artifact records and tabbed views using the application-selected filename.
+pub use tools::artifacts::{Artifact, ArtifactsPanel, ArtifactsParams};
 
 pub use maestro_app::{
     SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,
@@ -84,10 +84,10 @@ pub use maestro_app::{
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
 
-pub use tools::artifacts::{image_artifact::ImageArtifact, text_artifact::TextArtifact};
+pub use tools::artifacts::{TextArtifact, image_artifact::ImageArtifact};
 
 /// Editable document artifact views.
-pub use tools::artifacts::{markdown_artifact::MarkdownArtifact, svg_artifact::SvgArtifact};
+pub use tools::artifacts::{MarkdownArtifact, SvgArtifact};
 pub use tools::renderer_registry::{render_collapsible_header, render_header};
 pub use tools::renderers::default_renderer::DefaultRenderer;
 pub use tools::types::{ToolRenderResult, ToolRenderer};
@@ -100,8 +100,9 @@ pub use tools::renderers::bash_renderer::BashRenderer;
 pub use tools::renderers::calculate_renderer::CalculateRenderer;
 pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
 
-pub use tools::artifacts::{
-    artifact_pill::artifact_pill, artifacts_tool_renderer::ArtifactsToolRenderer,
-};
+pub use tools::artifacts::{ArtifactsToolRenderer, artifact_pill::artifact_pill};
 
 mod ui_error;
+
+#[cfg(target_arch = "wasm32")]
+pub use tools::artifacts::NativeArtifact;
