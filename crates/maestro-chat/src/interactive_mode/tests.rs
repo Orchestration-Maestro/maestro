@@ -30,6 +30,7 @@ mod notices;
 mod progress;
 mod prompts;
 mod queues;
+mod reload;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod settings;
@@ -196,6 +197,9 @@ pub(super) fn isolated_output(
     Some(output)
 }
 
+/// A controlled replacement for one resource reload.
+type ReloadOperation = Box<dyn Fn() -> Pin<Box<dyn Future<Output = io::Result<()>>>>>;
+
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
 /// successive prompt templates, context files and loaded extensions, and changing the
 /// configured theme while its themes are read.
@@ -216,6 +220,8 @@ pub(super) struct ForwardingLoader {
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
     /// The getters read, in order.
     pub(super) calls: RefCell<Vec<&'static str>>,
+    /// A controlled reload operation, when supplied by a witness.
+    pub(super) on_reload: RefCell<Option<ReloadOperation>>,
 }
 
 /// The diagnostics a loader reports beside its skills, prompt templates and themes.
@@ -295,6 +301,7 @@ impl ForwardingLoader {
             extensions: extensions
                 .or_else(|| loaded.then(|| Rc::new(load(paths, errors, &commands)))),
             calls: RefCell::default(),
+            on_reload: RefCell::default(),
         }
     }
 }
@@ -410,6 +417,10 @@ impl ResourceLoader<Local> for ForwardingLoader {
         self.inner.extend_resources(paths)
     }
     fn reload(&self) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+        self.calls.borrow_mut().push("reload");
+        if let Some(reload) = self.on_reload.borrow().as_ref() {
+            return reload();
+        }
         self.inner.reload()
     }
 }

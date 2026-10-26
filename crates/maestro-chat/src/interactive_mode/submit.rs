@@ -188,11 +188,18 @@ impl InteractiveMode {
         true
     }
 
-    /// Starts `/new`, or `/compact` with its instructions, when `text` is one of them, after
+    /// Starts `/new`, `/reload`, or `/compact` with its instructions when matched, after
     /// clearing the editor, and says whether `text` was handled as a command.
     fn runs_session_command(self: &Rc<Self>, text: &str) -> bool {
         let work: LocalFuture = if text == "/new" {
             Box::pin(Rc::clone(self).handle_clear_command())
+        } else if text == "/reload" {
+            let mode = Rc::clone(self);
+            Box::pin(async move {
+                mode.handle_reload_command()
+                    .await
+                    .map_err(|error| error as Box<dyn Error>)
+            })
         } else if text == "/compact" || text.starts_with("/compact ") {
             let instructions = text
                 .strip_prefix("/compact ")
