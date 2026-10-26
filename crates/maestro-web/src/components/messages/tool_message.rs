@@ -50,7 +50,7 @@ fn dispatch<D: 'static>(
         let timestamp = js_sys::Date::now();
         Some(ToolResultMessage {
             tool_call_id: call.id.clone(),
-            tool_name: String::new(),
+            tool_name: call.name.clone(),
             content: Vec::new(),
             details: None,
             is_error: true,
