@@ -269,6 +269,44 @@ pub async fn agent_interface_custom_provider_keys_follow_storage(import: js_sys:
     assert_eq!(fetch.requests().len(), 1);
 }
 
+/// Empty stored keys ask before sending, and do not hide a custom provider's nonempty key.
+#[wasm_bindgen]
+pub async fn agent_interface_empty_keys_prompt_without_sending(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let app = storage("agent-empty-keys");
+    app.custom_providers
+        .set(&local_provider(Some("")))
+        .await
+        .unwrap();
+    let fetch = Fetch::install(vec![]);
+    for model in [haiku(), local_model()] {
+        let provider = model.provider.clone();
+        app.provider_keys.set(&provider, "").await.unwrap();
+        let session = session(model, Vec::new());
+        let asked: Asked = Rc::default();
+        let (interface, _parent) = mounted(props(&session, &asked, vec![false]), 400);
+        let lookup = session.get_api_key.read().unwrap().clone().unwrap();
+        assert_eq!(lookup(provider.clone()).await.unwrap(), None);
+        interface.set_input("keep me", Vec::new()).unwrap();
+        interface.send_message("keep me", Vec::new()).await.unwrap();
+        assert_eq!(*asked.borrow(), [provider]);
+        assert_eq!(interface.editor().value(), "keep me");
+        assert!(fetch.requests().is_empty());
+    }
+    app.custom_providers
+        .set(&local_provider(Some("sk-local")))
+        .await
+        .unwrap();
+    let session = session(local_model(), Vec::new());
+    let (_interface, _parent) = mounted(props(&session, &Rc::default(), vec![]), 400);
+    let lookup = session.get_api_key.read().unwrap().clone().unwrap();
+    assert_eq!(
+        lookup("Local Box".into()).await.unwrap().as_deref(),
+        Some("sk-local")
+    );
+}
+
 /// Without a session the view says so; a session gets the browser's spawner, proxy-aware stream
 /// and stored-key lookup only where unset; replacing it moves the subscription.
 #[wasm_bindgen]

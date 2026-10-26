@@ -28,6 +28,8 @@ pub use components::messages::{
 #[cfg(target_arch = "wasm32")]
 pub use components::provider_key_input::ProviderKeyInput;
 pub use components::streaming_message_container::StreamingMessageContainer;
+#[cfg(target_arch = "wasm32")]
+pub use components::theme_toggle::ThemeToggle;
 pub use components::thinking_block::ThinkingBlock;
 #[cfg(target_arch = "wasm32")]
 pub use dialogs::attachment_overlay::AttachmentOverlay;
@@ -91,6 +93,7 @@ pub use maestro_app::browser::components::sandbox::{
     console_runtime_provider::{ConsoleLog, ConsoleRuntimeProvider},
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
 };
+pub use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW;
 pub mod tools;
 pub use tools::artifacts::artifact_element::ArtifactElement;
 

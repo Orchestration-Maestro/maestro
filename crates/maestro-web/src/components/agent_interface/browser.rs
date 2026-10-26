@@ -62,6 +62,10 @@ pub(super) struct Session<C: CustomAgentMessages + 'static> {
     pub(super) editor: MessageEditor,
     /// The editor operands carrying this view's callbacks.
     pub(super) editor_props: RefCell<MessageEditorProps>,
+    /// The totals row.
+    stats: Element,
+    /// The appearance button, while shown.
+    theme: RefCell<Option<crate::ThemeToggle>>,
     /// Usage totals as text.
     usage: Element,
     /// Usage totals as an action.
@@ -162,15 +166,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         let input = element(document, "div", "maestro-agent-input")?;
         let inner = element(document, "div", "maestro-agent-inner")?;
         let stats = element(document, "div", "maestro-agent-stats")?;
-        let usage = element(document, "span", "maestro-agent-usage")?;
-        let usage_action = element(
-            document,
-            "button",
-            "maestro-agent-usage maestro-agent-usage-action",
-        )?;
-        usage_action
-            .set_attribute("type", "button")
-            .map_err(|error| host_error(&error))?;
+        let (usage, usage_action) = usage_controls(document)?;
         let editor = MessageEditor::new(view, MessageEditorProps::default())?;
         append(&column, &history)?;
         append(&column, &stream_parent)?;
@@ -202,6 +198,8 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
             stream_parent,
             editor,
             editor_props: RefCell::default(),
+            stats,
+            theme: RefCell::default(),
             usage,
             usage_action,
             follow: Cell::default(),
@@ -284,7 +282,28 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         self.render_history(&session, &snapshot)?;
         self.render_stream(&session, &snapshot)?;
         self.render_editor(&session, snapshot.is_streaming)?;
+        self.render_theme()?;
         self.render_usage(&snapshot)
+    }
+    /// Show the appearance button at the start of the totals row while it is requested.
+    fn render_theme(&self) -> Result<(), ToolUiError> {
+        let shown = self.props.borrow().show_theme_toggle;
+        let mut theme = self.theme.borrow_mut();
+        match (shown, theme.as_ref()) {
+            (true, None) => {
+                let toggle = crate::ThemeToggle::new(&self.view, false)?;
+                self.stats
+                    .prepend_with_node_1(toggle.root())
+                    .map_err(|error| host_error(&error))?;
+                *theme = Some(toggle);
+            }
+            (false, Some(toggle)) => {
+                toggle.root().remove();
+                *theme = None;
+            }
+            _ => {}
+        }
+        Ok(())
     }
     /// Show the completed history.
     fn render_history(
@@ -377,17 +396,26 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         };
         hidden.remove();
         set_text_if_changed(shown, &text);
-        let parent = self.editor.root().next_element_sibling();
-        match parent {
-            Some(stats) if text.is_empty() => {
-                shown.remove();
-                drop(stats);
-            }
-            Some(stats) if shown.parent_node().is_none() => append(&stats, shown)?,
-            _ => {}
+        if text.is_empty() {
+            shown.remove();
+        } else if shown.parent_node().is_none() {
+            append(&self.stats, shown)?;
         }
         Ok(())
     }
+}
+/// The usage totals as text and as an action.
+fn usage_controls(document: &web_sys::Document) -> Result<(Element, Element), ToolUiError> {
+    let usage = element(document, "span", "maestro-agent-usage")?;
+    let action = element(
+        document,
+        "button",
+        "maestro-agent-usage maestro-agent-usage-action",
+    )?;
+    action
+        .set_attribute("type", "button")
+        .map_err(|error| host_error(&error))?;
+    Ok((usage, action))
 }
 /// Session values read once per render.
 struct Snapshot {

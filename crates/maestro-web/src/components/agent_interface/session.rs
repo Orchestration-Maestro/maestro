@@ -213,10 +213,17 @@ async fn proxy_url() -> Result<Option<String>, DiagnosticErrorInfo> {
         .map(|url| url.filter(|url| !url.is_empty()))
         .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))
 }
-/// The stored key for `provider`, else the nonempty key of the stored custom provider of that name.
+/// The nonempty stored key for `provider`, else the key of the stored custom provider of that name.
 pub(super) async fn stored_key(provider: &str) -> Option<String> {
     let storage = get_app_storage().ok()?;
-    if let Some(key) = storage.provider_keys.get(provider).await.ok().flatten() {
+    if let Some(key) = storage
+        .provider_keys
+        .get(provider)
+        .await
+        .ok()
+        .flatten()
+        .filter(|key| !key.is_empty())
+    {
         return Some(key);
     }
     storage

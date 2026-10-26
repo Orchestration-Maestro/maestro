@@ -16,6 +16,8 @@ pub mod message_renderer_registry;
 pub mod messages;
 /// The message being streamed, published once per frame.
 pub mod streaming_message_container;
+/// Light, dark and system appearance cycling.
+pub mod theme_toggle;
 /// Retained reasoning disclosure.
 pub mod thinking_block;
 

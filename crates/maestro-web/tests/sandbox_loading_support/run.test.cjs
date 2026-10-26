@@ -69,7 +69,7 @@ test('inventory_rejects_empty_or_invalid_names', () => {
   const selected = runner.validateInventory(inventory);
   assert.equal(selected.execution.length, 26);
   assert.equal(selected.loading.length, 26);
-  assert.equal(selected.contributions.length, 172);
+  assert.equal(selected.contributions.length, 176);
 });
 
 test('loading_exports_receive_the_page_module_import', async t => {
@@ -347,7 +347,7 @@ test('inventory_matches_authored_exports', () => {
     if (family === 'loading') names.push(...sourceExports('native_document_artifacts_browser.rs'), ...sourceExports('sample_sessions_browser.rs'), ...documentOverlay);
     assert.deepEqual(inventory[family], names);
   }
-  const contributions = ["dom_content_browser.rs", "contributions_browser.rs", "native_markdown_browser.rs", "native_thinking_browser.rs", "native_artifact_controls_browser.rs", "native_attachment_browser.rs", "native_messages_browser.rs", "native_tool_browser.rs", "native_simple_artifacts_browser.rs", "native_console_browser.rs", "custom_provider_card_browser.rs", "native_artifact_console_browser.rs", "document_tool_cards_browser.rs", "native_transcript_browser.rs", "message_tool_arguments.rs", "message_renderers_browser.rs", "message_errors.rs", "tool_renderers_browser/page.rs", "tool_renderer_support/lifetimes.rs", "dialogs_browser.rs", "provider_dialogs_browser.rs", "settings_dialogs_browser.rs", "message_editor_browser.rs", "agent_interface_browser.rs"]
+  const contributions = ["dom_content_browser.rs", "contributions_browser.rs", "native_markdown_browser.rs", "native_thinking_browser.rs", "native_artifact_controls_browser.rs", "native_attachment_browser.rs", "native_messages_browser.rs", "native_tool_browser.rs", "native_simple_artifacts_browser.rs", "native_console_browser.rs", "custom_provider_card_browser.rs", "native_artifact_console_browser.rs", "document_tool_cards_browser.rs", "native_transcript_browser.rs", "message_tool_arguments.rs", "message_renderers_browser.rs", "message_errors.rs", "tool_renderers_browser/page.rs", "tool_renderer_support/lifetimes.rs", "dialogs_browser.rs", "provider_dialogs_browser.rs", "settings_dialogs_browser.rs", "message_editor_browser.rs", "agent_interface_browser.rs", "theme_toggle_browser.rs"]
     .flatMap(sourceExports).filter(name => !documentOverlay.includes(name));
   assert.deepEqual(inventory.contributions.toSorted(), contributions.toSorted());
 });

@@ -21,6 +21,8 @@ pub struct AgentInterfaceProps<C: CustomAgentMessages = NoCustomMessages> {
     pub session: Option<Rc<BrowserSession<C>>>,
     /// The editor controls offered.
     pub controls: EditorControls,
+    /// Show the appearance button beside the usage totals.
+    pub show_theme_toggle: bool,
     /// Ask for a missing key before sending.
     pub on_api_key_required: Option<ApiKeyRequired>,
     /// Run before each admitted send.
@@ -35,6 +37,7 @@ impl<C: CustomAgentMessages> Default for AgentInterfaceProps<C> {
         Self {
             session: None,
             controls: EditorControls::default(),
+            show_theme_toggle: false,
             on_api_key_required: None,
             on_before_send: None,
             on_cost_click: None,
@@ -47,6 +50,7 @@ impl<C: CustomAgentMessages> Clone for AgentInterfaceProps<C> {
         Self {
             session: self.session.clone(),
             controls: self.controls,
+            show_theme_toggle: self.show_theme_toggle,
             on_api_key_required: self.on_api_key_required.clone(),
             on_before_send: self.on_before_send.clone(),
             on_cost_click: self.on_cost_click.clone(),

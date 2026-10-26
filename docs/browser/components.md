@@ -180,8 +180,8 @@ summed assistant usage below. Without a session it reads "No session set".
 `update` with a different session moves the subscription to it, and dropping the
 view ends the subscription and its observations. The view gives a session only
 what it lacks: the page's task spawner, a stream that reads the stored proxy
-settings on every request, and a key lookup that reads the stored provider key,
-else the key of the stored custom provider of that name.
+settings on every request, and a key lookup that reads the nonempty stored
+provider key, else the nonempty key of the stored custom provider of that name.
 
 `send_message`, which the editor's Send also calls, ignores a blank draft without
 attachments and any send while a response streams. A provider with no stored key
@@ -197,6 +197,19 @@ shrinking viewport is ignored as relayout. `set_auto_scroll` sets it directly an
 `set_input` replaces the draft. With `on_cost_click` the usage totals are a
 button. `on_model_select` replaces the built-in model selector, and the level
 menu changes the session's reasoning level unless `controls.thinking` is off.
+`show_theme_toggle` adds the appearance button beside the totals. Embedders can
+import `ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW` from the SDK for the existing
+read-write artifact runtime guidance.
+
+[`ThemeToggle::new`](../../crates/maestro-web/src/components/theme_toggle/browser.rs)
+is a keyboard-operable icon button named "Toggle theme", cycling light and dark,
+then system when `include_system` is
+set; without system in the cycle, system counts as light. The choice is stored
+under `theme` in the page's local storage, and system removes it; an absent or
+empty value shows system. The page root receives the pack's dark or light colors.
+In system mode the button follows the platform's dark preference while it exists.
+An unknown stored value shows light, with the sun icon, and the next activation
+starts the cycle at light.
 
 ## Styles
 

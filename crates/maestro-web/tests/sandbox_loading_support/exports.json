@@ -227,7 +227,11 @@
     "agent_interface_send_hooks_keep_session_and_attachments",
     "agent_interface_custom_provider_keys_follow_storage",
     "agent_interface_session_replacement_and_request_configuration",
-    "agent_interface_scroll_equality_relayout_and_cost_actions"
+    "agent_interface_scroll_equality_relayout_and_cost_actions",
+    "theme_toggle_is_named_and_keyboard_operable",
+    "theme_toggle_replays_all_recorded_cycles",
+    "theme_toggle_tracks_system_changes_only_in_system_mode",
+    "agent_interface_empty_keys_prompt_without_sending"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",
