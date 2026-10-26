@@ -1,29 +1,32 @@
 //! Browser conversation records and model projection.
-use crate::browser::utils::attachment_utils::{Attachment, AttachmentType};
+use crate::browser::utils::attachment_utils::{AttachmentType, SharedAttachment};
 use crate::utils::lock::read;
 use crate::{ImageContent, Message, TextContent, UserBlock, UserContent};
 use maestro_agent::{AgentMessage, CustomAgentMessages as CustomMessage};
 
 /// Convert images and nonempty document text into ordered model blocks.
 #[must_use]
-pub fn convert_attachments(attachments: &[Attachment]) -> Vec<UserBlock> {
+pub fn convert_attachments(attachments: &[SharedAttachment]) -> Vec<UserBlock> {
     attachments
         .iter()
-        .filter_map(|attachment| match attachment.r#type {
-            AttachmentType::Image => Some(UserBlock::Image(ImageContent {
-                data: attachment.content.clone(),
-                mime_type: attachment.mime_type.clone(),
-            })),
-            AttachmentType::Document => attachment
-                .extracted_text
-                .as_ref()
-                .filter(|text| !text.is_empty())
-                .map(|text| {
-                    UserBlock::Text(TextContent::new(format!(
-                        "\n\n[Document: {}]\n{text}",
-                        attachment.file_name
-                    )))
-                }),
+        .filter_map(|attachment| {
+            let attachment = read(attachment);
+            match attachment.r#type {
+                AttachmentType::Image => Some(UserBlock::Image(ImageContent {
+                    data: attachment.content.clone(),
+                    mime_type: attachment.mime_type.clone(),
+                })),
+                AttachmentType::Document => attachment
+                    .extracted_text
+                    .as_ref()
+                    .filter(|text| !text.is_empty())
+                    .map(|text| {
+                        UserBlock::Text(TextContent::new(format!(
+                            "\n\n[Document: {}]\n{text}",
+                            attachment.file_name
+                        )))
+                    }),
+            }
         })
         .collect()
 }
@@ -38,7 +41,7 @@ pub struct UserMessageWithAttachments {
     pub timestamp: f64,
     /// Optional original attachments.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub attachments: Option<Vec<Attachment>>,
+    pub attachments: Option<Vec<SharedAttachment>>,
 }
 impl CustomMessage for UserMessageWithAttachments {
     fn role(&self) -> &'static str {

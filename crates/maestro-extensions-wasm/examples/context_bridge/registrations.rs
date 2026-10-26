@@ -79,6 +79,9 @@ fn row_report(slot: &str, ctx: &ToolRenderContext) -> ExtensionResult<String> {
     let seen = ctx.state::<u32>();
     *seen.borrow_mut() += 1;
     let seen = *seen.borrow();
+    if ctx.args.as_ref().is_some_and(|args| args["fail"] == true) {
+        return Err("paint failed".into());
+    }
     if ctx.args.as_ref().is_some_and(|args| args["redraw"] == true) {
         (ctx.invalidate)()?;
     }
@@ -105,13 +108,18 @@ pub(super) fn register_tool(api: &ExtensionAPI, args: &str) -> ExtensionResult<(
 
 /// Registers a tool whose renderers report what they read about their row.
 fn painter(api: &ExtensionAPI) -> ExtensionResult<()> {
-    let render_call: ToolRenderCall =
-        Rc::new(|_, _, ctx, _| Ok(Component::new(Lines(vec![row_report("call", ctx)?]))));
-    let render_result: ToolRenderResult = Rc::new(|result, _, _, ctx, _| {
+    let render_call: ToolRenderCall = Rc::new(|args, _, ctx, _| {
+        Ok(Component::new(Lines(vec![
+            row_report("call", ctx)?,
+            json!(args).to_string(),
+        ])))
+    });
+    let render_result: ToolRenderResult = Rc::new(|result, options, _, ctx, _| {
         let report = row_report("result", ctx)?;
         Ok(Component::new(Lines(vec![
             report,
             json!(result).to_string(),
+            json!([options.expanded, options.is_partial]).to_string(),
         ])))
     });
     api.register_tool(maestro_extensions_wasm::ToolDefinition {

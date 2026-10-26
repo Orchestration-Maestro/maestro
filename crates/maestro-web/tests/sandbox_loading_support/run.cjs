@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const deviceScaleFactor = 1.25;
 const launchArgs = ['--no-sandbox', `--force-device-scale-factor=${deviceScaleFactor}`, '--js-flags=--expose-gc'];
 const families = ['execution', 'loading', 'contributions'];
-const counts = {execution: 26, loading: 25, contributions: 81};
+const counts = {execution: 26, loading: 33, contributions: 137};
 const total = Object.values(counts).reduce((sum, count) => sum + count);
 // Runtime modules initialize without unsafe-eval; frames load their own document.
 const contributionPolicy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'";
@@ -315,7 +315,9 @@ async function run({root, chromium, executablePath, inventory, log = console.log
     log(`COMPLETE ${families.reduce((sum, family) => sum + passed[family], 0)}/${total}`);
 
     async function withPage(name, action, entry = '/') {
-      const page = await Promise.race([browser.newPage({deviceScaleFactor}), disconnect]);
+      const pageOptions = {deviceScaleFactor};
+      if (name === "tile_dom_remove_does_not_open_and_uses_current_callback") pageOptions.hasTouch = true;
+      const page = await Promise.race([browser.newPage(pageOptions), disconnect]);
       const errors = [];
       const phase = message => log(`PHASE ${name} ${message}`);
       let pageFailure, rejectPage;

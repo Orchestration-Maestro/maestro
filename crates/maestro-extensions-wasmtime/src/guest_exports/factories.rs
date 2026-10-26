@@ -125,10 +125,13 @@ pub(crate) fn rendered_owners<T: crate::callback_imports::CallbackView>(
     store: &mut T,
     rendered: crate::guest_calls::tool_renders::Rendered,
 ) -> wasmtime::Result<(
-    crate::guest_calls::Handle,
+    Result<crate::guest_calls::Handle, String>,
     Option<crate::guest_calls::Handle>,
 )> {
-    let component = crate::callback_imports::transferred(store, rendered.component)?;
+    let component = match rendered.component {
+        Ok(component) => Ok(crate::callback_imports::transferred(store, component)?),
+        Err(error) => Err(error),
+    };
     let row = rendered
         .row
         .map(|row| crate::callback_imports::transferred(store, row))

@@ -37,7 +37,7 @@ pub fn get_shell_config(custom_shell_path: Option<&str>) -> io::Result<ShellConf
 
 /// Runs the platform's discovery command through synchronous capture.
 pub(super) fn probe(program: &str, operand: &str, deadline: Duration) -> Option<String> {
-    let mut command = tokio::process::Command::new(program);
+    let mut command = maestro_process::command(program);
     command.arg(operand);
     let output = spawn_sync(
         &mut command,
@@ -128,7 +128,11 @@ fn select_windows(
 /// Reads a fresh native environment and inserts `bin_dir` in its first PATH entry.
 #[must_use]
 pub fn get_shell_env(bin_dir: &str) -> ShellEnv {
-    shell_env(std::env::vars_os().collect(), bin_dir, cfg!(windows))
+    shell_env(
+        maestro_process::environment().collect(),
+        bin_dir,
+        cfg!(windows),
+    )
 }
 
 /// Prepends only when exact nonempty delimiter-separated membership is absent.

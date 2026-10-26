@@ -337,8 +337,9 @@ protocol crate. The connection output accepts only an `RpcLine`, which only an
 `RpcRecord` builds, so protocol output has one writer by type. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
-The workspace daemon is core design: the root always wires the daemon and the
-multiplexer through the application interface.
+The workspace daemon is core design: the root always wires the daemon through
+the application interface. A direct multiplexer dependency is permitted when its
+launcher is wired, not required for command-line startup.
 These declared owners need no placeholder crates before their first delivery.
 
 ## Libraries and formats

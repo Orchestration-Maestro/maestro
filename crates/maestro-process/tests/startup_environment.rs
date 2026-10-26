@@ -186,3 +186,54 @@ fn startup_child_default_keeps_launch_context() {
     .output();
     assert!(missing.is_err());
 }
+
+#[test]
+fn executable_marker_default_precedes_explicit_child_edits() {
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
+            "startup_environment::executable_marker_default_precedes_explicit_child_edits",
+        )
+        .unwrap()
+        .env_clear()
+        .case("marker")
+        .output()
+        .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    maestro_process::initialize_coding_agent();
+    for (edit, expected) in [
+        (None, "true"),
+        (Some(None), ""),
+        (Some(Some("custom")), "custom"),
+    ] {
+        let mut command = maestro_process::command("/bin/sh");
+        command.args(["-c", "printf %s \"$MAESTRO_CODING_AGENT\""]);
+        match edit {
+            Some(None) => {
+                command.env_remove("MAESTRO_CODING_AGENT");
+            }
+            Some(Some(value)) => {
+                command.env("MAESTRO_CODING_AGENT", value);
+            }
+            None => {}
+        }
+        let output = spawn_sync(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
+                stdout: OutputMode::Capture,
+                stderr: OutputMode::Capture,
+                input: None,
+                timeout: None,
+            },
+        )
+        .unwrap();
+        assert!(output.status.success());
+        assert_eq!(String::from_utf8(output.stdout).unwrap(), expected);
+    }
+}

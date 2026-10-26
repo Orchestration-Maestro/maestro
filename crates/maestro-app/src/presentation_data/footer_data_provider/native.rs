@@ -135,7 +135,7 @@ impl FooterOperations for NativeFooterOperations {
 
 /// Prepare the exact Git operands on the caller-selected directory.
 fn symbolic_command(repo_dir: &Path) -> Command {
-    let mut command = Command::new("git");
+    let mut command = maestro_process::command("git");
     command
         .arg("--no-optional-locks")
         .args(["symbolic-ref", "--quiet", "--short", "HEAD"])

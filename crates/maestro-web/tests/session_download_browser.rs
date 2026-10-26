@@ -5,7 +5,6 @@ use maestro_web::browser::attachment_content::{
     AttachmentHost, AttachmentHostError, BrowserAttachmentHost,
 };
 use maestro_web::export_html::template::{download_session_json, load_document};
-use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::*};
 
 /// Exercise both public routes, reached failures and idempotent anchor cleanup.
@@ -143,7 +142,8 @@ async fn attachment_download(fixture: &Fixture, host: &BrowserAttachmentHost) {
         preview: None,
     };
     fixture.begin("attachment");
-    host.download(Rc::new(RefCell::new(attachment))).unwrap();
+    host.download(std::sync::Arc::new(std::sync::RwLock::new(attachment)))
+        .unwrap();
     wasm_bindgen_futures::JsFuture::from(fixture.finish(
         &bytes,
         "application/octet-stream",

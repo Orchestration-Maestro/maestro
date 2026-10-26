@@ -503,6 +503,11 @@ impl Driver for ComponentDriver {
         let render = host::ToolRender {
             slot,
             row,
+            args: info.args.clone(),
+            options: Some(host::ToolRenderResultOptions {
+                expanded: info.expanded,
+                is_partial: info.phase.is_partial,
+            }),
             info,
             result: run.result.map(ToString::to_string),
         };
@@ -536,7 +541,7 @@ impl Driver for ComponentDriver {
             let row = state.table.get(&row).map_err(|e| e.to_string())?.0;
             state.observed.tool_rows.insert(id, row);
         }
-        let component = rendered.component.rep();
+        let component = rendered.component?.rep();
         state
             .observed
             .register(format!("tool-component {component}"), component);

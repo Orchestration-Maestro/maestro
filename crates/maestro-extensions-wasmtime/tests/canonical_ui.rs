@@ -966,9 +966,7 @@ fn row_context<'a>(
         invalidate: Rc::new(move || counted.set(counted.get() + 1)),
         environment,
         last_component: None,
-        state: Rc::new(RefCell::new(
-            maestro_extensions::ToolRendererState::default(),
-        )),
+        state: Rc::new(RefCell::new(rows.clone())),
         renderer_state: Some(rows),
         cwd: "/work".into(),
         phase: maestro_extensions::ToolRenderPhase {
@@ -1003,8 +1001,8 @@ fn canonical_tool_renderers_keep_row_state_and_read_the_row() {
         let render_call = binding.render_call.unwrap();
         let first = lines(&render_call(context.args, &theme, &context).unwrap());
         assert_eq!(
-            first,
-            [json!(["call", "n1", args, "/work", true, true, 1, false])]
+            first[0],
+            json!(["call", "n1", args, "/work", true, true, 1, false])
         );
         let second = lines(&render_call(context.args, &theme, &context).unwrap());
         assert_eq!(second[0][6], json!(2), "the row's guest state persists");
@@ -1034,6 +1032,204 @@ fn canonical_tool_renderers_keep_row_state_and_read_the_row() {
             "the result slot has no previous component yet"
         );
         assert_eq!(rendered[1]["details"], details);
+        bus.clear();
+    });
+}
+
+/// Runs both slots through failures and checks state and the next previous component.
+fn renderer_failures(attempts: &[bool]) {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let tool = painter(&runner).await;
+        for slot in ["call", "result"] {
+            render_failure_slot(&tool, attempts, slot);
+        }
+        bus.clear();
+    });
+}
+
+/// Checks mutations and previous-component observations for one renderer slot.
+fn render_failure_slot(
+    tool: &maestro_extensions::RegisteredTool<maestro_extensions::Local>,
+    attempts: &[bool],
+    slot: &str,
+) {
+    let binding = tool.definition.renderer_binding().unwrap();
+    let theme = maestro_theme::LiveTheme::default();
+    let redraws = Rc::new(std::cell::Cell::new(0));
+    let result = maestro_extensions::ToolRenderResultLike {
+        content: &[],
+        details: None,
+        terminate: None,
+        is_error: None,
+    };
+    let prepared = binding.render_result.unwrap().prepare(result).unwrap();
+    let options = maestro_extensions::ToolRenderResultOptions {
+        expanded: false,
+        is_partial: true,
+    };
+    let call = binding.render_call.unwrap();
+    let rows = maestro_extensions::ToolRendererState::default();
+    for (attempt, &fail) in attempts.iter().enumerate() {
+        let args = json!({ "fail": fail });
+        let context = row_context(&args, &rows, &redraws);
+        let rendered = if slot == "call" {
+            call(context.args, &theme, &context)
+        } else {
+            prepared.render(options, &theme, &context)
+        };
+        if fail {
+            assert_eq!(rendered.err().unwrap().message, "paint failed");
+        } else {
+            let report = lines(&rendered.unwrap());
+            assert_eq!(
+                report[0][6],
+                json!(attempt + 1),
+                "{slot} keeps failed mutations"
+            );
+            assert_eq!(
+                report[0][7],
+                json!(attempt > 0 && !attempts[attempt - 1]),
+                "{slot} clears failed component"
+            );
+        }
+    }
+}
+
+/// A first rendering failure must not discard the row's mutations.
+#[test]
+fn canonical_tool_renderer_error_first_keeps_state() {
+    renderer_failures(&[true, false]);
+}
+
+/// Each failed slot clears its cached component before the next rendering.
+#[test]
+fn canonical_tool_renderer_failure_clears_previous_component() {
+    renderer_failures(&[false, true, false, false]);
+}
+
+/// Native callback operands need not match the row context, including absent call args.
+#[test]
+fn canonical_tool_renderer_operands_are_independent_of_context() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let tool = painter(&runner).await;
+        let binding = tool.definition.renderer_binding().unwrap();
+        let theme = maestro_theme::LiveTheme::default();
+        let rows = maestro_extensions::ToolRendererState::default();
+        let redraws = Rc::new(std::cell::Cell::new(0));
+        let args = json!({ "context": true });
+        let supplied = json!({ "supplied": true });
+        let context = row_context(&args, &rows, &redraws);
+        let call = binding.render_call.unwrap();
+        for operand in [None, Some(&supplied)] {
+            let report = lines(&call(operand, &theme, &context).unwrap());
+            assert_eq!(report[0][2], args);
+            assert_eq!(report[1], json!(operand));
+        }
+        bus.clear();
+    });
+}
+
+/// Missing, null and populated details stay distinct at the component boundary.
+#[test]
+fn canonical_tool_renderer_result_preserves_optional_fields() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let tool = painter(&runner).await;
+        let renderer = tool
+            .definition
+            .renderer_binding()
+            .unwrap()
+            .render_result
+            .unwrap();
+        let theme = maestro_theme::LiveTheme::default();
+        let rows = maestro_extensions::ToolRendererState::default();
+        let redraws = Rc::new(std::cell::Cell::new(0));
+        let args = json!({});
+        let context = row_context(&args, &rows, &redraws);
+        let null = Value::Null;
+        let populated = json!({ "value": 1 });
+        for details in [None, Some(&null), Some(&populated)] {
+            for terminate in [None, Some(false), Some(true)] {
+                let result = maestro_extensions::ToolRenderResultLike {
+                    content: &[],
+                    details,
+                    terminate,
+                    is_error: None,
+                };
+                let prepared = renderer.prepare(result).unwrap();
+                let options = maestro_extensions::ToolRenderResultOptions {
+                    expanded: true,
+                    is_partial: false,
+                };
+                let report = lines(&prepared.render(options, &theme, &context).unwrap());
+                assert_eq!(report[1].get("details"), details);
+                assert_eq!(
+                    report[1].get("terminate"),
+                    terminate.map(Value::Bool).as_ref()
+                );
+                assert!(report[1].get("isError").is_none());
+            }
+        }
+        bus.clear();
+    });
+}
+
+/// Result callback options stay independent of the row context.
+#[test]
+fn canonical_tool_renderer_options_are_independent_of_context() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let tool = painter(&runner).await;
+        let binding = tool.definition.renderer_binding().unwrap();
+        let theme = maestro_theme::LiveTheme::default();
+        let rows = maestro_extensions::ToolRendererState::default();
+        let redraws = Rc::new(std::cell::Cell::new(0));
+        let args = json!({ "context": true });
+        let context = row_context(&args, &rows, &redraws);
+        let result = maestro_extensions::ToolRenderResultLike {
+            content: &[],
+            details: None,
+            terminate: None,
+            is_error: None,
+        };
+        let prepared = binding.render_result.unwrap().prepare(result).unwrap();
+        let options = maestro_extensions::ToolRenderResultOptions {
+            expanded: false,
+            is_partial: true,
+        };
+        let report = lines(&prepared.render(options, &theme, &context).unwrap());
+        assert_eq!(report[0][5], json!(true), "context remains expanded");
+        assert_eq!(report[2], json!([false, true]), "supplied result options");
         bus.clear();
     });
 }

@@ -288,11 +288,14 @@ impl Imports for Generated {
 
 /// Transfers a rendered component and a new row's state to the host as their identities.
 fn rendered_row(
-    (component, row): (crate::Component, Option<std::rc::Rc<crate::types::ToolRow>>),
+    (component, row): (
+        crate::ExtensionResult<crate::Component>,
+        Option<std::rc::Rc<crate::types::ToolRow>>,
+    ),
 ) -> host::ToolRendered {
     let identity = || super::callbacks::Identity::<Generated>::new(&Generated);
     host::ToolRendered {
-        component: identity().transfer(component),
+        component: component.map(|component| identity().transfer(component)),
         row: row.map(|row| identity().transfer(row)),
     }
 }
