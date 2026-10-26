@@ -1622,7 +1622,6 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
     drop(Browser::cold());
     browser_support::bootstrap_source(&browser);
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let command = browser.command("browser-debug-build");
     let target = std::path::PathBuf::from(
         command
@@ -1647,7 +1646,7 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     let target = target.canonicalize().unwrap();
     success(
         &toolchain_support::command(env!("CARGO"))
-            .current_dir(&root)
+            .current_dir(browser.workspace.path())
             .args(["build", "--locked", "-p", "maestro-tooling", "--bins"])
             .env("CARGO_TARGET_DIR", &target)
             .output()
