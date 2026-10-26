@@ -60,6 +60,17 @@ impl Request {
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
+    /// Starts authorization on the original native owner.
+    pub(crate) async fn login(
+        &self,
+        controls: crate::oauth_callbacks::Controls,
+    ) -> Result<String, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                crate::local_resources::Message::OAuthLogin(id, controls, reply, admission)
+            })
+            .await
+    }
     /// Awaits token rotation on the original native owner and pending-work service.
     pub(crate) async fn refresh(&self, credentials: String) -> Result<String, String> {
         self.0

@@ -451,6 +451,14 @@ async fn credential_command(
         return credentials::pending(api, request).await;
     }
     match request {
+        request if request.starts_with("credential oauth login ") => {
+            oauth::login(
+                api,
+                context,
+                request.trim_start_matches("credential oauth login "),
+            )
+            .await
+        }
         "credential oauth pending create" => oauth::pending_create(context),
         "credential oauth pending complete" => oauth::pending_complete().await,
         "credential oauth providers" => oauth::providers(context),

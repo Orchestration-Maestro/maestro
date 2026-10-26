@@ -133,3 +133,38 @@ impl State {
         );
     }
 }
+
+impl State {
+    /// Leaves token exchange and interaction order with the selected native implementation.
+    pub(super) fn start_oauth_login(
+        &self,
+        id: u64,
+        controls: crate::oauth_callbacks::Controls,
+        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
+        admission: Admission,
+    ) {
+        let capability = self.registry.capability(id);
+        let result = match capability.as_deref() {
+            Some(Capability::OAuthProvider(provider)) => controls
+                .callbacks(&self.registry)
+                .map(|callbacks| (provider.clone(), callbacks)),
+            _ => Err("extension OAuth provider resource ended".into()),
+        };
+        self.admit(
+            Box::pin(async move {
+                let result = match result {
+                    Ok((provider, callbacks)) => provider
+                        .login(callbacks, None)
+                        .await
+                        .map_err(|error| error.to_string())
+                        .and_then(|credentials| {
+                            serde_json::to_string(&credentials).map_err(|error| error.to_string())
+                        }),
+                    Err(error) => Err(error),
+                };
+                let _ = reply.send(result);
+            }),
+            admission,
+        );
+    }
+}

@@ -14,6 +14,7 @@ mod credentials;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
+mod oauth;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -49,6 +50,8 @@ type Abort = TypedFunc<
 
 /// Exports resolved from the canonical guest interface, never substitute implementations.
 pub(crate) struct Exports {
+    /// Actual OAuth interaction callbacks.
+    oauth: oauth::Exports,
     /// Actual credential backend and fallback callbacks.
     credentials: credentials::Exports,
     /// Original authored factory entry point.
@@ -129,6 +132,7 @@ impl Exports {
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
+            oauth: oauth::Exports::new(store, instance, &guest)?,
             credentials: credentials::Exports::new(store, instance, &guest)?,
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
@@ -169,7 +173,7 @@ impl Exports {
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
-            call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
+            call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_) | Call::OAuth(_)) => {
                 self.invoke_value_callback(accessor, call).await?;
             }
             Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
@@ -217,6 +221,7 @@ impl Exports {
             Call::Stream(call) => self.streams.invoke(accessor, call).await,
             Call::ModelHook(call) => self.model_hooks.invoke(accessor, call).await,
             Call::Schema(call) => self.schema.invoke(accessor, call).await,
+            Call::OAuth(call) => self.oauth.invoke(accessor, call).await,
             _ => Err(wasmtime::format_err!("extension call cannot run nested")),
         }
     }

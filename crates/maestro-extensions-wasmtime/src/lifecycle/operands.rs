@@ -22,15 +22,15 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
-            Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
-            Self::Stream(call) => Call::Stream(stream(call, completion)),
-            Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
+            Self::OAuth(call) => Call::OAuth(crate::oauth_callbacks::Invocation {
                 handler: completion.callback(call.handler),
-                operation: call.operation,
-                node: call.node,
-                emitter: call.emitter,
+                phase: call.phase,
+                data: call.data,
                 reply: call.reply,
             }),
+            Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
+            Self::Stream(call) => Call::Stream(stream(call, completion)),
+            Self::Schema(call) => Call::Schema(schema(call, completion)),
             Self::Credential(call) => Call::Credential(credential(call, completion)),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
@@ -225,6 +225,20 @@ fn stream(
         handler: completion.callback(call.handler),
         value: completion.callback(call.value),
         operation: call.operation,
+        reply: call.reply,
+    }
+}
+
+/// Retains schema callback admission beside its invocation-local operand.
+fn schema(
+    call: crate::guest_calls::schema::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::schema::Invocation<Callback> {
+    crate::guest_calls::schema::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        node: call.node,
+        emitter: call.emitter,
         reply: call.reply,
     }
 }

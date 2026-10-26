@@ -211,6 +211,7 @@ interface host {
     record local-auth-fallback { target: u32, provider: string }
     /// The nested same-instance target and its owned operands.
     variant local-call {
+        oauth(local-oauth-callback),
         auth-backend(local-auth-backend),
         auth-fallback(local-auth-fallback),
         renderer(local-renderer),
@@ -236,6 +237,7 @@ interface host {
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
+        oauth(result<option<string>, string>),
         auth-fallback(result<option<string>, string>),
         renderer(result<option<callback>, string>),
         render(result<list<string>, string>),
@@ -423,7 +425,10 @@ interface host {
     variant resolved-request-auth { ok(request-auth), error(string) }
     /// Independently retained accepted credentials and their original backend.
     /// Independently retained native OAuth implementation.
+    enum oauth-callback { auth, prompt, progress, manual, select }
+    record local-oauth-callback { target: u32, phase: oauth-callback, data: string }
     resource oauth-provider {
+        login: async func(callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<string, string>;
         info: func() -> result<string, string>;
         get-api-key: func(credentials: string) -> import-route;
         refresh-token: async func(credentials: string) -> result<string, string>;

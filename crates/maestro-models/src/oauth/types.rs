@@ -1,55 +1,16 @@
 //! Shared OAuth credential and prompt records.
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 pub use maestro_request::oauth::OAuthCredentials;
 
-/// Text requested during authorization.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OAuthPrompt {
-    /// Prompt text.
-    pub message: String,
-    /// Optional input hint; absent hints are omitted during serialization.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub placeholder: Option<String>,
-    /// Optional permission for empty input; explicit false is retained.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_empty: Option<bool>,
-}
-
-/// Authorization URL with optional instructions.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthAuthInfo {
-    /// Supplied authorization URL.
-    pub url: String,
-    /// Optional instructions; absent instructions are omitted during serialization.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub instructions: Option<String>,
-}
+pub use maestro_request::oauth::{
+    OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt,
+};
 
 /// Open provider identifier.
 pub type OAuthProviderId = String;
 /// Provider identifier used by authorization records.
 pub type OAuthProvider = OAuthProviderId;
-
-/// One supplied authorization choice.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthSelectOption {
-    /// Open choice identifier.
-    pub id: String,
-    /// Display label.
-    pub label: String,
-}
-
-/// Choice prompt retaining supplied option order and repeated identifiers.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthSelectPrompt {
-    /// Prompt text.
-    pub message: String,
-    /// Supplied choices in order.
-    pub options: Vec<OAuthSelectOption>,
-}
 
 /// OAuth failure retaining supplied diagnostics and its wrapped cause.
 #[derive(Debug)]

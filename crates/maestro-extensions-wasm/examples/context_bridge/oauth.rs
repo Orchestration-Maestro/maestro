@@ -142,3 +142,7 @@ pub async fn pending_complete() -> ExtensionResult<Value> {
             .is_sign_negative()
     ]))
 }
+
+#[path = "oauth/login.rs"]
+mod login;
+pub use login::run as login;

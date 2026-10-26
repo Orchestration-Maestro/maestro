@@ -204,13 +204,9 @@ impl State {
             Message::ApiModel(id, model, reply, admission) => {
                 self.start_api_model(id, *model, reply, admission);
             }
-            Message::Exec(id, request, reply, admission) => {
-                self.start_exec(id, request, reply, admission);
-            }
+            Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
-            Message::Auth(id, model, reply, admission) => {
-                self.start_auth(id, *model, reply, admission);
-            }
+            Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
@@ -219,6 +215,9 @@ impl State {
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
+            Message::OAuthLogin(id, controls, reply, admission) => {
+                self.start_oauth_login(id, controls, reply, admission);
+            }
             Message::OAuthRefresh(id, data, reply, admission) => {
                 self.start_oauth_refresh(id, data, reply, admission);
             }

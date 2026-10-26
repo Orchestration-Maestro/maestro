@@ -4,7 +4,11 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::{ExtensionFuture, ExtensionResult, Model, OAuthCredentials};
+use crate::{AbortSignal, ExtensionFuture, ExtensionResult, Model, OAuthCredentials};
+pub use maestro_request::oauth::{
+    OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt,
+};
+use std::rc::Rc;
 
 /// Open provider identifier.
 pub type OAuthProviderId = String;
@@ -19,6 +23,14 @@ pub trait OAuthProviderInterface {
     fn name(&self) -> &str;
     /// Returns callback-server metadata without filling in an absent value.
     fn uses_callback_server(&self) -> Option<bool>;
+    /// Authorizes through retained interaction callbacks.
+    ///
+    /// # Errors
+    /// The future returns the original provider or callback failure.
+    fn login(
+        &self,
+        callbacks: Rc<OAuthLoginCallbacks>,
+    ) -> ExtensionFuture<'static, OAuthCredentials>;
     /// Rotates credentials while retaining this implementation independently of the facade.
     ///
     /// # Errors
@@ -42,4 +54,33 @@ pub trait OAuthProviderInterface {
     /// # Errors
     /// Returns the original provider failure.
     fn get_api_key(&self, credentials: &OAuthCredentials) -> ExtensionResult<String>;
+}
+
+/// Synchronous authorization notification.
+pub type OAuthAuthCallback = Rc<dyn Fn(OAuthAuthInfo) -> ExtensionResult<()>>;
+/// Awaited text prompt.
+pub type OAuthPromptCallback = Rc<dyn Fn(OAuthPrompt) -> ExtensionFuture<'static, String>>;
+/// Synchronous progress notification.
+pub type OAuthProgressCallback = Rc<dyn Fn(&str) -> ExtensionResult<()>>;
+/// Optional concurrent pasted authorization input.
+pub type OAuthManualCodeCallback = Rc<dyn Fn() -> ExtensionFuture<'static, String>>;
+/// Awaited choice; None is the caller's cancellation decision.
+pub type OAuthSelectCallback =
+    Rc<dyn Fn(OAuthSelectPrompt) -> ExtensionFuture<'static, Option<String>>>;
+
+/// Interaction supplied by the caller of an authorization flow.
+#[derive(Clone)]
+pub struct OAuthLoginCallbacks {
+    /// Publishes the authorization URL synchronously.
+    pub on_auth: OAuthAuthCallback,
+    /// Awaits pasted authorization text.
+    pub on_prompt: OAuthPromptCallback,
+    /// Publishes progress synchronously when supplied.
+    pub on_progress: Option<OAuthProgressCallback>,
+    /// Starts optional concurrent pasted input.
+    pub on_manual_code_input: Option<OAuthManualCodeCallback>,
+    /// Requests an optional choice without replacing an absent callback.
+    pub on_select: Option<OAuthSelectCallback>,
+    /// Caller cancellation, absent unless supplied.
+    pub signal: Option<AbortSignal>,
 }

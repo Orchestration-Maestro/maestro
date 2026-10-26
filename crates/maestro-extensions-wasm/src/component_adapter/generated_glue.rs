@@ -12,6 +12,13 @@ use crate::types::ExtensionResult;
 use std::future::Future;
 
 impl<E: Extension> Guest for Glue<E> {
+    async fn invoke_oauth_callback(
+        handler: &host::Callback,
+        phase: host::OauthCallback,
+        data: String,
+    ) -> ExtensionResult<Option<String>> {
+        super::super::oauth::invoke(handler.id(), phase, &data).await
+    }
     fn invoke_auth_backend(
         handler: &host::Callback,
         update: &host::AuthLockUpdate,

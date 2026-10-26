@@ -242,6 +242,22 @@ impl host::HostOauthProvider for State {
 }
 
 impl host::HostOauthProviderWithStore<State> for Imports {
+    fn login(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        _callbacks: Resource<super::host::Identity>,
+        _options: (bool, bool, bool),
+        _signal: Option<Resource<super::host::Flag>>,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(accessor.with(|mut access| {
+            Ok(access
+                .get()
+                .table
+                .get(&this)?
+                .optional("oauth_login", &[])
+                .and_then(|value| value.ok_or_else(|| "missing OAuth login result".into())))
+        }))
+    }
     fn refresh_token(
         accessor: &Accessor<State, Self>,
         this: Resource<Reader>,

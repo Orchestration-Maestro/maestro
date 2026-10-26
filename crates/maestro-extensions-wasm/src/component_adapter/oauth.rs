@@ -45,6 +45,33 @@ impl<I: Imports> OAuthProviderInterface for Provider<I> {
     fn uses_callback_server(&self) -> Option<bool> {
         self.uses_callback_server
     }
+    fn login(
+        &self,
+        callbacks: Rc<crate::OAuthLoginCallbacks>,
+    ) -> ExtensionFuture<'static, OAuthCredentials> {
+        let (imports, resource) = (self.imports.clone(), self.resource.clone());
+        Box::pin(async move {
+            let mirror = Rc::new(super::signals::Mirror::new(
+                &imports,
+                callbacks.signal.as_ref(),
+            )?);
+            let options = (
+                callbacks.on_progress.is_some(),
+                callbacks.on_manual_code_input.is_some(),
+                callbacks.on_select.is_some(),
+            );
+            let scope = super::callbacks::Identity::new(&imports);
+            scope.stage(Rc::new(Interaction {
+                callbacks,
+                _signal: Box::new(mirror.clone()),
+            }));
+            let result = imports
+                .oauth_login(&resource, &scope.handle, (options, mirror.signal()))
+                .await;
+            scope.settle(true);
+            decode(&result?)
+        })
+    }
     fn refresh_token(
         &self,
         credentials: OAuthCredentials,
@@ -68,5 +95,49 @@ impl<I: Imports> OAuthProviderInterface for Provider<I> {
             &self.resource,
             &crate::types::finite::encode_value(credentials)?,
         )
+    }
+}
+
+/// Retains the caller's signal binding for as long as native callbacks retain this identity.
+pub(super) struct Interaction {
+    /// Original author-supplied operations.
+    callbacks: Rc<crate::OAuthLoginCallbacks>,
+    /// Native signal mirror with the original subscription removal.
+    _signal: Box<dyn std::any::Any>,
+}
+/// Invokes the original authored callback without holding its table borrow.
+pub(crate) async fn invoke(
+    handler: u32,
+    phase: crate::bindings::maestro::extension::host::OauthCallback,
+    data: &str,
+) -> ExtensionResult<Option<String>> {
+    use crate::bindings::maestro::extension::host::OauthCallback;
+    let interaction = super::callbacks::find::<Rc<Interaction>>(handler)?;
+    let callbacks = &interaction.callbacks;
+    match phase {
+        OauthCallback::Auth => {
+            (callbacks.on_auth)(decode(data)?)?;
+            Ok(None)
+        }
+        OauthCallback::Progress => {
+            if let Some(callback) = &callbacks.on_progress {
+                callback(data)?;
+            }
+            Ok(None)
+        }
+        OauthCallback::Prompt => (callbacks.on_prompt)(decode(data)?).await.map(Some),
+        OauthCallback::Manual => callbacks
+            .on_manual_code_input
+            .as_ref()
+            .ok_or("missing manual code callback")?()
+        .await
+        .map(Some),
+        OauthCallback::Select => {
+            callbacks
+                .on_select
+                .as_ref()
+                .ok_or("missing selection callback")?(decode(data)?)
+            .await
+        }
     }
 }

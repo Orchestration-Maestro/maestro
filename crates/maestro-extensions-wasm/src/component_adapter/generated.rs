@@ -38,6 +38,14 @@ impl Imports for Generated {
     fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String> {
         provider.info()
     }
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.login(handler, options, signal))
+    }
     fn oauth_refresh<'a>(
         &'a self,
         provider: &'a Self::OAuthProvider,

@@ -12,6 +12,13 @@ macro_rules! credential_imports {
         ) -> ExtensionResult<Vec<Self::OAuthProvider>>;
         /// Reads the literal identifier, label and optional callback-server metadata.
         fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String>;
+        /// Runs native authorization with retained callbacks and caller cancellation.
+        fn oauth_login<'a>(
+            &'a self,
+            provider: &'a Self::OAuthProvider,
+            handler: &'a Self::Callback,
+            controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+        ) -> ExtensionFuture<'a, String>;
         /// Awaits the original provider's refresh operation.
         fn oauth_refresh<'a>(
             &'a self,

@@ -87,6 +87,13 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
     ),
+    /// Runs the retained provider's native authorization with original interaction.
+    OAuthLogin(
+        u64,
+        crate::oauth_callbacks::Controls,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
     /// Awaits token rotation while retaining the originally selected provider.
     OAuthRefresh(
         u64,
@@ -498,7 +505,7 @@ impl Registry {
     }
 
     /// The pump's request sender while an existing admission keeps it live.
-    fn requests(&self) -> Result<UnboundedSender<Message>, String> {
+    pub(crate) fn requests(&self) -> Result<UnboundedSender<Message>, String> {
         self.requests
             .upgrade()
             .filter(|requests| !requests.is_closed())

@@ -533,6 +533,25 @@ impl Imports for Controlled {
     fn oauth_info(&self, provider: &Reader) -> ExtensionResult<String> {
         provider.data.string("oauth_info")
     }
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Reader,
+        handler: &'a Self::Callback,
+        _controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            super::super::component_adapter::oauth::invoke(
+                handler.id,
+                crate::bindings::maestro::extension::host::OauthCallback::Progress,
+                "controlled login",
+            )
+            .await?;
+            provider
+                .data
+                .optional("oauth_login", &[])?
+                .ok_or_else(|| "missing OAuth login result".into())
+        })
+    }
     fn oauth_refresh<'a>(
         &'a self,
         provider: &'a Reader,

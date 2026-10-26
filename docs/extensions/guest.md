@@ -427,8 +427,20 @@ modifier. The guest forwards complete credentials and model descriptors,
 including open credential fields, and rejects authored nonfinite numbers before
 encoding them. Provider failures retain their messages.
 
-These methods reuse the native OAuth algorithms. The guest does not yet expose
-login interaction callbacks or OAuth-bearing provider registration.
+`login` returns an owned future over the same native provider. Supply
+`Rc<OAuthLoginCallbacks>` with synchronous `on_auth` and optional `on_progress`
+notifications, an awaited `on_prompt`, and optional awaited manual-code and
+selection callbacks. An absent selection callback differs from a supplied
+callback returning `None` on cancel. Prompt records keep supplied text, optional
+fields and choice order. Callback failures retain their messages, and synchronous
+notifications may call back into the host before returning.
+
+The optional caller signal follows live cancellation, including a prior abort.
+Native callback aliases retain the interaction and its signal binding after the
+initiating login future ends; the final native release drops their captures.
+Pending input does not block other host requests. These methods reuse the native
+OAuth implementations; they do not store login credentials. OAuth-bearing guest
+provider registration is not yet exposed.
 
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied

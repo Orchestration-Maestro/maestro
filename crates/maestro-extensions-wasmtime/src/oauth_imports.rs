@@ -10,7 +10,7 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 /// Links native provider metadata, callable key conversion and credential enumeration.
-pub(crate) fn add_to_linker<T: WasiView + 'static>(
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Endpoint>(host, "oauth-provider")?;
@@ -46,6 +46,7 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
+    login(host)?;
     enumeration(host)
 }
 
@@ -72,6 +73,44 @@ fn enumeration<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmt
                         .collect::<Result<Vec<_>, _>>()
                 });
             Ok((result,))
+        },
+    )
+}
+
+/// Canonical login operands retain their typed callback and cancellation capabilities.
+type LoginInput = (
+    Resource<Endpoint>,
+    Resource<crate::guest_calls::Callback>,
+    (bool, bool, bool),
+    Option<Resource<crate::local_resources::SignalEndpoint>>,
+);
+
+/// Retains interaction before releasing Store access, then uses the existing local pump.
+fn login<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap_concurrent(
+        "[method]oauth-provider.login",
+        |accessor, (provider, handler, options, signal): LoginInput| {
+            Box::pin(async move {
+                let (endpoint, controls) = accessor.with(|mut access| {
+                    let state = access.get();
+                    let endpoint = state.ctx().table.get(&provider)?.clone();
+                    let handler = crate::callback_imports::retain(state, &handler)?;
+                    let signal = signal
+                        .map(|signal| state.ctx().table.get(&signal).cloned())
+                        .transpose()?;
+                    Ok::<_, wasmtime::Error>((
+                        endpoint,
+                        crate::oauth_callbacks::Controls {
+                            handler,
+                            options,
+                            signal,
+                        },
+                    ))
+                })?;
+                Ok((endpoint.login(controls).await,))
+            })
         },
     )
 }
