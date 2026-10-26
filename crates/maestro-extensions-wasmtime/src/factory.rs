@@ -8,39 +8,43 @@ use maestro_extensions::{ExtensionFactory, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
-    Config, Engine, Store,
+    Cache, Config, Engine, Store,
     component::{Component, Linker},
 };
 
 /// Creates a local factory for one authored extension component at the supplied path.
 ///
+/// The application supplies its installation version; components do not choose it.
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
-pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
-    factory(path, None)
+pub fn artifact_factory(path: String, installation_version: String) -> ExtensionFactory<Local> {
+    factory(path, installation_version, None)
 }
 
 /// Creates the production component factory with application-supplied native effects.
 ///
-/// The supplied operations remain on their original local executor. Construction performs
-/// no native launch or request; guest calls select their own effects.
+/// The application supplies its installation version and the operations' original local
+/// executor. Construction performs no native launch or request; guest calls select their effects.
 #[must_use]
 pub fn artifact_factory_with_io(
     path: String,
+    installation_version: String,
     io: Rc<dyn maestro_extensions::native_io::NativeIo>,
 ) -> ExtensionFactory<Local> {
-    factory(path, Some(io))
+    factory(path, installation_version, Some(io))
 }
 
 /// Retains the original supplied effects for each independently loaded component.
 fn factory(
     path: String,
+    installation_version: String,
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
         let io = io.clone();
+        let installation_version = installation_version.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new();
             pump.registry().resources.borrow_mut().native_io = io;
@@ -53,7 +57,7 @@ fn factory(
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path);
+            let state = lifecycle::State::new(endpoint, callbacks, &path, installation_version);
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {
@@ -102,6 +106,8 @@ async fn execute(
 ) -> wasmtime::Result<()> {
     let mut config = Config::new();
     config.wasm_component_model_async(true);
+    // The user cache is optional; unavailable storage must not prevent loading.
+    config.cache(Cache::from_file(None).ok());
     let engine = Engine::new(&config)?;
     let component = Component::from_file(&engine, path)?;
     let mut linker = Linker::new(&engine);

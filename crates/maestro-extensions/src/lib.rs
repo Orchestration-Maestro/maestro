@@ -45,6 +45,10 @@ pub use event_bus::{
 
 /// The read-only footer metadata extension footers receive.
 pub mod footer_data_provider;
+/// Native helper delegation used by component adapters.
+#[doc(hidden)]
+#[cfg(not(target_arch = "wasm32"))]
+pub mod helpers;
 mod loader;
 /// Native effects supplied to extension adapters.
 pub mod native_io;

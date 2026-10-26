@@ -20,6 +20,8 @@ delivery fix. Replace the Git pin with the first published release containing
 that fix. The manifests and lockfile select the exact commit; the Git-source
 allowlist names its repository.
 
-The native test host enables `cache` to reuse compiled components across isolated
-test processes. This feature is enabled only on the guest-authoring crate's
-development dependency, not in product builds.
+The runtime and native test host enable `cache` to reuse compiled bytes through
+Wasmtime's safe, content-keyed user cache. Cache setup, read or write failures
+fall back to compilation. Each load keeps its own Store. The Git build includes
+the host executable's modification time in cache keys, so separate host binaries
+do not share entries, but isolated test processes of the same binary do.

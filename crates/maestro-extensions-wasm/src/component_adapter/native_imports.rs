@@ -8,6 +8,21 @@ use crate::{ExtensionFuture, ExtensionResult};
 
 /// Native resource operations implemented by generated and controlled imports.
 pub trait NativeImports {
+    /// Host-owned cancellation flag.
+    type Signal: 'static;
+    /// Sends supplied operands with an original borrowed host signal.
+    fn fetch<'a>(
+        &'a self,
+        request: crate::bindings::maestro::extension::host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response>;
+    /// Waits using the selected native duration and borrowed cancellation.
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()>;
+
     /// Independently retained native HTTP response.
     type Response: 'static;
     /// Reads the native response status.

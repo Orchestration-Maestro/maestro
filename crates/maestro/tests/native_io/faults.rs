@@ -122,7 +122,11 @@ async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_a
     ));
     let loader: maestro_app::ModuleLoader<maestro_app::Local> = Rc::new(move |path: &str| {
         Box::pin(std::future::ready(Ok(Some(
-            maestro_extensions_wasmtime::artifact_factory_with_io(path.into(), Rc::clone(&io)),
+            maestro_extensions_wasmtime::artifact_factory_with_io(
+                path.into(),
+                maestro_app::configuration::config::VERSION.into(),
+                Rc::clone(&io),
+            ),
         ))))
     });
     let mut resources =

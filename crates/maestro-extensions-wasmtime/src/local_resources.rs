@@ -16,6 +16,7 @@ pub(crate) mod http;
 pub(crate) mod model_streams;
 pub(crate) mod native_io;
 pub(crate) mod native_resources;
+pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
@@ -245,6 +246,8 @@ enum Capability {
     NativeReader(Rc<dyn maestro_extensions::native_io::Readable>),
     /// Original native ordered input.
     NativeWriter(Rc<dyn maestro_extensions::native_io::Writable>),
+    /// An independently retained enumerated schema node.
+    Schema(maestro_extensions::SchemaNode),
     /// Original native model invocation buffer.
     AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.

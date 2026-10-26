@@ -518,6 +518,46 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    type Signal = Signal;
+    fn fetch<'a>(
+        &'a self,
+        request: crate::bindings::maestro::extension::host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response> {
+        Box::pin(async move {
+            Ok(self
+                .observe()
+                .native_http
+                .fetch(super::native_http_host::Request {
+                    url: request.url,
+                    method: request.method,
+                    headers: request.headers,
+                    body: request.body,
+                    signal: signal.map(|signal| signal.flag.key()),
+                }))
+        })
+    }
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            self.observe()
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                Err("Aborted".into())
+            } else {
+                Ok(())
+            }
+        })
+    }
+
     type Response = super::native_http_host::Response;
     fn response_status_text(&self, response: &Self::Response) -> String {
         response.status_text.clone()
@@ -605,43 +645,28 @@ impl crate::component_adapter::NativeImports for Controlled {
 }
 
 impl Imports for Controlled {
-    fn fetch<'a>(
-        &'a self,
-        request: crate::bindings::maestro::extension::host::HttpRequest,
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, Self::Response> {
-        Box::pin(async move {
-            Ok(self
-                .observe()
-                .native_http
-                .fetch(super::native_http_host::Request {
-                    url: request.url,
-                    method: request.method,
-                    headers: request.headers,
-                    body: request.body,
-                    signal: signal.map(|signal| signal.flag.key()),
-                }))
+    fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
+        serde_json::from_str(&self.observe().actions.record_for("format_size")?)
+            .map_err(|error| error.to_string())
+    }
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
+        use crate::bindings::maestro::extension::host::{FrontmatterDocument, FrontmatterToken};
+        if content != "---\nx: .nan\n---\nbody" {
+            return Err("unknown controlled metadata fixture".into());
+        }
+        Ok(FrontmatterDocument {
+            values: vec![
+                FrontmatterToken::Mapping(vec!["x".into()]),
+                FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
         })
     }
-    fn sleep<'a>(
-        &'a self,
-        duration: (u64, u32),
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(async move {
-            if signal.is_some_and(|signal| self.aborted(signal)) {
-                return Err("Aborted".into());
-            }
-            self.observe()
-                .log(format!("native-wait {} {}", duration.0, duration.1));
-            let hold = self.observe().take_hold();
-            pause(hold).await;
-            if signal.is_some_and(|signal| self.aborted(signal)) {
-                Err("Aborted".into())
-            } else {
-                Ok(())
-            }
-        })
+    fn native_helper(&self, operation: &str, _data: &str) -> ExtensionResult<String> {
+        self.observe().actions.record_for(operation)
     }
     type LockUpdate = Reader;
     fn lock_update(
@@ -1106,6 +1131,17 @@ impl Imports for Controlled {
         o.actions.check()?;
         serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
     }
+    fn schema_invoke(
+        &self,
+        _: &Self::Callback,
+        _: crate::bindings::maestro::extension::host::SchemaOperation,
+        _: &Self::JsonNode,
+        _: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        Err(crate::schema_code::DiagnosticErrorInfo::error(
+            "foreign schemas use the production runtime",
+        ))
+    }
     fn get_all_tools(
         &self,
     ) -> ExtensionResult<crate::component_adapter::ToolListing<Self::Callback>> {
@@ -1122,7 +1158,8 @@ impl Imports for Controlled {
                     },
                 )
                 .map_err(|error| error.message)?;
-            retained.push((tool, pointer, handle));
+            let shape = Exports::<Self>::describe_schema(id).map_err(|error| error.message)?;
+            retained.push((tool, pointer, handle, shape, true));
         }
         Ok((metadata, retained))
     }
@@ -1811,7 +1848,6 @@ impl Imports for Controlled {
     type Node = Node;
     type Update = Update;
     type Callback = Callback;
-    type Signal = Signal;
     type Context = Context;
     type CommandContext = CommandContext;
     type ReplacedContext = ReplacedContext;

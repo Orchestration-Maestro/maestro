@@ -138,6 +138,7 @@ async fn startup(
                 Box::pin(std::future::ready(Ok(Some(
                     maestro_extensions_wasmtime::artifact_factory_with_io(
                         path.to_owned(),
+                        config::VERSION.into(),
                         Rc::clone(&io),
                     ),
                 ))))

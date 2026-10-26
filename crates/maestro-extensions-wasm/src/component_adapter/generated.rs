@@ -28,6 +28,22 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl super::native_imports::NativeImports for Generated {
+    type Signal = host::AbortSignal;
+    fn fetch<'a>(
+        &'a self,
+        request: host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response> {
+        Box::pin(host::fetch(request, signal))
+    }
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(host::sleep(duration, signal))
+    }
+
     type Response = host::Response;
     fn response_status_text(&self, response: &Self::Response) -> String {
         response.status_text()
@@ -95,20 +111,6 @@ impl super::native_imports::NativeImports for Generated {
 }
 
 impl Imports for Generated {
-    fn fetch<'a>(
-        &'a self,
-        request: host::HttpRequest,
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, Self::Response> {
-        Box::pin(host::fetch(request, signal))
-    }
-    fn sleep<'a>(
-        &'a self,
-        duration: (u64, u32),
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(host::sleep(duration, signal))
-    }
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
         registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);
@@ -202,9 +204,23 @@ impl Imports for Generated {
             listing
                 .schemas
                 .into_iter()
-                .map(|b| (b.tool, b.pointer, b.handler))
+                .map(|b| (b.tool, b.pointer, b.handler, b.shape, b.local))
                 .collect(),
         ))
+    }
+
+    fn schema_invoke(
+        &self,
+        callback: &Self::Callback,
+        operation: host::SchemaOperation,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        let invocation = callback.schema_invoke(operation, node, path);
+        route::drive(&invocation).map_err(crate::schema_code::DiagnosticErrorInfo::error)?;
+        invocation
+            .schema_result()
+            .map_err(crate::schema_error::from_wire)
     }
 
     fn callback_emit(
@@ -253,6 +269,9 @@ impl Imports for Generated {
         signal_abort(signal: &Self::Signal) => abort();
     } }
     forward_resources! { functions {
+        native_format_size(bytes: f64) -> ExtensionResult<String> => host::native_format_size;
+        native_frontmatter(content: &str) -> ExtensionResult<host::FrontmatterDocument> => host::native_frontmatter;
+        native_helper(operation: &str, data: &str) -> ExtensionResult<String> => host::native_helper;
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;
         get_commands() -> ExtensionResult<String> => host::get_commands;
@@ -466,7 +485,6 @@ impl Imports for Generated {
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Theme = host::Theme;
-    type Signal = host::AbortSignal;
     type Context = host::Context;
     type CommandContext = host::CommandContext;
     type ReplacedContext = host::ReplacedSessionContext;

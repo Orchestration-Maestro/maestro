@@ -136,7 +136,9 @@ impl State {
             // A blocking waiter cannot yield to replenish Tokio's cooperative budget.
             let mut next = std::pin::pin!(tokio::task::coop::unconstrained(std::future::poll_fn(
                 |context| {
-                    self.poll_next_using(context, &mut |message| scoped(message, id, &mut value))
+                    self.poll_next_using(context, &mut |message| {
+                        self.scoped(message, id, &mut value)
+                    })
                 }
             )));
             match next.as_mut().poll(&mut context) {
@@ -158,29 +160,39 @@ pub(crate) enum Operand<'a> {
     Lock(&'a mut dyn FnMut(Option<&str>) -> maestro_extensions::LockUpdate),
 }
 
-/// Answers only the operand belonging to this stack's synchronous invocation.
-fn scoped(message: Message, id: u64, value: &mut Operand<'_>) -> Option<Message> {
-    match message {
-        Message::Json(target, request) => {
-            if target == id
-                && let Operand::Json(value) = value
-            {
-                request.answer(value);
-            } else {
-                request.reject();
+impl State {
+    /// Answer only the operand belonging to this stack's synchronous invocation.
+    fn scoped(&self, message: Message, id: u64, value: &mut Operand<'_>) -> Option<Message> {
+        match message {
+            Message::Routed(message, route) => {
+                self.routes.borrow_mut().push(route);
+                let remaining = self.scoped(*message, id, value);
+                if let Some(message) = remaining {
+                    self.dispatch(message);
+                }
+                self.routes.borrow_mut().pop();
             }
+            Message::Json(target, request) => {
+                if target == id
+                    && let Operand::Json(value) = value
+                {
+                    request.answer(value, &self.registry);
+                } else {
+                    request.reject();
+                }
+            }
+            Message::LockUpdate(target, current, reply) => {
+                let result = if target == id
+                    && let Operand::Lock(update) = value
+                {
+                    update(current.as_deref()).map_err(|error| error.to_string())
+                } else {
+                    Err("extension lock update ended".into())
+                };
+                let _ = reply.send(result);
+            }
+            message => return Some(message),
         }
-        Message::LockUpdate(target, current, reply) => {
-            let result = if target == id
-                && let Operand::Lock(update) = value
-            {
-                update(current.as_deref()).map_err(|error| error.to_string())
-            } else {
-                Err("extension lock update ended".into())
-            };
-            let _ = reply.send(result);
-        }
-        message => return Some(message),
+        None
     }
-    None
 }
