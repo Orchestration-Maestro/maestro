@@ -46,6 +46,10 @@ pub struct Bank {
     pub headers: Vec<(String, String)>,
     /// Supplied body chunks, including an absent body.
     pub body: Option<Vec<Vec<u8>>>,
+    /// Supplied failure before any response.
+    pub error: Option<String>,
+    /// Supplied failure after the body prefix.
+    pub read_error: Option<String>,
     /// Admitted requests in order.
     pub requests: Vec<Request>,
 }
@@ -57,24 +61,37 @@ impl Default for Bank {
             status_text: String::new(),
             headers: vec![],
             body: Some(vec![]),
+            error: None,
+            read_error: None,
             requests: vec![],
         }
     }
 }
 impl Bank {
     /// Records exact operands without interpreting them as native HTTP.
-    pub fn fetch(&mut self, request: Request) -> Response {
+    pub fn fetch(&mut self, request: Request) -> Result<Response, String> {
         self.requests.push(request);
-        Response {
+        if let Some(error) = &self.error {
+            return Err(error.clone());
+        }
+        let body = self.body.clone().map(super::native_io_host::Reader::new);
+        if let (Some(body), Some(error)) = (&body, &self.read_error) {
+            body.fail(error.clone());
+        }
+        Ok(Response {
             text: self.text.clone(),
             status: self.status,
             status_text: self.status_text.clone(),
             headers: self.headers.clone(),
-            body: self.body.clone().map(super::native_io_host::Reader::new),
-        }
+            body,
+        })
     }
 }
 impl Response {
+    /// Supplies a native JSON result with the same consuming-body admission.
+    pub fn json(&self) -> Result<serde_json::Value, String> {
+        serde_json::from_str(&self.text()?).map_err(|error| error.to_string())
+    }
     /// Returns the supplied native text, enforcing shared one-time consumption.
     pub fn text(&self) -> Result<String, String> {
         if let Some(body) = &self.body {
@@ -87,6 +104,18 @@ impl Response {
     }
 }
 impl host::HostResponseWithStore<State> for Imports {
+    fn json(
+        accessor: &Accessor<State, Self>,
+        response: Resource<Response>,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(accessor.with(|mut a| {
+            Ok(a.get()
+                .table
+                .get(&response)?
+                .json()
+                .and_then(|value| serde_json::to_string(&value).map_err(|error| error.to_string())))
+        }))
+    }
     fn text(
         accessor: &Accessor<State, Self>,
         response: Resource<Response>,
@@ -117,7 +146,10 @@ pub(super) fn fetch(
             body: request.body,
             signal,
         });
-        Ok(Ok(state.table.push(response)?))
+        match response {
+            Ok(response) => Ok(Ok(state.table.push(response)?)),
+            Err(error) => Ok(Err(error)),
+        }
     })
 }
 impl host::HostResponse for State {

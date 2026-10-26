@@ -43,6 +43,11 @@ impl Http {
     }
 }
 impl Response for Http {
+    fn json(&self) -> IoFuture<'_, serde_json::Value> {
+        Box::pin(async move {
+            serde_json::from_str(&self.text().await?).map_err(|error| error.to_string())
+        })
+    }
     fn text(&self) -> IoFuture<'_, String> {
         Box::pin(async move {
             let bytes = match &self.body {

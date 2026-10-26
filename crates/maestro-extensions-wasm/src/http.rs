@@ -21,6 +21,8 @@ pub struct Request {
 }
 /// Independently retained response from one native HTTP attempt.
 pub trait Response {
+    /// Consumes the original unused body as any JSON value through the native parser.
+    fn json(&self) -> crate::ExtensionFuture<'_, serde_json::Value>;
     /// Native HTTP status code, including non-success responses.
     fn status(&self) -> u16;
     /// Consumes the original unused body as BOM-aware, lossy UTF-8 text.

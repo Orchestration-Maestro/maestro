@@ -9,6 +9,7 @@ interface host {
     }
     /// Independently retained native response.
     resource response {
+        json: async func() -> result<string, string>;
         text: async func() -> result<string, string>;
         status: func() -> u16;
         status-text: func() -> string;

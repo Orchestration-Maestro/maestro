@@ -97,10 +97,16 @@ preserve NUL, malformed UTF-8 and split code points without decoding.
 
 `text().await` consumes the same body once through the native HTTP collector and
 text decoder. It strips one initial UTF-8 BOM and replaces malformed UTF-8; it does
-not trim whitespace or remove NUL. Getting a body handle does not consume it, but
-reading from that handle prevents later whole-body text consumption. A second
-`text()` call fails rather than replaying bytes. Collection observes the original
-request signal; closing a body releases that consumer without aborting the signal.
+not trim whitespace or remove NUL. `json().await` uses that decoder and the native
+JSON parser, returning any JSON value, including null, scalars and signed zero.
+Finite numbers and named object members cross the existing lossless JSON wire.
+Empty or malformed JSON fails at consumption, not at fetch.
+
+Getting a body handle does not consume it. A raw read prevents later text or JSON
+collection; a completed or failed collection cannot be replayed by either method.
+Collection and raw reads observe the original request signal after headers arrive.
+A late body error leaves already delivered bytes intact. Closing or dropping the
+last body consumer releases its work without aborting the caller signal.
 
 ## Executable example
 

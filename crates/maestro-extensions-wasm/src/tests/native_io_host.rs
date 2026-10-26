@@ -18,18 +18,36 @@ type Chunks = VecDeque<Result<Vec<u8>, String>>;
 
 /// One supplied consuming byte resource, not a native collector.
 #[derive(Clone)]
-pub struct Reader(Arc<Mutex<Chunks>>, Arc<AtomicBool>);
+pub struct Reader(Arc<Mutex<Chunks>>, Arc<AtomicBool>, Option<Arc<AtomicBool>>);
 impl Reader {
     /// Supplies exact chunks through the existing consuming byte resource.
     pub fn new(chunks: Vec<Vec<u8>>) -> Self {
         Self(
             Arc::new(Mutex::new(chunks.into_iter().map(Ok).collect())),
             Arc::default(),
+            None,
         )
+    }
+    /// Retains the original supplied cancellation flag for later body operations.
+    pub fn with_signal(mut self, signal: Option<Arc<AtomicBool>>) -> Self {
+        self.2 = signal;
+        self
+    }
+    /// Appends one supplied failure after the existing prefix.
+    pub fn fail(&self, error: String) {
+        self.0.lock().unwrap().push_back(Err(error));
     }
     /// Consumes the next supplied chunk without decoding it.
     pub fn read(&self) -> Result<Option<Vec<u8>>, String> {
         self.1.store(true, Ordering::SeqCst);
+        if self
+            .2
+            .as_ref()
+            .is_some_and(|flag| flag.load(Ordering::SeqCst))
+        {
+            self.close();
+            return Err("Aborted".into());
+        }
         self.0.lock().unwrap().pop_front().transpose()
     }
     /// Claims a whole-body operation only before any supplied read or close.
@@ -141,7 +159,7 @@ impl Bank {
         let reader = |selected: Stdio, bytes: &Vec<Vec<u8>>, error: Option<&String>| {
             (selected == Stdio::Pipe).then(|| {
                 let chunks = bytes.iter().cloned().map(Ok).chain(error.cloned().map(Err));
-                Reader(Arc::new(Mutex::new(chunks.collect())), Arc::default())
+                Reader(Arc::new(Mutex::new(chunks.collect())), Arc::default(), None)
             })
         };
         let child = Child {

@@ -89,6 +89,8 @@ pub struct Request {
 }
 /// Independently retained native response.
 pub trait Response {
+    /// Parses the original unused body with the shared text decoder and JSON parser.
+    fn json(&self) -> IoFuture<'_, serde_json::Value>;
     /// Collects the original unused body through the shared HTTP and text owners.
     fn text(&self) -> IoFuture<'_, String>;
     /// Native status, including non-success outcomes.

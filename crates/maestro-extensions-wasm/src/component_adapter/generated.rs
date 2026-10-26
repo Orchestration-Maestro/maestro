@@ -45,22 +45,15 @@ impl super::native_imports::NativeImports for Generated {
     }
 
     type Response = host::Response;
-    fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String> {
-        Box::pin(response.text())
+    fn response_json<'a>(
+        &'a self,
+        response: &'a Self::Response,
+    ) -> ExtensionFuture<'a, serde_json::Value> {
+        Box::pin(async move {
+            let value = response.json().await?;
+            serde_json::from_str(&value).map_err(|error| error.to_string())
+        })
     }
-    fn response_status_text(&self, response: &Self::Response) -> String {
-        response.status_text()
-    }
-    fn response_headers(&self, response: &Self::Response) -> Vec<(String, String)> {
-        response.headers()
-    }
-    fn response_body(&self, response: &Self::Response) -> Option<Self::Readable> {
-        response.body()
-    }
-    fn response_status(&self, response: &Self::Response) -> u16 {
-        response.status()
-    }
-
     type Child = host::ChildProcess;
     type Readable = host::Readable;
     type Writable = host::Writable;
@@ -100,6 +93,10 @@ impl super::native_imports::NativeImports for Generated {
         })
     }
     forward_resources! {
+        response_status(response: &Self::Response) -> u16 => status();
+        response_status_text(response: &Self::Response) -> String => status_text();
+        response_headers(response: &Self::Response) -> Vec<(String, String)> => headers();
+        response_body(response: &Self::Response) -> Option<Self::Readable> => body();
         child_pid(child: &Self::Child) -> Option<u32> => pid();
         child_stdin(child: &Self::Child) -> Option<Self::Writable> => stdin();
         child_stdout(child: &Self::Child) -> Option<Self::Readable> => stdout();
@@ -107,6 +104,7 @@ impl super::native_imports::NativeImports for Generated {
         readable_close(reader: &Self::Readable) -> ExtensionResult<()> => close();
     }
     forward_resources! { asynchronous {
+        response_text<'a>(response: Self::Response) -> String => text();
         readable_read<'a>(reader: Self::Readable) -> Option<Vec<u8>> => read();
         writable_write<'a>(writer: Self::Writable, bytes: &'a [u8]) -> () => write(bytes.to_vec());
         writable_end<'a>(writer: Self::Writable) -> () => end();

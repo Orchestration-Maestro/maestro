@@ -75,6 +75,9 @@ struct Response<I: Imports> {
     body: std::cell::OnceCell<Option<std::rc::Rc<dyn crate::streams::Readable>>>,
 }
 impl<I: Imports> crate::http::Response for Response<I> {
+    fn json(&self) -> ExtensionFuture<'_, serde_json::Value> {
+        self.resource.imports.response_json(&self.resource.handle)
+    }
     fn text(&self) -> ExtensionFuture<'_, String> {
         self.resource.imports.response_text(&self.resource.handle)
     }

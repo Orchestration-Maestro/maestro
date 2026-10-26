@@ -686,3 +686,161 @@ fn native_fetch_returns_non_success_responses() -> ExtensionResult<()> {
     }
     Ok(())
 }
+
+/// Supplies one request without inventing any native transport policy.
+fn http_request(signal: Option<crate::AbortSignal>) -> crate::http::Request {
+    crate::http::Request {
+        url: "http://loopback/".into(),
+        method: None,
+        headers: vec![],
+        body: None,
+        signal,
+    }
+}
+
+#[test]
+fn native_response_errors_keep_their_phase() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let flag = Flag::default();
+    flag.abort();
+    assert_eq!(
+        super::block_on(io.fetch(http_request(Some(signal(&host, host.signal(&flag)))))).err(),
+        Some("Aborted".into())
+    );
+    let flag = Flag::default();
+    let (hold, _started, open) = gate();
+    host.observe().hold_next_idle(hold);
+    let mut fetch = io.fetch(http_request(Some(signal(&host, host.signal(&flag)))));
+    assert!(
+        fetch
+            .as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    flag.abort();
+    open.send(()).unwrap();
+    assert_eq!(super::block_on(fetch).err(), Some("Aborted".into()));
+    let flag = Flag::default();
+    host.observe().native_http.body = Some(vec![b"first".to_vec()]);
+    let response =
+        super::block_on(io.fetch(http_request(Some(signal(&host, host.signal(&flag))))))?;
+    let body = response.body().unwrap();
+    assert_eq!(super::block_on(body.read())?, Some(b"first".to_vec()));
+    let (hold, _started, open) = gate();
+    host.observe().hold_next_idle(hold);
+    let mut read = body.read();
+    assert!(
+        read.as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    flag.abort();
+    open.send(()).unwrap();
+    assert_eq!(super::block_on(read), Err("Aborted".into()));
+    host.observe().native_http.error = Some("connection failed Ω".into());
+    assert_eq!(
+        super::block_on(io.fetch(http_request(None))).err(),
+        Some("connection failed Ω".into())
+    );
+    host.observe().native_http.error = None;
+    host.observe().native_http.read_error = Some("body failed Ω".into());
+    let response = super::block_on(io.fetch(http_request(None)))?;
+    let body = response.body().unwrap();
+    assert_eq!(super::block_on(body.read())?, Some(b"first".to_vec()));
+    assert_eq!(super::block_on(body.read()), Err("body failed Ω".into()));
+    assert_eq!(super::block_on(body.read())?, None);
+    Ok(())
+}
+
+#[test]
+fn native_response_consumers_share_one_body() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_http.text = "{\"value\":1}".into();
+    host.observe().native_http.body = Some(vec![b"{\"value\":".to_vec(), b"1}".to_vec()]);
+    let io = captured_api(&host)?.native_io();
+    for first in ["text", "json", "read"] {
+        let response = super::block_on(io.fetch(http_request(None)))?;
+        let body = response.body().unwrap();
+        assert!(std::rc::Rc::ptr_eq(&body, &response.body().unwrap()));
+        match first {
+            "text" => assert_eq!(super::block_on(response.text())?, "{\"value\":1}"),
+            "json" => assert_eq!(
+                super::block_on(response.json())?,
+                serde_json::json!({"value":1})
+            ),
+            _ => assert_eq!(super::block_on(body.read())?, Some(b"{\"value\":".to_vec())),
+        }
+        assert!(super::block_on(response.text()).is_err());
+        assert!(super::block_on(response.json()).is_err());
+        if first == "read" {
+            assert_eq!(super::block_on(body.read())?, Some(b"1}".to_vec()));
+        }
+        assert_eq!(super::block_on(body.read())?, None);
+    }
+    Ok(())
+}
+
+#[test]
+fn native_response_json_keeps_all_value_kinds() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for (text, expected) in [
+        ("null", serde_json::Value::Null),
+        ("\"雪\\u0000\"", serde_json::json!("雪\0")),
+        ("42", serde_json::json!(42)),
+        (
+            "1.2345678901234567",
+            serde_json::json!(1.234_567_890_123_456_7),
+        ),
+        ("-0.0", serde_json::json!(-0.0)),
+        ("true", serde_json::json!(true)),
+        ("false", serde_json::json!(false)),
+        (
+            "{\"2\":\"two\",\"1\":\"one\",\"a\":null}",
+            serde_json::json!({"2":"two","1":"one","a":null}),
+        ),
+        ("[1,false,null]", serde_json::json!([1, false, null])),
+        ("1e308", serde_json::json!(1e308)),
+        ("5e-324", serde_json::json!(5e-324)),
+        (
+            "9007199254740993",
+            serde_json::json!(9_007_199_254_740_993_u64),
+        ),
+    ] {
+        host.observe().native_http.text = text.into();
+        let response = super::block_on(io.fetch(http_request(None)))?;
+        let value = super::block_on(response.json())?;
+        assert_eq!(value, expected, "{text}");
+        if text == "-0.0" {
+            assert!(value.as_f64().unwrap().is_sign_negative());
+        }
+    }
+    for text in ["", "{", "undefined"] {
+        host.observe().native_http.text = text.into();
+        let response = super::block_on(io.fetch(http_request(None)))?;
+        assert_eq!(response.status(), 200);
+        assert!(super::block_on(response.json()).is_err(), "{text}");
+    }
+    Ok(())
+}
+
+#[test]
+fn native_response_text_uses_the_existing_decoder() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    for (bytes, expected) in [
+        (vec![], ""),
+        (b"\xef\xbb\xbfhello".to_vec(), "hello"),
+        (b"\xef\xbb\xbf\xef\xbb\xbfhello".to_vec(), "\u{feff}hello"),
+        (b"\0 \t\r\n".to_vec(), "\0 \t\r\n"),
+        (b"\xff\xe2\x82".to_vec(), "\u{fffd}\u{fffd}"),
+        ("Ω雪".as_bytes().to_vec(), "Ω雪"),
+    ] {
+        host.observe().native_http.body = Some(vec![bytes]);
+        host.observe().native_http.text = expected.into();
+        let response = super::block_on(io.fetch(http_request(None)))?;
+        assert_eq!(super::block_on(response.text())?, expected);
+    }
+    Ok(())
+}

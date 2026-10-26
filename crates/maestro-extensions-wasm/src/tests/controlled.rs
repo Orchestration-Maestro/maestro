@@ -525,16 +525,28 @@ impl crate::component_adapter::NativeImports for Controlled {
         signal: Option<&'a Self::Signal>,
     ) -> ExtensionFuture<'a, Self::Response> {
         Box::pin(async move {
-            Ok(self
-                .observe()
-                .native_http
-                .fetch(super::native_http_host::Request {
-                    url: request.url,
-                    method: request.method,
-                    headers: request.headers,
-                    body: request.body,
-                    signal: signal.map(|signal| signal.flag.key()),
-                }))
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            let mut response =
+                self.observe()
+                    .native_http
+                    .fetch(super::native_http_host::Request {
+                        url: request.url,
+                        method: request.method,
+                        headers: request.headers,
+                        body: request.body,
+                        signal: signal.map(|signal| signal.flag.key()),
+                    })?;
+            response.body = response
+                .body
+                .map(|body| body.with_signal(signal.map(|s| s.flag.shared())));
+            Ok(response)
         })
     }
     fn sleep<'a>(
@@ -559,6 +571,12 @@ impl crate::component_adapter::NativeImports for Controlled {
     }
 
     type Response = super::native_http_host::Response;
+    fn response_json<'a>(
+        &'a self,
+        response: &'a Self::Response,
+    ) -> ExtensionFuture<'a, serde_json::Value> {
+        Box::pin(async move { response.json() })
+    }
     fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String> {
         Box::pin(async move { response.text() })
     }

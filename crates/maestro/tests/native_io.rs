@@ -7,7 +7,12 @@ mod http;
 
 /// Loads the compiled native-operation component through normal startup.
 fn loaded(root: &Root) -> Rpc {
-    root.models("http://127.0.0.1:1/v1");
+    connected(root, "http://127.0.0.1:1/v1")
+}
+
+/// Loads the same component with a controlled provider for active-run cancellation.
+fn connected(root: &Root, base: &str) -> Rpc {
+    root.models(base);
     let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
     Rpc::command(&mut root.command(&[
         "--mode",
