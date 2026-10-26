@@ -9,7 +9,11 @@ type Reply<T> = Sender<Result<T, String>>;
 /// Operations on the original accepted credential state.
 pub(crate) enum Request {
     /// Replaces only this owner's selected fallback callback.
-    Fallback(crate::guest_calls::Handle, Arc<Lease>, Reply<()>),
+    Fallback(
+        crate::guest_calls::Handle,
+        tokio::sync::mpsc::UnboundedSender<Message>,
+        Reply<()>,
+    ),
     /// Installs a runtime-only key.
     Runtime(String, String, Reply<()>),
     /// Removes a runtime-only key.
@@ -61,8 +65,8 @@ impl Request {
     /// Calls the native credential algorithms outside the resource-table borrow.
     pub(crate) fn answer(self, owner: &AuthStorage) {
         match self {
-            Self::Fallback(handler, lease, reply) => {
-                owner.set_fallback_resolver(handler.fallback(lease));
+            Self::Fallback(handler, requests, reply) => {
+                owner.set_fallback_resolver(handler.fallback(requests));
                 send(&reply, Ok::<_, String>(()));
             }
             Self::Runtime(provider, key, reply) => {

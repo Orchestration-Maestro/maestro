@@ -101,19 +101,17 @@ impl Handle {
             })))
         })
     }
-    /// A retained resolver may reenter the host on its original pump before returning a value.
+    /// Retains pump admission, not a capability that could own these credentials.
     pub(crate) fn fallback(
         &self,
-        owner: Arc<Lease>,
+        requests: tokio::sync::mpsc::UnboundedSender<crate::local_resources::Message>,
     ) -> impl Fn(&str) -> Result<Option<String>, maestro_extensions::OAuthError> + Send + Sync + 'static
     {
         let handler = self.clone();
         move |provider| {
-            Registry::on_pump(owner.requests(), |registry| {
-                handler.resolve(registry, provider)
-            })
-            .and_then(std::convert::identity)
-            .map_err(|error| maestro_extensions::DiagnosticErrorInfo::error(error).into())
+            Registry::on_pump(&requests, |registry| handler.resolve(registry, provider))
+                .and_then(std::convert::identity)
+                .map_err(|error| maestro_extensions::DiagnosticErrorInfo::error(error).into())
         }
     }
 }

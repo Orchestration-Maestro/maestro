@@ -20,6 +20,18 @@ async fn observe(runner: &ExtensionRunner<Local>, request: &str) -> Value {
     serde_json::from_str(&text).unwrap_or_else(|error| panic!("{error}: {text}"))
 }
 
+/// Completes a native context read so queued resource releases precede the next Store call.
+async fn store_barrier(runner: &ExtensionRunner<Local>) {
+    let handler = runner
+        .get_command("bridge-observe")
+        .unwrap()
+        .command
+        .handler;
+    handler("barrier".into(), runner.create_command_context())
+        .await
+        .unwrap_err();
+}
+
 /// Keeps the loaded owner alive while the original catalog is observed.
 async fn loaded() -> (ExtensionHandle<Local>, ExtensionRunner<Local>) {
     let bus = super::components::TracedBus::new();
@@ -163,7 +175,7 @@ struct PendingProvider {
     /// Signals that locked refresh reached the native provider.
     started: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
     /// No timer or network supplies this completion.
-    released: std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>,
+    released: std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<Result<(), &'static str>>>>,
 }
 impl maestro_models::OAuthProviderInterface for PendingProvider {
     fn id(&self) -> &'static str {
@@ -194,7 +206,10 @@ impl maestro_models::OAuthProviderInterface for PendingProvider {
         let released = self.released.lock().unwrap().take().unwrap();
         Box::pin(async move {
             started.send(()).unwrap();
-            released.await.unwrap();
+            released
+                .await
+                .unwrap()
+                .map_err(maestro_models::DiagnosticErrorInfo::error)?;
             credentials.access = "refreshed-key".into();
             credentials.expires = 4_102_444_800_000.0;
             Ok(credentials)
@@ -229,7 +244,7 @@ fn credential_pending_key_retains_borrowed_update_and_owner_until_settlement() {
                 observe(&runner, "credential pending release").await,
                 json!("released")
             );
-            release.send(()).unwrap();
+            release.send(Ok(())).unwrap();
         };
         let (answer, ()) = tokio::join!(key, during);
         assert_eq!(answer, json!({"key":"refreshed-key","errors":[]}));
@@ -238,6 +253,195 @@ fn credential_pending_key_retains_borrowed_update_and_owner_until_settlement() {
             json!({"author-pending":{"type":"oauth","refresh":"original-refresh","access":"refreshed-key","expires":4_102_444_800_000_i64},"unknown":[null,false,2]})
         );
         maestro_models::unregister_oauth_provider("author-pending");
+    });
+}
+
+#[test]
+fn credential_backend_callbacks_keep_lock_update_outcomes() {
+    super::components::local(async {
+        let (_owner, runner) = loaded().await;
+        for (phase, error) in [
+            ("acquire", Some("awaited acquisition failed")),
+            ("write", Some("awaited write failed")),
+            ("reread", None),
+        ] {
+            backend_outcome_case(&runner, phase, error).await;
+        }
+    });
+}
+
+/// Runs one real native awaited-backend failure or no-write outcome.
+async fn backend_outcome_case(runner: &ExtensionRunner<Local>, phase: &str, error: Option<&str>) {
+    let (started, entered) = tokio::sync::oneshot::channel();
+    let (release, released) = tokio::sync::oneshot::channel();
+    let provider = std::sync::Arc::new(PendingProvider {
+        started: std::sync::Mutex::new(Some(started)),
+        released: std::sync::Mutex::new(Some(released)),
+    });
+    maestro_models::register_oauth_provider(provider.clone());
+    assert_eq!(
+        observe(runner, &format!("credential pending create-{phase}")).await,
+        json!("retained")
+    );
+    let key = observe(runner, "credential pending key");
+    let answer = if phase == "write" {
+        let during = async {
+            entered.await.unwrap();
+            release.send(Ok(())).unwrap();
+        };
+        tokio::join!(key, during).0
+    } else {
+        let answer = key.await;
+        assert!(
+            provider.started.lock().unwrap().is_some(),
+            "update entered the OAuth provider"
+        );
+        answer
+    };
+    assert_eq!(answer["key"], Value::Null);
+    let errors = answer["errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|error| error["message"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(errors, error.into_iter().collect::<Vec<_>>());
+    assert_backend_storage(runner, phase).await;
+    assert_pending_release(runner).await;
+    maestro_models::unregister_oauth_provider("author-pending");
+}
+
+/// Checks the final backend and resolver captures only after the native release barrier.
+async fn assert_pending_release(runner: &ExtensionRunner<Local>) {
+    assert_eq!(
+        observe(runner, "credential pending counts").await,
+        json!([])
+    );
+    observe(runner, "credential pending release").await;
+    store_barrier(runner).await;
+    assert_eq!(
+        observe(runner, "credential pending counts").await,
+        json!(["backend", "fallback"])
+    );
+}
+
+/// Compares native accepted state with the independently retained raw backend text.
+async fn assert_backend_storage(runner: &ExtensionRunner<Local>, phase: &str) {
+    let updates = observe(runner, "credential pending updates").await;
+    let raw = observe(runner, "credential pending raw").await;
+    let stored = observe(runner, "credential pending stored").await;
+    assert_backend_update(runner, phase, &updates, &raw).await;
+    if phase == "reread" {
+        assert_eq!(raw, json!({"unknown":[null,false,2]}));
+        assert_eq!(
+            observe(runner, "credential pending text").await,
+            json!(" \n{\"unknown\":[null,false,2]} \n")
+        );
+        assert_eq!(stored, Value::Null);
+    } else {
+        assert_eq!(raw["author-pending"]["access"], json!("old"));
+        assert_eq!(
+            credential_value(&stored),
+            credential_value(&raw["author-pending"])
+        );
+    }
+}
+
+/// Verifies the actual native replacement before the authored backend returns.
+async fn assert_backend_update(
+    runner: &ExtensionRunner<Local>,
+    phase: &str,
+    updates: &Value,
+    raw: &Value,
+) {
+    if phase == "acquire" {
+        assert_eq!(*updates, json!([]));
+    } else {
+        let update = &updates[0];
+        assert_eq!(updates.as_array().unwrap().len(), 1);
+        assert_eq!(
+            update["current"],
+            observe(runner, "credential pending text").await
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(update["current"].as_str().unwrap()).unwrap(),
+            *raw
+        );
+        if phase == "write" {
+            assert_eq!(update["accepted"]["access"], json!("refreshed-key"));
+            let replacement: Value =
+                serde_json::from_str(update["next"].as_str().unwrap()).unwrap();
+            assert_eq!(
+                credential_value(&replacement["author-pending"]),
+                credential_value(&update["accepted"])
+            );
+            assert_eq!(replacement["unknown"], json!([null, false, 2]));
+        } else {
+            assert_eq!(update["next"], Value::Null);
+            assert_eq!(update["accepted"], Value::Null);
+        }
+    }
+}
+
+/// Reads the declared credential view without equating JSON integer and float variants.
+fn credential_value(value: &Value) -> maestro_extensions::AuthCredential {
+    serde_json::from_value(value.clone()).unwrap()
+}
+
+#[test]
+fn credential_pending_key_retains_owner_until_settlement() {
+    super::components::local(async {
+        let (_owner, runner) = loaded().await;
+        for outcome in [Ok(()), Err("literal refresh failure")] {
+            let (started, entered) = tokio::sync::oneshot::channel();
+            let (release, released) = tokio::sync::oneshot::channel();
+            maestro_models::register_oauth_provider(std::sync::Arc::new(PendingProvider {
+                started: std::sync::Mutex::new(Some(started)),
+                released: std::sync::Mutex::new(Some(released)),
+            }));
+            assert_eq!(
+                observe(&runner, "credential pending create").await,
+                json!("retained")
+            );
+            assert_eq!(
+                observe(&runner, "credential pending counts").await,
+                json!([])
+            );
+            let key = observe(&runner, "credential pending key");
+            let during = async {
+                entered.await.unwrap();
+                assert_eq!(
+                    observe(&runner, "credential pending release").await,
+                    json!("released")
+                );
+                assert_eq!(
+                    observe(&runner, "credential pending counts").await,
+                    json!([])
+                );
+                release.send(outcome).unwrap();
+            };
+            let (answer, ()) = tokio::join!(key, during);
+            if outcome.is_ok() {
+                assert_eq!(answer, json!({"key":"refreshed-key","errors":[]}));
+            } else {
+                assert_eq!(answer["key"], Value::Null);
+                assert_eq!(answer["errors"].as_array().unwrap().len(), 1);
+                assert_eq!(
+                    answer["errors"][0]["message"],
+                    json!("Failed to refresh OAuth token for author-pending")
+                );
+            }
+            store_barrier(&runner).await;
+            assert_eq!(
+                observe(&runner, "credential pending counts").await,
+                json!(["backend", "fallback"])
+            );
+            assert_eq!(
+                observe(&runner, "credential pending counts").await,
+                json!(["backend", "fallback"])
+            );
+            maestro_models::unregister_oauth_provider("author-pending");
+        }
     });
 }
 
@@ -1227,6 +1431,7 @@ fn credential_fallback_reentry_and_replacement_keep_lifetime() {
             observe(&runner, "credential lifetime release").await,
             json!("released")
         );
+        store_barrier(&runner).await;
         assert_eq!(
             observe(&runner, "credential lifetime counts").await,
             json!([[1, true], [2, true]])
@@ -1236,6 +1441,105 @@ fn credential_fallback_reentry_and_replacement_keep_lifetime() {
             json!([[1, true], [2, true]])
         );
     });
+}
+
+#[test]
+fn credential_session_fallback_releases_after_runner_and_guest_handles() {
+    super::components::local(async {
+        let (session, _) = super::session::runner_session("/session-fallback");
+        let catalog = std::sync::Arc::downgrade(&session.model_registry);
+        let credentials = std::sync::Arc::downgrade(session.model_registry.auth_storage());
+        let bus = super::components::TracedBus::new();
+        let (owner, runner, _) =
+            super::retained_components::loaded_in(bus.controller.for_extension(), session).await;
+        assert_eq!(
+            observe(&runner, "credential lifetime session").await,
+            json!(true)
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime replace").await,
+            json!(true)
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime counts").await,
+            json!([[1, true]])
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime release").await,
+            json!("released")
+        );
+        assert_eq!(
+            observe(&runner, "credential lifetime keep-catalog").await,
+            json!("retained")
+        );
+        let command = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        drop(runner);
+        drop(owner);
+        assert_session_release(&command, catalog, credentials).await;
+    });
+}
+
+/// Observes final release through a different context, without retaining the original runner.
+async fn assert_session_release(
+    command: &maestro_extensions::types::CommandHandler<Local>,
+    catalog: std::sync::Weak<maestro_catalog::ModelRegistry>,
+    credentials: std::sync::Weak<maestro_extensions::AuthStorage>,
+) {
+    let observer = ExtensionRunner::<Local>::new(
+        Rc::default(),
+        maestro_extensions::create_extension_runtime::<Local>(),
+        super::session::runner_session("/observer").0,
+        Rc::new(|_| {}),
+        maestro_theme::LiveTheme::default(),
+    );
+    let answer = command(
+        "credential lifetime counts".into(),
+        observer.create_command_context(),
+    )
+    .await
+    .unwrap_err()
+    .to_string();
+    assert_eq!(
+        serde_json::from_str::<Value>(&answer).unwrap(),
+        json!([[1, true]])
+    );
+    assert!(catalog.upgrade().is_some(), "retained catalog ended early");
+    assert!(
+        credentials.upgrade().is_some(),
+        "retained credentials ended early"
+    );
+    command(
+        "credential lifetime release-catalog".into(),
+        observer.create_command_context(),
+    )
+    .await
+    .unwrap_err();
+    command("barrier".into(), observer.create_command_context())
+        .await
+        .unwrap_err();
+    let answer = command(
+        "credential lifetime counts".into(),
+        observer.create_command_context(),
+    )
+    .await
+    .unwrap_err()
+    .to_string();
+    assert_eq!(
+        serde_json::from_str::<Value>(&answer).unwrap(),
+        json!([[1, true], [2, true]])
+    );
+    assert!(
+        catalog.upgrade().is_none(),
+        "component API retained the session catalog"
+    );
+    assert!(
+        credentials.upgrade().is_none(),
+        "session credentials retained their fallback"
+    );
 }
 
 #[test]

@@ -367,7 +367,7 @@ async fn credential_command(
         return provider_controls::control(api, context, text).await;
     }
     if let Some(request) = request.strip_prefix("credential lifetime ") {
-        return credentials::lifetime(api, request);
+        return credentials::lifetime(api, context, request);
     }
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;

@@ -4,13 +4,17 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use maestro_extensions_wasm::{AuthStorage, AuthStorageData, ExtensionAPI, ExtensionResult};
+use maestro_extensions_wasm::{
+    AuthStorage, AuthStorageData, ExtensionAPI, ExtensionContext, ExtensionResult, ModelRegistry,
+};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
 thread_local! {
     /// The sole author alias, released separately from its callback captures.
     static OWNER: RefCell<Option<AuthStorage>> = const { RefCell::new(None) };
+    /// A separately acquired catalog keeps its original credentials alive.
+    static CATALOG: RefCell<Option<ModelRegistry>> = const { RefCell::new(None) };
     /// Each resolver's destructor records its identity and a reentrant native result.
     static DROPS: RefCell<Vec<(usize, bool)>> = const { RefCell::new(Vec::new()) };
 }
@@ -34,24 +38,36 @@ impl Drop for Capture {
 }
 
 /// Replaces one resolver at a time, then releases every alias of its credential owner.
-pub(super) fn control(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
+pub(super) fn control(
+    api: &ExtensionAPI,
+    context: &ExtensionContext,
+    request: &str,
+) -> ExtensionResult<Value> {
     if request == "counts" {
         return Ok(DROPS.with(|drops| json!(*drops.borrow())));
+    }
+    if request == "keep-catalog" {
+        let catalog = context.model_registry()?;
+        CATALOG.with(|slot| slot.replace(Some(catalog)));
+        return Ok(json!("retained"));
+    }
+    if request == "release-catalog" {
+        CATALOG.with(RefCell::take);
+        return Ok(json!("released"));
     }
     if request == "release" {
         OWNER.with(RefCell::take);
         return Ok(json!("released"));
     }
     let id = match request {
-        "create" => {
+        "create" | "session" => {
             DROPS.with(|drops| drops.borrow_mut().clear());
-            OWNER.with(|owner| -> ExtensionResult<()> {
-                owner.replace(Some(AuthStorage::in_memory(
-                    api,
-                    AuthStorageData::default(),
-                )?));
-                Ok(())
-            })?;
+            let owner = if request == "session" {
+                context.model_registry()?.auth_storage()?
+            } else {
+                AuthStorage::in_memory(api, AuthStorageData::default())?
+            };
+            OWNER.with(|slot| slot.replace(Some(owner)));
             1
         }
         "replace" => 2,

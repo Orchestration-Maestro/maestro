@@ -21,29 +21,62 @@ pub(super) async fn state(api: &ExtensionAPI) -> ExtensionResult<Value> {
 }
 
 /// Routes separately admitted resolver operations through the same author callbacks.
-pub(super) fn lifetime(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
-    lifetime::control(api, request)
+pub(super) fn lifetime(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionContext,
+    request: &str,
+) -> ExtensionResult<Value> {
+    lifetime::control(api, context, request)
 }
 
 /// Raw text retained by the author's backend, not a host-owned credential snapshot.
-struct Backend(Rc<RefCell<Option<String>>>);
+struct Backend {
+    /// The author's live document.
+    raw: Rc<RefCell<Option<String>>>,
+    /// Pending controls observe the actual native backend's final release.
+    _capture: Option<PendingCapture>,
+    /// An awaited acquisition or write may fail independently of synchronous reload.
+    failure: &'static str,
+}
+
+/// A native-owned callback capture, counted when its author object is released.
+struct PendingCapture(&'static str);
+impl Drop for PendingCapture {
+    fn drop(&mut self) {
+        PENDING_DROPS.with(|drops| drops.borrow_mut().push(self.0));
+    }
+}
 impl AuthStorageBackend for Backend {
     fn with_lock(
         &self,
         update: &mut dyn FnMut(Option<&str>) -> ExtensionResult<Option<String>>,
     ) -> ExtensionResult<()> {
-        let current = self.0.borrow().clone();
+        let current = self.raw.borrow().clone();
         let next = update(current.as_deref())?;
         if let Some(next) = next {
-            self.0.replace(Some(next));
+            self.raw.replace(Some(next));
         }
         Ok(())
     }
     fn with_lock_async<'a>(&'a self, update: AsyncLockUpdate<'a>) -> ExtensionFuture<'a, ()> {
         Box::pin(async move {
-            let current = self.0.borrow().clone();
-            if let Some(next) = update(current).await? {
-                self.0.replace(Some(next));
+            if self.failure == "awaited acquisition failed" {
+                return Err(self.failure.into());
+            }
+            let current = self.raw.borrow().clone();
+            let next = update(current.clone()).await?;
+            let owner = PENDING.with(|slot| slot.borrow().clone());
+            let accepted = owner.map(|owner| owner.get("author-pending")).transpose()?;
+            PENDING_UPDATES.with(|updates| {
+                updates
+                    .borrow_mut()
+                    .push(json!({"current":current,"next":next,"accepted":accepted}));
+            });
+            if self.failure == "awaited write failed" && next.is_some() {
+                return Err(self.failure.into());
+            }
+            if let Some(next) = next {
+                self.raw.replace(Some(next));
             }
             Ok(())
         })
@@ -55,7 +88,14 @@ pub(super) fn backend(api: &ExtensionAPI) -> ExtensionResult<Value> {
     let raw = Rc::new(RefCell::new(Some(
         r#"{"stored":{"type":"api_key","key":"first"},"untyped":null,"string":"opaque","number":1.5,"boolean":true,"object":{"type":"api_key","key":false},"array":[null,false],"oauth":{"type":"oauth","refresh":"r","access":"a","expires":42.5,"extra":["x","x"]}}"#.into(),
     )));
-    let owner = AuthStorage::from_storage(api, Rc::new(Backend(raw.clone())))?;
+    let owner = AuthStorage::from_storage(
+        api,
+        Rc::new(Backend {
+            raw: raw.clone(),
+            _capture: None,
+            failure: "",
+        }),
+    )?;
     owner.reload()?;
     let before = owner.get("stored")?;
     owner.set(
@@ -125,17 +165,17 @@ thread_local! {
     static PENDING: RefCell<Option<AuthStorage>> = const { RefCell::new(None) };
     /// Raw backend text remains independently observable after its credential resource retires.
     static RAW: RefCell<Option<Rc<RefCell<Option<String>>>>> = const { RefCell::new(None) };
+    /// Backend and fallback captures retire only when the admitted request settles.
+    static PENDING_DROPS: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
+    /// Actual borrowed-update results and accepted state before a backend replies.
+    static PENDING_UPDATES: RefCell<Vec<Value>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Retains, consumes or releases credentials independently of an already-admitted key request.
 pub(super) async fn pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
     match request {
-        "create" => {
-            let raw = Rc::new(RefCell::new(Some(r#"{"author-pending":{"type":"oauth","refresh":"original-refresh","access":"old","expires":0},"unknown":[null,false,2]}"#.into())));
-            let owner = AuthStorage::from_storage(api, Rc::new(Backend(raw.clone())))?;
-            PENDING.with(|slot| slot.replace(Some(owner)));
-            RAW.with(|slot| slot.replace(Some(raw)));
-            Ok(json!("retained"))
+        "create" | "create-acquire" | "create-write" | "create-reread" => {
+            retain_pending(api, request)
         }
         "key" => {
             let owner = PENDING
@@ -148,6 +188,20 @@ pub(super) async fn pending(api: &ExtensionAPI, request: &str) -> ExtensionResul
             PENDING.with(RefCell::take);
             Ok(json!("released"))
         }
+        "counts" => Ok(PENDING_DROPS.with(|drops| json!(*drops.borrow()))),
+        "updates" => Ok(PENDING_UPDATES.with(|updates| json!(*updates.borrow()))),
+        "stored" => {
+            let owner = PENDING
+                .with(|slot| slot.borrow().clone())
+                .ok_or("missing pending owner")?;
+            Ok(json!(owner.get("author-pending")?))
+        }
+        "text" => {
+            let raw = RAW
+                .with(|slot| slot.borrow().clone())
+                .ok_or("missing raw backend")?;
+            Ok(json!(*raw.borrow()))
+        }
         "raw" => {
             let raw = RAW
                 .with(|slot| slot.borrow().clone())
@@ -157,4 +211,34 @@ pub(super) async fn pending(api: &ExtensionAPI, request: &str) -> ExtensionResul
         }
         _ => Err("unknown pending credential operation".into()),
     }
+}
+
+/// Constructs the retained backend before selecting an independent awaited failure.
+fn retain_pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
+    let raw = Rc::new(RefCell::new(Some(r#"{"author-pending":{"type":"oauth","refresh":"original-refresh","access":"old","expires":0},"unknown":[null,false,2]}"#.into())));
+    PENDING_DROPS.with(|drops| drops.borrow_mut().clear());
+    PENDING_UPDATES.with(|updates| updates.borrow_mut().clear());
+    let owner = AuthStorage::from_storage(
+        api,
+        Rc::new(Backend {
+            raw: raw.clone(),
+            _capture: Some(PendingCapture("backend")),
+            failure: match request {
+                "create-acquire" => "awaited acquisition failed",
+                "create-write" => "awaited write failed",
+                _ => "",
+            },
+        }),
+    )?;
+    let capture = PendingCapture("fallback");
+    owner.set_fallback_resolver(Rc::new(move |_| {
+        let _capture = &capture;
+        Ok(None)
+    }))?;
+    PENDING.with(|slot| slot.replace(Some(owner)));
+    if request == "create-reread" {
+        raw.replace(Some(" \n{\"unknown\":[null,false,2]} \n".into()));
+    }
+    RAW.with(|slot| slot.replace(Some(raw)));
+    Ok(json!("retained"))
 }
