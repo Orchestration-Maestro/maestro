@@ -32,7 +32,7 @@ pub(super) async fn command(
     args: &str,
 ) -> Option<ExtensionResult<()>> {
     if let Some(request) = args.strip_prefix("builtin-custom-read ") {
-        let result = super::builtin_read::execute(api, (**context).clone(), request).await;
+        let result = super::builtin_read::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));
     }
     args.strip_prefix("builtin-register-renderer ")

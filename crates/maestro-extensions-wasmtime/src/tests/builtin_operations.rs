@@ -367,3 +367,104 @@ impl maestro_extensions::ReadContext for ReadModel {
         Some(std::sync::Arc::new(self.0.clone()))
     }
 }
+
+/// Image fitting and the call-time model are independent, including undecodable input.
+#[test]
+fn builtin_images_keep_resize_and_model_policy_independent() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for resize in [None, Some(true), Some(false)] {
+            for vision in [None, Some(false), Some(true)] {
+                observe_image_case(&runner, resize, vision).await;
+            }
+        }
+    });
+}
+
+/// Changes the supplied model only after construction, before the definition is invoked.
+async fn observe_image_case(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    resize: Option<bool>,
+    vision: Option<bool>,
+) {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    for bytes in [include_bytes!("read_resize.png").as_slice(), &[0, 255, 42]] {
+        let current = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let selected = current.clone();
+        bind_read_model(
+            runner,
+            std::rc::Rc::new(move || Ok(selected.borrow().clone())),
+        );
+        let (started, release) = read_gate(runner);
+        let request =
+            json!({"detect":true,"mime":"image/png","bytes":bytes,"resize":resize,"before":true});
+        let waiting = Box::pin((command.handler)(
+            format!("builtin-custom-read {request}"),
+            runner.create_command_context(),
+        ));
+        let waiting = match futures_util::future::select(waiting, started).await {
+            futures_util::future::Either::Left(_) => {
+                panic!("read completed before the post-construction gate")
+            }
+            futures_util::future::Either::Right((started, waiting)) => {
+                started.unwrap();
+                waiting
+            }
+        };
+        let model = read_model(vision);
+        *current.borrow_mut() = model.clone();
+        release.send(()).unwrap();
+        let observed: serde_json::Value =
+            serde_json::from_str(&waiting.await.unwrap_err().to_string()).unwrap();
+        let expected = native_read_case(&request, model).await;
+        assert_eq!(observed["result"], expected, "{resize:?}, {vision:?}");
+        let text = expected["content"][0]["text"].as_str().unwrap();
+        assert_eq!(
+            text.contains("Current model does not support images"),
+            vision == Some(false)
+        );
+        assert_eq!(
+            text.contains("original 2400x3, displayed at 2000x3"),
+            bytes.len() > 3 && resize != Some(false)
+        );
+        assert_eq!(
+            expected["content"].as_array().unwrap().len(),
+            if bytes.len() == 3 && resize != Some(false) {
+                1
+            } else {
+                2
+            }
+        );
+    }
+}
+
+/// Supplies a completion gate through the real command-context owner, with no timer.
+fn read_gate(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+) -> (
+    tokio::sync::oneshot::Receiver<()>,
+    tokio::sync::oneshot::Sender<()>,
+) {
+    let (start, started) = tokio::sync::oneshot::channel();
+    let (release, released) = tokio::sync::oneshot::channel();
+    let gate = std::cell::RefCell::new(Some((start, released)));
+    runner.bind_command_context(Some(
+        maestro_extensions::ExtensionCommandContextActions::new(
+            maestro_extensions::CommandContextOperations {
+                wait_for_idle: std::rc::Rc::new(move || {
+                    let (start, released) = gate.borrow_mut().take().unwrap();
+                    Box::pin(async move {
+                        start.send(()).unwrap();
+                        released.await?;
+                        Ok(())
+                    })
+                }),
+                ..crate::context_actions::silent_command_operations()
+            },
+        ),
+    ));
+    (started, release)
+}

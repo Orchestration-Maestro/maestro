@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    ExtensionAPI, ExtensionContext, ExtensionResult, ReadOperations, ReadToolOptions,
+    ExtensionAPI, ExtensionCommandContext, ExtensionResult, ReadOperations, ReadToolOptions,
 };
 use serde::Deserialize;
 use std::{cell::RefCell, rc::Rc};
@@ -26,6 +26,9 @@ struct Request {
     /// Uses the four-argument executable instead of the context-bearing definition.
     #[serde(default)]
     executable: bool,
+    /// Parks after construction so the caller can change the model before execution.
+    #[serde(default)]
+    before: bool,
 }
 /// Records the native arguments to every supplied observation.
 type Calls = Rc<RefCell<Vec<serde_json::Value>>>;
@@ -33,12 +36,13 @@ type Calls = Rc<RefCell<Vec<serde_json::Value>>>;
 /// Invokes the returned definition after its synchronous factory has returned.
 pub(super) async fn execute(
     api: &ExtensionAPI,
-    context: ExtensionContext,
+    context: ExtensionCommandContext,
     request: &str,
 ) -> ExtensionResult<String> {
     let request: Request = serde_json::from_str(request).map_err(|error| error.to_string())?;
     let calls = Calls::default();
     let executable = request.executable;
+    let before = request.before;
     let options = ReadToolOptions {
         auto_resize_images: request.resize,
         operations: Some(operations(request, &calls)),
@@ -46,15 +50,21 @@ pub(super) async fn execute(
     let args = serde_json::json!({"path":"雪.bin"});
     let (prepares, result) = if executable {
         let tool = api.create_read_tool("/virtual".into(), options)?;
+        if before {
+            context.wait_for_idle().await?;
+        }
         (
             tool.prepare_arguments.is_some(),
             (tool.execute)("custom-read".into(), args, None, None).await,
         )
     } else {
         let tool = api.create_read_tool_definition("/virtual".into(), options)?;
+        if before {
+            context.wait_for_idle().await?;
+        }
         (
             tool.prepare_arguments.is_some(),
-            (tool.execute)("custom-read".into(), args, None, None, context).await,
+            (tool.execute)("custom-read".into(), args, None, None, (*context).clone()).await,
         )
     };
     let mut response = serde_json::json!({"calls":*calls.borrow(),"prepares":prepares});
