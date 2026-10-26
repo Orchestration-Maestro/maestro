@@ -12,7 +12,7 @@ use std::sync::{Arc, mpsc};
 /// A catchable result after native registration or action dispatch.
 type Reply<T> = mpsc::Sender<Result<T, String>>;
 
-/// Callback-independent operations on the original extension API.
+/// Operations on the original extension API and its current runtime.
 pub(crate) enum Request {
     /// Registers a provider through the facade's loading or bound action route.
     RegisterProvider(

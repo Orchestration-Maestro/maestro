@@ -46,7 +46,7 @@ pub(crate) enum Message {
     ),
     /// Immediately resolve and invoke the registered native model adapter.
     ModelStart(model_streams::Creation),
-    /// Sets up a registered guest provider for a threaded native caller.
+    /// Routes registered-provider setup and native hook calls.
     Provider(provider_controls::Command),
     /// Operate on its original assistant FIFO and independent result.
     ModelStream(u64, model_streams::Request),

@@ -15,7 +15,7 @@ pub(crate) trait ApiView: WasiView {
     fn api(&self) -> &Endpoint;
 }
 
-/// Installs callback-independent registration and runtime action imports.
+/// Installs provider registration and runtime action imports.
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
