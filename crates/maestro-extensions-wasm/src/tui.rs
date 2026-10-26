@@ -155,14 +155,26 @@ pub type FooterFactory = Rc<
 >;
 
 /// Opaque original row retained by the active adapter, never reconstructed by an author.
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::NativeRow;
+/// let _ = NativeRow {};
+/// ```
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct NativeRow {
     /// Component adapter's independently retained original row.
     #[cfg(target_arch = "wasm32")]
     pub(crate) handle: Rc<crate::bindings::maestro::extension::host::NativeRow>,
 }
 /// Opaque original component identity retained by the active adapter.
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::NativeComponent;
+/// let _ = NativeComponent {};
+/// ```
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct NativeComponent {
     /// Component adapter's independently retained original view.
     #[cfg(target_arch = "wasm32")]
