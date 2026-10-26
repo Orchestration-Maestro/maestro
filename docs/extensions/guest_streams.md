@@ -144,3 +144,8 @@ observer and stream alias leaves the native producer running; finishing one
 producer cannot release another invocation's uncalled hooks. Explicit `push`
 and `end` on a returned stream use its original native buffer. Ending that
 buffer does not cancel its independently owned producer.
+
+Hook phases remain protocol-owned. Public and cloud content generation do not
+invoke a response hook. Response-session retries invoke the original response
+callback on each native attempt; a rejected attempt releases its body without
+polling it before the native retry consumes a later response.

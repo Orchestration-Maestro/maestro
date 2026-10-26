@@ -56,3 +56,5 @@ mod model_hook_gates;
 mod model_signal_selection;
 
 mod model_lifetimes;
+
+mod model_protocol_routes;

@@ -85,6 +85,10 @@ mod model_finite;
 #[path = "context_bridge/model_lifetimes.rs"]
 mod model_lifetimes;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_protocol_routes.rs"]
+mod model_protocol_routes;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -196,6 +200,9 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if args == "model-protocol-routes" {
+        return Box::pin(async { Err(model_protocol_routes::command().await?) });
+    }
     if let Some(request) = args.strip_prefix("model-retained ") {
         let result = model_lifetimes::start(&api, &context, request);
         return Box::pin(async move { Err(result?) });
