@@ -552,6 +552,29 @@ pub trait Imports: Clone + 'static {
     fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
     /// Reads the host editor's current text.
     fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Reads the UI's live theme.
+    fn ui_theme(&self, resource: &Self::Ui) -> ExtensionResult<Self::Theme>;
+    /// Lists every available theme.
+    fn ui_get_all_themes(&self, resource: &Self::Ui) -> ExtensionResult<Vec<crate::ThemeInfo>>;
+    /// Loads a theme by name without selecting it.
+    fn ui_get_theme(&self, resource: &Self::Ui, name: &str)
+    -> ExtensionResult<Option<Self::Theme>>;
+    /// Selects a theme by name.
+    fn ui_set_theme_name(
+        &self,
+        resource: &Self::Ui,
+        name: &str,
+    ) -> ExtensionResult<crate::ThemeSetResult>;
+    /// Selects a retained host theme.
+    fn ui_set_theme(
+        &self,
+        resource: &Self::Ui,
+        theme: &Self::Theme,
+    ) -> ExtensionResult<crate::ThemeSetResult>;
+    /// Reads whether tool output is expanded.
+    fn ui_get_tools_expanded(&self, resource: &Self::Ui) -> ExtensionResult<bool>;
+    /// Forwards the tool output expansion.
+    fn ui_set_tools_expanded(&self, resource: &Self::Ui, expanded: bool) -> ExtensionResult<()>;
     /// Adds the terminal input listener under `handler`, returning its host remover.
     fn ui_on_terminal_input(
         &self,

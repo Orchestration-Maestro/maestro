@@ -316,6 +316,31 @@ fn ui_call(
 ) -> ExtensionResult<()> {
     super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)
 }
+/// A selection result as success and its optional message.
+fn theme_set_result(result: &serde_json::Value) -> crate::ThemeSetResult {
+    crate::ThemeSetResult {
+        success: result[0] == true,
+        error: result[1].as_str().map(str::to_owned),
+    }
+}
+
+impl Controlled {
+    /// Records one theme request on `resource` and answers it from the controlled host.
+    fn ui_themed(
+        &self,
+        resource: &Ui,
+        method: &str,
+        operand: &serde_json::Value,
+    ) -> ExtensionResult<serde_json::Value> {
+        super::ui_host::themed(
+            &mut self.observed.borrow_mut(),
+            resource.key,
+            method,
+            operand,
+        )
+    }
+}
+
 /// Records one dialog through the controlled host, waits while it is held pending, records
 /// whether its signal is aborted by then and answers its supplied decision.
 async fn ui_dialog(
@@ -1110,6 +1135,44 @@ impl Imports for Controlled {
     }
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
+    fn ui_theme(&self, resource: &Ui) -> ExtensionResult<Theme> {
+        let key = self.ui_themed(resource, "theme", &serde_json::Value::Null)?;
+        Ok(self.theme(key.as_str().unwrap_or_default()))
+    }
+    fn ui_get_all_themes(&self, resource: &Ui) -> ExtensionResult<Vec<crate::ThemeInfo>> {
+        self.ui_themed(resource, "getAllThemes", &serde_json::Value::Null)?;
+        Ok(super::ui_host::THEMES
+            .iter()
+            .map(|(name, path)| crate::ThemeInfo {
+                name: (*name).to_owned(),
+                path: path.map(str::to_owned),
+            })
+            .collect())
+    }
+    fn ui_get_theme(&self, resource: &Ui, name: &str) -> ExtensionResult<Option<Theme>> {
+        let loaded = self.ui_themed(resource, "getTheme", &json!(name))?;
+        Ok(loaded.as_str().map(|key| self.theme(key)))
+    }
+    fn ui_set_theme_name(
+        &self,
+        resource: &Ui,
+        name: &str,
+    ) -> ExtensionResult<crate::ThemeSetResult> {
+        let result = self.ui_themed(resource, "setThemeName", &json!(name))?;
+        Ok(theme_set_result(&result))
+    }
+    fn ui_set_theme(&self, resource: &Ui, theme: &Theme) -> ExtensionResult<crate::ThemeSetResult> {
+        let result = self.ui_themed(resource, "setTheme", &json!(theme.key))?;
+        Ok(theme_set_result(&result))
+    }
+    fn ui_get_tools_expanded(&self, resource: &Ui) -> ExtensionResult<bool> {
+        let expanded = self.ui_themed(resource, "getToolsExpanded", &serde_json::Value::Null)?;
+        Ok(expanded == true)
+    }
+    fn ui_set_tools_expanded(&self, resource: &Ui, expanded: bool) -> ExtensionResult<()> {
+        self.ui_themed(resource, "setToolsExpanded", &json!(expanded))
+            .map(drop)
     }
     fn ui_on_terminal_input(
         &self,

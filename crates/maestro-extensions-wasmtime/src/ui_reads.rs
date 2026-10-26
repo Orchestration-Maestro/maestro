@@ -38,6 +38,8 @@ pub(crate) enum Request {
     SetEditorText(String, Reply),
     /// Reads the original editor's current text.
     GetEditorText(Sender<Result<String, String>>),
+    /// Looks up, selects or reports themes and tool expansion on the original UI.
+    Theme(crate::ui_themes::ThemeRequest),
     /// Adds an authored terminal input listener under the original extension.
     OnTerminalInput(
         crate::guest_calls::Handle,
@@ -56,6 +58,10 @@ impl Request {
         let (result, reply) = match self {
             Self::OnTerminalInput(handler, api, reply) => {
                 let _ = reply.send(registry.terminal_input(ui, handler, &api));
+                return;
+            }
+            Self::Theme(request) => {
+                request.answer(ui, registry);
                 return;
             }
             Self::Notify(message, kind, reply) => (ui.notify(message, kind), reply),
@@ -88,6 +94,7 @@ impl Request {
             Self::OnTerminalInput(_, _, reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
+            Self::Theme(request) => request.reject(error),
             Self::Notify(_, _, reply)
             | Self::Status(_, _, reply)
             | Self::WorkingMessage(_, reply)

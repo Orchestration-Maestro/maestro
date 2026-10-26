@@ -840,3 +840,160 @@ async fn terminal_input(driver: &mut impl Driver) -> Result<(), String> {
 fn terminal_input_keeps_transform_consume_and_removal() -> Result<(), String> {
     on_both_adapters!(terminal_input)
 }
+
+/// Runs one theme or tool expansion request through a fresh acquisition and returns the
+/// author's answer with the host's receipts as method and operands.
+async fn theme_request(
+    driver: &mut impl Driver,
+    call: &Value,
+) -> Result<(Value, Vec<(String, Value)>), String> {
+    let from = driver.transcript().len();
+    let answer = operate(driver, json!({ "op": "theme", "call": call })).await?;
+    let seen = receipts(&driver.transcript()[from..])
+        .into_iter()
+        .map(|seen| (seen.method, seen.operands))
+        .collect();
+    Ok((answer, seen))
+}
+
+/// The answer of one theme request, which must reach the host as `method` with `operand`.
+async fn ui_themed(
+    driver: &mut impl Driver,
+    call: Value,
+    method: &str,
+    operand: Value,
+) -> Result<Value, String> {
+    let (answer, seen) = theme_request(driver, &call).await?;
+    assert_eq!(
+        seen.first(),
+        Some(&(method.to_owned(), json!([operand]))),
+        "{call}"
+    );
+    Ok(answer)
+}
+
+/// Listing keeps the host's order and absent paths, and loading reads a theme without
+/// selecting it.
+async fn theme_lookup(driver: &mut impl Driver) -> Result<(), String> {
+    let current = json!({ "op": "current" });
+    assert_eq!(
+        ui_themed(driver, current.clone(), "theme", Value::Null).await?,
+        json!({ "ok": "dark" })
+    );
+    let all = ui_themed(
+        driver,
+        json!({ "op": "getAllThemes" }),
+        "getAllThemes",
+        Value::Null,
+    )
+    .await?;
+    assert_eq!(
+        all,
+        json!({ "ok": [
+            { "name": "alternate", "path": "/authored/theme.json" },
+            { "name": "dark", "path": "/themes/dark.json" },
+            { "name": "plain", "path": null },
+        ] })
+    );
+    let load = json!({ "op": "getTheme", "name": "alternate" });
+    assert_eq!(
+        ui_themed(driver, load, "getTheme", json!("alternate")).await?,
+        json!({ "ok": "alternate" })
+    );
+    let missing = json!({ "op": "getTheme", "name": "missing" });
+    assert_eq!(
+        ui_themed(driver, missing, "getTheme", json!("missing")).await?,
+        json!({ "ok": null })
+    );
+    assert_eq!(
+        ui_themed(driver, current, "theme", Value::Null).await?,
+        json!({ "ok": "dark" }),
+        "loading did not select"
+    );
+    Ok(())
+}
+
+/// Selecting by name and selecting a retained theme reach the host as distinct requests, each
+/// with its own result.
+async fn theme_selection(driver: &mut impl Driver) -> Result<(), String> {
+    let current = json!({ "op": "current" });
+    let by_name = json!({ "op": "setThemeName", "name": "alternate" });
+    assert_eq!(
+        ui_themed(driver, by_name, "setThemeName", json!("alternate")).await?,
+        json!({ "ok": { "success": true, "error": null } })
+    );
+    assert_eq!(
+        ui_themed(driver, current.clone(), "theme", Value::Null).await?,
+        json!({ "ok": "alternate" })
+    );
+    let missing = json!({ "op": "setThemeName", "name": "missing" });
+    assert_eq!(
+        ui_themed(driver, missing, "setThemeName", json!("missing")).await?,
+        json!({ "ok": { "success": false, "error": "Theme not found: missing" } })
+    );
+    let (answer, seen) =
+        theme_request(driver, &json!({ "op": "setLoaded", "name": "quantized" })).await?;
+    assert_eq!(answer, json!({ "ok": { "success": true, "error": null } }));
+    let methods: Vec<_> = seen
+        .iter()
+        .map(|(method, operands)| (method.as_str(), operands.clone()))
+        .collect();
+    assert_eq!(
+        methods,
+        [
+            ("getTheme", json!(["quantized"])),
+            ("setTheme", json!(["quantized"]))
+        ]
+    );
+    assert_eq!(
+        ui_themed(driver, current, "theme", Value::Null).await?,
+        json!({ "ok": "dark" }),
+        "the quantized palette is named dark"
+    );
+    Ok(())
+}
+
+/// Tool expansion changes both ways through the host.
+async fn tool_expansion(driver: &mut impl Driver) -> Result<(), String> {
+    for expanded in [true, false] {
+        let get = json!({ "op": "getToolsExpanded" });
+        assert_eq!(
+            ui_themed(driver, get.clone(), "getToolsExpanded", Value::Null).await?,
+            json!({ "ok": !expanded })
+        );
+        let set = json!({ "op": "setToolsExpanded", "expanded": expanded });
+        assert_eq!(
+            ui_themed(driver, set, "setToolsExpanded", json!(expanded)).await?,
+            json!({ "ok": null })
+        );
+        assert_eq!(
+            ui_themed(driver, get, "getToolsExpanded", Value::Null).await?,
+            json!({ "ok": expanded })
+        );
+    }
+    Ok(())
+}
+
+/// Theme lookup and selection, and tool expansion both ways, use the host.
+async fn theme_requests(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    theme_lookup(driver).await?;
+    theme_selection(driver).await?;
+    tool_expansion(driver).await?;
+    let control = json!({ "op": "control", "error": "themes 雪\nlocked" });
+    assert_eq!(operate(driver, control).await?, json!("controlled"));
+    let by_name = json!({ "op": "setThemeName", "name": "dark" });
+    assert_eq!(
+        operate(driver, json!({ "op": "theme", "call": by_name })).await?,
+        json!({ "error": "themes 雪\nlocked" }),
+        "a rejection is not a failed selection"
+    );
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0, "no UI or theme resource stays lent");
+    Ok(())
+}
+
+#[test]
+fn theme_lookup_selection_and_tool_expansion_use_host() -> Result<(), String> {
+    on_both_adapters!(theme_requests)
+}

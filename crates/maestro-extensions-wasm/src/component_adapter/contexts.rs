@@ -10,7 +10,8 @@ use super::{model_registry::registry, session::decode};
 use crate::{
     ContextUsage, ExtensionUIContext, ExtensionUIContextPort, ExtensionUIDialogOptions,
     ExtensionWidgetOptions, Model, ModelRegistry, NotificationType, ReadonlySessionManager,
-    Subscription, TerminalInputHandler, WorkingIndicatorOptions,
+    Subscription, TerminalInputHandler, Theme, ThemeInfo, ThemeSelection, ThemeSetResult,
+    WorkingIndicatorOptions,
 };
 /// Independently retained UI resource.
 struct Ui<I: Imports> {
@@ -80,6 +81,34 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     }
     fn get_editor_text(&self) -> ExtensionResult<String> {
         self.imports.ui_get_editor_text(&self.resource)
+    }
+    fn theme(&self) -> ExtensionResult<Theme> {
+        let theme = self.imports.ui_theme(&self.resource)?;
+        Ok(super::theme::theme(self.imports.clone(), theme))
+    }
+    fn get_all_themes(&self) -> ExtensionResult<Vec<ThemeInfo>> {
+        self.imports.ui_get_all_themes(&self.resource)
+    }
+    fn get_theme(&self, name: &str) -> ExtensionResult<Option<Theme>> {
+        let theme = self.imports.ui_get_theme(&self.resource, name)?;
+        Ok(theme.map(|theme| super::theme::theme(self.imports.clone(), theme)))
+    }
+    fn set_theme(&self, theme: ThemeSelection) -> ExtensionResult<ThemeSetResult> {
+        match theme {
+            ThemeSelection::Name(name) => self.imports.ui_set_theme_name(&self.resource, &name),
+            ThemeSelection::Theme(theme) => {
+                let retained = theme
+                    .host::<super::theme::Retained<I>>()
+                    .ok_or("the theme was not supplied by the host")?;
+                self.imports.ui_set_theme(&self.resource, &retained.theme)
+            }
+        }
+    }
+    fn get_tools_expanded(&self) -> ExtensionResult<bool> {
+        self.imports.ui_get_tools_expanded(&self.resource)
+    }
+    fn set_tools_expanded(&self, expanded: bool) -> ExtensionResult<()> {
+        self.imports.ui_set_tools_expanded(&self.resource, expanded)
     }
     fn on_terminal_input(&self, handler: TerminalInputHandler) -> ExtensionResult<Subscription> {
         let identity = Identity::new(&self.imports);

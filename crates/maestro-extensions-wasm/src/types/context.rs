@@ -83,6 +83,18 @@ port! {
         fn get_editor_text() -> String;
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
+        /// The UI's live theme; it observes later selections.
+        fn theme() -> crate::Theme;
+        /// Every available theme, in the host's order.
+        fn get_all_themes() -> Vec<crate::ThemeInfo>;
+        /// Loads a theme by name without selecting it.
+        fn get_theme(name: &str) -> Option<crate::Theme>;
+        /// Selects a theme by name or a retained host theme.
+        fn set_theme(theme: crate::ThemeSelection) -> crate::ThemeSetResult;
+        /// Reads whether tool output is expanded.
+        fn get_tools_expanded() -> bool;
+        /// Expands or collapses tool output.
+        fn set_tools_expanded(expanded: bool) -> ();
     }
     owned {
         /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.

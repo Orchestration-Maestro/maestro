@@ -473,3 +473,139 @@ fn canonical_terminal_input_reaches_listeners_and_removal() {
         bus.clear();
     });
 }
+
+/// Application themes published through one live view, with the tool expansion.
+struct Themes {
+    /// The published theme the live view reads.
+    state: maestro_theme::ThemeState,
+    /// Loadable themes by name, in the host's order.
+    loadable: Vec<(String, Rc<maestro_theme::Theme>)>,
+    /// Tool output expansion.
+    expanded: std::cell::Cell<bool>,
+}
+impl Themes {
+    /// A host listing `dark` and `light`, with `dark` published.
+    fn new() -> Self {
+        let theme = |name: &str| {
+            let options = maestro_theme::ThemeOptions {
+                name: Some(name.into()),
+                source_path: (name == "dark").then(|| "/themes/dark.json".into()),
+                source_info: None,
+            };
+            Rc::new(
+                maestro_theme::Theme::new([], [], maestro_theme::ColorMode::Truecolor, options)
+                    .unwrap(),
+            )
+        };
+        let loadable = vec![
+            ("light".to_owned(), theme("light")),
+            ("dark".to_owned(), theme("dark")),
+        ];
+        let directories = maestro_theme::ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: String::new(),
+        };
+        let state = maestro_theme::ThemeState::new(directories);
+        state.set_theme_instance(loadable[1].1.clone()).unwrap();
+        Self {
+            state,
+            loadable,
+            expanded: std::cell::Cell::default(),
+        }
+    }
+    /// The loadable theme `name`.
+    fn find(&self, name: &str) -> Option<Rc<maestro_theme::Theme>> {
+        self.loadable
+            .iter()
+            .find(|(it, _)| it == name)
+            .map(|(_, theme)| theme.clone())
+    }
+}
+impl ExtensionUIContextPort for Themes {
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        self.state.theme()
+    }
+    fn get_all_themes(&self) -> Result<Vec<maestro_theme::ThemeInfo>, EventError> {
+        let info = |(name, theme): &(String, Rc<maestro_theme::Theme>)| maestro_theme::ThemeInfo {
+            name: name.clone(),
+            path: theme.source_path().map(str::to_owned),
+        };
+        Ok(self.loadable.iter().map(info).collect())
+    }
+    fn get_theme(&self, name: String) -> Result<Option<Rc<maestro_theme::Theme>>, EventError> {
+        Ok(self.find(&name))
+    }
+    fn set_theme(
+        &self,
+        theme: maestro_extensions::types::ThemeSelection,
+    ) -> Result<maestro_extensions::types::ThemeSetResult, EventError> {
+        let theme = match theme {
+            maestro_extensions::types::ThemeSelection::Name(name) => self.find(&name),
+            maestro_extensions::types::ThemeSelection::Theme(live) => live.get().ok(),
+        };
+        let success = theme.is_some_and(|theme| self.state.set_theme_instance(theme).is_ok());
+        let error = (!success).then(|| "Theme not found".to_owned());
+        Ok(maestro_extensions::types::ThemeSetResult { success, error })
+    }
+    fn get_tools_expanded(&self) -> Result<bool, EventError> {
+        Ok(self.expanded.get())
+    }
+    fn set_tools_expanded(&self, expanded: bool) -> Result<(), EventError> {
+        self.expanded.set(expanded);
+        Ok(())
+    }
+}
+
+#[test]
+fn canonical_themes_and_tool_expansion_reach_the_original_ui() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        runner.set_ui_context(Some(ExtensionUIContext::new(Rc::new(Themes::new()))));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        for (request, expected) in [
+            ("current", json!("dark")),
+            (
+                "all",
+                json!([["light", null], ["dark", "/themes/dark.json"]]),
+            ),
+            ("load light", json!("light")),
+            ("current", json!("dark")),
+            ("load missing", Value::Null),
+            ("select light", json!([true, null])),
+            ("current", json!("light")),
+            ("select missing", json!([false, "Theme not found"])),
+            ("select-loaded dark", json!([true, null])),
+            ("current", json!("dark")),
+            ("expanded", json!(false)),
+            ("expand true", Value::Null),
+            ("expanded", json!(true)),
+            ("expand false", Value::Null),
+            ("expanded", json!(false)),
+        ] {
+            let answer = handler(
+                format!("ui theme {request}"),
+                runner.create_command_context(),
+            )
+            .await
+            .unwrap_err()
+            .to_string();
+            assert_eq!(
+                serde_json::from_str::<Value>(&answer).unwrap(),
+                expected,
+                "{request}"
+            );
+        }
+        bus.clear();
+    });
+}

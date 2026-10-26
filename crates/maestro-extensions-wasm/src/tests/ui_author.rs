@@ -13,8 +13,8 @@ use maestro_extensions_wasm::{
     AbortListener, AbortSignal, CallbackEmitter, CallbackEmitterPort, CommandOptions,
     CompactOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionResult,
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, NotificationType,
-    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, WidgetPlacement,
-    WorkingIndicatorOptions,
+    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, ThemeSelection,
+    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -152,6 +152,71 @@ pub enum Call {
     },
     /// Reads the host editor's text.
     GetEditorText,
+}
+
+/// One theme or tool expansion request.
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "camelCase")]
+pub enum ThemeCall {
+    /// Reads the name of the UI's live theme.
+    Current,
+    /// Lists every available theme.
+    GetAllThemes,
+    /// Loads a theme and reads its name.
+    GetTheme {
+        /// Literal theme name.
+        name: String,
+    },
+    /// Selects a theme by name.
+    SetThemeName {
+        /// Literal theme name.
+        name: String,
+    },
+    /// Loads a theme, then selects that retained theme.
+    SetLoaded {
+        /// Literal theme name.
+        name: String,
+    },
+    /// Reads the tool output expansion.
+    GetToolsExpanded,
+    /// Changes the tool output expansion.
+    SetToolsExpanded {
+        /// Requested expansion.
+        expanded: bool,
+    },
+}
+
+/// A selection result as its two members.
+fn selected(result: &ThemeSetResult) -> Value {
+    json!({ "success": result.success, "error": result.error })
+}
+
+/// Runs one theme or tool expansion request through the supplied handle.
+fn themes(ui: &ExtensionUIContext, call: ThemeCall) -> ExtensionResult<Value> {
+    Ok(match call {
+        ThemeCall::Current => json!(ui.theme()?.name()?),
+        ThemeCall::GetAllThemes => {
+            let themes = ui.get_all_themes()?.into_iter();
+            json!(
+                themes
+                    .map(|it| json!({ "name": it.name, "path": it.path }))
+                    .collect::<Vec<_>>()
+            )
+        }
+        ThemeCall::GetTheme { name } => {
+            json!(ui.get_theme(&name)?.map(|it| it.name()).transpose()?)
+        }
+        ThemeCall::SetThemeName { name } => selected(&ui.set_theme(ThemeSelection::Name(name))?),
+        ThemeCall::SetLoaded { name } => {
+            let theme = ui.get_theme(&name)?.ok_or("no theme to select")?;
+            selected(&ui.set_theme(ThemeSelection::Theme(theme))?)
+        }
+        ThemeCall::GetToolsExpanded => json!(ui.get_tools_expanded()?),
+        ThemeCall::SetToolsExpanded { expanded } => {
+            ui.set_tools_expanded(expanded)?;
+            Value::Null
+        }
+    })
 }
 
 /// Which caller signal a dialog receives.
@@ -444,6 +509,11 @@ enum Operation {
         /// The dialog.
         call: Dialog,
     },
+    /// Runs a theme or tool expansion request through a fresh acquisition.
+    Theme {
+        /// The request.
+        call: ThemeCall,
+    },
     /// Adds a labelled terminal input listener through a fresh acquisition.
     Listen {
         /// Listener label.
@@ -538,6 +608,7 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
         Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
         Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
+        Operation::Theme { call } => caught(themes(&ctx.ui()?, call).map(Some)),
         Operation::Listen { label } => caught(listen(ctx, label).map(Some)),
         Operation::Unlisten { label } => caught(stop_listening(&label, true).map(Some)),
         Operation::Forget { label } => caught(stop_listening(&label, false).map(Some)),

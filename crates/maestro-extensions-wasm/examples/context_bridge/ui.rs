@@ -6,8 +6,8 @@
 )]
 use maestro_extensions_wasm::{
     AbortSignal, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, NotificationType, Subscription, TerminalInputResult, WidgetPlacement,
-    WorkingIndicatorOptions,
+    ExtensionWidgetOptions, NotificationType, Subscription, TerminalInputResult, ThemeSelection,
+    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -19,6 +19,9 @@ pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult
     }
     if let Some(request) = args.strip_prefix("ui terminal ") {
         return terminal(context, request);
+    }
+    if let Some(request) = args.strip_prefix("ui theme ") {
+        return themes(context, request);
     }
     let clear = args == "ui clear";
     let ui = context.ui()?;
@@ -75,6 +78,31 @@ pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> Extensi
         }
         Some("input") => json!(ui.input(title, text("placeholder"), opts).await?),
         _ => json!(ui.editor(title, text("prefill")).await?),
+    };
+    Ok(answer.to_string())
+}
+
+/// Runs the theme or tool expansion request `request` names and returns its answer as JSON.
+fn themes(context: &ExtensionContext, request: &str) -> ExtensionResult<String> {
+    let ui = context.ui()?;
+    let (action, operand) = request.split_once(' ').unwrap_or((request, ""));
+    let selected = |result: ThemeSetResult| json!([result.success, result.error]);
+    let answer = match action {
+        "current" => json!(ui.theme()?.name()?),
+        "all" => json!(
+            ui.get_all_themes()?
+                .into_iter()
+                .map(|it| (it.name, it.path))
+                .collect::<Vec<_>>()
+        ),
+        "load" => json!(ui.get_theme(operand)?.map(|it| it.name()).transpose()?),
+        "select" => selected(ui.set_theme(ThemeSelection::Name(operand.to_owned()))?),
+        "select-loaded" => {
+            let theme = ui.get_theme(operand)?.ok_or("no theme to select")?;
+            selected(ui.set_theme(ThemeSelection::Theme(theme))?)
+        }
+        "expanded" => json!(ui.get_tools_expanded()?),
+        _ => json!(ui.set_tools_expanded(operand == "true")?),
     };
     Ok(answer.to_string())
 }

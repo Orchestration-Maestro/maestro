@@ -404,6 +404,18 @@ anything it retains. Clones of the facade share the acquired resource, so a hand
 kept past its callback keeps reading that resource, and a second acquisition stays
 independent. Widget factories remain outside this interface.
 
+### Themes and tool expansion
+
+`theme` returns the UI's live theme, which reads the host's later selections.
+`get_all_themes` lists `ThemeInfo` records in the host's order, with an absent `path`
+for a theme without a file. `get_theme` loads a theme by name without selecting it and
+returns `None` for an unknown name. `set_theme` selects a theme with
+`ThemeSelection::Name` or a host-supplied `ThemeSelection::Theme` and returns the host's
+`ThemeSetResult`, whose `error` explains a selection that did not apply; a theme the
+author built itself cannot be passed back and returns an error. A host rejection is an
+error, not a failed selection. `get_tools_expanded` and `set_tools_expanded` read and
+change the tool output expansion.
+
 ### Terminal input
 
 `on_terminal_input` adds a listener that sees each raw chunk of terminal input before

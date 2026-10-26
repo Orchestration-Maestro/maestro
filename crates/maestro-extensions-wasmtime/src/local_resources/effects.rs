@@ -101,6 +101,14 @@ impl Registry {
             .map(SubscriptionEndpoint)
     }
 
+    /// The live theme behind a retained theme resource.
+    pub(crate) fn live_theme(&self, theme: &ThemeEndpoint) -> Result<LiveTheme, String> {
+        match self.capability(theme.0.id).as_deref() {
+            Some(Capability::Theme(theme)) => Ok(theme.clone()),
+            _ => Err("extension theme resource ended".to_owned()),
+        }
+    }
+
     /// Adds an authored terminal input listener to the original UI and retains its remover.
     pub(crate) fn terminal_input(
         &self,

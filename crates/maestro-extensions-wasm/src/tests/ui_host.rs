@@ -13,6 +13,7 @@ use serde_json::{Value, json};
 
 use super::host::{Flag, State};
 use super::observed::Observed;
+use super::renderer_host::Theme;
 use crate::bindings::host_side::maestro::extension::host;
 use wasmtime::component::{Accessor, Resource};
 
@@ -34,6 +35,51 @@ pub struct Bank {
     editors: HashMap<usize, String>,
     /// Decision the next dialog answers with; absent dismisses it.
     answer: Option<Value>,
+    /// Recorded palette the UI's live theme reads; absent reads the dark palette.
+    theme: Option<String>,
+    /// Whether tool output is expanded.
+    tools: bool,
+}
+
+/// The themes the host lists, in its order; one has no file.
+pub const THEMES: [(&str, Option<&str>); 3] = [
+    ("alternate", Some("/authored/theme.json")),
+    ("dark", Some("/themes/dark.json")),
+    ("plain", None),
+];
+
+/// Records one theme request against the acquisition `key`, then answers it from the host's
+/// state: the live palette, the listed themes, a loaded palette, a selection result or the
+/// tool expansion.
+pub fn themed(
+    observed: &mut Observed,
+    key: usize,
+    method: &str,
+    operand: &Value,
+) -> Result<Value, String> {
+    call(observed, key, method, &json!([operand]))?;
+    let known = |name: &str| super::theme_host::corpus().palettes.contains_key(name);
+    let ui = &mut observed.ui;
+    Ok(match method {
+        "theme" => json!(ui.theme.clone().unwrap_or_else(|| "dark".to_owned())),
+        "getAllThemes" => json!(THEMES),
+        "getTheme" => json!(operand.as_str().filter(|name| known(name))),
+        "setThemeName" | "setTheme" => match operand.as_str().filter(|name| known(name)) {
+            Some(name) => {
+                ui.theme = Some(name.to_owned());
+                json!([true, null])
+            }
+            None => json!([
+                false,
+                format!("Theme not found: {}", operand.as_str().unwrap_or_default())
+            ]),
+        },
+        "getToolsExpanded" => json!(ui.tools),
+        _ => {
+            ui.tools = operand.as_bool().unwrap_or_default();
+            Value::Null
+        }
+    })
 }
 
 /// A supplied refusal and the method it is limited to.
@@ -169,6 +215,14 @@ pub fn terminal_answer(answer: Result<Option<Decision>, String>) -> Value {
     }
 }
 
+/// A selection result as success and its optional message.
+pub fn set_result(result: &Value) -> host::ThemeSetResult {
+    host::ThemeSetResult {
+        success: result[0] == true,
+        error: result[1].as_str().map(str::to_owned),
+    }
+}
+
 /// The decision supplied for the dialog that is settling.
 pub fn decision(observed: &mut Observed) -> Value {
     observed.ui.answer.take().unwrap_or(Value::Null)
@@ -294,6 +348,22 @@ pub fn receipts(lines: &[String]) -> Vec<Receipt> {
 }
 
 impl State {
+    /// Records one theme request made through `this` and answers it from the host's state.
+    fn ui_themed(
+        &mut self,
+        this: &Resource<Ui>,
+        method: &str,
+        operand: &Value,
+    ) -> wasmtime::Result<Result<Value, String>> {
+        let key = self.table.get(this)?.0;
+        Ok(themed(&mut self.observed, key, method, operand))
+    }
+
+    /// Lends the recorded palette `key` as a theme resource.
+    fn lend_theme(&mut self, key: &Value) -> wasmtime::Result<Resource<Theme>> {
+        self.push(Theme(key.as_str().unwrap_or_default().to_owned()))
+    }
+
     /// Whether a lent dialog signal is aborted, or null without one.
     fn flag_state(&self, signal: Option<&Resource<Flag>>) -> wasmtime::Result<Value> {
         signal.map_or(Ok(Value::Null), |signal| {
@@ -443,6 +513,75 @@ impl host::HostExtensionUiContext for State {
             Ok(subscription) => Ok(Ok(self.table.push(subscription)?)),
             Err(error) => Ok(Err(error)),
         }
+    }
+
+    fn theme(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<Resource<Theme>, String>> {
+        match self.ui_themed(&this, "theme", &Value::Null)? {
+            Ok(key) => Ok(Ok(self.lend_theme(&key)?)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
+
+    fn get_all_themes(
+        &mut self,
+        this: Resource<Ui>,
+    ) -> wasmtime::Result<Result<Vec<host::ThemeInfo>, String>> {
+        let themes = self.ui_themed(&this, "getAllThemes", &Value::Null)?;
+        Ok(themes.map(|_| {
+            THEMES
+                .iter()
+                .map(|(name, path)| host::ThemeInfo {
+                    name: (*name).to_owned(),
+                    path: path.map(str::to_owned),
+                })
+                .collect()
+        }))
+    }
+
+    fn get_theme(
+        &mut self,
+        this: Resource<Ui>,
+        name: String,
+    ) -> wasmtime::Result<Result<Option<Resource<Theme>>, String>> {
+        let loaded = self.ui_themed(&this, "getTheme", &json!(name))?;
+        match loaded {
+            Ok(key @ Value::String(_)) => Ok(Ok(Some(self.lend_theme(&key)?))),
+            Ok(_) => Ok(Ok(None)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
+
+    fn set_theme_name(
+        &mut self,
+        this: Resource<Ui>,
+        name: String,
+    ) -> wasmtime::Result<Result<host::ThemeSetResult, String>> {
+        let result = self.ui_themed(&this, "setThemeName", &json!(name))?;
+        Ok(result.map(|result| set_result(&result)))
+    }
+
+    fn set_theme(
+        &mut self,
+        this: Resource<Ui>,
+        theme: Resource<Theme>,
+    ) -> wasmtime::Result<Result<host::ThemeSetResult, String>> {
+        let key = self.table.get(&theme)?.0.clone();
+        let result = self.ui_themed(&this, "setTheme", &json!(key))?;
+        Ok(result.map(|result| set_result(&result)))
+    }
+
+    fn get_tools_expanded(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<bool, String>> {
+        let expanded = self.ui_themed(&this, "getToolsExpanded", &Value::Null)?;
+        Ok(expanded.map(|expanded| expanded == true))
+    }
+
+    fn set_tools_expanded(
+        &mut self,
+        this: Resource<Ui>,
+        expanded: bool,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.ui_themed(&this, "setToolsExpanded", &json!(expanded))?;
+        self.routed(result.map(drop))
     }
 
     fn get_editor_text(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<String, String>> {

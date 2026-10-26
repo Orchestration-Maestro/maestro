@@ -270,6 +270,10 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// One available theme; a theme without a file has no path.
+    record theme-info { name: string, path: option<string> }
+    /// Whether a theme selection applied, with the host's message when it did not.
+    record theme-set-result { success: bool, error: option<string> }
     /// Independently retained opaque UI capability.
     resource extension-ui-context {
         notify: func(message: string, kind: option<notification-type>) -> import-route;
@@ -285,6 +289,18 @@ interface host {
         get-editor-text: func() -> result<string, string>;
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         on-terminal-input: func(handler: borrow<callback>) -> result<subscription, string>;
+        /// The live theme of this UI.
+        theme: func() -> result<theme, string>;
+        /// Every available theme in the host's order.
+        get-all-themes: func() -> result<list<theme-info>, string>;
+        /// Loads a theme by name without selecting it.
+        get-theme: func(name: string) -> result<option<theme>, string>;
+        /// Selects a theme by name.
+        set-theme-name: func(name: string) -> result<theme-set-result, string>;
+        /// Selects a retained theme.
+        set-theme: func(theme: borrow<theme>) -> result<theme-set-result, string>;
+        get-tools-expanded: func() -> result<bool, string>;
+        set-tools-expanded: func(expanded: bool) -> import-route;
         /// Resolves to the chosen option, or none on dismissal.
         select: async func(title: string, options: list<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
         /// Resolves to false on dismissal.

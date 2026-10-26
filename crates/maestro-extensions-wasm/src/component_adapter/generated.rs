@@ -73,6 +73,7 @@ impl Imports for Generated {
         ui_paste_to_editor(resource: &Self::Ui, text: &str) => paste_to_editor(text);
         ui_set_editor_text(resource: &Self::Ui, text: &str) => set_editor_text(text);
         ui_set_title(resource: &Self::Ui, title: &str) => set_title(title);
+        ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
         command_abort(context: &Self::CommandContext) => abort();
@@ -145,6 +146,12 @@ impl Imports for Generated {
         theme_get_color_mode(theme: &Self::Theme) -> ExtensionResult<crate::ColorMode> => get_color_mode();
         ui_get_editor_text(resource: &Self::Ui) -> ExtensionResult<String> => get_editor_text();
         ui_on_terminal_input(resource: &Self::Ui, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_terminal_input(handler);
+        ui_theme(resource: &Self::Ui) -> ExtensionResult<Self::Theme> => theme();
+        ui_get_all_themes(resource: &Self::Ui) -> ExtensionResult<Vec<crate::ThemeInfo>> => get_all_themes();
+        ui_get_theme(resource: &Self::Ui, name: &str) -> ExtensionResult<Option<Self::Theme>> => get_theme(name);
+        ui_set_theme_name(resource: &Self::Ui, name: &str) -> ExtensionResult<crate::ThemeSetResult> => set_theme_name(name);
+        ui_set_theme(resource: &Self::Ui, theme: &Self::Theme) -> ExtensionResult<crate::ThemeSetResult> => set_theme(theme);
+        ui_get_tools_expanded(resource: &Self::Ui) -> ExtensionResult<bool> => get_tools_expanded();
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();
@@ -185,36 +192,6 @@ impl Imports for Generated {
         command_cwd(context: &host::CommandContext) -> ExtensionResult<String> => cwd();
         command(context: &host::ReplacedSessionContext) -> host::CommandContext => command();
     }
-    fn fork<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        entry_id: &'a str,
-        data: Option<String>,
-        with_session: Option<&'a Self::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.fork(entry_id.to_owned(), data, with_session))
-    }
-    fn navigate_tree<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        target_id: &'a str,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.navigate_tree(target_id.to_owned(), options))
-    }
-    fn switch_session<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        path: &'a str,
-        options: Option<()>,
-        with_session: Option<&'a Self::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.switch_session(
-            path.to_owned(),
-            options.map(|()| host::SwitchSessionOptions { with_session }),
-        ))
-    }
-
     type Writer = host::SessionManager;
 
     fn call<'a>(
@@ -242,6 +219,10 @@ impl Imports for Generated {
         ui_confirm<'a>(resource: Self::Ui, title: String, message: String, dialog: Dialog<'a, Self::Signal>) -> bool => confirm(title, message, dialog.signal, dialog.timeout);
         ui_input<'a>(resource: Self::Ui, title: String, placeholder: Option<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => input(title, placeholder, dialog.signal, dialog.timeout);
         ui_editor<'a>(resource: Self::Ui, title: String, prefill: Option<String>) -> Option<String> => editor(title, prefill);
+        fork<'a>(context: Self::CommandContext, entry_id: &'a str, data: Option<String>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => fork(entry_id.to_owned(), data, with_session);
+        navigate_tree<'a>(context: Self::CommandContext, target_id: &'a str, options: Option<String>) -> SessionChangeResult => navigate_tree(target_id.to_owned(), options);
+        switch_session<'a>(context: Self::CommandContext, path: &'a str, options: Option<()>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => switch_session(path.to_owned(), options.map(|()| host::SwitchSessionOptions { with_session }));
+        new_session<'a>(context: Self::CommandContext, session_data: Option<NewSessionCommandData>, setup: Option<&'a Self::Callback>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => new_session(session_data, setup, with_session);
         reload<'a>(context: Self::CommandContext) -> () => reload();
         wait_for_idle<'a>(context: Self::CommandContext) -> () => wait_for_idle();
         replaced_send_message<'a>(context: Self::ReplacedContext, message: String, options: Option<String>) -> () => send_message(message, options);
@@ -282,16 +263,6 @@ impl Imports for Generated {
     fn new_callback(&self) -> (u32, host::Callback) {
         let handle = host::Callback::new();
         (handle.id(), handle)
-    }
-
-    fn new_session<'a>(
-        &'a self,
-        context: &'a host::CommandContext,
-        session_data: Option<NewSessionCommandData>,
-        setup: Option<&'a host::Callback>,
-        with_session: Option<&'a host::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.new_session(session_data, setup, with_session))
     }
 }
 

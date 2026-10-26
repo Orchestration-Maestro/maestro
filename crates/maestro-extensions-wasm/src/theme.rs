@@ -5,9 +5,11 @@
     clippy::excessive_nesting
 )]
 
+#[cfg(any(test, target_arch = "wasm32"))]
+use std::any::Any;
 use std::rc::Rc;
 
-pub use crate::bindings::maestro::extension::host::ColorMode;
+pub use crate::bindings::maestro::extension::host::{ColorMode, ThemeInfo, ThemeSetResult};
 use crate::{ExtensionResult, SourceInfo};
 
 /// Independently retained theme capability; clones share its host owner.
@@ -15,13 +17,44 @@ use crate::{ExtensionResult, SourceInfo};
 pub struct Theme {
     /// The owner of this capability.
     port: Rc<dyn ThemePort>,
+    /// The host resource behind a theme the host supplied, which a selection can pass back.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    host: Option<Rc<dyn Any>>,
 }
 impl Theme {
     /// Retains the supplied host capability.
     #[must_use]
     pub fn new(port: Rc<dyn ThemePort>) -> Self {
-        Self { port }
+        Self {
+            port,
+            #[cfg(any(test, target_arch = "wasm32"))]
+            host: None,
+        }
     }
+
+    /// Retains a host-supplied theme whose resource a selection can pass back.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn supplied<P: ThemePort + 'static>(port: Rc<P>) -> Self {
+        Self {
+            port: port.clone(),
+            host: Some(port),
+        }
+    }
+
+    /// The host resource behind this theme, when the host supplied it as a `P`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
+        self.host.clone()?.downcast().ok()
+    }
+}
+
+/// A theme to select: by name, or a retained theme.
+#[derive(Clone)]
+pub enum ThemeSelection {
+    /// The name of a theme the host loads.
+    Name(String),
+    /// A theme the host supplied.
+    Theme(Theme),
 }
 
 port! {
