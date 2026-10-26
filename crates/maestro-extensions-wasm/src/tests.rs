@@ -55,6 +55,7 @@ pub(crate) mod host;
 mod host_family;
 mod join;
 mod json_payloads;
+mod model_streams;
 mod observed;
 mod parameter_schemas;
 mod pirate_example;

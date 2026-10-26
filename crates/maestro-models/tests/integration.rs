@@ -199,6 +199,7 @@ mod scripted_model_invocation;
 mod simple_model_options;
 #[path = "support/socks.rs"]
 mod socks;
+mod stream_options;
 mod streamed_arguments;
 mod subscription_accounts;
 #[cfg(target_os = "linux")]

@@ -18,6 +18,8 @@ mod extension_result;
 pub(crate) mod finite;
 pub(crate) mod object;
 mod selection_events;
+mod stream_options;
+pub use stream_options::*;
 mod session_events;
 mod tool_events;
 mod tool_results;
