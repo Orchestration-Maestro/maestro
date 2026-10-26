@@ -53,6 +53,8 @@ pub(crate) mod stream_host;
 #[macro_use]
 mod fixtures;
 mod editor_component;
+mod editor_driver;
+pub(crate) mod editor_host;
 mod editor_ui;
 mod guest_family;
 mod hello_example;
@@ -1106,6 +1108,8 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-completion",
             "invoke-component-factory",
             "invoke-dispose",
+            "invoke-editor",
+            "invoke-editor-factory",
             "invoke-event",
             "invoke-highlight",
             "invoke-listener",

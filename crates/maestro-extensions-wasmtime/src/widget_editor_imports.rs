@@ -2,6 +2,7 @@
 use crate::{
     callback_imports::{CallbackView, retain},
     guest_calls::Callback,
+    guest_calls::editors::TextCallbackEndpoint,
     import_route::push,
     keys_reads::KeysEndpoint,
     local_resources::effects::TuiEndpoint,
@@ -136,6 +137,7 @@ fn editor<T: CallbackView>(
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
+    authored(host)?;
     host.func_wrap(
         "new-editor",
         |mut store: StoreContextMut<'_, T>,
@@ -188,6 +190,39 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             let handler = retain(store.data_mut(), &handler)?;
             let request = |reply| Request::Editor(EditorRequest::OnAction(action, handler, reply));
             Ok((widget(store.data_mut(), &this)?.read(request),))
+        },
+    )?;
+    Ok(())
+}
+
+/// Installs the lent text callbacks, border style lending and widget sharing an authored editor
+/// uses.
+fn authored<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    crate::context_imports::add_resource::<T, TextCallbackEndpoint>(host, "text-callback")?;
+    host.func_wrap(
+        "[method]text-callback.call",
+        |mut store: StoreContextMut<'_, T>,
+         (this, text): (Resource<TextCallbackEndpoint>, String)| {
+            let callback = store.data_mut().ctx().table.get(&this)?.clone();
+            Ok((push(store.data_mut(), callback.call(text))?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]widget.border-color",
+        |mut store: StoreContextMut<'_, T>, (this,): (Resource<WidgetEndpoint>,)| {
+            let request = |reply| Request::Editor(EditorRequest::BorderColor(reply));
+            let style = match widget(store.data_mut(), &this)?.read(request) {
+                Ok(style) => Ok(store.data_mut().ctx().table.push(style)?),
+                Err(error) => Err(error),
+            };
+            Ok((style,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]widget.share",
+        |mut store: StoreContextMut<'_, T>, (this,): (Resource<WidgetEndpoint>,)| {
+            let shared = widget(store.data_mut(), &this)?;
+            Ok((store.data_mut().ctx().table.push(shared)?,))
         },
     )
 }

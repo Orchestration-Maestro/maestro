@@ -3,7 +3,7 @@ mod callbacks;
 mod editor;
 mod widgets;
 use crate::{EventError, footer_data_provider::ReadonlyFooterDataProvider};
-pub use callbacks::UIHostCall;
+pub use callbacks::{UIHostCall, WeakUIHostCall};
 pub use editor::{
     ActionHandlers, CustomEditorComponent, EditorFactoryOutcome, ExtensionShortcutCallback,
 };

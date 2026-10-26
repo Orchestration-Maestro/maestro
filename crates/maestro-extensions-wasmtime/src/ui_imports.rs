@@ -3,7 +3,7 @@ use crate::{
     guest_calls::Callback,
     local_resources::SignalEndpoint,
     read_imports::{ReadEndpoint, add_routed_operand, operand},
-    ui_reads::{Dialog, Endpoint, Request},
+    ui_reads::{Dialog, Endpoint, FactoryRequest, Request},
 };
 use wasmtime::{
     StoreContextMut,
@@ -78,6 +78,12 @@ fn editor<T: crate::callback_imports::CallbackView + 'static>(
         host,
         "[method]extension-ui-context.get-editor-text",
         Request::GetEditorText,
+        crate::read_imports::resource::<T, Endpoint>,
+    )?;
+    crate::read_imports::add_read(
+        host,
+        "[method]extension-ui-context.get-editor-component",
+        |reply| Request::Factory(FactoryRequest::GetEditorComponent(reply)),
         crate::read_imports::resource::<T, Endpoint>,
     )?;
     host.func_wrap(
@@ -184,8 +190,11 @@ fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
             let options = options.map(Into::into);
-            let route =
-                endpoint.route(|reply| Request::WidgetFactory(key, factory, api, options, reply));
+            let route = endpoint.route(|reply| {
+                Request::Factory(FactoryRequest::WidgetFactory(
+                    key, factory, api, options, reply,
+                ))
+            });
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
@@ -196,7 +205,21 @@ fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
             let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Footer(factory, api, reply));
+            let route = endpoint
+                .route(|reply| Request::Factory(FactoryRequest::Footer(factory, api, reply)));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]extension-ui-context.set-editor-component",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
+            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
+            let api = store.data().api().clone();
+            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
+            let route = endpoint.route(|reply| {
+                Request::Factory(FactoryRequest::EditorComponent(factory, api, reply))
+            });
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
@@ -207,7 +230,8 @@ fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
             let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Header(factory, api, reply));
+            let route = endpoint
+                .route(|reply| Request::Factory(FactoryRequest::Header(factory, api, reply)));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )

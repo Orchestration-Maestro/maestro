@@ -272,6 +272,12 @@ pub(crate) trait WidgetImports: Imports {
         action: &str,
         handler: &Self::Callback,
     ) -> ExtensionResult<()>;
+    /// Lends an editor's border style.
+    fn widget_border_color(&self, widget: &Self::Widget) -> ExtensionResult<Self::Style>;
+    /// A text callback the host lent to an authored editor.
+    type TextCallback: 'static;
+    /// Runs a lent text callback, running the nested calls the host makes first.
+    fn text_callback(&self, callback: &Self::TextCallback, text: &str) -> ExtensionResult<()>;
 }
 
 /// A settings row styling operand: a host row style, or the identity of an authored one.

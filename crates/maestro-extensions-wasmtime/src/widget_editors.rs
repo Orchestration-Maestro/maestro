@@ -93,6 +93,8 @@ pub(crate) enum EditorRequest {
     Edit(String, bool, Reply<()>),
     /// Replaces the handler of a custom editor's application action.
     OnAction(String, Handle, Reply<()>),
+    /// Lends the border style.
+    BorderColor(Reply<crate::widget_reads::StyleEndpoint>),
 }
 
 impl EditorRequest {
@@ -102,6 +104,7 @@ impl EditorRequest {
         match self {
             Self::Read(_, reply) => drop(reply.send(Err(error))),
             Self::Edit(_, _, reply) | Self::OnAction(_, _, reply) => drop(reply.send(Err(error))),
+            Self::BorderColor(reply) => drop(reply.send(Err(error))),
         }
     }
 }
@@ -120,6 +123,14 @@ impl EditorKind {
         match self {
             Self::Editor(editor) => editor.clone(),
             Self::Custom(editor) => editor.clone(),
+        }
+    }
+
+    /// The application's custom editor, when this is one.
+    pub(crate) fn custom(&self) -> Option<Rc<dyn ExtensionEditor>> {
+        match self {
+            Self::Editor(_) => None,
+            Self::Custom(editor) => Some(editor.clone()),
         }
     }
 
@@ -184,6 +195,10 @@ impl EditorKind {
                     editor.set_text(&text);
                 }
                 let _ = reply.send(binding.failure.borrow_mut().take().map_or(Ok(()), Err));
+            }
+            EditorRequest::BorderColor(reply) => {
+                let style = binding.registry.lend_style(self.editor().border_color());
+                let _ = reply.send(style);
             }
             EditorRequest::OnAction(action, handle, reply) => {
                 let _ = reply.send(match self {
@@ -290,7 +305,7 @@ impl EditorKind {
 
 impl Binding<'_> {
     /// An authored text handler.
-    fn text(&self, handle: Handle) -> Rc<dyn Fn(&str)> {
+    pub(crate) fn text(&self, handle: Handle) -> Rc<dyn Fn(&str)> {
         let (registry, events, failure) = self.owned();
         Rc::new(move |text: &str| {
             let binding = Binding {

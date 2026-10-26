@@ -4,6 +4,7 @@ use super::{Generated, route};
 use crate::EditorOptions;
 use crate::bindings::maestro::extension::host;
 use crate::component_adapter::{EditorAnswer, EditorRequest, EditorStyles, StyleRef};
+use crate::component_adapter::{Exports, callbacks, lists::WidgetHandler};
 use crate::types::ExtensionResult;
 
 /// The wire form of selection list styles in field order.
@@ -78,4 +79,70 @@ pub(super) fn request(
         host::EditorAnswer::Number(number) => EditorAnswer::Number(number),
         host::EditorAnswer::Flag(flag) => EditorAnswer::Flag(flag),
     })
+}
+
+/// Runs an editor factory with its lent terminal, styles and keybindings, and transfers what
+/// it built.
+pub(super) fn editor_factory(
+    handler: u32,
+    tui: host::Tui,
+    theme: host::EditorTheme,
+    keybindings: host::KeybindingsManager,
+    emitter: &host::CallbackEmitter,
+) -> ExtensionResult<host::EditorBuilt> {
+    let list = theme.select_list;
+    let styles = vec![
+        list.selected_prefix,
+        list.selected_text,
+        list.description,
+        list.scroll_info,
+        list.no_match,
+    ];
+    let lent = crate::component_adapter::LentEditor {
+        tui,
+        theme: (theme.border_color, styles),
+        keybindings,
+    };
+    let outcome = Exports::new(Generated).invoke_editor_factory(handler, lent, emitter)?;
+    crate::component_adapter::editor_factories::transfer(&Generated, &outcome)
+}
+
+/// Runs one host request on an authored editor and transfers what it answered.
+pub(super) fn authored(
+    handler: u32,
+    request: host::AuthoredEditorRequest,
+    emitter: &host::CallbackEmitter,
+) -> ExtensionResult<host::AuthoredEditorAnswer> {
+    use crate::component_adapter::{AuthoredAnswer, AuthoredRequest};
+    use host::AuthoredEditorRequest as Wire;
+    let request = match request {
+        Wire::GetText => AuthoredRequest::GetText,
+        Wire::SetText(text) => AuthoredRequest::SetText(text),
+        Wire::SetOnSubmit(callback) => AuthoredRequest::SetOnSubmit(callback),
+        Wire::OnChange => AuthoredRequest::OnChange,
+        Wire::SetOnChange(callback) => AuthoredRequest::SetOnChange(callback),
+        Wire::AddToHistory(text) => AuthoredRequest::AddToHistory(text),
+        Wire::InsertTextAtCursor(text) => AuthoredRequest::InsertTextAtCursor(text),
+        Wire::GetExpandedText => AuthoredRequest::GetExpandedText,
+        Wire::BorderColor => AuthoredRequest::BorderColor,
+        Wire::SetBorderColor(style) => AuthoredRequest::SetBorderColor(style),
+        Wire::SetPaddingX(padding) => AuthoredRequest::SetPaddingX(padding),
+        Wire::SetAutocompleteMaxVisible(max) => AuthoredRequest::SetAutocompleteMaxVisible(max),
+    };
+    let identity = || callbacks::Identity::<Generated>::new(&Generated);
+    Ok(
+        match Exports::new(Generated).invoke_editor(handler, request, emitter)? {
+            AuthoredAnswer::Done => host::AuthoredEditorAnswer::Done,
+            AuthoredAnswer::Absent => host::AuthoredEditorAnswer::Absent,
+            AuthoredAnswer::Text(text) => host::AuthoredEditorAnswer::Text(text),
+            AuthoredAnswer::Handler(handler) => {
+                host::AuthoredEditorAnswer::Handler(handler.map(|handler| {
+                    identity().transfer(std::rc::Rc::new(WidgetHandler::Text(handler)))
+                }))
+            }
+            AuthoredAnswer::Style(style) => {
+                host::AuthoredEditorAnswer::Style(identity().transfer(style))
+            }
+        },
+    )
 }

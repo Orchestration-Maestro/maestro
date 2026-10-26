@@ -23,6 +23,7 @@ mod footer_data;
 pub use factory::artifact_factory;
 mod guest_calls;
 mod guest_component;
+mod guest_editor;
 mod guest_exports;
 mod history_imports;
 mod history_reads;

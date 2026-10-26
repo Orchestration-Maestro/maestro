@@ -155,6 +155,10 @@ impl<I: WidgetImports> EditorPort for HostWidget<I> {
     fn set_focused(&self, focused: bool) -> ExtensionResult<()> {
         self.change(EditorRequest::SetFocused(focused))
     }
+    fn border_color(&self) -> ExtensionResult<Style> {
+        let style = self.imports.widget_border_color(&self.widget)?;
+        Ok(super::widgets::host_style(&self.imports, style))
+    }
     fn set_border_color(&self, color: &Style) -> ExtensionResult<()> {
         let staged = stage_style(&self.imports, color);
         let result = self.change(EditorRequest::SetBorderColor(style_ref(&staged)));
@@ -164,8 +168,16 @@ impl<I: WidgetImports> EditorPort for HostWidget<I> {
     fn set_on_submit(&self, handler: Option<TextHandler>) -> ExtensionResult<()> {
         self.handler(HandlerSlot::Submit, handler.map(WidgetHandler::Text))
     }
+    fn on_change(&self) -> ExtensionResult<Option<TextHandler>> {
+        Ok(self.change.borrow().clone())
+    }
     fn set_on_change(&self, handler: Option<TextHandler>) -> ExtensionResult<()> {
-        self.handler(HandlerSlot::Change, handler.map(WidgetHandler::Text))
+        self.handler(
+            HandlerSlot::Change,
+            handler.clone().map(WidgetHandler::Text),
+        )?;
+        drop(self.change.replace(handler));
+        Ok(())
     }
     fn handle_input(&self, data: &str) -> ExtensionResult<()> {
         self.imports.widget_handle_input(&self.widget, data)

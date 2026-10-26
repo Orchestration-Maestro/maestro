@@ -6,8 +6,8 @@
 )]
 
 use super::widgets::{Hosted, Widget, host};
-use super::{Component, EditorTheme, KeybindingsManager, Style, TUI, WidgetNotice};
-use crate::{CallbackEmitter, ExtensionResult};
+use super::{Component, ComponentView, EditorTheme, KeybindingsManager, Style, TUI, WidgetNotice};
+use crate::{CallbackEmitter, CustomEditorComponent, EditorComponent, ExtensionResult};
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -60,10 +60,14 @@ port! {
         fn focused() -> bool;
         /// Gives or takes the focus.
         fn set_focused(focused: bool) -> ();
+        /// The border style.
+        fn border_color() -> Style;
         /// Replaces the border style.
         fn set_border_color(color: &Style) -> ();
         /// Replaces or removes the submission handler.
         fn set_on_submit(handler: Option<TextHandler>) -> ();
+        /// The change handler last set through this editor, if any.
+        fn on_change() -> Option<TextHandler>;
         /// Replaces or removes the change handler.
         fn set_on_change(handler: Option<TextHandler>) -> ();
         /// Delivers input; the editor's handlers may run first.
@@ -123,6 +127,86 @@ impl Editor {
     pub(crate) fn hosted(widget: Widget, editor: Rc<dyn EditorPort>) -> Self {
         Self { widget, editor }
     }
+    /// The host widget behind this editor.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn widget(&self) -> &Widget {
+        &self.widget
+    }
+}
+
+impl ComponentView for Editor {
+    fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        Editor::render(self, width)
+    }
+    fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Editor::handle_input(self, data)
+    }
+    fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Editor::invalidate(self)
+    }
+}
+
+/// The host editor supports every optional editor operation.
+impl EditorComponent for Editor {
+    fn get_text(&self, _: CallbackEmitter<'_>) -> ExtensionResult<String> {
+        Editor::get_text(self)
+    }
+    fn set_text(&self, text: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Editor::set_text(self, text)
+    }
+    fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Editor::handle_input(self, data)
+    }
+    fn set_on_submit(
+        &self,
+        handler: Option<TextHandler>,
+        _: CallbackEmitter<'_>,
+    ) -> ExtensionResult<()> {
+        Editor::set_on_submit(self, handler)
+    }
+    fn on_change(&self, _: CallbackEmitter<'_>) -> ExtensionResult<Option<TextHandler>> {
+        Editor::on_change(self)
+    }
+    fn set_on_change(
+        &self,
+        handler: Option<TextHandler>,
+        _: CallbackEmitter<'_>,
+    ) -> ExtensionResult<()> {
+        Editor::set_on_change(self, handler)
+    }
+    fn add_to_history(&self, text: &str, _: CallbackEmitter<'_>) -> ExtensionResult<Option<()>> {
+        Editor::add_to_history(self, text).map(Some)
+    }
+    fn insert_text_at_cursor(
+        &self,
+        text: &str,
+        _: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        Editor::insert_text_at_cursor(self, text).map(Some)
+    }
+    fn get_expanded_text(&self, _: CallbackEmitter<'_>) -> ExtensionResult<Option<String>> {
+        Editor::get_expanded_text(self).map(Some)
+    }
+    fn border_color(&self, _: CallbackEmitter<'_>) -> ExtensionResult<Option<Style>> {
+        Editor::border_color(self).map(Some)
+    }
+    fn set_border_color(
+        &self,
+        color: Style,
+        _: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        Editor::set_border_color(self, &color).map(Some)
+    }
+    fn set_padding_x(&self, padding: f64, _: CallbackEmitter<'_>) -> ExtensionResult<Option<()>> {
+        Editor::set_padding_x(self, padding).map(Some)
+    }
+    fn set_autocomplete_max_visible(
+        &self,
+        max_visible: f64,
+        _: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        Editor::set_autocomplete_max_visible(self, max_visible).map(Some)
+    }
 }
 
 impl From<&Editor> for Component {
@@ -160,10 +244,123 @@ impl CustomEditor {
     }
 }
 
+impl CustomEditor {
+    /// Renders rows at `width`; the host may call authored functions first.
+    ///
+    /// # Errors
+    /// Returns the host's or an authored function's failure.
+    pub fn render(&self, width: u32) -> ExtensionResult<Vec<String>> {
+        self.editor.render(width)
+    }
+    /// Drops cached rows.
+    ///
+    /// # Errors
+    /// Returns the host's failure.
+    pub fn invalidate(&self) -> ExtensionResult<()> {
+        self.editor.invalidate()
+    }
+    /// Delivers input; the editor's handlers may run first.
+    ///
+    /// # Errors
+    /// Returns the host's or a handler's failure.
+    pub fn handle_input(&self, data: &str) -> ExtensionResult<()> {
+        self.editor.handle_input(data)
+    }
+}
+
 impl Deref for CustomEditor {
     type Target = Editor;
     fn deref(&self) -> &Editor {
         &self.editor
+    }
+}
+
+impl ComponentView for CustomEditor {
+    fn render(&self, width: u32, emitter: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        ComponentView::render(&self.editor, width, emitter)
+    }
+    fn handle_input(&self, data: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        ComponentView::handle_input(&self.editor, data, emitter)
+    }
+    fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        ComponentView::invalidate(&self.editor, emitter)
+    }
+}
+
+/// Delegates every editor operation to the host editor it extends.
+impl EditorComponent for CustomEditor {
+    fn get_text(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<String> {
+        EditorComponent::get_text(&self.editor, emitter)
+    }
+    fn set_text(&self, text: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        EditorComponent::set_text(&self.editor, text, emitter)
+    }
+    fn handle_input(&self, data: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        EditorComponent::handle_input(&self.editor, data, emitter)
+    }
+    fn set_on_submit(
+        &self,
+        handler: Option<TextHandler>,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<()> {
+        EditorComponent::set_on_submit(&self.editor, handler, emitter)
+    }
+    fn on_change(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<Option<TextHandler>> {
+        EditorComponent::on_change(&self.editor, emitter)
+    }
+    fn set_on_change(
+        &self,
+        handler: Option<TextHandler>,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<()> {
+        EditorComponent::set_on_change(&self.editor, handler, emitter)
+    }
+    fn add_to_history(
+        &self,
+        text: &str,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        EditorComponent::add_to_history(&self.editor, text, emitter)
+    }
+    fn insert_text_at_cursor(
+        &self,
+        text: &str,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        EditorComponent::insert_text_at_cursor(&self.editor, text, emitter)
+    }
+    fn get_expanded_text(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<Option<String>> {
+        EditorComponent::get_expanded_text(&self.editor, emitter)
+    }
+    fn border_color(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<Option<Style>> {
+        EditorComponent::border_color(&self.editor, emitter)
+    }
+    fn set_border_color(
+        &self,
+        color: Style,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        EditorComponent::set_border_color(&self.editor, color, emitter)
+    }
+    fn set_padding_x(
+        &self,
+        padding: f64,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        EditorComponent::set_padding_x(&self.editor, padding, emitter)
+    }
+    fn set_autocomplete_max_visible(
+        &self,
+        max_visible: f64,
+        emitter: CallbackEmitter<'_>,
+    ) -> ExtensionResult<Option<()>> {
+        EditorComponent::set_autocomplete_max_visible(&self.editor, max_visible, emitter)
+    }
+}
+
+impl CustomEditorComponent for CustomEditor {
+    fn custom_editor(&self) -> &CustomEditor {
+        self
     }
 }
 

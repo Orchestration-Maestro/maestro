@@ -50,6 +50,13 @@ impl Call {
             Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
             Self::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
             Self::Widget(call) => Call::Widget(widget(call, completion)),
+            Self::EditorFactory(call) => Call::EditorFactory(editor_factory(call, completion)),
+            Self::Editor(call) => Call::Editor(crate::guest_calls::editors::EditorCall {
+                handler: completion.callback(call.handler),
+                request: call.request,
+                emitter: call.emitter,
+                reply: call.reply,
+            }),
             Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
@@ -96,6 +103,21 @@ fn widget(
     crate::guest_calls::widget_calls::WidgetCall {
         handler: completion.callback(call.handler),
         event: call.event,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the editor factory admission beside its lent terminal, styles and keybindings.
+fn editor_factory(
+    call: crate::guest_calls::editors::FactoryCall,
+    completion: &Completion,
+) -> crate::guest_calls::editors::FactoryCall<Callback> {
+    crate::guest_calls::editors::FactoryCall {
+        handler: completion.callback(call.handler),
+        tui: call.tui,
+        theme: call.theme,
+        keybindings: call.keybindings,
         emitter: call.emitter,
         reply: call.reply,
     }

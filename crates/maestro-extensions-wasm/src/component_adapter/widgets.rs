@@ -88,6 +88,8 @@ pub(super) struct HostWidget<I: WidgetImports> {
     pub(super) widget: I::Widget,
     /// Authored children with the identity each was added under, in insertion order.
     guests: RefCell<Vec<(Component, u32)>>,
+    /// An editor's change handler last set through its facade.
+    pub(super) change: RefCell<Option<crate::TextHandler>>,
 }
 
 impl<I: WidgetImports> HostWidget<I> {
@@ -97,6 +99,7 @@ impl<I: WidgetImports> HostWidget<I> {
             imports: imports.clone(),
             widget,
             guests: RefCell::default(),
+            change: RefCell::default(),
         })
     }
     /// Retains a built widget.

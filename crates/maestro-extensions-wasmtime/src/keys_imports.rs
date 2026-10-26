@@ -15,7 +15,7 @@ use wasmtime::{
 /// The lent selection list styles of an editor theme.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-struct SelectListTheme {
+pub(crate) struct SelectListTheme {
     /// The selected row's prefix.
     #[component(name = "selected-prefix")]
     selected_prefix: Resource<StyleEndpoint>,
@@ -35,7 +35,7 @@ struct SelectListTheme {
 /// The lent editor styles.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-struct EditorTheme {
+pub(crate) struct EditorTheme {
     /// The border.
     #[component(name = "border-color")]
     border_color: Resource<StyleEndpoint>,
@@ -217,7 +217,7 @@ fn hints<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
                 .0
                 .request(|_, reply| Message::Widgets(WidgetMessage::LendEditor(reply)));
             let lent = match lent {
-                Ok((border, styles)) => Ok(lend(store.data_mut(), border, styles)?),
+                Ok(lent) => Ok(lend(store.data_mut().ctx().table, lent)?),
                 Err(error) => Err(error),
             };
             Ok((lent,))
@@ -225,13 +225,11 @@ fn hints<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
     )
 }
 
-/// Lends the editor border and selection list styles.
-fn lend<T: CallbackView>(
-    store: &mut T,
-    border: StyleEndpoint,
-    styles: Vec<StyleEndpoint>,
+/// Lends the editor border and selection list styles in field order.
+pub(crate) fn lend(
+    table: &mut wasmtime::component::ResourceTable,
+    (border, styles): (StyleEndpoint, Vec<StyleEndpoint>),
 ) -> wasmtime::Result<EditorTheme> {
-    let table = &mut *store.ctx().table;
     let border_color = table.push(border)?;
     let mut styles = styles.into_iter();
     let mut next = || -> wasmtime::Result<Resource<StyleEndpoint>> {

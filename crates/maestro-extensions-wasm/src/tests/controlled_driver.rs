@@ -471,6 +471,18 @@ impl Driver for ControlledDriver {
             _ => Err("expected rendered lines".to_owned()),
         }))
     }
+    fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> impl Future<Output = Result<serde_json::Value, String>> {
+        std::future::ready(self.host.authored_editor(request))
+    }
+    fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> impl Future<Output = Result<super::renderer_host::Reply, String>> {
+        std::future::ready(self.host.editor_component(call))
+    }
     fn widget_capabilities(
         &mut self,
         key: &str,

@@ -36,6 +36,29 @@ impl<I: WidgetImports> HostKeybindings<I> {
     }
 }
 
+/// Editor styles over a lent border style and completion list styles in field order.
+pub(super) fn editor_theme<I: WidgetImports>(
+    imports: &I,
+    (border, styles): (I::Style, Vec<I::Style>),
+) -> ExtensionResult<EditorTheme> {
+    let mut styles = styles.into_iter().map(|style| host_style(imports, style));
+    let mut next = || {
+        styles
+            .next()
+            .ok_or_else(|| "the host lent too few editor styles".to_owned())
+    };
+    Ok(EditorTheme {
+        border_color: host_style(imports, border),
+        select_list: SelectListTheme {
+            selected_prefix: next()?,
+            selected_text: next()?,
+            description: next()?,
+            scroll_info: next()?,
+            no_match: next()?,
+        },
+    })
+}
+
 /// Wraps a lent host manager.
 pub(super) fn lend<I: WidgetImports>(imports: &I, manager: I::Keybindings) -> KeybindingsManager {
     KeybindingsManager::lent(Rc::new(HostKeybindings {
@@ -100,23 +123,7 @@ impl<I: WidgetImports> Builder<I> {
 
     /// The live theme's editor styles.
     pub(super) fn lent_editor_theme(&self) -> ExtensionResult<EditorTheme> {
-        let (border, styles) = self.0.get_editor_theme()?;
-        let mut styles = styles.into_iter().map(|style| host_style(&self.0, style));
-        let mut next = || {
-            styles
-                .next()
-                .ok_or_else(|| "the host lent too few editor styles".to_owned())
-        };
-        Ok(EditorTheme {
-            border_color: host_style(&self.0, border),
-            select_list: SelectListTheme {
-                selected_prefix: next()?,
-                selected_text: next()?,
-                description: next()?,
-                scroll_info: next()?,
-                no_match: next()?,
-            },
-        })
+        editor_theme(&self.0, self.0.get_editor_theme()?)
     }
 
     /// A keybinding's keys, or a hint.

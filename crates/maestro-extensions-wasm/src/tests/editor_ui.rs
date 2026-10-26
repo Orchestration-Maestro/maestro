@@ -372,3 +372,259 @@ async fn custom_editor(driver: &mut impl Driver) -> Result<(), String> {
 fn custom_editor_offers_input_to_shortcuts_and_actions_first() -> Result<(), String> {
     on_both_adapters!(custom_editor)
 }
+
+/// Installs the editor `kind` names and checks the factory the host answers back.
+async fn install_editor(driver: &mut impl Driver, kind: &str) -> Result<Value, String> {
+    let answer = operate(driver, json!({ "op": "editorFactory", "kind": kind })).await?;
+    answer.get("ok").cloned().ok_or_else(|| answer.to_string())
+}
+
+/// Runs host editor requests in order and returns each described answer.
+async fn requests(driver: &mut impl Driver, requests: Value) -> Result<Vec<Value>, String> {
+    let mut answers = Vec::new();
+    for request in requests.as_array().cloned().ok_or("expected requests")? {
+        answers.push(driver.editor_request(request).await?);
+    }
+    Ok(answers)
+}
+
+/// The lent text callback calls and host editor requests recorded since `from`.
+fn editor_lines(driver: &impl Driver, from: usize) -> Vec<String> {
+    driver.transcript()[from..]
+        .iter()
+        .filter(|line| line.starts_with("text ") || line.starts_with("editor built"))
+        .cloned()
+        .collect()
+}
+
+/// An authored editor keeps its text and lent callbacks, reports every optional operation as
+/// absent, and returns its change handler to the host.
+async fn plain_editor(driver: &mut impl Driver) -> Result<(), String> {
+    use super::renderer_host::{Call, Reply};
+    let from = driver.transcript().len();
+    assert_eq!(
+        install_editor(driver, "plain").await?,
+        json!({ "same": true })
+    );
+    let answers = requests(
+        driver,
+        json!([
+            { "op": "setOnSubmit", "callback": "submit" },
+            { "op": "setOnChange", "callback": "change" },
+            { "op": "setText", "text": "λ\n雪" },
+            { "op": "getText" },
+        ]),
+    )
+    .await?;
+    assert_eq!(
+        answers,
+        [
+            json!("done"),
+            json!("done"),
+            json!("done"),
+            json!({ "text": "λ\n雪" })
+        ]
+    );
+    for data in ["!", "enter"] {
+        assert_eq!(
+            driver.editor_component(Call::Input(data)).await?,
+            Reply::Done
+        );
+    }
+    assert_eq!(
+        driver.editor_component(Call::Render(9)).await?,
+        Reply::Lines(vec!["plain|9".into(), "λ".into(), "雪!".into()])
+    );
+    plain_absence(driver).await?;
+    assert_eq!(
+        editor_lines(driver, from),
+        [
+            "editor built custom=null",
+            r#"text change "λ\n雪""#,
+            r#"text change "λ\n雪!""#,
+            r#"text submit "λ\n雪!""#,
+            r#"text change "probe""#,
+        ]
+    );
+    Ok(())
+}
+
+/// A plain authored editor answers each optional operation as absent and returns its change
+/// handler until it is removed.
+async fn plain_absence(driver: &mut impl Driver) -> Result<(), String> {
+    let optional = requests(
+        driver,
+        json!([
+            { "op": "getExpandedText" },
+            { "op": "borderColor" },
+            { "op": "setBorderColor", "role": "borderAccent" },
+            { "op": "setPaddingX", "padding": 2.0 },
+            { "op": "addToHistory", "text": "past" },
+            { "op": "insertTextAtCursor", "text": "ins" },
+            { "op": "setAutocompleteMaxVisible", "max": 3.0 },
+            { "op": "onChange" },
+            { "op": "setOnChange", "callback": null },
+            { "op": "onChange" },
+            { "op": "setText", "text": "after" },
+        ]),
+    )
+    .await?;
+    let mut expected = vec![json!("absent"); 7];
+    expected.extend([
+        json!({ "handler": true }),
+        json!("done"),
+        json!({ "handler": false }),
+        json!("done"),
+    ]);
+    assert_eq!(optional, expected);
+    Ok(())
+}
+
+/// The host's editor supports every optional operation and keeps its own border style.
+async fn host_editor_factory(driver: &mut impl Driver) -> Result<(), String> {
+    use super::renderer_host::{Call, Reply};
+    let from = driver.transcript().len();
+    assert_eq!(
+        install_editor(driver, "host").await?,
+        json!({ "same": true })
+    );
+    let answers = requests(
+        driver,
+        json!([
+            { "op": "setOnChange", "callback": "change" },
+            { "op": "setText", "text": "a" },
+            { "op": "getExpandedText" },
+            { "op": "borderColor" },
+            { "op": "setBorderColor", "role": "borderAccent" },
+            { "op": "borderColor" },
+            { "op": "setPaddingX", "padding": 2.0 },
+            { "op": "addToHistory", "text": "past" },
+            { "op": "insertTextAtCursor", "text": "!" },
+            { "op": "setAutocompleteMaxVisible", "max": 4.0 },
+            { "op": "onChange" },
+            { "op": "getText" },
+        ]),
+    )
+    .await?;
+    assert_eq!(
+        answers,
+        [
+            json!("done"),
+            json!("done"),
+            json!({ "text": "a" }),
+            json!({ "style": "<borderMuted>border" }),
+            json!("done"),
+            json!({ "style": "<borderAccent>border" }),
+            json!("done"),
+            json!("done"),
+            json!("done"),
+            json!("done"),
+            json!({ "handler": true }),
+            json!({ "text": "a!" }),
+        ]
+    );
+    assert_eq!(
+        driver.editor_component(Call::Render(6)).await?,
+        Reply::Lines(vec!["<borderAccent>edit|6".into(), "a!".into()])
+    );
+    assert_eq!(
+        editor_lines(driver, from),
+        [
+            "editor built custom=null",
+            r#"text change "a""#,
+            r#"text change "a!""#,
+            r#"text change "probe""#,
+        ]
+    );
+    Ok(())
+}
+
+/// An authored editor on the custom editor shares that editor's application actions with the
+/// host and passes on the input it does not keep.
+async fn custom_editor_factory(driver: &mut impl Driver) -> Result<(), String> {
+    use super::renderer_host::{Call, Reply};
+    let from = driver.transcript().len();
+    assert_eq!(
+        install_editor(driver, "custom").await?,
+        json!({ "same": true })
+    );
+    for data in ["x", "q", "f1"] {
+        assert_eq!(
+            driver.editor_component(Call::Input(data)).await?,
+            Reply::Done
+        );
+    }
+    let answers = requests(
+        driver,
+        json!([{ "op": "getText" }, { "op": "setPaddingX", "padding": 1.0 }]),
+    )
+    .await?;
+    assert_eq!(answers, [json!({ "text": "q" }), json!("done")]);
+    assert_eq!(
+        editor_lines(driver, from),
+        [r#"editor built custom=["app.demo"]"#]
+    );
+    let effects: Vec<_> = driver
+        .bus_emissions()
+        .into_iter()
+        .filter(|(channel, _)| channel == "modal-kept" || channel == "custom-action")
+        .collect();
+    assert_eq!(
+        effects,
+        [
+            ("modal-kept".to_owned(), json!("x")),
+            ("custom-action".to_owned(), json!("app.demo")),
+        ]
+    );
+    Ok(())
+}
+
+/// Factories keep their identity and absence, failures keep their message, and every
+/// authored editor keeps its callbacks, text and optional appearance across the transport.
+async fn editor_factories(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    assert_eq!(
+        install_editor(driver, "none").await?,
+        json!({ "current": false })
+    );
+    plain_editor(driver).await?;
+    host_editor_factory(driver).await?;
+    custom_editor_factory(driver).await?;
+    let failing = operate(driver, json!({ "op": "editorFactory", "kind": "failing" })).await?;
+    assert_eq!(failing, json!({ "error": "editor factory failed 雪\n" }));
+    assert_eq!(
+        install_editor(driver, "none").await?,
+        json!({ "current": false })
+    );
+    let requested: Vec<_> = driver
+        .transcript()
+        .iter()
+        .filter(|line| line.contains("EditorComponent"))
+        .cloned()
+        .collect();
+    let set = |shown: bool| format!("ui 0 setEditorComponent [{shown}]");
+    let get = "ui 0 getEditorComponent []".to_owned();
+    assert_eq!(
+        requested,
+        [
+            set(false),
+            get.clone(),
+            set(true),
+            get.clone(),
+            set(true),
+            get.clone(),
+            set(true),
+            get.clone(),
+            set(true),
+            set(false),
+            get,
+        ]
+    );
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn editor_factory_retains_callbacks_text_and_appearance() -> Result<(), String> {
+    on_both_adapters!(editor_factories)
+}

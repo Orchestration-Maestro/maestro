@@ -715,6 +715,11 @@ enum Operation {
     },
     /// Shows an authored editor through a retained component.
     AuthoredEditorContract,
+    /// Replaces the host editor with the editor `kind` names, or restores it for `none`.
+    EditorFactory {
+        /// `plain`, `host`, `custom`, `failing` or `none`.
+        kind: String,
+    },
     /// Calls an authored asynchronous completion provider.
     CompletionContract {
         /// Whether completion was explicitly requested.
@@ -913,8 +918,8 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 .and_then(|tool| api.register_tool(tool))
                 .map(|()| None),
         ),
-        Operation::AuthoredEditorContract => {
-            caught(super::authored_editor_author::install(&ctx.ui()?).map(|()| None))
+        operation @ (Operation::AuthoredEditorContract | Operation::EditorFactory { .. }) => {
+            caught(editors(ctx, operation))
         }
         Operation::CompletionContract { force } => {
             let signal = AbortSignal::new(Rc::new(Caller(Rc::default())));
@@ -959,6 +964,16 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
     };
     api.append_entry("ui-answer", Some(answer))?;
     api.append_entry("ui-done", None)
+}
+
+/// Shows an authored editor through a component, or installs an editor factory.
+fn editors(ctx: &ExtensionContext, operation: Operation) -> ExtensionResult<Option<Value>> {
+    match operation {
+        Operation::EditorFactory { kind } => {
+            super::editor_factory_author::install(&ctx.ui()?, &kind).map(Some)
+        }
+        _ => super::authored_editor_author::install(&ctx.ui()?).map(|()| None),
+    }
 }
 
 /// Registers the bus listener through an acquired handle, which reports that owner.

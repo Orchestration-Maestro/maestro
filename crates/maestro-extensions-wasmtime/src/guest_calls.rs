@@ -15,6 +15,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
+pub(crate) mod editors;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) mod paints;
@@ -73,6 +74,10 @@ pub(crate) enum Call<H = Handle> {
     Paint(paints::PaintCall<H>),
     /// Calls an authored handler, style, truncation or submenu of a host list or loader.
     Widget(widget_calls::WidgetCall<H>),
+    /// Builds one editor with what the native owner lent.
+    EditorFactory(editors::FactoryCall<H>),
+    /// Runs one native request on an authored editor.
+    Editor(editors::EditorCall<H>),
     /// Awaits an authored hook on the original pending native model invocation.
     ModelHook(crate::model_calls::Invocation<H>),
     /// Invokes an authored stream callback on the retained local event.

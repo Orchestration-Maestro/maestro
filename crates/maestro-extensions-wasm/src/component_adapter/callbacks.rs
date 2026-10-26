@@ -112,6 +112,8 @@ kinds! {
         Style(crate::Style),
         Highlight(crate::Highlight),
         Widget(std::rc::Rc<super::lists::WidgetHandler>),
+        EditorFactory(crate::EditorFactory),
+        Editor(std::rc::Rc<dyn crate::EditorComponent>),
         StreamValue(super::streams::Value),
         ModelPayload(crate::OnPayload),
         ModelResponse(crate::OnResponse),

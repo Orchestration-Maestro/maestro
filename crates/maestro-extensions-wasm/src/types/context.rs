@@ -94,6 +94,11 @@ port! {
         fn set_editor_text(text: &str) -> ();
         /// Reads the host editor's current text.
         fn get_editor_text() -> String;
+        /// Replaces the host editor with the editor `factory` builds, or restores the host's
+        /// editor; the factory runs before the request returns.
+        fn set_editor_component(factory: Option<crate::EditorFactory>) -> ();
+        /// The current editor factory, or `None` while the host's own editor is in use.
+        fn get_editor_component() -> Option<crate::EditorFactory>;
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
         /// The UI's live theme; it observes later selections.

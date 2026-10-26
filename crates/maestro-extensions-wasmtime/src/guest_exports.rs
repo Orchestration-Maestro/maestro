@@ -11,6 +11,7 @@ use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
 mod credentials;
+mod editors;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
@@ -77,6 +78,8 @@ pub(crate) struct Exports {
     paints: paints::Exports,
     /// Authored widget callback export.
     widgets: widget_calls::Exports,
+    /// Editor factory and authored editor exports.
+    editors: editors::Exports,
     /// Native component disposal.
     dispose: Abort,
     /// Native branch change listener.
@@ -133,6 +136,7 @@ impl Exports {
         let factories = factories::Exports::new(store, instance, &guest)?;
         let paints = paints::Exports::new(store, instance, &guest)?;
         let widgets = widget_calls::Exports::new(store, instance, &guest)?;
+        let editors = editors::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
@@ -150,6 +154,7 @@ impl Exports {
             factories,
             paints,
             widgets,
+            editors,
             dispose: typed(store, instance, &guest, "invoke-dispose")?,
             branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
@@ -189,7 +194,9 @@ impl Exports {
             | Call::Factory(_)
             | Call::ToolRender(_)
             | Call::Paint(_)
-            | Call::Widget(_)) => {
+            | Call::Widget(_)
+            | Call::EditorFactory(_)
+            | Call::Editor(_)) => {
                 self.ui(accessor, call).await?;
             }
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -246,6 +253,8 @@ impl Exports {
             Call::ToolRender(call) => self.factories.render(accessor, call).await,
             Call::Paint(call) => self.paints.invoke(accessor, call).await,
             Call::Widget(call) => self.widgets.invoke(accessor, call).await,
+            Call::EditorFactory(call) => self.editors.factory(accessor, call).await,
+            Call::Editor(call) => self.editors.request(accessor, call).await,
             _ => Err(wasmtime::format_err!("expected a UI callback")),
         }
     }

@@ -220,6 +220,30 @@ impl<E: Extension> Guest for Glue<E> {
         ))
     }
 
+    fn invoke_editor_factory(
+        handler: &host::Callback,
+        tui: host::Tui,
+        theme: host::EditorTheme,
+        keybindings: host::KeybindingsManager,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::EditorBuilt>> {
+        std::future::ready(super::editors::editor_factory(
+            handler.id(),
+            tui,
+            theme,
+            keybindings,
+            emitter,
+        ))
+    }
+
+    fn invoke_editor(
+        handler: &host::Callback,
+        request: host::AuthoredEditorRequest,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::AuthoredEditorAnswer>> {
+        std::future::ready(super::editors::authored(handler.id(), request, emitter))
+    }
+
     fn invoke_dispose(
         handler: &host::Callback,
         emitter: &host::CallbackEmitter,

@@ -16,7 +16,9 @@ pub use utils::event_stream::{AssistantMessageEventStream, EventStream, EventStr
 mod autocomplete;
 pub use autocomplete::*;
 mod editor_component;
-pub use editor_component::EditorComponent;
+pub use editor_component::{
+    CustomEditorComponent, EditorComponent, EditorFactory, EditorFactoryOutcome,
+};
 mod event_bus;
 pub use event_bus::*;
 mod bash_executor;

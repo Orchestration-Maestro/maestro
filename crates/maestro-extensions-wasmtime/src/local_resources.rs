@@ -289,6 +289,8 @@ enum Capability {
     SubmenuDone(Rc<dyn Fn(Option<String>)>),
     /// A keybindings manager.
     Keybindings(maestro_extensions::widgets::ExtensionKeybindings),
+    /// A native text callback lent to an authored editor.
+    Text(maestro_extensions::widgets::TextCallback),
 }
 
 /// Local entries and their monotonic identities.
@@ -544,6 +546,18 @@ pub(crate) enum Identity {
     ),
     /// The original weak schema allocation and guest callback admission.
     Schema(crate::schema_registration::Identity),
+    /// A native editor factory and the identity of the authored factory it runs.
+    EditorFactory(
+        maestro_extensions::types::WeakUIHostCall<
+            (
+                maestro_extensions::TUI,
+                maestro_extensions::widgets::EditorTheme,
+                maestro_extensions::KeybindingsManager,
+            ),
+            maestro_extensions::types::EditorFactoryOutcome,
+        >,
+        u32,
+    ),
 }
 impl Identity {
     /// Whether the original callback still has a strong capture owner.
@@ -551,6 +565,7 @@ impl Identity {
         match self {
             Self::Listener(weak, _) => weak.strong_count() > 0,
             Self::Schema((weak, _)) => weak.strong_count() > 0,
+            Self::EditorFactory(weak, _) => weak.alive(),
         }
     }
 }

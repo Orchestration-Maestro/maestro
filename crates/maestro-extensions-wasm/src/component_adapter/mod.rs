@@ -15,6 +15,7 @@ pub(crate) mod renderers;
 pub(crate) use event_bus::events;
 pub(crate) mod bash;
 mod contexts;
+mod editor_factories;
 mod editors;
 mod signals;
 pub(crate) mod streams;
@@ -42,6 +43,9 @@ mod tools;
 mod ui;
 mod widget_imports;
 mod widgets;
+#[cfg(test)]
+pub(crate) use editor_factories::keep_editor;
+pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, LentEditor};
 pub(crate) use lists::invoke_widget;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;

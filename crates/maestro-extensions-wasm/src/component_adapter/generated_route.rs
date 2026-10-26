@@ -72,6 +72,44 @@ fn dispatch(call: host::LocalCall) -> Running {
             super::super::auth_storage::invoke_fallback(call.target, &call.provider),
         ),
         host::LocalCall::AuthBackend(call) => return backend(call),
+        call @ (host::LocalCall::Renderer(_)
+        | host::LocalCall::Render(_)
+        | host::LocalCall::Unit(_)
+        | host::LocalCall::Key(_)) => component(call),
+        host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
+            call.target,
+            &call.args,
+            &call.emitter,
+        )),
+        host::LocalCall::Schema(call) => host::LocalResult::Schema(
+            exports
+                .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
+                .map_err(crate::schema_error::to_wire),
+        ),
+        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+            call.target,
+            call.value,
+            call.operation,
+        )),
+        host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
+        call @ (host::LocalCall::Expanded(_)
+        | host::LocalCall::Factory(_)
+        | host::LocalCall::ToolRender(_)
+        | host::LocalCall::TerminalInput(_)
+        | host::LocalCall::Style(_)
+        | host::LocalCall::Highlight(_)
+        | host::LocalCall::Widget(_)
+        | host::LocalCall::EditorFactory(_)
+        | host::LocalCall::Editor(_)) => ui(call),
+        call => return asynchronous(call),
+    };
+    Box::pin(std::future::ready(result))
+}
+
+/// Runs one nested message renderer or retained component method.
+fn component(call: host::LocalCall) -> host::LocalResult {
+    let exports = Exports::new(Generated);
+    match call {
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
                 .invoke_renderer(
@@ -98,48 +136,44 @@ fn dispatch(call: host::LocalCall) -> Running {
                 None => view.invalidate(emitter),
             },
         )),
-        host::LocalCall::Expanded(call) => host::LocalResult::Unit(exports.invoke_set_expanded(
-            call.target,
-            call.expanded,
-            &call.emitter,
-        )),
         host::LocalCall::Key(call) => host::LocalResult::Key(exports.invoke_component(
             call.target,
             &call.emitter,
             crate::Component::wants_key_release,
         )),
-        host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
+        _ => host::LocalResult::Unit(Err("expected a component call".to_owned())),
+    }
+}
+
+/// Runs one nested UI callback: an expansion, a factory, a tool rendering, terminal input, an
+/// authored style or highlighting, a widget callback or an authored editor request.
+fn ui(call: host::LocalCall) -> host::LocalResult {
+    let exports = Exports::new(Generated);
+    match call {
+        host::LocalCall::Expanded(call) => host::LocalResult::Unit(exports.invoke_set_expanded(
             call.target,
-            &call.args,
+            call.expanded,
             &call.emitter,
         )),
-        host::LocalCall::Schema(call) => host::LocalResult::Schema(
-            exports
-                .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
-                .map_err(crate::schema_error::to_wire),
-        ),
         host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
         host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
-        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+        host::LocalCall::EditorFactory(call) => {
+            host::LocalResult::EditorFactory(super::editors::editor_factory(
+                call.target,
+                call.tui,
+                call.theme,
+                call.keybindings,
+                &call.emitter,
+            ))
+        }
+        host::LocalCall::Editor(call) => host::LocalResult::Editor(super::editors::authored(
             call.target,
-            call.value,
-            call.operation,
+            call.request,
+            &call.emitter,
         )),
-        host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
-        call @ (host::LocalCall::Style(_)
-        | host::LocalCall::Highlight(_)
-        | host::LocalCall::Widget(_)) => widget(call),
-        call => return asynchronous(call),
-    };
-    Box::pin(std::future::ready(result))
-}
-
-/// Runs one nested authored style, highlighting or widget callback.
-fn widget(call: host::LocalCall) -> host::LocalResult {
-    match call {
         host::LocalCall::Style(call) => {
             host::LocalResult::Style(super::super::invoke_style(call.target, &call.text))
         }
@@ -151,7 +185,7 @@ fn widget(call: host::LocalCall) -> host::LocalResult {
             call.event,
             &call.emitter,
         )),
-        _ => host::LocalResult::Unit(Err("expected a widget call".to_owned())),
+        _ => host::LocalResult::Unit(Err("expected a UI callback".to_owned())),
     }
 }
 

@@ -8,7 +8,8 @@
 use std::rc::Rc;
 
 use crate::{
-    AutocompleteProvider, CallbackEmitter, ComponentView, ExtensionResult, Style, TextHandler,
+    AutocompleteProvider, CallbackEmitter, ComponentView, CustomEditor, EditorTheme,
+    ExtensionResult, KeybindingsManager, Style, TUI, TextHandler,
 };
 
 /// An authored text editor with independently optional advanced operations.
@@ -153,3 +154,45 @@ pub trait EditorComponent: ComponentView {
         Ok(None)
     }
 }
+
+/// An authored editor built on the application's custom editor, whose application actions
+/// and special keys the host shares with it.
+///
+/// The host reaches the editor operations through [`EditorComponent`], and the actions and
+/// interrupt, exit, image-paste and shortcut callbacks through the custom editor this editor
+/// names. Input the editor passes on to that custom editor runs those actions.
+pub trait CustomEditorComponent: EditorComponent {
+    /// The application's custom editor this editor extends.
+    fn custom_editor(&self) -> &CustomEditor;
+}
+
+/// The editor an editor factory built: a plain editor, or one with the application's actions.
+#[derive(Clone)]
+pub enum EditorFactoryOutcome {
+    /// An editor with only the editor operations.
+    Editor(Rc<dyn EditorComponent>),
+    /// An editor that also shares the application's actions and callbacks.
+    CustomEditor(Rc<dyn CustomEditorComponent>),
+}
+
+impl EditorFactoryOutcome {
+    /// The built editor through its editor operations.
+    #[must_use]
+    pub fn editor(&self) -> Rc<dyn EditorComponent> {
+        match self {
+            Self::Editor(editor) => Rc::clone(editor),
+            Self::CustomEditor(editor) => Rc::clone(editor) as Rc<dyn EditorComponent>,
+        }
+    }
+}
+
+/// Builds a replacement editor from the terminal, the editor styles and the keybindings,
+/// synchronously.
+pub type EditorFactory = Rc<
+    dyn for<'a> Fn(
+        TUI,
+        EditorTheme,
+        KeybindingsManager,
+        CallbackEmitter<'a>,
+    ) -> ExtensionResult<EditorFactoryOutcome>,
+>;

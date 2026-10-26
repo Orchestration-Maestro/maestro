@@ -28,6 +28,9 @@ pub struct Widget(pub u32);
 /// A host style by role.
 pub struct Style(pub String);
 
+/// A text callback lent to an authored editor, by name.
+pub struct TextCallback(pub String);
+
 /// The host's code highlighting, by name.
 pub struct Highlighter(pub String);
 
@@ -355,6 +358,15 @@ impl WidgetImports for Controlled {
     ) -> ExtensionResult<()> {
         let handler = self.callback_id(handler);
         widget_editors::on_action(&mut self.observe(), widget.0, action, handler)
+    }
+    fn widget_border_color(&self, widget: &Widget) -> ExtensionResult<Style> {
+        widget_editors::border_color(&mut self.observe(), widget.0).map(Style)
+    }
+    type TextCallback = TextCallback;
+    fn text_callback(&self, callback: &TextCallback, text: &str) -> ExtensionResult<()> {
+        self.observe()
+            .log(format!("text {} {}", callback.0, json!(text)));
+        Ok(())
     }
     fn widget_update_value(&self, widget: &Widget, id: &str, value: &str) -> ExtensionResult<()> {
         let mut observed = self.observe();
@@ -770,5 +782,63 @@ fn editor_answer(answer: widget_editors::Answer) -> EditorAnswer {
         Answer::Cursor(line, col) => EditorAnswer::Cursor(line, col),
         Answer::Number(number) => EditorAnswer::Number(number),
         Answer::Flag(flag) => EditorAnswer::Flag(flag),
+    }
+}
+
+impl Controlled {
+    /// The component and editor identities of the authored editor the host shows.
+    fn shown_editor(&self) -> Result<(u32, u32), String> {
+        let observed = self.observe();
+        let slot = observed.ui.editor.as_ref().ok_or("no authored editor")?;
+        Ok((slot.component, slot.editor))
+    }
+
+    /// Runs one host request on the authored editor the host shows.
+    pub fn authored_editor(&self, request: serde_json::Value) -> Result<serde_json::Value, String> {
+        use super::editor_host::{self as described, EditorOp};
+        use crate::component_adapter::{AuthoredAnswer, AuthoredRequest};
+        let request = match described::op(request)? {
+            EditorOp::GetText => AuthoredRequest::GetText,
+            EditorOp::SetText { text } => AuthoredRequest::SetText(text),
+            EditorOp::SetOnSubmit { callback } => {
+                AuthoredRequest::SetOnSubmit(callback.map(TextCallback))
+            }
+            EditorOp::OnChange => AuthoredRequest::OnChange,
+            EditorOp::SetOnChange { callback } => {
+                AuthoredRequest::SetOnChange(callback.map(TextCallback))
+            }
+            EditorOp::AddToHistory { text } => AuthoredRequest::AddToHistory(text),
+            EditorOp::InsertTextAtCursor { text } => AuthoredRequest::InsertTextAtCursor(text),
+            EditorOp::GetExpandedText => AuthoredRequest::GetExpandedText,
+            EditorOp::BorderColor => AuthoredRequest::BorderColor,
+            EditorOp::SetBorderColor { role } => AuthoredRequest::SetBorderColor(Style(role)),
+            EditorOp::SetPaddingX { padding } => AuthoredRequest::SetPaddingX(padding),
+            EditorOp::SetAutocompleteMaxVisible { max } => {
+                AuthoredRequest::SetAutocompleteMaxVisible(max)
+            }
+        };
+        let (_, editor) = self.shown_editor()?;
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let exports = crate::component_adapter::Exports::new(self.clone());
+        Ok(match exports.invoke_editor(editor, request, &emitter)? {
+            AuthoredAnswer::Done => described::done(),
+            AuthoredAnswer::Absent => described::absent(),
+            AuthoredAnswer::Text(text) => described::text(&text),
+            AuthoredAnswer::Handler(None) => described::handler(false),
+            AuthoredAnswer::Handler(Some(handler)) => {
+                with_emitter(self, &emitter, |emitter| handler(described::PROBE, emitter))?;
+                described::handler(true)
+            }
+            AuthoredAnswer::Style(style) => described::style(&style.apply(described::BORDER)?),
+        })
+    }
+
+    /// Calls one method of the authored editor's component.
+    pub fn editor_component(
+        &self,
+        call: super::renderer_host::Call<'_>,
+    ) -> Result<super::renderer_host::Reply, String> {
+        let (component, _) = self.shown_editor()?;
+        super::renderer_host::invoke(&authored_component(component)?, call, self, 0)
     }
 }

@@ -52,6 +52,10 @@ mod retained;
 mod signals;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "../src/tests/editor_factory_author.rs"]
+mod editor_factory_author;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "../src/tests/factory_component_author.rs"]
 mod factory_component_author;
 

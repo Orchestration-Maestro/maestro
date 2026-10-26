@@ -94,7 +94,35 @@ pub(in super::super) struct LocalWidget {
     emitter: Resource<EmitterEndpoint>,
 }
 
-/// Marshals one component factory, tool renderer, terminal input or widget callback.
+/// Owned operands of one nested editor factory.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalEditorFactory {
+    /// Authored identity of the factory.
+    target: u32,
+    /// Original terminal, transferred.
+    tui: Resource<crate::local_resources::effects::TuiEndpoint>,
+    /// Lent editor styles, transferred.
+    theme: crate::keys_imports::EditorTheme,
+    /// Original keybindings manager, transferred.
+    keybindings: Resource<crate::keys_reads::KeysEndpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested request on an authored editor.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalEditor {
+    /// Authored identity of the editor.
+    target: u32,
+    /// The request.
+    request: crate::guest_calls::editors::WireRequest,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Marshals one component factory, tool renderer, terminal input, widget or editor callback.
 pub(super) fn lower(
     table: &mut ResourceTable,
     call: &Call<Callback>,
@@ -139,17 +167,46 @@ pub(super) fn lower(
             event: call.event.lower(table)?,
             emitter: table.push(call.emitter.clone())?,
         }),
+        Call::EditorFactory(call) => LocalCall::EditorFactory(LocalEditorFactory {
+            target: call.handler.id,
+            tui: table.push(call.tui.clone())?,
+            theme: crate::keys_imports::lend(table, call.theme.clone())?,
+            keybindings: table.push(call.keybindings.clone())?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
+        Call::Editor(call) => LocalCall::Editor(LocalEditor {
+            target: call.handler.id,
+            request: call.request.lower(table)?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
         _ => return Err(wasmtime::format_err!("expected a UI callback")),
     })
 }
 
-/// Delivers a nested authored styling, highlighting or widget callback's result.
+/// Delivers a nested UI callback's result.
 pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     store: &mut T,
     call: Call<Callback>,
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
+            let value = match value {
+                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Factory(call), LocalResult::Factory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
         (Call::Paint(PaintCall::Style(_, _, reply)), LocalResult::Style(value)) => {
             let _ = reply.send(value);
         }
@@ -159,6 +216,20 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Widget(call), LocalResult::Widget(value)) => {
             let value = match value {
                 Ok(answer) => Ok(crate::guest_calls::widget_calls::answered(store, answer)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::EditorFactory(call), LocalResult::EditorFactory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_calls::editors::retained(store, built)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Editor(call), LocalResult::Editor(value)) => {
+            let value = match value {
+                Ok(answer) => Ok(crate::guest_calls::editors::answered(store, answer)?),
                 Err(error) => Err(error),
             };
             let _ = call.reply.send(value);

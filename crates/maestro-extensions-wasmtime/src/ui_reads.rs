@@ -40,26 +40,8 @@ pub(crate) enum Request {
     GetEditorText(Sender<Result<String, String>>),
     /// Looks up, selects or reports themes and tool expansion on the original UI.
     Theme(crate::ui_themes::ThemeRequest),
-    /// Replaces the footer with the component an authored factory builds, or restores it.
-    Footer(
-        Option<crate::guest_calls::Handle>,
-        crate::api_reads::Endpoint,
-        Reply,
-    ),
-    /// Replaces the header with the component an authored factory builds, or restores it.
-    Header(
-        Option<crate::guest_calls::Handle>,
-        crate::api_reads::Endpoint,
-        Reply,
-    ),
-    /// Shows the component an authored factory builds under one widget key.
-    WidgetFactory(
-        String,
-        crate::guest_calls::Handle,
-        crate::api_reads::Endpoint,
-        Option<ExtensionWidgetOptions>,
-        Reply,
-    ),
+    /// Installs or reads an authored factory on the original UI.
+    Factory(FactoryRequest),
     /// Adds an authored terminal input listener under the original extension.
     OnTerminalInput(
         crate::guest_calls::Handle,
@@ -76,40 +58,16 @@ impl Request {
         registry: &crate::local_resources::Registry,
     ) {
         let (result, reply) = match self {
+            Self::Factory(request) => {
+                request.answer(ui, registry);
+                return;
+            }
             Self::OnTerminalInput(handler, api, reply) => {
                 let _ = reply.send(registry.terminal_input(ui, handler, &api));
                 return;
             }
             Self::Theme(request) => {
                 request.answer(ui, registry);
-                return;
-            }
-            Self::Footer(factory, api, reply) => {
-                let shown = registry.facade(&api).and_then(|api| {
-                    let factory =
-                        factory.map(|factory| factory.footer_factory(registry.clone(), &api));
-                    ui.set_footer(factory).map_err(|error| error.to_string())
-                });
-                let _ = reply.send(shown);
-                return;
-            }
-            Self::Header(factory, api, reply) => {
-                let shown = registry.facade(&api).and_then(|api| {
-                    let factory =
-                        factory.map(|factory| factory.component_factory(registry.clone(), &api));
-                    ui.set_header(factory).map_err(|error| error.to_string())
-                });
-                let _ = reply.send(shown);
-                return;
-            }
-            Self::WidgetFactory(key, factory, api, options, reply) => {
-                let shown = registry.facade(&api).and_then(|api| {
-                    let factory = factory.component_factory(registry.clone(), &api);
-                    let content = Some(WidgetContent::Factory(factory));
-                    ui.set_widget(key, content, options)
-                        .map_err(|error| error.to_string())
-                });
-                let _ = reply.send(shown);
                 return;
             }
             Self::Notify(message, kind, reply) => (ui.notify(message, kind), reply),
@@ -143,10 +101,8 @@ impl Request {
                 let _ = reply.send(Err(error.to_owned()));
             }
             Self::Theme(request) => request.reject(error),
-            Self::WidgetFactory(.., reply)
-            | Self::Header(_, _, reply)
-            | Self::Footer(_, _, reply)
-            | Self::Notify(_, _, reply)
+            Self::Factory(request) => request.reject(error),
+            Self::Notify(_, _, reply)
             | Self::Status(_, _, reply)
             | Self::WorkingMessage(_, reply)
             | Self::WorkingVisible(_, reply)
@@ -158,6 +114,90 @@ impl Request {
             | Self::SetEditorText(_, reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
+        }
+    }
+}
+
+/// Requests that install an authored factory on the original UI, which the UI may run before
+/// it answers, or read the current editor factory.
+pub(crate) enum FactoryRequest {
+    /// Replaces the footer with the component an authored factory builds, or restores it.
+    Footer(
+        Option<crate::guest_calls::Handle>,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
+    /// Replaces the header with the component an authored factory builds, or restores it.
+    Header(
+        Option<crate::guest_calls::Handle>,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
+    /// Shows the component an authored factory builds under one widget key.
+    WidgetFactory(
+        String,
+        crate::guest_calls::Handle,
+        crate::api_reads::Endpoint,
+        Option<ExtensionWidgetOptions>,
+        Reply,
+    ),
+    /// Replaces the editor with the one an authored factory builds, or restores it.
+    EditorComponent(
+        Option<crate::guest_calls::Handle>,
+        crate::api_reads::Endpoint,
+        Reply,
+    ),
+    /// Reads the identity of the current authored editor factory.
+    GetEditorComponent(Sender<Result<Option<u32>, String>>),
+}
+
+impl FactoryRequest {
+    /// Calls the original native UI outside all capability-table borrows.
+    fn answer(self, ui: &ExtensionUIContext, registry: &crate::local_resources::Registry) {
+        match self {
+            Self::EditorComponent(factory, api, reply) => {
+                let _ = reply.send(registry.set_editor_component(ui, factory, &api));
+            }
+            Self::GetEditorComponent(reply) => {
+                let _ = reply.send(registry.editor_component(ui));
+            }
+            Self::Footer(factory, api, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory =
+                        factory.map(|factory| factory.footer_factory(registry.clone(), &api));
+                    ui.set_footer(factory).map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
+            }
+            Self::Header(factory, api, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory =
+                        factory.map(|factory| factory.component_factory(registry.clone(), &api));
+                    ui.set_header(factory).map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
+            }
+            Self::WidgetFactory(key, factory, api, options, reply) => {
+                let shown = registry.facade(&api).and_then(|api| {
+                    let factory = factory.component_factory(registry.clone(), &api);
+                    let content = Some(WidgetContent::Factory(factory));
+                    ui.set_widget(key, content, options)
+                        .map_err(|error| error.to_string())
+                });
+                let _ = reply.send(shown);
+            }
+        }
+    }
+
+    /// Settles a released capability without leaving the Store caller waiting.
+    fn reject(self, error: &str) {
+        let error = error.to_owned();
+        match self {
+            Self::GetEditorComponent(reply) => drop(reply.send(Err(error))),
+            Self::WidgetFactory(.., reply)
+            | Self::Header(_, _, reply)
+            | Self::Footer(_, _, reply)
+            | Self::EditorComponent(_, _, reply) => drop(reply.send(Err(error))),
         }
     }
 }

@@ -72,6 +72,18 @@ pub struct WidgetSlot {
     pub width: Option<f64>,
 }
 
+/// The editor an authored factory built, as the host shows it in place of its own.
+pub struct EditorSlot {
+    /// Identity of the factory.
+    pub factory: u32,
+    /// Host handle of the editor's component.
+    pub component: u32,
+    /// Host handle of the editor's operations.
+    pub editor: u32,
+    /// Key of the custom editor widget the editor extends.
+    pub custom: Option<u32>,
+}
+
 /// The header container the host keeps once its built-in header exists.
 #[derive(Default)]
 pub struct Header {
@@ -117,6 +129,8 @@ pub enum Nested {
     /// The interceptor of an input of the editor under this key; input it did not consume
     /// continues.
     Shortcut(u32, String),
+    /// An editor factory with this identity, whose editor replaces the current one.
+    Editor(u32),
 }
 
 /// Host state the UI requests are served from.
@@ -152,6 +166,8 @@ pub struct Bank {
     pub keys: super::widget_keys::Managers,
     /// The editors among the widgets.
     pub widget_editors: super::widget_editors::Editors,
+    /// The authored editor shown in place of the host's own, when there is one.
+    pub editor: Option<EditorSlot>,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -293,6 +309,44 @@ pub fn set_editor_text(observed: &mut Observed, key: usize, text: &str) -> Resul
     call(observed, key, "setEditorText", &json!([text]))?;
     observed.ui.editors.insert(key, text.to_owned());
     Ok(())
+}
+
+/// Records an editor factory request against the acquisition `key` and removes the current
+/// authored editor, returning it; the host builds the new one afterwards.
+pub fn set_editor_component(
+    observed: &mut Observed,
+    key: usize,
+    factory: Option<u32>,
+) -> Result<Option<EditorSlot>, String> {
+    call(
+        observed,
+        key,
+        "setEditorComponent",
+        &json!([factory.is_some()]),
+    )?;
+    Ok(observed.ui.editor.take())
+}
+
+/// Records the editor a factory built and the actions of the custom editor it extends.
+pub fn show_editor(observed: &mut Observed, slot: EditorSlot) {
+    let actions = slot.custom.map(|custom| {
+        super::widget_editors::editor(observed, custom).map(|editor| {
+            editor
+                .actions
+                .iter()
+                .map(|(action, _)| action.clone())
+                .collect::<Vec<_>>()
+        })
+    });
+    let actions = json!(actions.map(Result::unwrap_or_default));
+    observed.log(format!("editor built custom={actions}"));
+    observed.ui.editor = Some(slot);
+}
+
+/// Records a factory read against the acquisition `key` and answers the current factory.
+pub fn get_editor_component(observed: &mut Observed, key: usize) -> Result<Option<u32>, String> {
+    call(observed, key, "getEditorComponent", &json!([]))?;
+    Ok(observed.ui.editor.as_ref().map(|slot| slot.factory))
 }
 
 /// Records one read against the acquisition `key` and answers the text its binding keeps.
@@ -641,6 +695,21 @@ impl State {
                 self.observed.ui.widgets.push(slot);
                 Ok(None)
             }
+            (Nested::Editor(factory), host::LocalResult::EditorFactory(Ok(built))) => {
+                let custom = built
+                    .custom
+                    .map(|custom| self.table.delete(custom).map(|widget| widget.0))
+                    .transpose()?;
+                let slot = EditorSlot {
+                    factory,
+                    component: built.component.rep(),
+                    editor: built.editor.rep(),
+                    custom,
+                };
+                show_editor(&mut self.observed, slot);
+                Ok(None)
+            }
+            (Nested::Editor(_), host::LocalResult::EditorFactory(Err(error))) => Ok(Some(error)),
             (
                 _,
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
@@ -994,6 +1063,53 @@ impl host::HostExtensionUiContext for State {
     fn get_editor_text(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<String, String>> {
         let key = self.table.get(&this)?.0;
         Ok(get_editor_text(&mut self.observed, key))
+    }
+
+    fn set_editor_component(
+        &mut self,
+        this: Resource<Ui>,
+        factory: Option<Resource<super::host::Identity>>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let key = self.table.get(&this)?.0;
+        let target = factory
+            .as_ref()
+            .map(|factory| self.table.get(factory).map(|identity| identity.0))
+            .transpose()?;
+        let old = match set_editor_component(&mut self.observed, key, target) {
+            Ok(old) => old,
+            Err(error) => return self.routed(Err(error)),
+        };
+        if let Some(old) = old {
+            self.observed
+                .register(format!("editor component {}", old.component), old.component);
+            self.observed
+                .register(format!("editor {}", old.editor), old.editor);
+        }
+        let mut steps = std::collections::VecDeque::new();
+        if let Some(target) = target {
+            let call = host::LocalEditorFactory {
+                target,
+                tui: self.push(Tui)?,
+                theme: self.lend_editor_theme()?,
+                keybindings: self.push(super::widget_component::KeybindingsResource(0))?,
+                emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+            };
+            steps.push_back((host::LocalCall::EditorFactory(call), Nested::Editor(target)));
+        }
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
+        })
+    }
+
+    fn get_editor_component(
+        &mut self,
+        this: Resource<Ui>,
+    ) -> wasmtime::Result<Result<Option<u32>, String>> {
+        let key = self.table.get(&this)?.0;
+        Ok(get_editor_component(&mut self.observed, key))
     }
 
     fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {

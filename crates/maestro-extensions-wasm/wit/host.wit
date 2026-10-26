@@ -171,6 +171,10 @@ interface host {
     record local-highlight { target: u32, code: string, lang: option<string> }
     /// One nested same-instance widget callback.
     record local-widget { target: u32, event: widget-event, emitter: callback-emitter }
+    /// One nested same-instance editor factory.
+    record local-editor-factory { target: u32, tui: tui, theme: editor-theme, keybindings: keybindings-manager, emitter: callback-emitter }
+    /// One nested same-instance request on an authored editor.
+    record local-editor { target: u32, request: authored-editor-request, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
     enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
@@ -245,6 +249,8 @@ interface host {
         style(local-style),
         highlight(local-highlight),
         widget(local-widget),
+        editor-factory(local-editor-factory),
+        editor(local-editor),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -267,6 +273,8 @@ interface host {
         style(result<string, string>),
         highlight(result<list<string>, string>),
         widget(result<widget-answer, string>),
+        editor-factory(result<editor-built, string>),
+        editor(result<authored-editor-answer, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-value { unit, boolean(bool), text(string), lines(list<string>), credentials(auth-storage), catalog(model-registry) }
@@ -497,6 +505,10 @@ interface host {
         insert-editor-text: func(text: string) -> import-route;
         /// Replaces the handler of an application action of a custom editor, keeping its place.
         on-action: func(action: string, handler: borrow<callback>) -> result<_, string>;
+        /// The border style of an editor.
+        border-color: func() -> result<style, string>;
+        /// Another handle to the same widget.
+        share: func() -> widget;
     }
     /// The toolkit editor on a lent terminal.
     new-editor: func(tui: borrow<tui>, theme: editor-styles, options: editor-options) -> result<widget, string>;
@@ -563,6 +575,20 @@ interface host {
     raw-key-hint: func(key: string, description: string) -> result<string, string>;
     /// The live theme's editor border and selection list styles.
     record editor-theme { border-color: style, select-list: select-list-theme }
+    /// A text callback the host lent to an authored editor.
+    resource text-callback { call: func(text: string) -> import-route; }
+    /// What one request asks of an authored editor.
+    variant authored-editor-request {
+        get-text, set-text(string), set-on-submit(option<text-callback>),
+        on-change, set-on-change(option<text-callback>), add-to-history(string),
+        insert-text-at-cursor(string), get-expanded-text, border-color, set-border-color(style),
+        set-padding-x(f64), set-autocomplete-max-visible(f64),
+    }
+    /// What an authored editor answered; `absent` means it lacks the operation.
+    variant authored-editor-answer { done, absent, text(string), handler(option<callback>), style(callback) }
+    /// An editor a factory built: its component, its editor operations and, for an editor on the
+    /// application's custom editor, that custom editor.
+    record editor-built { component: callback, editor: callback, custom: option<widget> }
     /// The live theme's editor styles.
     get-editor-theme: func() -> result<editor-theme, string>;
     /// Which renderer a tool rendering enters.
@@ -616,6 +642,10 @@ interface host {
         paste-to-editor: func(text: string) -> import-route;
         set-editor-text: func(text: string) -> import-route;
         get-editor-text: func() -> result<string, string>;
+        /// Replaces the editor with the one a factory builds, or restores the host editor.
+        set-editor-component: func(factory: option<borrow<callback>>) -> import-route;
+        /// The identity of the current editor factory, absent while the host editor is in use.
+        get-editor-component: func() -> result<option<u32>, string>;
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         on-terminal-input: func(handler: borrow<callback>) -> result<subscription, string>;
         /// The live theme of this UI.

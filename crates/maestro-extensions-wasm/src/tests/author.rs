@@ -28,6 +28,8 @@ mod catalog_author;
 mod compaction_author;
 #[path = "completion_author.rs"]
 mod completion_author;
+#[path = "editor_factory_author.rs"]
+mod editor_factory_author;
 #[path = "factory_component_author.rs"]
 mod factory_component_author;
 #[path = "provider_author.rs"]

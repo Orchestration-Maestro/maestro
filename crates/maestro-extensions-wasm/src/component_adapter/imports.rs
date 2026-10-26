@@ -615,6 +615,14 @@ pub trait Imports: Clone + 'static {
     fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
     /// Reads the host editor's current text.
     fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Forwards the editor factory, which the host runs before answering, or its removal.
+    fn ui_set_editor_component(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Reads the identity of the current editor factory.
+    fn ui_get_editor_component(&self, resource: &Self::Ui) -> ExtensionResult<Option<u32>>;
     /// Reads the UI's live theme.
     fn ui_theme(&self, resource: &Self::Ui) -> ExtensionResult<Self::Theme>;
     /// Lists every available theme.

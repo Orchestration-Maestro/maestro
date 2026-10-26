@@ -33,6 +33,9 @@ pub(super) fn observe(
         let steps = serde_json::from_str(steps).map_err(|error| error.to_string())?;
         return Ok(super::widget_author::run(steps, context.ui().ok()).to_string());
     }
+    if let Some(kind) = args.strip_prefix("ui editor ") {
+        return Ok(super::editor_factory_author::install(&context.ui()?, kind)?.to_string());
+    }
     if let Some(options) = args.strip_prefix("ui capabilities ") {
         let (width, expandable): (Option<f64>, bool) =
             serde_json::from_str(options).map_err(|e| e.to_string())?;

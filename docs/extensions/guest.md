@@ -544,8 +544,9 @@ runs its interrupt, exit and image-paste handlers and the `on_action` handlers o
 application actions its manager binds; replacing an action keeps its place.
 
 The [authored editor and completion contracts](guest_ui.md) describe `EditorComponent`,
-`AutocompleteProvider` and their optional operations. They are separate from the host-backed
-editor facades and do not yet install replacements into the UI.
+`AutocompleteProvider` and their optional operations. The host-backed editor facades implement
+the editor traits, and [an editor factory](guest_ui.md#editor-factories) replaces the host's
+editor with an authored one.
 
 ### Themes and tool expansion
 

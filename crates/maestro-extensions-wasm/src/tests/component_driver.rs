@@ -620,6 +620,41 @@ impl Driver for ComponentDriver {
         let rep = slot.ok_or_else(|| format!("no widget {key}"))?;
         self.render_slot(rep, width).await
     }
+    async fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let op = super::editor_host::op(request)?;
+        let editor = self.observed(|observed| observed.ui.editor.as_ref().map(|slot| slot.editor));
+        let editor = editor.ok_or("no authored editor")?;
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        super::editor_driver::request(harness, editor, op)
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    async fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> Result<super::renderer_host::Reply, String> {
+        let component =
+            self.observed(|observed| observed.ui.editor.as_ref().map(|slot| slot.component));
+        let rep = component.ok_or("no authored editor")?;
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter { key: 0 })
+            .map_err(|e| e.to_string())?;
+        let reply = component_call(harness, Resource::new_borrow(rep), call, &emitter).await?;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        reply
+    }
     async fn widget_capabilities(
         &mut self,
         key: &str,

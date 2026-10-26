@@ -305,6 +305,12 @@ pub(super) enum LocalCall {
     /// An authored widget callback.
     #[component(name = "widget")]
     Widget(LocalWidget),
+    /// An editor factory.
+    #[component(name = "editor-factory")]
+    EditorFactory(ui::LocalEditorFactory),
+    /// A request on an authored editor.
+    #[component(name = "editor")]
+    Editor(ui::LocalEditor),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -368,6 +374,12 @@ pub(super) enum LocalResult {
     /// The widget callback's answer, or the authored error.
     #[component(name = "widget")]
     Widget(Result<crate::guest_calls::widget_calls::Answer, String>),
+    /// The built editor's identities, or the authored error.
+    #[component(name = "editor-factory")]
+    EditorFactory(Result<crate::guest_calls::editors::Built, String>),
+    /// The authored editor's answer, or its error.
+    #[component(name = "editor")]
+    Editor(Result<crate::guest_calls::editors::Answer, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -406,7 +418,9 @@ pub(super) fn lower(
         | Call::Factory(_)
         | Call::TerminalInput(_)
         | Call::Paint(_)
-        | Call::Widget(_)) => ui::lower(table, call)?,
+        | Call::Widget(_)
+        | Call::EditorFactory(_)
+        | Call::Editor(_)) => ui::lower(table, call)?,
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -553,27 +567,19 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
         }
-        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
-            let _ = call.reply.send(value);
-        }
-        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
-            let value = match value {
-                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
-                Err(error) => Err(error),
-            };
-            let _ = call.reply.send(value);
-        }
-        (Call::Factory(call), LocalResult::Factory(value)) => {
-            let value = match value {
-                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
-                Err(error) => Err(error),
-            };
-            let _ = call.reply.send(value);
-        }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);
         }
-        (call @ (Call::Paint(_) | Call::Widget(_)), value) => ui::settle(store, call, value)?,
+        (
+            call @ (Call::TerminalInput(_)
+            | Call::ToolRender(_)
+            | Call::Factory(_)
+            | Call::Paint(_)
+            | Call::Widget(_)
+            | Call::EditorFactory(_)
+            | Call::Editor(_)),
+            value,
+        ) => ui::settle(store, call, value)?,
         (call, value) => settle_asynchronous(store, call, value)?,
     }
     Ok(())

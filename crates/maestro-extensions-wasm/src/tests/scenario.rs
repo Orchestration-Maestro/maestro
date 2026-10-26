@@ -161,6 +161,17 @@ pub trait Driver {
         key: &str,
         expanded: bool,
     ) -> Result<(Option<f64>, bool), String>;
+    /// Runs one host request on the authored editor the host shows, describing the answer as
+    /// [`super::editor_host`] does.
+    async fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String>;
+    /// Calls one method of the component of the authored editor the host shows.
+    async fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> Result<super::renderer_host::Reply, String>;
     /// Delivers one terminal input chunk to every live terminal input listener in
     /// registration order and returns each listener's answer.
     async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String>;

@@ -160,7 +160,8 @@ pub mod widgets {
         Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
         SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
         SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
-        components::settings_list::SettingsListOptions, editor_component::BorderColor,
+        components::settings_list::SettingsListOptions,
+        editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
     };
     pub use maestro_tui::{
         Editor, EditorOptions, EditorTheme, Focusable, KeybindingConflict, KeybindingDefinition,

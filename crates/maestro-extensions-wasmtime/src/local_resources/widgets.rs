@@ -83,6 +83,83 @@ impl Registry {
         }
     }
 
+    /// Lends a host style.
+    pub(crate) fn lend_style(&self, style: BorderColor) -> Result<StyleEndpoint, String> {
+        self.insert(Capability::Style(style)).map(StyleEndpoint)
+    }
+
+    /// Lends editor styles: the border, then the completion list styles in field order.
+    pub(crate) fn lend_editor_theme(
+        &self,
+        theme: maestro_extensions::widgets::EditorTheme,
+    ) -> Result<(StyleEndpoint, Vec<StyleEndpoint>), String> {
+        let list = Rc::new(theme.select_list);
+        let styles = crate::widget_lists::select_roles(&list)
+            .into_iter()
+            .map(|style| self.lend_style(style))
+            .collect::<Result<_, _>>()?;
+        Ok((self.lend_style(theme.border_color)?, styles))
+    }
+
+    /// Lends a native text callback to an authored editor.
+    pub(crate) fn lend_text(
+        &self,
+        callback: maestro_extensions::widgets::TextCallback,
+    ) -> Result<crate::guest_calls::editors::TextCallbackEndpoint, String> {
+        self.insert(Capability::Text(callback))
+            .map(crate::guest_calls::editors::TextCallbackEndpoint)
+    }
+
+    /// The application's custom editor behind a widget resource.
+    pub(crate) fn custom_editor(
+        &self,
+        widget: &WidgetEndpoint,
+    ) -> Result<Rc<dyn maestro_extensions::widgets::ExtensionEditor>, String> {
+        self.widget(widget)?
+            .custom_editor()
+            .ok_or_else(|| "the widget is no custom editor".to_owned())
+    }
+
+    /// Replaces the original UI's editor with the one an authored factory builds, keeping the
+    /// factory's identity so the extension can read the factory back, or restores the editor.
+    pub(crate) fn set_editor_component(
+        &self,
+        ui: &maestro_extensions::ExtensionUIContext,
+        factory: Option<crate::guest_calls::Handle>,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<(), String> {
+        let api = self.facade(api)?;
+        let factory = factory.map(|factory| {
+            let id = factory.id();
+            let native = factory.editor_factory(self.clone(), &api);
+            let weak = native.downgrade();
+            let identity = super::Identity::EditorFactory(native.downgrade(), id);
+            self.resources.borrow_mut().identity(weak.addr(), identity);
+            native
+        });
+        ui.set_editor_component(factory)
+            .map_err(|error| error.to_string())
+    }
+
+    /// The identity of the original UI's current editor factory, absent while its own editor
+    /// is in use.
+    pub(crate) fn editor_component(
+        &self,
+        ui: &maestro_extensions::ExtensionUIContext,
+    ) -> Result<Option<u32>, String> {
+        let Some(factory) = ui
+            .get_editor_component()
+            .map_err(|error| error.to_string())?
+        else {
+            return Ok(None);
+        };
+        let key = factory.downgrade().addr();
+        match self.resources.borrow().identities.get(&key) {
+            Some(super::Identity::EditorFactory(weak, id)) if weak.alive() => Ok(Some(*id)),
+            _ => Err("the editor factory belongs to another extension".to_owned()),
+        }
+    }
+
     /// The widget behind a widget resource.
     pub(crate) fn widget(&self, widget: &WidgetEndpoint) -> Result<Rc<Widget>, String> {
         match self.capability(widget.0.id).as_deref() {
@@ -162,6 +239,10 @@ impl State {
                 done(value);
                 let _ = reply.send(Ok(()));
             }
+            (Some(Capability::Text(callback)), Lent::Text(text, reply)) => {
+                callback(&text);
+                let _ = reply.send(Ok(()));
+            }
             (_, lent) => lent.reject("extension style resource ended"),
         }
     }
@@ -169,14 +250,7 @@ impl State {
     /// Lends the live theme's editor border and selection list styles.
     fn lend_editor(&self) -> Result<(StyleEndpoint, Vec<StyleEndpoint>), String> {
         let registry = &self.registry;
-        let theme = registry.widgets.editor_theme();
-        let style = |style| registry.insert(Capability::Style(style)).map(StyleEndpoint);
-        let list = Rc::new(theme.select_list);
-        let styles = crate::widget_lists::select_roles(&list)
-            .into_iter()
-            .map(style)
-            .collect::<Result<_, _>>()?;
-        Ok((style(theme.border_color)?, styles))
+        registry.lend_editor_theme(registry.widgets.editor_theme())
     }
 
     /// Lends the live theme's settings list styles.

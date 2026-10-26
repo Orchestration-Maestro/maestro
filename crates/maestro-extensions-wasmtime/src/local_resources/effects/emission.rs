@@ -155,7 +155,8 @@ impl Registry {
                     .get(&identity(entry.listener()))
                     .and_then(|identity| match identity {
                         crate::local_resources::Identity::Listener(_, id) => Some(*id),
-                        crate::local_resources::Identity::Schema(_) => None,
+                        crate::local_resources::Identity::Schema(_)
+                        | crate::local_resources::Identity::EditorFactory(..) => None,
                     })
             })
             .collect();

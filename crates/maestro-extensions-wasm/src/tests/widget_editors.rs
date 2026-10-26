@@ -85,6 +85,18 @@ pub fn editor(observed: &mut Observed, key: u32) -> Result<&mut Editor, String> 
         .ok_or_else(|| format!("widget {key} is no editor"))
 }
 
+/// Records a border style read and answers the role of a host style, or names an authored one.
+///
+/// # Errors
+/// Returns a message when the widget is no editor.
+pub fn border_color(observed: &mut Observed, key: u32) -> Result<String, String> {
+    observed.log(format!("widget {key} borderColor"));
+    Ok(match &editor(observed, key)?.border {
+        Paint::Host(role) => role.clone(),
+        Paint::Authored(id) => format!("authored {id}"),
+    })
+}
+
 /// Whether the widget under `key` is an editor.
 pub fn is_editor(observed: &Observed, key: u32) -> bool {
     observed.ui.widget_editors.0.contains_key(&key)

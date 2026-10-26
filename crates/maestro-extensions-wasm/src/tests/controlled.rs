@@ -299,6 +299,42 @@ impl Controlled {
     }
 
     /// Runs one widget disposal with a lent emitter.
+    /// Runs an editor factory with the host's terminal, editor styles and keybindings, and
+    /// shows what it built.
+    fn build_editor_component(&self, factory: u32) -> ExtensionResult<()> {
+        let roles = [
+            "selectedPrefix",
+            "selectedText",
+            "description",
+            "scrollInfo",
+            "noMatch",
+        ];
+        let lent = crate::component_adapter::LentEditor {
+            tui: Tui {
+                _lease: Lease::new(&self.observed),
+            },
+            theme: (
+                super::widget_controlled::Style("borderMuted".to_owned()),
+                roles
+                    .map(|role| super::widget_controlled::Style(role.to_owned()))
+                    .into(),
+            ),
+            keybindings: super::widget_controlled::Keybindings(0),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let outcome = Exports::new(self.clone()).invoke_editor_factory(factory, lent, &emitter)?;
+        let (component, editor, custom) =
+            crate::component_adapter::keep_editor(self, &outcome, |widget| widget.0)?;
+        let slot = super::ui_host::EditorSlot {
+            factory,
+            component,
+            editor,
+            custom,
+        };
+        super::ui_host::show_editor(&mut self.observed.borrow_mut(), slot);
+        Ok(())
+    }
+
     fn dispose(&self, dispose: &crate::ComponentDisposer) -> ExtensionResult<()> {
         let emitter = super::bus_host::Emitter { key: 0 };
         crate::component_adapter::renderers::with_emitter(self, &emitter, |emitter| {
@@ -1599,6 +1635,27 @@ impl Imports for Controlled {
     }
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
+    fn ui_set_editor_component(
+        &self,
+        resource: &Ui,
+        factory: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        let target = factory.map(|factory| factory.id);
+        let old = super::ui_host::set_editor_component(
+            &mut self.observed.borrow_mut(),
+            resource.key,
+            target,
+        )?;
+        if let Some(old) = old {
+            let mut observed = self.observed.borrow_mut();
+            observed.register(format!("editor component {}", old.component), old.component);
+            observed.register(format!("editor {}", old.editor), old.editor);
+        }
+        target.map_or(Ok(()), |factory| self.build_editor_component(factory))
+    }
+    fn ui_get_editor_component(&self, resource: &Ui) -> ExtensionResult<Option<u32>> {
+        super::ui_host::get_editor_component(&mut self.observed.borrow_mut(), resource.key)
     }
     fn ui_theme(&self, resource: &Ui) -> ExtensionResult<Theme> {
         let key = self.ui_themed(resource, "theme", &serde_json::Value::Null)?;

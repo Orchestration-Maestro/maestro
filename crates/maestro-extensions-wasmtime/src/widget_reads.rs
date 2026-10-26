@@ -156,6 +156,8 @@ pub(crate) enum Lent {
     Row(String, bool, Reply<String>),
     /// Closes a submenu with its chosen value, or without one.
     Done(Option<String>, Reply<()>),
+    /// Runs a lent text callback.
+    Text(String, Reply<()>),
 }
 
 impl Lent {
@@ -165,7 +167,7 @@ impl Lent {
         match self {
             Self::Style(_, reply) | Self::Row(_, _, reply) => drop(reply.send(Err(error))),
             Self::Highlight(_, _, reply) => drop(reply.send(Err(error))),
-            Self::Done(_, reply) => drop(reply.send(Err(error))),
+            Self::Done(_, reply) | Self::Text(_, reply) => drop(reply.send(Err(error))),
         }
     }
 }
@@ -203,6 +205,16 @@ pub(crate) struct Widget {
 }
 
 impl Widget {
+    /// The application's custom editor, when the widget is one.
+    pub(crate) fn custom_editor(
+        &self,
+    ) -> Option<std::rc::Rc<dyn maestro_extensions::widgets::ExtensionEditor>> {
+        match &self.kind {
+            Kind::Editor(editor) => editor.custom(),
+            _ => None,
+        }
+    }
+
     /// The widget as a toolkit component.
     pub(crate) fn component(&self) -> ComponentHandle {
         match &self.kind {

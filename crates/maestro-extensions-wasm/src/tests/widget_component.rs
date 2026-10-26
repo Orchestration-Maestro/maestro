@@ -23,6 +23,9 @@ pub struct WidgetResource(pub u32);
 /// Host type of one host style, by role.
 pub struct StyleResource(pub String);
 
+/// Host type of one text callback lent to an authored editor, by name.
+pub struct TextCallbackResource(pub String);
+
 /// Host type of the host's code highlighting.
 pub struct HighlighterResource;
 
@@ -280,6 +283,23 @@ impl host::HostWidget for State {
         text: String,
     ) -> wasmtime::Result<Resource<Route>> {
         self.edit_route(&this, &text, true)
+    }
+    fn border_color(
+        &mut self,
+        this: Resource<WidgetResource>,
+    ) -> wasmtime::Result<Result<Resource<StyleResource>, String>> {
+        let key = self.table.get(&this)?.0;
+        match super::widget_editors::border_color(&mut self.observed, key) {
+            Ok(role) => Ok(Ok(self.push(StyleResource(role))?)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
+    fn share(
+        &mut self,
+        this: Resource<WidgetResource>,
+    ) -> wasmtime::Result<Resource<WidgetResource>> {
+        let key = self.table.get(&this)?.0;
+        self.push(WidgetResource(key))
     }
     fn on_action(
         &mut self,
@@ -1002,6 +1022,11 @@ impl State {
     /// Lends the editor border and the selection list styles.
     pub(super) fn editor_theme(&mut self) -> wasmtime::Result<host::EditorTheme> {
         self.observed.log("getEditorTheme");
+        self.lend_editor_theme()
+    }
+
+    /// Lends the live theme's editor styles without recording a request.
+    pub(super) fn lend_editor_theme(&mut self) -> wasmtime::Result<host::EditorTheme> {
         let mut role = |name: &str| self.push(StyleResource(name.to_owned()));
         let border_color = role("borderMuted")?;
         let select_list = host::SelectListTheme {
@@ -1015,5 +1040,20 @@ impl State {
             border_color,
             select_list,
         })
+    }
+}
+
+impl host::HostTextCallback for State {
+    fn call(
+        &mut self,
+        this: Resource<TextCallbackResource>,
+        text: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let name = self.table.get(&this)?.0.clone();
+        self.observed.log(format!("text {name} {}", json!(text)));
+        self.routed(Ok(()))
+    }
+    fn drop(&mut self, this: Resource<TextCallbackResource>) -> wasmtime::Result<()> {
+        self.release(this)
     }
 }
