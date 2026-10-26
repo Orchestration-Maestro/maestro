@@ -2,15 +2,15 @@
 use super::actions::shows;
 use super::extension_editors::{Knobs, probe_factory};
 use super::extension_ui::port;
-use super::extension_widgets::with_factories;
+use super::extension_widgets::{with_configured_factories, with_factories};
 use super::navigation::{append_user, resume::saved};
 use super::{Setup, World, admitted, isolated, isolated_output, start, started, submit};
 use maestro_app::{
-    ComponentFactory, DiagnosticErrorInfo, ExtensionAPI, ExtensionCommandContext,
+    ComponentFactory, ContextFile, DiagnosticErrorInfo, ExtensionAPI, ExtensionCommandContext,
     ExtensionComponent, ExtensionFactory, ExtensionUIFuture, ForkOptions, ForkPosition, Local,
     NavigateTreeOptions, NewSessionCommandOptions, Presence, ReadonlySessionManager,
     SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
-    SessionBeforeSwitchResult, SessionBeforeTreeEvent, SessionBeforeTreeResult,
+    SessionBeforeSwitchResult, SessionBeforeTreeEvent, SessionBeforeTreeResult, SettingsManager,
     SwitchSessionOptions, WidgetContent,
 };
 use maestro_tui::{Cancellation, Component, EditorComponent, Focusable, Text};
@@ -264,6 +264,24 @@ fn reload_failure_restores_captured_editor_without_rollback() {
 }
 
 #[test]
+fn reload_listing_failure_restores_captured_editor() {
+    // A home that is not UTF-8 fails the listing's first path display, after the refresh.
+    if let Some(output) = isolated_output(
+        "reload_listing_failure_restores_captured_editor",
+        "child",
+        &[],
+        "trap '' XFSZ; export HOME=$'\\xff'",
+        async |directory| failed_reload(directory, "listing").await,
+    ) {
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+#[test]
 fn reload_restores_settings_headers_and_diagnostics() {
     isolated(
         "reload_restores_settings_headers_and_diagnostics",
@@ -403,11 +421,32 @@ async fn quiet_reload(directory: &Path, broken: bool) {
     assert!(restored(&world, &world.mode.current_editor()));
 }
 
-/// Checks captured-editor restoration after a reachable reload failure.
-async fn failed_reload(directory: &Path, stage: &'static str) {
-    let (world, mut apis) = with_factories(directory, |api| vec![api.clone()]).await;
+/// Starts a mode whose next reload fails at `stage`, returning it with the header's
+/// expansion count.
+async fn failing_world(directory: &Path, stage: &'static str) -> (World, Rc<Cell<usize>>) {
+    // A quiet start lists no extension path, so only the reload reads the home.
+    let quiet = Box::new(move |settings: &mut SettingsManager| {
+        settings.set_quiet_startup(stage == "listing");
+    });
+    let (world, mut apis) =
+        with_configured_factories(directory, quiet, |api| vec![api.clone()]).await;
     let api = apis.pop().unwrap();
     let expands = prepare_failed_reload(&world, &api, stage);
+    (world, expands)
+}
+
+/// The failure notice a reload failing at `stage` shows.
+fn failure_notice(stage: &str) -> &'static str {
+    if stage == "listing" {
+        "Reload failed: home directory is not valid UTF-8"
+    } else {
+        "Reload failed:"
+    }
+}
+
+/// Checks captured-editor restoration after a reachable reload failure.
+async fn failed_reload(directory: &Path, stage: &'static str) {
+    let (world, expands) = failing_world(directory, stage).await;
     world
         .mode
         .chat_container
@@ -433,7 +472,7 @@ async fn failed_reload(directory: &Path, stage: &'static str) {
         );
     }
     let rows = world.mode.chat_container.render(160).join("\n");
-    assert!(rows.contains("Reload failed:"), "{stage}: {rows}");
+    assert!(rows.contains(failure_notice(stage)), "{stage}: {rows}");
     assert!(!rows.contains("Reloaded keybindings"), "{stage}: {rows}");
     assert_eq!(
         world
@@ -565,6 +604,7 @@ fn prepare_failed_reload(
     let failing = knobs;
     let expands = Rc::new(Cell::new(0));
     let header = failing_header(api, &expands);
+    let loader = Rc::downgrade(&world.loader);
     world.loader.on_reload.replace(Some(Box::new(move || {
         if stage == "application" {
             return Box::pin(async { Err(io::Error::other("application failed")) });
@@ -582,6 +622,16 @@ fn prepare_failed_reload(
         }
         if stage == "header" {
             ui.set_header(Some(header.clone())).unwrap();
+        }
+        if stage == "listing" {
+            session
+                .settings_manager()
+                .borrow_mut()
+                .set_quiet_startup(false);
+            *loader.upgrade().unwrap().context.borrow_mut() = Rc::from([ContextFile {
+                path: "/AGENTS.md".into(),
+                content: "context".into(),
+            }]);
         }
         if stage == "cursor" {
             mode.ui.set_show_hardware_cursor(true).unwrap();

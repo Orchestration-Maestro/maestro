@@ -45,7 +45,7 @@ pub fn extract_ansi_code(
     api.helper("extract_ansi_code", &(text, pos))
 }
 
-/// Checks the host whitespace set against every supplied scalar.
+/// Reports whether any supplied scalar is in the host whitespace set.
 ///
 /// # Errors
 /// Returns the host's failure or an invalid response.
@@ -53,7 +53,7 @@ pub fn is_whitespace_char(api: &ExtensionAPI, text: &str) -> ExtensionResult<boo
     api.helper("is_whitespace_char", &(text,))
 }
 
-/// Checks the host punctuation set against every supplied scalar.
+/// Reports whether any supplied scalar is in the host punctuation set.
 ///
 /// # Errors
 /// Returns the host's failure or an invalid response.

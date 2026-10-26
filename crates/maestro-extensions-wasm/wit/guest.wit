@@ -6,9 +6,13 @@ interface guest {
     invoke-auth-backend: async func(handler: borrow<callback>, update: borrow<auth-lock-update>, asynchronous: bool) -> result<_, string>;
     invoke-auth-fallback: async func(handler: borrow<callback>, provider: string) -> result<option<string>, string>;
     use host.{theme, json-node, schema-shape, schema-operation, diagnostic-error-info};
-    use host.{stream-operation, stream-selection, model-hook, payload-selection, abort-signal};
+    use host.{stream-operation, stream-selection, model-hook, payload-selection, abort-signal, provider-input, assistant-operation};
     /// Await the original payload selector or response observer.
     invoke-model-hook: async func(handler: borrow<callback>, phase: model-hook, data: string, model: string, signal: option<abort-signal>) -> result<payload-selection, string>;
+    /// Invoke the retained original provider without consuming its returned stream.
+    invoke-provider: async func(handler: borrow<callback>, data: string, input: provider-input) -> result<callback, string>;
+    /// Operate directly on an independently retained returned assistant stream.
+    invoke-assistant: async func(handler: borrow<callback>, operation: assistant-operation, data: option<string>, signal: option<abort-signal>) -> result<option<string>, string>;
     /// Run a synchronous stream callback on its original retained local event.
     invoke-stream: async func(handler: borrow<callback>, value: borrow<callback>, operation: stream-operation) -> result<stream-selection, string>;
     invoke-schema: async func(handler: borrow<callback>, operation: schema-operation, node: borrow<json-node>, emitter: borrow<callback-emitter>) -> result<string, diagnostic-error-info>;

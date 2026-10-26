@@ -35,10 +35,19 @@ fn native_stream_aliases_keep_sdk_constructor_inference() {
     };
     let defaults: SimpleStreamOptions = SimpleStreamOptions::default();
     assert!(defaults.tool_choice.is_none());
+    let raw: maestro_request::types::StreamOptionsInput<StreamOptions, _, ToolChoice> =
+        StreamOptionsInput::from(raw);
+    assert!(raw.common().on_payload.is_some());
     assert!(
-        matches!(StreamOptionsInput::from(raw), StreamOptionsInput::Raw(value) if value.extra["open"] == false)
+        matches!(raw, StreamOptionsInput::Raw(value) if value.extra["open"] == false && value.objects.get::<u32>() == Some(&42))
     );
+    let simple: maestro_request::types::StreamOptionsInput<
+        StreamOptions<Local>,
+        maestro_models::ProviderObjects,
+        _,
+    > = StreamOptionsInput::from(simple);
+    assert!(simple.common().on_response.is_some());
     assert!(
-        matches!(StreamOptionsInput::from(simple), StreamOptionsInput::Simple(value) if value.tool_choice == Some(ToolChoice::None))
+        matches!(simple, StreamOptionsInput::Simple(value) if value.tool_choice == Some(ToolChoice::None))
     );
 }
