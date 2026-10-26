@@ -45,6 +45,8 @@ impl Call {
             Self::TerminalInput(call) => attach(&call.reply, completion),
             Self::Factory(call) => attach(&call.reply, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
+            Self::Stream(call) => attach(&call.reply, completion),
+            Self::ModelHook(call) => attach(&call.reply, completion),
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),

@@ -12,6 +12,24 @@ use crate::types::ExtensionResult;
 use std::future::Future;
 
 impl<E: Extension> Guest for Glue<E> {
+    async fn invoke_model_hook(
+        handler: &host::Callback,
+        phase: host::ModelHook,
+        data: String,
+        model: String,
+        signal: Option<host::AbortSignal>,
+    ) -> ExtensionResult<host::PayloadSelection> {
+        super::model_streams::hook(handler.id(), phase, data, model, signal).await
+    }
+
+    fn invoke_stream(
+        handler: &host::Callback,
+        value: &host::Callback,
+        operation: host::StreamOperation,
+    ) -> impl Future<Output = ExtensionResult<host::StreamSelection>> {
+        std::future::ready(super::streams::invoke(handler.id(), value.id(), operation))
+    }
+
     fn describe_schema(
         handler: &host::Callback,
     ) -> Result<host::SchemaShape, host::DiagnosticErrorInfo> {

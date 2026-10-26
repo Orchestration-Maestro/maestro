@@ -8,6 +8,8 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
+Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
+
 ## Build a component
 
 ```sh

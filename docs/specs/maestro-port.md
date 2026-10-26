@@ -456,6 +456,15 @@ invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general
 shared-types container.
 
+Shared invocation options also live in `maestro-request::types`: `ThinkingBudgets`,
+`CacheRetention`, `Transport`, `ProviderResponse`, `StreamOptions`,
+`ProviderStreamOptions` and `SimpleStreamOptions`. `StreamOptionSlots` selects the
+signal, payload hook, response hook and fetch representations without operations.
+Native aliases specialize the fetch slot so unannotated SDK constructors still
+coerce transport closures; they retain execution-family identity and defaults. Guest aliases
+retain local capabilities. Provider execution, opaque native objects and tool
+choice behavior stay in models.
+
 `maestro-resources` owns the package manifest reader (the `maestro` member of `package.json`),
 extension entry resolution and the project configuration directory name `.maestro`. A
 directory's extension entries are the existing paths its manifest's `extensions` list

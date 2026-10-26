@@ -3,6 +3,11 @@ package maestro:extension@0.1.0;
 /// Callbacks the host invokes on the extension.
 interface guest {
     use host.{theme, json-node, schema-shape, schema-operation, diagnostic-error-info};
+    use host.{stream-operation, stream-selection, model-hook, payload-selection, abort-signal};
+    /// Await the original payload selector or response observer.
+    invoke-model-hook: async func(handler: borrow<callback>, phase: model-hook, data: string, model: string, signal: option<abort-signal>) -> result<payload-selection, string>;
+    /// Run a synchronous stream callback on its original retained local event.
+    invoke-stream: async func(handler: borrow<callback>, value: borrow<callback>, operation: stream-operation) -> result<stream-selection, string>;
     invoke-schema: async func(handler: borrow<callback>, operation: schema-operation, node: borrow<json-node>, emitter: borrow<callback-emitter>) -> result<string, diagnostic-error-info>;
     /// Read callbacks retained at this originating node.
     describe-schema: func(handler: borrow<callback>) -> result<schema-shape, diagnostic-error-info>;

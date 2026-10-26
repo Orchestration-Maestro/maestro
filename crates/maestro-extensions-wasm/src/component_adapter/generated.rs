@@ -3,8 +3,8 @@
 
 use std::marker::PhantomData;
 
+use super::Imports;
 use super::imports::Dialog;
-use super::{Capabilities, Imports};
 use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};
@@ -14,9 +14,14 @@ use crate::{
 
 #[path = "generated_route.rs"]
 mod route;
+#[path = "generated_streams.rs"]
+mod streams;
+pub(crate) use streams::new_event_stream;
 
 #[path = "generated_glue.rs"]
 mod glue;
+#[path = "generated_model_streams.rs"]
+pub(crate) mod model_streams;
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
@@ -79,6 +84,7 @@ impl Imports for Generated {
         command_abort(context: &Self::CommandContext) => abort();
         command_shutdown(context: &Self::CommandContext) => shutdown();
         tool_update(update: &Self::Update, partial: &str) => update(partial);
+        signal_abort(signal: &Self::Signal) => abort();
     } }
     forward_resources! { functions {
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
@@ -108,7 +114,6 @@ impl Imports for Generated {
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
         aborted(signal: &host::AbortSignal) -> bool => aborted();
-        signal_abort(signal: &Self::Signal) -> ExtensionResult<()> => abort();
         writer_reader(resource: &Self::Writer) -> Self::Reader => reader();
         writer_set_session_file(resource: &Self::Writer, path: &str) -> ExtensionResult<()> => set_session_file(path);
         writer_new_session(resource: &Self::Writer, options: Option<&str>) -> ExtensionResult<Option<String>> => new_session(options);
