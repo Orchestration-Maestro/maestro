@@ -28,6 +28,26 @@ Extensions use the same mode through the [extension UI](extension-ui.md): dialog
 restore the current editor when they settle, completion wrappers rebuild at once,
 and notifications use the transcript's status, warning and error rows.
 
+## Forking and cloning
+
+`/fork` and the configurable `app.session.fork` action open the earlier-message
+panel. It lists user messages in chronological order, with the newest selected.
+Enter forks before the selected message, replays the new session and puts that
+message's text in the editor. The panel closes with `Forked to new session`.
+With no user messages, the mode shows `No messages to fork from` instead.
+
+Escape closes the fork panel, restores editor focus and keeps the draft that was
+there when the panel opened. This draft restoration differs from a successful
+fork, which replaces the draft with the selected message's text. An extension
+can veto a fork; that also closes the panel and keeps the draft.
+
+`/clone` copies the current branch through its exact leaf into a new session.
+After replacement callbacks finish, it replays that session, clears the editor
+and shows `Cloned to new session`. Without a leaf, it shows `Nothing to clone yet`.
+Cloning has no Escape cancellation; an extension can veto it. A veto leaves the
+session and transcript alone. A submitted command has already cleared the editor.
+Fork and clone failures show an error rather than a success notice.
+
 ## Session tree
 
 `/tree` opens the current session's tree at its current leaf, using the saved tree

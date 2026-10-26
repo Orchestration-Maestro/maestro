@@ -360,7 +360,14 @@ fn navigation_loader_stops_and_restores_escape_on_every_result() {
                 maestro_app::key_text("app.interrupt")
             );
 
+            world.mode.compaction_queued_messages.borrow_mut().push(
+                super::super::super::queues::CompactionQueuedMessage {
+                    text: "retained after summary failure".into(),
+                    mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+                },
+            );
             cancelled_summary(&scripted, &first, &label, original.as_ref()).await;
+            assert_eq!(world.mode.compaction_queued_messages.borrow().len(), 1);
 
             summarize(world, &first, 1);
             finish(world).await;
@@ -371,6 +378,14 @@ fn navigation_loader_stops_and_restores_escape_on_every_result() {
             assert!(panel::<TreeSelectorComponent>(world).is_none());
             assert!(world.mode.status_container.render(100).is_empty());
             assert!(restored(world, original.as_ref()));
+            assert_eq!(
+                world.mode.compaction_queued_messages.borrow()[0].text,
+                "retained after summary failure"
+            );
+            assert!(!super::super::actions::shows(
+                &world.mode.chat_container,
+                "retained after summary failure"
+            ));
             scripted.finish();
         },
     );
