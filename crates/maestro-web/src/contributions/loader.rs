@@ -68,6 +68,11 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
             crate::components::markdown_block::MarkdownBlock::define(view)
                 .and_then(|()| crate::ThinkingBlock::define(view))
                 .and_then(|()| crate::tools::artifacts::html_artifact::define(view))
+                .and_then(|()| crate::tools::artifacts::svg_artifact::define(view))
+                .and_then(|()| crate::tools::artifacts::pdf_artifact::define(view))
+                .and_then(|()| crate::tools::artifacts::native::define(view))
+                .and_then(|()| crate::tools::artifacts::console::define(view))
+                .and_then(|()| crate::tools::artifacts::panel::define(view))
                 .map_err(|error| JsValue::from_str(&error.to_string()))?;
             crate::components::preview_code_toggle::dom::define(view)?;
             crate::components::mode_toggle::define(view)?;
