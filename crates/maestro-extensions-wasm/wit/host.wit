@@ -295,6 +295,8 @@ interface host {
         set-working-indicator: func(options: option<working-indicator-options>) -> import-route;
         set-hidden-thinking-label: func(label: option<string>) -> import-route;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> import-route;
+        /// Replaces the header with the component a factory builds, or restores the host header.
+        set-header: func(factory: option<borrow<callback>>) -> import-route;
         /// Shows the component a factory builds; the host disposes the widget it replaces first.
         set-widget-factory: func(key: string, factory: borrow<callback>, options: option<extension-widget-options>) -> import-route;
         set-title: func(title: string) -> import-route;

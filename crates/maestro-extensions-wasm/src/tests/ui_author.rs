@@ -579,6 +579,12 @@ enum Operation {
         #[serde(default)]
         dispose: bool,
     },
+    /// Replaces the header with a labelled factory component, or restores the host's header.
+    Header {
+        /// Label the header renders; absent restores the host's header.
+        #[serde(default)]
+        label: Option<String>,
+    },
     /// Adds a labelled terminal input listener through a fresh acquisition.
     Listen {
         /// Listener label.
@@ -622,6 +628,9 @@ enum Operation {
         /// Decision the host's next dialog answers with.
         #[serde(default)]
         answer: Option<Value>,
+        /// How the host builds its built-in header.
+        #[serde(default)]
+        header: Option<String>,
     },
 }
 
@@ -690,6 +699,10 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                     .map(|()| None),
             )
         }
+        Operation::Header { label } => {
+            let factory = label.map(|label| label_factory(api, label, true));
+            caught(ctx.ui()?.set_header(factory).map(|()| None))
+        }
         Operation::Listen { label } => caught(listen(ctx, label).map(Some)),
         Operation::Unlisten { label } => caught(stop_listening(&label, true).map(Some)),
         Operation::Forget { label } => caught(stop_listening(&label, false).map(Some)),
@@ -703,11 +716,11 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             error,
             binding,
             answer,
+            header,
         } => {
-            api.append_entry(
-                "ui-control",
-                Some(json!({ "error": error, "binding": binding, "answer": answer })),
-            )?;
+            let control = json!({ "error": error, "binding": binding, "answer": answer,
+                "header": header });
+            api.append_entry("ui-control", Some(control))?;
             json!("controlled")
         }
     };

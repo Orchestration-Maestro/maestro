@@ -91,7 +91,7 @@ fn dispatch(call: host::LocalCall) -> Running {
         host::LocalCall::Factory(call) => host::LocalResult::Factory(
             exports
                 .invoke_component_factory(call.target, call.tui, call.theme, &call.emitter)
-                .map(super::built),
+                .map(|built| crate::component_adapter::factories::transfer(&Generated, built)),
         ),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),

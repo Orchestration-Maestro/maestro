@@ -33,8 +33,37 @@ pub struct WidgetSlot {
     pub dispose: Option<u32>,
 }
 
+/// The header container the host keeps once its built-in header exists.
+#[derive(Default)]
+pub struct Header {
+    /// Children in order: `banner`, `built-in` or `custom`.
+    pub children: Vec<String>,
+    /// Whether the built-in header exists.
+    pub ready: bool,
+    /// The custom header the host shows, when there is one.
+    pub custom: Option<WidgetSlot>,
+}
+
+impl Header {
+    /// Shows `custom`, or restores the built-in header, at the current header's slot; a custom
+    /// header with no slot to take goes first.
+    pub fn install(&mut self, custom: Option<WidgetSlot>) {
+        let label = |custom: bool| if custom { "custom" } else { "built-in" };
+        let current = label(self.custom.is_some());
+        let next = label(custom.is_some()).to_owned();
+        match self.children.iter().position(|child| child == current) {
+            Some(index) => self.children[index] = next,
+            None if custom.is_some() => self.children.insert(0, next),
+            None => {}
+        }
+        self.custom = custom;
+    }
+}
+
 /// What the result of a nested call the host made settles.
 pub enum Nested {
+    /// A header factory, whose component replaces the current header.
+    Header,
     /// A widget's disposal.
     Dispose,
     /// A widget factory, whose component the host shows under this key.
@@ -60,6 +89,8 @@ pub struct Bank {
     theme: Option<String>,
     /// Factory widgets in the order they were shown.
     pub widgets: Vec<WidgetSlot>,
+    /// The header container.
+    pub header: Header,
     /// Whether tool output is expanded.
     tools: bool,
 }
@@ -125,6 +156,9 @@ struct Control {
     binding: Option<usize>,
     /// Decision the next dialog answers with; absent dismisses it.
     answer: Option<Value>,
+    /// Builds the built-in header: `ready` adds it after a banner, `detached` keeps only the
+    /// banner.
+    header: Option<String>,
 }
 
 impl Bank {
@@ -135,6 +169,15 @@ impl Bank {
             self.binding = binding;
         }
         self.answer = control.answer;
+        if let Some(header) = control.header {
+            let mut children = vec!["banner".to_owned()];
+            children.extend((header == "ready").then(|| "built-in".to_owned()));
+            self.header = Header {
+                children,
+                ready: true,
+                custom: None,
+            };
+        }
         self.error = control.error.map(|message| Refusal {
             method: control.method,
             message,
@@ -397,6 +440,30 @@ impl State {
         Ok(steps)
     }
 
+    /// Queues the custom header for release and returns its disposal, which the guest runs
+    /// before the replacement is built; the header stays shown until it is replaced.
+    fn take_header(
+        &mut self,
+    ) -> wasmtime::Result<std::collections::VecDeque<(host::LocalCall, Nested)>> {
+        let mut steps = std::collections::VecDeque::new();
+        let Some(custom) = self.observed.ui.header.custom.as_ref() else {
+            return Ok(steps);
+        };
+        let (component, dispose) = (custom.component, custom.dispose);
+        self.observed
+            .register(format!("header {component}"), component);
+        if let Some(target) = dispose {
+            let dispose = host::LocalSynchronous {
+                target,
+                kind: host::LocalKind::Dispose,
+                data: String::new(),
+                emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+            };
+            steps.push_back((host::LocalCall::Synchronous(dispose), Nested::Dispose));
+        }
+        Ok(steps)
+    }
+
     /// Shows a built widget, or returns the failure that ends its operation.
     pub(super) fn settle_nested(
         &mut self,
@@ -404,6 +471,19 @@ impl State {
         value: host::LocalResult,
     ) -> wasmtime::Result<Option<String>> {
         match (nested, value) {
+            (Nested::Header, host::LocalResult::Factory(Ok(built))) => {
+                let dispose = built
+                    .dispose
+                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
+                    .transpose()?;
+                let slot = WidgetSlot {
+                    key: "header".to_owned(),
+                    component: built.component.rep(),
+                    dispose,
+                };
+                self.observed.ui.header.install(Some(slot));
+                Ok(None)
+            }
             (Nested::Factory(key), host::LocalResult::Factory(Ok(built))) => {
                 let dispose = built
                     .dispose
@@ -552,6 +632,39 @@ impl host::HostExtensionUiContext for State {
             return self.routed(Err(error));
         }
         let steps = self.take_widgets(&key)?;
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            result: Some(Ok(())),
+        })
+    }
+
+    fn set_header(
+        &mut self,
+        this: Resource<Ui>,
+        factory: Option<Resource<super::host::Identity>>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let ukey = self.table.get(&this)?.0;
+        let operands = json!([factory.is_some()]);
+        if let Err(error) = call(&mut self.observed, ukey, "setHeader", &operands) {
+            return self.routed(Err(error));
+        }
+        if !self.observed.ui.header.ready {
+            return self.routed(Ok(()));
+        }
+        let mut steps = self.take_header()?;
+        match factory {
+            None => self.observed.ui.header.install(None),
+            Some(factory) => {
+                let factory = host::LocalFactory {
+                    target: self.table.get(&factory)?.0,
+                    tui: self.push(Tui)?,
+                    theme: self.push(Theme("dark".to_owned()))?,
+                    emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+                };
+                steps.push_back((host::LocalCall::Factory(factory), Nested::Header));
+            }
+        }
         self.push(super::host::Route {
             steps,
             running: None,

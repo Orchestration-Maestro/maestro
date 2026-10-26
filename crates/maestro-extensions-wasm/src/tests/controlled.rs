@@ -205,6 +205,40 @@ impl Controlled {
         Ok(())
     }
 
+    /// Builds the component a factory under `factory` makes with a lent terminal and theme,
+    /// and keeps it under a fresh handle.
+    fn build(&self, factory: &Callback) -> ExtensionResult<u32> {
+        let tui = Tui {
+            _lease: Lease::new(&self.observed),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let built = Exports::new(self.clone()).invoke_component_factory(
+            factory.id,
+            tui,
+            self.theme("dark"),
+            &emitter,
+        )?;
+        let handle = self.observed.borrow_mut().next_identity();
+        self.widgets.borrow_mut().insert(handle, built);
+        Ok(handle)
+    }
+
+    /// The component the custom header shows.
+    pub fn header(&self) -> Option<crate::Component> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .header
+            .custom
+            .as_ref()
+            .map(|slot| slot.component)?;
+        self.widgets
+            .borrow()
+            .get(&slot)
+            .map(|built| built.component.clone())
+    }
+
     /// Runs one widget disposal with a lent emitter.
     fn dispose(&self, dispose: &crate::ComponentDisposer) -> ExtensionResult<()> {
         let emitter = super::bus_host::Emitter { key: 0 };
@@ -1183,18 +1217,7 @@ impl Imports for Controlled {
         let operands = json!([key, placement]);
         ui_call(&self.observed, resource.key, "setWidgetFactory", &operands)?;
         self.take_widgets(key)?;
-        let tui = Tui {
-            _lease: Lease::new(&self.observed),
-        };
-        let emitter = super::bus_host::Emitter { key: 0 };
-        let built = Exports::new(self.clone()).invoke_component_factory(
-            factory.id,
-            tui,
-            self.theme("dark"),
-            &emitter,
-        )?;
-        let handle = self.observed.borrow_mut().next_identity();
-        self.widgets.borrow_mut().insert(handle, built);
+        let handle = self.build(factory)?;
         self.observed
             .borrow_mut()
             .ui
@@ -1204,6 +1227,36 @@ impl Imports for Controlled {
                 component: handle,
                 dispose: None,
             });
+        Ok(())
+    }
+    fn ui_set_header(&self, resource: &Ui, factory: Option<&Callback>) -> ExtensionResult<()> {
+        let operands = json!([factory.is_some()]);
+        ui_call(&self.observed, resource.key, "setHeader", &operands)?;
+        if !self.observed.borrow().ui.header.ready {
+            return Ok(());
+        }
+        let old = self
+            .observed
+            .borrow()
+            .ui
+            .header
+            .custom
+            .as_ref()
+            .map(|slot| slot.component);
+        let old = old.and_then(|old| self.widgets.borrow_mut().remove(&old));
+        if let Some(dispose) = old.as_ref().and_then(|old| old.dispose.clone()) {
+            self.dispose(&dispose)?;
+        }
+        drop(old);
+        let slot = match factory {
+            None => None,
+            Some(factory) => Some(super::ui_host::WidgetSlot {
+                key: "header".to_owned(),
+                component: self.build(factory)?,
+                dispose: None,
+            }),
+        };
+        self.observed.borrow_mut().ui.header.install(slot);
         Ok(())
     }
     fn ui_set_title(&self, resource: &Ui, title: &str) -> ExtensionResult<()> {

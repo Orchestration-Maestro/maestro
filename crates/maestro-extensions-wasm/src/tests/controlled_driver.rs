@@ -349,6 +349,20 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn header(
+        &mut self,
+        width: u32,
+    ) -> impl Future<Output = Result<(Vec<String>, Option<Vec<String>>), String>> {
+        let children = self.host.observed().ui.header.children.clone();
+        let rendered = self.host.header().map(|component| {
+            let call = super::renderer_host::Call::Render(width);
+            match super::renderer_host::invoke(&component, call, &self.host, 0)? {
+                super::renderer_host::Reply::Lines(lines) => Ok(lines),
+                _ => Err("expected rendered lines".to_owned()),
+            }
+        });
+        std::future::ready(rendered.transpose().map(|rendered| (children, rendered)))
+    }
     fn widget(
         &mut self,
         key: &str,

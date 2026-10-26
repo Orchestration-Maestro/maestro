@@ -107,11 +107,11 @@ impl ComponentView for Labelled {
     }
 }
 
-/// Shows a factory widget whose disposal registers the flag `disposed-<label>` and whose
-/// component registers `released-<label>` once it is released.
-fn widget(context: &ExtensionContext, api: &ExtensionAPI, label: &str) -> ExtensionResult<String> {
+/// A factory whose component renders `label` and its width, whose disposal registers the flag
+/// `disposed-<label>` and whose capture registers `released-<label>` once it is released.
+fn labelled(api: &ExtensionAPI, label: &str) -> ComponentFactory {
     let (api, label) = (api.clone(), label.to_owned());
-    let factory: ComponentFactory = Rc::new(move |_, _, _| {
+    Rc::new(move |_, _, _| {
         let (owner, named) = (api.clone(), label.clone());
         let dispose: ComponentDisposer = Rc::new(move |_| {
             let flag = FlagOptions {
@@ -129,8 +129,22 @@ fn widget(context: &ExtensionContext, api: &ExtensionAPI, label: &str) -> Extens
             }),
             dispose: Some(dispose),
         })
-    });
-    context.ui()?.set_widget_factory("bridge", factory, None)?;
+    })
+}
+
+/// Shows a labelled factory widget, or replaces the header with one; `header` alone restores
+/// the host's header.
+fn widget(
+    context: &ExtensionContext,
+    api: &ExtensionAPI,
+    request: &str,
+) -> ExtensionResult<String> {
+    let ui = context.ui()?;
+    match request.split_once(' ') {
+        Some(("header", label)) => ui.set_header(Some(labelled(api, label)))?,
+        None if request == "header" => ui.set_header(None)?,
+        _ => ui.set_widget_factory("bridge", labelled(api, request), None)?,
+    }
     Ok("widget shown".into())
 }
 

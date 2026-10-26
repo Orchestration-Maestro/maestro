@@ -70,6 +70,18 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
         self.imports
             .ui_set_widget(&self.resource, key, content, options)
     }
+    fn set_header(&self, factory: Option<crate::ComponentFactory>) -> ExtensionResult<()> {
+        let Some(factory) = factory else {
+            return self.imports.ui_set_header(&self.resource, None);
+        };
+        let identity = Identity::new(&self.imports);
+        identity.stage(factory);
+        let result = self
+            .imports
+            .ui_set_header(&self.resource, Some(&identity.handle));
+        identity.settle(result.is_ok());
+        result
+    }
     fn set_widget_factory(
         &self,
         key: &str,

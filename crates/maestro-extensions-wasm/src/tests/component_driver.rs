@@ -149,6 +149,29 @@ impl ComponentDriver {
         reported(finished)
     }
 
+    /// Renders the host-held component with the table handle `rep`.
+    async fn render_slot(&mut self, rep: u32, width: u32) -> Result<Vec<String>, String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter { key: 0 })
+            .map_err(|e| e.to_string())?;
+        let call = super::renderer_host::Call::Render(width);
+        let reply = component_call(harness, Resource::new_borrow(rep), call, &emitter).await?;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        match reply? {
+            super::renderer_host::Reply::Lines(lines) => Ok(lines),
+            _ => Err("expected rendered lines".to_owned()),
+        }
+    }
+
     /// Invokes a continuation under an identity the component never registered.
     async fn unknown_continuation(&mut self) -> wasmtime::Result<String> {
         let harness = started(&mut self.harness)?;
@@ -462,6 +485,21 @@ impl Driver for ComponentDriver {
         &mut self.previous
     }
 
+    async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String> {
+        let (children, custom) = self.observed(|observed| {
+            let header = &observed.ui.header;
+            (
+                header.children.clone(),
+                header.custom.as_ref().map(|slot| slot.component),
+            )
+        });
+        let Some(rep) = custom else {
+            return Ok((children, None));
+        };
+        let rendered = self.render_slot(rep, width).await?;
+        Ok((children, Some(rendered)))
+    }
+
     async fn widget(&mut self, key: &str, width: u32) -> Result<Vec<String>, String> {
         let slot = self.observed(|observed| {
             observed
@@ -472,25 +510,7 @@ impl Driver for ComponentDriver {
                 .map(|slot| slot.component)
         });
         let rep = slot.ok_or_else(|| format!("no widget {key}"))?;
-        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
-        let emitter = harness
-            .store
-            .data_mut()
-            .table
-            .push(super::bus_host::Emitter { key: 0 })
-            .map_err(|e| e.to_string())?;
-        let call = super::renderer_host::Call::Render(width);
-        let reply = component_call(harness, Resource::new_borrow(rep), call, &emitter).await?;
-        harness
-            .store
-            .data_mut()
-            .table
-            .delete(emitter)
-            .map_err(|e| e.to_string())?;
-        match reply? {
-            super::renderer_host::Reply::Lines(lines) => Ok(lines),
-            _ => Err("expected rendered lines".to_owned()),
-        }
+        self.render_slot(rep, width).await
     }
     async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String> {
         let listeners = self.observed(super::ui_host::terminal_listeners);

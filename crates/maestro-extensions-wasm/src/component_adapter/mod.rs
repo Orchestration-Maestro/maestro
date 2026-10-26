@@ -19,7 +19,7 @@ mod signals;
 #[cfg(test)]
 pub(crate) use signals::signal;
 mod exports;
-mod factories;
+pub(crate) mod factories;
 #[cfg(target_arch = "wasm32")]
 mod generated;
 mod host_api;

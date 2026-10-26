@@ -44,15 +44,17 @@ impl<I: Imports> Exports<I> {
     }
 }
 
-/// Transfers a built component and its disposal to the host as two identities.
+/// Transfers a built component and its disposal to the host as their identities.
 #[cfg(target_arch = "wasm32")]
-pub(super) fn transfer<I: Imports>(
+pub(super) fn transfer<
+    I: Imports<Callback = crate::bindings::maestro::extension::host::Callback>,
+>(
     imports: &I,
     built: ExtensionComponent,
-) -> (I::Callback, Option<I::Callback>) {
+) -> crate::bindings::maestro::extension::host::FactoryComponent {
     let component = callbacks::Identity::<I>::new(imports).transfer(built.component);
     let dispose = built
         .dispose
         .map(|dispose| callbacks::Identity::<I>::new(imports).transfer(dispose));
-    (component, dispose)
+    crate::bindings::maestro::extension::host::FactoryComponent { component, dispose }
 }

@@ -413,6 +413,10 @@ factory widget under the same key too. The factory's captures stay usable while 
 host shows the component and are released after the host removes it. A factory error
 is the setter's error.
 
+`set_header` replaces the header with the component a factory builds, or restores the
+host's header with `None`. The host disposes the custom header it replaces first, and a
+host that has not built its own header yet runs no factory.
+
 ### Themes and tool expansion
 
 `theme` returns the UI's live theme, which reads the host's later selections.

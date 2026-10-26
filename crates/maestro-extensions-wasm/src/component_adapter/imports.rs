@@ -555,6 +555,12 @@ pub trait Imports: Clone + 'static {
         content: Option<&[String]>,
         options: Option<ExtensionWidgetOptions>,
     ) -> ExtensionResult<()>;
+    /// Forwards the header factory, which the host may run before answering, or its removal.
+    fn ui_set_header(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
     /// Forwards the factory of one widget, which the host may run before answering.
     fn ui_set_widget_factory(
         &self,

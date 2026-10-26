@@ -3,7 +3,10 @@
 use maestro_extensions::{
     Cancellation, EventError, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
     InputListenerResult, TerminalInputHandler, WorkingIndicatorOptions,
-    types::{ExtensionUIContextPort, ExtensionUIFuture, NotificationType, WidgetContent},
+    types::{
+        ComponentFactory, ExtensionUIContextPort, ExtensionUIFuture, NotificationType,
+        WidgetContent,
+    },
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -619,9 +622,28 @@ struct Widgets {
     /// The component each key shows.
     shown: RefCell<Vec<(String, maestro_extensions::types::ExtensionComponent)>>,
 }
+impl Widgets {
+    /// Disposes every shown component, then builds `factory` when there is one.
+    fn replace(&self, key: String, factory: Option<ComponentFactory>) -> Result<(), EventError> {
+        let removed = self.shown.borrow_mut().drain(..).collect::<Vec<_>>();
+        for (_, widget) in removed {
+            if let Some(dispose) = widget.dispose {
+                dispose.call(())?;
+            }
+        }
+        if let Some(factory) = factory {
+            let built = factory.call((self.tui.clone(), self.theme.clone()))?;
+            self.shown.borrow_mut().push((key, built));
+        }
+        Ok(())
+    }
+}
 impl ExtensionUIContextPort for Widgets {
     fn theme(&self) -> maestro_theme::LiveTheme {
         self.theme.clone()
+    }
+    fn set_header(&self, factory: Option<ComponentFactory>) -> Result<(), EventError> {
+        self.replace("header".to_owned(), factory)
     }
     fn set_widget(
         &self,
@@ -629,17 +651,11 @@ impl ExtensionUIContextPort for Widgets {
         content: Option<WidgetContent>,
         _options: Option<ExtensionWidgetOptions>,
     ) -> Result<(), EventError> {
-        let removed = self.shown.borrow_mut().drain(..).collect::<Vec<_>>();
-        for (_, widget) in removed {
-            if let Some(dispose) = widget.dispose {
-                dispose.call(())?;
-            }
-        }
-        if let Some(WidgetContent::Factory(factory)) = content {
-            let built = factory.call((self.tui.clone(), self.theme.clone()))?;
-            self.shown.borrow_mut().push((key, built));
-        }
-        Ok(())
+        let factory = match content {
+            Some(WidgetContent::Factory(factory)) => Some(factory),
+            _ => None,
+        };
+        self.replace(key, factory)
     }
 }
 
@@ -698,6 +714,68 @@ fn canonical_widget_factories_build_render_and_dispose_through_the_component() {
         removed.dispose.unwrap().call(()).unwrap();
         assert!(flag("disposed-B"));
         drop(removed.component);
+        bus.clear();
+    });
+}
+
+#[test]
+fn canonical_header_factories_replace_dispose_and_restore() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no diagnostics")),
+        );
+        let (owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let terminal = super::recording_terminal::RecordingTerminal::new(40, 12);
+        let tui = maestro_tui::TUI::new(
+            terminal.handle(),
+            super::manual_runtime::ManualRuntime::new().handle(),
+            maestro_tui::TerminalImage::default(),
+            Some(false),
+        );
+        let ui = Rc::new(Widgets {
+            tui,
+            theme: maestro_theme::LiveTheme::default(),
+            shown: RefCell::default(),
+        });
+        runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let handler = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        let flag = |name: &str| owner.read().unwrap().flags.contains_key(name);
+        for (request, rendered) in [
+            ("header H1", Some("H1 9")),
+            ("header H2", Some("H2 9")),
+            ("header", None),
+        ] {
+            let shown = handler(
+                format!("ui widget {request}"),
+                runner.create_command_context(),
+            )
+            .await
+            .unwrap_err()
+            .to_string();
+            assert_eq!(shown, "widget shown");
+            let lines = ui
+                .shown
+                .borrow()
+                .first()
+                .map(|(_, built)| built.component.try_render(9).unwrap());
+            assert_eq!(
+                lines,
+                rendered.map(|line| vec![line.to_owned()]),
+                "{request}"
+            );
+        }
+        assert!(
+            flag("disposed-H1") && flag("disposed-H2"),
+            "each replaced header was disposed in the setter"
+        );
         bus.clear();
     });
 }

@@ -74,6 +74,7 @@ impl Imports for Generated {
         ui_set_editor_text(resource: &Self::Ui, text: &str) => set_editor_text(text);
         ui_set_title(resource: &Self::Ui, title: &str) => set_title(title);
         ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
+        ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
@@ -270,12 +271,6 @@ impl Imports for Generated {
     }
 }
 
-/// Transfers a factory's component and disposal to the host as their identities.
-fn built(built: crate::ExtensionComponent) -> host::FactoryComponent {
-    let (component, dispose) = super::factories::transfer(&Generated, built);
-    host::FactoryComponent { component, dispose }
-}
-
 /// Entry type of an extension component: serves the generated exports for `E`.
 #[doc(hidden)]
 pub struct Glue<E>(PhantomData<E>);
@@ -414,7 +409,7 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(
             exports
                 .invoke_component_factory(handler.id(), tui, theme, emitter)
-                .map(built),
+                .map(|built| super::factories::transfer(&Generated, built)),
         )
     }
 

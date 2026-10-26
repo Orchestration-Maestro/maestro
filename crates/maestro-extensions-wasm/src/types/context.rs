@@ -80,6 +80,9 @@ port! {
             factory: crate::ComponentFactory,
             options: Option<ExtensionWidgetOptions>,
         ) -> ();
+        /// Replaces the header with the component `factory` builds, or restores the host's
+        /// header; the host disposes the header it replaces first.
+        fn set_header(factory: Option<crate::ComponentFactory>) -> ();
         /// Sets the terminal title.
         fn set_title(title: &str) -> ();
         /// Pastes literal text into the host editor through its paste handling.

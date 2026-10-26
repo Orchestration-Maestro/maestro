@@ -1149,3 +1149,104 @@ async fn widget_factories(driver: &mut impl Driver) -> Result<(), String> {
 fn widget_factory_disposes_before_new_factory_returns() -> Result<(), String> {
     on_both_adapters!(widget_factories)
 }
+
+/// Sets the header to a labelled factory component, or restores it, and returns the
+/// receipts, factory and disposal effects it caused.
+async fn set_header(driver: &mut impl Driver, label: Option<&str>) -> Result<Vec<String>, String> {
+    let from = driver.transcript().len();
+    operate(driver, json!({ "op": "header", "label": label })).await?;
+    Ok(widget_events(driver, from))
+}
+
+/// The receipt, disposal, factory and answer lines of one header change.
+fn header_change(factory: bool, disposed: Option<&str>, built: Option<&str>) -> Vec<String> {
+    let mut lines = vec![format!("ui 0 setHeader [{factory}]")];
+    lines.extend(disposed.map(|label| format!("entry widget-dispose \"{label}\"")));
+    lines.extend(built.map(|label| format!("entry widget-factory \"{label}\"")));
+    lines.push("entry ui-answer {\"ok\":true}".to_owned());
+    lines
+}
+
+/// A header container of a banner followed by `header`.
+fn banner(header: &str) -> Vec<String> {
+    vec!["banner".to_owned(), header.to_owned()]
+}
+
+/// Before the built-in header exists, setting a header runs no factory.
+async fn early_header(driver: &mut impl Driver) -> Result<(), String> {
+    assert_eq!(
+        set_header(driver, Some("early")).await?,
+        header_change(true, None, None)
+    );
+    assert_eq!(
+        driver.header(10).await?,
+        (Vec::new(), None),
+        "no header yet"
+    );
+    Ok(())
+}
+
+/// Each replacement takes the current header's slot after disposing the custom header it
+/// replaces, and restoring brings the built-in header back to that slot.
+async fn header_in_place(driver: &mut impl Driver) -> Result<(), String> {
+    let ready = json!({ "op": "control", "header": "ready" });
+    assert_eq!(operate(driver, ready).await?, json!("controlled"));
+    assert_eq!(
+        set_header(driver, Some("A")).await?,
+        header_change(true, None, Some("A"))
+    );
+    assert_eq!(
+        driver.header(10).await?,
+        (banner("custom"), Some(vec!["A 10".to_owned()]))
+    );
+    assert_eq!(
+        set_header(driver, Some("B")).await?,
+        header_change(true, Some("A"), Some("B"))
+    );
+    assert_eq!(
+        driver.header(5).await?,
+        (banner("custom"), Some(vec!["B 5".to_owned()]))
+    );
+    assert_eq!(
+        set_header(driver, None).await?,
+        header_change(false, Some("B"), None)
+    );
+    assert_eq!(
+        driver.header(5).await?,
+        (banner("built-in"), None),
+        "restored in place"
+    );
+    Ok(())
+}
+
+/// A custom header with no header slot to take goes first.
+async fn detached_header(driver: &mut impl Driver) -> Result<(), String> {
+    let detached = json!({ "op": "control", "header": "detached" });
+    assert_eq!(operate(driver, detached).await?, json!("controlled"));
+    assert_eq!(
+        set_header(driver, Some("C")).await?,
+        header_change(true, None, Some("C"))
+    );
+    let first = vec!["custom".to_owned(), "banner".to_owned()];
+    assert_eq!(
+        driver.header(3).await?,
+        (first, Some(vec!["C 3".to_owned()])),
+        "added first"
+    );
+    Ok(())
+}
+
+/// The header keeps its early, in-place and first-slot states on both adapters.
+async fn header_slots(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    early_header(driver).await?;
+    header_in_place(driver).await?;
+    detached_header(driver).await?;
+    driver.release_all().await;
+    Ok(())
+}
+
+#[test]
+fn header_factory_preserves_early_and_retained_states() -> Result<(), String> {
+    on_both_adapters!(header_slots)
+}
