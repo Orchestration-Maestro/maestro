@@ -47,3 +47,6 @@ pub type ProviderStreamOptions =
 /// Simple invocation data without an authored tool-choice operation.
 pub type SimpleStreamOptions =
     maestro_request::types::SimpleStreamOptions<StreamOptions, Infallible>;
+/// Original raw or simple callback options with guest-local capability representations.
+pub type StreamOptionsInput =
+    maestro_request::types::StreamOptionsInput<StreamOptions, ProviderObjects, Infallible>;

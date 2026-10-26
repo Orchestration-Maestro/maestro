@@ -4,6 +4,9 @@ The guest library re-exports `ThinkingBudgets`, `CacheRetention`, `Transport` an
 `ProviderResponse` from the shared request owner. `StreamOptions`,
 `ProviderStreamOptions` and `SimpleStreamOptions` specialize the same shared
 records with guest-local capabilities; they do not copy native option definitions.
+`StreamOptionsInput` specializes the shared raw/simple enum with those same
+capabilities. Its variants preserve the supplied option form, and `common()`
+borrows common controls without converting the raw fields or simple policies.
 
 Common options include temperature, token limits, ordered headers, request metadata,
 authentication, session identity, transport, cache policy and retry settings.

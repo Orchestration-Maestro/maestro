@@ -29,7 +29,7 @@ From `docs/specs/maestro-port.md`.
 - **AssistantMessageEventStream:** EventStream specialization retaining shared assistant-message handles.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
 - **Request records:** Shared message and model-request data describing application messages and a model invocation's descriptor, conversation, instruction inputs and observations; the shared owner is `maestro-request`, not an invocation executor or a general data container.
-- **Stream option slots:** The shared request owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases; provider execution stays in models.
+- **Stream option slots:** The shared request owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases. Its `StreamOptionsInput` record preserves the supplied raw or simple variant without converting their policies; provider execution stays in models.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
 - **PKCE:** Proof Key for Code Exchange: a random verifier paired with a SHA-256 challenge of its encoded text.
