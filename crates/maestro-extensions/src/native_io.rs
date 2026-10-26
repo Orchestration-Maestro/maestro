@@ -1,5 +1,91 @@
-//! Native effects exposed without moving their lifecycle into the component adapter.
+//! Native effects supplied by the application without moving lifecycle into the adapter.
+use std::{future::Future, pin::Pin, rc::Rc};
 
 /// Cancellable native delay owned by the tools runtime.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::process::sleep::sleep;
+
+/// A local native operation with its unchanged failure text.
+pub type IoFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, String>> + 'a>>;
+
+/// Selection of one native standard descriptor.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum Stdio {
+    /// Retained raw byte pipe.
+    #[default]
+    Pipe,
+    /// Native null device.
+    Ignore,
+    /// Corresponding host descriptor.
+    Inherit,
+}
+/// Literal child launch selections; a present environment replaces ambient values.
+#[derive(Default)]
+pub struct SpawnOptions {
+    /// Omitted inherits the host directory.
+    pub cwd: Option<String>,
+    /// Entire supplied environment, including a present-empty selection.
+    pub env: Option<Vec<(String, String)>>,
+    /// Creates a native session where supported.
+    pub detached: bool,
+    /// Independent stdin, stdout and stderr selections.
+    pub stdio: [Stdio; 3],
+}
+/// Numeric exit and signal termination remain distinct.
+#[derive(Debug, Eq, PartialEq)]
+pub struct ExitStatus {
+    /// Absent for signal termination.
+    pub code: Option<i32>,
+    /// Absent for numeric exit.
+    pub signal: Option<String>,
+}
+/// Independently retained consuming byte reader.
+pub trait Readable {
+    /// Reads available raw bytes or observes EOF.
+    fn read(&self) -> IoFuture<'_, Option<Vec<u8>>>;
+    /// Closes only this consumer.
+    ///
+    /// # Errors
+    /// Returns the native close failure.
+    fn close(&self) -> Result<(), String>;
+}
+/// Independently retained ordered byte writer.
+pub trait Writable {
+    /// Writes every admitted byte, including across partial native writes.
+    fn write<'a>(&'a self, bytes: &'a [u8]) -> IoFuture<'a, ()>;
+    /// Closes after earlier admitted writes.
+    fn end(&self) -> IoFuture<'_, ()>;
+}
+/// Retained child controls and the original selected descriptors.
+pub trait ChildProcess {
+    /// Original native process ID.
+    fn pid(&self) -> Option<u32>;
+    /// Original input pipe, absent unless selected.
+    fn stdin(&self) -> Option<Rc<dyn Writable>>;
+    /// Original output pipe, absent unless selected.
+    fn stdout(&self) -> Option<Rc<dyn Readable>>;
+    /// Original error pipe, absent unless selected.
+    fn stderr(&self) -> Option<Rc<dyn Readable>>;
+    /// Observes the sole native waiter's exit and output-close completion.
+    fn wait(&self) -> IoFuture<'_, ExitStatus>;
+    /// Signals this process only before its native exit.
+    ///
+    /// # Errors
+    /// Returns the native signal failure.
+    fn kill(&self, signal: Option<String>) -> Result<bool, String>;
+}
+/// Application-supplied native effects available to component resources.
+pub trait NativeIo {
+    /// Launches literal command operands without shell or environment rewriting.
+    fn spawn(
+        &self,
+        command: String,
+        args: Vec<String>,
+        options: SpawnOptions,
+    ) -> IoFuture<'_, Rc<dyn ChildProcess>>;
+    /// Signals a PID, or a native process group where supported.
+    ///
+    /// # Errors
+    /// Returns the native signal failure.
+    fn kill(&self, pid: i32, signal: Option<String>) -> Result<(), String>;
+}

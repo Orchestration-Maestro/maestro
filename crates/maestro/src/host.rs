@@ -132,11 +132,17 @@ async fn startup(
         sessions: crate::presentations::sessions(Rc::clone(&local), Rc::clone(themes)),
         missing_cwd: crate::presentations::missing_cwd(Rc::clone(&local), Rc::clone(themes)),
         local: Rc::clone(&local),
-        module_loader: Rc::new(|path: &str| {
-            Box::pin(std::future::ready(Ok(Some(
-                maestro_extensions_wasmtime::artifact_factory(path.to_owned()),
-            ))))
-        }),
+        module_loader: {
+            let io = maestro_app::extension_native_io::extension_native_io(&local);
+            Rc::new(move |path: &str| {
+                Box::pin(std::future::ready(Ok(Some(
+                    maestro_extensions_wasmtime::artifact_factory_with_io(
+                        path.to_owned(),
+                        Rc::clone(&io),
+                    ),
+                ))))
+            })
+        },
         modes: crate::modes::launchers(Rc::clone(&local), themes, Rc::clone(&export)),
         stdin: &mut stdin,
         stdin_is_tty: &|| io::stdin().is_terminal(),

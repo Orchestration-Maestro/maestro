@@ -209,14 +209,7 @@ impl State {
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
-            Message::Catalog(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
-                    request.answer(catalog);
-                } else {
-                    request.reject("extension catalog resource ended");
-                }
-            }
+            Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => {
                 let capability = self.registry.capability(id);
                 if let Some(Capability::Node(node)) = capability.as_deref() {
@@ -235,10 +228,21 @@ impl State {
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
+            Message::Native(id, request) => self.native(id, request),
             Message::Release(id) => {
                 let removed = self.registry.resources.borrow_mut().entries.remove(&id);
                 drop(removed);
             }
+        }
+    }
+
+    /// Answers catalog requests outside the resource-table borrow.
+    fn catalog(&self, id: u64, request: crate::catalog_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
+            request.answer(catalog);
+        } else {
+            request.reject("extension catalog resource ended");
         }
     }
 

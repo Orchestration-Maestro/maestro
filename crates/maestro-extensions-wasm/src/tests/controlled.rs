@@ -517,6 +517,71 @@ impl Controlled {
     }
 }
 
+impl crate::component_adapter::NativeImports for Controlled {
+    type Child = super::native_io_host::Child;
+    type Readable = super::native_io_host::Reader;
+    type Writable = super::native_io_host::Writer;
+    fn spawn(
+        &self,
+        command: String,
+        args: Vec<String>,
+        options: crate::child_process::SpawnOptions,
+    ) -> ExtensionFuture<'_, Self::Child> {
+        Box::pin(async move { self.observe().native_io.spawn(command, args, options) })
+    }
+    fn kill(&self, pid: i32, signal: Option<String>) -> ExtensionResult<()> {
+        self.observe().native_io.kill(pid, signal)
+    }
+    fn child_pid(&self, child: &Self::Child) -> Option<u32> {
+        Some(child.pid)
+    }
+    fn child_stdin(&self, child: &Self::Child) -> Option<Self::Writable> {
+        child.stdin.clone()
+    }
+    fn child_stdout(&self, child: &Self::Child) -> Option<Self::Readable> {
+        child.stdout.clone()
+    }
+    fn child_stderr(&self, child: &Self::Child) -> Option<Self::Readable> {
+        child.stderr.clone()
+    }
+    fn child_wait<'a>(
+        &'a self,
+        child: &'a Self::Child,
+    ) -> ExtensionFuture<'a, crate::child_process::ExitStatus> {
+        Box::pin(std::future::ready(Ok(child.wait())))
+    }
+    fn child_kill(&self, child: &Self::Child, signal: Option<String>) -> ExtensionResult<bool> {
+        Ok(child.kill(signal))
+    }
+    fn readable_read<'a>(
+        &'a self,
+        reader: &'a Self::Readable,
+    ) -> ExtensionFuture<'a, Option<Vec<u8>>> {
+        Box::pin(std::future::ready(Ok(reader.read())))
+    }
+    fn readable_close(&self, reader: &Self::Readable) -> ExtensionResult<()> {
+        reader.close();
+        Ok(())
+    }
+    fn writable_write<'a>(
+        &'a self,
+        writer: &'a Self::Writable,
+        bytes: &'a [u8],
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            writer.write(bytes)
+        })
+    }
+    fn writable_end<'a>(&'a self, writer: &'a Self::Writable) -> ExtensionFuture<'a, ()> {
+        writer
+            .ended
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+
 impl Imports for Controlled {
     fn sleep<'a>(
         &'a self,

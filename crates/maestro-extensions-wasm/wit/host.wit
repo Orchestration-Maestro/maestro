@@ -2,6 +2,39 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// One native standard descriptor selection.
+    enum stdio { pipe, ignore, inherit }
+    /// Literal native child launch selections.
+    record spawn-options {
+        cwd: option<string>, env: option<list<tuple<string, string>>>,
+        detached: bool, stdio: tuple<stdio, stdio, stdio>,
+    }
+    /// Numeric exit and terminating signal remain distinct.
+    record exit-status { code: option<s32>, signal: option<string> }
+    /// Independently retained consuming raw reader.
+    resource readable {
+        read: async func() -> result<option<list<u8>>, string>;
+        close: func() -> result<_, string>;
+    }
+    /// Independently retained ordered raw writer.
+    resource writable {
+        write: async func(bytes: list<u8>) -> result<_, string>;
+        end: async func() -> result<_, string>;
+    }
+    /// Retained child controls; ordinary resource drop does not kill it.
+    resource child-process {
+        pid: func() -> option<u32>;
+        stdin: func() -> option<writable>;
+        stdout: func() -> option<readable>;
+        stderr: func() -> option<readable>;
+        wait: async func() -> result<exit-status, string>;
+        kill: func(signal: option<string>) -> result<bool, string>;
+    }
+    /// Launches a literal program, without a shell or implicit cancellation.
+    spawn: async func(command: string, args: list<string>, options: spawn-options) -> result<child-process, string>;
+    /// Delivers a native signal to a PID or supported process group.
+    kill: func(pid: s32, signal: option<string>) -> result<_, string>;
+
     /// Waits for seconds and fractional nanoseconds, without an implicit timeout.
     sleep: async func(duration: tuple<u64, u32>, signal: option<borrow<abort-signal>>) -> result<_, string>;
 

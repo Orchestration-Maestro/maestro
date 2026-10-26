@@ -34,7 +34,7 @@ pub struct Dialog<'a, S> {
 /// component, an in-process host where the same logic runs natively.
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
-pub trait Imports: Clone + 'static {
+pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
     /// Waits using the selected native duration and borrowed cancellation.
     fn sleep<'a>(
         &'a self,

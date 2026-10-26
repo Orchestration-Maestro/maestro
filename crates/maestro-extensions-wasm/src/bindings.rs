@@ -30,6 +30,9 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.child-process": crate::tests::native_io_host::Child,
+            "maestro:extension/host.readable": crate::tests::native_io_host::Reader,
+            "maestro:extension/host.writable": crate::tests::native_io_host::Writer,
             "maestro:extension/host.bash-output": crate::tests::shell_host::Receiver,
             "maestro:extension/host.theme": crate::tests::renderer_host::Theme,
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,

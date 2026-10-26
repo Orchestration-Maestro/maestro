@@ -12,6 +12,7 @@ mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod native_io;
+pub(crate) mod native_resources;
 mod signals;
 mod synchronous;
 pub(crate) use synchronous::Completion;
@@ -105,6 +106,8 @@ pub(crate) enum Message {
     Theme(u64, crate::theme_reads::Request),
     /// Reads or subscribes to the footer metadata lent to a footer factory.
     Footer(u64, crate::footer_data::Request),
+    /// Typed operations on original application-supplied native resources.
+    Native(u64, native_resources::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -190,6 +193,12 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Original native child, independently retained after its creating callback.
+    NativeChild(Rc<dyn maestro_extensions::native_io::ChildProcess>),
+    /// Original native consuming output.
+    NativeReader(Rc<dyn maestro_extensions::native_io::Readable>),
+    /// Original native ordered input.
+    NativeWriter(Rc<dyn maestro_extensions::native_io::Writable>),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.
@@ -239,6 +248,8 @@ enum Capability {
 /// Local entries and their monotonic identities.
 #[derive(Default)]
 pub(crate) struct Resources {
+    /// Native effects supplied by the application's composition, never reconstructed here.
+    pub(crate) native_io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
     /// Next identity; released identities are never reused.
     next: u64,
     /// Weak native callback identities by allocation address; each weak handle keeps its

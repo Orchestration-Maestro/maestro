@@ -17,7 +17,7 @@ mod exec;
 mod exec_imports;
 mod factory;
 mod footer_data;
-pub use factory::artifact_factory;
+pub use factory::{artifact_factory, artifact_factory_with_io};
 mod guest_calls;
 mod guest_component;
 mod guest_exports;
@@ -26,6 +26,9 @@ mod history_reads;
 mod import_route;
 mod lifecycle;
 mod local_resources;
+mod native_imports;
+/// Native capability contract accepted by the artifact factory.
+pub use maestro_extensions::native_io;
 mod read_imports;
 mod registration_imports;
 mod registration_reads;

@@ -18,6 +18,7 @@ mod contexts;
 mod signals;
 #[cfg(test)]
 pub(crate) use signals::signal;
+mod byte_resources;
 mod exports;
 pub(crate) mod factories;
 #[cfg(target_arch = "wasm32")]
@@ -26,6 +27,7 @@ mod host_api;
 mod imports;
 mod io;
 mod model_registry;
+mod native_imports;
 mod schema;
 mod session;
 mod setup;
@@ -47,6 +49,8 @@ pub(crate) use imports::Dialog;
 pub(crate) use imports::Imports;
 #[cfg(test)]
 pub(crate) use imports::ToolCallbacks;
+#[cfg(test)]
+pub(crate) use native_imports::NativeImports;
 
 pub(crate) use imports::ToolListing;
 

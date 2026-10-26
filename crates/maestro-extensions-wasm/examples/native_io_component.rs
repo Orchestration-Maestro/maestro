@@ -10,6 +10,9 @@ use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionFuture};
 #[cfg(target_arch = "wasm32")]
 use std::rc::Rc;
 #[cfg(target_arch = "wasm32")]
+#[path = "native_io_component/children.rs"]
+mod children;
+#[cfg(target_arch = "wasm32")]
 #[path = "native_io_component/waits.rs"]
 mod waits;
 
@@ -18,6 +21,7 @@ mod waits;
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         let io = api.native_io();
+        children::register(&api, Rc::clone(&io))?;
         let direct = Rc::clone(&io);
         api.register_command(
             "native-wait",

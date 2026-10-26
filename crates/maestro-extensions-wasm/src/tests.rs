@@ -56,6 +56,7 @@ mod host_family;
 mod join;
 mod json_payloads;
 mod native_io;
+pub(crate) mod native_io_host;
 mod observed;
 mod parameter_schemas;
 mod pirate_example;
@@ -563,6 +564,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_eq!(
         names(&contract.imports, true),
         [
+            "[method]child-process.wait",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
@@ -574,13 +576,18 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]extension-ui-context.input",
             "[method]extension-ui-context.select",
             "[method]model-registry.get-api-key-and-headers",
+            "[method]readable.read",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "[method]writable.end",
+            "[method]writable.write",
             "call",
             "event-emit",
             "get-all-tools",
             "register-tool",
             "set-model",
+            "sleep",
+            "spawn",
         ]
     );
     assert_interface_contract(&contract);

@@ -580,6 +580,10 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn kill(&mut self, pid: i32, signal: Option<String>) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.observed.native_io.kill(pid, signal))
+    }
+
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,
@@ -1354,6 +1358,18 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn spawn(
+        accessor: &Accessor<State, Self>,
+        command: String,
+        args: Vec<String>,
+        options: host::SpawnOptions,
+    ) -> impl Future<Output = wasmtime::Result<Result<Resource<super::native_io_host::Child>, String>>>
+    {
+        std::future::ready(super::native_io_host::spawn(
+            accessor, command, args, options,
+        ))
+    }
+
     async fn sleep(
         accessor: &Accessor<State, Self>,
         duration: (u64, u32),
