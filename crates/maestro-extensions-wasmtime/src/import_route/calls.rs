@@ -17,6 +17,11 @@ use crate::{
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
+mod credentials;
+mod ui;
+use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
+mod tool;
+
 /// Owned operands of one nested renderer call.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -195,10 +200,36 @@ pub(super) struct LocalBash {
     resources: BashResources,
 }
 
+/// Owned operands of one nested credential backend method.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalBackend {
+    /// Authored backend identity.
+    target: u32,
+    /// Invocation-local native update.
+    update: Resource<crate::local_resources::credential_scope::Endpoint>,
+    /// Whether the author must await its update.
+    asynchronous: bool,
+}
+/// Owned operands of one nested fallback lookup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalFallback {
+    /// Authored resolver identity.
+    target: u32,
+    /// Literal provider.
+    provider: String,
+}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Authored backend and still-borrowed native update.
+    #[component(name = "auth-backend")]
+    AuthBackend(LocalBackend),
+    /// Authored fallback with its original optional result.
+    #[component(name = "auth-fallback")]
+    AuthFallback(LocalFallback),
     /// A message renderer.
     #[component(name = "renderer")]
     Renderer(LocalRenderer),
@@ -214,12 +245,18 @@ pub(super) enum LocalCall {
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
+    /// A terminal input listener.
+    #[component(name = "terminal-input")]
+    TerminalInput(LocalTerminalInput),
     /// A synchronous callback prefix.
     #[component(name = "synchronous")]
     Synchronous(LocalSynchronous),
     /// A schema method against the original borrowed operand.
     #[component(name = "schema")]
     Schema(LocalSchema),
+    /// A synchronous authored-stream classifier or extractor.
+    #[component(name = "stream")]
+    Stream(crate::stream_calls::Local),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -247,12 +284,21 @@ pub(super) enum LocalCall {
     /// An execution of returned shell operations.
     #[component(name = "bash")]
     Bash(LocalBash),
+    /// A component factory.
+    #[component(name = "factory")]
+    Factory(LocalFactory),
+    /// A tool rendering.
+    #[component(name = "tool-render")]
+    ToolRender(LocalToolRender),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Exact optional fallback value or authored error.
+    #[component(name = "auth-fallback")]
+    AuthFallback(Result<Option<String>, String>),
     /// Optional retained component identity, or the authored error.
     #[component(name = "renderer")]
     Renderer(Result<Option<Resource<Callback>>, String>),
@@ -268,12 +314,18 @@ pub(super) enum LocalResult {
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
+    /// The terminal input listener's decision or its error.
+    #[component(name = "terminal-input")]
+    TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),
     /// Unit result of a synchronous prefix, or the authored error.
     #[component(name = "synchronous")]
     Synchronous(Result<(), String>),
     /// The schema result with every authored diagnostic field.
     #[component(name = "schema")]
     Schema(Result<String, crate::schema_wire::Error>),
+    /// Selected terminal classification or retained result.
+    #[component(name = "stream")]
+    Stream(Result<crate::stream_calls::WireSelection, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -286,6 +338,12 @@ pub(super) enum LocalResult {
     /// Optional exit status, or the authored error.
     #[component(name = "bash")]
     Bash(Result<Option<f64>, String>),
+    /// The built component identities, or the authored error.
+    #[component(name = "factory")]
+    Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// The rendered component and new row state identities, or the authored error.
+    #[component(name = "tool-render")]
+    ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -294,6 +352,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
             message: call.message.clone(),
@@ -312,12 +371,16 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
+        Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
+        call @ (Call::ToolRender(_) | Call::Factory(_) | Call::TerminalInput(_)) => {
+            ui::lower(table, call)?
+        }
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -392,7 +455,7 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
                     .transpose()?,
             },
         }),
-        Call::Tool(call) => tool(table, call)?,
+        Call::Tool(call) => tool::lower(table, call)?,
         Call::Setup(handler, writer, _) => LocalCall::Setup(LocalSetup {
             target: handler.id,
             writer: table.push(writer.clone())?,
@@ -418,42 +481,6 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
     })
 }
 
-/// Marshals one tool execution with its per-call capabilities.
-fn tool(table: &mut ResourceTable, call: &ToolCall<Callback>) -> wasmtime::Result<LocalCall> {
-    let ToolCall::Execute {
-        handler,
-        id,
-        params,
-        context,
-        signal,
-        update,
-        ..
-    } = call
-    else {
-        return Err(wasmtime::format_err!(
-            "extension preparation is synchronous"
-        ));
-    };
-    Ok(LocalCall::Tool(LocalTool {
-        target: handler.id,
-        invocation: ToolInvocation {
-            tool_call_id: id.clone(),
-            params: params.clone(),
-        },
-        resources: ToolResources {
-            ctx: table.push(Context(context.clone()))?,
-            signal: signal
-                .clone()
-                .map(|signal| table.push(signal))
-                .transpose()?,
-            update: update
-                .clone()
-                .map(|update| table.push(update))
-                .transpose()?,
-        },
-    }))
-}
-
 /// Delivers a nested call's own result to the native caller that asked for it.
 pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     store: &mut T,
@@ -461,6 +488,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::Credential(call), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component
@@ -482,8 +510,32 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
             let _ = reply.send(value);
         }
+        (Call::Stream(call), LocalResult::Stream(value)) => {
+            let value = match value {
+                Ok(value) => Ok(value.retained(store)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
+        }
+        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
+            let value = match value {
+                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Factory(call), LocalResult::Factory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);

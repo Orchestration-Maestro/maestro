@@ -48,9 +48,18 @@ pub mod footer_data_provider;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
-pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
+pub use maestro_catalog::{
+    AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageData,
+    AuthStorageError, AuthStorageFuture, LockUpdate,
+};
+pub use maestro_catalog::{
+    ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
+};
 pub use maestro_models::{
-    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
+    AssistantMessageEventStream, Base, Context, EventStream, OAuthError, ParameterSchema,
+    PayloadHookInput, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
+    SchemaCallback, SchemaCode, SchemaNode, SimpleStreamOptions, StreamOptions, schema_transport,
+    stream_for, stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
@@ -68,6 +77,8 @@ pub use maestro_theme::Theme;
 pub use maestro_theme::ThemeBg;
 /// Foreground color key, including authored names.
 pub use maestro_theme::ThemeColor;
+/// What a terminal input listener decided about one chunk of input.
+pub use maestro_tui::tui::InputListenerResult;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
@@ -83,6 +94,7 @@ pub use types::{
 pub mod runner;
 pub use runner::ExtensionRunner;
 
+pub use loader::CatalogConstruction;
 pub use loader::runtime::create_extension_runtime;
 pub use maestro_models::{
     Cancellation, Local, Model, ModelThinkingLevel, SharedHandle, ToolInfo,
@@ -93,16 +105,16 @@ pub use maestro_tools::{ExecOptions, ExecResult};
 pub use types::{
     AppendEntryHandler, ExtensionActions, ExtensionError, ExtensionErrorListener, ExtensionRuntime,
     ExtensionRuntimeState, GetActiveToolsHandler, GetAllToolsHandler, GetCommandsHandler,
-    GetThinkingLevelHandler, ProviderConfig, ProviderModelConfig, SendMessageHandler,
-    SendUserMessageHandler, SetActiveToolsHandler, SetLabelHandler, SetModelHandler,
-    SetThinkingLevelHandler,
+    GetThinkingLevelHandler, ProviderCallbacks, ProviderConfig, ProviderModelConfig,
+    SendMessageHandler, SendUserMessageHandler, SetActiveToolsHandler, SetLabelHandler,
+    SetModelHandler, SetThinkingLevelHandler,
 };
 
 /// Registered-tool invocation adapters.
 pub mod wrapper;
 pub use loader::load_extension_from_factory;
 #[cfg(not(target_arch = "wasm32"))]
-pub use loader::{discover_and_load_extensions, load_extensions};
+pub use loader::{discover_and_load_extensions, load_extensions, load_extensions_with_runtime};
 pub use types::{
     ExtensionFactory, ExtensionHandler, RegisteredTool, RegisteredToolInput, ToolDefinitionMetadata,
 };
@@ -131,5 +143,10 @@ pub use maestro_tools::types::local;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+/// Native tool renderers, the row context they read and the result they render.
+pub use maestro_tools::{
+    ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
+    ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
+};
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
-pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager};
+pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

@@ -5,6 +5,10 @@ factory for an already-built component. Pass it to
 `maestro_extensions::load_extension_from_factory` on a Tokio local task set.
 Construction does not discover files or compile source.
 
+Compiled artifacts use Wasmtime's user cache (`$XDG_CACHE_HOME/wasmtime`, or
+`~/.cache/wasmtime` by default on Linux); cache failures fall back to compilation,
+and each load creates a fresh Store.
+
 Each instance reads the artifact's path as the `MAESTRO_EXTENSION_PATH`
 environment variable, so a component can find files installed beside it. The
 value is the factory's `path` as supplied. Through `load_extensions` that is the
@@ -36,7 +40,8 @@ Calls into other components are unaffected.
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,
 status, working-row, indicator, hidden-thinking-label, widget and title requests
-without choosing presentation defaults. Credential commands belong to the supplied
+without choosing presentation defaults. Dialogs run on the originally acquired UI
+and keep the component free while they wait. Credential commands belong to the supplied
 context's model catalog, not the component factory.
 
 When the component's factory returns an error, loading fails with that message as

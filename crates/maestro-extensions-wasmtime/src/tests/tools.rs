@@ -34,6 +34,7 @@ async fn tool() {
         endpoint
             .registration(|reply| Request::Tool {
                 schemas: vec![],
+                renderers: (None, None),
                 metadata: json!({"name":" exact ","label":" Label ","description":" desc ",
                 "parameters":{"type":"object"},"promptSnippet":"",
                 "promptGuidelines":[],"executionMode":"parallel","renderShell":"self"})
@@ -194,7 +195,7 @@ fn malformed_tool_documents_never_register_a_native_definition() {
                 json!({"name":"bad","label":"bad","description":"bad","parameters":{},"renderShell":"unknown"}).to_string(),
                 json!({"name":"bad","label":"bad","description":"bad","parameters":{},"executionMode":"unknown"}).to_string(),
             ] {
-                assert!(endpoint.registration(|reply| Request::Tool { schemas: vec![],
+                assert!(endpoint.registration(|reply| Request::Tool { schemas: vec![], renderers: (None, None),
                     metadata, prepare: None, execute: handler.clone(), reply,
                 }).is_err());
             }

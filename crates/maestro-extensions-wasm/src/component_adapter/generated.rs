@@ -1,29 +1,118 @@
 //! The generated imports and exports behind the shared adapter logic: single calls into the
 //! bindings, compiled only for the component target.
 
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
-use super::tools::ToolCapabilities;
-use super::{Capabilities, Exports, Imports, release};
-use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
-use crate::bindings::exports::maestro::extension::guest::{self, Guest};
+use super::Imports;
+use super::imports::Dialog;
 use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
-use crate::loader::Extension;
 use crate::types::{ExtensionFuture, ExtensionResult};
 use crate::{
-    AutocompleteItem, ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType,
-    WorkingIndicatorOptions,
+    ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
 #[path = "generated_route.rs"]
 mod route;
+#[path = "generated_streams.rs"]
+mod streams;
+pub(crate) use streams::new_event_stream;
+
+#[path = "generated_glue.rs"]
+mod glue;
+#[path = "generated_model_streams.rs"]
+pub(crate) mod model_streams;
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;
 
 impl Imports for Generated {
+    forward_resources! { routed {
+        registry_refresh(resource: &Self::Registry) => refresh();
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);
+        registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
+    } }
+    forward_resources! { routed functions {
+        register_provider(name: &str, config: &str) => host::register_provider;
+        unregister_provider(name: &str) => host::unregister_provider;
+    } }
+    fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {
+        route::text(&owner.get_available())
+    }
+    fn registry_has_configured_auth(
+        &self,
+        owner: &Self::Registry,
+        model: &str,
+    ) -> ExtensionResult<bool> {
+        route::boolean(&owner.has_configured_auth(model))
+    }
+    fn registry_get_provider_auth_status(
+        &self,
+        owner: &Self::Registry,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        route::text(&owner.get_provider_auth_status(provider))
+    }
+    type LockUpdate = host::AuthLockUpdate;
+    fn lock_update(
+        &self,
+        update: &Self::LockUpdate,
+        current: Option<&str>,
+    ) -> ExtensionResult<Option<String>> {
+        update.update(current)
+    }
+    fn lock_update_async<'a>(
+        &'a self,
+        update: &'a Self::LockUpdate,
+        current: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move { update.update_async(current).await })
+    }
+    fn auth_storage_from_backend(
+        &self,
+        backend: &Self::Callback,
+    ) -> ExtensionResult<Self::Credentials> {
+        match route::value(&host::auth_storage_from_backend(backend))? {
+            host::RouteValue::Credentials(owner) => Ok(owner),
+            _ => Err("extension route result kind mismatch".into()),
+        }
+    }
+    fn credentials_set_fallback(
+        &self,
+        owner: &Self::Credentials,
+        resolver: &Self::Callback,
+    ) -> ExtensionResult<()> {
+        route::drive(&owner.set_fallback_resolver(resolver))
+    }
+    fn credentials_has_auth(
+        &self,
+        owner: &Self::Credentials,
+        provider: &str,
+    ) -> ExtensionResult<bool> {
+        route::boolean(&owner.has_auth(provider))
+    }
+    fn credentials_get_auth_status(
+        &self,
+        owner: &Self::Credentials,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        route::text(&owner.get_auth_status(provider))
+    }
+    type Credentials = host::AuthStorage;
+    forward_resources! { routed {
+        credentials_reload(resource: &Self::Credentials) => reload();
+        credentials_set(resource: &Self::Credentials, provider: &str, credential: &str) => set(provider, credential);
+        credentials_remove(resource: &Self::Credentials, provider: &str) => remove(provider);
+        credentials_logout(resource: &Self::Credentials, provider: &str) => logout(provider);
+    } }
+    forward_resources! { functions {
+        create_auth_storage(path: Option<&str>) -> ExtensionResult<Self::Credentials> => host::create_auth_storage;
+        auth_storage_in_memory(data: &str) -> ExtensionResult<Self::Credentials> => host::auth_storage_in_memory;
+        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> ExtensionResult<Self::Registry> => host::create_model_registry;
+        in_memory_model_registry(auth: &Self::Credentials) -> ExtensionResult<Self::Registry> => host::in_memory_model_registry;
+    } }
+
     type JsonNode = host::JsonNode;
     fn get_all_tools(&self) -> ExtensionResult<super::ToolListing<Self::Callback>> {
         let listing = host::get_all_tools()?;
@@ -32,9 +121,23 @@ impl Imports for Generated {
             listing
                 .schemas
                 .into_iter()
-                .map(|b| (b.tool, b.pointer, b.handler))
+                .map(|b| (b.tool, b.pointer, b.handler, b.shape, b.local))
                 .collect(),
         ))
+    }
+
+    fn schema_invoke(
+        &self,
+        callback: &Self::Callback,
+        operation: host::SchemaOperation,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        let invocation = callback.schema_invoke(operation, node, path);
+        route::drive(&invocation).map_err(crate::schema_code::DiagnosticErrorInfo::error)?;
+        invocation
+            .schema_result()
+            .map_err(crate::schema_error::from_wire)
     }
 
     fn callback_emit(
@@ -56,7 +159,6 @@ impl Imports for Generated {
         set_label(entry_id: &str, label: Option<&str>) => host::set_label;
         set_active_tools(tool_names: &[String]) => host::set_active_tools;
         set_thinking_level(level: &str) => host::set_thinking_level;
-        register_tool(metadata: &str, prepare: Option<&host::Callback>, execute: &host::Callback, schemas: &[(String, &host::Callback)]) => host::register_tool;
         append_entry(custom_type: &str, data: Option<&str>) => host::append_entry;
     } }
     forward_resources! { routed {
@@ -72,11 +174,16 @@ impl Imports for Generated {
         ui_paste_to_editor(resource: &Self::Ui, text: &str) => paste_to_editor(text);
         ui_set_editor_text(resource: &Self::Ui, text: &str) => set_editor_text(text);
         ui_set_title(resource: &Self::Ui, title: &str) => set_title(title);
+        ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
+        ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
+        ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
+        ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
         command_abort(context: &Self::CommandContext) => abort();
         command_shutdown(context: &Self::CommandContext) => shutdown();
         tool_update(update: &Self::Update, partial: &str) => update(partial);
+        signal_abort(signal: &Self::Signal) => abort();
     } }
     forward_resources! { functions {
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
@@ -103,10 +210,17 @@ impl Imports for Generated {
         json_splice(node: &Self::JsonNode, path: &str, range: (u32, u32), values: &[String]) -> ExtensionResult<Vec<String>> => splice(path, range, values);
         callback_id(callback: &Self::Callback) -> u32 => id();
         unsubscribe(subscription: &Self::Subscription) -> ExtensionResult<()> => unsubscribe();
+        registry_auth_storage(resource: &Self::Registry) -> ExtensionResult<Self::Credentials> => auth_storage();
+        credentials_set_runtime_api_key(resource: &Self::Credentials, provider: &str, key: &str) -> ExtensionResult<()> => set_runtime_api_key(provider, key);
+        credentials_remove_runtime_api_key(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => remove_runtime_api_key(provider);
+        credentials_get(resource: &Self::Credentials, provider: &str) -> ExtensionResult<Option<String>> => get(provider);
+        credentials_list(resource: &Self::Credentials) -> ExtensionResult<Vec<String>> => list();
+        credentials_has(resource: &Self::Credentials, provider: &str) -> ExtensionResult<bool> => has(provider);
+        credentials_get_all(resource: &Self::Credentials) -> ExtensionResult<String> => get_all();
+        credentials_drain_errors(resource: &Self::Credentials) -> ExtensionResult<String> => drain_errors();
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
         aborted(signal: &host::AbortSignal) -> bool => aborted();
-        signal_abort(signal: &Self::Signal) -> ExtensionResult<()> => abort();
         writer_reader(resource: &Self::Writer) -> Self::Reader => reader();
         writer_set_session_file(resource: &Self::Writer, path: &str) -> ExtensionResult<()> => set_session_file(path);
         writer_new_session(resource: &Self::Writer, options: Option<&str>) -> ExtensionResult<Option<String>> => new_session(options);
@@ -125,8 +239,10 @@ impl Imports for Generated {
         writer_reset_leaf(resource: &Self::Writer) -> ExtensionResult<()> => reset_leaf();
         writer_branch_with_summary(resource: &Self::Writer, from_id: Option<&str>, summary: &str, metadata: (Option<&str>, Option<bool>)) -> ExtensionResult<String> => branch_with_summary(from_id, summary, metadata);
         writer_create_branched_session(resource: &Self::Writer, leaf_id: &str) -> ExtensionResult<Option<String>> => create_branched_session(leaf_id);
-        registry_get_available(resource: &Self::Registry) -> ExtensionResult<String> => get_available();
         registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
+        registry_get_error(resource: &Self::Registry) -> ExtensionResult<Option<String>> => get_error();
+        registry_get_provider_display_name(resource: &Self::Registry, provider: &str) -> ExtensionResult<String> => get_provider_display_name(provider);
+        registry_is_using_oauth(resource: &Self::Registry, model: &str) -> ExtensionResult<bool> => is_using_oauth(model);
         ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
         theme_name(theme: &Self::Theme) -> ExtensionResult<Option<String>> => name();
         theme_source_path(theme: &Self::Theme) -> ExtensionResult<Option<String>> => source_path();
@@ -142,7 +258,21 @@ impl Imports for Generated {
         theme_get_fg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_fg_ansi(color);
         theme_get_bg_ansi(theme: &Self::Theme, color: &str) -> ExtensionResult<String> => get_bg_ansi(color);
         theme_get_color_mode(theme: &Self::Theme) -> ExtensionResult<crate::ColorMode> => get_color_mode();
+        theme_thinking_border(theme: &Self::Theme, level: &str, text: &str) -> ExtensionResult<String> => thinking_border(level, text);
+        theme_bash_mode_border(theme: &Self::Theme, text: &str) -> ExtensionResult<String> => bash_mode_border(text);
         ui_get_editor_text(resource: &Self::Ui) -> ExtensionResult<String> => get_editor_text();
+        ui_on_terminal_input(resource: &Self::Ui, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_terminal_input(handler);
+        ui_theme(resource: &Self::Ui) -> ExtensionResult<Self::Theme> => theme();
+        ui_get_all_themes(resource: &Self::Ui) -> ExtensionResult<Vec<crate::ThemeInfo>> => get_all_themes();
+        ui_get_theme(resource: &Self::Ui, name: &str) -> ExtensionResult<Option<Self::Theme>> => get_theme(name);
+        ui_set_theme_name(resource: &Self::Ui, name: &str) -> ExtensionResult<crate::ThemeSetResult> => set_theme_name(name);
+        ui_set_theme(resource: &Self::Ui, theme: &Self::Theme) -> ExtensionResult<crate::ThemeSetResult> => set_theme(theme);
+        ui_get_tools_expanded(resource: &Self::Ui) -> ExtensionResult<bool> => get_tools_expanded();
+        invalidate(invalidator: &Self::Invalidator) -> ExtensionResult<()> => invalidate();
+        footer_get_git_branch(footer: &Self::FooterData) -> ExtensionResult<Option<String>> => get_git_branch();
+        footer_get_extension_statuses(footer: &Self::FooterData) -> ExtensionResult<Vec<(String, String)>> => get_extension_statuses();
+        footer_get_available_provider_count(footer: &Self::FooterData) -> ExtensionResult<f64> => get_available_provider_count();
+        footer_on_branch_change(footer: &Self::FooterData, listener: &Self::Callback) -> ExtensionResult<Self::Subscription> => on_branch_change(listener);
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();
@@ -183,76 +313,52 @@ impl Imports for Generated {
         command_cwd(context: &host::CommandContext) -> ExtensionResult<String> => cwd();
         command(context: &host::ReplacedSessionContext) -> host::CommandContext => command();
     }
-    fn fork<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        entry_id: &'a str,
-        data: Option<String>,
-        with_session: Option<&'a Self::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.fork(entry_id.to_owned(), data, with_session))
-    }
-    fn navigate_tree<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        target_id: &'a str,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.navigate_tree(target_id.to_owned(), options))
-    }
-    fn switch_session<'a>(
-        &'a self,
-        context: &'a Self::CommandContext,
-        path: &'a str,
-        options: Option<()>,
-        with_session: Option<&'a Self::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.switch_session(
-            path.to_owned(),
-            options.map(|()| host::SwitchSessionOptions { with_session }),
-        ))
-    }
-    fn reload<'a>(&'a self, context: &'a Self::CommandContext) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.reload())
-    }
-    fn replaced_send_message<'a>(
-        &'a self,
-        context: &'a Self::ReplacedContext,
-        message: String,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.send_message(message, options))
-    }
-    fn replaced_send_user_message<'a>(
-        &'a self,
-        target: &'a Self::ReplacedContext,
-        content: String,
-        options: Option<String>,
-    ) -> ExtensionFuture<'a, ()> {
-        Box::pin(target.send_user_message(content, options))
-    }
-
     type Writer = host::SessionManager;
 
-    fn call<'a>(
-        &'a self,
-        operation: &'a str,
-        data: String,
-        signal: Option<&'a Self::Signal>,
-    ) -> ExtensionFuture<'a, String> {
-        Box::pin(host::call(operation.to_owned(), data, signal))
-    }
-
-    fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
-        Box::pin(host::set_model(model))
-    }
+    forward_resources! { asynchronous functions {
+        call<'a>(operation: &'a str, data: String, signal: Option<&'a Self::Signal>) -> String => host::call[operation.to_owned(), data, signal];
+        set_model<'a>(model: String) -> bool => host::set_model[model];
+        event_emit<'a>(channel: String, data: String) -> () => host::event_emit[channel, data];
+    } }
 
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
-    fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
-        Box::pin(host::event_emit(channel, data))
-    }
     type Ui = host::ExtensionUiContext;
+    type Tui = host::Tui;
+    type Invalidator = host::ToolInvalidator;
+    fn register_tool(
+        &self,
+        metadata: &str,
+        callbacks: super::imports::ToolCallbacks<'_, host::Callback>,
+        schemas: &[(String, &host::Callback)],
+    ) -> ExtensionResult<()> {
+        let (prepare, execute) = (callbacks.prepare, callbacks.execute);
+        let renderers = (callbacks.render_call, callbacks.render_result);
+        route::drive(&host::register_tool(
+            metadata,
+            prepare,
+            execute,
+            schemas,
+            renderers.0,
+            renderers.1,
+        ))
+    }
+    type FooterData = host::FooterData;
+
+    forward_resources! { asynchronous {
+        ui_select<'a>(resource: Self::Ui, title: String, options: Vec<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => select(title, options, dialog.signal, dialog.timeout);
+        ui_confirm<'a>(resource: Self::Ui, title: String, message: String, dialog: Dialog<'a, Self::Signal>) -> bool => confirm(title, message, dialog.signal, dialog.timeout);
+        ui_input<'a>(resource: Self::Ui, title: String, placeholder: Option<String>, dialog: Dialog<'a, Self::Signal>) -> Option<String> => input(title, placeholder, dialog.signal, dialog.timeout);
+        ui_editor<'a>(resource: Self::Ui, title: String, prefill: Option<String>) -> Option<String> => editor(title, prefill);
+        fork<'a>(context: Self::CommandContext, entry_id: &'a str, data: Option<String>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => fork(entry_id.to_owned(), data, with_session);
+        navigate_tree<'a>(context: Self::CommandContext, target_id: &'a str, options: Option<String>) -> SessionChangeResult => navigate_tree(target_id.to_owned(), options);
+        switch_session<'a>(context: Self::CommandContext, path: &'a str, options: Option<()>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => switch_session(path.to_owned(), options.map(|()| host::SwitchSessionOptions { with_session }));
+        new_session<'a>(context: Self::CommandContext, session_data: Option<NewSessionCommandData>, setup: Option<&'a Self::Callback>, with_session: Option<&'a Self::Callback>) -> SessionChangeResult => new_session(session_data, setup, with_session);
+        reload<'a>(context: Self::CommandContext) -> () => reload();
+        wait_for_idle<'a>(context: Self::CommandContext) -> () => wait_for_idle();
+        replaced_send_message<'a>(context: Self::ReplacedContext, message: String, options: Option<String>) -> () => send_message(message, options);
+        replaced_send_user_message<'a>(target: Self::ReplacedContext, content: String, options: Option<String>) -> () => send_user_message(content, options);
+    } }
     type Registry = host::ModelRegistry;
 
     fn registry_get_api_key_and_headers<'a>(
@@ -273,6 +379,22 @@ impl Imports for Generated {
         })
     }
 
+    fn credentials_get_api_key<'a>(
+        &'a self,
+        resource: &'a Self::Credentials,
+        provider: String,
+        include_fallback: Option<bool>,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(resource.get_api_key(provider, include_fallback))
+    }
+    fn registry_get_api_key_for_provider<'a>(
+        &'a self,
+        resource: &'a Self::Registry,
+        provider: String,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(resource.get_api_key_for_provider(provider))
+    }
+
     type BashOutput = host::BashOutput;
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
@@ -289,242 +411,22 @@ impl Imports for Generated {
         let handle = host::Callback::new();
         (handle.id(), handle)
     }
+}
 
-    fn wait_for_idle<'a>(&'a self, context: &'a host::CommandContext) -> ExtensionFuture<'a, ()> {
-        Box::pin(context.wait_for_idle())
-    }
-
-    fn new_session<'a>(
-        &'a self,
-        context: &'a host::CommandContext,
-        session_data: Option<NewSessionCommandData>,
-        setup: Option<&'a host::Callback>,
-        with_session: Option<&'a host::Callback>,
-    ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.new_session(session_data, setup, with_session))
+/// Transfers a rendered component and a new row's state to the host as their identities.
+fn rendered_row(
+    (component, row): (
+        crate::ExtensionResult<crate::Component>,
+        Option<std::rc::Rc<crate::types::ToolRow>>,
+    ),
+) -> host::ToolRendered {
+    let identity = || super::callbacks::Identity::<Generated>::new(&Generated);
+    host::ToolRendered {
+        component: component.map(|component| identity().transfer(component)),
+        row: row.map(|row| identity().transfer(row)),
     }
 }
 
 /// Entry type of an extension component: serves the generated exports for `E`.
 #[doc(hidden)]
 pub struct Glue<E>(PhantomData<E>);
-
-impl<E: Extension> Guest for Glue<E> {
-    fn describe_schema(
-        handler: &host::Callback,
-    ) -> Result<host::SchemaShape, host::DiagnosticErrorInfo> {
-        Exports::<Generated>::describe_schema(handler.id()).map_err(crate::schema_error::to_wire)
-    }
-    fn retain_schema(
-        handler: &host::Callback,
-        retained: host::Callback,
-    ) -> Result<(), host::DiagnosticErrorInfo> {
-        Exports::new(Generated)
-            .retain_schema(handler.id(), retained)
-            .map_err(crate::schema_error::to_wire)
-    }
-    fn invoke_schema(
-        handler: &host::Callback,
-        operation: host::SchemaOperation,
-        node: &host::JsonNode,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = Result<String, host::DiagnosticErrorInfo>> {
-        std::future::ready(
-            Exports::new(Generated)
-                .invoke_schema(handler.id(), operation, node, emitter)
-                .map_err(crate::schema_error::to_wire),
-        )
-    }
-    fn invoke_renderer(
-        handler: &host::Callback,
-        request: guest::RenderRequest,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<Option<host::Callback>>> {
-        let request = super::renderers::RenderRequest {
-            message: &request.message,
-            expanded: request.expanded,
-            theme: request.theme,
-            emitter,
-        };
-        std::future::ready(
-            Exports::new(Generated)
-                .invoke_renderer(handler.id(), request)
-                .map(|view| super::renderers::retain(&Generated, view)),
-        )
-    }
-    fn component_render(
-        handler: &host::Callback,
-        width: u32,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<Vec<String>>> {
-        std::future::ready(Exports::new(Generated).invoke_component(
-            handler.id(),
-            emitter,
-            |view, emitter| view.render(width, emitter),
-        ))
-    }
-    fn component_handle_input(
-        handler: &host::Callback,
-        data: String,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<()>> {
-        std::future::ready(Exports::new(Generated).invoke_component(
-            handler.id(),
-            emitter,
-            |view, emitter| view.handle_input(&data, emitter),
-        ))
-    }
-    fn component_wants_key_release(
-        handler: &host::Callback,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<bool>> {
-        std::future::ready(Exports::new(Generated).invoke_component(
-            handler.id(),
-            emitter,
-            crate::Component::wants_key_release,
-        ))
-    }
-    fn component_invalidate(
-        handler: &host::Callback,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<()>> {
-        std::future::ready(Exports::new(Generated).invoke_component(
-            handler.id(),
-            emitter,
-            crate::Component::invalidate,
-        ))
-    }
-
-    async fn invoke_setup(
-        handler: &host::Callback,
-        writer: host::SessionManager,
-    ) -> ExtensionResult<()> {
-        Exports::new(Generated)
-            .invoke_setup(handler.id(), writer)
-            .await
-    }
-    fn invoke_compaction_complete(
-        handler: &host::Callback,
-        result: String,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<()>> {
-        std::future::ready(Exports::new(Generated).invoke_compaction_complete(
-            handler.id(),
-            &result,
-            emitter,
-        ))
-    }
-    fn invoke_compaction_error(
-        handler: &host::Callback,
-        error: String,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<()>> {
-        std::future::ready(Exports::new(Generated).invoke_compaction_error(
-            handler.id(),
-            error,
-            emitter,
-        ))
-    }
-
-    fn invoke_abort(
-        handler: &host::Callback,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<()>> {
-        std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
-    }
-
-    async fn start() -> ExtensionResult<()> {
-        Exports::new(Generated).start::<E>().await
-    }
-
-    fn release(handler: &host::Callback) {
-        release(handler.id());
-    }
-
-    fn invoke_prepare(
-        handler: &host::Callback,
-        args: String,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<String>> {
-        std::future::ready(Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter))
-    }
-    fn invoke_listener(
-        handler: &host::Callback,
-        data: String,
-        emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<()>> {
-        std::future::ready(Exports::new(Generated).invoke_listener(handler.id(), &data, emitter))
-    }
-    async fn invoke_tail(handler: &host::Callback) -> ExtensionResult<()> {
-        Exports::<Generated>::invoke_tail(handler.id()).await
-    }
-    async fn invoke_tool(
-        handler: &host::Callback,
-        invocation: ToolInvocation,
-        resources: guest::ToolCapabilities,
-    ) -> ExtensionResult<String> {
-        let guest::ToolCapabilities {
-            ctx,
-            signal,
-            update,
-        } = resources;
-        Exports::new(Generated)
-            .invoke_tool(
-                handler.id(),
-                invocation,
-                ToolCapabilities {
-                    ctx,
-                    signal,
-                    update,
-                },
-            )
-            .await
-    }
-    async fn invoke_command(
-        handler: &host::Callback,
-        args: String,
-        ctx: host::CommandContext,
-    ) -> ExtensionResult<()> {
-        Exports::new(Generated)
-            .invoke_command(handler.id(), args, ctx)
-            .await
-    }
-
-    async fn invoke_completion(
-        handler: &host::Callback,
-        prefix: String,
-    ) -> ExtensionResult<Option<Vec<AutocompleteItem>>> {
-        Exports::new(Generated)
-            .invoke_completion(handler.id(), prefix)
-            .await
-    }
-    async fn invoke_shortcut(handler: &host::Callback, ctx: host::Context) -> ExtensionResult<()> {
-        Exports::new(Generated)
-            .invoke_shortcut(handler.id(), ctx)
-            .await
-    }
-
-    async fn invoke_with_session(
-        handler: &host::Callback,
-        ctx: host::ReplacedSessionContext,
-    ) -> ExtensionResult<()> {
-        Exports::new(Generated)
-            .invoke_with_session(handler.id(), ctx)
-            .await
-    }
-
-    async fn invoke_event(
-        handler: &host::Callback,
-        event: String,
-        resources: host::Capabilities,
-    ) -> Result<host::EventOutcome, String> {
-        route::event(handler.id(), event, resources).await
-    }
-    async fn bash_exec(
-        handler: &host::Callback,
-        request: host::BashRequest,
-        resources: host::BashCapabilities,
-    ) -> ExtensionResult<Option<f64>> {
-        route::bash(handler.id(), request, resources).await
-    }
-}

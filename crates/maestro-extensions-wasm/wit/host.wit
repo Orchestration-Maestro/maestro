@@ -2,6 +2,17 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// A native update borrowed only while the author's backend is running.
+    resource auth-lock-update {
+        update: func(current: option<string>) -> result<option<string>, string>;
+        update-async: async func(current: option<string>) -> result<option<string>, string>;
+    }
+    auth-storage-from-backend: func(backend: borrow<callback>) -> import-route;
+    /// File constructors resolve absent paths through application-supplied defaults.
+    create-auth-storage: func(path: option<string>) -> result<auth-storage, string>;
+    auth-storage-in-memory: func(data: string) -> result<auth-storage, string>;
+    create-model-registry: func(auth: borrow<auth-storage>, path: option<string>) -> result<model-registry, string>;
+    in-memory-model-registry: func(auth: borrow<auth-storage>) -> result<model-registry, string>;
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};
@@ -47,6 +58,10 @@ interface host {
         get-fg-ansi: func(color: string) -> result<string, string>;
         get-bg-ansi: func(color: string) -> result<string, string>;
         get-color-mode: func() -> result<color-mode, string>;
+        /// Colors text with the border color of a thinking level.
+        thinking-border: func(level: string, text: string) -> result<string, string>;
+        /// Colors text with the shell mode border color.
+        bash-mode-border: func(text: string) -> result<string, string>;
     }
     /// Registers a renderer without invoking it.
     register-message-renderer: func(custom-type: string, handler: borrow<callback>) -> result<_, string>;
@@ -69,9 +84,8 @@ interface host {
         delete: func(path: string, key: string) -> result<_, string>;
         splice: func(path: string, range: tuple<u32, u32>, values: list<string>) -> result<list<string>, string>;
     }
-    /// Bindings belong to their own tool and contain only this guest's callbacks.
-    /// Foreign tool records carry only schema data.
-    record schema-binding { tool: u32, pointer: string, handler: callback }
+    /// Independently retained callbacks, with author affinity and their original shape.
+    record schema-binding { tool: u32, pointer: string, handler: callback, shape: schema-shape, local: bool }
     /// Opaque metadata with independently retained executable annotations.
     record tool-listing { metadata: string, schemas: list<schema-binding> }
     /// Host-owned identity of one guest closure.
@@ -79,8 +93,45 @@ interface host {
         constructor();
         /// Stable key of this identity, equal for the owner handle and every borrow.
         id: func() -> u32;
-
+        /// Invoke a foreign node through the current synchronous native import route.
+        schema-invoke: func(operation: schema-operation, node: borrow<json-node>, path: string) -> import-route;
     }
+
+    /// Independently retained author value, never encoded as JSON.
+    resource stream-value {
+        constructor(value: callback);
+        id: func() -> u32;
+    }
+    /// Original model invocation buffer, without a second event queue.
+    resource assistant-stream {
+        push: func(event: string) -> result<_, string>;
+        end: func(value: option<string>) -> result<_, string>;
+        next: async func() -> result<option<string>, string>;
+        %result: async func() -> result<string, string>;
+    }
+    /// Non-data invocation operands retained independently of the initiating callback.
+    record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
+    /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
+    model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Native phase calling an awaited authored hook.
+    enum model-hook { payload, response }
+    /// Selected payload and optional original or replacement cancellation.
+    record payload-selection { data: string, signal: option<abort-signal>, owner: option<callback> }
+    /// Host-buffered generic authored events and their independent final result.
+    resource event-stream {
+        push: func(value: stream-value) -> import-route;
+        end: func(value: option<stream-value>) -> import-route;
+        next: async func() -> result<option<stream-value>, string>;
+        %result: async func() -> result<stream-value, string>;
+    }
+    /// Create the native buffer with synchronous author callbacks.
+    new-event-stream: func(classifier: borrow<callback>, extractor: borrow<callback>) -> result<event-stream, string>;
+    /// Which synchronous author callback native admission requests.
+    enum stream-operation { classify, extract }
+    /// Typed result of one author callback.
+    variant stream-selection { complete(bool), extracted(stream-value) }
+    /// One synchronous callback on the original retained event.
+    record local-stream { target: u32, value: u32, operation: stream-operation }
 
     /// Explicit subscription remover.
     resource subscription { unsubscribe: func() -> result<_, string>; }
@@ -106,8 +157,16 @@ interface host {
     record local-key { target: u32, emitter: callback-emitter }
     /// One nested same-instance argument preparation.
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
+    /// What a terminal input listener decided; absent members leave the input as it is.
+    record terminal-input-result { consume: option<bool>, data: option<string> }
+    /// One nested same-instance tool rendering.
+    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
+    /// One nested same-instance component factory.
+    record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
+    /// One nested same-instance terminal input chunk.
+    record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.
@@ -148,15 +207,21 @@ interface host {
     record local-bash { target: u32, request: bash-request, resources: bash-capabilities }
     /// One nested same-instance schema method over the operand its native caller lends.
     record local-schema { target: u32, operation: schema-operation, node: json-node, emitter: callback-emitter }
+    record local-auth-backend { target: u32, update: auth-lock-update, asynchronous: bool }
+    record local-auth-fallback { target: u32, provider: string }
     /// The nested same-instance target and its owned operands.
     variant local-call {
+        auth-backend(local-auth-backend),
+        auth-fallback(local-auth-fallback),
         renderer(local-renderer),
         render(local-render),
         unit(local-unit),
         key(local-key),
         prepare(local-prepare),
+        terminal-input(local-terminal-input),
         synchronous(local-synchronous),
         schema(local-schema),
+        %stream(local-stream),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -166,29 +231,39 @@ interface host {
         with-session(local-continuation),
         tail(u32),
         bash(local-bash),
+        factory(local-factory),
+        tool-render(local-tool-render),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
+        auth-fallback(result<option<string>, string>),
         renderer(result<option<callback>, string>),
         render(result<list<string>, string>),
         unit(result<_, string>),
         key(result<bool, string>),
         prepared(result<string, string>),
+        terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
+        %stream(result<stream-selection, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
         bash(result<option<f64>, string>),
+        factory(result<factory-component, string>),
+        tool-render(result<tool-rendered, string>),
     }
     /// One step of a native operation that may call back into this same instance.
-    variant route-step { invoke(local-call), done(result<_, string>) }
+    variant route-value { unit, boolean(bool), text(string), credentials(auth-storage), catalog(model-registry) }
+    variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
     resource import-route {
         next: func() -> route-step;
         resume: func(value: local-result);
         /// Releases the native caller once the nested call's prefix ran; its result follows.
         defer: func() -> local-settlement;
+        /// Take a completed schema import's original structured result.
+        schema-result: func() -> result<string, diagnostic-error-info>;
     }
     /// A nested call whose prefix ran and whose result the guest delivers later.
     resource local-settlement { finish: func(value: local-result); }
@@ -201,8 +276,9 @@ interface host {
 
     /// Host-owned cancellation flag.
     resource abort-signal {
+        retain: func() -> abort-signal;
         aborted: func() -> bool;
-        abort: func() -> result<_, string>;
+        abort: func() -> import-route;
     }
     /// Creates an independently owned cancellation signal.
     new-signal: func() -> result<abort-signal, string>;
@@ -264,6 +340,40 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// Terminal handle lent to a component factory.
+    resource tui;
+    /// Which renderer a tool rendering enters.
+    enum tool-render-slot { call, %result }
+    /// What a tool renderer reads about its row at this rendering.
+    record tool-render-info {
+        tool-call-id: string, args: option<string>, cwd: string, phase: tool-render-phase,
+        expanded: bool, show-images: bool, is-error: bool,
+    }
+    /// Execution progress of a tool row.
+    record tool-render-phase { execution-started: bool, args-complete: bool, is-partial: bool }
+    /// One tool rendering: the renderer slot, the identity of the row's guest state once it
+    /// has one, the row context and the independently supplied callback operands.
+    record tool-render { slot: tool-render-slot, row: option<u32>, info: tool-render-info, args: option<string>, %result: option<string>, options: option<tool-render-result-options> }
+    /// Options supplied to the result callback independently of the row context.
+    record tool-render-result-options { expanded: bool, is-partial: bool }
+    /// A tool rendering's component or error, with new row state retained in either case.
+    record tool-rendered { component: result<callback, string>, row: option<callback> }
+    /// Redraws one tool row.
+    resource tool-invalidator { invalidate: func() -> result<_, string>; }
+    /// The footer metadata a footer factory may read; each read is current.
+    resource footer-data {
+        get-git-branch: func() -> result<option<string>, string>;
+        get-extension-statuses: func() -> result<list<tuple<string, string>>, string>;
+        get-available-provider-count: func() -> result<f64, string>;
+        /// Calls the listener when the branch may have changed; dropping the subscription keeps it.
+        on-branch-change: func(listener: borrow<callback>) -> result<subscription, string>;
+    }
+    /// A component a factory built, with the disposal the host calls when it removes it.
+    record factory-component { component: callback, dispose: option<callback> }
+    /// One available theme; a theme without a file has no path.
+    record theme-info { name: string, path: option<string> }
+    /// Whether a theme selection applied, with the host's message when it did not.
+    record theme-set-result { success: bool, error: option<string> }
     /// Independently retained opaque UI capability.
     resource extension-ui-context {
         notify: func(message: string, kind: option<notification-type>) -> import-route;
@@ -273,10 +383,38 @@ interface host {
         set-working-indicator: func(options: option<working-indicator-options>) -> import-route;
         set-hidden-thinking-label: func(label: option<string>) -> import-route;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> import-route;
+        /// Replaces the footer with the component a factory builds, or restores the host footer.
+        set-footer: func(factory: option<borrow<callback>>) -> import-route;
+        /// Replaces the header with the component a factory builds, or restores the host header.
+        set-header: func(factory: option<borrow<callback>>) -> import-route;
+        /// Shows the component a factory builds; the host disposes the widget it replaces first.
+        set-widget-factory: func(key: string, factory: borrow<callback>, options: option<extension-widget-options>) -> import-route;
         set-title: func(title: string) -> import-route;
         paste-to-editor: func(text: string) -> import-route;
         set-editor-text: func(text: string) -> import-route;
         get-editor-text: func() -> result<string, string>;
+        /// Adds a raw terminal input listener; dropping the subscription keeps it.
+        on-terminal-input: func(handler: borrow<callback>) -> result<subscription, string>;
+        /// The live theme of this UI.
+        theme: func() -> result<theme, string>;
+        /// Every available theme in the host's order.
+        get-all-themes: func() -> result<list<theme-info>, string>;
+        /// Loads a theme by name without selecting it.
+        get-theme: func(name: string) -> result<option<theme>, string>;
+        /// Selects a theme by name.
+        set-theme-name: func(name: string) -> result<theme-set-result, string>;
+        /// Selects a retained theme.
+        set-theme: func(theme: borrow<theme>) -> result<theme-set-result, string>;
+        get-tools-expanded: func() -> result<bool, string>;
+        set-tools-expanded: func(expanded: bool) -> import-route;
+        /// Resolves to the chosen option, or none on dismissal.
+        select: async func(title: string, options: list<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
+        /// Resolves to false on dismissal.
+        confirm: async func(title: string, message: string, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<bool, string>;
+        /// Resolves to the entered line, or none on dismissal.
+        input: async func(title: string, placeholder: option<string>, signal: option<borrow<abort-signal>>, timeout: option<f64>) -> result<option<string>, string>;
+        /// Resolves to the edited text, or none on dismissal.
+        editor: async func(title: string, prefill: option<string>) -> result<option<string>, string>;
     }
     /// Resolved credentials, retaining key and header presence.
     record request-auth {
@@ -285,12 +423,43 @@ interface host {
     }
     /// Resolution outcome, separate from an import failure.
     variant resolved-request-auth { ok(request-auth), error(string) }
+    /// Independently retained accepted credentials and their original backend.
+    resource auth-storage {
+        set-fallback-resolver: func(resolver: borrow<callback>) -> import-route;
+        set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;
+        remove-runtime-api-key: func(provider: string) -> result<_, string>;
+        reload: func() -> import-route;
+        get: func(provider: string) -> result<option<string>, string>;
+        set: func(provider: string, credential: string) -> import-route;
+        remove: func(provider: string) -> import-route;
+        %list: func() -> result<list<string>, string>;
+        has: func(provider: string) -> result<bool, string>;
+        has-auth: func(provider: string) -> import-route;
+        get-auth-status: func(provider: string) -> import-route;
+        get-all: func() -> result<string, string>;
+        drain-errors: func() -> result<string, string>;
+        logout: func(provider: string) -> import-route;
+        get-api-key: async func(provider: string, include-fallback: option<bool>) -> result<option<string>, string>;
+    }
+
     /// Independently retained host catalog.
     resource model-registry {
+        auth-storage: func() -> result<auth-storage, string>;
         get-all: func() -> result<string, string>;
-        get-available: func() -> result<string, string>;
+        get-available: func() -> import-route;
         find: func(provider: string, model-id: string) -> result<option<string>, string>;
         get-api-key-and-headers: async func(model: string) -> result<resolved-request-auth, string>;
+        refresh: func() -> import-route;
+        get-error: func() -> result<option<string>, string>;
+        has-configured-auth: func(model: string) -> import-route;
+        /// The provider's authentication status as JSON.
+        get-provider-auth-status: func(provider: string) -> import-route;
+        get-provider-display-name: func(provider: string) -> result<string, string>;
+        is-using-oauth: func(model: string) -> result<bool, string>;
+        /// Registers JSON provider data directly in this catalog.
+        register-provider: func(name: string, config: string) -> import-route;
+        unregister-provider: func(name: string) -> import-route;
+        get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
 
     /// Plain compaction options, separate from their retained callbacks.
@@ -390,7 +559,11 @@ interface host {
         name: string, description: option<string>, completions: option<borrow<callback>>, handler: borrow<callback>,
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
-    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>) -> import-route;
+    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
+    /// Registers JSON provider data, queued until the host binds.
+    register-provider: func(name: string, config: string) -> import-route;
+    /// Unregisters a provider, including its queued registrations.
+    unregister-provider: func(name: string) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> import-route;
 

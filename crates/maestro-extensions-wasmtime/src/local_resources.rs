@@ -8,9 +8,15 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+pub(crate) mod credential_scope;
+mod dialogs;
 pub(crate) mod effects;
+mod footer;
+pub(crate) mod model_streams;
+pub(crate) mod schema;
 mod signals;
-mod synchronous;
+pub(crate) mod stream_reads;
+pub(crate) mod synchronous;
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -20,6 +26,16 @@ pub(crate) type Work = std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>;
 pub(crate) enum Message {
     /// Completes an admitted synchronous guest call through this same receiver.
     Completed(u64, Result<(), String>),
+    /// Calls a synchronous update still borrowed on its native caller's stack.
+    LockUpdate(
+        u64,
+        Option<String>,
+        std::sync::mpsc::Sender<Result<Option<String>, String>>,
+    ),
+    /// Calls a Send update still borrowed by its native pending future.
+    AsyncLockUpdate(u64, credential_scope::AsyncRequest),
+    /// Retires the async operand only when its actual native future ends.
+    EndLockUpdate(u64),
     /// The original retained Json.
     Json(u64, crate::schema_reads::Request),
     /// Live declarations with their original schema callback identities.
@@ -27,6 +43,14 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
     ),
+    /// Immediately resolve and invoke the registered native model adapter.
+    ModelStart(model_streams::Creation),
+    /// Operate on its original assistant FIFO and independent result.
+    ModelStream(u64, model_streams::Request),
+    /// Construct the models-owned buffer with retained local callbacks.
+    NewStream(stream_reads::Creation),
+    /// Operate on the original native event buffer.
+    Stream(u64, crate::local_resources::stream_reads::Request),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
@@ -64,6 +88,15 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
     ),
+    /// Uses independently retained accepted credentials.
+    Credentials(u64, crate::credential_reads::Request),
+    /// Resolves a key while retaining the original owner through settlement.
+    CredentialKey(
+        u64,
+        (String, Option<bool>),
+        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
+        Admission,
+    ),
     /// Reads the original live catalog, not a captured descriptor list.
     Catalog(u64, crate::catalog_reads::Request),
     /// Resolves credentials using the caller's effects without blocking other requests.
@@ -71,6 +104,13 @@ pub(crate) enum Message {
         u64,
         Box<Model>,
         tokio::sync::oneshot::Sender<Result<ResolvedRequestAuth, String>>,
+        Admission,
+    ),
+    /// Resolves a key through the original catalog's credential and config owners.
+    ProviderKey(
+        u64,
+        String,
+        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
     /// Reads one retained node of an already-built tree.
@@ -90,8 +130,12 @@ pub(crate) enum Message {
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
+    /// Admits one dialog on the originally acquired UI.
+    Dialog(u64, crate::ui_reads::DialogRequest, Admission),
     /// Reads or edits the independently retained live renderer theme.
     Theme(u64, crate::theme_reads::Request),
+    /// Reads or subscribes to the footer metadata lent to a footer factory.
+    Footer(u64, crate::footer_data::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -112,6 +156,10 @@ pub(crate) struct Lease {
 }
 
 impl Lease {
+    /// Provides the original Send endpoint for pump-thread credential callbacks.
+    pub(crate) fn requests(&self) -> &UnboundedSender<Message> {
+        &self.requests
+    }
     /// Retains this original owner's admission for a native callback or its work.
     pub(crate) fn admission(&self) -> Admission {
         Admission {
@@ -152,9 +200,9 @@ impl Lease {
 
     /// Sends a request whose native code may call back into this instance; the guest
     /// drives the returned route until the request's own result arrives.
-    pub(crate) fn route(
+    pub(crate) fn route<T: Into<crate::import_route::Value> + Send + 'static>(
         &self,
-        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<(), String>>) -> Message,
+        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<T, String>>) -> Message,
     ) -> crate::import_route::Route {
         let (reply, response) = std::sync::mpsc::channel();
         let (nested, route) = crate::import_route::Route::new(response);
@@ -177,6 +225,12 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// An independently retained enumerated schema node.
+    Schema(maestro_extensions::SchemaNode),
+    /// Original native model invocation buffer.
+    AssistantStream(maestro_extensions::AssistantMessageEventStream),
+    /// Native event buffer with caller-local completion callbacks.
+    Stream(crate::local_resources::stream_reads::Owner),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.
@@ -189,6 +243,11 @@ enum Capability {
     History(Rc<RefCell<dyn ReadonlySessionManager>>),
     /// Original writable setup capability, not a copied or reconstructed history.
     Writer(Rc<RefCell<maestro_extensions::SessionManager>>),
+    /// Original credentials and their request-time effects.
+    Credentials(
+        Arc<maestro_extensions::AuthStorage>,
+        maestro_extensions::ConfigValues,
+    ),
     /// Original independently retained catalog.
     Catalog(SharedHandle<ModelRegistry>),
     /// A captured node, independent of the reader that produced its tree.
@@ -207,8 +266,20 @@ enum Capability {
     SignalSubscription(Rc<dyn Fn()>),
     /// Original live theme supplied by native rendering.
     Theme(maestro_extensions::LiveTheme),
+    /// Removes a terminal input listener from the UI it was added to; dropping it keeps the
+    /// listener.
+    UiSubscription(Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
+    /// Original footer metadata lent to a footer factory.
+    Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
+    /// Original redraw capability of one tool row.
+    Invalidate(Rc<dyn Fn()>),
+    /// Original terminal lent to a component factory.
+    Tui {
+        /// Ownership alone crosses the opaque canonical terminal resource.
+        _owner: maestro_extensions::TUI,
+    },
 }
 
 /// Local entries and their monotonic identities.
@@ -237,6 +308,31 @@ pub(crate) struct Registry {
 }
 
 impl Registry {
+    /// Selects the retained credentials only when the supplied lease belongs to this pump.
+    pub(crate) fn credential_owner(
+        &self,
+        endpoint: &crate::credential_reads::Endpoint,
+    ) -> Result<
+        (
+            Arc<maestro_extensions::AuthStorage>,
+            maestro_extensions::ConfigValues,
+        ),
+        String,
+    > {
+        if !self.owns(&endpoint.0) {
+            return Err("extension credential resource belongs to another host".into());
+        }
+        match self.capability(endpoint.0.id).as_deref() {
+            Some(Capability::Credentials(auth, effects)) => Ok((auth.clone(), effects.clone())),
+            _ => Err("extension credential resource ended".into()),
+        }
+    }
+    /// Checks provenance without relying on registry-local resource identities.
+    pub(crate) fn owns(&self, lease: &Lease) -> bool {
+        self.requests
+            .upgrade()
+            .is_some_and(|requests| requests.same_channel(&lease.requests))
+    }
     /// Clones one original capability without holding a table borrow during native calls.
     fn capability(&self, id: u64) -> Option<Rc<Capability>> {
         self.resources.borrow().entries.get(&id).cloned()
@@ -256,9 +352,17 @@ impl Registry {
         &self,
         api: &crate::api_reads::Endpoint,
     ) -> Result<maestro_extensions::EventBus<maestro_extensions::Local>, String> {
+        self.facade(api).map(|api| api.events)
+    }
+
+    /// The original extension facade behind an API resource.
+    pub(crate) fn facade(
+        &self,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<maestro_extensions::ExtensionAPI<maestro_extensions::Local>, String> {
         let capability = self.capability(api.0.id);
         match capability.as_deref() {
-            Some(Capability::Api(api)) => Ok(api.events.clone()),
+            Some(Capability::Api(api)) => Ok(api.clone()),
             _ => Err("extension API resource ended".to_owned()),
         }
     }
@@ -320,6 +424,16 @@ impl Registry {
     ) -> Result<crate::catalog_reads::Endpoint, String> {
         self.insert(Capability::Catalog(catalog))
             .map(crate::catalog_reads::Endpoint)
+    }
+
+    /// Retains accepted credentials together with their original request-time effects.
+    pub(crate) fn credentials(
+        &self,
+        owner: Arc<maestro_extensions::AuthStorage>,
+        effects: maestro_extensions::ConfigValues,
+    ) -> Result<crate::credential_reads::Endpoint, String> {
+        self.insert(Capability::Credentials(owner, effects))
+            .map(crate::credential_reads::Endpoint)
     }
 
     /// Retains a captured node without keeping the guarded context or reader alive.

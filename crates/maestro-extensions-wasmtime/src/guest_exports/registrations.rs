@@ -89,7 +89,10 @@ impl Exports {
             }
             RegisteredCall::Completion(handler, prefix, reply) => {
                 let callback = accessor.with(|mut access| {
-                    access.get().ctx().table.push(Callback { id: handler.id })
+                    access.get().ctx().table.push(Callback {
+                        id: handler.id,
+                        schema: None,
+                    })
                 })?;
                 let result = self
                     .completion

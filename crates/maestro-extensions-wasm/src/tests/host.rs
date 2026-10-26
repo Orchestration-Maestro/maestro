@@ -214,6 +214,16 @@ impl State {
 impl session::Host for State {}
 
 impl host::HostCallback for State {
+    fn schema_invoke(
+        &mut self,
+        _: Resource<Identity>,
+        _: host::SchemaOperation,
+        _: Resource<JsonNode>,
+        _: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.routed(Err("foreign schemas use the production runtime".into()))
+    }
+
     fn new(&mut self) -> wasmtime::Result<Resource<Identity>> {
         let identity = self.observed.next_identity();
         Ok(self.table.push(Identity(identity, None))?)
@@ -262,8 +272,14 @@ impl host::HostToolUpdate for State {
 }
 
 impl host::HostAbortSignal for State {
-    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Result<(), String>> {
-        Ok(self.abort(this.rep()).map_err(|error| error.to_string()))
+    fn retain(&mut self, this: Resource<Flag>) -> wasmtime::Result<Resource<Flag>> {
+        let signal = self.table.get(&this)?.0.clone();
+        self.push(Flag(signal))
+    }
+
+    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Resource<Route>> {
+        let result = self.abort(this.rep()).map_err(|error| error.to_string());
+        self.routed(result)
     }
 
     fn aborted(&mut self, this: Resource<Flag>) -> wasmtime::Result<bool> {
@@ -515,8 +531,15 @@ impl host::HostCallbackEmitter for State {
         Ok(())
     }
 }
-/// A host operation the test host completed before returning it; it makes no nested call.
-pub struct Route(Option<Result<(), String>>);
+/// A host operation's nested calls into this instance, in order, before its own result.
+pub struct Route {
+    /// Nested calls not handed out yet, each with what its result settles.
+    pub(super) steps: std::collections::VecDeque<(host::LocalCall, super::ui_host::Nested)>,
+    /// What the nested call the guest is running settles.
+    pub(super) running: Option<super::ui_host::Nested>,
+    /// The operation's own result.
+    pub(super) result: Option<Result<host::RouteValue, String>>,
+}
 
 /// A deferred nested call; the test host never makes one.
 pub struct Settlement;
@@ -536,16 +559,46 @@ impl State {
         &mut self,
         result: Result<(), String>,
     ) -> wasmtime::Result<Resource<Route>> {
-        self.push(Route(Some(result)))
+        self.push(Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result.map(|()| host::RouteValue::Unit)),
+        })
     }
 }
 
 impl host::HostImportRoute for State {
-    fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
-        let result = self.table.get_mut(&this)?.0.take();
-        Ok(host::RouteStep::Done(result.unwrap_or(Ok(()))))
+    fn schema_result(
+        &mut self,
+        _: Resource<Route>,
+    ) -> wasmtime::Result<Result<String, host::DiagnosticErrorInfo>> {
+        Ok(Err(host::DiagnosticErrorInfo {
+            name: None,
+            message: "foreign schemas use the production runtime".into(),
+            stack: None,
+            code: None,
+        }))
     }
-    fn resume(&mut self, _: Resource<Route>, _: host::LocalResult) -> wasmtime::Result<()> {
+
+    fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
+        let route = self.table.get_mut(&this)?;
+        if let Some((call, nested)) = route.steps.pop_front() {
+            route.running = Some(nested);
+            return Ok(host::RouteStep::Invoke(call));
+        }
+        Ok(host::RouteStep::Done(
+            route.result.take().unwrap_or(Ok(host::RouteValue::Unit)),
+        ))
+    }
+    fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
+        let nested = self.table.get_mut(&this)?.running.take();
+        let failure = match nested {
+            Some(nested) => self.settle_nested(nested, value)?,
+            None => None,
+        };
+        if let Some(error) = failure {
+            self.table.get_mut(&this)?.result = Some(Err(error));
+        }
         Ok(())
     }
     fn defer(&mut self, _: Resource<Route>) -> wasmtime::Result<Resource<Settlement>> {
@@ -557,6 +610,23 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn model_stream(
+        &mut self,
+        _: bool,
+        _: String,
+        _: host::ModelControls,
+    ) -> wasmtime::Result<Result<Resource<super::stream_host::Assistant>, String>> {
+        Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
+    }
+
+    fn new_event_stream(
+        &mut self,
+        _: Resource<Identity>,
+        _: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::stream_host::Stream>, String>> {
+        Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
+    }
+
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,
@@ -841,6 +911,77 @@ impl host::Host for State {
                 crate::FlagValue::String(v) => host::FlagValue::String(v),
             })
         }))
+    }
+
+    fn auth_storage_from_backend(
+        &mut self,
+        _backend: Resource<Identity>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_from_backend", &[])?;
+            self.table
+                .push(reader)
+                .map(host::RouteValue::Credentials)
+                .map_err(|error| error.to_string())
+        });
+        self.push(Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
+    }
+    fn create_auth_storage(
+        &mut self,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn auth_storage_in_memory(
+        &mut self,
+        data: String,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn create_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("create_model_registry", &[serde_json::json!(path)])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn in_memory_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("in_memory_model_registry", &[])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn register_provider(
+        &mut self,
+        name: String,
+        config: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.observed
+            .log(format!("provider register {name} {config}"));
+        self.routed(Ok(()))
+    }
+
+    fn unregister_provider(&mut self, name: String) -> wasmtime::Result<Resource<Route>> {
+        self.observed.log(format!("provider unregister {name}"));
+        self.routed(Ok(()))
     }
 
     fn append_entry(
@@ -1355,6 +1496,8 @@ impl host::HostWithStore<State> for Imports {
         prepare: Option<Resource<Identity>>,
         execute: Resource<Identity>,
         schemas: Vec<(String, Resource<Identity>)>,
+        render_call: Option<Resource<Identity>>,
+        render_result: Option<Resource<Identity>>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Resource<Route>>> {
         std::future::ready(accessor.with(|mut access| {
             let state = access.get();
@@ -1370,10 +1513,12 @@ impl host::HostWithStore<State> for Imports {
                     .schemas
                     .push((name.clone(), pointer, handler.rep()));
             }
-            let result =
-                state
-                    .observed
-                    .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
+            let rep = |handler: Option<Resource<Identity>>| handler.map(|handler| handler.rep());
+            let result = state.observed.register_tool(
+                &metadata,
+                (rep(prepare), execute.rep()),
+                (rep(render_call), rep(render_result)),
+            );
             state.routed(result)
         }))
     }

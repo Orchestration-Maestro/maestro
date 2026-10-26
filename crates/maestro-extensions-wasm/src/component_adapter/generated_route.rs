@@ -10,7 +10,9 @@ use std::{
 use super::{Generated, host};
 use crate::ExtensionResult;
 use crate::component_adapter::tools::ToolCapabilities;
-use crate::component_adapter::{Exports, bash::BashCapabilities, callbacks, renderers};
+use crate::component_adapter::{
+    Capabilities, Exports, bash::BashCapabilities, callbacks, renderers,
+};
 
 /// One nested call's result, ready at once or after its later continuation.
 type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
@@ -20,6 +22,14 @@ type Running = Pin<Box<dyn Future<Output = host::LocalResult>>>;
 /// # Errors
 /// Returns the host operation's own error.
 pub(super) fn drive(route: &host::ImportRoute) -> ExtensionResult<()> {
+    match value(route)? {
+        host::RouteValue::Unit => Ok(()),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Drives the same continuation while preserving a non-unit operation result.
+pub(super) fn value(route: &host::ImportRoute) -> ExtensionResult<host::RouteValue> {
     loop {
         match route.next() {
             host::RouteStep::Done(result) => return result,
@@ -47,6 +57,8 @@ fn start(route: &host::ImportRoute, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
+        host::LocalCall::AuthFallback(call) => auth_fallback(&call),
+        host::LocalCall::AuthBackend(call) => return backend(call),
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
                 .invoke_renderer(
@@ -88,10 +100,28 @@ fn dispatch(call: host::LocalCall) -> Running {
                 .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
                 .map_err(crate::schema_error::to_wire),
         ),
+        host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
+        host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
+        host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
+            exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
+        ),
+        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+            call.target,
+            call.value,
+            call.operation,
+        )),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))
+}
+
+/// Invoke the retained credential fallback through its original author adapter.
+fn auth_fallback(call: &host::LocalAuthFallback) -> host::LocalResult {
+    host::LocalResult::AuthFallback(super::super::auth_storage::invoke_fallback(
+        call.target,
+        &call.provider,
+    ))
 }
 
 /// Runs one nested synchronous callback prefix.
@@ -108,7 +138,31 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
             exports.invoke_compaction_error(call.target, call.data.clone(), &call.emitter)
         }
         host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
+        host::LocalKind::Dispose => exports.invoke_dispose(call.target, &call.emitter),
+        host::LocalKind::BranchChange => {
+            crate::component_adapter::factories::invoke_branch_change(call.target)
+        }
     }
+}
+
+/// Runs one nested tool rendering and transfers what it returned.
+fn tool_render(call: host::LocalToolRender) -> ExtensionResult<host::ToolRendered> {
+    let lent = (call.theme, call.invalidator);
+    Exports::new(Generated)
+        .invoke_tool_render(call.target, &call.render, lent, &call.emitter)
+        .map(super::rendered_row)
+}
+
+/// Runs one nested component factory and transfers what it built.
+fn factory(call: host::LocalFactory) -> ExtensionResult<host::FactoryComponent> {
+    let lent = crate::component_adapter::factories::Lent {
+        tui: call.tui,
+        theme: call.theme,
+        footer: call.footer,
+    };
+    Exports::new(Generated)
+        .invoke_component_factory(call.target, lent, &call.emitter)
+        .map(|built| crate::component_adapter::factories::transfer(&Generated, built))
 }
 
 /// Starts one nested asynchronous callback with its original capabilities.
@@ -176,7 +230,7 @@ pub(super) async fn event(
 ) -> Result<host::EventOutcome, String> {
     let host::Capabilities { ctx, signal } = resources;
     let outcome = Exports::new(Generated)
-        .invoke_event(target, event, super::Capabilities { ctx, signal })
+        .invoke_event(target, event, Capabilities { ctx, signal })
         .await?;
     Ok(host::EventOutcome {
         event: outcome.event,
@@ -234,4 +288,32 @@ pub(super) fn walk_snapshot(
         }
     }
     Ok(())
+}
+
+/// Runs either authored backend method with its still-borrowed native update.
+fn backend(call: host::LocalAuthBackend) -> Running {
+    Box::pin(async move {
+        let result = if call.asynchronous {
+            super::super::auth_storage::invoke_backend_async(&Generated, call.target, &call.update)
+                .await
+        } else {
+            super::super::auth_storage::invoke_backend(&Generated, call.target, &call.update)
+        };
+        host::LocalResult::Unit(result)
+    })
+}
+
+/// Preserves the original non-unit predicate result.
+pub(super) fn boolean(route: &host::ImportRoute) -> ExtensionResult<bool> {
+    match value(route)? {
+        host::RouteValue::Boolean(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+/// Preserves an encoded record returned by the original native owner.
+pub(super) fn text(route: &host::ImportRoute) -> ExtensionResult<String> {
+    match value(route)? {
+        host::RouteValue::Text(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
 }

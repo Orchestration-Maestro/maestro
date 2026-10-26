@@ -1,34 +1,58 @@
 //! Registrations and actions forwarded to the host imports.
 
+use std::rc::Rc;
+
 use super::callbacks::Identity;
 use super::exports::encode_value;
-use super::imports::Imports;
+use super::imports::{Imports, ToolCallbacks};
+use super::signals::Mirror;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
-use std::rc::Rc;
 
 /// The host imports behind the facade.
 pub(super) struct Host<I: Imports>(pub(super) I);
 
-/// An execution's caller-signal listener, removed when the execution settles or is dropped.
-struct Listening(Option<crate::Subscription>);
-
-impl Listening {
-    /// Removes the listener once, returning the host's rejection.
-    fn remove(&mut self) -> ExtensionResult<()> {
-        self.0
-            .take()
-            .map_or(Ok(()), |subscription| subscription.unsubscribe())
-    }
-}
-
-impl Drop for Listening {
-    fn drop(&mut self) {
-        let _ = self.remove();
-    }
-}
-
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn auth_storage_from_backend(
+        &self,
+        backend: Rc<dyn crate::AuthStorageBackend>,
+    ) -> ExtensionResult<crate::AuthStorage> {
+        let identity = Identity::new(&self.0);
+        identity.stage(backend);
+        let result = self.0.auth_storage_from_backend(&identity.handle);
+        identity.settle(result.is_ok());
+        result.map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<crate::AuthStorage> {
+        self.0
+            .create_auth_storage(path)
+            .map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn auth_storage_in_memory(
+        &self,
+        data: crate::AuthStorageData,
+    ) -> ExtensionResult<crate::AuthStorage> {
+        self.0
+            .auth_storage_in_memory(&encode_value(&data)?)
+            .map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn create_model_registry(
+        &self,
+        auth: crate::AuthStorage,
+        path: Option<&str>,
+    ) -> ExtensionResult<crate::ModelRegistry> {
+        self.0
+            .create_model_registry(super::auth_storage::resource::<I>(&auth)?, path)
+            .map(|resource| super::model_registry::registry(self.0.clone(), resource))
+    }
+    fn in_memory_model_registry(
+        &self,
+        auth: crate::AuthStorage,
+    ) -> ExtensionResult<crate::ModelRegistry> {
+        self.0
+            .in_memory_model_registry(super::auth_storage::resource::<I>(&auth)?)
+            .map(|resource| super::model_registry::registry(self.0.clone(), resource))
+    }
     fn exec<'a>(
         &'a self,
         command: &'a str,
@@ -38,36 +62,11 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move {
             let data = encode_value(&(command, args, options.as_ref()))?;
             let caller = options.and_then(|options| options.signal);
-            let native = caller
-                .as_ref()
-                .map(|_| self.0.new_signal())
-                .transpose()?
-                .map(Rc::new);
-            let mut listening = Listening(
-                caller
-                    .as_ref()
-                    .zip(native.as_ref())
-                    .map(|(caller, native)| {
-                        let (imports, native) = (self.0.clone(), Rc::clone(native));
-                        caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
-                    })
-                    .transpose()?,
-            );
-            let aborted = caller.as_ref().is_some_and(crate::AbortSignal::aborted);
-            let notified = native
-                .as_deref()
-                .filter(|_| aborted)
-                .map(|native| self.0.signal_abort(native))
-                .transpose();
-            let result = match notified {
-                Ok(_) => self.0.call("exec", data, native.as_deref()).await,
-                Err(error) => Err(error),
-            };
-            let removed = listening.remove();
-            result.and_then(|data| {
-                removed?;
-                super::session::decode(&data)
-            })
+            let mirror = Mirror::new(&self.0, caller.as_ref())?;
+            let result = self.0.call("exec", data, mirror.signal()).await;
+            mirror
+                .settle(result)
+                .and_then(|data| super::session::decode(&data))
         })
     }
 
@@ -110,27 +109,31 @@ impl<I: Imports> ExtensionHost for Host<I> {
         let (text, bindings) = self.0.get_all_tools()?;
         let handlers = bindings
             .into_iter()
-            .map(|(index, pointer, handle)| {
+            .map(|(index, pointer, handle, shape, local)| {
                 (
                     index,
                     pointer,
                     super::callbacks::Scoped::from_handle(&self.0, handle),
+                    shape,
+                    local,
                 )
             })
             .collect::<Vec<_>>();
         let tools = super::tools::decode_tools(&text)?;
         let mut codes = std::collections::HashMap::<usize, crate::schema_code::SchemaCode>::new();
-        for (index, pointer, identity) in &handlers {
-            let index = *index as usize;
+        for (index, pointer, identity, shape, local) in handlers {
+            let index = index as usize;
             if index >= tools.len() {
                 return Err("schema binding has no matching tool".into());
             }
-            let id = self.0.callback_id(&identity.handle);
-            let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
-            codes
-                .entry(index)
-                .or_default()
-                .insert(pointer.clone(), super::schema::node(&handler));
+            let node = if local {
+                let id = self.0.callback_id(&identity.handle);
+                let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
+                super::schema::node(&handler)
+            } else {
+                super::schema::foreign(&self.0, identity, shape)
+            };
+            codes.entry(index).or_default().insert(pointer, node);
         }
         Ok(tools
             .into_iter()
@@ -218,6 +221,8 @@ impl<I: Imports> ExtensionHost for Host<I> {
             metadata,
             prepare_arguments,
             execute,
+            render_call,
+            render_result,
         } = tool;
         let encoded = super::tools::encode_metadata(&metadata)?;
         let code = metadata
@@ -232,22 +237,32 @@ impl<I: Imports> ExtensionHost for Host<I> {
             })
             .collect::<Vec<_>>();
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
+        let render_call = render_call.map(|render| (Identity::new(&self.0), render));
+        let render_result = render_result.map(|render| (Identity::new(&self.0), render));
         let identity = Identity::new(&self.0);
-        let result = self.0.register_tool(
-            &encoded,
-            prepare.as_ref().map(|(identity, _)| &identity.handle),
-            &identity.handle,
-            &code
-                .iter()
-                .map(|(pointer, id)| (pointer.clone(), &id.handle))
-                .collect::<Vec<_>>(),
-        );
+        let callbacks = ToolCallbacks {
+            prepare: prepare.as_ref().map(|(identity, _)| &identity.handle),
+            execute: &identity.handle,
+            render_call: render_call.as_ref().map(|(identity, _)| &identity.handle),
+            render_result: render_result.as_ref().map(|(identity, _)| &identity.handle),
+        };
+        let schemas = code
+            .iter()
+            .map(|(pointer, id)| (pointer.clone(), &id.handle))
+            .collect::<Vec<_>>();
+        let result = self.0.register_tool(&encoded, callbacks, &schemas);
         for (_, identity) in code {
             identity.settle(result.is_ok());
         }
         result?;
         if let Some((identity, prepare)) = prepare {
             identity.keep(prepare);
+        }
+        if let Some((identity, render)) = render_call {
+            identity.keep(render);
+        }
+        if let Some((identity, render)) = render_result {
+            identity.keep(render);
         }
         identity.keep(execute);
         Ok(())
@@ -259,5 +274,11 @@ impl<I: Imports> ExtensionHost for Host<I> {
     ) -> ExtensionResult<()> {
         self.0
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
+    }
+    fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
+        self.0.register_provider(name, &encode_value(&config)?)
+    }
+    fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
+        self.0.unregister_provider(name)
     }
 }

@@ -22,6 +22,8 @@ pub fn register(
     let prepare_arguments = preparation(api, config.clone(), Rc::clone(&kept));
     let execute = execution(api, config, captured, kept);
     api.register_tool(ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments,
         execute,

@@ -16,10 +16,14 @@ use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
 pub(crate) mod events;
+pub(crate) mod factories;
 pub(crate) use events::EventCall;
+pub(crate) mod credentials;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod schema;
+pub(crate) mod terminal;
+pub(crate) mod tool_renders;
 pub(crate) mod tools;
 pub(crate) use bash::{BashCall, BashRequest};
 pub(crate) use registrations::RegisteredCall;
@@ -29,6 +33,8 @@ pub(crate) use tools::ToolCall;
 pub(crate) struct Callback {
     /// Stable key used by the authored closure table.
     pub(crate) id: u32,
+    /// An enumerated foreign node retained by the existing native registry.
+    pub(crate) schema: Option<crate::local_resources::schema::Endpoint>,
 }
 
 /// Invocations consumed by the single Store driver, not by a replacement executor.
@@ -53,8 +59,20 @@ pub(crate) enum Call<H = Handle> {
     Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
     Tool(ToolCall<H>),
+    /// Calls an authored credential backend with its native scoped update.
+    Credential(credentials::CredentialCall<H>),
     /// The original weak schema allocation and guest callback admission.
     Schema(schema::Invocation<H>),
+    /// Delivers one chunk of terminal input to an authored listener.
+    TerminalInput(terminal::Input<H>),
+    /// Builds one component with the terminal and theme the native owner lent.
+    Factory(factories::FactoryCall<H>),
+    /// Renders one tool row through its authored renderer.
+    ToolRender(tool_renders::ToolRenderCall<H>),
+    /// Awaits an authored hook on the original pending native model invocation.
+    ModelHook(crate::model_calls::Invocation<H>),
+    /// Invokes an authored stream callback on the retained local event.
+    Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.
@@ -118,7 +136,7 @@ impl Callbacks {
         self.next = id
             .checked_add(1)
             .ok_or_else(|| "extension callback identity exhausted".to_owned())?;
-        Ok(Callback { id })
+        Ok(Callback { id, schema: None })
     }
 
     /// Retains one callback admission, shared by every native alias of this identity.
@@ -358,6 +376,12 @@ pub(crate) enum SynchronousKind {
     /// Native abort observer; its export takes no data.
     #[component(name = "abort")]
     Abort,
+    /// Native component disposal; its export takes no data.
+    #[component(name = "dispose")]
+    Dispose,
+    /// Native branch change of a footer's metadata; its export takes no data.
+    #[component(name = "branch-change")]
+    BranchChange,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.

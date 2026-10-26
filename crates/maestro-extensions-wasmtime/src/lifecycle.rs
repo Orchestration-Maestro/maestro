@@ -131,9 +131,13 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
     crate::ui_imports::add_to_linker(&mut host)?;
+    crate::ui_themes::add_to_linker(&mut host)?;
+    crate::footer_data::add_to_linker(&mut host)?;
     crate::theme_imports::add_to_linker(&mut host)?;
     crate::command_imports::add_to_linker(&mut host)?;
     crate::catalog_imports::add_to_linker(&mut host)?;
+    crate::credential_imports::add_to_linker(&mut host)?;
+    crate::construction::link(&mut host)?;
     crate::history_imports::add_to_linker(&mut host)?;
     crate::tree_imports::add_to_linker(&mut host)?;
     crate::writer_imports::add_to_linker(&mut host)?;
@@ -143,6 +147,8 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::event_imports::add_to_linker(&mut host)?;
     crate::signal_imports::add_to_linker(&mut host)?;
     crate::schema_imports::add_to_linker(&mut host)?;
+    crate::stream_imports::add_to_linker(&mut host)?;
+    crate::model_imports::add_to_linker(&mut host)?;
     crate::registration_imports::add_to_linker(&mut host)?;
     crate::import_route::link(&mut host)
 }

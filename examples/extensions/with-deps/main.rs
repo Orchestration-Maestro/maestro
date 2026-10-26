@@ -61,6 +61,8 @@ fn parse_duration(duration: &str, pattern: &Regex) -> ExtensionResult<f64> {
 fn duration_tool() -> ExtensionResult<ToolDefinition> {
     let pattern = Regex::new(GRAMMAR).map_err(|error| error.to_string())?;
     Ok(ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: ToolMetadata {
             name: "parse_duration".into(),
             label: "Parse Duration".into(),

@@ -140,6 +140,24 @@ pub trait Driver {
     fn previous_signal(&mut self) -> &mut Option<usize>;
     /// Repeats release through a fresh borrow of an existing identity.
     async fn repeat_release(&mut self, handler: u32) -> Result<(), String>;
+    /// Runs one tool renderer for the row its info names, keeping the row's guest state, and
+    /// renders the returned component at `width`.
+    async fn render_tool(
+        &mut self,
+        run: ToolRenderRun<'_>,
+        width: u32,
+    ) -> Result<Vec<String>, String>;
+    /// Renders the custom footer, if the host shows one.
+    async fn footer(&mut self, width: u32) -> Result<Option<Vec<String>>, String>;
+    /// Runs every live branch change listener in registration order and returns each answer.
+    async fn branch_change(&mut self) -> Result<Vec<serde_json::Value>, String>;
+    /// The header container's children and the rendering of its custom header, if any.
+    async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String>;
+    /// Renders the factory widget the host shows under `key`, or reports that it shows none.
+    async fn widget(&mut self, key: &str, width: u32) -> Result<Vec<String>, String>;
+    /// Delivers one terminal input chunk to every live terminal input listener in
+    /// registration order and returns each listener's answer.
+    async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String>;
     /// Delivers one compaction notification through an existing borrowed emitter.
     async fn notify_compaction(
         &mut self,
@@ -388,3 +406,16 @@ pub const EXPECTED: &[&str] = &[
     r#"entry released "reentrant-guard""#,
     "register event late",
 ];
+
+/// One tool rendering: the tool, the renderer slot, what the renderer reads and, for a result,
+/// the result document.
+pub struct ToolRenderRun<'a> {
+    /// Tool name.
+    pub tool: &'a str,
+    /// `call` or `result`.
+    pub slot: &'a str,
+    /// The row's call id, arguments, directory and flags.
+    pub info: &'a serde_json::Value,
+    /// The result document of a result rendering.
+    pub result: Option<&'a serde_json::Value>,
+}

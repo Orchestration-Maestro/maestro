@@ -56,6 +56,13 @@ fn perform(theme: &Theme, method: &str, args: &[Value]) -> ExtensionResult<Value
             ColorMode::Truecolor => "truecolor",
             ColorMode::Color256 => "256color",
         }),
+        "thinkingBorder" => {
+            let level = text(args, 0)?
+                .parse()
+                .map_err(|_| "unknown thinking level")?;
+            json!(theme.get_thinking_border_color(level)(text(args, 1)?)?)
+        }
+        "bashModeBorder" => json!(theme.get_bash_mode_border_color()(text(args, 0)?)?),
         _ => return Err(format!("unknown theme method {method}")),
     })
 }

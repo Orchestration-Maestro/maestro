@@ -132,8 +132,8 @@ fn consumer_config(
             serde_json::from_value(serde_json::json!({"X-Model":"model","X-Order":"model"}))
                 .unwrap(),
         );
-        input.stream_simple = Some(original.clone());
-        input.oauth = Some(Arc::new(Account {
+        input.callbacks.stream_simple = Some(original.clone());
+        input.callbacks.oauth = Some(Arc::new(Account {
             catalog: Arc::downgrade(registry),
             throws: false,
             events: events.clone(),
@@ -189,7 +189,7 @@ pub fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers()
     registry.unregister_provider("p").unwrap();
     assert!(get_api_provider("extension-original").is_none());
     assert!(get_oauth_provider("p").is_none());
-    config.write().unwrap().stream_simple = None;
+    config.write().unwrap().callbacks.stream_simple = None;
     let weak = Arc::downgrade(&original);
     drop(original);
     executor.block_on(
@@ -236,7 +236,7 @@ fn reentry_case((throws, queued): (bool, bool)) {
     );
     let events = Arc::new(Mutex::new(Vec::new()));
     let config = tests::good("outer-model");
-    config.write().unwrap().oauth = Some(Arc::new(Account {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(Account {
         catalog: Arc::downgrade(&registry),
         throws,
         events: events.clone(),

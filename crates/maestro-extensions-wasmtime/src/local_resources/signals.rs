@@ -34,10 +34,10 @@ impl SignalEndpoint {
             .request(|id, reply| Message::Signal(id, Request::Aborted(reply)))
     }
 
-    /// Aborts on the original local owner through the same request pump.
-    pub(crate) fn abort(&self) -> Result<(), String> {
+    /// Aborts through the existing continuation so relayed signals can call this guest again.
+    pub(crate) fn abort(&self) -> crate::import_route::Route {
         self.0
-            .request(|id, reply| Message::Signal(id, Request::Abort(reply)))
+            .route(|id, reply| Message::Signal(id, Request::Abort(reply)))
     }
 
     /// Registers `listener` to run once, through its synchronous export, when aborted.

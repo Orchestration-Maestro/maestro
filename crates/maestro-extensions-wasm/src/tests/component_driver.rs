@@ -149,6 +149,29 @@ impl ComponentDriver {
         reported(finished)
     }
 
+    /// Renders the host-held component with the table handle `rep`.
+    async fn render_slot(&mut self, rep: u32, width: u32) -> Result<Vec<String>, String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter { key: 0 })
+            .map_err(|e| e.to_string())?;
+        let call = super::renderer_host::Call::Render(width);
+        let reply = component_call(harness, Resource::new_borrow(rep), call, &emitter).await?;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        match reply? {
+            super::renderer_host::Reply::Lines(lines) => Ok(lines),
+            _ => Err("expected rendered lines".to_owned()),
+        }
+    }
+
     /// Invokes a continuation under an identity the component never registered.
     async fn unknown_continuation(&mut self) -> wasmtime::Result<String> {
         let harness = started(&mut self.harness)?;
@@ -462,6 +485,176 @@ impl Driver for ComponentDriver {
         &mut self.previous
     }
 
+    async fn render_tool(
+        &mut self,
+        run: super::scenario::ToolRenderRun<'_>,
+        width: u32,
+    ) -> Result<Vec<String>, String> {
+        use crate::bindings::host_side::maestro::extension::host;
+        let handler = self.identity(&format!("render-{} {}", run.slot, run.tool))?;
+        let info = super::ui_host::render_info(run.info);
+        let id = info.tool_call_id.clone();
+        let row = self.observed(|observed| observed.tool_rows.get(&id).copied());
+        let slot = if run.slot == "call" {
+            host::ToolRenderSlot::Call
+        } else {
+            host::ToolRenderSlot::Result
+        };
+        let render = host::ToolRender {
+            slot,
+            row,
+            args: info.args.clone(),
+            options: Some(host::ToolRenderResultOptions {
+                expanded: info.expanded,
+                is_partial: info.phase.is_partial,
+            }),
+            info,
+            result: run.result.map(ToString::to_string),
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let state = harness.store.data_mut();
+        let theme = state.push(super::renderer_host::Theme("dark".into()));
+        let invalidator = state.push(super::ui_host::Invalidator(id.clone()));
+        let emitter = state.table.push(super::bus_host::Emitter { key: 0 });
+        let (theme, invalidator, emitter) = (
+            theme.map_err(|e| e.to_string())?,
+            invalidator.map_err(|e| e.to_string())?,
+            emitter.map_err(|e| e.to_string())?,
+        );
+        let operands = (
+            borrow(handler),
+            render,
+            theme,
+            invalidator,
+            Resource::new_borrow(emitter.rep()),
+        );
+        let rendered = harness
+            .exports
+            .func_invoke_tool_render()
+            .call_async(&mut harness.store, operands)
+            .await
+            .map_err(|e| e.to_string())?
+            .0?;
+        let state = harness.store.data_mut();
+        state.table.delete(emitter).map_err(|e| e.to_string())?;
+        if let Some(row) = rendered.row {
+            let row = state.table.get(&row).map_err(|e| e.to_string())?.0;
+            state.observed.tool_rows.insert(id, row);
+        }
+        let component = rendered.component?.rep();
+        state
+            .observed
+            .register(format!("tool-component {component}"), component);
+        self.render_slot(component, width).await
+    }
+
+    async fn footer(&mut self, width: u32) -> Result<Option<Vec<String>>, String> {
+        let custom = self.observed(|observed| {
+            observed
+                .ui
+                .footer
+                .custom
+                .as_ref()
+                .map(|slot| slot.component)
+        });
+        match custom {
+            Some(rep) => self.render_slot(rep, width).await.map(Some),
+            None => Ok(None),
+        }
+    }
+
+    async fn branch_change(&mut self) -> Result<Vec<serde_json::Value>, String> {
+        let listeners = self.observed(|observed| super::ui_host::listeners_on(observed, "branch"));
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let mut answers = Vec::new();
+        for id in listeners {
+            let emitter = harness
+                .store
+                .data_mut()
+                .table
+                .push(super::bus_host::Emitter { key: 0 })
+                .map_err(|e| e.to_string())?;
+            let operands = (borrow(id), Resource::new_borrow(emitter.rep()));
+            let answer = harness
+                .exports
+                .func_invoke_branch_change()
+                .call_async(&mut harness.store, operands)
+                .await
+                .map_err(|e| e.to_string())?
+                .0;
+            harness
+                .store
+                .data_mut()
+                .table
+                .delete(emitter)
+                .map_err(|e| e.to_string())?;
+            answers.push(super::ui_host::unit_answer(answer));
+        }
+        Ok(answers)
+    }
+
+    async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String> {
+        let (children, custom) = self.observed(|observed| {
+            let header = &observed.ui.header;
+            (
+                header.children.clone(),
+                header.custom.as_ref().map(|slot| slot.component),
+            )
+        });
+        let Some(rep) = custom else {
+            return Ok((children, None));
+        };
+        let rendered = self.render_slot(rep, width).await?;
+        Ok((children, Some(rendered)))
+    }
+
+    async fn widget(&mut self, key: &str, width: u32) -> Result<Vec<String>, String> {
+        let slot = self.observed(|observed| {
+            observed
+                .ui
+                .widgets
+                .iter()
+                .find(|slot| slot.key == key)
+                .map(|slot| slot.component)
+        });
+        let rep = slot.ok_or_else(|| format!("no widget {key}"))?;
+        self.render_slot(rep, width).await
+    }
+    async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String> {
+        let listeners = self.observed(super::ui_host::terminal_listeners);
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let mut answers = Vec::new();
+        for id in listeners {
+            let emitter = harness
+                .store
+                .data_mut()
+                .table
+                .push(super::bus_host::Emitter { key: 0 })
+                .map_err(|e| e.to_string())?;
+            let operands = (
+                borrow(id),
+                data.to_owned(),
+                Resource::new_borrow(emitter.rep()),
+            );
+            let answer = harness
+                .exports
+                .func_invoke_terminal_input()
+                .call_async(&mut harness.store, operands)
+                .await
+                .map_err(|e| e.to_string())?
+                .0;
+            harness
+                .store
+                .data_mut()
+                .table
+                .delete(emitter)
+                .map_err(|e| e.to_string())?;
+            answers.push(super::ui_host::terminal_answer(
+                answer.map(|decision| decision.map(|it| (it.consume, it.data))),
+            ));
+        }
+        Ok(answers)
+    }
     async fn prepare_key(&mut self, handler: u32, args: &str) -> Result<String, String> {
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
         let emitter = harness

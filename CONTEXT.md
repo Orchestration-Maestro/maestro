@@ -29,6 +29,7 @@ From `docs/specs/maestro-port.md`.
 - **AssistantMessageEventStream:** EventStream specialization retaining shared assistant-message handles.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
 - **Request records:** Shared message and model-request data describing application messages and a model invocation's descriptor, conversation, instruction inputs and observations; the shared owner is `maestro-request`, not an invocation executor or a general data container.
+- **Stream option slots:** The shared request owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases; provider execution stays in models.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
 - **PKCE:** Proof Key for Code Exchange: a random verifier paired with a SHA-256 challenge of its encoded text.
@@ -112,7 +113,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Session directory:** A caller-selected or default directory used for native session files.
 - **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, in-place persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
-- **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
+- **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input. Its typed records belong to `maestro-request::auth_storage`; credentials re-exports them.
 - **Account file:** The standalone `auth.json` an account command reads and writes at the caller's relative path, distinct from the session credential store; its entries hold stored credentials.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
 - **AuthStorage:** The owner of accepted stored credentials, their ordered listing, drainable errors and per-provider persistence through a replaceable raw-text backend, plus request key selection, OAuth login and locked token refresh; the [credentials documentation](docs/credentials.md) describes them, and the provider registry and refresh operation belong to the [OAuth documentation](docs/models/oauth.md).

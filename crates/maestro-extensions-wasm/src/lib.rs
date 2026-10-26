@@ -9,6 +9,10 @@
 #[macro_use]
 mod port;
 mod agent;
+pub mod utils;
+#[cfg(target_arch = "wasm32")]
+pub use utils::event_stream::create_assistant_message_event_stream;
+pub use utils::event_stream::{AssistantMessageEventStream, EventStream, EventStreamPort};
 mod autocomplete;
 pub use autocomplete::*;
 mod event_bus;
@@ -28,6 +32,8 @@ mod loader;
 mod messages;
 mod slash_commands;
 pub use slash_commands::*;
+mod auth_storage;
+pub use auth_storage::*;
 mod model_registry;
 mod session_manager;
 pub use model_registry::*;
@@ -47,6 +53,7 @@ pub use compaction::*;
 #[doc(hidden)]
 pub use component_adapter::Glue;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
+pub use maestro_request::auth_storage::{AuthSource, AuthStatus};
 pub use maestro_request::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };
@@ -55,7 +62,7 @@ pub use maestro_request::skills::Skill;
 pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 pub use maestro_request::types::{
     AnthropicMessagesCompat, Api, AssistantContent, AssistantMessage, AssistantMessageEvent,
-    CacheControlFormat, DataCollection, DoneReason, ErrorReason, ImageContent, MaxPrice,
+    CacheControlFormat, Context, DataCollection, DoneReason, ErrorReason, ImageContent, MaxPrice,
     MaxTokensField, Message, Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel,
     OpenAICompletionsCompat, OpenAIResponsesCompat, OpenRouterRouting, Provider, RoutingPrice,
     RoutingSort, RoutingThreshold, SharedAssistantMessage, StopReason, TextContent,
@@ -76,3 +83,9 @@ pub mod schema_code;
 
 #[cfg(any(test, target_arch = "wasm32"))]
 mod schema_error;
+
+/// Immediate model invocation and eager completion.
+#[cfg(target_arch = "wasm32")]
+pub mod stream;
+#[cfg(target_arch = "wasm32")]
+pub use stream::{complete, complete_simple, stream, stream_simple};

@@ -8,6 +8,8 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
+Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
+
 ## Build a component
 
 ```sh
@@ -148,6 +150,21 @@ intact. Metadata transport does not validate invocation arguments; argument prep
 and validation remain with the model argument validator. Model-server JSON limits do
 not apply to these author-supplied declarations.
 
+### Tool renderers
+
+`render_call` and `render_result` are optional and independent. Each returns a `Component`
+that the host shows in the tool's row. A call renderer gets the arguments as they stand,
+the live theme, a `ToolRenderContext` and a `CallbackEmitter`. A result renderer also gets
+the `AgentToolResult` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+
+`ToolRenderContext` holds the row's `tool_call_id`, arguments, working directory,
+`ToolRenderPhase`, expansion, image visibility and error flag. `last_component` is the
+component that the same renderer returned for the row last time. `invalidate()` asks the
+host to redraw the row. `state::<S>()` returns the row's state of type `S`. It is created
+with its default the first time it is read and shared by both renderers of the row on
+every rendering, so a value set by the call renderer is visible to the result renderer.
+The row keeps its state and previous components until the host releases the row.
+
 ### Executable schema nodes
 
 Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a
@@ -171,12 +188,58 @@ message, stack and code. Ordinary extension operations still use `ExtensionResul
 and string errors. Schema code stays out of serialized metadata and provider
 JSON; decoding ordinary JSON produces no callbacks.
 
-Enumerating and re-registering a guest's own schemas keeps their callbacks and
-author captures. Bindings follow each tool, not the first tool in a listing.
-Independent identities release separately; the last holder releases the capture.
-Foreign entries remain data-only. Live foreign schema enumeration, retention,
-re-registration and invocation are tracked together in
-[the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
+### Foreign schema calls
+
+Enumeration keeps executable schemas from this guest, other guests and native
+callers. Bindings follow each tool, not the first tool in a listing. Each listing
+retains independent identities; keeping the received schema or registering a new
+tool with it keeps its callbacks alive. Releasing one identity does not revoke
+another. The last holder releases the originating captures through the existing
+native request pump and Store release path, not from a resource destructor.
+
+`SchemaCallback::new` and `call` remain synchronous. Same-origin callbacks keep
+their original capture identity and run locally, without host mediation. A foreign
+call follows this path:
+
+```text
+SchemaCallback::call
+  callback.schema-invoke → existing native import route
+    scoped operand wait → retained native SchemaNode
+      originating native callback or guest callback
+  import-route.schema-result → original result or structured diagnostic
+```
+
+The native node lives in the receiving guest's existing capability registry. Its
+scoped wait borrows the checker's original mutable value, including a selected
+child, so edits remain visible on success and error without a subtree copy.
+Passing an absent child to a foreign callback returns `JSON operand is absent`;
+it never substitutes JSON null. A local guest callback can still observe absence
+through `kind` and `read`.
+
+The import route returns nested same-instance calls to the guest, which runs the
+same Rust callback bodies its exports use. This supports A→B→A without entering
+an instance while it is blocked inside an import. Only the dedicated Store thread
+waits on synchronous host imports; the original native request receiver continues
+servicing requests. No synchronous callback tries to suspend through an async
+canonical import, and no additional registry or work queue is involved.
+
+This relies on Wasmtime's blocking [`func_wrap` contract][schema-sync-import],
+not on suspending a synchronous component task. Wasmtime [rejects such
+suspension][schema-sync-task] and [prevents reentry into an active stackful
+instance][schema-reentry]. These links name the pinned runtime revision. The host
+continues to install [WASI 0.2 standard-library imports][schema-wasi] alongside its
+native-async component exports; the foreign-call route requires no WASI polling
+or new WASI interface.
+
+The original facade's activity guard runs before entering a guest-origin schema.
+Unload or reload leaves an already-admitted callback running to completion, but
+later calls return that origin's stale-runtime message without guest entry.
+Ordinary extension results and string-error APIs are unchanged.
+
+[schema-sync-import]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/linker.rs#L675-L683
+[schema-sync-task]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L2728-L2736
+[schema-reentry]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L784-L793
+[schema-wasi]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasi/src/p2/mod.rs#L314-L324
 
 ## Event channels
 
@@ -360,6 +423,40 @@ operation for the supplied descriptor, without checking catalog membership.
 present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
+`ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
+`get_provider_auth_status`, `get_provider_display_name`, `is_using_oauth`,
+`register_provider`, `unregister_provider` and `get_api_key_for_provider` to the
+same host catalog. Models and provider data are checked for nonfinite numbers
+before the call; `AuthStatus` and `AuthSource` are the
+[shared credential records](../records.md#credential-records).
+
+`ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
+copied credentials. Its `AuthStorage` handle can outlive the creating callback.
+Reads, runtime key overrides, stored credential changes, reload, logout and error
+draining reach that same owner. `get_api_key` uses its original credential-command
+effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
+remain in `drain_errors` rather than rolling back accepted state.
+
+The guest currently acquires credentials from a catalog or wraps a supplied
+`AuthStoragePort`. `AuthStorage::create(&api, path)` and
+`ModelRegistry::create(&api, auth_storage, path)` accept independent optional file
+paths. Omitted paths use lazy defaults supplied by the application before factory
+loading. Both `in_memory` constructors avoid file access; catalogs retain the
+supplied credential owner rather than copying its current records.
+
+`AuthStorage::from_storage(&api, backend)` retains an authored `AuthStorageBackend`.
+Its synchronous and awaited methods receive a borrowed native update. `None`
+leaves stored text unchanged; `Some("")` writes empty text. The awaited update can
+remain pending without blocking the host's local executor. Backend failures keep
+the native accepted-state and drainable-error behavior.
+
+`set_fallback_resolver` retains the supplied callback until replacement or final
+release. It returns absent, empty and nonempty keys distinctly and preserves the
+callback's error text. Backend and fallback callbacks may call back into the same
+host, including from synchronous credential and catalog metadata reads. Callback
+resources stay typed; their identities are never placed in JSON. Callable provider
+stream and OAuth fields remain separate from the provider data record.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
@@ -402,7 +499,79 @@ with the host.
 A request borrows its text and lines only for the synchronous call; the host owns
 anything it retains. Clones of the facade share the acquired resource, so a handle
 kept past its callback keeps reading that resource, and a second acquisition stays
-independent. Widget factories remain outside this interface.
+independent.
+
+`set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
+factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
+and returns an `ExtensionComponent`: the component and an optional disposal. The host
+runs the disposal of the widget a key already shows before it runs the new factory, and
+both finish before the setter returns. `set_widget` with lines or `None` disposes a
+factory widget under the same key too. The factory's captures stay usable while the
+host shows the component and are released after the host removes it. A factory error
+is the setter's error.
+
+`set_footer` replaces the footer with the component a `FooterFactory` builds from the
+terminal, the theme and the `FooterData` the host lends, or restores the host's footer
+with `None`; the host disposes the custom footer it replaces first. `FooterData` reads
+the current branch, extension statuses in insertion order and provider count on every
+call, so a retained footer sees later changes. `on_branch_change` keeps its
+`BranchChangeListener` until the returned subscription is unsubscribed; dropping the
+subscription keeps it.
+
+`set_header` replaces the header with the component a factory builds, or restores the
+host's header with `None`. The host disposes the custom header it replaces first, and a
+host that has not built its own header yet runs no factory.
+
+### Themes and tool expansion
+
+`theme` returns the UI's live theme, which reads the host's later selections.
+`get_all_themes` lists `ThemeInfo` records in the host's order, with an absent `path`
+for a theme without a file. `get_theme` loads a theme by name without selecting it and
+returns `None` for an unknown name. `set_theme` selects a theme with
+`ThemeSelection::Name` or a host-supplied `ThemeSelection::Theme` and returns the host's
+`ThemeSetResult`, whose `error` explains a selection that did not apply; a theme the
+author built itself cannot be passed back and returns an error. A host rejection is an
+error, not a failed selection. `get_tools_expanded` and `set_tools_expanded` read and
+change the tool output expansion.
+
+`Theme::get_thinking_border_color` and `Theme::get_bash_mode_border_color` return a
+`BorderColor` callback that asks the theme's owner to color text with the border color
+of a `ModelThinkingLevel` or of the shell mode. The level-to-color choice stays with the
+host's theme, and each call reads the theme the handle currently observes.
+
+### Terminal input
+
+`on_terminal_input` adds a listener that sees each raw chunk of terminal input before
+the focused component does. It runs synchronously with a callback emitter, like the
+other synchronous callbacks, and returns `None` to leave the chunk as it is or a
+`TerminalInputResult`: `consume: Some(true)` stops the chunk, `data` replaces it for the
+listeners after it, and absent members leave it unchanged. When both are set,
+consumption wins. A listener's error reaches the host with its message. `unsubscribe`
+on the returned `Subscription` removes the listener; dropping the subscription keeps
+it. The host owns the order of listeners and the delivery of what remains.
+
+### Dialogs
+
+`select`, `confirm`, `input` and `editor` ask the host for an answer and return a
+future that owns its operands, so it may outlive the handle that started it:
+
+| Method | Request | Dismissal |
+| --- | --- | --- |
+| `select` | A title and the ordered choices, repetitions and empty entries included. | `None` |
+| `confirm` | A title and a message. | `false` |
+| `input` | A title and an optional placeholder. | `None` |
+| `editor` | A title and optional prefilled text. | `None` |
+
+`ExtensionUIDialogOptions::timeout` reaches the host's dialog as the supplied
+milliseconds, without a guest timer or a changed value. A supplied `signal` gets a
+host signal of its own for that dialog: an abort before the call, or while the dialog
+waits, reaches the host, which decides what the dialog answers. The guest adds no
+deadline or dismissal of its own. When the dialog returns, its listener on the
+caller's signal is removed, so the caller can keep the signal, abort it later or
+pass it to another dialog. An absent placeholder or
+prefill stays distinct from an empty one, and an empty answer stays distinct from a
+dismissal. A host rejection resolves to its message; it is never turned into a
+dismissal.
 
 The component example's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction
@@ -424,6 +593,16 @@ names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) a
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
 schema and details text with semantic JSON serialization.
+
+## Provider registration
+
+`ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
+host, and `unregister_provider` sends a name. `ProviderConfig` and
+`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
+carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`false` are sent as written, header, model and input order is kept, and signed zero
+survives. A nonfinite number fails with the finite-number error before the host
+sees the call. Queuing during loading, validation and replacement stay host policy.
 
 ## Model selection and action errors
 

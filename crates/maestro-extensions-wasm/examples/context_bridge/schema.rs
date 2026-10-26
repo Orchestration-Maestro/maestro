@@ -8,13 +8,27 @@ use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, ParameterSchema, Sc
 use serde_json::{Value, json};
 use std::rc::Rc;
 
+#[path = "foreign_schema.rs"]
+mod foreign;
+
 /// Runs the schema command `args` names, or returns `None` for any other command.
 pub(super) fn command(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<Value>> {
+    if let Some(chain) = args.strip_prefix("schema chain:") {
+        return Some(
+            chain
+                .split_once(':')
+                .ok_or_else(|| "missing chain name".into())
+                .and_then(|(source, name)| foreign::chain(api, source, name)),
+        );
+    }
     if let Some(count) = args.strip_prefix("schema growth:") {
         let count = count.parse::<usize>().map_err(|e| e.to_string());
         return Some(count.and_then(|count| growth(api, count)));
     }
     match args {
+        "schema methods" => Some(foreign::methods(api)),
+        "schema leaf" => Some(foreign::leaf(api)),
+        "schema inspect" => Some(foreign::inspect(api)),
         "schema executable" => Some(executable(api)),
         "schema relay" => Some(relay(api)),
         "schema imports" => Some(observe(api)),
@@ -33,6 +47,8 @@ pub(super) fn observe(api: &ExtensionAPI) -> ExtensionResult<Value> {
         ],
     );
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, _, _, _, _| {
@@ -78,6 +94,8 @@ pub(super) fn executable(api: &ExtensionAPI) -> ExtensionResult<Value> {
         .collect(),
     );
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, args, _, _, _| {
@@ -104,6 +122,8 @@ pub(super) fn relay(api: &ExtensionAPI) -> ExtensionResult<Value> {
     .map_err(|e| e.to_string())?;
     metadata.parameters = tool.parameters;
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, args, _, _, _| {
@@ -141,6 +161,8 @@ pub(super) fn growth(api: &ExtensionAPI, count: usize) -> ExtensionResult<Value>
             .collect(),
     );
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata,
         prepare_arguments: None,
         execute: Rc::new(|_, _, _, _, _| Box::pin(async { Err("not executed".into()) })),
