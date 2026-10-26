@@ -32,7 +32,7 @@ fn awaited_hooks_gate_the_same_pending_invocation() {
 }
 
 /// Each case owns a new containing component and the same raw/simple native protocol routes.
-fn run_cases(actions: &[&str]) {
+pub(super) fn run_cases(actions: &[&str]) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -176,6 +176,10 @@ async fn drive(
 
 /// Compare the selected JSON at the real local HTTP peer, including an unchanged neighbor.
 fn check_request(request: &Value, action: &str) {
+    if let Some(selected) = selected_payload(action) {
+        assert_eq!(request, &selected);
+        return;
+    }
     assert_eq!(request["stream"], true);
     if action == "replace" {
         assert_eq!(
@@ -201,6 +205,21 @@ fn check_request(request: &Value, action: &str) {
         request.get("max_tokens"),
         (action != "delete").then_some(&json!(17))
     );
+}
+
+/// Literal selections are compared at the actual TCP peer, not a simulated provider phase.
+fn selected_payload(action: &str) -> Option<Value> {
+    match action {
+        "null" => Some(Value::Null),
+        "false" => Some(json!(false)),
+        "zero" => Some(json!(0)),
+        "empty-string" => Some(json!("")),
+        "number" => Some(json!(7.5)),
+        "string" => Some(json!("replacement 雪")),
+        "object" => Some(json!({"selected":true})),
+        "array" => Some(json!([null, false, 0])),
+        _ => None,
+    }
 }
 
 /// A parked hook still belongs to the same invocation and yields its normal terminal protocol.

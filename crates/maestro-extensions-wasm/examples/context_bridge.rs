@@ -214,9 +214,6 @@ fn command(
     if args == "model-signals" {
         return Box::pin(async { Err(model_hooks::signals().await?) });
     }
-    if args == "model-hooks" {
-        return Box::pin(async { Err(model_hooks::command().await?) });
-    }
     if let Some(action) = args.strip_prefix("model-completions ") {
         let action = action.to_owned();
         return Box::pin(async move { Err(model_completions::command(&action).await?) });
