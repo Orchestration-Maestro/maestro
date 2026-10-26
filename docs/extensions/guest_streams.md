@@ -111,6 +111,9 @@ A hook can edit, replace, add or delete payload fields; the selected JSON reache
 the HTTP peer. Its response hook finishes before the first body poll or start event.
 While either hook is pending, native event and result observations remain pending.
 Cancellation raised during the payload hook still controls that same invocation.
+A rejected hook ends the already-started provider stream with one terminal error
+and EOF, preserving the supplied error text. It does not become a setup rejection.
+A response-hook failure releases the native body without polling it.
 
 Invoked model events use the existing shared-record JSON codec. A decoded event
 is an observation, not a live cross-component object reference; later native

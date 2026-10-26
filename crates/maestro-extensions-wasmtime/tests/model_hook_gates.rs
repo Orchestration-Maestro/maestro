@@ -13,13 +13,23 @@ use tokio::sync::{mpsc, oneshot};
 
 #[test]
 fn payload_edits_are_read_after_the_awaited_callback() {
+    run_cases(&["keep", "edit", "replace", "add", "delete", "abort"]);
+}
+
+#[test]
+fn hook_failures_end_the_provider_stream_once() {
+    run_cases(&["payload-failure", "response-failure"]);
+}
+
+/// Each case owns a new containing component and the same raw/simple native protocol routes.
+fn run_cases(actions: &[&str]) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
         for simple in [false, true] {
-            for action in ["keep", "edit", "replace", "add", "delete", "abort"] {
+            for action in actions {
                 exercise(simple, action).await;
             }
         }
@@ -29,7 +39,7 @@ fn payload_edits_are_read_after_the_awaited_callback() {
 /// The guest waits inside both original hook exports while native observations stay pending.
 async fn exercise(simple: bool, action: &str) {
     let probe = Arc::new(http::Probe::default());
-    let server = (action != "abort").then(http::Server::new);
+    let server = (!matches!(action, "abort" | "payload-failure")).then(http::Server::new);
     let base_url = server
         .as_ref()
         .map_or("http://127.0.0.1:1", |s| s.url.as_str());
@@ -73,16 +83,27 @@ async fn exercise(simple: bool, action: &str) {
     )
     .await;
     assert_eq!(signal.is_aborted(), action == "abort");
+    check_consumption(server, &probe, action);
+    bus.clear();
+    unregister_api_providers("component-gated-http");
+}
+
+/// The response body is never polled after a rejected hook and is released exactly once.
+fn check_consumption(server: Option<http::Server>, probe: &http::Probe, action: &str) {
     if let Some(server) = server {
         let request = server.finish();
         check_request(&request, action);
-        assert!(probe.body_polls() > 0);
+        if action == "response-failure" {
+            assert_eq!(probe.body_polls(), 0);
+        } else {
+            assert!(probe.body_polls() > 0);
+        }
+        assert_eq!(probe.body_drops(), 1);
     } else {
         assert_eq!(probe.dispatches(), 0);
         assert_eq!(probe.body_polls(), 0);
+        assert_eq!(probe.body_drops(), 0);
     }
-    bus.clear();
-    unregister_api_providers("component-gated-http");
 }
 
 /// Native command imports provide explicit admission and acknowledgment, not elapsed-time checks.
@@ -133,7 +154,7 @@ async fn drive(
     probe.assert_pending();
     probe.allow_payload();
     payload.send(()).unwrap();
-    if action != "abort" {
+    if !matches!(action, "abort" | "payload-failure") {
         let response = incoming.recv().await.unwrap();
         assert_eq!(probe.dispatches(), 1);
         assert_eq!(probe.body_polls(), 0);
@@ -174,6 +195,11 @@ fn check_request(request: &Value, action: &str) {
 
 /// A parked hook still belongs to the same invocation and yields its normal terminal protocol.
 fn check_output(output: &Value, action: &str) {
+    if let Some(phase) = action.strip_suffix("-failure") {
+        check_hook_error(output, phase);
+        check_terminal(output);
+        return;
+    }
     if action == "abort" {
         assert_eq!(output["calls"], json!(["payload"]));
         assert_eq!(output["events"].as_array().unwrap().len(), 1);
@@ -206,4 +232,24 @@ fn check_terminal(output: &Value) {
     );
     assert_eq!(output["sameOwner"], true);
     assert_eq!(output["eof"], true);
+}
+
+/// Hook rejection belongs to the already-started stream, with no start/delta/body effect.
+fn check_hook_error(output: &Value, phase: &str) {
+    assert_eq!(
+        output["calls"],
+        if phase == "payload" {
+            json!(["payload"])
+        } else {
+            json!(["payload", "response"])
+        }
+    );
+    assert_eq!(output["events"].as_array().unwrap().len(), 1);
+    assert_eq!(output["events"][0]["type"], "error");
+    assert_eq!(output["events"][0]["reason"], "error");
+    assert_eq!(output["message"]["stopReason"], "error");
+    assert_eq!(
+        output["message"]["errorMessage"],
+        format!("{phase} gate failed")
+    );
 }
