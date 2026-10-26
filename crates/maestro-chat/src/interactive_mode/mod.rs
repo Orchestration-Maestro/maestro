@@ -38,6 +38,7 @@ mod navigation;
 mod notices;
 mod progress;
 mod queues;
+mod reload;
 mod replay;
 mod resources;
 mod selectors;
