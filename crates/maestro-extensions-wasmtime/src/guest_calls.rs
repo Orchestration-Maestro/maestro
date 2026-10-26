@@ -59,6 +59,8 @@ pub(crate) enum Call<H = Handle> {
     Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
     Tool(ToolCall<H>),
+    /// Invokes the original OAuth interaction callback.
+    OAuth(crate::oauth_callbacks::Invocation<H>),
     /// Calls an authored credential backend with its native scoped update.
     Credential(credentials::CredentialCall<H>),
     /// The original weak schema allocation and guest callback admission.

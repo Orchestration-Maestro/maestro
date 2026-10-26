@@ -28,6 +28,9 @@ mod exec;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/oauth.rs"]
+mod oauth;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/prefixes.rs"]
 mod prefixes;
 
@@ -486,12 +489,16 @@ async fn credential_command(
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }
-    match request {
-        "credential fallback" => credentials::fallback(api).await,
-        "credential backend" => credentials::backend(api),
-        "credential state" => credentials::state(api).await,
-        _ => providers::command(api, context, request).await,
+    if let Some(id) = request.strip_prefix("credential oauth builtin ") {
+        return oauth::builtin(api, context, id).await;
     }
+    if let Some(operation) = request.strip_prefix("credential oauth reverse ") {
+        return oauth::reverse(api, operation).await;
+    }
+    if let Some(mode) = request.strip_prefix("credential oauth storage ") {
+        return oauth::storage(api, context, mode).await;
+    }
+    credentials::observation(api, context, request).await
 }
 
 /// Preserves the caller-controlled startup failure before any callback registration.

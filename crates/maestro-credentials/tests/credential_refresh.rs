@@ -665,6 +665,9 @@ mod tests {
     }
 
     impl OAuthLoginCallbacks for Recording {
+        fn callback_presence(&self) -> (bool, bool, bool) {
+            (true, false, false)
+        }
         fn on_auth(&self, _info: OAuthAuthInfo) -> Result<(), OAuthError> {
             Ok(())
         }
