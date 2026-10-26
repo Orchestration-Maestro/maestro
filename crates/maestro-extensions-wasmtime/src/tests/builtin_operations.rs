@@ -2256,7 +2256,7 @@ fn assert_builtin_spawn_outcome(observed: &serde_json::Value, request: &serde_js
     }
 }
 
-/// Aborting inside a synchronous hook reaches an arbitrary relayed signal before exec.
+/// Aborting inside a synchronous hook prevents either backend from starting.
 async fn check_builtin_spawn_abort(
     runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
     command: &maestro_extensions::types::RegisteredCommand<maestro_extensions::Local>,
@@ -2276,16 +2276,10 @@ async fn check_builtin_spawn_abort(
             "executable":true,"command":"while :; do :; done","hook":"abort"});
         let observed = observe_builtin_bash(runner, command, &request).await;
         assert!(signal.is_aborted());
-        if supplied {
-            assert_eq!(observed["calls"][1]["aborted"], true);
-            assert_eq!(
-                observed["result"],
-                json!({"Ok":{"content":[{"type":"text","text":"supplied\0é😀"}]}})
-            );
-        } else {
-            let expected = native_shell_error(cwd, None, Some(signal), "while :; do :; done").await;
-            assert_eq!(observed["result"], json!({"Err":expected}));
-        }
+        assert_eq!(observed["calls"].as_array().unwrap().len(), 1);
+        assert_eq!(observed["calls"][0]["hook"], request["command"]);
+        let expected = native_shell_error(cwd, None, Some(signal), "while :; do :; done").await;
+        assert_eq!(observed["result"], json!({"Err":expected}));
     }
 }
 
@@ -2311,4 +2305,247 @@ async fn native_shell_error(
         .await
         .unwrap_err()
         .to_string()
+}
+
+/// Initial observer failures use the existing reporter and do not block either backend.
+#[test]
+fn builtin_bash_initial_progress_failure_is_reported_without_failing_exec() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let marker = scratch.path().join("started");
+        let command = format!("printf started > '{}'", marker.display());
+        let errors = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let runner = progress_reporting_runner(errors.clone()).await;
+        for (executable, command) in [
+            (false, None),
+            (true, None),
+            (false, Some(command.clone())),
+            (true, Some(command)),
+        ] {
+            errors.borrow_mut().clear();
+            let observed = observe_progress(
+                &runner,
+                &json!({"cwd":scratch.path().to_str().unwrap(),
+                "executable":executable,"command":command,"chunks":[],"fail":"initial"}),
+            )
+            .await;
+            assert_progress(&observed, "");
+            assert_eq!(observed["entered"], usize::from(command.is_none()));
+            assert_eq!(
+                observed["signals"],
+                json!(vec![false; usize::from(command.is_none())])
+            );
+            assert_eq!(
+                *errors.borrow(),
+                vec!["Event handler error (tool-update): progress observer rejected é\n"]
+            );
+            if command.is_some() {
+                assert_eq!(std::fs::read_to_string(&marker).unwrap(), "started");
+                std::fs::remove_file(&marker).unwrap();
+            }
+        }
+    });
+}
+
+/// Uses the public command consumer, not an alternative factory or operation owner.
+async fn observe_progress(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    request: &serde_json::Value,
+) -> serde_json::Value {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let result = (command.handler)(
+        format!("builtin-progress {request}"),
+        runner.create_command_context(),
+    )
+    .await;
+    serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
+}
+
+/// Split bytes, local stdout/stderr and retained artifacts share the native progress owner.
+#[test]
+fn builtin_bash_bytes_and_progress_survive_guest_wrapping() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let runner = super::builtin_author::loaded().await;
+        for executable in [false, true] {
+            let cases = [
+                (
+                    None,
+                    vec![
+                        vec![0],
+                        vec![0xc3],
+                        vec![0xa9, 0xf0],
+                        vec![0x9f, 0x98],
+                        vec![0x80],
+                    ],
+                    "\0é😀",
+                ),
+                (None, vec![], ""),
+                (Some("printf 'é😀'"), vec![], "é😀"),
+                (Some("printf 'é😀' >&2"), vec![], "é😀"),
+            ];
+            for (command, chunks, text) in cases {
+                let observed = observe_progress(
+                    &runner,
+                    &json!({"cwd":scratch.path().to_str().unwrap(),
+                    "executable":executable,"command":command,"chunks":chunks,"fail":null}),
+                )
+                .await;
+                assert_progress(&observed, text);
+                assert_eq!(observed["entered"], usize::from(command.is_none()));
+                assert_eq!(
+                    observed["signals"],
+                    json!(vec![false; usize::from(command.is_none())])
+                );
+            }
+            let bytes = "é😀\n".repeat(3000).into_bytes();
+            let observed = observe_progress(
+                &runner,
+                &json!({"cwd":scratch.path().to_str().unwrap(),
+                "executable":executable,"command":null,"chunks":[bytes],"fail":null}),
+            )
+            .await;
+            assert_progress_artifact(&observed, &bytes);
+        }
+    });
+}
+
+/// The native owner may coalesce chunks; the initial and final snapshots remain observable.
+fn assert_progress(observed: &serde_json::Value, text: &str) {
+    let updates = observed["updates"].as_array().unwrap();
+    assert_eq!(updates.first(), Some(&json!({"content":[]})));
+    assert_eq!(
+        observed["result"],
+        json!({"Ok":{"content":[{"type":"text",
+        "text":if text.is_empty() { "(no output)" } else { text }}]}})
+    );
+    if text.is_empty() {
+        assert_eq!(updates.len(), 1);
+    } else {
+        assert_eq!(
+            updates.last(),
+            Some(&json!({"content":[{"type":"text","text":text}],"details":{}}))
+        );
+    }
+}
+
+/// Artifact identity survives both the progress and final result after the wrapper is dropped.
+fn assert_progress_artifact(observed: &serde_json::Value, bytes: &[u8]) {
+    let result = &observed["result"]["Ok"];
+    let path = result["details"]["fullOutputPath"].as_str().unwrap();
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+    let updates = observed["updates"].as_array().unwrap();
+    assert_eq!(updates.first(), Some(&json!({"content":[]})));
+    assert_eq!(updates.last().unwrap()["details"], result["details"]);
+    let text = result["content"][0]["text"].as_str().unwrap();
+    assert_eq!(
+        text,
+        format!(
+            "{}\n\n[Showing lines 1002-3001 of 3001. Full output: {path}]",
+            "é😀\n".repeat(1999)
+        )
+    );
+    assert_eq!(
+        updates.last().unwrap()["content"][0]["text"],
+        "é😀\n".repeat(1999)
+    );
+    std::fs::remove_file(path).unwrap();
+}
+
+/// A later observer error uses the original bus diagnostic path without changing settlement.
+#[test]
+fn builtin_bash_later_progress_failure_is_reported_without_failing_exec() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let errors = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let runner = progress_reporting_runner(errors.clone()).await;
+        for executable in [false, true] {
+            errors.borrow_mut().clear();
+            let observed = observe_progress(
+                &runner,
+                &json!({"cwd":"/","executable":executable,
+                "command":null,"chunks":[[111,107]],"fail":"later"}),
+            )
+            .await;
+            assert_progress(&observed, "ok");
+            assert_eq!(
+                *errors.borrow(),
+                vec!["Event handler error (tool-update): progress observer rejected é\n"]
+            );
+        }
+    });
+}
+
+/// Frozen native time forces pending chunks to flush only after the operation finishes.
+#[test]
+fn builtin_bash_final_progress_failure_keeps_native_settlement() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let (release, waiting) = std::sync::mpsc::channel::<()>();
+        let (started, ready) = tokio::sync::oneshot::channel();
+        // Tokio documents that active blocking work prevents a paused clock from auto-advancing.
+        let clock = tokio::task::spawn_blocking(move || {
+            started.send(()).unwrap();
+            let _ = waiting.recv();
+        });
+        ready.await.unwrap();
+        let errors = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let runner = progress_reporting_runner(errors.clone()).await;
+        for executable in [false, true] {
+            errors.borrow_mut().clear();
+            let observed = observe_progress(
+                &runner,
+                &json!({"cwd":"/","executable":executable,
+                "command":null,"chunks":[[108,101,102,116],[109,105,100],[114,105,103,104,116]],"fail":"final"}),
+            )
+            .await;
+            assert_progress(&observed, "leftmidright");
+            assert_eq!(
+                observed["updates"],
+                json!([
+                    {"content":[]},
+                    {"content":[{"type":"text","text":"left"}],"details":{}},
+                    {"content":[{"type":"text","text":"leftmidright"}],"details":{}}
+                ])
+            );
+            assert_eq!(
+                *errors.borrow(),
+                vec!["Event handler error (tool-update): progress observer rejected é\n"]
+            );
+        }
+        drop(release);
+        clock.await.unwrap();
+    });
+}
+
+/// Captures diagnostics from the real extension bus without replacing its error owner.
+async fn progress_reporting_runner(
+    errors: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
+) -> maestro_extensions::ExtensionRunner<maestro_extensions::Local> {
+    super::builtin_author::loaded_with_reporter(
+        maestro_extensions::ToolConstruction {
+            tools_manager: std::sync::Arc::new(
+                maestro_extensions::ToolsManager::new("/unused-builtin-bin".into(), None)
+                    .with_offline(Some(true)),
+            ),
+            bin_dir: "/unused-builtin-bin".into(),
+        },
+        std::rc::Rc::new(move |error| errors.borrow_mut().push(error.to_owned())),
+    )
+    .await
+    .0
 }

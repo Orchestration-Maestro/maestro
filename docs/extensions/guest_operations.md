@@ -154,6 +154,16 @@ supplied operations. Native process creation omits unset values; an unset key is
 not the same as an empty string. The emitter cannot escape the hook. Callback
 captures stay owned by the returned tool rather than the factory call.
 
+Both factory forms forward the optional progress observer while native execution
+is running. Shell output decoding, snapshot coalescing and artifact ownership
+stay native. When final output is truncated, progress and final details retain
+the same full-output artifact. The observer stays retained until execution ends
+or its future is dropped.
+
+Observer failures use the native event bus's error reporter and do not replace
+the tool's result, including failures on the initial and final notifications.
+Use a spawn hook or tool event to prevent command execution.
+
 ```rust
 use std::rc::Rc;
 use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionResult};

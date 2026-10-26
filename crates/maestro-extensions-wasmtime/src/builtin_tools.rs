@@ -38,6 +38,8 @@ pub(crate) struct Invocation {
     pub(crate) args: Value,
     /// Original native cancellation, when supplied.
     pub(crate) signal: Option<Cancellation>,
+    /// Original independently optional progress observer.
+    pub(crate) update: Option<maestro_extensions::AgentToolUpdateCallback<Value, Local>>,
 }
 /// Native local work with the native result and diagnostic preserved.
 type Work = std::pin::Pin<
@@ -101,7 +103,12 @@ where
             ToolDefinitionInput::<Context, P, D, S, Local>::Retained(self),
             factory,
         );
-        (tool.execute)(invocation.id, invocation.args, invocation.signal, None)
+        (tool.execute)(
+            invocation.id,
+            invocation.args,
+            invocation.signal,
+            invocation.update,
+        )
     }
 }
 

@@ -1,6 +1,10 @@
 //! Retained native definitions forwarded through the component adapter.
 use super::super::generated::{Generated, host, route};
-use super::super::{callbacks::Identity, signals::Mirror, theme::Retained};
+use super::super::{
+    callbacks::{Identity, Scoped},
+    signals::Mirror,
+    theme::Retained,
+};
 use crate::types::finite::encode_value;
 use crate::{
     Component, ComponentView, ExtensionResult, NativeComponent, NativeRow, ReadToolOptions,
@@ -49,9 +53,9 @@ pub(super) fn executable(tool: Rc<host::BuiltinTool>) -> ExtensionResult<crate::
         parameters: metadata.parameters,
         prepare_arguments: None,
         execution_mode: metadata.execution_mode,
-        execute: Rc::new(move |id, args, signal, _update| {
+        execute: Rc::new(move |id, args, signal, update| {
             let tool = tool.clone();
-            Box::pin(async move { invoke(&tool, id, args, signal, || Ok(None)).await })
+            Box::pin(async move { invoke(&tool, id, args, (signal, update), || Ok(None)).await })
         }),
     })
 }
@@ -260,11 +264,11 @@ pub(super) fn definition(
 
 /// Executes on the native owner with call-time model and arbitrary caller cancellation.
 fn execute(tool: Rc<host::BuiltinTool>, reads_model: bool) -> crate::ToolExecute {
-    Rc::new(move |id, args, signal, _update, context| {
+    Rc::new(move |id, args, signal, update, context| {
         let tool = tool.clone();
         let context = reads_model.then_some(context);
         Box::pin(async move {
-            invoke(&tool, id, args, signal, || {
+            invoke(&tool, id, args, (signal, update), || {
                 context.map_or(Ok(None), |context| context.model())
             })
             .await
@@ -277,16 +281,36 @@ async fn invoke(
     tool: &host::BuiltinTool,
     id: String,
     args: serde_json::Value,
-    signal: Option<crate::AbortSignal>,
+    (signal, update): (
+        Option<crate::AbortSignal>,
+        Option<crate::AgentToolUpdateCallback>,
+    ),
     model: impl FnOnce() -> ExtensionResult<Option<crate::Model>>,
 ) -> ExtensionResult<crate::AgentToolResult> {
     let mirror = Mirror::new(&Generated, signal.as_ref())?;
+    let observer = update.map(progress);
     let model = model()?.as_ref().map(encode_value).transpose()?;
     let result = tool
-        .execute(id, encode_value(&args)?, model, mirror.signal())
+        .execute(
+            id,
+            encode_value(&args)?,
+            model,
+            mirror.signal(),
+            observer.as_ref().map(|observer| &observer.handle),
+        )
         .await;
     let text = mirror.settle(result)?;
     super::super::session::decode(&text)
+}
+
+/// Delivers progress through the existing synchronous notification frame and error owner.
+fn progress(update: crate::AgentToolUpdateCallback) -> Scoped<Generated> {
+    let listener: crate::EventListener = Rc::new(move |partial, _| {
+        let partial = serde_json::from_value(partial).map_err(|error| error.to_string())?;
+        update(partial)?;
+        Ok(None)
+    });
+    Scoped::new(&Generated, listener)
 }
 
 /// Forwards call operands independently of the row's public observations.

@@ -242,6 +242,10 @@ impl State {
                 .map(crate::writer_reads::decode)
                 .transpose()?
                 .map(Arc::new);
+            let update = execution
+                .update
+                .map(|handler| self.builtin_update(handler, &execution.api))
+                .transpose()?;
             let invocation = crate::builtin_tools::Invocation {
                 id: execution.id,
                 args: crate::writer_reads::decode(&execution.args)?,
@@ -250,6 +254,7 @@ impl State {
                     .as_ref()
                     .map(|signal| self.registry.cancellation(signal))
                     .transpose()?,
+                update,
             };
             Ok(definition.clone().execute(invocation, model))
         })();
@@ -270,6 +275,37 @@ impl State {
                 let _ = reply.send(Err(error));
             }
         }
+    }
+}
+
+impl State {
+    /// Delivers native progress through the existing synchronous frame and diagnostic owner.
+    fn builtin_update(
+        &self,
+        handler: crate::guest_calls::Handle,
+        api: &crate::api_reads::Endpoint,
+    ) -> Result<
+        maestro_extensions::AgentToolUpdateCallback<serde_json::Value, maestro_extensions::Local>,
+        String,
+    > {
+        let events = self.registry.events(api)?;
+        let registry = self.registry.clone();
+        Ok(Rc::new(move |partial| {
+            let result = serde_json::to_string(&partial)
+                .map_err(|error| error.to_string())
+                .and_then(|data| {
+                    crate::compact_calls::notify(
+                        &handler,
+                        &registry,
+                        &events,
+                        crate::guest_calls::SynchronousKind::Listener,
+                        data,
+                    )
+                });
+            if let Err(error) = result {
+                events.report_error("tool-update", &std::io::Error::other(error));
+            }
+        }))
     }
 }
 

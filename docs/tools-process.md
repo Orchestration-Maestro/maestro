@@ -163,7 +163,7 @@ newline before the input command. Each call builds fresh environment operands,
 then `spawn_hook` may replace the complete command, directory and environment;
 a hook error returns before progress or execution. `BashToolInput::timeout` is
 optional numeric seconds forwarded unchanged to the selected operation, as is
-the optional cancellation signal; supplied operations own those policies.
+the optional cancellation signal; supplied operations own those policies once started.
 
 An observer receives an empty-content update synchronously before the execution
 future is returned, after a successful hook. While accumulation succeeds, the first
@@ -171,6 +171,9 @@ data callback publishes a snapshot immediately; later callbacks coalesce until 1
 emission, or flush on settlement. Data updates carry one text block and present
 details, even when empty. Without an observer there is no progress timer.
 After settlement the execution releases its observer and pending timer.
+After the initial update, an already-aborted signal returns `Command aborted`
+without entering either the local or supplied backend. An observer that aborts
+that signal synchronously also prevents backend entry.
 
 Output bytes are not sanitized. The [streaming accumulator](tools-read.md#native-streaming)
 owns decoding, tail selection and raw artifacts. On successful accumulation the tool

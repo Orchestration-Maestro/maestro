@@ -139,6 +139,7 @@ impl host::HostBuiltinToolWithStore<State> for Imports {
         _: String,
         _: Option<String>,
         _: Option<Resource<Flag>>,
+        _: Option<Resource<Identity>>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Result<String, String>>> {
         std::future::ready(Err(wasmtime::format_err!(
             "built-in tools require the production host"

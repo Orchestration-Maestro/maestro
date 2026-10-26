@@ -29,10 +29,21 @@ pub(super) async fn loaded_with_tool_services(
     ExtensionRunner<Local>,
     maestro_extensions::EventBusController<Local>,
 ) {
+    loaded_with_reporter(services, Rc::new(|_| {})).await
+}
+
+/// Observes callback diagnostics through the original event bus reporter.
+pub(super) async fn loaded_with_reporter(
+    services: maestro_extensions::ToolConstruction,
+    report: maestro_extensions::ErrorReporter<Local>,
+) -> (
+    ExtensionRunner<Local>,
+    maestro_extensions::EventBusController<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let runtime = create_extension_runtime::<Local>();
     runtime.set_tool_construction(services);
-    let events = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
+    let events = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), report);
     let owner = maestro_extensions::load_extension_from_factory(
         crate::artifact_factory(path.clone(), "builtin-test-version".into()),
         "/".into(),

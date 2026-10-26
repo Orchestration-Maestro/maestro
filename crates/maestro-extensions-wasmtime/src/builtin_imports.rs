@@ -31,9 +31,9 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     )?;
     host.func_wrap_concurrent(
         "[method]builtin-tool.execute",
-        |accessor, (tool, id, args, model, signal): ExecutionArgs| {
+        |accessor, (tool, id, args, model, signal, update): ExecutionArgs| {
             Box::pin(async move {
-                let (tool, signal) = accessor.with(|mut access| {
+                let (tool, signal, update, api) = accessor.with(|mut access| {
                     let state = access.get();
                     Ok::<_, wasmtime::Error>((
                         state.ctx().table.get(&tool)?.clone(),
@@ -41,6 +41,11 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                             .as_ref()
                             .map(|signal| state.ctx().table.get(signal).cloned())
                             .transpose()?,
+                        update
+                            .as_ref()
+                            .map(|update| crate::callback_imports::borrowed_object(state, update))
+                            .transpose()?,
+                        state.api().clone(),
                     ))
                 })?;
                 Ok((tool
@@ -49,6 +54,8 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                         args,
                         model,
                         signal,
+                        update,
+                        api,
                     })
                     .await,))
             })
@@ -140,6 +147,7 @@ type ExecutionArgs = (
     String,
     Option<String>,
     Option<Resource<SignalEndpoint>>,
+    Option<Resource<crate::guest_calls::Callback>>,
 );
 
 /// Constructor signature shared by factories with optional replacement effects.

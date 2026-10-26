@@ -369,34 +369,14 @@
         "preAbort": true
       },
       "expected": {
-        "value": {
-          "content": [
-            {
-              "type": "text",
-              "text": "(no output)"
-            }
-          ]
-        },
+        "error": "Command aborted",
         "updates": [
           {
             "content": []
           }
         ],
-        "opsTrace": [
-          {
-            "command": "literal $COMMAND",
-            "cwd": "/work",
-            "signalPresent": true,
-            "aborted": true,
-            "signalAtEnd": true
-          }
-        ],
-        "phases": [
-          [
-            "exec",
-            1
-          ]
-        ],
+        "opsTrace": [],
+        "phases": [],
         "hookCalls": 0,
         "artifacts": []
       }

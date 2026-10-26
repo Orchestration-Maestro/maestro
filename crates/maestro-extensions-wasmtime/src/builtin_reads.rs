@@ -70,6 +70,10 @@ pub(crate) struct Execution {
     pub(crate) model: Option<String>,
     /// Independently retained cancellation.
     pub(crate) signal: Option<SignalEndpoint>,
+    /// Independently retained operation-scoped progress capability.
+    pub(crate) update: Option<crate::guest_calls::Handle>,
+    /// Original facade supplies the existing synchronous callback frame and error destination.
+    pub(crate) api: crate::api_reads::Endpoint,
 }
 impl Endpoint {
     /// Admits asynchronous native execution on the original local pump.

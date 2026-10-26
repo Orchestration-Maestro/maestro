@@ -124,7 +124,9 @@ pub(crate) async fn run(
 ) -> Result<AgentToolResult<BashToolDetails>, DiagnosticErrorInfo> {
     let state = Mutex::new(Progress::new());
     let changed = Notify::new();
-    let result = {
+    let result = if signal.as_ref().is_some_and(Cancellation::is_aborted) {
+        Err(crate::process::bash::BashError::Aborted)
+    } else {
         let mut data = |bytes: &[u8]| {
             let value = state
                 .lock()

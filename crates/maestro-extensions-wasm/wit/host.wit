@@ -16,7 +16,7 @@ interface host {
         prepare: func(args: string) -> result<prepared-arguments, string>;
         render-call: func(args: option<string>, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
-        execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>) -> result<string, string>;
+        execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>, update: option<borrow<callback>>) -> result<string, string>;
     }
     /// Independent controls of the original local shell factory.
     record bash-tool-controls { command-prefix: option<string>, shell-path: option<string> }

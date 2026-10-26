@@ -34,6 +34,9 @@ mod builtin_grep;
 #[path = "context_bridge/builtin_ls.rs"]
 mod builtin_ls;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_progress.rs"]
+mod builtin_progress;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_queue.rs"]
 mod builtin_queue;
 #[cfg(target_arch = "wasm32")]
