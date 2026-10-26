@@ -28,3 +28,30 @@ level. Both reuse the shared request types. `Context` is re-exported for owned m
 
 These records do not provide a stream executor, event buffer or provider registry.
 Model dispatch, stream handles and host hook forwarding are separate capabilities.
+
+## Authored event streams
+
+`EventStream<T, R = T>` forwards to the native model library's event buffer. Events
+and results can contain local closures or other non-serializable, non-Clone values.
+The component retains each value under a typed resource; it does not encode it as
+JSON or maintain a guest-side queue.
+
+`EventStream::new(is_complete, extract_result)` creates a component stream. The
+classifier and extractor run synchronously before `push` returns, outside callback
+storage borrows. Classifier reentry can admit an event before terminal reservation;
+extractor reentry cannot admit another event after that reservation.
+
+`next()` readers compete for events in registration order. Ended streams drain
+queued events before EOF. The first terminal event is delivered once and settles
+`result()` independently of iteration; later events do not run callbacks. Repeated
+result observations share the same `Rc<R>`, without requiring `R: Clone`.
+
+`end(None)` stops iteration but does not invent a result. A later `end(Some(value))`
+can settle that pending observation, including when `value` is JSON null, false or
+zero. Once published, the first result is not replaced.
+
+Alternate adapters implement `EventStreamPort<T, R>` and use `from_port`. Native
+model-library callers retain the default threaded callbacks; its `Local` execution
+family accepts local captures through `EventStream::<T, R, Local>::new_local`.
+These operations do not yet provide model invocation, assistant-stream forwarding
+or awaited provider hooks.

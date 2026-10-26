@@ -14,6 +14,9 @@ use crate::{
 
 #[path = "generated_route.rs"]
 mod route;
+#[path = "generated_streams.rs"]
+mod streams;
+pub(crate) use streams::new_event_stream;
 
 #[path = "generated_glue.rs"]
 mod glue;

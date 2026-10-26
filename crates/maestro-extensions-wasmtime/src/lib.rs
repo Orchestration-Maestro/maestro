@@ -39,6 +39,8 @@ mod schema_wire;
 mod session_calls;
 mod session_imports;
 mod signal_imports;
+mod stream_calls;
+mod stream_imports;
 mod theme_imports;
 mod theme_reads;
 mod tool_registration;

@@ -64,6 +64,8 @@ pub(crate) enum Call<H = Handle> {
     Factory(factories::FactoryCall<H>),
     /// Renders one tool row through its authored renderer.
     ToolRender(tool_renders::ToolRenderCall<H>),
+    /// Invokes an authored stream callback on the retained local event.
+    Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.

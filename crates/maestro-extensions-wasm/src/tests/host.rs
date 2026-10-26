@@ -580,6 +580,14 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn new_event_stream(
+        &mut self,
+        _: Resource<Identity>,
+        _: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::stream_host::Stream>, String>> {
+        Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
+    }
+
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,

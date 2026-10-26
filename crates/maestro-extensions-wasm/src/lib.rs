@@ -9,6 +9,8 @@
 #[macro_use]
 mod port;
 mod agent;
+pub mod utils;
+pub use utils::event_stream::{EventStream, EventStreamPort};
 mod autocomplete;
 pub use autocomplete::*;
 mod event_bus;

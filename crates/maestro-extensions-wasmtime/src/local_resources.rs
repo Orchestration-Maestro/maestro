@@ -12,6 +12,7 @@ mod dialogs;
 pub(crate) mod effects;
 mod footer;
 mod signals;
+pub(crate) mod stream_reads;
 mod synchronous;
 pub(crate) use synchronous::Completion;
 
@@ -29,6 +30,10 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
     ),
+    /// Construct the models-owned buffer with retained local callbacks.
+    NewStream(stream_reads::Creation),
+    /// Operate on the original native event buffer.
+    Stream(u64, crate::local_resources::stream_reads::Request),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
@@ -183,6 +188,8 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Native event buffer with caller-local completion callbacks.
+    Stream(crate::local_resources::stream_reads::Owner),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.

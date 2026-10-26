@@ -267,6 +267,9 @@ pub(super) enum LocalCall {
     /// A schema method against the original borrowed operand.
     #[component(name = "schema")]
     Schema(LocalSchema),
+    /// A synchronous authored-stream classifier or extractor.
+    #[component(name = "stream")]
+    Stream(crate::stream_calls::Local),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -330,6 +333,9 @@ pub(super) enum LocalResult {
     /// The schema result with every authored diagnostic field.
     #[component(name = "schema")]
     Schema(Result<String, crate::schema_wire::Error>),
+    /// Selected terminal classification or retained result.
+    #[component(name = "stream")]
+    Stream(Result<crate::stream_calls::WireSelection, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -374,6 +380,7 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
+        Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
@@ -566,6 +573,13 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
             let _ = reply.send(value);
+        }
+        (Call::Stream(call), LocalResult::Stream(value)) => {
+            let value = match value {
+                Ok(value) => Ok(value.retained(store)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
         }
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));

@@ -53,6 +53,10 @@ mod theme;
 #[path = "context_bridge/schema.rs"]
 mod schema;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/streams.rs"]
+mod streams;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -160,6 +164,20 @@ fn listener_tail(
 /// Uses independently supplied native command contexts and controllable pending operations.
 #[cfg(target_arch = "wasm32")]
 fn command(
+    args: String,
+    context: maestro_extensions_wasm::ExtensionCommandContext,
+    api: ExtensionAPI,
+) -> ExtensionFuture<'static, ()> {
+    if let Some(request) = args.strip_prefix("stream ") {
+        let request = request.to_owned();
+        return Box::pin(async move { Err(streams::command(&request).await?) });
+    }
+    context_command(args, context, api)
+}
+
+/// Dispatch context and registration observations unrelated to stream ownership.
+#[cfg(target_arch = "wasm32")]
+fn context_command(
     args: String,
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,

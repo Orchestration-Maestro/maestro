@@ -5,18 +5,14 @@ use std::future::{Future, poll_fn};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::task::{Poll, Waker};
 
-#[cfg(not(target_arch = "wasm32"))]
-/// Shared callback that recognizes terminal events.
-type Classifier<T> = Arc<dyn Fn(&T) -> bool + Send + Sync>;
-#[cfg(target_arch = "wasm32")]
-/// Browser-local callback that recognizes terminal events.
-type Classifier<T> = Arc<dyn Fn(&T) -> bool>;
-#[cfg(not(target_arch = "wasm32"))]
-/// Shared callback that extracts a retained result from an event.
-type Extractor<T, R> = Arc<dyn Fn(&T) -> R + Send + Sync>;
-#[cfg(target_arch = "wasm32")]
-/// Browser-local callback that extracts the retained final result.
-type Extractor<T, R> = Arc<dyn Fn(&T) -> R>;
+use super::types::{Execution, Local, Threaded};
+mod execution;
+pub use execution::StreamExecution;
+
+/// Family-selected synchronous terminal classifier.
+type Classifier<T, R, E> = <E as Execution>::Shared<<E as StreamExecution<T, R>>::Classifier>;
+/// Family-selected synchronous final-result extractor.
+type Extractor<T, R, E> = <E as Execution>::Shared<<E as StreamExecution<T, R>>::Extractor>;
 
 /// Queued read with its assigned event and wake registration.
 struct Reader<T> {
@@ -55,21 +51,21 @@ struct State<T, R> {
 }
 
 /// Producer-owned FIFO whose readers compete for events, not final results.
-pub struct EventStream<T, R = T> {
+pub struct EventStream<T, R = T, E: StreamExecution<T, R> = Threaded> {
     /// Shared mutable stream state.
     state: Arc<Mutex<State<T, R>>>,
     /// Caller callback recognizing a terminal event.
-    is_complete: Classifier<T>,
+    is_complete: Classifier<T, R, E>,
     /// Caller callback extracting the final result.
-    extract_result: Extractor<T, R>,
+    extract_result: Extractor<T, R, E>,
 }
 
-impl<T, R> Clone for EventStream<T, R> {
+impl<T, R, E: StreamExecution<T, R>> Clone for EventStream<T, R, E> {
     fn clone(&self) -> Self {
         Self {
             state: Arc::clone(&self.state),
-            is_complete: Arc::clone(&self.is_complete),
-            extract_result: Arc::clone(&self.extract_result),
+            is_complete: self.is_complete.clone(),
+            extract_result: self.extract_result.clone(),
         }
     }
 }
@@ -93,7 +89,10 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
         T: Send,
         R: Send + Sync,
     {
-        Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
+        Self::from_callbacks(
+            Threaded::share(is_complete),
+            Threaded::share(extract_result),
+        )
     }
 
     /// Construct a stream with browser-local terminal callbacks.
@@ -103,7 +102,10 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
         is_complete: impl Fn(&T) -> bool + 'static,
         extract_result: impl Fn(&T) -> R + 'static,
     ) -> Self {
-        Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
+        Self::from_callbacks(
+            Threaded::share(is_complete),
+            Threaded::share(extract_result),
+        )
     }
 
     /// Construct a native stream that may carry local items.
@@ -113,7 +115,10 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
         is_complete: impl Fn(&T) -> bool + Send + Sync + 'static,
         extract_result: impl Fn(&T) -> R + Send + Sync + 'static,
     ) -> Self {
-        Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
+        Self::from_callbacks(
+            Threaded::share(is_complete),
+            Threaded::share(extract_result),
+        )
     }
 
     /// Construct a browser stream that may carry local items.
@@ -123,11 +128,33 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
         is_complete: impl Fn(&T) -> bool + 'static,
         extract_result: impl Fn(&T) -> R + 'static,
     ) -> Self {
-        Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
+        Self::from_callbacks(
+            Threaded::share(is_complete),
+            Threaded::share(extract_result),
+        )
     }
+}
 
-    /// Initialize stream state from shared callbacks.
-    fn from_callbacks(is_complete: Classifier<T>, extract_result: Extractor<T, R>) -> Self {
+impl<T: 'static, R: Clone + 'static> EventStream<T, R, Local> {
+    /// Construct a stream whose synchronous callbacks retain caller-local captures.
+    #[must_use]
+    pub fn new_local(
+        is_complete: impl Fn(&T) -> bool + 'static,
+        extract_result: impl Fn(&T) -> R + 'static,
+    ) -> Self {
+        Self::from_callbacks(
+            std::rc::Rc::new(is_complete),
+            std::rc::Rc::new(extract_result),
+        )
+    }
+}
+
+impl<T: 'static, R: Clone + 'static, E: StreamExecution<T, R>> EventStream<T, R, E> {
+    /// Initialize stream state from family-selected callbacks.
+    fn from_callbacks(
+        is_complete: Classifier<T, R, E>,
+        extract_result: Extractor<T, R, E>,
+    ) -> Self {
         Self {
             state: Arc::new(Mutex::new(State {
                 queue: VecDeque::new(),
