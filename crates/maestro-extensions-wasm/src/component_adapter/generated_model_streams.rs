@@ -2,7 +2,7 @@
 use super::{Generated, host};
 use crate::component_adapter::{
     callbacks::{self, Identity},
-    signals::{self, Mirror},
+    signals::{self, Binding},
 };
 use crate::types::finite::encode_value;
 use crate::{
@@ -94,7 +94,7 @@ fn invoke(
 ) -> ExtensionResult<AssistantMessageEventStream> {
     let signal = common
         .and_then(|o| o.signal.as_ref())
-        .map(|caller| Mirror::new(&Generated, Some(caller)).map(Rc::new))
+        .map(|caller| Binding::new(&Generated, Some(caller)).map(Rc::new))
         .transpose()?;
     let payload = common.and_then(|o| o.on_payload.clone()).map(staged);
     let response = common.and_then(|o| o.on_response.clone()).map(staged);
@@ -162,7 +162,7 @@ fn selected_signal(selected: &PayloadHookInput) -> ExtensionResult<host::Payload
     let binding = selected
         .signal
         .as_ref()
-        .map(|signal| Mirror::new(&Generated, Some(signal)))
+        .map(|signal| Binding::new(&Generated, Some(signal)))
         .transpose()?;
     let signal = binding
         .as_ref()

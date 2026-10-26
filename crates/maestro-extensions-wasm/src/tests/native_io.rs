@@ -63,7 +63,7 @@ fn native_wait_releases_its_signal_observer() -> ExtensionResult<()> {
     let io = captured_api(&host)?.native_io();
     for outcome in ["complete", "abort", "drop"] {
         let flag = Flag::default();
-        let signal = signal(&host, host.signal(&flag));
+        let signal = super::signal_callbacks::authored(signal(&host, host.signal(&flag)));
         let (hold, _started, open) = gate();
         host.observe().hold_next_idle(hold);
         let mut wait = io.sleep(Duration::from_secs(9), Some(signal));
@@ -146,6 +146,33 @@ fn native_child_streams_bytes_while_input_is_pending() -> ExtensionResult<()> {
     );
     assert_eq!(observed.native_io.launches[0].0, "literal program");
     assert_eq!(observed.native_io.launches[0].1, ["$x; Ω\n"]);
+    Ok(())
+}
+
+#[test]
+fn native_wait_keeps_the_original_host_signal() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let io = captured_api(&host)?.native_io();
+    let flag = Flag::default();
+    let original = signal(&host, host.signal(&flag));
+    let (hold, _started, open) = gate();
+    host.observe().hold_next_idle(hold);
+    let mut wait = io.sleep(Duration::from_secs(9), Some(original.clone()));
+    assert!(
+        wait.as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    assert!(host.observed().bus.listeners.is_empty());
+    drop(original);
+    assert_eq!(host.observed().shell.signal_drops.get(&flag.key()), None);
+    flag.abort();
+    open.send(()).unwrap();
+    assert_eq!(super::block_on(wait), Err("Aborted".into()));
+    assert_eq!(
+        host.observed().shell.signal_drops.get(&flag.key()),
+        Some(&1)
+    );
     Ok(())
 }
 
