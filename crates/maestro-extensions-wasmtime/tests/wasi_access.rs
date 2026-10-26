@@ -400,6 +400,38 @@ fn component_filesystem_failures_remain_os_failures() {
     unavailable_cwd(&scratch, &healthy, "unreadable");
 }
 
+#[cfg(unix)]
+#[test]
+fn component_non_unicode_cwd_keeps_absolute_access() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    if maestro_test_process::run_alone("component_non_unicode_cwd_keeps_absolute_access").unwrap() {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let cwd = scratch.path().join(OsString::from_vec(vec![b'c', 255]));
+    std::fs::create_dir(&cwd).unwrap();
+    assert!(!Path::new(cwd.to_string_lossy().as_ref()).exists());
+    let healthy = scratch.path().join("healthy");
+    std::fs::write(&healthy, b"healthy\0\xff").unwrap();
+    std::env::set_current_dir(&cwd).unwrap();
+    assert!(std::env::current_dir().unwrap().to_str().is_none());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        let observed = host.request(json!({"op":"cwd"})).await;
+        assert!(observed["p3"].is_null(), "{observed}");
+        for generation in ["p2", "p3"] {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":healthy,"bytes":[]}))
+                .await;
+            assert_eq!(observed["bytes"], json!(b"healthy\0\xff"), "{generation}");
+        }
+        let healthy = host.request(json!({"op":"environment"})).await;
+        assert_eq!(healthy["p2"][1], std::env::var(COMPONENT).unwrap());
+    });
+    std::env::set_current_dir(original).unwrap();
+}
+
 /// Each failed operation leaves both its native permissions and later callbacks healthy.
 #[cfg(unix)]
 async fn file_failures(cases: &[(std::path::PathBuf, &str)], healthy: &Path) {
