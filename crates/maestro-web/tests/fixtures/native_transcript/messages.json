@@ -2896,5 +2896,380 @@
     "cost": {
       "total": 0.001
     }
-  }
+  },
+  "listExactIds": [
+    {
+      "id": "",
+      "expected": [
+        {
+          "key": "",
+          "details": "last"
+        },
+        {
+          "key": "!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "x",
+      "expected": [
+        {
+          "key": "x",
+          "details": "last"
+        },
+        {
+          "key": "x!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "X",
+      "expected": [
+        {
+          "key": "X",
+          "details": "last"
+        },
+        {
+          "key": "X!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "雪",
+      "expected": [
+        {
+          "key": "雪",
+          "details": "last"
+        },
+        {
+          "key": "雪!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "x ",
+      "expected": [
+        {
+          "key": "x ",
+          "details": "last"
+        },
+        {
+          "key": "x !",
+          "details": "decoy"
+        }
+      ]
+    }
+  ],
+  "listForwarding": [
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    }
+  ],
+  "listCallbacks": [
+    {
+      "edit": "mutate",
+      "expected": {
+        "values": [
+          "edited",
+          "second",
+          "third"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1",
+          "msg:2"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "replace",
+      "expected": {
+        "values": [
+          "first",
+          "replacement",
+          "third"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1",
+          "msg:2"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "add",
+      "expected": {
+        "values": [
+          "first",
+          "second",
+          "third",
+          "added"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1",
+          "msg:2",
+          "msg:3"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "delete",
+      "expected": {
+        "values": [
+          "first",
+          "third"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "throw",
+      "expected": {
+        "called": 1,
+        "throwsOriginal": true
+      }
+    },
+    {
+      "edit": "result-after-index",
+      "expected": {
+        "indexKey": "call",
+        "retainedId": "changed",
+        "details": 2,
+        "sameEnvelope": true
+      }
+    }
+  ]
 }

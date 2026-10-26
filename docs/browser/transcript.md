@@ -101,6 +101,34 @@ parameter, page content by default in the browser build.
 `message_renderer_registry::dom` holds the same two lookups under the browser
 module path.
 
+## Message list
+
+`MessageList<C>` shows the completed messages of a session. `messages` is the
+shared history (`Arc<RwLock<Vec<AgentMessage<..>>>>`); `tools`,
+`pending_tool_calls`, `is_streaming` and `on_cost_click` are forwarded to each
+assistant row. Mount it once and call `update` after changing the history or a
+setting.
+
+Preparing the list reads the history twice: once to index every tool result by
+its exact call ID, keeping the last result for a repeated ID, and once in order to
+choose each row. Neither read holds the history while a renderer runs, so a
+renderer may edit the history or a record. A result edited after indexing is
+still found under its indexed ID, and the row sees the edited envelope.
+
+Artifact entries are skipped before any role renderer sees them. A registered
+role renderer comes first for every other entry and receives the original
+message handle; its content is used even when it is empty, and its error is
+returned unchanged. Otherwise ordinary and attachment-bearing user entries show
+user rows and assistant entries show assistant rows. Result entries and unknown
+roles show nothing; their results appear inside the assistant row that made the
+call. Assistant rows never stream and never hide tool calls; they hide pending
+calls only while `is_streaming` is set.
+
+Rows are placed by emitted position, counting only shown entries. A position
+keeps its root while it shows the same kind of row, so skipped entries before it
+do not move it; a different kind replaces the root, and positions past the last
+row are removed.
+
 ## Native copy controls
 
 `maestro_web::components::copy_button::CopyButton` retains a supplied

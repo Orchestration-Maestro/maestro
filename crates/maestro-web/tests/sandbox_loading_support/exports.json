@@ -185,7 +185,9 @@
     "repl_text_downloads_decode_utf8_without_losing_bytes",
     "malformed_repl_downloads_keep_original_content",
     "all_render_outputs_keep_opened_overlays_when_drawing_fails",
-    "returned_file_updates_preserve_opened_original_downloads"
+    "returned_file_updates_preserve_opened_original_downloads",
+    "message_list_pairs_last_results_and_filters_artifacts",
+    "message_list_preserves_emitted_positions_and_current_actions"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

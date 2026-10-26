@@ -3,6 +3,8 @@ pub mod attachment_tile;
 pub mod diff;
 /// Retained single-line browser input.
 pub mod input;
+/// Completed transcript history placed by emitted position.
+pub mod message_list;
 /// Open custom-message role callbacks.
 pub mod message_renderer_registry;
 /// Retained transcript message rows.

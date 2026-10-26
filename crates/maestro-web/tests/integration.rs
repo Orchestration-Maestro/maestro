@@ -136,3 +136,4 @@ mod artifact_presentation_support;
 mod sample_sessions_browser;
 
 mod native_tool_browser;
+mod native_transcript_browser;

@@ -9,6 +9,7 @@ pub mod dom;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
 pub use components::input::Input;
+pub use components::message_list::MessageList;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
 };
