@@ -277,6 +277,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     crate::context_imports::add_resource::<T, WidgetEndpoint>(host, "widget")?;
     crate::context_imports::add_resource::<T, StyleEndpoint>(host, "style")?;
     crate::context_imports::add_resource::<T, HighlighterEndpoint>(host, "highlighter")?;
+    crate::theme_imports::add_global(host)?;
     constructors(host)?;
     markdown(host)?;
     methods(host)?;
@@ -285,6 +286,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     crate::keys_imports::add_to_linker(host)?;
     crate::widget_editor_imports::add_to_linker(host)?;
     crate::provider_imports::add_to_linker(host)?;
+    crate::foreign_editor_imports::add_to_linker(host)?;
     lent(host)
 }
 

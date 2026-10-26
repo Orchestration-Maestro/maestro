@@ -118,6 +118,12 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         api.register_message_renderer(
             "bridge-view",
             Rc::new(move |message, options, theme, emitter| {
+                if let Some(method) = message.custom_type.strip_prefix("global-theme ") {
+                    return Ok(Some(theme::view(
+                        maestro_extensions_wasm::theme()?,
+                        method.into(),
+                    )));
+                }
                 if let Some(method) = message.custom_type.strip_prefix("theme ") {
                     return Ok(Some(theme::view(theme, method.into())));
                 }

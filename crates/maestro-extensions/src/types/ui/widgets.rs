@@ -65,6 +65,8 @@ pub trait ExtensionEditor: super::editor::CustomEditorComponent {
 /// one goes through the UI context. Text, boxes, containers and spacers need nothing from the
 /// host and are built from the toolkit directly.
 pub trait ExtensionWidgets {
+    /// The live theme shared by the host's widgets, even without an interactive UI.
+    fn theme(&self) -> maestro_theme::LiveTheme;
     /// Markdown laid out with the host terminal's capabilities.
     fn markdown(
         &self,

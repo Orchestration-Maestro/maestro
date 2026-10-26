@@ -16,6 +16,10 @@ use crate::{
     ExtensionResult, Style, TUI, TextHandler,
 };
 
+/// The current editor factory: absent, one this extension set by identity, or another
+/// extension's as the host resource that builds with it.
+pub(crate) type CurrentFactory = Option<Result<u32, Rc<dyn std::any::Any>>>;
+
 /// What an editor factory's host lends it: the terminal, the editor styles and the
 /// keybindings.
 pub(crate) struct LentEditor<I: super::providers::EditorImports> {
@@ -97,7 +101,7 @@ impl ComponentView for EditorView {
 }
 
 /// A text callback the host lent, as an author's handler; it runs under the host's own frame.
-fn lent_text<I: super::providers::EditorImports>(
+pub(super) fn lent_text<I: super::providers::EditorImports>(
     imports: &I,
     callback: I::TextCallback,
 ) -> TextHandler {

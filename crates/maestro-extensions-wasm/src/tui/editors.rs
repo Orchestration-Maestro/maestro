@@ -247,11 +247,18 @@ impl CustomEditor {
         keybindings: &KeybindingsManager,
         options: EditorOptions,
     ) -> ExtensionResult<Self> {
-        let (widget, editor, custom) = host()?.custom_editor(tui, theme, keybindings, options)?;
-        Ok(Self {
+        host()?
+            .custom_editor(tui, theme, keybindings, options)
+            .map(Self::hosted)
+    }
+    /// A custom editor over a widget and its editor and custom editor requests.
+    pub(crate) fn hosted(
+        (widget, editor, custom): (Widget, Rc<dyn EditorPort>, Rc<dyn CustomEditorPort>),
+    ) -> Self {
+        Self {
             editor: Editor::hosted(widget, editor),
             custom,
-        })
+        }
     }
 }
 

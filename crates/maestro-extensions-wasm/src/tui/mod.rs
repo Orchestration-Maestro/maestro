@@ -34,6 +34,7 @@ pub trait ComponentView {
 
 #[macro_use]
 mod widgets;
+pub(crate) use widgets::host as widget_host;
 mod editors;
 mod keys;
 mod lists;

@@ -17,6 +17,7 @@ pub(crate) mod bash;
 mod contexts;
 mod editor_factories;
 mod editors;
+mod foreign_editors;
 mod signals;
 pub(crate) mod streams;
 #[cfg(target_arch = "wasm32")]
@@ -46,7 +47,8 @@ mod widget_imports;
 mod widgets;
 #[cfg(test)]
 pub(crate) use editor_factories::keep_editor;
-pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, LentEditor};
+pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, CurrentFactory, LentEditor};
+pub(crate) use foreign_editors::{ForeignAnswer, ForeignRequest};
 pub(crate) use lists::invoke_widget;
 #[cfg(test)]
 pub(crate) use providers::keep_provider;

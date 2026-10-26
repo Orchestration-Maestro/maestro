@@ -112,6 +112,8 @@ pub(crate) enum Request {
 
 /// A message for the widgets of one extension.
 pub(crate) enum WidgetMessage {
+    /// Retains the host's live theme independently of UI availability.
+    GlobalTheme(Reply<crate::theme_reads::Endpoint>),
     /// A request on the widget with this identity.
     Request(u64, Request),
     /// Builds a widget for the extension whose API has this identity.
@@ -143,6 +145,9 @@ pub(crate) enum WidgetMessage {
     ),
     /// One request on a lent completion provider.
     Provider(u64, crate::guest_calls::providers::Lent),
+    /// Builds an editor with another extension's editor factory for the extension whose API
+    /// has this identity.
+    Foreign(u64, crate::widget_foreign::ForeignBuild),
 }
 
 /// The lent settings list styles: label and value row styles, description, cursor and hint.
@@ -216,7 +221,7 @@ impl Widget {
     /// The application's custom editor, when the widget is one.
     pub(crate) fn custom_editor(
         &self,
-    ) -> Option<std::rc::Rc<dyn maestro_extensions::widgets::ExtensionEditor>> {
+    ) -> Option<std::rc::Rc<dyn maestro_extensions::types::CustomEditorComponent>> {
         match &self.kind {
             Kind::Editor(editor) => editor.custom(),
             _ => None,
@@ -234,6 +239,20 @@ impl Widget {
             Kind::Plain(widget) => widget.clone(),
             Kind::List(list) => list.component(),
             Kind::Editor(editor) => editor.component(),
+        }
+    }
+
+    /// Keeps an editor whose authored callbacks report to `failure` and enter `events`.
+    pub(crate) fn editor(
+        editor: crate::widget_editors::EditorKind,
+        failure: Failure,
+        events: EventBus<Local>,
+    ) -> Self {
+        Self {
+            kind: Kind::Editor(editor),
+            failure,
+            events,
+            guests: RefCell::default(),
         }
     }
 

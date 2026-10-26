@@ -232,6 +232,8 @@ impl Widget {
 
 /// Builds host widgets.
 pub(crate) trait WidgetHost {
+    /// The host's live theme, independent of UI availability.
+    fn theme(&self) -> ExtensionResult<crate::Theme>;
     /// Wrapped text between padding.
     fn text(
         &self,
@@ -327,6 +329,15 @@ pub(crate) trait WidgetHost {
         keybindings: &super::KeybindingsManager,
         options: super::EditorOptions,
     ) -> ExtensionResult<CustomEditorParts>;
+    /// Builds an editor with an editor factory another extension set, kept as `factory`.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    fn foreign_editor(
+        &self,
+        factory: &dyn std::any::Any,
+        tui: &super::TUI,
+        theme: &super::EditorTheme,
+        keybindings: &super::KeybindingsManager,
+    ) -> ExtensionResult<crate::EditorFactoryOutcome>;
 }
 
 /// A custom editor's widget, editor requests and custom editor requests.
@@ -340,7 +351,7 @@ pub(crate) type CustomEditorParts = (
 ///
 /// # Errors
 /// Returns a message when no extension host runs this code.
-pub(super) fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
+pub(crate) fn host() -> ExtensionResult<Rc<dyn WidgetHost>> {
     #[cfg(any(test, target_arch = "wasm32"))]
     return crate::component_adapter::widget_host();
     #[cfg(not(any(test, target_arch = "wasm32")))]

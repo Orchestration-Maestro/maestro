@@ -44,6 +44,9 @@ impl ExtensionWidgetHost {
 }
 
 impl ExtensionWidgets for ExtensionWidgetHost {
+    fn theme(&self) -> LiveTheme {
+        self.theme.clone()
+    }
     fn markdown(
         &self,
         text: String,

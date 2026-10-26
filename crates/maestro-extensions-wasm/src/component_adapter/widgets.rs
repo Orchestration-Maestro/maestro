@@ -314,6 +314,9 @@ pub(super) fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Styl
 }
 
 impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
+    fn theme(&self) -> ExtensionResult<crate::Theme> {
+        Ok(super::theme::theme(self.0.clone(), self.0.global_theme()?))
+    }
     fn text(
         &self,
         text: &str,
@@ -486,6 +489,15 @@ impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
         let built = self.build_editor(tui, theme, Some(keybindings), options)?;
         let widget = HostWidget::shared(&self.0, built);
         Ok((Widget::new(widget.clone()), widget.clone(), widget))
+    }
+    fn foreign_editor(
+        &self,
+        factory: &dyn std::any::Any,
+        tui: &crate::TUI,
+        theme: &crate::EditorTheme,
+        keybindings: &crate::KeybindingsManager,
+    ) -> ExtensionResult<crate::EditorFactoryOutcome> {
+        self.build_foreign(factory, tui, theme, keybindings)
     }
 }
 

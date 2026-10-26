@@ -5,13 +5,23 @@ use crate::keys_reads::KeysEndpoint;
 use crate::local_resources::effects::TuiEndpoint;
 use crate::widget_lists::{Binding, ListRequest, Slot};
 use crate::widget_reads::{Paint, Reply};
-use maestro_extensions::ComponentHandle;
+use maestro_extensions::types::{CustomEditorComponent, EditorFactoryOutcome};
 use maestro_extensions::widgets::{
-    Editor, EditorOptions, EditorTheme, ExtensionEditor, ExtensionWidgets, Focusable,
-    SelectListTheme,
+    Editor, EditorComponent, EditorOptions, EditorTheme, ExtensionEditor, ExtensionWidgets,
+    Focusable, SelectListTheme,
 };
+use maestro_extensions::{Cancellation, ComponentHandle, KeybindingsManager, TUI};
 use std::rc::Rc;
 use wasmtime::component::{ComponentType, Lower};
+
+/// Replaces the text of `editor`, or inserts at its cursor.
+fn edit(editor: &Editor, text: &str, insert: bool) {
+    if insert {
+        editor.insert_text_at_cursor(text);
+    } else {
+        editor.set_text(text);
+    }
+}
 
 /// What a new editor is built from.
 pub(crate) struct EditorBuild {
@@ -97,6 +107,11 @@ pub(crate) enum EditorRequest {
     BorderColor(Reply<crate::widget_reads::StyleEndpoint>),
     /// Replaces the completion provider with an authored one.
     Provider(Handle, Reply<()>),
+    /// One editor operation, answering the editor's absence of an optional one.
+    Foreign(
+        crate::widget_foreign::ForeignRequest,
+        Reply<crate::widget_foreign::ForeignAnswered>,
+    ),
 }
 
 impl EditorRequest {
@@ -109,40 +124,53 @@ impl EditorRequest {
                 drop(reply.send(Err(error)));
             }
             Self::BorderColor(reply) => drop(reply.send(Err(error))),
+            Self::Foreign(_, reply) => drop(reply.send(Err(error))),
         }
     }
 }
 
-/// The toolkit editor, or the application's custom editor.
+/// The toolkit editor, the application's custom editor, or an editor another extension's
+/// factory built.
 pub(crate) enum EditorKind {
     /// The toolkit editor.
     Editor(Rc<Editor>),
     /// The application's custom editor.
     Custom(Rc<dyn ExtensionEditor>),
+    /// An editor another extension's factory built.
+    Foreign(EditorFactoryOutcome),
 }
 
 impl EditorKind {
     /// The editor as a toolkit component.
     pub(crate) fn component(&self) -> ComponentHandle {
+        self.operations()
+    }
+
+    /// The editor through its editor operations.
+    pub(crate) fn operations(&self) -> Rc<dyn EditorComponent<Signal = Cancellation>> {
         match self {
             Self::Editor(editor) => editor.clone(),
             Self::Custom(editor) => editor.clone(),
+            Self::Foreign(built) => built.editor(),
         }
     }
 
-    /// The application's custom editor, when this is one.
-    pub(crate) fn custom(&self) -> Option<Rc<dyn ExtensionEditor>> {
+    /// The application's actions and callbacks, when the editor has them.
+    pub(crate) fn custom(&self) -> Option<Rc<dyn CustomEditorComponent>> {
         match self {
-            Self::Editor(_) => None,
+            Self::Editor(_) | Self::Foreign(EditorFactoryOutcome::Editor(_)) => None,
             Self::Custom(editor) => Some(editor.clone()),
+            Self::Foreign(EditorFactoryOutcome::CustomEditor(editor)) => Some(editor.clone()),
         }
     }
 
-    /// The toolkit editor operations.
-    fn editor(&self) -> &Editor {
+    /// The toolkit editor operations; another extension's editor offers only its editor
+    /// operations.
+    fn editor(&self) -> Result<&Editor, String> {
         match self {
-            Self::Editor(editor) => editor,
-            Self::Custom(editor) => editor.editor(),
+            Self::Editor(editor) => Ok(editor),
+            Self::Custom(editor) => Ok(editor.editor()),
+            Self::Foreign(_) => Err("the editor offers only its editor operations".to_owned()),
         }
     }
 
@@ -152,6 +180,18 @@ impl EditorKind {
         binding: &Binding<'_>,
         widgets: &dyn ExtensionWidgets,
     ) -> Result<Self, String> {
+        let (tui, theme, options, keybindings) = Self::parts(build, binding)?;
+        Ok(match keybindings {
+            None => Self::Editor(Rc::new(Editor::new(&tui, theme, options))),
+            Some(manager) => Self::Custom(widgets.custom_editor(&tui, theme, manager, options)),
+        })
+    }
+
+    /// The terminal, styles, options and keybindings `build` names.
+    pub(crate) fn parts(
+        build: EditorBuild,
+        binding: &Binding<'_>,
+    ) -> Result<(TUI, EditorTheme, EditorOptions, Option<KeybindingsManager>), String> {
         let registry = binding.registry;
         let tui = registry.terminal(&build.tui)?;
         let mut list = build
@@ -176,13 +216,11 @@ impl EditorKind {
             padding_x: build.options.0,
             autocomplete_max_visible: build.options.1,
         };
-        Ok(match build.keybindings {
-            None => Self::Editor(Rc::new(Editor::new(&tui, theme, options))),
-            Some(keys) => {
-                let manager = registry.keybindings_manager(&keys)?;
-                Self::Custom(widgets.custom_editor(&tui, theme, manager, options))
-            }
-        })
+        let keybindings = build
+            .keybindings
+            .map(|keys| registry.keybindings_manager(&keys))
+            .transpose()?;
+        Ok((tui, theme, options, keybindings))
     }
 
     /// Answers one request.
@@ -192,27 +230,25 @@ impl EditorKind {
                 let _ = reply.send(self.read(read, binding));
             }
             EditorRequest::Edit(text, insert, reply) => {
-                let editor = self.editor();
-                if insert {
-                    editor.insert_text_at_cursor(&text);
-                } else {
-                    editor.set_text(&text);
-                }
-                let _ = reply.send(binding.failure.borrow_mut().take().map_or(Ok(()), Err));
+                let edited = self.editor().map(|editor| edit(editor, &text, insert));
+                let failure = binding.failure.borrow_mut().take();
+                let _ = reply.send(edited.and(failure.map_or(Ok(()), Err)));
             }
             EditorRequest::Provider(handle, reply) => {
                 let provider =
                     crate::guest_provider::GuestProvider::new(handle, binding.registry.clone());
-                self.editor().set_autocomplete_provider(Rc::new(provider));
-                let _ = reply.send(Ok(()));
+                let installed = self.editor();
+                let _ = reply.send(installed.map(|editor| {
+                    editor.set_autocomplete_provider(Rc::new(provider));
+                }));
             }
             EditorRequest::BorderColor(reply) => {
-                let style = binding.registry.lend_style(self.editor().border_color());
-                let _ = reply.send(style);
+                let style = self.editor().map(Editor::border_color);
+                let _ = reply.send(style.and_then(|style| binding.registry.lend_style(style)));
             }
             EditorRequest::OnAction(action, handle, reply) => {
-                let _ = reply.send(match self {
-                    Self::Custom(editor) => {
+                let _ = reply.send(match self.custom() {
+                    Some(editor) => {
                         let handler = binding.notice(handle, || Event::Notice);
                         let old = editor
                             .action_handlers()
@@ -221,15 +257,18 @@ impl EditorKind {
                         drop(old);
                         Ok(())
                     }
-                    Self::Editor(_) => Err("the editor has no application actions".to_owned()),
+                    None => Err("the editor has no application actions".to_owned()),
                 });
+            }
+            EditorRequest::Foreign(request, reply) => {
+                let _ = reply.send(self.foreign(request, binding));
             }
         }
     }
 
     /// Answers a request without callbacks.
     fn read(&self, read: Read, binding: &Binding<'_>) -> Result<EditorAnswer, String> {
-        let editor = self.editor();
+        let editor = self.editor()?;
         let count = |value: usize| u32::try_from(value).map_err(|error| error.to_string());
         let answer = match read {
             Read::GetText => EditorAnswer::Text(editor.get_text()),
@@ -256,7 +295,7 @@ impl EditorKind {
 
     /// Applies a request that changes the editor without callbacks.
     fn change(&self, change: Read, binding: &Binding<'_>) -> Result<(), String> {
-        let editor = self.editor();
+        let editor = self.editor()?;
         match change {
             Read::AddToHistory(text) => editor.add_to_history(&text),
             Read::SetPaddingX(padding) => editor.set_padding_x(padding),
@@ -291,20 +330,22 @@ impl EditorKind {
         let notice = |handler: Option<Handle>| {
             handler.map(|handle| binding.notice(handle, || Event::Notice))
         };
-        match (self, slot) {
-            (_, Slot::Submit | Slot::Change) => {
-                let text = handler.map(|handle| binding.text(handle));
-                let editor = self.editor();
-                if matches!(slot, Slot::Submit) {
-                    editor.set_on_submit(text);
-                } else {
-                    editor.set_on_change(text);
-                }
+        if matches!(slot, Slot::Submit | Slot::Change) {
+            let text = handler.map(|handle| binding.text(handle));
+            let editor = self.operations();
+            if matches!(slot, Slot::Submit) {
+                editor.set_on_submit(text);
+            } else {
+                editor.set_on_change(text);
             }
-            (Self::Custom(editor), Slot::Escape) => editor.set_on_escape(notice(handler)),
-            (Self::Custom(editor), Slot::CtrlD) => editor.set_on_ctrl_d(notice(handler)),
-            (Self::Custom(editor), Slot::PasteImage) => editor.set_on_paste_image(notice(handler)),
-            (Self::Custom(editor), Slot::ExtensionShortcut) => {
+            return Ok(());
+        }
+        let editor = self.custom().ok_or("the widget has no such handler")?;
+        match slot {
+            Slot::Escape => editor.set_on_escape(notice(handler)),
+            Slot::CtrlD => editor.set_on_ctrl_d(notice(handler)),
+            Slot::PasteImage => editor.set_on_paste_image(notice(handler)),
+            Slot::ExtensionShortcut => {
                 editor.set_on_extension_shortcut(handler.map(|handle| binding.shortcut(handle)));
             }
             _ => return Err("the widget has no such handler".to_owned()),

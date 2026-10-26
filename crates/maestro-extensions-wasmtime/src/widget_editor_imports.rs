@@ -19,7 +19,7 @@ use wasmtime::{
 /// Editor styles as the guest sends them.
 #[derive(ComponentType, Lift)]
 #[component(record)]
-struct EditorStyles {
+pub(crate) struct EditorStyles {
     /// The border.
     #[component(name = "border-color")]
     border_color: StyleSource,
@@ -119,18 +119,29 @@ fn editor<T: CallbackView>(
     keybindings: Option<&Resource<KeysEndpoint>>,
     options: &EditorOptions,
 ) -> wasmtime::Result<Result<Resource<WidgetEndpoint>, String>> {
+    let options = (options.padding_x, options.autocomplete_max_visible);
+    let editor = editor_build(store, (tui, theme), keybindings, options)?;
+    build(store, Build::Editor(editor))
+}
+
+/// What an editor is built from: the terminal, its styles, a manager and options.
+pub(crate) fn editor_build<T: CallbackView>(
+    store: &mut T,
+    (tui, theme): (&Resource<TuiEndpoint>, &EditorStyles),
+    keybindings: Option<&Resource<KeysEndpoint>>,
+    options: (Option<f64>, Option<f64>),
+) -> wasmtime::Result<EditorBuild> {
     let tui = store.ctx().table.get(tui)?.clone();
     let keybindings = keybindings
         .map(|keys| store.ctx().table.get(keys).cloned())
         .transpose()?;
-    let editor = EditorBuild {
+    Ok(EditorBuild {
         tui,
         border: paint(store, &theme.border_color)?,
         list: theme.select_list.paints(store)?,
         keybindings,
-        options: (options.padding_x, options.autocomplete_max_visible),
-    };
-    build(store, Build::Editor(editor))
+        options,
+    })
 }
 
 /// Installs the editor constructors and methods.

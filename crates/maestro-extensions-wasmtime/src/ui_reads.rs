@@ -147,8 +147,10 @@ pub(crate) enum FactoryRequest {
         crate::api_reads::Endpoint,
         Reply,
     ),
-    /// Reads the identity of the current authored editor factory.
-    GetEditorComponent(Sender<Result<Option<u32>, String>>),
+    /// Reads the current editor factory: one this extension set, or another's, lent.
+    GetEditorComponent(
+        Sender<Result<Option<Result<u32, crate::widget_foreign::FactoryEndpoint>>, String>>,
+    ),
     /// Stacks an authored provider factory on the completion provider.
     AutocompleteProvider(
         crate::guest_calls::Handle,
