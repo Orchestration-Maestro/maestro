@@ -121,6 +121,18 @@ interface host {
     record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
     /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
     model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Retained original native options, including hooks and opaque controls.
+    resource provider-controls {
+        invoke: async func(phase: model-hook, data: string, model: string, signal: option<borrow<abort-signal>>, owner: option<borrow<callback>>) -> result<payload-selection, string>;
+    }
+    /// Capabilities lent to the registered guest provider independently of its caller.
+    record provider-input { controls: provider-controls, signal: option<abort-signal>, payload: bool, response: bool }
+    /// Setup on the original authored provider.
+    record local-provider { target: u32, data: string, input: provider-input }
+    /// Operations on the original returned assistant stream.
+    enum assistant-operation { push, end, next, %result }
+    /// An operation with ordinary event or result data, never a stream identity.
+    record local-assistant { target: u32, operation: assistant-operation, data: option<string>, signal: option<abort-signal> }
     /// Native phase calling an awaited authored hook.
     enum model-hook { payload, response }
     /// Selected payload and optional original or replacement cancellation.
@@ -230,6 +242,8 @@ interface host {
         synchronous(local-synchronous),
         schema(local-schema),
         %stream(local-stream),
+        provider(local-provider),
+        assistant(local-assistant),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -254,6 +268,8 @@ interface host {
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
         %stream(result<stream-selection, string>),
+        provider(result<callback, string>),
+        assistant(result<option<string>, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
@@ -465,7 +481,7 @@ interface host {
         get-provider-display-name: func(provider: string) -> result<string, string>;
         is-using-oauth: func(model: string) -> result<bool, string>;
         /// Registers JSON provider data directly in this catalog.
-        register-provider: func(name: string, config: string) -> import-route;
+        register-provider: func(name: string, config: string, %stream: option<borrow<callback>>) -> import-route;
         unregister-provider: func(name: string) -> import-route;
         get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
@@ -569,7 +585,7 @@ interface host {
     /// Registers authored tool data and callbacks.
     register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
     /// Registers JSON provider data, queued until the host binds.
-    register-provider: func(name: string, config: string) -> import-route;
+    register-provider: func(name: string, config: string, %stream: option<borrow<callback>>) -> import-route;
     /// Unregisters a provider, including its queued registrations.
     unregister-provider: func(name: string) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.

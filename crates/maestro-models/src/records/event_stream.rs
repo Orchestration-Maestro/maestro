@@ -392,11 +392,42 @@ impl<T, R> Drop for Observing<T, R> {
 
 use super::types::{AssistantMessageEvent, SharedAssistantMessage};
 
-/// Assistant-event FIFO with an independently observable shared final message.
+/// Operations on an assistant stream whose original owner retains buffering and settlement.
+pub trait AssistantMessageEventStreamPort {
+    /// Admit an update or the first terminal event on the original stream.
+    fn push(&self, event: AssistantMessageEvent);
+    /// End the original stream without replacing its published result.
+    fn end(&self, result: Option<SharedAssistantMessage>);
+    /// Observe one competing-reader event or EOF.
+    fn next(&self) -> super::types::BoxFuture<Option<AssistantMessageEvent>>;
+    /// Observe the original independently settled final message.
+    fn result(&self) -> super::types::BoxFuture<SharedAssistantMessage>;
+}
+impl AssistantMessageEventStreamPort
+    for EventStream<AssistantMessageEvent, SharedAssistantMessage>
+{
+    fn push(&self, event: AssistantMessageEvent) {
+        Self::push(self, event);
+    }
+    fn end(&self, result: Option<SharedAssistantMessage>) {
+        Self::end(self, result);
+    }
+    fn next(&self) -> super::types::BoxFuture<Option<AssistantMessageEvent>> {
+        Box::pin(Self::next(self))
+    }
+    fn result(&self) -> super::types::BoxFuture<SharedAssistantMessage> {
+        Box::pin(Self::result(self))
+    }
+}
+/// Assistant-event stream retaining its original buffer and independently settled message.
 #[derive(Clone)]
 pub struct AssistantMessageEventStream {
-    /// Generic FIFO carrying assistant events and the shared final message.
-    inner: EventStream<AssistantMessageEvent, SharedAssistantMessage>,
+    /// Original native or imported stream operations, shared by every alias.
+    #[cfg(not(target_arch = "wasm32"))]
+    inner: Arc<dyn AssistantMessageEventStreamPort + Send + Sync>,
+    /// Browser operations retain the same local ownership as native browser callbacks.
+    #[cfg(target_arch = "wasm32")]
+    inner: std::rc::Rc<dyn AssistantMessageEventStreamPort>,
 }
 impl Default for AssistantMessageEventStream {
     fn default() -> Self {
@@ -404,13 +435,28 @@ impl Default for AssistantMessageEventStream {
     }
 }
 impl AssistantMessageEventStream {
-    /// Create an empty assistant stream.
+    /// Create the ordinary native FIFO with its existing terminal projection.
     #[must_use]
     pub fn new() -> Self {
+        Self::from_port(EventStream::new(
+            AssistantMessageEvent::is_terminal,
+            |event| Arc::clone(event.message()),
+        ))
+    }
+    /// Front an owned stream without adding a queue, reducer or result settlement.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[must_use]
+    pub fn from_port(port: impl AssistantMessageEventStreamPort + Send + Sync + 'static) -> Self {
         Self {
-            inner: EventStream::new(AssistantMessageEvent::is_terminal, |event| {
-                Arc::clone(event.message())
-            }),
+            inner: Arc::new(port),
+        }
+    }
+    /// Front a browser-local stream without adding a second buffer.
+    #[cfg(target_arch = "wasm32")]
+    #[must_use]
+    pub fn from_port(port: impl AssistantMessageEventStreamPort + 'static) -> Self {
+        Self {
+            inner: std::rc::Rc::new(port),
         }
     }
     /// Admit an assistant update or terminal event.
