@@ -62,15 +62,22 @@ pub async fn generic_values() -> ExtensionResult<String> {
     .to_string())
 }
 
+#[path = "assistant_streams.rs"]
+mod assistant;
 #[path = "stream_reads.rs"]
-mod reads;
+pub(super) mod reads;
 #[path = "stream_reentry.rs"]
 mod reentry;
+#[path = "stream_work.rs"]
+mod work;
 
 /// Dispatch one bounded authored-stream observation.
 pub async fn command(request: &str) -> ExtensionResult<String> {
     let report = match request {
         "generic" => return generic_values().await,
+        "admission" => work::admission().await?,
+        "assistant-events" => assistant::events().await?,
+        "assistant-results" => assistant::results().await?,
         "readers" => reads::readers().await?,
         "terminal-readers" => reads::terminal_readers().await?,
         "optional-results" => reads::optional_results().await?,

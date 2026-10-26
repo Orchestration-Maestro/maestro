@@ -408,28 +408,9 @@ impl AssistantMessageEventStream {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            inner: EventStream::new(
-                |event| {
-                    matches!(
-                        event,
-                        AssistantMessageEvent::Done { .. } | AssistantMessageEvent::Error { .. }
-                    )
-                },
-                |event| match event {
-                    AssistantMessageEvent::Done { message, .. } => Arc::clone(message),
-                    AssistantMessageEvent::Error { error, .. } => Arc::clone(error),
-                    AssistantMessageEvent::Start { partial }
-                    | AssistantMessageEvent::TextStart { partial, .. }
-                    | AssistantMessageEvent::TextDelta { partial, .. }
-                    | AssistantMessageEvent::TextEnd { partial, .. }
-                    | AssistantMessageEvent::ThinkingStart { partial, .. }
-                    | AssistantMessageEvent::ThinkingDelta { partial, .. }
-                    | AssistantMessageEvent::ThinkingEnd { partial, .. }
-                    | AssistantMessageEvent::ToolcallStart { partial, .. }
-                    | AssistantMessageEvent::ToolcallDelta { partial, .. }
-                    | AssistantMessageEvent::ToolcallEnd { partial, .. } => Arc::clone(partial),
-                },
-            ),
+            inner: EventStream::new(AssistantMessageEvent::is_terminal, |event| {
+                Arc::clone(event.message())
+            }),
         }
     }
     /// Admit an assistant update or terminal event.

@@ -34,4 +34,5 @@ mod model_support;
 #[path = "../../maestro-extensions/tests/support/command_operations.rs"]
 mod context_actions;
 
+mod authored_stream_lifetimes;
 mod authored_streams;

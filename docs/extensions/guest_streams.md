@@ -50,8 +50,34 @@ result observations share the same `Rc<R>`, without requiring `R: Clone`.
 can settle that pending observation, including when `value` is JSON null, false or
 zero. Once published, the first result is not replaced.
 
+Dropping a result-observation future does not cancel an independently owned producer
+or another observation. A result alias remains usable after the stream is dropped;
+the result is released after its last alias. The producer owns cancellation policy:
+an authored producer can subscribe to the caller's signal and end its stream explicitly.
+Final host-owned value releases wait for Store quiescence. Their destructors run
+outside callback-storage borrows and may create another stream.
+
+Admission forwards each accepted event once, without rescanning its history. The
+classifier runs once per accepted event and the extractor once for the first terminal
+event. The compiled-guest checks cover 64, 128 and 256 events, with a deliberate
+history-rescan control to distinguish quadratic work.
+
 Alternate adapters implement `EventStreamPort<T, R>` and use `from_port`. Native
 model-library callers retain the default threaded callbacks; its `Local` execution
 family accepts local captures through `EventStream::<T, R, Local>::new_local`.
-These operations do not yet provide model invocation, assistant-stream forwarding
-or awaited provider hooks.
+
+## Assistant event streams
+
+`AssistantMessageEventStream::new()` and `create_assistant_message_event_stream()`
+create the assistant specialization on that same native FIFO. Native and guest
+streams use the shared event record's `is_terminal()` and `message()` projections;
+neither copies a terminal classifier or reconstructs message content from deltas.
+
+`push`, `end`, `next` and `result` retain original shared assistant messages. Partial
+events still see edits through their shared message handle after admission. Done
+reasons stop, length and tool use select the supplied final message; error and
+aborted events select the supplied error message. Repeated `result()` calls return
+the same shared message owner without draining queued events. All supplied content,
+usage, costs, tool arguments, diagnostics and optional fields remain intact.
+
+These operations do not yet provide model invocation or awaited provider hooks.
