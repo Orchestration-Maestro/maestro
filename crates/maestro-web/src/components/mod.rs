@@ -1,4 +1,6 @@
 //! Browser attachment components.
+/// The session view composing the transcript and the editor.
+pub mod agent_interface;
 pub mod attachment_tile;
 pub mod diff;
 /// Native single-line input.

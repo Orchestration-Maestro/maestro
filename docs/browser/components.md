@@ -171,6 +171,33 @@ model control focuses the text field first, so focus returns there, then calls
 `on_model_select` on the next frame. `EditorControls` hides the attachment, model
 or level control.
 
+## Session view
+
+[`AgentInterface::new`](../../crates/maestro-web/src/components/agent_interface/browser.rs)
+shows a `BrowserSession`, a local agent over the browser message records: the
+completed history, the streaming response and the message editor, with the
+summed assistant usage below. Without a session it reads "No session set".
+`update` with a different session moves the subscription to it, and dropping the
+view ends the subscription and its observations. The view gives a session only
+what it lacks: the page's task spawner, a stream that reads the stored proxy
+settings on every request, and a key lookup that reads the stored provider key,
+else the key of the stored custom provider of that name.
+
+`send_message`, which the editor's Send also calls, ignores a blank draft without
+attachments and any send while a response streams. A provider with no stored key
+asks `on_api_key_required`; a refusal, or no callback, keeps the draft. The
+`on_before_send` hook runs next and its failure also keeps the draft. Only then
+is the draft cleared and the prompt started, carrying the original attachments
+as a user message with attachments. A finished response moves into the history
+once and leaves the streaming area.
+
+The transcript follows new content until the reader scrolls up from a nonzero
+offset more than 50 px from the bottom; coming within 10 px resumes it, and a
+shrinking viewport is ignored as relayout. `set_auto_scroll` sets it directly and
+`set_input` replaces the draft. With `on_cost_click` the usage totals are a
+button. `on_model_select` replaces the built-in model selector, and the level
+menu changes the session's reasoning level unless `controls.thinking` is off.
+
 ## Styles
 
 The page installs the dialog stylesheet with the other built-in element styles

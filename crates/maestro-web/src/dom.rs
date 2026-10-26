@@ -235,6 +235,7 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("dom.css"));
     css.push_str(include_str!("dialogs/dialogs.css"));
     css.push_str(include_str!("components/message_editor.css"));
+    css.push_str(include_str!("components/agent_interface.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))
 }

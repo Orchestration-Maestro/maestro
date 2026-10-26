@@ -6,6 +6,11 @@ pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
 pub mod dom;
+#[cfg(target_arch = "wasm32")]
+pub use components::agent_interface::AgentInterface;
+pub use components::agent_interface::{
+    AgentInterfaceProps, ApiKeyRequired, BeforeSend, BrowserSession,
+};
 pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
 #[cfg(target_arch = "wasm32")]
@@ -60,7 +65,8 @@ pub use maestro_app::browser::utils::attachment_utils::{
     Attachment, SharedAttachment, load_attachment,
 };
 pub use maestro_app::browser::utils::proxy_utils::{
-    apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
+    apply_proxy_if_needed, create_local_stream_fn, create_stream_fn, is_cors_error,
+    should_use_proxy_for_provider,
 };
 
 pub use maestro_app::{

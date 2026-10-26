@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_interface_browser;
 pub mod artifact_card_support;
 mod artifact_elements;
 mod artifact_elements_browser;

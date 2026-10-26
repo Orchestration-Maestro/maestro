@@ -2,6 +2,11 @@
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
+/// The conversation owner and its construction, state, input and subscription records.
+pub use maestro_agent::{
+    Agent, AgentInitialState, AgentListener, AgentOptions, AgentSpawner, AgentState, PromptInput,
+    Subscription,
+};
 pub use maestro_agent::{
     AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, SharedAgentTool, StreamFn,
 };
