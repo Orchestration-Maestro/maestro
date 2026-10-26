@@ -85,9 +85,10 @@ command below.
 
 ## Input, timers and dialogs
 
-[Browser input, timers and dialogs](components.md) reuse the attachment content host for
-native editing, owned callbacks and dialog reading/semantic controls. The retained browser `Input` is
-distinct from the terminal toolkit input.
+[Browser input, timers and dialogs](components.md) mount native fields and dialogs as page
+content, including the model picker, the provider and key dialogs, the settings dialog, the saved
+session list and the storage permission request. The browser `Input` is distinct from the terminal
+toolkit input.
 
 ## Sandbox messages
 

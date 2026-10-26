@@ -618,7 +618,6 @@ pub fn reading_frame_repaint_preserves_single_scroller_and_native_state() {
 #[wasm_bindgen]
 pub fn reading_frame_transitions_restore_both_nodes_after_failure() {
     reading_candidate_setup_failures_keep_the_published_root();
-    reading_input_transition_keeps_caller_class_and_native_events();
     for route in [Route::Retained, Route::Replacement] {
         for node in ["frame", "viewport", "slot0", "slot1", "slot2"] {
             slot_failure_moments(route, node);
@@ -739,55 +738,6 @@ fn reading_candidate_setup_failures_keep_the_published_root() {
     unchanged(&old);
     slots.publish(egui::vec2(300., 40.), &[]);
     assert!(!js(&old, "return value.root.isConnected").as_bool().unwrap());
-}
-
-/// A direct-child input replacement clears reading markers without losing its own class.
-fn reading_input_transition_keeps_caller_class_and_native_events() {
-    use maestro_web::browser::attachment_content::{AttachmentContent, AttachmentSurface};
-    use maestro_web::components::input::InputProps;
-    let slots = Slots::new();
-    slots.publish(egui::vec2(300., 40.), &[]);
-    let old = slots.root();
-    let reference = Rc::new(std::cell::RefCell::new(None));
-    let calls = Rc::new(std::cell::Cell::new(0));
-    let observed = Rc::clone(&calls);
-    let props = InputProps {
-        class_name: "caller-input".into(),
-        input_ref: Some(Rc::clone(&reference)),
-        on_input: Some(Rc::new(move |_| observed.set(observed.get() + 1))),
-        ..Default::default()
-    };
-    slots
-        .host
-        .present(
-            AttachmentSurface {
-                id: slots.id,
-                rect: egui::Rect::from_min_size(slots.origin, egui::vec2(300., 40.)),
-                clip_rect: egui::Rect::EVERYTHING,
-                pixels_per_point: 1.,
-                opacity: 1.,
-                occluders: vec![],
-                content: AttachmentContent::Input {
-                    props: &props,
-                    accessible_label: "native input",
-                    value_changed: true,
-                    modal: None,
-                    context: &slots.context,
-                },
-            },
-            &slots.pack.presentation(BrandMode::Dark).unwrap(),
-        )
-        .unwrap();
-    assert!(!old.is_connected());
-    let input = reference.borrow().as_ref().unwrap().clone();
-    assert_eq!(input.parent_element().unwrap().class_name(), "caller-input");
-    js(&input, "value.dispatchEvent(new Event('input'))");
-    assert_eq!(calls.get(), 1);
-    slots.publish(egui::vec2(300., 40.), &[]);
-    assert!(!input.is_connected());
-    assert!(reference.borrow().is_none());
-    js(&input, "value.dispatchEvent(new Event('input'))");
-    assert_eq!(calls.get(), 1);
 }
 
 /// Exercise every before/after and publication boundary for one retained node.

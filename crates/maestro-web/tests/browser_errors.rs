@@ -5,8 +5,7 @@ use crate::support::tool_output::TextOnlyOutput as _;
 use maestro_web::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
-    components::input::InputUiError,
-    dialogs::{attachment_overlay::AttachmentUiError, dialog::DialogUiError},
+    dialogs::attachment_overlay::AttachmentUiError,
     icons::{IconError, IconSize, icon},
     tools::artifacts::{ArtifactUiError, PresentationCause},
 };
@@ -35,8 +34,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
             Box::new(ArtifactUiError::Presentation(PresentationCause::from(
                 message.to_owned(),
             ))),
-            Box::new(InputUiError::Presentation(message.into())),
-            Box::new(DialogUiError::Presentation(message.into())),
         ];
         for error in errors {
             assert_eq!(error.to_string(), message);
@@ -47,7 +44,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
         Box::new(AttachmentHostError::BorrowConflict) as Box<dyn Error>,
         Box::new(AttachmentUiError::BorrowConflict),
         Box::new(ArtifactUiError::BorrowConflict),
-        Box::new(DialogUiError::BorrowConflict),
     ] {
         assert_eq!(error.to_string(), "Attachment is already borrowed");
         assert!(error.source().is_none());
@@ -56,7 +52,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
         for make in [ControlError::Host, ControlError::Presentation] {
             let errors: Vec<Box<dyn Error>> = vec![
                 Box::new(AttachmentUiError::Control(make(message.into()))),
-                Box::new(DialogUiError::Control(make(message.into()))),
                 Box::new(ArtifactUiError::Control(make(message.into()))),
             ];
             for error in errors {
@@ -73,8 +68,6 @@ fn leaf_sources() {
     let localization: Vec<Box<dyn Error>> = vec![
         Box::new(AttachmentUiError::from(I18nError::NotText("*".into()))),
         Box::new(ArtifactUiError::from(I18nError::NotText("*".into()))),
-        Box::new(InputUiError::from(I18nError::NotText("*".into()))),
-        Box::new(DialogUiError::from(I18nError::NotText("*".into()))),
     ];
     for error in localization {
         assert_eq!(error.to_string(), "Translation is not text: *");
@@ -84,7 +77,6 @@ fn leaf_sources() {
         Box::new(ControlError::from(icon_error())),
         Box::new(AttachmentUiError::from(ControlError::from(icon_error()))),
         Box::new(ArtifactUiError::from(ControlError::from(icon_error()))),
-        Box::new(DialogUiError::from(ControlError::from(icon_error()))),
     ];
     for error in controls {
         let original = error.source().unwrap().downcast_ref::<IconError>().unwrap();
@@ -94,8 +86,6 @@ fn leaf_sources() {
     let hosts: Vec<Box<dyn Error>> = vec![
         Box::new(AttachmentUiError::from(AttachmentHostError::BorrowConflict)),
         Box::new(ArtifactUiError::from(AttachmentHostError::BorrowConflict)),
-        Box::new(InputUiError::from(AttachmentHostError::BorrowConflict)),
-        Box::new(DialogUiError::from(AttachmentHostError::BorrowConflict)),
     ];
     for error in hosts {
         assert_eq!(error.to_string(), "Attachment is already borrowed");

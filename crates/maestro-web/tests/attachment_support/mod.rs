@@ -68,26 +68,6 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
     }
-    fn capture_focus(
-        &self,
-    ) -> Result<
-        Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentHostError,
-    > {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn restore_focus(
-        &self,
-        _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
-        unreachable!("no dialog measurement in this adapter")
-    }
-    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
-        unreachable!("no native dialog key in this adapter")
-    }
 
     fn reading_layout(
         &self,
@@ -107,9 +87,6 @@ impl AttachmentHost for Host {
     ) -> Result<(), AttachmentHostError> {
         let content = match s.content {
             AttachmentContent::Reading(reading) => Content::Reading(reading.content, reading.phase),
-            AttachmentContent::Input { .. } => {
-                unreachable!("attachment suite does not create inputs")
-            }
             AttachmentContent::Image { source, alt, fit } => {
                 Content::Image(source.into(), alt.into(), fit)
             }
@@ -154,9 +131,6 @@ impl AttachmentHost for Host {
     }
     fn remove(&self, id: egui::Id) {
         self.effects.borrow_mut().push(format!("remove:{id:?}"));
-    }
-    fn take_escape(&self) -> bool {
-        false
     }
     fn timer(
         &self,

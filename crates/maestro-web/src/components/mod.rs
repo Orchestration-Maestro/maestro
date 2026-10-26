@@ -1,7 +1,8 @@
 //! Browser attachment components.
 pub mod attachment_tile;
 pub mod diff;
-/// Retained single-line browser input.
+/// Native single-line input.
+#[cfg(target_arch = "wasm32")]
 pub mod input;
 /// Open custom-message role callbacks.
 pub mod message_renderer_registry;
@@ -35,5 +36,8 @@ pub mod console_block;
 pub mod custom_provider_card;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
+/// Masked provider key entry tested before saving.
+#[cfg(target_arch = "wasm32")]
+pub mod provider_key_input;
 
 pub mod expandable_section;

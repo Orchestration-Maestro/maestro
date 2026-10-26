@@ -8,6 +8,7 @@ pub mod docx_preview;
 pub mod dom;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
+#[cfg(target_arch = "wasm32")]
 pub use components::input::Input;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
@@ -16,14 +17,28 @@ pub use components::messages::{
     AbortedMessage, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageDebugView,
     ToolMessageProps, UserMessage, UserMessageInput,
 };
+#[cfg(target_arch = "wasm32")]
+pub use components::provider_key_input::ProviderKeyInput;
 pub use components::thinking_block::ThinkingBlock;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
+#[cfg(target_arch = "wasm32")]
+pub use dialogs::{
+    api_key_prompt_dialog::ApiKeyPromptDialog,
+    custom_provider_dialog::CustomProviderDialog,
+    model_selector_dialog::ModelSelector,
+    persistent_storage_dialog::PersistentStorageDialog,
+    providers_models_tab::ProvidersModelsTab,
+    session_list_dialog::SessionListDialog,
+    settings_dialog::{ApiKeysTab, ProxyTab, SettingsDialog, SettingsTab},
+};
 pub mod export_html;
 pub mod icons;
 pub mod storage;
 #[cfg(target_arch = "wasm32")]
 pub use storage::backends::indexeddb_storage_backend::IndexedDBStorageBackend;
 pub mod utils;
+#[cfg(target_arch = "wasm32")]
+pub use utils::auth_token::{clear_auth_token, get_auth_token};
 pub use utils::format::{format_cost, format_model_cost, format_token_count, format_usage};
 #[cfg(target_arch = "wasm32")]
 pub use utils::i18n::BrowserLanguageHost;

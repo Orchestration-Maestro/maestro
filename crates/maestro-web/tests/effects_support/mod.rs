@@ -115,26 +115,6 @@ impl AttachmentHost for Host {
             result.get().map_or(Poll::Pending, Poll::Ready)
         }))
     }
-    fn capture_focus(
-        &self,
-    ) -> Result<
-        Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentHostError,
-    > {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn restore_focus(
-        &self,
-        _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
-        unreachable!("no dialog measurement in this adapter")
-    }
-    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
-        unreachable!("no native dialog key in this adapter")
-    }
 
     fn reading_layout(
         &self,
@@ -193,9 +173,6 @@ impl AttachmentHost for Host {
             self.layouts.borrow_mut().insert(surface.id, controls);
         }
         Ok(())
-    }
-    fn take_escape(&self) -> bool {
-        false
     }
     fn remove(&self, id: egui::Id) {
         self.removed.borrow_mut().push(id);

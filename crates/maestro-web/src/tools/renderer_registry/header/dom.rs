@@ -1,6 +1,7 @@
 //! Page-content status header.
 use crate::{
     browser::attachment_content::browser::{element, host_error},
+    dom::icon,
     tools::{renderer_registry::ToolHeaderState, types::ToolUiError},
 };
 use web_sys::{Document, Element};
@@ -38,16 +39,4 @@ pub(crate) fn render_header(
             .map_err(|error| host_error(&error))?;
     }
     Ok(header)
-}
-/// One small icon in a classed span.
-fn icon(document: &Document, name: &str, class: &str) -> Result<Element, ToolUiError> {
-    let node = crate::icons::icon_node(name)
-        .map_err(|error| ToolUiError::Presentation(error.to_string()))?
-        .ok_or_else(|| ToolUiError::Presentation(format!("Missing icon {name}")))?;
-    let span = element(document, "span", class)?;
-    let svg = crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)
-        .map_err(|error| host_error(&error))?;
-    span.append_child(&svg)
-        .map_err(|error| host_error(&error))?;
-    Ok(span)
 }
