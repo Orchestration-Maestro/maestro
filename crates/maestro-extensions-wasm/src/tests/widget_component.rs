@@ -763,3 +763,210 @@ impl host::HostSubmenuDone for State {
         self.release(this)
     }
 }
+
+/// Bindings in their wire form.
+type WireConfig = Vec<(String, Option<host::KeybindingKeys>)>;
+
+/// Host type of one keybindings manager, by key.
+pub struct KeybindingsResource(pub u32);
+
+/// Keys from their wire form.
+fn keys(keys: host::KeybindingKeys) -> crate::KeybindingKeys {
+    match keys {
+        host::KeybindingKeys::Single(key) => crate::KeybindingKeys::Single(key),
+        host::KeybindingKeys::Multiple(keys) => crate::KeybindingKeys::Multiple(keys),
+    }
+}
+
+/// The wire form of keys.
+fn wire_keys(keys: crate::KeybindingKeys) -> host::KeybindingKeys {
+    match keys {
+        crate::KeybindingKeys::Single(key) => host::KeybindingKeys::Single(key),
+        crate::KeybindingKeys::Multiple(keys) => host::KeybindingKeys::Multiple(keys),
+    }
+}
+
+/// Bindings from their wire form.
+pub(super) fn config(config: WireConfig) -> crate::KeybindingsConfig {
+    config
+        .into_iter()
+        .map(|(id, bound)| (id, bound.map(keys)))
+        .collect()
+}
+
+/// The wire form of bindings.
+fn wire_config(config: crate::KeybindingsConfig) -> WireConfig {
+    config
+        .into_iter()
+        .map(|(id, bound)| (id, bound.map(wire_keys)))
+        .collect()
+}
+
+/// Definitions from their wire form.
+pub(super) fn definitions(
+    definitions: Vec<(String, host::KeybindingDefinition)>,
+) -> crate::KeybindingDefinitions {
+    definitions
+        .into_iter()
+        .map(|(id, definition)| {
+            let definition = crate::KeybindingDefinition {
+                default_keys: keys(definition.default_keys),
+                description: definition.description,
+            };
+            (id, definition)
+        })
+        .collect()
+}
+
+impl State {
+    /// Answers one request on `this`.
+    fn keys_request(
+        &mut self,
+        this: &Resource<KeybindingsResource>,
+        request: super::widget_keys::Request,
+    ) -> wasmtime::Result<super::widget_keys::Answer> {
+        let key = self.table.get(this)?.0;
+        Ok(super::widget_keys::request(
+            &mut self.observed,
+            key,
+            request,
+        ))
+    }
+
+    /// Keeps a manager and lends it.
+    pub(super) fn keep_keys(
+        &mut self,
+        definitions: Option<crate::KeybindingDefinitions>,
+        user: crate::KeybindingsConfig,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<KeybindingsResource>, String>> {
+        let key = super::widget_keys::keep(&mut self.observed, definitions, user, path);
+        Ok(Ok(self.push(KeybindingsResource(key))?))
+    }
+}
+
+impl host::HostKeybindingsManager for State {
+    fn matches(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+        data: String,
+        keybinding: String,
+    ) -> wasmtime::Result<Result<bool, String>> {
+        let request = super::widget_keys::Request::Matches(data, keybinding);
+        match self.keys_request(&this, request)? {
+            super::widget_keys::Answer::Matched(matched) => Ok(Ok(matched)),
+            _ => Ok(Err("no match".to_owned())),
+        }
+    }
+    fn get_keys(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+        keybinding: String,
+    ) -> wasmtime::Result<Result<Vec<String>, String>> {
+        match self.keys_request(&this, super::widget_keys::Request::Keys(keybinding))? {
+            super::widget_keys::Answer::Keys(keys) => Ok(Ok(keys)),
+            _ => Ok(Err("no keys".to_owned())),
+        }
+    }
+    fn get_definition(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+        keybinding: String,
+    ) -> wasmtime::Result<Result<Option<host::KeybindingDefinition>, String>> {
+        let request = super::widget_keys::Request::Definition(keybinding);
+        match self.keys_request(&this, request)? {
+            super::widget_keys::Answer::Definition(definition) => {
+                Ok(Ok(definition.map(|definition| {
+                    host::KeybindingDefinition {
+                        default_keys: wire_keys(definition.default_keys),
+                        description: definition.description,
+                    }
+                })))
+            }
+            _ => Ok(Err("no definition".to_owned())),
+        }
+    }
+    fn get_conflicts(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+    ) -> wasmtime::Result<Result<Vec<host::KeybindingConflict>, String>> {
+        match self.keys_request(&this, super::widget_keys::Request::Conflicts)? {
+            super::widget_keys::Answer::Conflicts(conflicts) => Ok(Ok(conflicts
+                .into_iter()
+                .map(|conflict| host::KeybindingConflict {
+                    key: conflict.key,
+                    keybindings: conflict.keybindings,
+                })
+                .collect())),
+            _ => Ok(Err("no conflicts".to_owned())),
+        }
+    }
+    fn set_user_bindings(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+        user_bindings: WireConfig,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let request = super::widget_keys::Request::SetUserBindings(config(user_bindings));
+        self.keys_request(&this, request).map(|_| Ok(()))
+    }
+    fn get_user_bindings(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+    ) -> wasmtime::Result<Result<WireConfig, String>> {
+        self.keys_config(&this, super::widget_keys::Request::UserBindings)
+    }
+    fn get_resolved_bindings(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+    ) -> wasmtime::Result<Result<WireConfig, String>> {
+        self.keys_config(&this, super::widget_keys::Request::ResolvedBindings)
+    }
+    fn reload(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.keys_request(&this, super::widget_keys::Request::Reload)
+            .map(|_| Ok(()))
+    }
+    fn get_effective_config(
+        &mut self,
+        this: Resource<KeybindingsResource>,
+    ) -> wasmtime::Result<Result<WireConfig, String>> {
+        self.keys_config(&this, super::widget_keys::Request::EffectiveConfig)
+    }
+    fn drop(&mut self, this: Resource<KeybindingsResource>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl State {
+    /// Answers one request on `this` that answers bindings.
+    fn keys_config(
+        &mut self,
+        this: &Resource<KeybindingsResource>,
+        request: super::widget_keys::Request,
+    ) -> wasmtime::Result<Result<WireConfig, String>> {
+        match self.keys_request(this, request)? {
+            super::widget_keys::Answer::Config(config) => Ok(Ok(wire_config(config))),
+            _ => Ok(Err("no bindings".to_owned())),
+        }
+    }
+
+    /// Lends the editor border and the selection list styles.
+    pub(super) fn editor_theme(&mut self) -> wasmtime::Result<host::EditorTheme> {
+        self.observed.log("getEditorTheme");
+        let mut role = |name: &str| self.push(StyleResource(name.to_owned()));
+        let border_color = role("borderMuted")?;
+        let select_list = host::SelectListTheme {
+            selected_prefix: role("selectedPrefix")?,
+            selected_text: role("selectedText")?,
+            description: role("description")?,
+            scroll_info: role("scrollInfo")?,
+            no_match: role("noMatch")?,
+        };
+        Ok(host::EditorTheme {
+            border_color,
+            select_list,
+        })
+    }
+}

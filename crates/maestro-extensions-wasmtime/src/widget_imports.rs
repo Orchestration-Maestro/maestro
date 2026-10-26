@@ -282,6 +282,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     methods(host)?;
     children(host)?;
     crate::widget_list_imports::add_to_linker(host)?;
+    crate::keys_imports::add_to_linker(host)?;
     lent(host)
 }
 

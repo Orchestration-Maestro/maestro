@@ -21,6 +21,9 @@ mod glue;
 #[path = "generated_widgets.rs"]
 mod widgets;
 
+#[path = "generated_keys.rs"]
+mod keys;
+
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;

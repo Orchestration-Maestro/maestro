@@ -36,7 +36,7 @@ pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecu
 pub use maestro_extensions::MessageRendererCall;
 
 /// The application's bordered loader, as an extension holds it.
-pub use maestro_extensions::widgets::ExtensionLoader;
+pub use maestro_extensions::widgets::{ExtensionKeybindings, ExtensionLoader};
 
 /// Creates an empty shared event bus whose default callbacks use the thread-safe family.
 ///

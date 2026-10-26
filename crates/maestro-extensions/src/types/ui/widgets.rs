@@ -1,9 +1,20 @@
 //! The host capability that builds the extension widgets whose look depends on the host.
 use maestro_theme::Theme;
 use maestro_tui::{
-    Cancellation, Component, Container, Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme,
-    SettingsListTheme, TUI, editor_component::BorderColor, tui::ComponentHandle,
+    Cancellation, Component, Container, EditorTheme, KeybindingsConfig, KeybindingsManager,
+    Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme, SettingsListTheme, TUI,
+    editor_component::BorderColor, tui::ComponentHandle,
 };
+
+/// A keybindings manager an extension holds, with the reload of an application manager that
+/// has a file.
+#[derive(Clone)]
+pub struct ExtensionKeybindings {
+    /// The manager; clones share its bindings.
+    pub manager: KeybindingsManager,
+    /// Reloads the user bindings from the manager's file.
+    pub reload: Option<Rc<dyn Fn()>>,
+}
 use std::rc::Rc;
 
 /// The application's bordered loader, as an extension holds it.
@@ -52,4 +63,30 @@ pub trait ExtensionWidgets {
         message: String,
         cancellable: bool,
     ) -> Result<Rc<dyn ExtensionLoader>, String>;
+    /// A manager of the application's keybindings with `user_bindings`, reloading from
+    /// `config_path`.
+    fn keybindings(
+        &self,
+        user_bindings: KeybindingsConfig,
+        config_path: Option<String>,
+    ) -> ExtensionKeybindings;
+    /// A manager of the application's keybindings loaded from `agent_dir`, or from the host's
+    /// agent directory.
+    ///
+    /// # Errors
+    /// Returns the failure to find the host's agent directory.
+    fn create_keybindings(&self, agent_dir: Option<String>)
+    -> Result<ExtensionKeybindings, String>;
+    /// Editor styles that read the live theme when they run.
+    fn editor_theme(&self) -> EditorTheme;
+    /// The keys of `keybinding` and `description`, styled with the live theme.
+    ///
+    /// # Errors
+    /// Returns the theme's failure, such as a theme that is not published yet.
+    fn key_hint(&self, keybinding: &str, description: &str) -> Result<String, String>;
+    /// A literal `key` and `description`, styled with the live theme.
+    ///
+    /// # Errors
+    /// Returns the theme's failure, such as a theme that is not published yet.
+    fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String>;
 }

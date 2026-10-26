@@ -18,7 +18,7 @@ use std::{
     ops::Deref,
     rc::Rc,
 };
-pub use widgets::{ExtensionLoader, ExtensionWidgets};
+pub use widgets::{ExtensionKeybindings, ExtensionLoader, ExtensionWidgets};
 
 /// A local UI operation that settles with its result or the host's error.
 pub type ExtensionUIFuture<T> = <Local as Execution>::Future<'static, Result<T, EventError>>;

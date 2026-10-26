@@ -195,7 +195,9 @@ from the toolkit directly. `maestro_extensions::widgets` re-exports those toolki
 widgets beside the capability, and the chat crate's `ExtensionWidgetHost` implements it.
 The capability also lends the live theme's selection and settings list styles and builds the
 application's bordered loader as an `ExtensionLoader`, whose signal, abort notification,
-disposal and rows the extension keeps.
+disposal and rows the extension keeps. It builds the application's keybindings managers as
+`ExtensionKeybindings`, with the reload of a manager that has a file, and formats keybinding
+hints and editor styles with the live theme.
 
 ## Custom components
 

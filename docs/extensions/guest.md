@@ -486,6 +486,16 @@ loader built with `cancellable: Some(false)` ignores input. `get_select_list_the
 its row is selected. The first failure of an authored handler or style is the next `render`
 or `handle_input` error of its widget.
 
+`KeybindingsManager` is a manager the host keeps. `KeybindingsManager::new` and
+`KeybindingsManager::create` build one of the application's keybindings, with user bindings
+and the file `reload` reads, or loaded from `keybindings.json` in an agent directory;
+`from_definitions` builds one of supplied `KeybindingDefinition`s; `get_keybindings` returns
+the keybindings the host's terminal uses. A manager matches input, reads keys, definitions,
+conflicts, user, resolved and effective bindings, and replaces its user bindings; a manager
+without a file keeps its bindings on `reload`. `key_text`, `key_hint` and `raw_key_hint`
+format keybinding hints with the host's keybindings and live theme, and `get_editor_theme`
+lends the live editor styles.
+
 ### Themes and tool expansion
 
 `theme` returns the UI's live theme, which reads the host's later selections.

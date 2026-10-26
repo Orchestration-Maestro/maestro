@@ -24,6 +24,8 @@ mod guest_exports;
 mod history_imports;
 mod history_reads;
 mod import_route;
+mod keys_imports;
+mod keys_reads;
 mod lifecycle;
 mod local_resources;
 mod read_imports;

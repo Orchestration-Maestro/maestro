@@ -694,6 +694,78 @@ impl host::Host for State {
             no_match: role("noMatch")?,
         }))
     }
+    fn new_keybindings_manager(
+        &mut self,
+        user_bindings: Vec<(String, Option<host::KeybindingKeys>)>,
+        config_path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let user = super::widget_component::config(user_bindings);
+        self.keep_keys(None, user, config_path)
+    }
+    fn create_keybindings_manager(
+        &mut self,
+        agent_dir: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let path = format!(
+            "{}/keybindings.json",
+            agent_dir.as_deref().unwrap_or("/agent")
+        );
+        self.keep_keys(None, Vec::new(), Some(path))
+    }
+    fn new_keybindings_with_definitions(
+        &mut self,
+        definitions: Vec<(String, host::KeybindingDefinition)>,
+        user_bindings: Vec<(String, Option<host::KeybindingKeys>)>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let definitions = super::widget_component::definitions(definitions);
+        let user = super::widget_component::config(user_bindings);
+        self.keep_keys(Some(definitions), user, None)
+    }
+    fn get_keybindings(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        self.observed.log("getKeybindings");
+        Ok(Ok(
+            self.push(super::widget_component::KeybindingsResource(0))?
+        ))
+    }
+    fn key_text(&mut self, keybinding: String) -> wasmtime::Result<Result<String, String>> {
+        Ok(Ok(super::widget_keys::hint(
+            &mut self.observed,
+            Some(&keybinding),
+            None,
+            None,
+        )))
+    }
+    fn key_hint(
+        &mut self,
+        keybinding: String,
+        description: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let hint = super::widget_keys::hint(
+            &mut self.observed,
+            Some(&keybinding),
+            None,
+            Some(&description),
+        );
+        Ok(Ok(hint))
+    }
+    fn raw_key_hint(
+        &mut self,
+        key: String,
+        description: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let hint =
+            super::widget_keys::hint(&mut self.observed, None, Some(&key), Some(&description));
+        Ok(Ok(hint))
+    }
+    fn get_editor_theme(&mut self) -> wasmtime::Result<Result<host::EditorTheme, String>> {
+        self.editor_theme().map(Ok)
+    }
     fn get_settings_list_theme(
         &mut self,
     ) -> wasmtime::Result<Result<host::SettingsListTheme, String>> {

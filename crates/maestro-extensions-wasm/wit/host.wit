@@ -439,6 +439,45 @@ interface host {
     get-select-list-theme: func() -> result<select-list-theme, string>;
     /// The live theme's settings list styles.
     get-settings-list-theme: func() -> result<settings-list-theme, string>;
+    /// The keys of one keybinding: one key, or a list that may be empty.
+    variant keybinding-keys { single(string), multiple(list<string>) }
+    /// One keybinding's default keys and description.
+    record keybinding-definition { default-keys: keybinding-keys, description: option<string> }
+    /// Several keybindings a user bound to one key.
+    record keybinding-conflict { key: string, keybindings: list<string> }
+    /// Keybindings in their order, each with its keys or unset.
+    type keybindings-config = list<tuple<string, option<keybinding-keys>>>;
+    /// A keybindings manager the host keeps; clones observe each change of its bindings.
+    resource keybindings-manager {
+        matches: func(data: string, keybinding: string) -> result<bool, string>;
+        get-keys: func(keybinding: string) -> result<list<string>, string>;
+        get-definition: func(keybinding: string) -> result<option<keybinding-definition>, string>;
+        get-conflicts: func() -> result<list<keybinding-conflict>, string>;
+        set-user-bindings: func(user-bindings: keybindings-config) -> result<_, string>;
+        get-user-bindings: func() -> result<keybindings-config, string>;
+        get-resolved-bindings: func() -> result<keybindings-config, string>;
+        /// Reloads the user bindings from the manager's file; a manager without one keeps them.
+        reload: func() -> result<_, string>;
+        get-effective-config: func() -> result<keybindings-config, string>;
+    }
+    /// A manager of the application's keybindings with user bindings, reloading from a file.
+    new-keybindings-manager: func(user-bindings: keybindings-config, config-path: option<string>) -> result<keybindings-manager, string>;
+    /// A manager of the application's keybindings loaded from the agent directory's file.
+    create-keybindings-manager: func(agent-dir: option<string>) -> result<keybindings-manager, string>;
+    /// A manager of the supplied keybindings with user bindings.
+    new-keybindings-with-definitions: func(definitions: list<tuple<string, keybinding-definition>>, user-bindings: keybindings-config) -> result<keybindings-manager, string>;
+    /// The keybindings the host's terminal uses.
+    get-keybindings: func() -> result<keybindings-manager, string>;
+    /// The keys of a keybinding, joined with `/`.
+    key-text: func(keybinding: string) -> result<string, string>;
+    /// A keybinding's keys and a description, styled with the live theme.
+    key-hint: func(keybinding: string, description: string) -> result<string, string>;
+    /// A literal key and a description, styled with the live theme.
+    raw-key-hint: func(key: string, description: string) -> result<string, string>;
+    /// The live theme's editor border and selection list styles.
+    record editor-theme { border-color: style, select-list: select-list-theme }
+    /// The live theme's editor styles.
+    get-editor-theme: func() -> result<editor-theme, string>;
     /// Which renderer a tool rendering enters.
     enum tool-render-slot { call, %result }
     /// What a tool renderer reads about its row at this rendering.

@@ -261,6 +261,59 @@ fn extension_widget_host_builds_application_loaders_and_list_styles() {
 }
 
 #[test]
+fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles() {
+    use maestro_app::ExtensionWidgets;
+    use maestro_tui::KeybindingKeys;
+    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let host = maestro_chat::ExtensionWidgetHost::new(
+        live.clone(),
+        highlighter,
+        TerminalImage::new(|_| None, || 1),
+    );
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_str().unwrap().to_owned();
+    let user = vec![(
+        "tui.select.up".to_owned(),
+        Some(KeybindingKeys::Single("f3".to_owned())),
+    )];
+    let keybindings = host.keybindings(user.clone(), None);
+    assert_eq!(keybindings.manager.get_user_bindings(), user);
+    assert_eq!(keybindings.manager.get_keys("tui.select.up"), ["f3"]);
+    (keybindings.reload.unwrap())();
+    assert_eq!(
+        keybindings.manager.get_user_bindings(),
+        user,
+        "no file keeps the bindings"
+    );
+    let created = host.create_keybindings(Some(dir.clone())).unwrap();
+    std::fs::write(
+        format!("{dir}/keybindings.json"),
+        r#"{"tui.select.up":"f9"}"#,
+    )
+    .unwrap();
+    (created.reload.unwrap())();
+    assert_eq!(
+        created.manager.get_keys("tui.select.up"),
+        ["f9"],
+        "reloads its file"
+    );
+    let hint = host.key_hint("tui.select.up", "up").unwrap();
+    assert_eq!(
+        hint,
+        maestro_app::key_hint("tui.select.up", "up", &live).unwrap()
+    );
+    let raw = host.raw_key_hint("esc", "back").unwrap();
+    assert_eq!(
+        raw,
+        maestro_app::raw_key_hint("esc", "back", &live).unwrap()
+    );
+    let theme = host.editor_theme();
+    let direct = maestro_theme::get_editor_theme(live);
+    assert_eq!((theme.border_color)("x"), (direct.border_color)("x"));
+}
+
+#[test]
 fn border_returns_painter_output_without_preserving_rule_glyphs() {
     let state = published::unpublished();
     let border = DynamicBorder::new(state.theme(), Some(Rc::new(|text| text.replace('─', "="))));

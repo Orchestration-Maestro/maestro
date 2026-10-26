@@ -24,6 +24,7 @@ pub(crate) mod factories;
 mod generated;
 mod host_api;
 mod imports;
+mod keys;
 mod lists;
 mod model_registry;
 mod schema;
@@ -39,9 +40,9 @@ pub(crate) use lists::invoke_widget;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
 pub(crate) use widget_imports::{
-    ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme, LayoutRef,
-    MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle, WidgetAnswer,
-    WidgetEvent, WidgetImports,
+    ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme, KeyHint,
+    KeybindingsAnswer, KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef, SettingRef,
+    SettingsStyles, StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
 };
 #[cfg(test)]
 pub(crate) use widgets::authored_component;

@@ -20,6 +20,10 @@ use maestro_extensions_wasm::{
     SettingsListTheme, Spacer, Style, SubmenuDone, Text, TextDecoration, get_markdown_theme,
     get_select_list_theme, get_settings_list_theme,
 };
+use maestro_extensions_wasm::{
+    KeybindingDefinition, KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_editor_theme,
+    get_keybindings, key_hint, key_text, raw_key_hint,
+};
 use std::rc::Rc;
 
 /// A widget or authored component the author keeps under a name.
@@ -45,6 +49,8 @@ enum Kept {
     Settings(SettingsList),
     /// A bordered loader.
     Loader(BorderedLoader),
+    /// A keybindings manager.
+    Keys(KeybindingsManager),
 }
 
 impl Kept {
@@ -61,6 +67,10 @@ impl Kept {
             Self::Select(widget) => widget.into(),
             Self::Settings(widget) => widget.into(),
             Self::Loader(widget) => widget.into(),
+            Self::Keys(_) => Component::new(View {
+                name: "keys".to_owned(),
+                widgets: Vec::new(),
+            }),
         }
     }
 
@@ -77,6 +87,7 @@ impl Kept {
             Self::Select(widget) => widget.render(width),
             Self::Settings(widget) => widget.render(width),
             Self::Loader(widget) => widget.render(width),
+            Self::Keys(_) => Err("a keybindings manager renders nothing".to_owned()),
         }
     }
 
@@ -93,6 +104,7 @@ impl Kept {
             Self::Select(widget) => widget.invalidate(),
             Self::Settings(widget) => widget.invalidate(),
             Self::Loader(widget) => widget.invalidate(),
+            Self::Keys(_) => Ok(()),
         }
     }
 }
@@ -430,6 +442,58 @@ pub enum Step {
     ApplyList {
         /// Role.
         role: String,
+        /// Text.
+        text: String,
+    },
+    /// Keeps a keybindings manager: `new`, `create`, `definitions` or `global`.
+    Keybindings {
+        /// Name to keep it under.
+        name: String,
+        /// Where it comes from.
+        source: String,
+        /// User bindings of a new manager.
+        #[serde(default)]
+        user: Option<Value>,
+        /// File of a new manager.
+        #[serde(default)]
+        path: Option<String>,
+        /// Agent directory of a created manager.
+        #[serde(default)]
+        dir: Option<String>,
+        /// `[id, keys, description]` definitions.
+        #[serde(default)]
+        definitions: Option<Vec<(String, Value, Option<String>)>>,
+    },
+    /// One request on a kept keybindings manager.
+    Keys {
+        /// Kept name.
+        name: String,
+        /// The request.
+        op: String,
+        /// Input of a match.
+        #[serde(default)]
+        data: Option<String>,
+        /// Keybinding of a match, keys or definition.
+        #[serde(default)]
+        id: Option<String>,
+        /// User bindings to set.
+        #[serde(default)]
+        user: Option<Value>,
+    },
+    /// A keybinding's keys, or a keybinding or literal key hint.
+    Hint {
+        /// The keybinding.
+        #[serde(default)]
+        id: Option<String>,
+        /// The literal key.
+        #[serde(default)]
+        key: Option<String>,
+        /// The description.
+        #[serde(default)]
+        description: Option<String>,
+    },
+    /// Applies the live editor border and selected-text styles to `text`.
+    EditorTheme {
         /// Text.
         text: String,
     },
@@ -812,8 +876,169 @@ fn list_steps(step: Step) -> ExtensionResult<Value> {
             };
             Ok(json!(style.apply(&text, selected)?))
         }
+        step => keys_steps(step),
+    }
+}
+
+/// Keybinding keys from their script form: one key, or a list.
+fn keys_of(value: &Value) -> ExtensionResult<KeybindingKeys> {
+    match value {
+        Value::String(key) => Ok(KeybindingKeys::Single(key.clone())),
+        value => serde_json::from_value(value.clone())
+            .map(KeybindingKeys::Multiple)
+            .map_err(|error| error.to_string()),
+    }
+}
+
+/// Bindings from their script form: `[id, keys or null]` pairs.
+fn bindings(value: Option<Value>) -> ExtensionResult<KeybindingsConfig> {
+    let pairs: Vec<(String, Value)> =
+        serde_json::from_value(value.unwrap_or(json!([]))).map_err(|error| error.to_string())?;
+    pairs
+        .into_iter()
+        .map(|(id, keys)| {
+            Ok((
+                id,
+                if keys.is_null() {
+                    None
+                } else {
+                    Some(keys_of(&keys)?)
+                },
+            ))
+        })
+        .collect()
+}
+
+/// The script form of keys.
+fn keys_json(keys: &KeybindingKeys) -> Value {
+    match keys {
+        KeybindingKeys::Single(key) => json!(key),
+        KeybindingKeys::Multiple(keys) => json!(keys),
+    }
+}
+
+/// The script form of bindings.
+fn bindings_json(config: &KeybindingsConfig) -> Value {
+    json!(
+        config
+            .iter()
+            .map(|(id, keys)| json!([id, keys.as_ref().map(keys_json)]))
+            .collect::<Vec<_>>()
+    )
+}
+
+/// A kept keybindings manager from its source.
+fn manager_of(step: Step) -> ExtensionResult<(String, KeybindingsManager)> {
+    let Step::Keybindings {
+        name,
+        source,
+        user,
+        path,
+        dir,
+        definitions,
+    } = step
+    else {
+        return Err("expected a keybindings manager".to_owned());
+    };
+    let manager = match source.as_str() {
+        "new" => KeybindingsManager::new(bindings(user)?, path.as_deref())?,
+        "create" => KeybindingsManager::create(dir.as_deref())?,
+        "definitions" => {
+            let definitions = definitions
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(id, keys, description)| {
+                    let default_keys = keys_of(&keys)?;
+                    Ok((
+                        id,
+                        KeybindingDefinition {
+                            default_keys,
+                            description,
+                        },
+                    ))
+                })
+                .collect::<ExtensionResult<_>>()?;
+            KeybindingsManager::from_definitions(definitions, bindings(user)?)?
+        }
+        _ => get_keybindings()?,
+    };
+    Ok((name, manager))
+}
+
+/// Keeps keybindings managers, sends their requests and reads hints and editor styles.
+fn keys_steps(step: Step) -> ExtensionResult<Value> {
+    match step {
+        step @ Step::Keybindings { .. } => {
+            let (name, manager) = manager_of(step)?;
+            Ok(keep(name, Kept::Keys(manager)))
+        }
+        Step::Keys {
+            name,
+            op,
+            data,
+            id,
+            user,
+        } => {
+            let Kept::Keys(manager) = kept(&name)? else {
+                return Err(format!("{name} is no keybindings manager"));
+            };
+            keys_request(&manager, &op, (data, id), user)
+        }
+        Step::Hint {
+            id,
+            key,
+            description,
+        } => match (id, key, description) {
+            (Some(id), _, Some(description)) => Ok(json!(key_hint(&id, &description)?)),
+            (_, Some(key), Some(description)) => Ok(json!(raw_key_hint(&key, &description)?)),
+            (Some(id), _, None) => Ok(json!(key_text(&id)?)),
+            _ => Err("expected a keybinding or a key".to_owned()),
+        },
+        Step::EditorTheme { text } => {
+            let theme = get_editor_theme()?;
+            let border = theme.border_color.apply(&text)?;
+            Ok(json!([
+                border,
+                theme.select_list.selected_text.apply(&text)?
+            ]))
+        }
         step => children(step).map(|()| json!(true)),
     }
+}
+
+/// Sends one request to a keybindings manager.
+fn keys_request(
+    manager: &KeybindingsManager,
+    op: &str,
+    (data, id): (Option<String>, Option<String>),
+    user: Option<Value>,
+) -> ExtensionResult<Value> {
+    let id = id.unwrap_or_default();
+    Ok(match op {
+        "matches" => json!(manager.matches(&data.unwrap_or_default(), &id)?),
+        "getKeys" => json!(manager.get_keys(&id)?),
+        "getDefinition" => json!(manager.get_definition(&id)?.map(|definition| {
+            json!([keys_json(&definition.default_keys), definition.description])
+        })),
+        "getConflicts" => json!(
+            manager
+                .get_conflicts()?
+                .into_iter()
+                .map(|conflict| json!([conflict.key, conflict.keybindings]))
+                .collect::<Vec<_>>()
+        ),
+        "setUserBindings" => {
+            manager.set_user_bindings(bindings(user)?)?;
+            json!(true)
+        }
+        "getUserBindings" => bindings_json(&manager.get_user_bindings()?),
+        "getResolvedBindings" => bindings_json(&manager.get_resolved_bindings()?),
+        "reload" => {
+            manager.reload()?;
+            json!(true)
+        }
+        _ => bindings_json(&manager.get_effective_config()?),
+    })
 }
 
 /// The selection list kept under `name`.

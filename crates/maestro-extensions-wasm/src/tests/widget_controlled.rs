@@ -9,13 +9,14 @@ use serde_json::json;
 
 use super::controlled::Controlled;
 use super::widget_host::{self, Build, CODE, Change, Child, Paint, Part, ROLES};
+use super::widget_keys::{self, Answer as KeysAnswer, Request as KeysRequest};
 use super::widget_lists::{self, Call, Event, List, Setting};
 use crate::component_adapter::renderers::with_emitter;
 use crate::component_adapter::{
     ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme, Imports,
-    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle,
-    WidgetAnswer, WidgetEvent, WidgetImports, authored_component, invoke_highlight, invoke_style,
-    invoke_widget,
+    KeyHint, KeybindingsAnswer, KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef,
+    SettingRef, SettingsStyles, StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
+    authored_component, invoke_highlight, invoke_style, invoke_widget,
 };
 use crate::types::ExtensionResult;
 
@@ -74,6 +75,83 @@ impl WidgetImports for Controlled {
     type Widget = Widget;
     type Style = Style;
     type Highlighter = Highlighter;
+    type Keybindings = Keybindings;
+
+    fn new_keybindings(
+        &self,
+        user_bindings: &crate::KeybindingsConfig,
+        config_path: Option<&str>,
+    ) -> ExtensionResult<Keybindings> {
+        let path = config_path.map(str::to_owned);
+        Ok(Keybindings(widget_keys::keep(
+            &mut self.observe(),
+            None,
+            user_bindings.clone(),
+            path,
+        )))
+    }
+    fn create_keybindings(&self, agent_dir: Option<&str>) -> ExtensionResult<Keybindings> {
+        let path = format!("{}/keybindings.json", agent_dir.unwrap_or("/agent"));
+        Ok(Keybindings(widget_keys::keep(
+            &mut self.observe(),
+            None,
+            Vec::new(),
+            Some(path),
+        )))
+    }
+    fn keybindings_with_definitions(
+        &self,
+        definitions: &crate::KeybindingDefinitions,
+        user_bindings: &crate::KeybindingsConfig,
+    ) -> ExtensionResult<Keybindings> {
+        let definitions = Some(definitions.clone());
+        let key = widget_keys::keep(
+            &mut self.observe(),
+            definitions,
+            user_bindings.clone(),
+            None,
+        );
+        Ok(Keybindings(key))
+    }
+    fn get_keybindings(&self) -> ExtensionResult<Keybindings> {
+        self.observe().log("getKeybindings");
+        Ok(Keybindings(0))
+    }
+    fn keybindings_request(
+        &self,
+        manager: &Keybindings,
+        request: KeybindingsRequest<'_>,
+    ) -> ExtensionResult<KeybindingsAnswer> {
+        let answer = widget_keys::request(&mut self.observe(), manager.0, keys_request(request));
+        Ok(keys_answer(answer))
+    }
+    fn key_hint(&self, hint: KeyHint<'_>) -> ExtensionResult<String> {
+        let mut observed = self.observe();
+        Ok(match hint {
+            KeyHint::Text(id) => widget_keys::hint(&mut observed, Some(id), None, None),
+            KeyHint::Keybinding(id, text) => {
+                widget_keys::hint(&mut observed, Some(id), None, Some(text))
+            }
+            KeyHint::Raw(key, text) => {
+                widget_keys::hint(&mut observed, None, Some(key), Some(text))
+            }
+        })
+    }
+    fn get_editor_theme(&self) -> ExtensionResult<(Style, Vec<Style>)> {
+        self.observe().log("getEditorTheme");
+        let roles = [
+            "selectedPrefix",
+            "selectedText",
+            "description",
+            "scrollInfo",
+            "noMatch",
+        ];
+        let styles = roles
+            .into_iter()
+            .map(|role| Style(role.to_owned()))
+            .collect();
+        Ok((Style("borderMuted".to_owned()), styles))
+    }
     type RowStyle = RowStyle;
     type SubmenuDone = SubmenuDone;
 
@@ -521,5 +599,37 @@ impl Controlled {
         });
         widget_lists::keep(&mut self.observe(), widget.0, list);
         widget
+    }
+}
+
+/// A host keybindings manager by key.
+pub struct Keybindings(pub u32);
+
+/// The owned form of a keybindings request.
+pub fn keys_request(request: KeybindingsRequest<'_>) -> KeysRequest {
+    match request {
+        KeybindingsRequest::Matches(data, id) => {
+            KeysRequest::Matches(data.to_owned(), id.to_owned())
+        }
+        KeybindingsRequest::Keys(id) => KeysRequest::Keys(id.to_owned()),
+        KeybindingsRequest::Definition(id) => KeysRequest::Definition(id.to_owned()),
+        KeybindingsRequest::Conflicts => KeysRequest::Conflicts,
+        KeybindingsRequest::SetUserBindings(config) => KeysRequest::SetUserBindings(config.clone()),
+        KeybindingsRequest::UserBindings => KeysRequest::UserBindings,
+        KeybindingsRequest::ResolvedBindings => KeysRequest::ResolvedBindings,
+        KeybindingsRequest::Reload => KeysRequest::Reload,
+        KeybindingsRequest::EffectiveConfig => KeysRequest::EffectiveConfig,
+    }
+}
+
+/// The adapter form of a keybindings answer.
+fn keys_answer(answer: KeysAnswer) -> KeybindingsAnswer {
+    match answer {
+        KeysAnswer::Done => KeybindingsAnswer::Done,
+        KeysAnswer::Matched(matched) => KeybindingsAnswer::Matched(matched),
+        KeysAnswer::Keys(keys) => KeybindingsAnswer::Keys(keys),
+        KeysAnswer::Definition(definition) => KeybindingsAnswer::Definition(definition),
+        KeysAnswer::Conflicts(conflicts) => KeybindingsAnswer::Conflicts(conflicts),
+        KeysAnswer::Config(config) => KeybindingsAnswer::Config(config),
     }
 }

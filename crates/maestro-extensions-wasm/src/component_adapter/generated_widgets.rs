@@ -6,11 +6,13 @@ use super::{Generated, route};
 use crate::bindings::maestro::extension::host;
 use crate::component_adapter::{
     Builder, ChildKey, ChildRef, HandlerSlot, HighlightRef, HostMarkdownTheme, HostSettingsTheme,
-    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TextStyle,
-    WidgetAnswer, WidgetEvent, WidgetImports,
+    KeyHint, KeybindingsAnswer, KeybindingsRequest, LayoutRef, MarkdownStyles, RowStyleRef,
+    SettingRef, SettingsStyles, StyleRef, TextStyle, WidgetAnswer, WidgetEvent, WidgetImports,
 };
 use crate::types::ExtensionResult;
-use crate::{SelectItem, SelectListTruncatePrimaryContext};
+use crate::{
+    KeybindingDefinitions, KeybindingsConfig, SelectItem, SelectListTruncatePrimaryContext,
+};
 
 /// The host that builds this component's widgets.
 pub(super) fn widget_host() -> Rc<dyn crate::WidgetHost> {
@@ -343,6 +345,69 @@ impl WidgetImports for Generated {
     }
     fn submenu_done(&self, done: &host::SubmenuDone, value: Option<&str>) -> ExtensionResult<()> {
         route::drive(&done.done(value))
+    }
+    type Keybindings = host::KeybindingsManager;
+    fn new_keybindings(
+        &self,
+        user_bindings: &KeybindingsConfig,
+        config_path: Option<&str>,
+    ) -> ExtensionResult<host::KeybindingsManager> {
+        host::new_keybindings_manager(&super::keys::wire_config(user_bindings), config_path)
+    }
+    fn create_keybindings(
+        &self,
+        agent_dir: Option<&str>,
+    ) -> ExtensionResult<host::KeybindingsManager> {
+        host::create_keybindings_manager(agent_dir)
+    }
+    fn keybindings_with_definitions(
+        &self,
+        definitions: &KeybindingDefinitions,
+        user_bindings: &KeybindingsConfig,
+    ) -> ExtensionResult<host::KeybindingsManager> {
+        let definitions: Vec<_> = definitions
+            .iter()
+            .map(|(id, definition)| {
+                let wire = host::KeybindingDefinition {
+                    default_keys: super::keys::wire_keys(&definition.default_keys),
+                    description: definition.description.clone(),
+                };
+                (id.clone(), wire)
+            })
+            .collect();
+        host::new_keybindings_with_definitions(
+            &definitions,
+            &super::keys::wire_config(user_bindings),
+        )
+    }
+    fn get_keybindings(&self) -> ExtensionResult<host::KeybindingsManager> {
+        host::get_keybindings()
+    }
+    fn keybindings_request(
+        &self,
+        manager: &host::KeybindingsManager,
+        request: KeybindingsRequest<'_>,
+    ) -> ExtensionResult<KeybindingsAnswer> {
+        super::keys::request(manager, request)
+    }
+    fn key_hint(&self, hint: KeyHint<'_>) -> ExtensionResult<String> {
+        match hint {
+            KeyHint::Text(id) => host::key_text(id),
+            KeyHint::Keybinding(id, description) => host::key_hint(id, description),
+            KeyHint::Raw(key, description) => host::raw_key_hint(key, description),
+        }
+    }
+    fn get_editor_theme(&self) -> ExtensionResult<(host::Style, Vec<host::Style>)> {
+        let theme = host::get_editor_theme()?;
+        let list = theme.select_list;
+        let styles = vec![
+            list.selected_prefix,
+            list.selected_text,
+            list.description,
+            list.scroll_info,
+            list.no_match,
+        ];
+        Ok((theme.border_color, styles))
     }
 }
 

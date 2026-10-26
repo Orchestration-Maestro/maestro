@@ -63,6 +63,14 @@ impl Registry {
             .map(crate::widget_lists::SubmenuDoneEndpoint)
     }
 
+    /// Keeps a keybindings manager under a fresh identity.
+    pub(crate) fn keep_keybindings(
+        &self,
+        keybindings: maestro_extensions::widgets::ExtensionKeybindings,
+    ) -> Result<std::sync::Arc<super::Lease>, String> {
+        self.insert(Capability::Keybindings(keybindings))
+    }
+
     /// The widget behind a widget resource.
     pub(crate) fn widget(&self, widget: &WidgetEndpoint) -> Result<Rc<Widget>, String> {
         match self.capability(widget.0.id).as_deref() {
@@ -107,6 +115,21 @@ impl State {
             WidgetMessage::LendSettings(reply) => {
                 let _ = reply.send(self.lend_settings());
             }
+            WidgetMessage::NewKeys(build, reply) => {
+                let keys = crate::keys_reads::build(build, &*registry.widgets)
+                    .and_then(|keys| registry.keybindings(keys));
+                let _ = reply.send(keys);
+            }
+            WidgetMessage::Keys(id, request) => match registry.capability(id).as_deref() {
+                Some(Capability::Keybindings(keys)) => request.answer(keys),
+                _ => request.reject("extension keybindings resource ended"),
+            },
+            WidgetMessage::Hint(hint, reply) => {
+                let _ = reply.send(crate::keys_reads::hint(hint, &*registry.widgets));
+            }
+            WidgetMessage::LendEditor(reply) => {
+                let _ = reply.send(self.lend_editor());
+            }
         }
     }
 
@@ -129,6 +152,19 @@ impl State {
             }
             (_, lent) => lent.reject("extension style resource ended"),
         }
+    }
+
+    /// Lends the live theme's editor border and selection list styles.
+    fn lend_editor(&self) -> Result<(StyleEndpoint, Vec<StyleEndpoint>), String> {
+        let registry = &self.registry;
+        let theme = registry.widgets.editor_theme();
+        let style = |style| registry.insert(Capability::Style(style)).map(StyleEndpoint);
+        let list = Rc::new(theme.select_list);
+        let styles = crate::widget_lists::select_roles(&list)
+            .into_iter()
+            .map(style)
+            .collect::<Result<_, _>>()?;
+        Ok((style(theme.border_color)?, styles))
     }
 
     /// Lends the live theme's settings list styles.

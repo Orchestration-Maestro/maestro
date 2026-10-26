@@ -6,7 +6,10 @@
 )]
 
 use super::Imports;
-use crate::{ExtensionResult, SelectItem, SelectListTruncatePrimaryContext, TextDecoration};
+use crate::{
+    ExtensionResult, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions,
+    KeybindingsConfig, SelectItem, SelectListTruncatePrimaryContext, TextDecoration,
+};
 
 /// A styling operand: a host style, or the identity of an authored one.
 pub(crate) enum StyleRef<'a, I: WidgetImports> {
@@ -213,6 +216,34 @@ pub(crate) trait WidgetImports: Imports {
     ) -> ExtensionResult<String>;
     /// Closes a submenu, running the nested calls the host makes first.
     fn submenu_done(&self, done: &Self::SubmenuDone, value: Option<&str>) -> ExtensionResult<()>;
+    /// A host keybindings manager.
+    type Keybindings: 'static;
+    /// A manager of the application's keybindings.
+    fn new_keybindings(
+        &self,
+        user_bindings: &KeybindingsConfig,
+        config_path: Option<&str>,
+    ) -> ExtensionResult<Self::Keybindings>;
+    /// A manager of the application's keybindings loaded from an agent directory.
+    fn create_keybindings(&self, agent_dir: Option<&str>) -> ExtensionResult<Self::Keybindings>;
+    /// A manager of the supplied keybindings.
+    fn keybindings_with_definitions(
+        &self,
+        definitions: &KeybindingDefinitions,
+        user_bindings: &KeybindingsConfig,
+    ) -> ExtensionResult<Self::Keybindings>;
+    /// The keybindings the host's terminal uses.
+    fn get_keybindings(&self) -> ExtensionResult<Self::Keybindings>;
+    /// One request on a keybindings manager.
+    fn keybindings_request(
+        &self,
+        manager: &Self::Keybindings,
+        request: KeybindingsRequest<'_>,
+    ) -> ExtensionResult<KeybindingsAnswer>;
+    /// A keybinding's keys, or a hint of a keybinding or a literal key.
+    fn key_hint(&self, hint: KeyHint<'_>) -> ExtensionResult<String>;
+    /// Lends the live theme's editor border and selection list styles in field order.
+    fn get_editor_theme(&self) -> ExtensionResult<(Self::Style, Vec<Self::Style>)>;
 }
 
 /// A settings row styling operand: a host row style, or the identity of an authored one.
@@ -303,3 +334,52 @@ pub(crate) type HostSettingsTheme<I> = (
     String,
     <I as WidgetImports>::Style,
 );
+
+/// One request on a keybindings manager.
+#[derive(Clone, Copy)]
+pub(crate) enum KeybindingsRequest<'a> {
+    /// Whether input matches a keybinding.
+    Matches(&'a str, &'a str),
+    /// A keybinding's keys.
+    Keys(&'a str),
+    /// A keybinding's definition.
+    Definition(&'a str),
+    /// The user binding conflicts.
+    Conflicts,
+    /// Replaces the user bindings.
+    SetUserBindings(&'a KeybindingsConfig),
+    /// The user bindings.
+    UserBindings,
+    /// The resolved bindings.
+    ResolvedBindings,
+    /// Reloads the user bindings.
+    Reload,
+    /// The effective configuration.
+    EffectiveConfig,
+}
+
+/// What a keybindings request answers.
+pub(crate) enum KeybindingsAnswer {
+    /// Nothing.
+    Done,
+    /// Whether input matched.
+    Matched(bool),
+    /// Keys.
+    Keys(Vec<String>),
+    /// A definition, absent for an unknown keybinding.
+    Definition(Option<KeybindingDefinition>),
+    /// Conflicts.
+    Conflicts(Vec<KeybindingConflict>),
+    /// Bindings.
+    Config(KeybindingsConfig),
+}
+
+/// A keybinding hint request.
+pub(crate) enum KeyHint<'a> {
+    /// The keys of a keybinding.
+    Text(&'a str),
+    /// A keybinding and a description.
+    Keybinding(&'a str, &'a str),
+    /// A literal key and a description.
+    Raw(&'a str, &'a str),
+}

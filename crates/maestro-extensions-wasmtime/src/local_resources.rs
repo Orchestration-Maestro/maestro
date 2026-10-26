@@ -237,6 +237,8 @@ enum Capability {
     RowStyle(Rc<crate::widget_lists::RowStyleFn>),
     /// Closes an open settings submenu.
     SubmenuDone(Rc<dyn Fn(Option<String>)>),
+    /// A keybindings manager.
+    Keybindings(maestro_extensions::widgets::ExtensionKeybindings),
 }
 
 /// Local entries and their monotonic identities.

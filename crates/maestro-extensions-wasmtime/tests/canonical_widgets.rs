@@ -533,3 +533,58 @@ fn published_ui() -> Rc<super::canonical_ui::Widgets> {
         shown: RefCell::default(),
     })
 }
+
+#[test]
+fn canonical_keybindings_reach_the_host_managers_hints_and_editor_styles() {
+    with_bridge(async |runner| {
+        let user = json!([["tui.select.up", "f3"], ["tui.select.down", "f3"]]);
+        let steps = json!([
+            { "do": "keybindings", "name": "g", "source": "global" },
+            { "do": "keys", "name": "g", "op": "getKeys", "id": "tui.select.cancel" },
+            { "do": "keys", "name": "g", "op": "matches", "data": "\u{1b}", "id": "tui.select.cancel" },
+            { "do": "keybindings", "name": "k", "source": "new", "user": user, "path": "/k.json" },
+            { "do": "keys", "name": "k", "op": "getKeys", "id": "tui.select.up" },
+            { "do": "keys", "name": "k", "op": "getConflicts" },
+            { "do": "keys", "name": "k", "op": "reload" },
+            { "do": "keys", "name": "k", "op": "getUserBindings" },
+            { "do": "keys", "name": "k", "op": "getKeys", "id": "tui.select.up" },
+            { "do": "keybindings", "name": "d", "source": "definitions",
+              "definitions": [["x.one", ["a", "b", "a"], "One"]], "user": [["x.one", null]] },
+            { "do": "keys", "name": "d", "op": "getKeys", "id": "x.one" },
+            { "do": "keys", "name": "d", "op": "getDefinition", "id": "x.one" },
+            { "do": "keybindings", "name": "p", "source": "new" },
+            { "do": "keys", "name": "p", "op": "reload" },
+            { "do": "keys", "name": "p", "op": "getUserBindings" },
+            { "do": "hint", "id": "tui.select.cancel" },
+            { "do": "hint", "id": "tui.select.cancel", "description": "cancel" },
+            { "do": "hint", "key": "esc", "description": "back" },
+            { "do": "editorTheme", "text": "x" },
+        ]);
+        let outcomes = script(runner, &steps).await;
+        let keys = maestro_tui::get_keybindings().get_keys("tui.select.cancel");
+        let joined = keys.join("/");
+        let done = ok(json!(true));
+        let expected = vec![
+            done.clone(),
+            ok(json!(keys)),
+            ok(json!(true)),
+            done.clone(),
+            ok(json!(["f3"])),
+            ok(json!([["f3", ["tui.select.up", "tui.select.down"]]])),
+            done.clone(),
+            ok(json!([["tui.select.up", "f2"]])),
+            ok(json!(["f2"])),
+            done.clone(),
+            ok(json!(["a", "b"])),
+            ok(json!([["a", "b", "a"], "One"])),
+            done.clone(),
+            done,
+            ok(json!([])),
+            ok(json!(joined)),
+            ok(json!(format!("[{joined}] cancel"))),
+            ok(json!("[esc] back")),
+            ok(json!(["x", "x"])),
+        ];
+        assert_eq!(outcomes, expected);
+    });
+}

@@ -34,7 +34,13 @@ pub trait ComponentView {
 
 #[macro_use]
 mod widgets;
+mod keys;
 mod lists;
+pub use keys::{
+    EditorTheme, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
+    KeybindingsConfig, KeybindingsManager, KeybindingsPort, get_editor_theme, get_keybindings,
+    key_hint, key_text, raw_key_hint,
+};
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use lists::SubmenuDonePort;
 pub use lists::{

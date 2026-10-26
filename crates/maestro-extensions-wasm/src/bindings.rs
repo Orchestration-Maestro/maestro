@@ -50,6 +50,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.highlighter": crate::tests::widget_component::HighlighterResource,
             "maestro:extension/host.row-style": crate::tests::widget_component::RowStyleResource,
             "maestro:extension/host.submenu-done": crate::tests::widget_component::SubmenuDoneResource,
+            "maestro:extension/host.keybindings-manager": crate::tests::widget_component::KeybindingsResource,
             "maestro:extension/host.local-settlement": crate::tests::host::Settlement,
             "maestro:extension/host.callback": crate::tests::host::Identity,
             "maestro:extension/host.json-node": crate::tests::host::JsonNode,

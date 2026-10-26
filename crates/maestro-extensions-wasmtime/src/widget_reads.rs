@@ -120,6 +120,17 @@ pub(crate) enum WidgetMessage {
     LendSelect(Reply<Vec<StyleEndpoint>>),
     /// Lends the live theme's settings list styles.
     LendSettings(Reply<LentSettings>),
+    /// Keeps a new keybindings manager.
+    NewKeys(
+        crate::keys_reads::KeysBuild,
+        Reply<crate::keys_reads::KeysEndpoint>,
+    ),
+    /// A request on the keybindings manager with this identity.
+    Keys(u64, crate::keys_reads::KeysRequest),
+    /// A keybinding hint.
+    Hint(crate::keys_reads::Hint, Reply<String>),
+    /// Lends the live theme's editor border and selection list styles in field order.
+    LendEditor(Reply<(StyleEndpoint, Vec<StyleEndpoint>)>),
 }
 
 /// The lent settings list styles: label and value row styles, description, cursor and hint.

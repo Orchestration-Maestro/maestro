@@ -417,6 +417,49 @@ impl<I: WidgetImports> WidgetHost for Builder<I> {
     fn settings_list_theme(&self) -> ExtensionResult<crate::SettingsListTheme> {
         self.lent_settings_list_theme()
     }
+    fn keybindings(
+        &self,
+        user_bindings: crate::KeybindingsConfig,
+        config_path: Option<&str>,
+    ) -> ExtensionResult<crate::KeybindingsManager> {
+        self.application_keybindings(&user_bindings, config_path)
+    }
+    fn create_keybindings(
+        &self,
+        agent_dir: Option<&str>,
+    ) -> ExtensionResult<crate::KeybindingsManager> {
+        let manager = self.0.create_keybindings(agent_dir)?;
+        Ok(super::keys::lend(&self.0, manager))
+    }
+    fn keybindings_with_definitions(
+        &self,
+        definitions: crate::KeybindingDefinitions,
+        user_bindings: crate::KeybindingsConfig,
+    ) -> ExtensionResult<crate::KeybindingsManager> {
+        let manager = self
+            .0
+            .keybindings_with_definitions(&definitions, &user_bindings)?;
+        Ok(super::keys::lend(&self.0, manager))
+    }
+    fn get_keybindings(&self) -> ExtensionResult<crate::KeybindingsManager> {
+        let manager = self.0.get_keybindings()?;
+        Ok(super::keys::lend(&self.0, manager))
+    }
+    fn key_text(&self, keybinding: &str) -> ExtensionResult<String> {
+        self.hint(super::widget_imports::KeyHint::Text(keybinding))
+    }
+    fn key_hint(&self, keybinding: &str, description: &str) -> ExtensionResult<String> {
+        self.hint(super::widget_imports::KeyHint::Keybinding(
+            keybinding,
+            description,
+        ))
+    }
+    fn raw_key_hint(&self, key: &str, description: &str) -> ExtensionResult<String> {
+        self.hint(super::widget_imports::KeyHint::Raw(key, description))
+    }
+    fn editor_theme(&self) -> ExtensionResult<crate::EditorTheme> {
+        self.lent_editor_theme()
+    }
 }
 
 /// Styles text with the authored style under `handler`.

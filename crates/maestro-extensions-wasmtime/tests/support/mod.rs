@@ -78,6 +78,48 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
             signal: maestro_tui::Cancellation::new(),
         }))
     }
+    fn keybindings(
+        &self,
+        user_bindings: maestro_tui::KeybindingsConfig,
+        config_path: Option<String>,
+    ) -> maestro_extensions::widgets::ExtensionKeybindings {
+        let manager = maestro_tui::KeybindingsManager::new(
+            maestro_tui::TUI_KEYBINDINGS.clone(),
+            user_bindings,
+        );
+        let reloaded = manager.clone();
+        maestro_extensions::widgets::ExtensionKeybindings {
+            manager,
+            reload: config_path.map(|_| {
+                Rc::new(move || reloaded.set_user_bindings(reloaded_bindings())) as Rc<dyn Fn()>
+            }),
+        }
+    }
+    fn create_keybindings(
+        &self,
+        agent_dir: Option<String>,
+    ) -> Result<maestro_extensions::widgets::ExtensionKeybindings, String> {
+        let path = agent_dir.unwrap_or_else(|| "/agent".to_owned());
+        Ok(self.keybindings(Vec::new(), Some(format!("{path}/keybindings.json"))))
+    }
+    fn editor_theme(&self) -> maestro_tui::EditorTheme {
+        maestro_theme::get_editor_theme(self.0.clone())
+    }
+    fn key_hint(&self, keybinding: &str, description: &str) -> Result<String, String> {
+        let keys = maestro_extensions::widgets::key_text(keybinding);
+        Ok(format!("[{keys}] {description}"))
+    }
+    fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String> {
+        Ok(format!("[{key}] {description}"))
+    }
+}
+
+/// The user bindings a test manager with a file reloads.
+pub fn reloaded_bindings() -> maestro_tui::KeybindingsConfig {
+    vec![(
+        "tui.select.up".to_owned(),
+        Some(maestro_tui::KeybindingKeys::Single("f2".to_owned())),
+    )]
 }
 
 /// A loader between no borders: input cancels it only when it is cancellable.

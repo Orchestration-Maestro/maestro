@@ -1,14 +1,15 @@
 //! The host widgets an extension builds, over the toolkit and application widgets.
 use super::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
 use super::dynamic_border::DynamicBorder;
-use maestro_app::{ExtensionLoader, ExtensionWidgets};
+use maestro_app::{ExtensionKeybindings, ExtensionLoader, ExtensionWidgets, KeybindingsManager};
 use maestro_theme::{
-    LiveTheme, SyntaxHighlighter, Theme, get_markdown_theme, get_select_list_theme,
-    get_settings_list_theme,
+    LiveTheme, SyntaxHighlighter, Theme, get_editor_theme, get_markdown_theme,
+    get_select_list_theme, get_settings_list_theme,
 };
 use maestro_tui::{
-    Cancellation, Container, Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme,
-    SettingsListTheme, TUI, TerminalImage, editor_component::BorderColor, tui::ComponentHandle,
+    Cancellation, Container, EditorTheme, KeybindingsConfig, Markdown, MarkdownOptions,
+    MarkdownTheme, SelectListTheme, SettingsListTheme, TUI, TerminalImage,
+    editor_component::BorderColor, tui::ComponentHandle,
 };
 use std::rc::Rc;
 
@@ -72,6 +73,40 @@ impl ExtensionWidgets for ExtensionWidgetHost {
         loader
             .map(|loader| Rc::new(loader) as Rc<dyn ExtensionLoader>)
             .map_err(|error| error.to_string())
+    }
+    fn keybindings(
+        &self,
+        user_bindings: KeybindingsConfig,
+        config_path: Option<String>,
+    ) -> ExtensionKeybindings {
+        keybindings(KeybindingsManager::new(user_bindings, config_path))
+    }
+    fn create_keybindings(
+        &self,
+        agent_dir: Option<String>,
+    ) -> Result<ExtensionKeybindings, String> {
+        KeybindingsManager::create(agent_dir.as_deref())
+            .map(keybindings)
+            .map_err(|error| error.to_string())
+    }
+    fn editor_theme(&self) -> EditorTheme {
+        get_editor_theme(self.theme.clone())
+    }
+    fn key_hint(&self, keybinding: &str, description: &str) -> Result<String, String> {
+        maestro_app::key_hint(keybinding, description, &self.theme)
+            .map_err(|error| error.to_string())
+    }
+    fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String> {
+        maestro_app::raw_key_hint(key, description, &self.theme).map_err(|error| error.to_string())
+    }
+}
+
+/// The application manager's shared bindings and its reload.
+fn keybindings(manager: KeybindingsManager) -> ExtensionKeybindings {
+    let shared = (*manager).clone();
+    ExtensionKeybindings {
+        manager: shared,
+        reload: Some(Rc::new(move || manager.reload())),
     }
 }
 

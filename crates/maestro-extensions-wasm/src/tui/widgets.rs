@@ -285,6 +285,33 @@ pub(crate) trait WidgetHost {
     fn select_list_theme(&self) -> ExtensionResult<super::SelectListTheme>;
     /// The live theme's settings list styles.
     fn settings_list_theme(&self) -> ExtensionResult<super::SettingsListTheme>;
+    /// A manager of the application's keybindings.
+    fn keybindings(
+        &self,
+        user_bindings: super::KeybindingsConfig,
+        config_path: Option<&str>,
+    ) -> ExtensionResult<super::KeybindingsManager>;
+    /// A manager of the application's keybindings loaded from an agent directory.
+    fn create_keybindings(
+        &self,
+        agent_dir: Option<&str>,
+    ) -> ExtensionResult<super::KeybindingsManager>;
+    /// A manager of the supplied keybindings.
+    fn keybindings_with_definitions(
+        &self,
+        definitions: super::KeybindingDefinitions,
+        user_bindings: super::KeybindingsConfig,
+    ) -> ExtensionResult<super::KeybindingsManager>;
+    /// The keybindings the host's terminal uses.
+    fn get_keybindings(&self) -> ExtensionResult<super::KeybindingsManager>;
+    /// The keys of a keybinding, joined with `/`.
+    fn key_text(&self, keybinding: &str) -> ExtensionResult<String>;
+    /// A keybinding's hint, styled with the live theme.
+    fn key_hint(&self, keybinding: &str, description: &str) -> ExtensionResult<String>;
+    /// A literal key's hint, styled with the live theme.
+    fn raw_key_hint(&self, key: &str, description: &str) -> ExtensionResult<String>;
+    /// The live theme's editor styles.
+    fn editor_theme(&self) -> ExtensionResult<super::EditorTheme>;
 }
 
 /// The host that builds widgets.

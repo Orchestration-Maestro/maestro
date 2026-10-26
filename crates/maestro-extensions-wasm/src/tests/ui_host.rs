@@ -141,6 +141,8 @@ pub struct Bank {
     pub hosted: super::widget_host::Bank,
     /// The lists and loaders among them.
     pub lists: super::widget_lists::Lists,
+    /// Keybindings managers.
+    pub keys: super::widget_keys::Managers,
 }
 
 /// The themes the host lists, in its order; one has no file.
