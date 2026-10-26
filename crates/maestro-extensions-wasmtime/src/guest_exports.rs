@@ -81,6 +81,8 @@ pub(crate) struct Exports {
         crate::guest_calls::grep::Operation,
         crate::guest_calls::grep::Output,
     >,
+    /// Original directory observations and structured failures.
+    ls: file_operations::Export<crate::guest_calls::ls::Operation, crate::guest_calls::ls::Output>,
     /// Original glob observations and structured failures.
     find: file_operations::Export<
         crate::guest_calls::find::Operation,
@@ -159,6 +161,7 @@ impl Exports {
             read: typed(store, instance, &guest, "invoke-read")?,
             write: typed(store, instance, &guest, "invoke-write")?,
             edit: typed(store, instance, &guest, "invoke-edit")?,
+            ls: typed(store, instance, &guest, "invoke-ls")?,
             find: typed(store, instance, &guest, "invoke-find")?,
             grep: typed(store, instance, &guest, "invoke-grep")?,
             schema: schema::Exports::new(store, instance, &guest)?,
@@ -201,6 +204,7 @@ impl Exports {
             | Call::Write(_)
             | Call::Edit(_)
             | Call::Find(_)
+            | Call::Ls(_)
             | Call::Grep(_)) => {
                 self.io(accessor, call).await?;
             }
@@ -440,6 +444,16 @@ impl Exports {
                 )
                 .await
             }
+            Call::Ls(call) => {
+                file_operations::invoke(
+                    &self.ls,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
             Call::Find(call) => {
                 file_operations::invoke(
                     &self.find,
@@ -461,7 +475,9 @@ impl Exports {
     ) -> wasmtime::Result<()> {
         match call {
             Call::Bash(call) => self.bash.invoke(accessor, call).await,
-            call @ (Call::Grep(_) | Call::Find(_)) => self.search(accessor, call).await,
+            call @ (Call::Grep(_) | Call::Find(_) | Call::Ls(_)) => {
+                self.search(accessor, call).await
+            }
             Call::Edit(call) => {
                 file_operations::invoke(
                     &self.edit,

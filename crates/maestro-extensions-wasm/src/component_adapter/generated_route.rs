@@ -206,6 +206,9 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Grep(call) => host::LocalResult::Grep(
                 super::super::tools::grep::invoke(call.target, call.operation, call.path).await,
             ),
+            host::LocalCall::Ls(call) => host::LocalResult::Ls(
+                super::super::tools::ls::invoke(call.target, call.operation, call.path).await,
+            ),
             host::LocalCall::Find(call) => host::LocalResult::Find(
                 super::super::tools::find::invoke(call.target, call.operation, call.path).await,
             ),

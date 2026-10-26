@@ -29,6 +29,22 @@ impl<I: Imports> ExtensionHost for Host<I> {
         self.0.create_grep_tool_definition(cwd, options)
     }
 
+    fn create_ls_tool(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_ls_tool(cwd, options)
+    }
+
+    fn create_ls_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_ls_tool_definition(cwd, options)
+    }
+
     fn create_find_tool(
         &self,
         cwd: String,

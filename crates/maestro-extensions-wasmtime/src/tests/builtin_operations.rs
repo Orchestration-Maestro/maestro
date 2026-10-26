@@ -1510,3 +1510,191 @@ fn assert_managed_grep(
         );
     }
 }
+
+/// Listing policy stays native across both guest projections and ready/pending observations.
+#[test]
+fn builtin_listing_callbacks_keep_sort_suffix_and_skip_rules() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        for executable in [false, true] {
+            listing_cases(&runner, executable).await;
+        }
+    });
+}
+
+/// Supplies literal effect order independently of the native comparator's formatting.
+async fn listing_cases(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+) {
+    let base = json!({"args":{"path":"雪"},"exists":true,"directory":true,"names":["雪","skip","Dir","b","A"],"executable":executable});
+    for (limit, reached) in [
+        (None, vec!["A", "b", "Dir", "skip", "雪"]),
+        (Some(json!(null)), vec!["A", "b", "Dir", "skip", "雪"]),
+        (Some(json!(0)), vec![]),
+        (Some(json!(2)), vec!["A", "b"]),
+    ] {
+        let mut request = base.clone();
+        if let Some(limit) = limit {
+            request["args"]["limit"] = limit;
+        }
+        observe_listing(runner, request, &reached).await;
+    }
+    let mut empty = base.clone();
+    empty["names"] = json!([]);
+    observe_listing(runner, empty, &[]).await;
+    let mut large = base.clone();
+    let name = "x".repeat(52000);
+    large["names"] = json!([name]);
+    observe_listing(runner, large, &[&name]).await;
+    for (key, value) in [("exists", false), ("directory", false)] {
+        let mut request = base.clone();
+        request[key] = json!(value);
+        observe_listing(runner, request, &[]).await;
+    }
+    for stage in ["exists", "stat", "readdir", "skip"] {
+        for pending in [false, true] {
+            let mut request = base.clone();
+            if stage != "skip" {
+                request["fail"] = json!(stage);
+            }
+            request["gate"] = json!(pending.then_some(stage));
+            observe_listing(
+                runner,
+                request,
+                if stage == "skip" {
+                    &["A", "b", "Dir", "skip", "雪"]
+                } else {
+                    &[]
+                },
+            )
+            .await;
+        }
+    }
+    for stage in ["exists", "stat", "readdir"] {
+        let mut request = base.clone();
+        request["gate"] = json!(stage);
+        observe_listing(runner, request, &["A", "b", "Dir", "skip", "雪"]).await;
+    }
+}
+
+/// Waits for an actual callback completion witness, never an elapsed-time guess.
+async fn observe_listing(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    request: serde_json::Value,
+    entries: &[&str],
+) {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let work = Box::pin((command.handler)(
+        format!("builtin-custom-ls {request}"),
+        runner.create_command_context(),
+    ));
+    let result = if request["gate"].is_string() {
+        let (started, release) = read_gate(runner);
+        let waiting = match futures_util::future::select(work, started).await {
+            futures_util::future::Either::Left(_) => {
+                panic!("listing completed before its operation gate")
+            }
+            futures_util::future::Either::Right((started, waiting)) => {
+                started.unwrap();
+                waiting
+            }
+        };
+        release.send(()).unwrap();
+        waiting.await
+    } else {
+        work.await
+    };
+    let observed: serde_json::Value =
+        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let mut calls = vec![json!(["exists", "/virtual/雪"])];
+    if request["exists"] == true && request["fail"] != "exists" {
+        calls.push(json!(["stat", "/virtual/雪"]));
+    }
+    if request["exists"] == true
+        && request["directory"] == true
+        && request["fail"] != "exists"
+        && request["fail"] != "stat"
+    {
+        calls.push(json!(["readdir", "/virtual/雪"]));
+    }
+    calls.extend(
+        entries
+            .iter()
+            .map(|name| json!(["stat", format!("/virtual/雪/{name}")])),
+    );
+    match native_listing(&request).await {
+        Ok(result) => {
+            assert_eq!(observed, json!({"calls":calls,"result":result}));
+            if entries == ["A", "b", "Dir", "skip", "雪"] {
+                assert_eq!(
+                    observed["result"],
+                    json!({"content":[{"type":"text","text":"A\nb\nDir/\n雪"}]})
+                );
+            }
+        }
+        Err(error) => assert_eq!(observed, json!({"calls":calls,"error":error})),
+    }
+}
+
+/// Independent native callback responses with the same authored failure fields.
+struct ListingAnswer(serde_json::Value);
+impl ListingAnswer {
+    /// Leaves root formatting, per-entry skipping and diagnostics to the native owner.
+    fn answer<T>(
+        &self,
+        stage: &str,
+        value: T,
+    ) -> Result<T, maestro_extensions::DiagnosticErrorInfo> {
+        if self.0["fail"] == stage || stage == "skip" {
+            Err(maestro_extensions::DiagnosticErrorInfo {
+                name: Some("ListingFailure".into()),
+                message: format!("refused {stage} 雪"),
+                stack: None,
+                code: Some(maestro_extensions::DiagnosticCode::Number(17.0)),
+            })
+        } else {
+            Ok(value)
+        }
+    }
+}
+impl maestro_extensions::LsOperations for ListingAnswer {
+    fn exists(&self, _: String) -> ReadFuture<bool> {
+        Box::pin(std::future::ready(
+            self.answer("exists", self.0["exists"].as_bool().unwrap()),
+        ))
+    }
+    fn stat(&self, path: String) -> ReadFuture<bool> {
+        let (stage, value) = if path == "/virtual/雪" {
+            ("stat", self.0["directory"].as_bool().unwrap())
+        } else if path.ends_with("/skip") {
+            ("skip", false)
+        } else {
+            ("entry", path.ends_with("/Dir"))
+        };
+        Box::pin(std::future::ready(self.answer(stage, value)))
+    }
+    fn readdir(&self, _: String) -> ReadFuture<Vec<String>> {
+        Box::pin(std::future::ready(self.answer(
+            "readdir",
+            serde_json::from_value(self.0["names"].clone()).unwrap(),
+        )))
+    }
+}
+/// Gets complete native result/error records without copying output templates into the facade.
+async fn native_listing(request: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let definition = maestro_extensions::local::create_ls_tool_definition::<()>(
+        "/virtual".into(),
+        maestro_extensions::LsToolOptions {
+            operations: Some(std::sync::Arc::new(ListingAnswer(request.clone()))),
+        },
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    let result = (tool.execute)("native-ls".into(), request["args"].clone(), None, None)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(serde_json::to_value(result).unwrap())
+}

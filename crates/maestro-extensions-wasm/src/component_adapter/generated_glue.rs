@@ -219,6 +219,13 @@ impl<E: Extension> Guest for Glue<E> {
     ) -> impl Future<Output = Result<host::GrepOutput, host::DiagnosticErrorInfo>> {
         super::super::tools::grep::invoke(handler.id(), operation, path)
     }
+    fn invoke_ls(
+        handler: &host::Callback,
+        operation: host::LsOperation,
+        path: String,
+    ) -> impl Future<Output = Result<host::LsOutput, host::DiagnosticErrorInfo>> {
+        super::super::tools::ls::invoke(handler.id(), operation, path)
+    }
     fn invoke_find(
         handler: &host::Callback,
         operation: host::FindOperation,

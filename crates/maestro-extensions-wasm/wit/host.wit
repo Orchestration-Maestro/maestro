@@ -20,6 +20,12 @@ interface host {
     create-edit-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
     /// Constructs the native finder using the application's search services.
     create-find-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the original directory lister over retained observations.
+    create-ls-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Directory observations; sorting, suffixes and skipped entries remain native.
+    enum ls-operation { exists, stat, readdir }
+    variant ls-output { boolean(bool), names(list<string>) }
+    record local-ls { target: u32, operation: ls-operation, path: string }
     /// Exact operands and observations of supplied file searches.
     record find-glob-options { ignore: list<string>, limit: f64 }
     record find-glob { pattern: string, options: find-glob-options }
@@ -296,6 +302,7 @@ interface host {
         write(local-write),
         grep(local-grep),
         find(local-find),
+        ls(local-ls),
         edit(local-edit),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
@@ -320,6 +327,7 @@ interface host {
         write(result<_, diagnostic-error-info>),
         grep(result<grep-output, diagnostic-error-info>),
         find(result<find-output, diagnostic-error-info>),
+        ls(result<ls-output, diagnostic-error-info>),
         edit(result<read-output, diagnostic-error-info>),
     }
     /// One step of a native operation that may call back into this same instance.

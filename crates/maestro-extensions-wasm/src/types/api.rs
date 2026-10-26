@@ -90,6 +90,10 @@ port! {
         fn create_edit_tool(cwd: String, options: crate::EditToolOptions) -> crate::Tool;
         /// Constructs a native edit definition with retained effects and renderers.
         fn create_edit_tool_definition(cwd: String, options: crate::EditToolOptions) -> ToolDefinition;
+        /// Constructs a context-free native directory lister.
+        fn create_ls_tool(cwd: String, options: crate::LsToolOptions) -> crate::Tool;
+        /// Constructs a native listing definition without observing the filesystem.
+        fn create_ls_tool_definition(cwd: String, options: crate::LsToolOptions) -> ToolDefinition;
         /// Constructs a context-free native finder over retained observations.
         fn create_find_tool(cwd: String, options: crate::FindToolOptions) -> crate::Tool;
         /// Constructs a native find definition without acquiring programs or observing files.

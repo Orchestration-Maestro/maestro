@@ -1101,6 +1101,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-find",
             "invoke-grep",
             "invoke-listener",
+            "invoke-ls",
             "invoke-model-hook",
             "invoke-prepare",
             "invoke-read",

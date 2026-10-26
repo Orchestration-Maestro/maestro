@@ -147,6 +147,20 @@ services during resource loading and retains them on reload; the component runti
 never discovers a default directory or creates another manager. An unconfigured
 host returns a construction error.
 
+## Replace directory observations
+
+`create_ls_tool` and `create_ls_tool_definition` return the native listing owner's
+executable and registerable forms. `LsToolOptions::operations` supplies
+`exists(absolute_root)`, `stat(absolute_path)` and `readdir(absolute_root)`.
+`stat` returns whether the root or entry is a directory; `readdir` returns entry
+names in producer order. All three callbacks return `OperationFuture` with
+`DiagnosticErrorInfo` on failure.
+
+Construction performs no directory access. The host retains supplied callbacks;
+omitted operations use the native filesystem. Sorting, directory suffixes,
+per-entry stat failure skipping, limits and output notices stay with the
+[native listing owner](../tools-search.md).
+
 ## Native helpers
 
 Terminal text operations in `maestro_extensions_wasm::utils` receive an

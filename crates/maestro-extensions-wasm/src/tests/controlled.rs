@@ -532,6 +532,16 @@ impl Imports for Controlled {
     ) -> ExtensionResult<crate::ToolDefinition> {
         Err("built-in tools require the production host".into())
     }
+    fn create_ls_tool(&self, _: String, _: crate::LsToolOptions) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_ls_tool_definition(
+        &self,
+        _: String,
+        _: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
     fn create_find_tool(
         &self,
         _: String,

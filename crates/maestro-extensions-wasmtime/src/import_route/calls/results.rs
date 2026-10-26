@@ -66,6 +66,9 @@ pub(in crate::import_route) enum LocalResult {
     /// Original file search observation or structured diagnostic.
     #[component(name = "find")]
     Find(Result<crate::guest_calls::find::Output, crate::schema_wire::Error>),
+    /// Original directory observation or structured diagnostic.
+    #[component(name = "ls")]
+    Ls(Result<crate::guest_calls::ls::Output, crate::schema_wire::Error>),
     /// Original edit observation or structured diagnostic.
     #[component(name = "edit")]
     Edit(Result<crate::guest_calls::read::Output, crate::schema_wire::Error>),

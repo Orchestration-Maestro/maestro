@@ -19,11 +19,14 @@ pub(crate) enum Factory {
     Edit(String, Option<crate::guest_calls::Handle>),
     /// Write through native ordering and independently retained effects.
     Write(String, Option<crate::guest_calls::Handle>),
+    /// Directory listing with native ordering and output selection.
+    Ls(String, Option<crate::guest_calls::Handle>),
 }
 impl Registry {
     /// Constructs the original typed definition and gives it an independent resource lease.
     pub(super) fn create_builtin(&self, factory: Factory) -> Result<Endpoint, String> {
         let definition: Rc<dyn crate::builtin_tools::Definition> = match factory {
+            Factory::Ls(cwd, operations) => Self::ls(cwd, operations),
             Factory::Grep(api, cwd, operations) => self.grep(api, cwd, operations)?,
             Factory::Find(api, cwd, operations) => self.find(api, cwd, operations)?,
             Factory::Read(cwd, auto_resize_images, operations) => Rc::new(RwLock::new(
@@ -71,6 +74,23 @@ impl Registry {
     }
 }
 impl Registry {
+    /// Constructs the original listing definition without filesystem work.
+    fn ls(
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Rc<dyn crate::builtin_tools::Definition> {
+        Rc::new(RwLock::new(
+            maestro_extensions::local::create_ls_tool_definition::<crate::builtin_tools::Context>(
+                cwd,
+                maestro_extensions::LsToolOptions {
+                    operations: operations.map(|owner| {
+                        Arc::new(crate::guest_calls::ls::Operations(owner))
+                            as Arc<dyn maestro_extensions::LsOperations>
+                    }),
+                },
+            ),
+        ))
+    }
     /// Constructs the original grep definition on the application-owned manager.
     fn grep(
         &self,
@@ -122,6 +142,16 @@ impl Registry {
     }
 }
 impl crate::api_reads::Endpoint {
+    /// Retains native listing without observing directories during construction.
+    pub(crate) fn create_ls(
+        &self,
+        cwd: String,
+        operations: Option<crate::guest_calls::Handle>,
+    ) -> Result<Endpoint, String> {
+        self.0.request(|_, reply| {
+            Message::BuiltinOperation(Operation::Create(Factory::Ls(cwd, operations), reply))
+        })
+    }
     /// Retains native content search with the original facade's services.
     pub(crate) fn create_grep(
         &self,

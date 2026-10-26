@@ -49,6 +49,18 @@ pub(in crate::import_route) struct LocalFind {
     pub(super) path: String,
 }
 
+/// Original operation operands of a nested directory listing.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in crate::import_route) struct LocalLs {
+    /// Original guest effect identity.
+    pub(super) target: u32,
+    /// Requested directory listing observation.
+    pub(super) operation: crate::guest_calls::ls::Operation,
+    /// Exact absolute target.
+    pub(super) path: String,
+}
+
 /// Original operation operands of a nested content search.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -68,6 +80,11 @@ pub(super) fn lower(
     use super::LocalCall;
     use crate::guest_calls::Call;
     Ok(match call {
+        Call::Ls(call) => LocalCall::Ls(LocalLs {
+            target: call.handler.id,
+            operation: call.operation,
+            path: call.path.clone(),
+        }),
         Call::Grep(call) => LocalCall::Grep(LocalGrep {
             target: call.handler.id,
             operation: call.operation,

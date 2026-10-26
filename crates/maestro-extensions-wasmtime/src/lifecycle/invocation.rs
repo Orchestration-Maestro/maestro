@@ -62,6 +62,7 @@ impl Call {
             Self::Write(call) => attach(&call.reply, completion),
             Self::Edit(call) => attach(&call.reply, completion),
             Self::Find(call) => attach(&call.reply, completion),
+            Self::Ls(call) => attach(&call.reply, completion),
             Self::Grep(call) => attach(&call.reply, completion),
             Self::Registered(call) => match call {
                 RegisteredCall::Command(_, _, _, reply) | RegisteredCall::Shortcut(_, _, reply) => {

@@ -134,6 +134,31 @@ fn native_edit(
     Ok(Rc::new(tool?))
 }
 
+/// Constructs the original ls definition with native renderers and output selection.
+pub(super) fn ls(cwd: &str, options: crate::LsToolOptions) -> ExtensionResult<ToolDefinition> {
+    definition(native_ls(cwd, options)?, false)
+}
+/// Retains the same native directory lister without a caller context requirement.
+pub(super) fn executable_ls(
+    cwd: &str,
+    options: crate::LsToolOptions,
+) -> ExtensionResult<crate::Tool> {
+    executable(native_ls(cwd, options)?)
+}
+/// Admits original observations under the existing callback rollback owner.
+fn native_ls(cwd: &str, options: crate::LsToolOptions) -> ExtensionResult<Rc<host::BuiltinTool>> {
+    let operations = options.operations.map(|operations| {
+        let identity = Identity::new(&Generated);
+        identity.stage(operations);
+        identity
+    });
+    let tool = host::create_ls_tool(cwd, operations.as_ref().map(|identity| &identity.handle));
+    if let Some(identity) = operations {
+        identity.settle(tool.is_ok());
+    }
+    Ok(Rc::new(tool?))
+}
+
 /// Constructs the original find definition with native renderers and output selection.
 pub(super) fn find(cwd: &str, options: crate::FindToolOptions) -> ExtensionResult<ToolDefinition> {
     definition(native_find(cwd, options)?, false)

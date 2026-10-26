@@ -154,6 +154,8 @@ pub mod local {
     pub use maestro_tools::search::find::local::create_find_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::search::grep::local::create_grep_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::ls::local::create_ls_tool_definition;
     pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     pub use maestro_tools::types::local::*;
     #[cfg(not(target_arch = "wasm32"))]
@@ -171,8 +173,8 @@ pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperatio
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
     EditOperations, EditToolOptions, FindOperations, FindToolOptions, GrepOperations,
-    GrepToolOptions, ReadContext, ReadOperations, ReadToolOptions, SearchTool, ToolRendererBinding,
-    ToolsManager, WriteOperations, WriteToolOptions,
+    GrepToolOptions, LsOperations, LsToolOptions, ReadContext, ReadOperations, ReadToolOptions,
+    SearchTool, ToolRendererBinding, ToolsManager, WriteOperations, WriteToolOptions,
 };
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{

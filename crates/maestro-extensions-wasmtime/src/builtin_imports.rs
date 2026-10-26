@@ -89,6 +89,10 @@ fn add_mutating_factories<T: CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     for (name, create) in [
         (
+            "create-ls-tool",
+            crate::api_reads::Endpoint::create_ls as MutationFactory,
+        ),
+        (
             "create-grep-tool",
             crate::api_reads::Endpoint::create_grep as MutationFactory,
         ),

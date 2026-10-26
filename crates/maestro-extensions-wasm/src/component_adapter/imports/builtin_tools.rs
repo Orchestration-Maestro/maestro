@@ -19,6 +19,22 @@ macro_rules! builtin_tool_imports {
             cwd: String,
             options: crate::GrepToolOptions,
         ) -> ExtensionResult<crate::ToolDefinition>;
+        /// Constructs the original context-free native directory lister.
+        /// # Errors
+        /// Returns construction or resource admission failures.
+        fn create_ls_tool(
+            &self,
+            cwd: String,
+            options: crate::LsToolOptions,
+        ) -> ExtensionResult<crate::Tool>;
+        /// Constructs the original listing definition with retained observations.
+        /// # Errors
+        /// Returns construction or resource admission failures.
+        fn create_ls_tool_definition(
+            &self,
+            cwd: String,
+            options: crate::LsToolOptions,
+        ) -> ExtensionResult<crate::ToolDefinition>;
         /// Constructs an original context-free native finder.
         /// # Errors
         /// Returns construction or resource admission failures.

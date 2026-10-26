@@ -102,6 +102,7 @@ kinds! {
         Write(crate::WriteOperations),
         Edit(crate::EditOperations),
         Find(crate::FindOperations),
+        Ls(crate::LsOperations),
         Grep(crate::GrepOperations),
         Schema(crate::schema_code::Handler),
         CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),

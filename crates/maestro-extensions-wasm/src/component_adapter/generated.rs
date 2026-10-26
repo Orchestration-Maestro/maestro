@@ -47,6 +47,22 @@ impl Imports for Generated {
         builtin::grep(&cwd, options)
     }
 
+    fn create_ls_tool(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_ls(&cwd, options)
+    }
+
+    fn create_ls_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::ls(&cwd, options)
+    }
+
     fn create_find_tool(
         &self,
         cwd: String,

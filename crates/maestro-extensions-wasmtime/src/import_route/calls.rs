@@ -20,7 +20,7 @@ use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
 mod credentials;
 mod file_operations;
 mod results;
-use file_operations::{LocalEdit, LocalFind, LocalGrep, LocalRead, LocalWrite};
+use file_operations::{LocalEdit, LocalFind, LocalGrep, LocalLs, LocalRead, LocalWrite};
 pub(super) use results::LocalResult;
 mod ui;
 use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
@@ -306,6 +306,9 @@ pub(super) enum LocalCall {
     /// A reverse find observation.
     #[component(name = "find")]
     Find(LocalFind),
+    /// A reverse directory observation.
+    #[component(name = "ls")]
+    Ls(LocalLs),
     /// A reverse edit effect.
     #[component(name = "edit")]
     Edit(LocalEdit),
@@ -408,9 +411,12 @@ fn registered(
 /// Marshals the remaining asynchronous callbacks with their original capabilities.
 fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
     Ok(match call {
-        call @ (Call::Read(_) | Call::Write(_) | Call::Edit(_) | Call::Find(_) | Call::Grep(_)) => {
-            file_operations::lower(call)?
-        }
+        call @ (Call::Read(_)
+        | Call::Write(_)
+        | Call::Edit(_)
+        | Call::Find(_)
+        | Call::Grep(_)
+        | Call::Ls(_)) => file_operations::lower(call)?,
         Call::Event(call) => LocalCall::Event(LocalEvent {
             target: call.handler.id,
             event: call.event.clone(),
@@ -550,6 +556,9 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
             let _ = reply.send(value);
         }
         (Call::Grep(call), LocalResult::Grep(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Ls(call), LocalResult::Ls(value)) => {
             let _ = call.reply.send(Ok(value.map_err(Into::into)));
         }
         (Call::Find(call), LocalResult::Find(value)) => {
