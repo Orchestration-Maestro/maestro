@@ -22,6 +22,8 @@ pub(super) struct Probe {
     dispatches: AtomicUsize,
     /// Polls of the actual response body, including a pending first poll.
     body_polls: AtomicUsize,
+    /// Release of the actual HTTP body after consumption or callback failure.
+    body_drops: AtomicUsize,
     /// Same native FIFO/result owner, not an event recorder.
     stream: Mutex<Option<AssistantMessageEventStream>>,
 }
@@ -33,6 +35,10 @@ impl Probe {
     /// Observe body consumption before acknowledging its awaited hook.
     pub(super) fn body_polls(&self) -> usize {
         self.body_polls.load(Ordering::SeqCst)
+    }
+    /// Observe that producer teardown released the actual response body exactly once.
+    pub(super) fn body_drops(&self) -> usize {
+        self.body_drops.load(Ordering::SeqCst)
     }
     /// Acknowledge payload readiness on the same invocation.
     pub(super) fn allow_payload(&self) {
@@ -53,7 +59,9 @@ impl Probe {
     }
     /// Count the original body's first poll even when it has no chunk ready.
     fn observe_body(self: Arc<Self>, mut body: HttpBody) -> HttpBody {
+        let release = BodyRelease(self.clone());
         Box::pin(poll_fn(move |context| {
+            let _ = &release;
             assert_eq!(
                 self.phase.load(Ordering::SeqCst),
                 2,
@@ -164,4 +172,12 @@ fn read_request(peer: &mut std::net::TcpStream) -> Value {
     let mut body = vec![0; length];
     peer.read_exact(&mut body).unwrap();
     serde_json::from_slice(&body).unwrap()
+}
+
+/// A capture belonging only to the actual native response-body stream.
+struct BodyRelease(Arc<Probe>);
+impl Drop for BodyRelease {
+    fn drop(&mut self) {
+        self.0.body_drops.fetch_add(1, Ordering::SeqCst);
+    }
 }

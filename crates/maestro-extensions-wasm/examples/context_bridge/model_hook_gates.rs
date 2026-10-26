@@ -39,6 +39,7 @@ pub async fn command(request: &str, context: ExtensionCommandContext) -> Result<
     }))
     .map_err(|e| e.to_string())?;
     let calls = Rc::new(RefCell::new(Vec::new()));
+    let fail_response = request.action == "response-failure";
     let common = StreamOptions {
         temperature: Some(0.25),
         max_tokens: Some(17.0),
@@ -46,7 +47,7 @@ pub async fn command(request: &str, context: ExtensionCommandContext) -> Result<
         max_retries: Some(0.0),
         signal: context.signal()?,
         on_payload: Some(payload(context.clone(), request.action, calls.clone())),
-        on_response: Some(response(context, calls.clone())),
+        on_response: Some(response(context, calls.clone(), fail_response)),
         ..Default::default()
     };
     let stream = if request.simple {
@@ -105,7 +106,11 @@ fn payload(
                         .shift_remove("max_tokens");
                 }
                 "abort" => context.reload().await?,
-                "keep" => {}
+                "payload-failure" => {
+                    calls.borrow_mut().push("payload");
+                    return Err("payload gate failed".into());
+                }
+                "keep" | "response-failure" => {}
                 _ => return Err("unknown gated edit".into()),
             }
             calls.borrow_mut().push("payload");
@@ -115,7 +120,11 @@ fn payload(
 }
 
 /// The first native body poll must await this original response callback.
-fn response(context: ExtensionCommandContext, calls: Rc<RefCell<Vec<&'static str>>>) -> OnResponse {
+fn response(
+    context: ExtensionCommandContext,
+    calls: Rc<RefCell<Vec<&'static str>>>,
+    failing: bool,
+) -> OnResponse {
     Rc::new(move |response, model| {
         let (context, calls) = (context.clone(), calls.clone());
         Box::pin(async move {
@@ -127,6 +136,9 @@ fn response(context: ExtensionCommandContext, calls: Rc<RefCell<Vec<&'static str
             }
             context.wait_for_idle().await?;
             calls.borrow_mut().push("response");
+            if failing {
+                return Err("response gate failed".into());
+            }
             Ok(())
         })
     })
