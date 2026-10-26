@@ -61,8 +61,11 @@ impl OAuthProviderInterface for Provider {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(std::future::ready(Ok(credentials)))
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
 }
 
@@ -122,8 +125,11 @@ impl OAuthProviderInterface for Retaining {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(std::future::ready(Ok(credentials)))
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
 }
 

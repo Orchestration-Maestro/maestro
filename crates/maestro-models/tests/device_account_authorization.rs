@@ -445,7 +445,7 @@ fn device_provider_exposes_shared_contract() {
         extra: maestro_models::JsonObject::new(),
     };
     assert!(std::ptr::eq(
-        provider.get_api_key(&credentials).unwrap(),
+        provider.get_api_key(&credentials).unwrap().as_ref(),
         credentials.access.as_str()
     ));
     assert!(std::ptr::eq(

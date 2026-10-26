@@ -162,11 +162,14 @@ pub trait OAuthProviderInterface {
         credentials: OAuthCredentials,
         fetch: Option<crate::Fetch>,
     ) -> crate::BoxFuture<Result<OAuthCredentials, OAuthError>>;
-    /// Borrow the request access key.
+    /// Borrow a credential field or return an independently computed request key.
     ///
     /// # Errors
     /// Implementations may reject credentials.
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError>;
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError>;
     /// Optionally transform model descriptors; absent by default.
     ///
     /// Borrow an input element to retain its identity, or return an owned descriptor

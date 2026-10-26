@@ -61,7 +61,10 @@ impl OAuthProviderInterface for Provider {
             Ok(result)
         })
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
         maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.get_api_key(credentials)
     }
     fn modify_models<'m>(

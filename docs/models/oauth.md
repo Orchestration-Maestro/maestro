@@ -49,6 +49,11 @@ built-in implementation or removes a custom entry; unknown IDs are ignored.
 `get_oauth_provider` looks up an exact ID; `get_oauth_providers` returns an ordered
 membership snapshot whose handles share provider state.
 
+`OAuthProviderInterface::get_api_key` returns `Cow<'a, str>`. Built-in providers
+borrow the access field; custom providers may return a computed, owned key that
+is not present in their credentials. Callers that retain the key use
+`into_owned()`, so an already owned result is not copied.
+
 `refresh_oauth_token` delegates one refresh without checking expiry or extracting
 a key. `get_oauth_api_key` selects a provider, returns `None` for missing supplied
 credentials, and otherwise refreshes once when the current epoch milliseconds

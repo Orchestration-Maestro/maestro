@@ -218,8 +218,8 @@ impl maestro_models::OAuthProviderInterface for PendingProvider {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_models::OAuthCredentials,
-    ) -> Result<&'a str, maestro_models::OAuthError> {
-        Ok(&credentials.access)
+    ) -> Result<std::borrow::Cow<'a, str>, maestro_models::OAuthError> {
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
 }
 

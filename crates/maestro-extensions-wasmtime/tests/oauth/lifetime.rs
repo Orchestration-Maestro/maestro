@@ -39,7 +39,10 @@ impl OAuthProviderInterface for Provider {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.refresh_token(credentials, fetch)
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         if credentials.extra.get("deny") == Some(&serde_json::Value::Bool(true)) {
             return Err(DiagnosticErrorInfo::new(None, "literal key denial").into());
         }

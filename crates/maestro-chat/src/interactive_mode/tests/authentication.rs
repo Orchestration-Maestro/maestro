@@ -196,8 +196,11 @@ impl OAuthProviderInterface for Scripted {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(std::future::ready(Err(refused())))
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
     }
 }
 
@@ -772,8 +775,11 @@ impl OAuthProviderInterface for RefusingAfter {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(std::future::ready(Err(refused())))
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,

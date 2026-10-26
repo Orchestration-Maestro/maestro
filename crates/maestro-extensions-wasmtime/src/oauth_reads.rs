@@ -1,7 +1,10 @@
 //! OAuth calls use the retained implementation, not a later registry lookup.
 use crate::local_resources::Lease;
 use maestro_extensions::OAuthProviderHandle;
-use std::sync::{Arc, mpsc::Sender};
+use std::{
+    borrow::Cow,
+    sync::{Arc, mpsc::Sender},
+};
 
 /// Requests on one original OAuth implementation.
 pub(crate) enum Request {
@@ -41,7 +44,7 @@ impl Request {
                 let result = crate::writer_reads::decode(&data).and_then(|credentials| {
                     provider
                         .get_api_key(&credentials)
-                        .map(str::to_owned)
+                        .map(Cow::into_owned)
                         .map_err(|error| error.to_string())
                 });
                 (result, reply)
