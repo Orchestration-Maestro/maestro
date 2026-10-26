@@ -55,7 +55,7 @@ pub use maestro_request::skills::Skill;
 pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 pub use maestro_request::types::{
     AnthropicMessagesCompat, Api, AssistantContent, AssistantMessage, AssistantMessageEvent,
-    CacheControlFormat, DataCollection, DoneReason, ErrorReason, ImageContent, MaxPrice,
+    CacheControlFormat, Context, DataCollection, DoneReason, ErrorReason, ImageContent, MaxPrice,
     MaxTokensField, Message, Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel,
     OpenAICompletionsCompat, OpenAIResponsesCompat, OpenRouterRouting, Provider, RoutingPrice,
     RoutingSort, RoutingThreshold, SharedAssistantMessage, StopReason, TextContent,
