@@ -6,7 +6,9 @@ use maestro_extensions::{
     create_event_bus_for,
     types::{EditorFactory, EditorFactoryOutcome, ExtensionKeybindings, ExtensionUIContextPort},
 };
-use maestro_tui::{EditorComponent, KeybindingDefinition, KeybindingKeys, KeybindingsManager};
+use maestro_tui::{
+    EditorComponent, KeybindingDefinition, KeybindingKeys, KeybindingsConfig, KeybindingsManager,
+};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -54,6 +56,8 @@ struct Fixture {
     ui: Rc<Ui>,
     /// Native text callbacks and authored emissions, in order.
     calls: Rc<RefCell<Vec<String>>>,
+    /// The bindings the supplied reload will read at call time.
+    reload_keys: Rc<RefCell<KeybindingsConfig>>,
 }
 
 impl Fixture {
@@ -87,16 +91,15 @@ impl Fixture {
             ],
             Vec::new(),
         );
+        let reload_keys = Rc::new(RefCell::new(Vec::new()));
+        let reload_from = reload_keys.clone();
         let ui = Rc::new(Ui {
             tui,
             theme: published(),
             keybindings: ExtensionKeybindings {
                 manager: keybindings.clone(),
                 reload: Some(Rc::new(move || {
-                    keybindings.set_user_bindings(vec![(
-                        "app.demo".into(),
-                        Some(KeybindingKeys::Single("f9".into())),
-                    )]);
+                    keybindings.set_user_bindings(reload_from.borrow().clone());
                 })),
             },
             factory: RefCell::default(),
@@ -108,6 +111,7 @@ impl Fixture {
             runner,
             ui,
             calls,
+            reload_keys,
         }
     }
 
@@ -368,7 +372,8 @@ async fn native_factory(fixture: &Fixture, custom: bool) -> EditorFactory {
         let factory: EditorFactory =
             api.ui_callback(move |(tui, theme, keys): (_, _, ExtensionKeybindings), _| {
                 let options = maestro_tui::EditorOptions::default();
-                Ok(if custom {
+                let retained = keys.clone();
+                let built = if custom {
                     let widgets = super::support::widgets();
                     EditorFactoryOutcome::CustomEditor(widgets.custom_editor(
                         &tui,
@@ -380,7 +385,11 @@ async fn native_factory(fixture: &Fixture, custom: bool) -> EditorFactory {
                     EditorFactoryOutcome::Editor(Rc::new(maestro_tui::Editor::new(
                         &tui, theme, options,
                     )))
-                })
+                };
+                built
+                    .editor()
+                    .set_on_submit(Some(Rc::new(move |_| retained.reload())));
+                Ok(built)
             });
         slot.replace(Some(factory));
         Box::pin(async { Ok(()) })
@@ -422,6 +431,8 @@ fn optional(editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>) ->
 /// An authored factory wrapping another extension's builds that extension's editor through the
 /// host, keeping its text, callbacks, custom actions and absent optional operations.
 async fn foreign(fixture: &Fixture, custom: bool) {
+    fixture.ui.keybindings.set_user_bindings(binding("f3"));
+    fixture.reload_keys.replace(binding("f9"));
     let native = native_factory(fixture, custom).await;
     fixture.ui.set_editor_component(Some(native)).unwrap();
     assert_eq!(
@@ -450,8 +461,19 @@ async fn foreign(fixture: &Fixture, custom: bool) {
         custom.set_on_escape(Some(Rc::new(|| {})));
         assert!(custom.on_escape().is_some());
     }
+    foreign_reload_after_restoration(fixture, editor.as_ref()).await;
+}
+
+/// Restoring the default does not revoke a foreign editor's captured application manager.
+async fn foreign_reload_after_restoration(
+    fixture: &Fixture,
+    editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>,
+) {
     let none: Value = serde_json::from_str(&fixture.install("none").await).unwrap();
     assert_eq!(none, json!({ "current": false }));
+    input(editor, "\r");
+    assert_eq!(fixture.ui.keybindings.get_keys("app.demo"), ["f9"]);
+    assert_eq!(fixture.take(), ["change \"\""]);
 }
 
 #[test]
@@ -486,13 +508,50 @@ fn canonical_editor_factory_retains_application_keybindings_reload() {
             fixture.install("keys").await,
             json!({ "same": true }).to_string()
         );
-        input(fixture.built().editor().as_ref(), "enter");
-        assert_eq!(fixture.take(), [r#"factory-keys [["f3"],["f9"]]"#]);
+        let retained = fixture.built().editor();
+        fixture.reload_keys.replace(binding("f9"));
+        input(retained.as_ref(), "enter");
+        assert_reload_report(&fixture, "f3", "f9");
         assert_eq!(fixture.ui.keybindings.get_keys("app.demo"), ["f9"]);
+        assert_eq!(independent.ui.keybindings.get_keys("app.demo"), ["ctrl+x"]);
+        assert_eq!(
+            fixture.install("host").await,
+            json!({ "same": true }).to_string()
+        );
+        assert_eq!(
+            fixture.install("none").await,
+            json!({ "current": false }).to_string()
+        );
+        fixture.reload_keys.replace(binding("f10"));
+        input(retained.as_ref(), "enter");
+        assert_reload_report(&fixture, "f9", "f10");
+        assert_eq!(fixture.ui.keybindings.get_keys("app.demo"), ["f10"]);
         assert_eq!(independent.ui.keybindings.get_keys("app.demo"), ["ctrl+x"]);
         drop(fixture.runner);
         fixture.bus.clear();
         drop(independent.runner);
         independent.bus.clear();
     });
+}
+
+/// An application override supplied to the reload reader.
+fn binding(key: &str) -> KeybindingsConfig {
+    vec![("app.demo".into(), Some(KeybindingKeys::Single(key.into())))]
+}
+
+/// Exact guest observations of an owned snapshot and the reloaded application manager.
+fn assert_reload_report(fixture: &Fixture, before: &str, after: &str) {
+    let events = fixture.take();
+    assert_eq!(events.len(), 1);
+    let report: Value =
+        serde_json::from_str(events[0].strip_prefix("factory-keys ").unwrap()).unwrap();
+    assert_eq!(
+        report,
+        json!({
+            "before": [before], "after": [after], "snapshotOwned": true,
+            "snapshot": [["app.demo", before], ["app.host", "ctrl+y"]],
+            "effective": [["app.demo", after], ["app.host", "ctrl+y"]],
+            "user": [["app.demo", after]],
+        })
+    );
 }

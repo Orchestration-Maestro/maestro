@@ -152,8 +152,18 @@ fn factory(ui: &ExtensionUIContext, kind: &str) -> ExtensionResult<EditorFactory
             let editor = Plain::default();
             editor.submit.replace(Some(Rc::new(move |_, emitter| {
                 let before = keys.get_keys("app.demo")?;
+                let mut snapshot = keys.get_effective_config()?;
+                let saved = super::widget_author::bindings_json(&snapshot);
+                snapshot.clear();
+                let owned =
+                    saved == super::widget_author::bindings_json(&keys.get_effective_config()?);
                 keys.reload()?;
-                emitter.emit("factory-keys", json!([before, keys.get_keys("app.demo")?]))
+                emitter.emit("factory-keys", json!({
+                    "before": before, "after": keys.get_keys("app.demo")?,
+                    "snapshot": saved, "snapshotOwned": owned,
+                    "effective": super::widget_author::bindings_json(&keys.get_effective_config()?),
+                    "user": super::widget_author::bindings_json(&keys.get_user_bindings()?),
+                }))
             })));
             Ok(EditorFactoryOutcome::Editor(Rc::new(editor)))
         }),
