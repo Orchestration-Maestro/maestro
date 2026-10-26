@@ -33,7 +33,13 @@ pub fn with_environment_without(
     );
     let environment = |(): &()| {
         let mut environment = BTreeMap::from([
-            ("HOME".to_owned(), format!("{base}/home")),
+            (
+                if cfg!(windows) { "USERPROFILE" } else { "HOME" }.to_owned(),
+                std::path::Path::new(&base)
+                    .join("home")
+                    .display()
+                    .to_string(),
+            ),
             (BASE.to_owned(), base.clone()),
         ]);
         for (key, value) in variables {
