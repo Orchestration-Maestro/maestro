@@ -42,13 +42,13 @@ fn returned_stream_retains_hooks_and_cancellation() {
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
         for simple in [false, true] {
-            retained(simple).await;
+            retained(simple, None).await;
         }
     });
 }
 
 /// Hooks are first called only after their initiating registration and temporary options end.
-async fn retained(simple: bool) {
+pub(super) async fn retained(simple: bool, object_drop: Option<&'static str>) {
     let (entered, mut incoming) = mpsc::unbounded_channel();
     let protocol = Arc::new(producer::Protocol(Mutex::new(entered)));
     register_api_provider(
@@ -69,7 +69,7 @@ async fn retained(simple: bool) {
     let trace = Rc::new(Trace::default());
     let signal = Cancellation::new();
     bind(&runner, &trace, signal.clone());
-    let invocation = start(&owner, &runner, &mut incoming, simple).await;
+    let invocation = start(&owner, &runner, &mut incoming, (simple, object_drop)).await;
     trace.expect(&[]).await;
     invocation.start.send(()).unwrap();
     invocation.ready.await.unwrap();
@@ -84,18 +84,7 @@ async fn retained(simple: bool) {
         result.read().unwrap().error_message.as_deref(),
         Some("Request was aborted")
     );
-    let output = observe(&runner, "observe first").await;
-    check_output(&output);
-    observe(&runner, "release first").await;
-    trace
-        .expect(&[
-            "first:payload",
-            "first:payload-drop",
-            "first:response",
-            "first:response-drop",
-            "first:signal-drop",
-        ])
-        .await;
+    observe_releases(&runner, &trace, object_drop).await;
     bus.clear();
     drop((invocation.stream, owner, runner, events, bus));
     teardown.await.unwrap();
@@ -103,12 +92,34 @@ async fn retained(simple: bool) {
     unregister_api_providers("component-retained-model");
 }
 
+/// Repeated final owners and every capture release are observed through the retained component.
+async fn observe_releases(
+    runner: &ExtensionRunner<Local>,
+    trace: &Trace,
+    object_drop: Option<&str>,
+) {
+    let output = observe(runner, "observe first").await;
+    check_output(&output);
+    observe(runner, "release first").await;
+    let mut expected = vec![
+        "first:payload",
+        "first:payload-drop",
+        "first:response",
+        "first:response-drop",
+        "first:signal-drop",
+    ];
+    if let Some(label) = object_drop {
+        expected.insert(0, label);
+    }
+    trace.expect(&expected).await;
+}
+
 /// Release the initiating registration before allowing any provider hook to run.
 async fn start(
     owner: &maestro_extensions::types::ExtensionHandle<Local>,
     runner: &ExtensionRunner<Local>,
     incoming: &mut mpsc::UnboundedReceiver<producer::Invocation>,
-    simple: bool,
+    case: (bool, Option<&str>),
 ) -> producer::Invocation {
     let command = runner
         .get_command("bridge-observe")
@@ -117,7 +128,10 @@ async fn start(
         .handler;
     assert_eq!(
         command(
-            format!("model-retained {}", json!({"simple":simple,"id":"first"})),
+            format!(
+                "model-retained {}",
+                json!({"simple":case.0,"id":"first","opaque":case.1.is_some()})
+            ),
             runner.create_command_context()
         )
         .await

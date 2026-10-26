@@ -7,8 +7,8 @@
 use maestro_extensions_wasm::{
     AbortListener, AbortSignal, AssistantMessageEventStream, CommandOptions, Context, EventStream,
     ExtensionAPI, ExtensionCommandContext, ExtensionFuture, ExtensionResult, Model, OnPayload,
-    OnResponse, ProviderStreamOptions, SignalPort, SimpleStreamOptions, StreamOptions,
-    Subscription,
+    OnResponse, ProviderObjects, ProviderStreamOptions, SignalPort, SimpleStreamOptions,
+    StreamOptions, Subscription,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -77,6 +77,9 @@ struct Request {
     simple: bool,
     /// Distinguishable overlapping invocation identity.
     id: String,
+    /// Retain a nonserializable author value through the actual native invocation.
+    #[serde(default)]
+    opaque: bool,
 }
 /// Return immediately, retaining only the stream and separately registered observer callback.
 pub fn start(
@@ -92,7 +95,11 @@ pub fn start(
     }))
     .map_err(|e| e.to_string())?;
     let common = options(context, &request.id)?;
-    let stream = invoke(model, common, request.simple)?;
+    if serde_json::to_value(&common).map_err(|e| e.to_string())? != json!({}) {
+        return Err("capabilities appeared in serialized common options".into());
+    }
+    let objects = request.opaque.then(|| opaque(context, &request.id));
+    let stream = invoke(model, common, request.simple, objects)?;
     let mut observers = Vec::new();
     for _ in 0..3 {
         let mut observer = stream.result();
@@ -123,6 +130,7 @@ fn invoke(
     model: Model,
     common: StreamOptions,
     simple: bool,
+    objects: ProviderObjects,
 ) -> ExtensionResult<AssistantMessageEventStream> {
     let conversation = Context {
         system_prompt: None,
@@ -139,14 +147,29 @@ fn invoke(
             }),
         )
     } else {
-        maestro_extensions_wasm::stream(
-            model,
-            conversation,
-            Some(ProviderStreamOptions {
-                common,
-                ..Default::default()
-            }),
-        )
+        let options = ProviderStreamOptions {
+            common,
+            objects,
+            ..Default::default()
+        };
+        if let Some(object) = &options.objects {
+            let cloned = options.clone();
+            if !Rc::ptr_eq(
+                object,
+                cloned
+                    .objects
+                    .as_ref()
+                    .ok_or("missing cloned opaque owner")?,
+            ) || (object
+                .downcast_ref::<Opaque>()
+                .ok_or("opaque value narrowed")?
+                .value)()
+                != 42
+            {
+                return Err("opaque owner or local closure changed".into());
+            }
+        }
+        maestro_extensions_wasm::stream(model, conversation, Some(options))
     }
 }
 /// Every callback capture has its own observable final release, separate from the signal.
@@ -278,4 +301,22 @@ fn release(action: &str, id: &str) -> ExtensionResult<bool> {
         return Ok(true);
     }
     Ok(false)
+}
+
+/// Neither serialization nor cloning is required of the author's actual local value.
+struct Opaque {
+    /// One nonserializable, non-Clone computation retained with the source value.
+    value: Box<dyn Fn() -> u32>,
+    /// Observe final release outside callback storage, including reentrant stream creation.
+    _release: Released,
+}
+/// Retain an arbitrary author value, never a simulated native client resource.
+fn opaque(context: &ExtensionCommandContext, id: &str) -> Rc<dyn std::any::Any> {
+    Rc::new(Opaque {
+        value: Box::new(|| 42),
+        _release: Released {
+            context: context.clone(),
+            label: format!("{id}:opaque-drop"),
+        },
+    })
 }

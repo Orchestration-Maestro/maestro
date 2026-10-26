@@ -147,5 +147,9 @@ buffer does not cancel its independently owned producer.
 
 Hook phases remain protocol-owned. Public and cloud content generation do not
 invoke a response hook. Response-session retries invoke the original response
-callback on each native attempt; a rejected attempt releases its body without
-polling it before the native retry consumes a later response.
+callback on each native attempt. If that callback rejects, its attempt releases
+the body without polling it; a later native retry consumes a new response.
+
+Opaque author values can hold non-Clone closures. Cloned raw options share their
+original owner; its destructor runs once when the invocation releases its final
+retained value. Ordinary JSON still omits that value.
