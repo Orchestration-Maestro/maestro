@@ -1,5 +1,7 @@
 //! Registrations and actions forwarded to the host imports.
 
+use std::rc::Rc;
+
 use super::callbacks::Identity;
 use super::exports::encode_value;
 use super::imports::{Imports, ToolCallbacks};
@@ -22,6 +24,46 @@ impl<I: Imports> ExtensionHost for Host<I> {
     }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.0.native_helper(operation, data)
+    }
+    fn auth_storage_from_backend(
+        &self,
+        backend: Rc<dyn crate::AuthStorageBackend>,
+    ) -> ExtensionResult<crate::AuthStorage> {
+        let identity = Identity::new(&self.0);
+        identity.stage(backend);
+        let result = self.0.auth_storage_from_backend(&identity.handle);
+        identity.settle(result.is_ok());
+        result.map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<crate::AuthStorage> {
+        self.0
+            .create_auth_storage(path)
+            .map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn auth_storage_in_memory(
+        &self,
+        data: crate::AuthStorageData,
+    ) -> ExtensionResult<crate::AuthStorage> {
+        self.0
+            .auth_storage_in_memory(&encode_value(&data)?)
+            .map(|resource| super::auth_storage::storage(self.0.clone(), resource))
+    }
+    fn create_model_registry(
+        &self,
+        auth: crate::AuthStorage,
+        path: Option<&str>,
+    ) -> ExtensionResult<crate::ModelRegistry> {
+        self.0
+            .create_model_registry(super::auth_storage::resource::<I>(&auth)?, path)
+            .map(|resource| super::model_registry::registry(self.0.clone(), resource))
+    }
+    fn in_memory_model_registry(
+        &self,
+        auth: crate::AuthStorage,
+    ) -> ExtensionResult<crate::ModelRegistry> {
+        self.0
+            .in_memory_model_registry(super::auth_storage::resource::<I>(&auth)?)
+            .map(|resource| super::model_registry::registry(self.0.clone(), resource))
     }
     fn exec<'a>(
         &'a self,
@@ -240,5 +282,11 @@ impl<I: Imports> ExtensionHost for Host<I> {
     ) -> ExtensionResult<()> {
         self.0
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
+    }
+    fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
+        self.0.register_provider(name, &encode_value(&config)?)
+    }
+    fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
+        self.0.unregister_provider(name)
     }
 }

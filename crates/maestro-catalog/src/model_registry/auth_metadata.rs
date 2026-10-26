@@ -83,7 +83,7 @@ impl ModelRegistry {
             .map(|(_, c)| SharedHandle::clone(c));
         let registered = retained.map(|config| {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
-            (config.name.clone(), config.oauth.clone())
+            (config.name.clone(), config.callbacks.oauth.clone())
         });
         if let Some((name, oauth)) = registered {
             if let Some(name) = name {

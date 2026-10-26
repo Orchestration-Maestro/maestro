@@ -528,7 +528,7 @@ pub struct Route {
     /// What the nested call the guest is running settles.
     pub(super) running: Option<super::ui_host::Nested>,
     /// The operation's own result.
-    pub(super) result: Option<Result<(), String>>,
+    pub(super) result: Option<Result<host::RouteValue, String>>,
 }
 
 /// A deferred nested call; the test host never makes one.
@@ -552,7 +552,7 @@ impl State {
         self.push(Route {
             steps: std::collections::VecDeque::new(),
             running: None,
-            result: Some(result),
+            result: Some(result.map(|()| host::RouteValue::Unit)),
         })
     }
 }
@@ -564,7 +564,9 @@ impl host::HostImportRoute for State {
             route.running = Some(nested);
             return Ok(host::RouteStep::Invoke(call));
         }
-        Ok(host::RouteStep::Done(route.result.take().unwrap_or(Ok(()))))
+        Ok(host::RouteStep::Done(
+            route.result.take().unwrap_or(Ok(host::RouteValue::Unit)),
+        ))
     }
     fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
         let nested = self.table.get_mut(&this)?.running.take();
@@ -916,6 +918,77 @@ impl host::Host for State {
                 crate::FlagValue::String(v) => host::FlagValue::String(v),
             })
         }))
+    }
+
+    fn auth_storage_from_backend(
+        &mut self,
+        _backend: Resource<Identity>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_from_backend", &[])?;
+            self.table
+                .push(reader)
+                .map(host::RouteValue::Credentials)
+                .map_err(|error| error.to_string())
+        });
+        self.push(Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            result: Some(result),
+        })
+    }
+    fn create_auth_storage(
+        &mut self,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn auth_storage_in_memory(
+        &mut self,
+        data: String,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let result = self.observed.readers.acquire().and_then(|reader| {
+            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+            self.table.push(reader).map_err(|error| error.to_string())
+        });
+        Ok(result)
+    }
+    fn create_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+        path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("create_model_registry", &[serde_json::json!(path)])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn in_memory_model_registry(
+        &mut self,
+        auth: Resource<super::reader_host::Reader>,
+    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+        let reader = self.table.get(&auth)?.clone();
+        Ok(reader
+            .unit("in_memory_model_registry", &[])
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+    }
+    fn register_provider(
+        &mut self,
+        name: String,
+        config: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.observed
+            .log(format!("provider register {name} {config}"));
+        self.routed(Ok(()))
+    }
+
+    fn unregister_provider(&mut self, name: String) -> wasmtime::Result<Resource<Route>> {
+        self.observed.log(format!("provider unregister {name}"));
+        self.routed(Ok(()))
     }
 
     fn append_entry(
