@@ -8,6 +8,8 @@ mod lifecycle;
 mod output;
 #[cfg(any(windows, test))]
 mod producer;
+#[cfg(any(windows, test))]
+mod reader;
 #[cfg(unix)]
 mod unix;
 #[cfg(windows)]

@@ -3,9 +3,11 @@
 
 use std::future::pending;
 use std::io::{self, Write};
+use std::sync::Mutex;
 
 use crossterm_winapi::{
-    Console, ConsoleMode, Handle as ConsoleHandle, HandleType, InputRecord, ScreenBuffer,
+    Console, ConsoleMode, ControlKeyState, Handle as ConsoleHandle, HandleType, InputRecord,
+    ScreenBuffer,
 };
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
@@ -13,7 +15,25 @@ use tokio::task::{JoinHandle, LocalSet};
 
 use super::OutputPort;
 use super::input::{Input, Wake, until};
-use super::producer::{Arrival, Producer, Record, Records};
+use super::producer::{self, Arrival, Record, Records};
+use super::reader::{Reader, Subscription};
+
+/// Standard input has one reader shared by terminals and standalone waits.
+static STDIN: Mutex<InputOwner> = Mutex::new(InputOwner {
+    reader: None,
+    mode: None,
+    users: 0,
+});
+
+/// The single standard-input reader and the raw-mode acquisition its subscribers share.
+struct InputOwner {
+    /// Retained across terminal generations and standalone waits.
+    reader: Option<Reader>,
+    /// The console and original mode, while at least one acquisition is live.
+    mode: Option<(ConsoleHandle, u32)>,
+    /// How many acquisitions still need raw input.
+    users: usize,
+}
 
 /// Ctrl+C and the other control keys are handled by the console.
 const ENABLE_PROCESSED_INPUT: u32 = 0x0001;
@@ -34,19 +54,18 @@ const ENABLE_VIRTUAL_TERMINAL_INPUT: u32 = 0x0200;
 /// Escape sequences written to the console are interpreted rather than shown.
 const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
 
-/// The live input task of a generation and the thread reading for it.
+/// The live input task of a generation and its reader subscription.
 pub(super) struct Task {
     /// The task delivering input.
     task: JoinHandle<()>,
-    /// The record reader, absent when standard input is not a console.
-    producer: Option<Producer>,
+    /// Its live subscription to standard input.
+    subscription: Subscription,
 }
 
 impl Task {
-    /// Stops and joins the reader, so no record is read after this returns, then cancels the
-    /// task.
+    /// Stops forwarding input to this generation, then cancels its task.
     pub(super) fn abort(self) {
-        drop(self.producer);
+        drop(self.subscription);
         self.task.abort();
     }
 }
@@ -54,8 +73,8 @@ impl Task {
 /// The console modes a started terminal changed and must give back.
 #[derive(Default)]
 pub(super) struct Acquired {
-    /// The standard-input console and its mode before raw mode, when it is a console.
-    input: Option<(ConsoleHandle, u32)>,
+    /// Whether this acquisition holds a share of standard input.
+    input: bool,
     /// The standard-output console and its mode before escape-sequence processing, when it
     /// is a console that accepted the change.
     output: Option<(ConsoleHandle, u32)>,
@@ -67,18 +86,17 @@ impl Acquired {
     /// and standard input that is not a console is left alone. A remembered mode is kept, so
     /// repeating the call never records the changed mode as the original.
     fn take_input(&mut self) -> io::Result<()> {
-        if self.input.is_some() {
+        if self.input {
             return Ok(());
         }
-        let Some((handle, original)) = console_mode(HandleType::InputHandle) else {
-            return Ok(());
-        };
-        let mode = ConsoleMode::from(handle.clone());
-        let raw = (original & !(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT))
-            | ENABLE_WINDOW_INPUT;
-        mode.set_mode(raw)?;
-        self.input = Some((handle, original));
-        let _ = mode.set_mode(raw | ENABLE_VIRTUAL_TERMINAL_INPUT);
+        let mut owner = STDIN
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if owner.users == 0 {
+            owner.take_mode()?;
+        }
+        owner.users += 1;
+        self.input = true;
         Ok(())
     }
 
@@ -105,16 +123,37 @@ impl Acquired {
                 ConsoleMode::from(handle).set_mode(original)
             })
         };
-        let input = restore(self.input.take());
+        let input = if std::mem::take(&mut self.input) {
+            let mut owner = STDIN
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            owner.users -= 1;
+            if owner.users == 0 {
+                restore(owner.mode.take())
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        };
         let output = restore(self.output.take());
         input.and(output)
     }
+}
 
-    /// The standard-input console, when raw mode was applied to one.
-    fn console(&self) -> Option<Console> {
-        self.input
-            .as_ref()
-            .map(|(handle, _)| Console::from(handle.clone()))
+impl InputOwner {
+    /// Saves and acquires raw console input for the first live user; pipes need no mode.
+    fn take_mode(&mut self) -> io::Result<()> {
+        let Some((handle, original)) = console_mode(HandleType::InputHandle) else {
+            return Ok(());
+        };
+        let mode = ConsoleMode::from(handle.clone());
+        let raw = (original & !(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT))
+            | ENABLE_WINDOW_INPUT;
+        mode.set_mode(raw)?;
+        self.mode = Some((handle, original));
+        let _ = mode.set_mode(raw | ENABLE_VIRTUAL_TERMINAL_INPUT);
+        Ok(())
     }
 }
 
@@ -146,6 +185,7 @@ impl Records for Console {
                     key: key.virtual_key_code,
                     unit: key.u_char,
                     repeat: key.repeat_count,
+                    control: control_bits(key.control_key_state),
                 },
                 InputRecord::WindowBufferSizeEvent(_) => Record::Resize,
                 _ => Record::Other,
@@ -154,28 +194,49 @@ impl Records for Console {
     }
 }
 
+/// The bits of the console control-state mask, whose safe wrapper exposes only queries.
+fn control_bits(control: ControlKeyState) -> u32 {
+    (0..u32::BITS)
+        .map(|shift| 1 << shift)
+        .filter(|bit| control.has_state(*bit))
+        .fold(0, |mask, bit| mask | bit)
+}
+
 /// The reader of a generation that is not spawned yet.
 pub(super) struct Stream {
-    /// The record reader, absent when standard input is not a console.
-    producer: Option<Producer>,
-    /// What the reader delivers; closed at once when there is no reader.
+    /// Its live subscription to standard input.
+    subscription: Subscription,
+    /// What the shared reader delivers to this generation.
     arrivals: UnboundedReceiver<Arrival>,
 }
 
-/// Acquires the consoles, then starts the record reader when standard input is a console.
+/// Acquires console modes and subscribes to standard input.
 pub(super) fn acquire(acquired: &mut Acquired) -> io::Result<Stream> {
     acquired.take()?;
-    open(acquired)
+    open()
 }
 
-/// Starts the record reader on the standard-input console `acquired` holds, if any.
-fn open(acquired: &Acquired) -> io::Result<Stream> {
+/// Opens one subscription to the process-wide console or redirected stream reader.
+fn open() -> io::Result<Stream> {
     let (sender, arrivals) = unbounded_channel();
-    let producer = acquired
-        .console()
-        .map(|console| Producer::spawn(console, sender))
-        .transpose()?;
-    Ok(Stream { producer, arrivals })
+    let mut owner = STDIN
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if owner.reader.is_none() {
+        owner.reader = Some(match &owner.mode {
+            Some((handle, _)) => Reader::spawn(producer::console(Console::from(handle.clone())))?,
+            None => Reader::spawn(producer::pipe(io::stdin()))?,
+        });
+    }
+    let subscription = owner
+        .reader
+        .as_ref()
+        .ok_or_else(|| io::Error::other("input reader missing"))?
+        .subscribe(sender);
+    Ok(Stream {
+        subscription,
+        arrivals,
+    })
 }
 
 impl Stream {
@@ -183,7 +244,7 @@ impl Stream {
     pub(super) fn spawn(self, local: &LocalSet, input: Input) -> Task {
         Task {
             task: local.spawn_local(run(input, self.arrivals)),
-            producer: self.producer,
+            subscription: self.subscription,
         }
     }
 }
@@ -245,9 +306,9 @@ pub(super) fn window_size() -> Option<(usize, usize)> {
     ))
 }
 
-/// Await one nonempty raw console read without starting a terminal or enabling output modes.
+/// Await one nonempty raw standard-input read without starting a terminal or enabling output modes.
 /// Acquires the standard-input console on first poll and restores its saved mode on
-/// completion or drop. Standard input that is not a console remains pending until dropped.
+/// completion or drop. Redirected input is read as bytes; EOF stays pending until dropped.
 /// Requires a caller-driven Tokio runtime.
 ///
 /// # Errors
@@ -258,7 +319,7 @@ pub async fn wait_for_input() -> io::Result<()> {
     let mut acquired = Acquired::default();
     let result = async {
         acquired.take_input()?;
-        let mut stream = open(&acquired)?;
+        let mut stream = open()?;
         loop {
             match stream.arrivals.recv().await {
                 Some(Arrival::Bytes(_)) => return Ok(()),

@@ -248,10 +248,10 @@ A pipe is supported and arbitrary bytes count as input. EOF stays pending until 
 Success, errors and future drop restore the saved terminal attributes and descriptor
 flags, including initially raw state. Explicit completion reports restoration failures
 unless an earlier operation already failed. Opening or acquisition failures release the
-input registration. A later wait opens its own reader rather than retaining one.
+input registration. On Unix, a later wait opens its own reader rather than retaining one.
 On Windows it acquires the standard-input console as `start` does, without the output
-mode, and completes on the first typed text the console reader delivers; standard input that
-is not a console stays pending until drop, and drop restores the saved mode.
+mode, and completes on the first text or redirected bytes the shared reader delivers. EOF
+stays pending until drop, and drop restores the saved mode.
 
 ## Windows consoles
 
@@ -262,23 +262,27 @@ terminal sends and modified keys such as Shift+Tab are told apart. A console tha
 escape-sequence input stays in raw mode without it, and `start` still succeeds; such a
 console delivers typed characters but no sequences for keys that produce none. `start` also
 turns on escape-sequence processing for the standard-output console when it accepts it.
-`stop` restores both saved modes; repeated and replacing starts keep the modes saved first,
-as on Unix. Standard input or output that is not a console is left alone.
+`stop` restores the saved output mode. Standard input's original mode is restored after
+the last terminal or standalone wait releases it; repeated and replacing starts keep the
+mode saved first, as on Unix. Standard input or output that is not a console is left alone.
 
-The console offers no read that can be cancelled, so input is read by a thread of its own
-for each input generation. It asks the console how many records are waiting, reads only when
-some are, and sleeps 10 ms otherwise, which bounds the added latency; idle, it costs one
-console query per interval. Key presses that produce a UTF-16 unit, and Alt releases that
-carry a character composed on the numeric keypad, become text in order, repeated as the
-record says; a surrogate pair split across reads is joined, and an unpaired surrogate becomes
-U+FFFD. That text then follows the shared [Input](#input) path, so framing, paste markers,
-keyboard replies and their order are as on Unix. A window-size record refreshes the size,
-which is read from the window of the standard-output console. The thread checks a stop flag
-before every read; `stop` and a replacing `start` set it and join the thread before the
-console mode is restored, so no record is read after they return. A console read failure
-ends the reader and is returned by the next `stop`.
+Windows input uses one process-wide reader thread shared by terminal generations and
+standalone waits. It queries an idle console every 10 ms and reads the waiting records.
+The count is only a latency optimization: another reader can consume those records before
+the read begins. Stopping removes the generation's subscription without joining or waiting
+for that read, so neither a console nor a pipe can block shutdown. A completed batch with
+no subscriber is held for the next start, and concurrent subscriptions each receive the
+same input. External readers are not coordinated.
 
-Standard input that is not a console (a pipe or `NUL`) is treated as ended at once: no
-thread is started and no input is delivered, because a blocking read of it could not be
-stopped. Output is written synchronously to standard output, so
+Character-producing key presses, including NUL from Ctrl+Space or Ctrl+2, and Alt releases
+that carry a character composed on the numeric keypad become text in order, repeated as
+the record says. Modifier-only records are not text. Control-state metadata distinguishes
+NUL-producing keys from records that carry no character. Surrogate pairs split across
+reads are joined; an unpaired surrogate becomes U+FFFD. Text then follows the shared
+[Input](#input) path. Window-size records refresh the size from the standard-output console.
+A read failure ends the source and is returned by the next `stop`.
+
+Redirected standard input is read as bytes on the same reader thread, at most 4096 bytes
+per read. A pending read can outlive `stop`, but cannot forward to a stopped generation;
+its bytes are held for resume. EOF ends input delivery. Output is synchronous, so
 `pending_output_bytes` is always zero.

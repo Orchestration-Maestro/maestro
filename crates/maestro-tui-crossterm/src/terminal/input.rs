@@ -157,3 +157,6 @@ pub(super) async fn until(deadline: Option<Instant>) {
         None => pending().await,
     }
 }
+
+#[cfg(test)]
+mod tests;

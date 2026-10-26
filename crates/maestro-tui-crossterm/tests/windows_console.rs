@@ -290,9 +290,9 @@ fn resize() {
 }
 
 #[test]
-fn standard_input_that_is_not_a_console_ends_input_and_stops_cleanly() {
+fn null_input_stops_cleanly_and_restores_output() {
     on_console(
-        "standard_input_that_is_not_a_console_ends_input_and_stops_cleanly",
+        "null_input_stops_cleanly_and_restores_output",
         true,
         null_input,
     );
@@ -304,7 +304,6 @@ fn null_input() {
     drive(|local| async move {
         let (mut terminal, inputs, _) = started(&local);
         assert_ne!(mode(HandleType::OutputHandle) & VT_PROCESSING, 0);
-        tokio::time::sleep(Duration::from_millis(50)).await;
         terminal.stop().unwrap();
         assert_eq!(inputs.get(), 0);
     });
@@ -333,4 +332,32 @@ fn dropped_wait() {
         assert_eq!(mode(HandleType::OutputHandle), original.1);
     });
     assert_eq!(modes(), original);
+}
+
+#[test]
+fn concurrent_terminal_and_wait_restore_input_after_the_last_release() {
+    on_console(
+        "concurrent_terminal_and_wait_restore_input_after_the_last_release",
+        false,
+        concurrent_wait,
+    );
+}
+
+/// Stops a terminal while a standalone wait still owns raw input, then releases the wait.
+fn concurrent_wait() {
+    let original = fresh_modes();
+    drive(|local| async move {
+        let (mut terminal, _, _) = started(&local);
+        {
+            let mut wait = pin!(wait_for_input());
+            assert!(
+                wait.as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+                    .is_pending()
+            );
+            terminal.stop().unwrap();
+            assert_eq!(mode(HandleType::InputHandle) & COOKED, 0);
+        }
+        assert_eq!(modes(), original);
+    });
 }
