@@ -35,6 +35,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.stream-value": crate::tests::stream_host::Value,
             "maestro:extension/host.native-row": crate::tests::host::NativeRow,
             "maestro:extension/host.native-component": crate::tests::host::NativeComponent,
+            "maestro:extension/host.file-mutation": crate::tests::host::FileMutation,
             "maestro:extension/host.builtin-tool": crate::tests::host::BuiltinTool,
             "maestro:extension/host.bash-output": crate::tests::shell_host::Receiver,
             "maestro:extension/host.theme": crate::tests::renderer_host::Theme,

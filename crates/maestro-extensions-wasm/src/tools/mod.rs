@@ -6,6 +6,7 @@
 )]
 
 mod bash;
+pub(crate) mod file_mutation_queue;
 pub use bash::*;
 mod read;
 pub use read::*;

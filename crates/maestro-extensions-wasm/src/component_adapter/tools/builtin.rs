@@ -8,6 +8,21 @@ use crate::{
 };
 use std::rc::Rc;
 
+/// Retains the original native queue future until the guest callback settles or is dropped.
+pub(super) fn with_file_mutation_queue(
+    file_path: &str,
+    operation: Box<dyn FnOnce() -> crate::ExtensionFuture<'static, ()>>,
+) -> crate::ExtensionFuture<'static, ()> {
+    let mutation = host::with_file_mutation_queue(file_path);
+    Box::pin(async move {
+        let mutation = mutation?;
+        mutation.wait().await?;
+        let result = operation().await;
+        drop(mutation);
+        result
+    })
+}
+
 /// Constructs the native read with independently retained replacement observations.
 pub(super) fn read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<ToolDefinition> {
     definition(native_read(cwd, options)?, true)

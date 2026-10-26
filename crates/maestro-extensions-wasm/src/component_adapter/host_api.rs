@@ -13,6 +13,14 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn with_file_mutation_queue(
+        &self,
+        file_path: String,
+        operation: Box<dyn FnOnce() -> crate::ExtensionFuture<'static, ()>>,
+    ) -> crate::ExtensionFuture<'static, ()> {
+        self.0.with_file_mutation_queue(file_path, operation)
+    }
+
     fn create_grep_tool(
         &self,
         cwd: String,

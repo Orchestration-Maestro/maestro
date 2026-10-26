@@ -532,6 +532,16 @@ impl Imports for Controlled {
     ) -> ExtensionResult<crate::ToolDefinition> {
         Err("built-in tools require the production host".into())
     }
+    fn with_file_mutation_queue(
+        &self,
+        _: String,
+        _: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>,
+    ) -> ExtensionFuture<'static, ()> {
+        Box::pin(std::future::ready(Err(
+            "file mutation queues require the production host".into(),
+        )))
+    }
+
     fn create_ls_tool(&self, _: String, _: crate::LsToolOptions) -> ExtensionResult<crate::Tool> {
         Err("built-in tools require the production host".into())
     }

@@ -1698,3 +1698,371 @@ async fn native_listing(request: &serde_json::Value) -> Result<serde_json::Value
         .map_err(|error| error.to_string())?;
     Ok(serde_json::to_value(result).unwrap())
 }
+
+/// Generic author values stay local while the production host owns admission.
+#[test]
+fn builtin_queue_returns_nonserializable_author_values() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let runner = super::builtin_author::loaded().await;
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let result = (command.handler)(
+            format!(
+                "builtin-queue value {}",
+                scratch.path().join("unresolved").display()
+            ),
+            runner.create_command_context(),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&result).unwrap(),
+            json!({"same":true,"value":42,"error":"author queue error"})
+        );
+    });
+}
+
+/// Dropping a waiting guest future releases only its own original native admission.
+#[test]
+fn builtin_mutation_admission_cancellation_has_no_late_effect() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch
+            .path()
+            .join("cancelled")
+            .to_str()
+            .unwrap()
+            .to_owned();
+        std::fs::write(&path, "unchanged").unwrap();
+        let (runner, events) = super::builtin_author::loaded_with_events().await;
+        let target = path.clone();
+        let late_write = events.on(
+            "builtin-queue-late-write",
+            std::rc::Rc::new(move |_, _| {
+                std::fs::write(&target, "late write").unwrap();
+                Ok(None)
+            }),
+        );
+        for poll in [false, true] {
+            let head = maestro_extensions::with_file_mutation_queue(&path, || async { Ok(()) });
+            let (dropped, subscription) = queue_notice(&events, "builtin-queue-dropped");
+            let command = runner.get_command("bridge-observe").unwrap().command;
+            let waiting = Box::pin((command.handler)(
+                format!("builtin-queue cancel {}", json!({"path":path,"poll":poll})),
+                runner.create_command_context(),
+            ));
+            let waiting = until_queue_notice(waiting, dropped).await;
+            head.await.unwrap();
+            let response = waiting.await.unwrap_err().to_string();
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&response).unwrap(),
+                json!({"cancelledEffects":0,"following":"live"})
+            );
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), "unchanged");
+            subscription.unsubscribe();
+        }
+        late_write.unsubscribe();
+    });
+}
+
+/// A positive completion on another file proves the guest is not using a global queue.
+#[test]
+fn builtin_mutations_keep_distinct_files_independent() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let runner = super::builtin_author::loaded().await;
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let (started, release) = read_gate(&runner);
+        let held = Box::pin((command.handler)(
+            format!(
+                "builtin-queue hold {}",
+                scratch.path().join("held").display()
+            ),
+            runner.create_command_context(),
+        ));
+        let held = match futures_util::future::select(held, started).await {
+            futures_util::future::Either::Left(_) => panic!("held queue operation did not wait"),
+            futures_util::future::Either::Right((started, held)) => {
+                started.unwrap();
+                held
+            }
+        };
+        let completed = (command.handler)(
+            format!(
+                "builtin-queue value {}",
+                scratch.path().join("other").display()
+            ),
+            runner.create_command_context(),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&completed).unwrap(),
+            json!({"same":true,"value":42,"error":"author queue error"})
+        );
+        release.send(()).unwrap();
+        assert_eq!(held.await.unwrap_err().to_string(), "released");
+    });
+}
+
+/// Failure releases the original file identity, including unresolved and symlink spellings.
+#[test]
+fn builtin_mutations_release_after_error_and_alias_paths() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let existing = scratch.path().join("existing");
+        std::fs::write(&existing, "unchanged").unwrap();
+        let missing = scratch.path().join("missing");
+        let pairs = [
+            (existing.clone(), scratch.path().join("./existing")),
+            (missing, scratch.path().join("unresolved/../missing")),
+        ]
+        .into_iter();
+        #[cfg(unix)]
+        let pairs = {
+            let alias = scratch.path().join("alias");
+            std::os::unix::fs::symlink(&existing, &alias).unwrap();
+            pairs.chain([(existing.clone(), alias)])
+        };
+        let (runner, events) = super::builtin_author::loaded_with_events().await;
+        for (head, alias) in pairs {
+            observe_queue_alias(
+                &runner,
+                &events,
+                head.to_str().unwrap(),
+                alias.to_str().unwrap(),
+            )
+            .await;
+        }
+        assert_eq!(std::fs::read_to_string(&existing).unwrap(), "unchanged");
+        observe_queue_tool_release(&runner, existing.to_str().unwrap()).await;
+    });
+}
+
+/// A closed callback transcript proves the successor starts only after the failed head ends.
+async fn observe_queue_alias(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    events: &maestro_extensions::EventBusController<maestro_extensions::Local>,
+    original_path: &str,
+    alias: &str,
+) {
+    let phases = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let observed = phases.clone();
+    let phases_subscription = events.on(
+        "builtin-queue-phase",
+        std::rc::Rc::new(move |phase, _| {
+            observed.borrow_mut().push((*phase).clone());
+            Ok(None)
+        }),
+    );
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let (started, release) = read_gate(runner);
+    let held = Box::pin((command.handler)(
+        format!("builtin-queue fail {original_path}"),
+        runner.create_command_context(),
+    ));
+    let held = until_queue_notice(held, started).await;
+    let (admitted, subscription) = queue_notice(events, "builtin-queue-admitted");
+    let waiting = Box::pin((command.handler)(
+        format!("builtin-queue value {alias}"),
+        runner.create_command_context(),
+    ));
+    let waiting = until_queue_notice(waiting, admitted).await;
+    release.send(()).unwrap();
+    assert_eq!(held.await.unwrap_err().to_string(), "queued author failure");
+    let result = waiting.await.unwrap_err().to_string();
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&result).unwrap(),
+        json!({"same":true,"value":42,"error":"author queue error"})
+    );
+    assert_eq!(
+        *phases.borrow(),
+        vec![json!("head:start"), json!("head:end"), json!("value:start")]
+    );
+    subscription.unsubscribe();
+    phases_subscription.unsubscribe();
+}
+
+/// An explicit producer completion, not a deadline, closes the admission prefix.
+fn queue_notice(
+    events: &maestro_extensions::EventBusController<maestro_extensions::Local>,
+    channel: &str,
+) -> (
+    tokio::sync::oneshot::Receiver<()>,
+    maestro_extensions::Subscription<maestro_extensions::Local>,
+) {
+    let (sent, received) = tokio::sync::oneshot::channel();
+    let sent = std::cell::RefCell::new(Some(sent));
+    let subscription = events.on(
+        channel,
+        std::rc::Rc::new(move |_, _| {
+            sent.borrow_mut().take().unwrap().send(()).unwrap();
+            Ok(None)
+        }),
+    );
+    (received, subscription)
+}
+
+/// Keeps the same caller future pending until its producer announces the requested phase.
+async fn until_queue_notice<F: std::future::Future + Unpin>(
+    work: F,
+    ready: tokio::sync::oneshot::Receiver<()>,
+) -> F {
+    match futures_util::future::select(work, ready).await {
+        futures_util::future::Either::Left(_) => {
+            panic!("queue completed before the requested phase")
+        }
+        futures_util::future::Either::Right((ready, work)) => {
+            ready.unwrap();
+            work
+        }
+    }
+}
+
+/// Guest queue calls and both returned mutation factories share the actual file's queue.
+#[test]
+fn builtin_mutations_share_native_file_ordering() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch
+            .path()
+            .join("mutations")
+            .to_str()
+            .unwrap()
+            .to_owned();
+        let (runner, events) = super::builtin_author::loaded_with_events().await;
+        for write in [false, true] {
+            std::fs::write(&path, "alpha\nbeta\n").unwrap();
+            let command = runner.get_command("bridge-observe").unwrap().command;
+            let (started, release) = read_gate(&runner);
+            let held = Box::pin((command.handler)(
+                format!("builtin-queue hold {path}"),
+                runner.create_command_context(),
+            ));
+            let held = until_queue_notice(held, started).await;
+            let (admitted, subscription) = queue_notice(&events, "builtin-mutations-admitted");
+            let mutations = Box::pin((command.handler)(
+                format!(
+                    "builtin-queue mutations {}",
+                    json!({"path":path,"write":write})
+                ),
+                runner.create_command_context(),
+            ));
+            let mutations = until_queue_notice(mutations, admitted).await;
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), "alpha\nbeta\n");
+            release.send(()).unwrap();
+            assert_eq!(held.await.unwrap_err().to_string(), "released");
+            let actual: serde_json::Value =
+                serde_json::from_str(&mutations.await.unwrap_err().to_string()).unwrap();
+            assert_eq!(
+                std::fs::read_to_string(&path).unwrap(),
+                if write {
+                    "written last\n"
+                } else {
+                    "ALPHA\nBETA\n"
+                }
+            );
+            assert_eq!(actual, native_ordered_mutations(&path, write).await);
+            subscription.unsubscribe();
+        }
+    });
+}
+
+/// Compares complete results with the individual factories on the same actual path.
+async fn native_ordered_mutations(path: &str, write: bool) -> serde_json::Value {
+    std::fs::write(path, "alpha\nbeta\n").unwrap();
+    let edit = maestro_extensions::local::wrap_tool_definition(
+        maestro_extensions::local::create_edit_tool_definition::<()>(
+            "/".into(),
+            maestro_extensions::EditToolOptions::default(),
+        ),
+        None,
+    );
+    let first = (edit.execute)(
+        "first".into(),
+        json!({"path":path,"edits":[{"oldText":"alpha","newText":"ALPHA"}]}),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    let second = if write {
+        let write = maestro_extensions::local::wrap_tool_definition(
+            maestro_extensions::local::create_write_tool_definition::<()>(
+                "/".into(),
+                maestro_extensions::WriteToolOptions::default(),
+            ),
+            None,
+        );
+        (write.execute)(
+            "second".into(),
+            json!({"path":path,"content":"written last\n"}),
+            None,
+            None,
+        )
+        .await
+        .unwrap()
+    } else {
+        (edit.execute)(
+            "second".into(),
+            json!({"path":path,"edits":[{"oldText":"beta","newText":"BETA"}]}),
+            None,
+            None,
+        )
+        .await
+        .unwrap()
+    };
+    json!([{"Ok":first},{"Ok":second}])
+}
+
+/// Dropping one returned owner cannot invalidate a separately returned tool.
+async fn observe_queue_tool_release(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    path: &str,
+) {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let actual: serde_json::Value = serde_json::from_str(
+        &(command.handler)(
+            format!("builtin-queue owners {path}"),
+            runner.create_command_context(),
+        )
+        .await
+        .unwrap_err()
+        .to_string(),
+    )
+    .unwrap();
+    assert_eq!(std::fs::read_to_string(path).unwrap(), "kept");
+    let native = maestro_extensions::local::wrap_tool_definition(
+        maestro_extensions::local::create_write_tool_definition::<()>(
+            "/".into(),
+            maestro_extensions::WriteToolOptions::default(),
+        ),
+        None,
+    );
+    let expected = (native.execute)(
+        "survivor".into(),
+        json!({"path":path,"content":"kept"}),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(actual, serde_json::to_value(expected).unwrap());
+}

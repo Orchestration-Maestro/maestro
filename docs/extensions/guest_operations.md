@@ -119,6 +119,22 @@ display string. In particular, edit access formats a supplied text or numeric
 at their reached stage. Matching, validation, diff construction, BOM and line-ending
 policy remain with the [native edit owner](../tools-edit.md).
 
+## Share native file ordering
+
+`ExtensionAPI::with_file_mutation_queue(path, operation)` takes its place in the
+same native queue used by edit and write, before its returned future is polled.
+The callback starts after earlier operations on that file finish; other files
+can proceed independently. Native canonical paths identify existing files,
+including symlink aliases. Unresolved paths use native lexical absolute paths.
+
+The callback returns `ExtensionFuture<'static, T>`. Its value stays in the guest:
+`T` needs no serialization bound and can retain `Rc` identity. Callback errors
+release the turn and reach the caller unchanged. Dropping a waiting future
+releases its turn without calling the operation. This does not undo effects
+that have already started. Do not call a queued edit or write from inside a
+queue operation for the same file: that nested call would wait for its own
+predecessor to finish.
+
 ## Replace search observations
 
 `create_find_tool` / `create_find_tool_definition` and `create_grep_tool` /

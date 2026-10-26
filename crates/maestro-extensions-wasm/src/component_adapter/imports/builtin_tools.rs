@@ -3,6 +3,12 @@
 /// Declares native factories without creating a second adapter trait.
 macro_rules! builtin_tool_imports {
     () => {
+        /// Runs a guest-local callback while retaining the native queue turn.
+        fn with_file_mutation_queue(
+            &self,
+            file_path: String,
+            operation: Box<dyn FnOnce() -> crate::ExtensionFuture<'static, ()>>,
+        ) -> crate::ExtensionFuture<'static, ()>;
         /// Constructs the original context-free content search.
         /// # Errors
         /// Returns construction or resource admission failures.

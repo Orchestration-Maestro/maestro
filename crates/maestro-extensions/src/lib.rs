@@ -144,6 +144,9 @@ pub use maestro_resources::{SlashCommandInfo, SlashCommandSource};
 pub use maestro_tools::ToolRenderResultOptions;
 /// Native tool framing retained by extension registrations.
 pub use maestro_tools::ToolRenderShell;
+/// Native per-file mutation ordering shared with built-in edit and write.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::with_file_mutation_queue;
 /// Caller-local tool definitions with their original tools-owned types.
 pub mod local {
     #[cfg(not(target_arch = "wasm32"))]

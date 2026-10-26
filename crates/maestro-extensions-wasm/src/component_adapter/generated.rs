@@ -31,6 +31,10 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl Imports for Generated {
+    forward_resources! { functions {
+        with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ExtensionFuture<'static, ()> => builtin::with_file_mutation_queue[&file_path, operation];
+    } }
+
     fn create_grep_tool(
         &self,
         cwd: String,

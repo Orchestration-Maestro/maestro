@@ -35,6 +35,23 @@ pub struct Update;
 
 /// Native tool resources are created only by the production runtime, not this fixture.
 pub enum BuiltinTool {}
+/// Queue futures exist only on the production host.
+pub enum FileMutation {}
+impl host::HostFileMutation for State {
+    fn drop(&mut self, _: Resource<FileMutation>) -> wasmtime::Result<()> {
+        wasmtime::bail!("file mutation queues require the production host")
+    }
+}
+impl host::HostFileMutationWithStore<State> for Imports {
+    fn wait(
+        _: &Accessor<State, Self>,
+        _: Resource<FileMutation>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<(), String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "file mutation queues require the production host"
+        )))
+    }
+}
 
 /// Native row resources are lent only by the production host.
 pub enum NativeRow {}
@@ -706,6 +723,13 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn with_file_mutation_queue(
+        &mut self,
+        _: String,
+    ) -> wasmtime::Result<Result<Resource<FileMutation>, String>> {
+        wasmtime::bail!("file mutation queues require the production host")
+    }
+
     fn model_stream(
         &mut self,
         _: bool,

@@ -142,6 +142,10 @@ port! {
         /// Executes a literal program and argument vector through the host.
         fn exec<'a>(command: &'a str, args: &'a [String], options: Option<crate::ExecOptions>) -> crate::ExecResult;
     }
+    host_owned {
+        /// Takes a native file queue turn immediately and retains it through the callback.
+        fn with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ();
+    }
     infallible {
         /// Returns the supplied host bus.
         fn events() -> crate::EventBus;
@@ -183,6 +187,22 @@ impl ExtensionAPI {
 }
 
 impl ExtensionAPI {
+    /// Runs an operation in the native file queue, preserving its guest-owned result.
+    ///
+    /// Admission occurs before the returned future is polled. Dropping that future
+    /// releases its native queue turn without starting a waiting operation.
+    ///
+    /// # Errors
+    /// Returns native admission or callback errors unchanged.
+    #[must_use]
+    pub fn with_file_mutation_queue<T: 'static>(
+        &self,
+        file_path: String,
+        operation: impl FnOnce() -> ExtensionFuture<'static, T> + 'static,
+    ) -> ExtensionFuture<'static, T> {
+        crate::tools::file_mutation_queue::run(&*self.0, file_path, operation)
+    }
+
     /// Encodes ordinary operands without introducing another native algorithm.
     pub(crate) fn helper<A: serde::Serialize, R: serde::de::DeserializeOwned>(
         &self,

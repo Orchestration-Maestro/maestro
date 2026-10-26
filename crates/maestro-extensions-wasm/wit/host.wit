@@ -2,6 +2,12 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Retains the original native queue future until the operation completes or is dropped.
+    resource file-mutation {
+        wait: async func() -> result<_, string>;
+    }
+    with-file-mutation-queue: func(file-path: string) -> result<file-mutation, string>;
+
     /// Retained argument mutations and the independently returned preparation.
     record prepared-arguments { retained: string, prepared: result<string, string> }
     /// An original native definition, retained independently of the factory and its callback.
