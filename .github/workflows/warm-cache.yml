@@ -11,6 +11,6 @@ jobs:
   warm:
     name: Warm compile cache
     # Moves with the release re-pin of the required checks (docs/development.md).
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@52704c40d6696ecb019fedf5918443b0c0360b62 # v0.15.5
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@be12ba727a7870cd044f6e29cedddeb3d7f709cc # v0.15.6
     with:
       warm-cache: true
