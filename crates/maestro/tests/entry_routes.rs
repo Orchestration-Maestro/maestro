@@ -291,8 +291,13 @@ fn rpc_root_reports_state() {
 
 #[test]
 fn rpc_root_persists_prompt_history() {
-    crate::support::connected(|_, rpc, _| {
+    crate::support::connected(|_, rpc, provider| {
         rpc.prompt("hello");
+        assert!(
+            provider.requests.lock().unwrap()[0]["messages"]
+                .to_string()
+                .contains("hello")
+        );
         assert!(
             rpc.events
                 .iter()

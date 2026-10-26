@@ -2413,24 +2413,19 @@ fn workspace_root_accepts_native_target_wiring() {
 }
 
 #[test]
-fn workspace_root_requires_core_wiring() {
+fn workspace_root_requires_application_wiring() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro"]);
-    let targets = ["maestro-app", "maestro-multiplexer"];
-    for omitted in targets {
-        let mut declarations = String::from("[dependencies]\n");
-        for target in targets.iter().filter(|target| **target != omitted) {
-            writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
-        }
-        workspace.member("maestro", "maestro", &declarations);
-        assert_eq!(
-            check_workspace(workspace.root.path()),
-            Err(format!(
-                "maestro: missing required direct dependency {omitted}"
-            ))
-        );
-    }
-    workspace.foundation(&["maestro"]);
+    workspace.member("maestro", "maestro", "");
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro: missing required direct dependency maestro-app".into())
+    );
+    workspace.member(
+        "maestro",
+        "maestro",
+        "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }",
+    );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 

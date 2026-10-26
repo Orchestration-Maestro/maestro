@@ -826,10 +826,10 @@ cycle rules apply, and the required-toolkit rule keeps `maestro-text` out of it.
 
 ### Workspace daemon
 
-The workspace daemon is core design. The executable always wires the daemon,
-and the multiplexer: it requires direct application and multiplexer dependencies,
-with daemon operations reached through
-`maestro-app`. There is no Cargo feature, optional dependency or separate install.
+The workspace daemon is core design. The executable requires a direct application
+dependency, with daemon operations reached through `maestro-app`. A direct
+multiplexer dependency is permitted when its launcher is wired, not required for
+command-line startup. There is no Cargo feature, optional dependency or separate install.
 Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
 builds already exclude native process crates. Every frontend calls `maestro-app`.
 

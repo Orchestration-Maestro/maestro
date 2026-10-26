@@ -527,7 +527,7 @@ pub(crate) fn exact(name: &str) -> bool {
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
     match name {
-        "maestro" => &["maestro-app", "maestro-multiplexer"],
+        "maestro" => &["maestro-app"],
         "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer" => {
             &["maestro-app"]
         }

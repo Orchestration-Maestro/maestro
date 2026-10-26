@@ -13,7 +13,6 @@ maestro-cli = { path = "../maestro-cli" }
 maestro-chat = { path = "../maestro-chat" }
 maestro-rpc = { path = "../maestro-rpc" }
 maestro-extensions-wasmtime = { path = "../maestro-extensions-wasmtime" }
-maestro-multiplexer = { path = "../maestro-multiplexer" }
 maestro-theme = { path = "../maestro-theme" }
 maestro-tui = { path = "../maestro-tui" }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
