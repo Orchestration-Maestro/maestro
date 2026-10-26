@@ -388,6 +388,9 @@ pub(crate) enum SynchronousKind {
     /// Native branch change of a footer's metadata; its export takes no data.
     #[component(name = "branch-change")]
     BranchChange,
+    /// Native file notification; its export takes no data.
+    #[component(name = "watch")]
+    Watch,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.

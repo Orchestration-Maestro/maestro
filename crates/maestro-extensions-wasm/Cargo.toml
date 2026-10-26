@@ -43,6 +43,10 @@ name = "module_location_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "native_io_component"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "pirate"
 path = "../../examples/extensions/pirate.rs"
 crate-type = ["cdylib"]

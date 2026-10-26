@@ -2,6 +2,61 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Owned native file watch; drop and close stop notification delivery.
+    resource fs-watcher { close: func() -> result<_, string>; }
+    watch: func(path: string, listener: borrow<callback>) -> result<fs-watcher, string>;
+    /// Supplied HTTP operands, normalized only by the native HTTP owner.
+    record http-request {
+        url: string, method: option<string>, headers: list<tuple<string, string>>,
+        body: option<list<u8>>,
+    }
+    /// Independently retained native response.
+    resource response {
+        json: async func() -> result<string, string>;
+        text: async func() -> result<string, string>;
+        status: func() -> u16;
+        status-text: func() -> string;
+        headers: func() -> list<tuple<string, string>>;
+        body: func() -> option<readable>;
+    }
+    /// Sends one attempt with the caller's original signal.
+    fetch: async func(request: http-request, signal: option<borrow<abort-signal>>) -> result<response, string>;
+    /// One native standard descriptor selection.
+    enum stdio { pipe, ignore, inherit }
+    /// Literal native child launch selections.
+    record spawn-options {
+        cwd: option<string>, env: option<list<tuple<string, string>>>,
+        detached: bool, stdio: tuple<stdio, stdio, stdio>,
+    }
+    /// Numeric exit and terminating signal remain distinct.
+    record exit-status { code: option<s32>, signal: option<string> }
+    /// Independently retained consuming raw reader.
+    resource readable {
+        read: async func() -> result<option<list<u8>>, string>;
+        close: func() -> result<_, string>;
+    }
+    /// Independently retained ordered raw writer.
+    resource writable {
+        write: async func(bytes: list<u8>) -> result<_, string>;
+        end: async func() -> result<_, string>;
+    }
+    /// Retained child controls; ordinary resource drop does not kill it.
+    resource child-process {
+        pid: func() -> option<u32>;
+        stdin: func() -> option<writable>;
+        stdout: func() -> option<readable>;
+        stderr: func() -> option<readable>;
+        wait: async func() -> result<exit-status, string>;
+        kill: func(signal: option<string>) -> result<bool, string>;
+    }
+    /// Launches a literal program, without a shell or implicit cancellation.
+    spawn: async func(command: string, args: list<string>, options: spawn-options) -> result<child-process, string>;
+    /// Delivers a native signal to a PID or supported process group.
+    kill: func(pid: s32, signal: option<string>) -> result<_, string>;
+
+    /// Waits for seconds and fractional nanoseconds, without an implicit timeout.
+    sleep: async func(duration: tuple<u64, u32>, signal: option<borrow<abort-signal>>) -> result<_, string>;
+
     /// Formats a native floating-point byte count without a JSON-number boundary.
     native-format-size: func(bytes: f64) -> result<string, string>;
     /// Preorder metadata values, with container lengths and numbers kept outside JSON.
@@ -186,7 +241,7 @@ interface host {
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change, watch }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.

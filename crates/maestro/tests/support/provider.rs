@@ -50,7 +50,7 @@ impl Drop for Provider {
 }
 
 /// Read headers through their blank line, then exactly the declared JSON body.
-fn request(stream: &mut TcpStream) -> Value {
+pub(crate) fn request(stream: &mut TcpStream) -> Value {
     let mut reader = BufReader::new(stream);
     let mut length = 0;
     loop {

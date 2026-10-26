@@ -58,6 +58,10 @@ mod host_family;
 mod join;
 mod json_payloads;
 mod model_streams;
+pub(crate) mod native_http_host;
+mod native_io;
+pub(crate) mod native_io_host;
+pub(crate) mod native_watch_host;
 mod observed;
 mod parameter_schemas;
 mod pirate_example;
@@ -586,6 +590,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]auth-lock-update.update-async",
             "[method]auth-storage.get-api-key",
             "[method]auth-storage.login",
+            "[method]child-process.wait",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
@@ -602,13 +607,21 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]oauth-provider.login",
             "[method]oauth-provider.refresh-token",
             "[method]provider-controls.invoke",
+            "[method]readable.read",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "[method]response.json",
+            "[method]response.text",
+            "[method]writable.end",
+            "[method]writable.write",
             "call",
             "event-emit",
+            "fetch",
             "get-all-tools",
             "register-tool",
             "set-model",
+            "sleep",
+            "spawn",
         ]
     );
     assert_interface_contract(&contract);
@@ -1117,6 +1130,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-terminal-input",
             "invoke-tool",
             "invoke-tool-render",
+            "invoke-watch",
             "invoke-with-session",
             "start"
         ],

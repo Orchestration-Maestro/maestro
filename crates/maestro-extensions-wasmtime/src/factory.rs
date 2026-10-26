@@ -19,11 +19,35 @@ use wasmtime::{
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
 pub fn artifact_factory(path: String, installation_version: String) -> ExtensionFactory<Local> {
+    factory(path, installation_version, None)
+}
+
+/// Creates the production component factory with application-supplied native effects.
+///
+/// The application supplies its installation version and the operations' original local
+/// executor. Construction performs no native launch or request; guest calls select their effects.
+#[must_use]
+pub fn artifact_factory_with_io(
+    path: String,
+    installation_version: String,
+    io: Rc<dyn maestro_extensions::native_io::NativeIo>,
+) -> ExtensionFactory<Local> {
+    factory(path, installation_version, Some(io))
+}
+
+/// Retains the original supplied effects for each independently loaded component.
+fn factory(
+    path: String,
+    installation_version: String,
+    io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
+) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
+        let io = io.clone();
         let installation_version = installation_version.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new();
+            pump.registry().resources.borrow_mut().native_io = io;
             let endpoint = pump.registry().api(api)?;
             let (calls, incoming) = mpsc::unbounded_channel();
             let shutdown = Arc::new(tokio::sync::Notify::new());
