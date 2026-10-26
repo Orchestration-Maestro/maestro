@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use ra_ap_rustc_lexer::TokenKind;
 use syn::{spanned::Spanned, visit::Visit};
 
 use crate::generated;
@@ -79,10 +79,16 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
 /// Locates documentation tokens in the Unicode coordinates used by syntax spans.
 fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
     let mut spans = Vec::new();
-    let mut offset = ra_ap_rustc_lexer::strip_shebang(contents).unwrap_or(0);
-    let mut position = (1, contents[..offset].chars().count());
-    for token in ra_ap_rustc_lexer::tokenize(&contents[offset..], FrontmatterAllowed::No) {
-        let end = offset + token.len as usize;
+    let mut tokens = crate::source::tokens(contents).peekable();
+    let mut position = (
+        1,
+        tokens
+            .peek()
+            .map_or(0, |(_, range)| contents[..range.start].chars().count()),
+    );
+    for (kind, range) in tokens {
+        let offset = range.start;
+        let end = range.end;
         let next = contents[offset..end]
             .chars()
             .fold(position, |(line, column), character| {
@@ -93,7 +99,7 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
                 }
             });
         if matches!(
-            token.kind,
+            kind,
             TokenKind::LineComment { doc_style: Some(_) }
                 | TokenKind::BlockComment {
                     doc_style: Some(_),
@@ -102,7 +108,6 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
         ) {
             spans.push(position..next);
         }
-        offset = end;
         position = next;
     }
     spans
