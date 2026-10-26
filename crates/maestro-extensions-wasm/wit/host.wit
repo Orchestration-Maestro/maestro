@@ -2,6 +2,8 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Synchronous ordinary helper operands; metadata numbers use a separate typed boundary.
+    native-helper: func(operation: string, data: string) -> result<string, string>;
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};

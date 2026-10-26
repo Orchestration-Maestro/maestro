@@ -31,6 +31,10 @@ path = "../../examples/extensions/hidden_thinking_label.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "helper_capabilities"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hook_component"
 crate-type = ["cdylib"]
 

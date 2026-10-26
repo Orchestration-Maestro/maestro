@@ -518,6 +518,9 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn native_helper(&self, _operation: &str, _data: &str) -> ExtensionResult<String> {
+        self.observe().actions.record()
+    }
     type BashOutput = super::shell_host::NativeReceiver;
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
         self.observe().shell.outputs[output.id].data(bytes)

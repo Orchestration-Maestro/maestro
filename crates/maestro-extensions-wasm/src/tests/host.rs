@@ -603,6 +603,13 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn native_helper(
+        &mut self,
+        _operation: String,
+        _data: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.observed.actions.record())
+    }
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,

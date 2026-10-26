@@ -35,6 +35,8 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Forwards ordinary helper operands synchronously.
+    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String>;
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
         &'a self,

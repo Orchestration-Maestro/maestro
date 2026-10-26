@@ -45,6 +45,9 @@ pub use event_bus::{
 
 /// The read-only footer metadata extension footers receive.
 pub mod footer_data_provider;
+/// Native helper delegation used by component adapters.
+#[doc(hidden)]
+pub mod helpers;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;

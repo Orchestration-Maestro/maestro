@@ -19,6 +19,7 @@ mod factory_shutdown;
 mod lifetimes;
 mod listener_prefixes;
 mod module_location;
+mod native_helpers;
 mod retained_components;
 mod retained_contexts;
 mod startup;

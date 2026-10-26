@@ -42,6 +42,7 @@ mod tests;
 mod tui;
 mod types;
 pub use tui::*;
+pub use utils::visible_width;
 mod theme;
 pub use theme::*;
 
