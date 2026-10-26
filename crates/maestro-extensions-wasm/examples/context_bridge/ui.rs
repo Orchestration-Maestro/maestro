@@ -47,17 +47,17 @@ pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult
 }
 
 /// Shows the dialog `request` names on the originally acquired UI, with an already aborted
-/// caller signal when it asks for one, and returns its answer.
+/// caller signal and the timeout it asks for, and returns its answer.
 pub(super) async fn dialog(context: &ExtensionContext, request: &str) -> ExtensionResult<String> {
     let request: Value = serde_json::from_str(request).map_err(|error| error.to_string())?;
     let text = |key: &str| request[key].as_str().map(str::to_owned);
     let title = text("title").unwrap_or_default();
-    let opts = request["aborted"]
-        .as_bool()
-        .map(|_| ExtensionUIDialogOptions {
-            signal: Some(AbortSignal::new(Rc::new(super::exec::AlreadyAborted))),
-            timeout: None,
-        });
+    let signal = request["aborted"].as_bool();
+    let timeout = request["timeout"].as_f64();
+    let opts = (signal.is_some() || timeout.is_some()).then(|| ExtensionUIDialogOptions {
+        signal: signal.map(|_| AbortSignal::new(Rc::new(super::exec::AlreadyAborted))),
+        timeout,
+    });
     let ui = context.ui()?;
     let answer = match request["method"].as_str() {
         Some("select") => {

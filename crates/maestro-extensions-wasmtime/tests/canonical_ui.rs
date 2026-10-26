@@ -268,8 +268,20 @@ impl ExtensionUIContextPort for Dialogs {
 }
 
 /// Each dialog, its answer and the host call the original application UI received.
-fn dialog_rows() -> [(Value, Result<Value, String>, &'static str, Value); 7] {
+fn dialog_rows() -> [(Value, Result<Value, String>, &'static str, Value); 9] {
     [
+        (
+            json!({"method":"select","title":"T","options":["a"],"timeout":-1.0}),
+            Ok(json!("a")),
+            "\"a\"",
+            json!(["select", "T", ["a"], [null, -1.0]]),
+        ),
+        (
+            json!({"method":"input","title":"T","aborted":true,"timeout":2.5}),
+            Ok(Value::Null),
+            "null",
+            json!(["input", "T", null, [true, 2.5]]),
+        ),
         (
             json!({"method":"confirm","title":"Stop","message":"","aborted":true}),
             Ok(json!(false)),

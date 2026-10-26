@@ -600,3 +600,53 @@ async fn signal_retention(driver: &mut impl Driver) -> Result<(), String> {
 fn dialog_signal_is_retained_after_return() -> Result<(), String> {
     on_both_adapters!(signal_retention)
 }
+
+/// Every timeout reaches the selected dialog as the supplied milliseconds, and a signal and
+/// a timeout supplied apart reach only the dialog they were supplied to.
+async fn timeouts(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    for timeout in [
+        json!(null),
+        json!(0.0),
+        json!(-1.0),
+        json!(2.5),
+        json!(1500.0),
+    ] {
+        let opts = json!({ "timeout": timeout });
+        let call = json!({ "op": "select", "title": "T", "options": ["a"], "opts": opts });
+        let operands = json!(["T", ["a"], null, timeout]);
+        asked(driver, &call, &json!("a"), ("select", &operands)).await?;
+        let call = json!({ "op": "confirm", "title": "T", "message": "m", "opts": opts });
+        let operands = json!(["T", "m", null, timeout]);
+        asked(driver, &call, &json!(true), ("confirm", &operands)).await?;
+        let call = json!({ "op": "input", "title": "T", "opts": opts });
+        let operands = json!(["T", null, null, timeout]);
+        asked(driver, &call, &json!("x"), ("input", &operands)).await?;
+    }
+    let signal_only = json!({ "op": "select", "title": "S", "options": [],
+        "opts": { "signal": "live" } });
+    let (_, seen) = signaled(driver, &signal_only, &Value::Null, false).await?;
+    assert_eq!(
+        seen,
+        signal_receipts("select", json!(["S", [], false, null]), false)
+    );
+    let timeout_only = json!({ "op": "confirm", "title": "C", "message": "",
+        "opts": { "timeout": 2.5 } });
+    let operands = json!(["C", "", null, 2.5]);
+    asked(driver, &timeout_only, &json!(false), ("confirm", &operands)).await?;
+    let both = json!({ "op": "input", "title": "I",
+        "opts": { "signal": { "kept": 0 }, "timeout": 0.25 } });
+    let (_, seen) = signaled(driver, &both, &Value::Null, false).await?;
+    assert_eq!(
+        seen,
+        signal_receipts("input", json!(["I", null, false, 0.25]), false)
+    );
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0, "no UI resource stays lent");
+    Ok(())
+}
+
+#[test]
+fn dialog_timeout_is_forwarded_without_guest_policy() -> Result<(), String> {
+    on_both_adapters!(timeouts)
+}
