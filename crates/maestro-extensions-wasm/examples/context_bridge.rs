@@ -76,6 +76,10 @@ mod stream_lifetimes;
 mod model_streams;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_registered.rs"]
+mod model_registered;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/model_completions.rs"]
 mod model_completions;
 
@@ -225,6 +229,12 @@ fn command(
     }
     if args == "model-errors" {
         return Box::pin(async { Err(model_streams::errors().await?) });
+    }
+    if let Some(request) = args.strip_prefix("model-registered ") {
+        let request = request.to_owned();
+        return Box::pin(
+            async move { Err(model_registered::command(&api, &context, &request).await?) },
+        );
     }
     if args == "model-streams" {
         return Box::pin(async { Err(model_streams::command().await?) });

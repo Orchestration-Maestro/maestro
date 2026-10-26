@@ -18,7 +18,7 @@ mod extension_result;
 pub(crate) mod finite;
 pub(crate) mod object;
 mod providers;
-pub use providers::{ProviderConfig, ProviderModelConfig};
+pub use providers::{ProviderCallbacks, ProviderConfig, ProviderModelConfig};
 mod selection_events;
 mod stream_options;
 pub use stream_options::*;

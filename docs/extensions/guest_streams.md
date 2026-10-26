@@ -131,8 +131,26 @@ is an observation, not a live cross-component object reference; later native
 partial-message edits do not modify an earlier decoded event. Authored streams
 created inside the component still retain their original local message handles.
 
-Registering a guest provider for native callers is a separate capability. These
-invocation functions do not add a second provider registry or transport client.
+## Providers called by native code
+
+Set `ProviderConfig.callbacks.stream_simple` to a local `StreamFunction<StreamOptionsInput>`
+and register it through the extension API or a retained model registry. Native raw
+and simple calls retain their original option variants. Native hooks stay callable
+and awaited in the guest, including their selected payload and supplied failures.
+Native opaque controls stay retained; they do not become guest HTTP clients.
+
+The native consumer fronts the original authored stream. There is no forwarding
+queue or task that drains its events. Repeated final observations share one decoded
+native message, also used by the terminal event. Dropping an unassigned pending read
+removes only that waiter, as on a native stream; it does not stop the producer.
+
+A Store or codec failure yields one native terminal error with the original error
+text, the same final message and EOF. A final message already decoded by the native
+consumer wins over a later failure. Unread values in a crashed Store are lost.
+
+Local native hooks require the extension's original pump thread. Calls from another
+thread must use the Threaded family; an off-thread Local call returns an affinity
+error. These routes use the existing provider registry, not a second registry.
 
 Returned model streams retain their original hooks and arbitrary caller signal
 storage after the initiating command and registration are released. Cancellation

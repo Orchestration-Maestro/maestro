@@ -50,3 +50,12 @@ pub type SimpleStreamOptions =
 /// Original raw or simple callback options with guest-local capability representations.
 pub type StreamOptionsInput =
     maestro_request::types::StreamOptionsInput<StreamOptions, ProviderObjects, Infallible>;
+
+/// Retained local provider invoked with the original option variant.
+pub type StreamFunction<O = ProviderStreamOptions> = Rc<
+    dyn Fn(
+        Model,
+        crate::Context,
+        Option<O>,
+    ) -> crate::ExtensionResult<crate::AssistantMessageEventStream>,
+>;

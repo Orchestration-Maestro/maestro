@@ -60,3 +60,5 @@ mod model_lifetimes;
 
 mod foreign_schema;
 mod model_protocol_routes;
+
+mod model_registered;

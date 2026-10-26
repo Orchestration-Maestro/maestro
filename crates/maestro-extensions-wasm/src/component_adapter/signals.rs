@@ -32,7 +32,7 @@ impl<I: Imports> SignalPort for Signal<I> {
 }
 
 /// A caller's signal listener, removed when its host call settles or is dropped.
-struct Listening(Option<Subscription>);
+pub(super) struct Listening(pub(super) Option<Subscription>);
 
 impl Listening {
     /// Removes the listener once, returning the host's rejection.
