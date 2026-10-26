@@ -298,10 +298,7 @@ impl Peer {
         match TcpStream::connect(self.address) {
             // The stopped listener can close before or during the wake-up handshake.
             Err(error)
-                if matches!(
-                    error.kind(),
-                    std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::ConnectionReset
-                ) => {}
+                if error.kind() == std::io::ErrorKind::ConnectionRefused || vanished(&error) => {}
             other => other.map(drop)?,
         }
         let worker = self.worker.take().ok_or("server already finished")?;
@@ -489,7 +486,7 @@ fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
     }
 }
 
-/// Whether the error reports a client that closed its end of the data connection.
+/// Whether the error reports a peer that closed its connection.
 fn vanished(error: &std::io::Error) -> bool {
     matches!(
         error.kind(),
