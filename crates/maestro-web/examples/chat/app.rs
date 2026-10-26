@@ -401,6 +401,10 @@ impl State {
         self: &Rc<Self>,
         initial: AgentInitialState<ExampleMessages, Local>,
     ) -> Result<(), JsValue> {
+        let outgoing = self.current.borrow().agent.clone();
+        if let Some(outgoing) = outgoing {
+            outgoing.abort();
+        }
         if let Some(subscription) = self.current.borrow_mut().subscription.take() {
             subscription.unsubscribe();
         }

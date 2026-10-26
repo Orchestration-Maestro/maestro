@@ -267,7 +267,12 @@
     "chat_example_titles_and_admission_follow_the_first_user_message",
     "chat_example_saves_and_restores_sessions_from_the_url",
     "chat_example_edits_titles_and_follows_new_and_deleted_sessions",
-    "chat_example_prompts_notifies_and_opens_settings"
+    "chat_example_prompts_notifies_and_opens_settings",
+    "chat_panel_registers_builtins_without_a_contribution_host",
+    "chat_panel_filename_pills_stay_with_their_own_chat",
+    "chat_example_message_completion_keeps_title_drafts",
+    "chat_example_title_saves_stay_with_the_originating_session",
+    "chat_example_new_session_aborts_the_outgoing_request"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

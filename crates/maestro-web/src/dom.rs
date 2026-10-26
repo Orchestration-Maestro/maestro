@@ -19,6 +19,8 @@ pub struct DomView {
     pub pack: Rc<maestro_theme::BrandPack>,
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
+    /// Instance-local tool renderers, selected before page-wide registrations.
+    pub tool_renderers: Rc<indexmap::IndexMap<String, crate::tools::types::ToolRendererBinding>>,
 }
 /// Prepared renderer output: owned records on native targets, which have no page.
 #[cfg(not(target_arch = "wasm32"))]

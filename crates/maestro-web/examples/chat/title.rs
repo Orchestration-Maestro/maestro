@@ -80,6 +80,9 @@ impl State {
             self.title_input.replace(None);
             return Ok(());
         }
+        if editing && self.title_input.borrow().is_some() {
+            return Ok(());
+        }
         if editing {
             return self.edit_title(&title);
         }
@@ -134,29 +137,46 @@ impl State {
         self.title_input.replace(Some(input));
         Ok(())
     }
-    /// End title editing on the page's task queue, storing a new title `value` first.
+    /// Store a changed title, then close the editor only if the same session is still shown.
     fn finish_title(self: &Rc<Self>, value: Option<String>) {
-        self.spawn(|state| async move { state.commit_title(value).await });
-    }
-    /// End title editing, storing `value` first when it is a new nonblank title of a stored
-    /// session.
-    async fn commit_title(self: Rc<Self>, value: Option<String>) -> Result<(), JsValue> {
-        let title = value.map(|value| value.trim().to_owned());
-        let id = self.current.borrow().session_id.clone();
-        let changed =
-            title.filter(|title| !title.is_empty() && *title != self.current.borrow().title);
-        if let (Some(title), Some(id)) = (changed, id) {
-            self.storage
-                .sessions
-                .update_title(&id, &title)
-                .await
-                .map_err(js)?;
-            self.current.borrow_mut().title = title;
-        }
-        let editing = std::mem::replace(&mut self.current.borrow_mut().editing_title, false);
-        if editing {
-            self.render_title()?;
-        }
-        Ok(())
+        let (agent, id, title) = {
+            let current = self.current.borrow();
+            let Some(agent) = current.agent.clone() else {
+                return;
+            };
+            let title = value
+                .map(|value| value.trim().to_owned())
+                .filter(|title| !title.is_empty() && *title != current.title);
+            (agent, current.session_id.clone(), title)
+        };
+        self.spawn(move |state| async move {
+            if let (Some(title), Some(id)) = (&title, &id) {
+                state
+                    .storage
+                    .sessions
+                    .update_title(id, title)
+                    .await
+                    .map_err(js)?;
+            }
+            let mut current = state.current.borrow_mut();
+            if current
+                .agent
+                .as_ref()
+                .is_none_or(|shown| !Rc::ptr_eq(shown, &agent))
+            {
+                return Ok(());
+            }
+            if id.is_some()
+                && let Some(title) = title
+            {
+                current.title = title;
+            }
+            let editing = std::mem::replace(&mut current.editing_title, false);
+            drop(current);
+            if editing {
+                state.render_title()?;
+            }
+            Ok(())
+        });
     }
 }

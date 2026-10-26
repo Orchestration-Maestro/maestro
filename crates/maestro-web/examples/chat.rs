@@ -50,6 +50,7 @@ async fn run() -> Result<(), wasm_bindgen::JsValue> {
         ),
         pack: Rc::new(pack),
         mode: maestro_theme::BrandMode::Dark,
+        tool_renderers: Rc::default(),
     });
     let storage = app::storage("maestro-chat-example");
     let running = app::App::init(&view, storage, &root).await?;

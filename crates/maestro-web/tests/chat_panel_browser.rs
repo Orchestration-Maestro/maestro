@@ -154,7 +154,7 @@ fn assert_composed(chat: &ChatPanel, first: &Rc<BrowserSession>, received: &Rece
             .unwrap()
             .is_none()
     );
-    assert!(get_tool_renderer::<JsonObject, Value>("artifacts").is_some());
+    assert!(get_tool_renderer::<JsonObject, Value>("artifacts").is_none());
     let restored = providers().unwrap();
     assert_eq!(restored.len(), 2, "attachments and artifacts");
     let data = restored[1].get_data().unwrap();
@@ -307,8 +307,7 @@ fn hit_center(element: &Element) -> Element {
         .element_from_point(x, y)
         .unwrap()
 }
-/// The backdrop dims and blurs, takes the clicks meant for the chat and leaves the panel sharp
-/// and reachable under `presentation`.
+/// The sharp overlay fills the viewport and keeps its controls reachable under `presentation`.
 fn assert_overlay(chat: &ChatPanel, presentation: &maestro_theme::BrandPresentation<'_>) {
     let backdrop = side(chat);
     let panel = select(&backdrop, ".maestro-artifacts-panel");
@@ -331,9 +330,28 @@ fn assert_overlay(chat: &ChatPanel, presentation: &maestro_theme::BrandPresentat
         .element_from_point(2.0, 2.0)
         .unwrap();
     assert!(
-        corner.is_same_node(Some(&backdrop)),
-        "the chat behind takes no clicks"
+        panel.contains(Some(&corner)),
+        "the artifact overlay fills the viewport"
     );
+    let bounds = panel.get_bounding_client_rect();
+    let window = web_sys::window().unwrap();
+    assert_eq!((bounds.left(), bounds.top()), (0.0, 0.0));
+    assert!(
+        (bounds.width()
+            - f64::from(
+                window
+                    .document()
+                    .unwrap()
+                    .document_element()
+                    .unwrap()
+                    .client_width()
+            ))
+        .abs()
+            < 1.0
+    );
+    assert!((bounds.height() - window.inner_height().unwrap().as_f64().unwrap()).abs() < 1.0);
+    assert_eq!(computed(&panel, "border-radius"), "0px");
+    assert_eq!(computed(&panel, "border-left-width"), "0px");
     let tab = select(&panel, ".maestro-artifact-tabs button");
     assert!(
         tab.contains(Some(&hit_center(&tab))),
@@ -341,8 +359,8 @@ fn assert_overlay(chat: &ChatPanel, presentation: &maestro_theme::BrandPresentat
     );
 }
 
-/// Below the breakpoint the open panel stays sharp and usable above a full-viewport backdrop
-/// that dims and blurs the chat and takes the clicks meant for it, in both packs and modes.
+/// Below the breakpoint the panel fills the viewport above the backdrop, without an inset,
+/// border or rounded corners, in both packs and modes.
 #[wasm_bindgen]
 pub async fn chat_panel_overlay_dims_and_blurs_behind_a_sharp_panel(import: js_sys::Function) {
     let shown = view();
@@ -368,4 +386,92 @@ pub async fn chat_panel_overlay_dims_and_blurs_behind_a_sharp_panel(import: js_s
     let tab: HtmlElement = select(&side(&chat), ".maestro-artifact-tabs button").unchecked_into();
     tab.click();
     assert_eq!(tab.get_attribute("aria-pressed").as_deref(), Some("true"));
+}
+
+/// Standalone chat mounts native artifact bodies without a contribution host; registering the
+/// host afterwards and creating another chat reuse the same built-in constructors.
+#[wasm_bindgen]
+pub async fn chat_panel_registers_builtins_without_a_contribution_host(import: js_sys::Function) {
+    let shown = view();
+    let chat = ChatPanel::new(&shown).unwrap();
+    mounted(&chat);
+    let first = session(Vec::new());
+    chat.set_agent(Rc::clone(&first), ChatPanelConfig::default())
+        .await
+        .unwrap();
+    create(&first, "notes.txt").await;
+    assert_eq!(
+        text(&select(
+            chat.root(),
+            "text-artifact .maestro-text-artifact code"
+        )),
+        "text"
+    );
+    artifacts(
+        &first,
+        json!({"command": "create", "filename": "notes.md", "content": "# Visible"}),
+    )
+    .await;
+    assert_eq!(
+        text(&select(chat.root(), "markdown-artifact h1")),
+        "Visible"
+    );
+    assert!(
+        chat.root()
+            .query_selector("copy-button button")
+            .unwrap()
+            .is_some()
+    );
+    let registry = web_sys::window().unwrap().custom_elements();
+    let original = registry.get("text-artifact");
+    let _host = host(&shown, &import);
+    let _second = ChatPanel::<maestro_app::NoCustomMessages>::new(&shown).unwrap();
+    assert!(js_sys::Object::is(
+        &original,
+        &registry.get("text-artifact")
+    ));
+}
+
+/// Artifact filename pills rendered after another chat is initialized still open their own
+/// panel; replacing that other chat's session cannot replace the first chat's renderer.
+#[wasm_bindgen]
+pub async fn chat_panel_filename_pills_stay_with_their_own_chat(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let a = ChatPanel::new(&shown).unwrap();
+    let b = ChatPanel::new(&shown).unwrap();
+    mounted(&a);
+    mounted(&b);
+    let first = session(Vec::new());
+    a.set_agent(Rc::clone(&first), ChatPanelConfig::default())
+        .await
+        .unwrap();
+    create(&first, "shared.txt").await;
+    close(&a);
+    for _ in 0..2 {
+        let second = session(Vec::new());
+        b.set_agent(Rc::clone(&second), ChatPanelConfig::default())
+            .await
+            .unwrap();
+        create(&second, "shared.txt").await;
+        close(&b);
+        let call = json!({"role": "assistant", "api": "anthropic-messages", "provider": "anthropic", "model": "claude-haiku-4-5",
+            "content": [{"type": "toolCall", "id": "file", "name": "artifacts", "arguments": {"command": "get", "filename": "shared.txt"}}],
+            "usage": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0, "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}},
+            "stopReason": "toolUse", "timestamp": 1});
+        first
+            .state()
+            .write()
+            .unwrap()
+            .set_messages(vec![serde_json::from_value(call).unwrap()]);
+        let interface = a.agent_interface().unwrap();
+        interface.root().remove();
+        main_column(&a).append_child(interface.root()).unwrap();
+        select(a.root(), "button.maestro-artifact-pill")
+            .unchecked_into::<HtmlElement>()
+            .click();
+        assert!(open(&a), "the originating chat opens");
+        assert!(!open(&b), "another chat stays closed");
+        close(&a);
+    }
 }

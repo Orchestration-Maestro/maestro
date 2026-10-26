@@ -31,11 +31,10 @@
 }
 .maestro-chat-side.maestro-dialog-backdrop > .maestro-artifacts-panel {
   position: absolute;
-  inset: var(--maestro-spacing-lg);
-  height: auto;
+  inset: 0;
+  height: 100%;
   overflow: hidden;
-  border: 1px solid var(--maestro-color-border);
-  border-radius: var(--maestro-radii-panel);
+  border: 0;
 }
 .maestro-chat-pill {
   position: absolute;

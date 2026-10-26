@@ -9,7 +9,6 @@ use crate::{
     },
     components::{connection, message_editor::EditorControls},
     dom::{DomView, MountedContent, report},
-    register_tool_renderer,
     tools::types::{ToolRendererBinding, ToolUiError},
 };
 use maestro_app::{
@@ -129,7 +128,8 @@ impl<C: CustomAgentMessages + 'static> ChatPanel<C> {
     /// # Errors
     /// Returns a localization or native failure.
     pub fn new(view: &Rc<DomView>) -> Result<Self, ToolUiError> {
-        crate::dom::install_styles(view).map_err(|error| host_error(&error))?;
+        crate::contributions::register_builtin_elements(view)
+            .map_err(|error| host_error(&error))?;
         let connection: connection::Connection = Rc::default();
         let state = Rc::new(Chat::build(view, &connection)?);
         let weak = Rc::downgrade(&state);
@@ -167,7 +167,7 @@ impl<C: CustomAgentMessages + 'static> ChatPanel<C> {
     ///
     /// The session's tools become the artifacts tool followed by the factory's tools. The
     /// artifacts its history leaves are restored without opening the panel; afterwards a new
-    /// artifact opens it. The artifacts tool renderer is registered for this panel.
+    /// artifact opens it. Artifact rendering stays bound to this session view's panel.
     /// # Errors
     /// Returns a localization or native failure.
     pub async fn set_agent(
@@ -177,8 +177,12 @@ impl<C: CustomAgentMessages + 'static> ChatPanel<C> {
     ) -> Result<(), ToolUiError> {
         let state = &self.state;
         *state.agent.borrow_mut() = Some(Rc::clone(&agent));
+        let panel = Rc::new(ArtifactsPanel::default());
+        let application = panel.application(&state.view);
+        let mut view = (*state.view).clone();
+        Rc::make_mut(&mut view.tool_renderers).insert("artifacts".into(), renderer(&application));
         let interface = Rc::new(AgentInterface::new(
-            &state.view,
+            &Rc::new(view),
             AgentInterfaceProps {
                 session: Some(Rc::clone(&agent)),
                 controls: EditorControls {
@@ -193,12 +197,9 @@ impl<C: CustomAgentMessages + 'static> ChatPanel<C> {
                 on_model_select: config.on_model_select,
             },
         )?);
-        let panel = Rc::new(ArtifactsPanel::default());
-        let application = panel.application(&state.view);
         let session: Rc<dyn AgentLike> = Rc::clone(agent.state()) as Rc<dyn AgentLike>;
         application.set_agent(Some(&session));
         panel.set_sandbox_url_provider(config.sandbox_url_provider);
-        register(&application);
         state.observe(&panel);
         let providers = runtime_providers(Rc::downgrade(&session), Rc::clone(&application));
         let mut tools: Vec<SharedAgentTool<Local>> = vec![Rc::new(RwLock::new(application.tool()))];
@@ -232,15 +233,12 @@ impl<C: CustomAgentMessages + 'static> ChatPanel<C> {
         state.render()
     }
 }
-/// Register the artifacts tool renderer for `application`'s panel.
-fn register(application: &Rc<LocalArtifactsPanel>) {
+/// Retain the artifacts tool renderer for one session view's panel.
+fn renderer(application: &Rc<LocalArtifactsPanel>) -> ToolRendererBinding {
     let renderer = Rc::new(ArtifactsToolRenderer::new(Some(Rc::clone(application))));
-    register_tool_renderer(
-        "artifacts",
-        ToolRendererBinding::from_raw::<JsonObject, Value>(renderer.clone())
-            .with_raw::<Value, Value>(renderer.clone())
-            .with_raw::<ArtifactsParams, Value>(renderer),
-    );
+    ToolRendererBinding::from_raw::<JsonObject, Value>(renderer.clone())
+        .with_raw::<Value, Value>(renderer.clone())
+        .with_raw::<ArtifactsParams, Value>(renderer)
 }
 /// The number of artifacts `application` holds.
 fn artifact_count(application: &LocalArtifactsPanel) -> usize {

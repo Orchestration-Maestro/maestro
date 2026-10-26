@@ -213,8 +213,9 @@ starts the cycle at light.
 
 ## Chat screen
 
-[`ChatPanel::new`](../../crates/maestro-web/src/chat_panel.rs) builds the chat
-screen, which reads "No agent set" until `set_agent` gives it a `BrowserSession`.
+[`ChatPanel::new`](../../crates/maestro-web/src/chat_panel.rs) registers the built-in
+elements and styles, then builds the chat screen, which reads "No agent set" until
+`set_agent` gives it a `BrowserSession`.
 `set_agent` builds a new session view with every editor control and no appearance
 button, and a new native artifacts panel that records into that session. It passes
 the `ChatPanelConfig` key, pre-send, usage and model callbacks to the view and the
@@ -223,22 +224,21 @@ tool followed by whatever `tools_factory` returns. The factory receives the
 original session, view and panel, and a runtime provider factory. That factory
 offers the session's current attachments, when there are any, and read-write
 artifact access. `JavaScriptReplTool::local_tool` turns the JavaScript tool
-into an entry of the browser-local session. The artifacts tool renderer is
-registered for the new panel. Artifacts left by the history are restored
-without opening the panel.
+into an entry of the browser-local session. The session view retains its own
+artifacts tool renderer, so filename actions stay with that panel. Artifacts left
+by the history are restored without opening the panel.
 
 After that, a new artifact opens the panel; an edit does not. The panel's Close
 control closes it, and while it is closed a count badge above the chat reopens
 it. At 800 px of window width and above, an open panel takes half of the row.
-Below that it floats over the chat on a full-viewport backdrop that dims and
-blurs the chat and takes the clicks meant for it. The panel itself stays sharp
-and usable. The screen follows the window width only while it is in the page.
+Below that the panel fills the viewport above the backdrop, without an inset,
+border or rounded corners. Its content and controls stay sharp and usable. The screen follows the window width only while it is in the page.
 `agent`, `agent_interface` and `artifacts_panel` return the current parts.
 
 ## Styles
 
 The page installs the dialog stylesheet with the other built-in element styles
-when its `ContributionHost` is created. Every colour, font and radius comes from
+when its `ContributionHost` or standalone `ChatPanel` is created. Every colour, font and radius comes from
 the selected brand pack's custom properties. Both light modes paint the panel and
 the canvas with one swatch, so a panel fill never marks a state alone: the
 highlighted model and the active settings tab carry an accent edge, an idle

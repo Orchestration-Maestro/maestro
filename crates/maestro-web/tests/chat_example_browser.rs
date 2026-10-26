@@ -367,3 +367,158 @@ pub async fn chat_example_prompts_notifies_and_opens_settings(import: js_sys::Fu
     assert!(body.contains("\"javascript_repl\"") && body.contains("\"artifacts\""));
     header_controls(&root).await;
 }
+
+/// Hold a browser effect through the page's own module import until the test releases it.
+async fn held_effect(import: &js_sys::Function, operation: &str, value: &str) -> JsValue {
+    let url = wasm_bindgen::link_to!(module = "/tests/chat_example_support.js");
+    let module =
+        crate::contributions_support::settle(import.call1(&JsValue::NULL, &url.into()).unwrap())
+            .await
+            .unwrap();
+    crate::contributions_support::call(&module, operation, &js_sys::Array::of1(&value.into())).await
+}
+/// Call a controlled effect's operation.
+fn effect(effect: &JsValue, name: &str) {
+    js_sys::Reflect::get(effect, &name.into())
+        .unwrap()
+        .unchecked_into::<js_sys::Function>()
+        .call0(effect)
+        .unwrap();
+}
+/// Wait until a controlled effect reaches its hold.
+async fn ready(effect: &JsValue) {
+    crate::contributions_support::settle(js_sys::Reflect::get(effect, &"ready".into()).unwrap())
+        .await
+        .unwrap();
+}
+/// Start a session through the header and wait for its empty transcript and cleared address.
+async fn start_new_session(page: &JsValue, root: &Element) {
+    click(root, "New Session");
+    until(page, || rows(root) == 0 && url_session().is_none()).await;
+}
+/// Begin editing the title and return its focused field.
+fn title_field(root: &Element, draft: &str) -> HtmlInputElement {
+    select(root, ".example-title-button")
+        .unchecked_into::<HtmlElement>()
+        .click();
+    let field: HtmlInputElement = select(root, ".example-title input").unchecked_into();
+    field.set_value(draft);
+    field
+}
+
+/// Completing an unrelated message keeps the title draft, node, focus and selection.
+#[wasm_bindgen]
+pub async fn chat_example_message_completion_keeps_title_drafts(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    reset_url();
+    let storage = keyed("example-title-draft").await;
+    let _fetch = Fetch::install(vec![(200, "text/event-stream", completed_reply())]);
+    let root = container();
+    let _running = app::App::init(&shown, Rc::clone(&storage), &root)
+        .await
+        .unwrap();
+    let (id, _) = converse(&page, &root, &storage, "Plan a trip.").await;
+    let held = held_effect(&import, "holdResponse", &completed_reply()).await;
+    send(&root, "continue");
+    ready(&held).await;
+    let field = title_field(&root, "Unfinished title");
+    field.set_selection_range(2, 7).unwrap();
+    effect(&held, "finish");
+    until(&page, || rows(&root) == 4).await;
+    stored(&storage, &id, |metadata| metadata.message_count >= 4.0).await;
+    assert!(field.is_same_node(Some(&select(&root, ".example-title input"))));
+    assert_eq!(field.value(), "Unfinished title");
+    assert!(focused(&field));
+    assert_eq!(
+        (
+            field.selection_start().unwrap(),
+            field.selection_end().unwrap()
+        ),
+        (Some(2), Some(7))
+    );
+    effect(&held, "restore");
+}
+
+/// A title save from an outgoing session cannot rename the new session or close its editor.
+#[wasm_bindgen]
+pub async fn chat_example_title_saves_stay_with_the_originating_session(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    reset_url();
+    let storage = keyed("example-title-origin").await;
+    let _fetch = Fetch::install(vec![
+        (200, "text/event-stream", completed_reply()),
+        (200, "text/event-stream", completed_reply()),
+        (200, "text/event-stream", completed_reply()),
+    ]);
+    let root = container();
+    let _running = app::App::init(&shown, Rc::clone(&storage), &root)
+        .await
+        .unwrap();
+    let (a, _) = converse(&page, &root, &storage, "Session A").await;
+    let held = held_effect(&import, "holdTitleWrite", "Renamed A").await;
+    title_field(&root, "Renamed A");
+    press("Enter").await;
+    ready(&held).await;
+    start_new_session(&page, &root).await;
+    converse(&page, &root, &storage, "Session B").await;
+    finish_outgoing_title_while_editing(&page, &root, &held).await;
+    let (_, saved) = converse(&page, &root, &storage, "continue B").await;
+    assert_eq!(saved.title, "Session B");
+    assert_eq!(stored(&storage, &a, |_| true).await.title, "Renamed A");
+    effect(&held, "restore");
+}
+
+/// Finish the outgoing write while editing the new session, preserving its editor and title.
+async fn finish_outgoing_title_while_editing(page: &JsValue, root: &Element, held: &JsValue) {
+    let field = title_field(root, "B draft");
+    field.set_selection_range(1, 3).unwrap();
+    effect(held, "finish");
+    crate::contributions_support::frames(page, 2).await;
+    assert!(
+        field.is_same_node(
+            root.query_selector(".example-title input")
+                .unwrap()
+                .as_deref()
+        )
+    );
+    assert_eq!(field.value(), "B draft");
+    assert!(focused(&field));
+    press("Escape").await;
+    until(page, || {
+        root.query_selector(".example-title-button")
+            .unwrap()
+            .is_some()
+    })
+    .await;
+    assert_eq!(text(&select(root, ".example-title-button")), "Session B");
+}
+
+/// New Session signals cancellation to an outgoing controlled streaming request.
+#[wasm_bindgen]
+pub async fn chat_example_new_session_aborts_the_outgoing_request(import: js_sys::Function) {
+    let shown = view();
+    let _host = host(&shown, &import);
+    let page = page_module(&import).await;
+    reset_url();
+    let storage = keyed("example-new-abort").await;
+    let root = container();
+    let _running = app::App::init(&shown, storage, &root).await.unwrap();
+    let held = held_effect(&import, "holdResponse", &completed_reply()).await;
+    send(&root, "pending");
+    ready(&held).await;
+    start_new_session(&page, &root).await;
+    crate::contributions_support::frames(&page, 2).await;
+    assert_eq!(
+        js_sys::Reflect::get(&held, &"aborted".into()).unwrap(),
+        JsValue::TRUE
+    );
+    assert_eq!(
+        text(&select(&root, ".example-name")),
+        "Maestro Web UI Example"
+    );
+    effect(&held, "restore");
+}

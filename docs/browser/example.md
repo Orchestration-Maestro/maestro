@@ -50,7 +50,9 @@ The example does not ask for persistent storage.
 ## Behaviour notes
 
 The page never reloads. New Session and a missing session replace the address and
-start a new session in place. A restored session keeps the example's
+start a new session in place. Replacing the shown session aborts its active
+request. Message completion preserves an open title draft; a pending title save
+updates only its originating session. A restored session keeps the example's
 instructions, and a stored summary sums the assistant usage.
 
 ## Tests

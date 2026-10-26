@@ -69,7 +69,7 @@ test('inventory_rejects_empty_or_invalid_names', () => {
   const selected = runner.validateInventory(inventory);
   assert.equal(selected.execution.length, 26);
   assert.equal(selected.loading.length, 49);
-  assert.equal(selected.contributions.length, 189);
+  assert.equal(selected.contributions.length, 194);
 });
 
 test('loading_exports_receive_the_page_module_import', async t => {
