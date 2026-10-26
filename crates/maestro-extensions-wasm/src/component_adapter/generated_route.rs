@@ -75,7 +75,9 @@ fn dispatch(call: host::LocalCall) -> Running {
         call @ (host::LocalCall::Renderer(_)
         | host::LocalCall::Render(_)
         | host::LocalCall::Unit(_)
-        | host::LocalCall::Key(_)) => component(call),
+        | host::LocalCall::Key(_)
+        | host::LocalCall::Focused(_)
+        | host::LocalCall::SetFocused(_)) => component(call),
         host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
             call.target,
             &call.args,
@@ -94,6 +96,7 @@ fn dispatch(call: host::LocalCall) -> Running {
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call @ (host::LocalCall::Expanded(_)
         | host::LocalCall::Factory(_)
+        | host::LocalCall::CustomFactory(_)
         | host::LocalCall::ToolRender(_)
         | host::LocalCall::TerminalInput(_)
         | host::LocalCall::Style(_)
@@ -137,6 +140,16 @@ fn component(call: host::LocalCall) -> host::LocalResult {
                 None => view.invalidate(emitter),
             },
         )),
+        host::LocalCall::Focused(call) => host::LocalResult::Focused(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            crate::Component::focused,
+        )),
+        host::LocalCall::SetFocused(call) => host::LocalResult::Unit(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            |view, emitter| view.set_focused(call.focused, emitter),
+        )),
         host::LocalCall::Key(call) => host::LocalResult::Key(exports.invoke_component(
             call.target,
             &call.emitter,
@@ -157,6 +170,19 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
             &call.emitter,
         )),
         host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
+        host::LocalCall::CustomFactory(call) => {
+            let lent = super::super::custom::Lent {
+                tui: call.input.tui,
+                theme: call.input.theme,
+                keybindings: call.input.keybindings,
+                close: call.input.close,
+            };
+            host::LocalResult::CustomFactory(
+                exports
+                    .invoke_custom_factory(call.target, lent, &call.emitter)
+                    .map(|outcome| super::super::custom::transfer(&Generated, outcome)),
+            )
+        }
         host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
@@ -184,11 +210,9 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
         host::LocalCall::Highlight(call) => host::LocalResult::Highlight(
             super::super::invoke_highlight(call.target, &call.code, call.lang.as_deref()),
         ),
-        host::LocalCall::Widget(call) => host::LocalResult::Widget(super::widgets::invoke_widget(
-            call.target,
-            call.event,
-            &call.emitter,
-        )),
+        host::LocalCall::Widget(call) => host::LocalResult::Widget(
+            super::widget_events::invoke_widget(call.target, call.event, &call.emitter),
+        ),
         _ => host::LocalResult::Unit(Err("expected a UI callback".to_owned())),
     }
 }
@@ -260,6 +284,11 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::WithSession(call) => {
                 host::LocalResult::Unit(exports.invoke_with_session(call.target, call.ctx).await)
             }
+            host::LocalCall::CustomFuture(target) => host::LocalResult::Factory(
+                super::super::custom::invoke_custom_future(target)
+                    .await
+                    .map(|built| super::super::factories::transfer(&Generated, built)),
+            ),
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }

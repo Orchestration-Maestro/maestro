@@ -37,6 +37,12 @@ pub(crate) enum WidgetHandler {
     Text(crate::TextHandler),
     /// Intercepts an editor's input.
     Shortcut(crate::EditorShortcut),
+    /// Decides whether an overlay shows.
+    Visible(crate::OverlayVisible),
+    /// Receives a shown overlay's handle.
+    OverlayHandle(crate::OverlayHandleCallback),
+    /// Resolves an overlay's placement.
+    OverlayOptions(crate::OverlayOptionsResolver),
 }
 
 /// A host row style kept by its facade.
@@ -60,7 +66,7 @@ impl<I: WidgetImports> SubmenuDonePort for HostDone<I> {
 }
 
 /// `handler` staged under a fresh identity for one request.
-pub(super) fn stage_handler<I: WidgetImports>(imports: &I, handler: WidgetHandler) -> Identity<I> {
+pub(super) fn stage_handler<I: super::Imports>(imports: &I, handler: WidgetHandler) -> Identity<I> {
     let identity = Identity::new(imports);
     identity.stage(Rc::new(handler));
     identity
@@ -303,6 +309,15 @@ pub(crate) fn invoke_widget<I: WidgetImports>(
         }
         (WidgetHandler::Row(style), WidgetEvent::Row(text, selected)) => {
             style.apply(&text, selected).map(WidgetAnswer::Text)
+        }
+        (WidgetHandler::Visible(visible), WidgetEvent::Visible(columns, rows)) => {
+            visible(columns, rows).map(WidgetAnswer::Visible)
+        }
+        (WidgetHandler::OverlayHandle(receive), WidgetEvent::OverlayHandle(handle)) => {
+            receive(super::overlays::handle(imports, handle), emitter).map(|()| WidgetAnswer::Done)
+        }
+        (WidgetHandler::OverlayOptions(resolve), WidgetEvent::OverlayOptions) => {
+            resolve(emitter).map(WidgetAnswer::OverlayOptions)
         }
         (WidgetHandler::Submenu(submenu), WidgetEvent::Submenu(value, done)) => {
             let done = SubmenuDone::new(Rc::new(HostDone {

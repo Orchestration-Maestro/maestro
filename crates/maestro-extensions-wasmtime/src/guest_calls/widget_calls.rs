@@ -72,6 +72,12 @@ pub(crate) enum Event {
     Notice,
     /// Input offered to an editor's interceptor.
     Shortcut(String),
+    /// An overlay's visibility check at these terminal columns and rows.
+    Visible(u32, u32),
+    /// A custom overlay's handle after it is shown.
+    OverlayHandle(crate::overlay_reads::HandleEndpoint),
+    /// A custom overlay asks for its placement.
+    OverlayOptions,
 }
 
 /// The wire form of an event.
@@ -111,6 +117,15 @@ pub(crate) enum WireEvent {
     /// Input offered to an editor's interceptor.
     #[component(name = "shortcut")]
     Shortcut(String),
+    /// An overlay's visibility check.
+    #[component(name = "visible")]
+    Visible((u32, u32)),
+    /// A custom overlay's transferred handle.
+    #[component(name = "overlay-handle")]
+    OverlayHandle(Resource<crate::overlay_reads::HandleEndpoint>),
+    /// A custom overlay asks for its placement.
+    #[component(name = "overlay-options")]
+    OverlayOptions,
 }
 
 impl Event {
@@ -130,6 +145,9 @@ impl Event {
             Self::Text(text) => WireEvent::Text(text.clone()),
             Self::Notice => WireEvent::Notice,
             Self::Shortcut(data) => WireEvent::Shortcut(data.clone()),
+            Self::Visible(columns, rows) => WireEvent::Visible((*columns, *rows)),
+            Self::OverlayHandle(handle) => WireEvent::OverlayHandle(table.push(handle.clone())?),
+            Self::OverlayOptions => WireEvent::OverlayOptions,
         })
     }
 }
@@ -150,6 +168,12 @@ pub(crate) enum Answer {
     /// Whether an interceptor consumed its input.
     #[component(name = "consumed")]
     Consumed(bool),
+    /// Whether an overlay is visible.
+    #[component(name = "visible")]
+    Visible(bool),
+    /// An overlay's transferred placement owner.
+    #[component(name = "overlay-options")]
+    OverlayOptions(Resource<crate::overlay_reads::OptionsEndpoint>),
 }
 
 /// What an authored widget callback answered, with a component kept as a native owner.
@@ -162,6 +186,10 @@ pub(crate) enum Answered {
     Component(Handle),
     /// Whether an interceptor consumed its input.
     Consumed(bool),
+    /// Whether an overlay is visible.
+    Visible(bool),
+    /// An overlay's placement owner.
+    OverlayOptions(crate::overlay_reads::OptionsEndpoint),
 }
 
 /// Keeps a transferred component of an answer as a native owner.
@@ -173,6 +201,10 @@ pub(crate) fn answered<T: crate::callback_imports::CallbackView>(
         Answer::Done => Answered::Done,
         Answer::Text(text) => Answered::Text(text),
         Answer::Consumed(consumed) => Answered::Consumed(consumed),
+        Answer::Visible(visible) => Answered::Visible(visible),
+        Answer::OverlayOptions(options) => {
+            Answered::OverlayOptions(store.ctx().table.delete(options)?)
+        }
         Answer::Component(component) => {
             Answered::Component(crate::callback_imports::transferred(store, component)?)
         }
@@ -202,16 +234,26 @@ impl Handle {
         events
             .invoke_callback(|emitter| -> Result<Answered, EventError> {
                 let emitter = registry.emitter(emitter.frame())?;
-                let answer = self.0.endpoint.synchronous(registry, |reply| {
-                    Ok(Call::Widget(WidgetCall {
-                        handler: self.clone(),
-                        event,
-                        emitter,
-                        reply,
-                    }))
-                });
-                answer.map_err(EventError::from)
+                self.widget_in(registry, emitter, event)
+                    .map_err(EventError::from)
             })
             .map_err(|error| error.to_string())
+    }
+
+    /// Calls the authored widget callback within a native callback's own frame.
+    pub(crate) fn widget_in(
+        &self,
+        registry: &Registry,
+        emitter: EmitterEndpoint,
+        event: Event,
+    ) -> Result<Answered, String> {
+        self.0.endpoint.synchronous(registry, |reply| {
+            Ok(Call::Widget(WidgetCall {
+                handler: self.clone(),
+                event,
+                emitter,
+                reply,
+            }))
+        })
     }
 }

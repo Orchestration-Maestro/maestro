@@ -178,15 +178,17 @@ impl State {
     pub(super) fn widgets(&self, message: WidgetMessage) {
         let registry = &self.registry;
         match message {
+            WidgetMessage::Overlay(message) => self.overlays(message),
+            WidgetMessage::FullRedraws(id, reply) => self.full_redraws(id, &reply),
+            message @ (WidgetMessage::Writer(..) | WidgetMessage::Drain(..)) => {
+                self.frame_writer(message);
+            }
             WidgetMessage::GlobalTheme(reply) => {
                 let _ = reply.send(registry.theme(registry.widgets.theme()));
             }
             WidgetMessage::New(api, build, reply) => {
-                let events = match registry.capability(api).as_deref() {
-                    Some(Capability::Api(api)) => Ok(api.events.clone()),
-                    _ => Err("extension API resource ended".to_owned()),
-                };
-                let widget = events
+                let widget = registry
+                    .events_of(api)
                     .and_then(|events| Widget::build(build, registry, &*registry.widgets, events))
                     .and_then(|widget| registry.insert(Capability::Widget(Rc::new(widget))))
                     .map(WidgetEndpoint);
@@ -197,17 +199,8 @@ impl State {
                 _ => request.reject("extension widget resource ended"),
             },
             WidgetMessage::Lent(id, lent) => self.lent(id, lent),
-            WidgetMessage::LendTheme(reply) => {
-                let _ = reply.send(self.lend_theme());
-            }
-            WidgetMessage::LendSelect(reply) => {
-                let theme = Rc::new(registry.widgets.select_list_theme());
-                let styles = crate::widget_lists::select_roles(&theme)
-                    .into_iter()
-                    .map(|style| registry.insert(Capability::Style(style)).map(StyleEndpoint))
-                    .collect();
-                let _ = reply.send(styles);
-            }
+            WidgetMessage::LendTheme(reply) => drop(reply.send(self.lend_theme())),
+            WidgetMessage::LendSelect(reply) => drop(reply.send(self.lend_select())),
             WidgetMessage::LendSettings(reply) => {
                 let _ = reply.send(self.lend_settings());
             }
@@ -235,6 +228,79 @@ impl State {
                 let _ = reply.send(self.foreign(id, build));
             }
         }
+    }
+
+    /// Lends the live theme's selection list styles in field order.
+    fn lend_select(&self) -> Result<Vec<StyleEndpoint>, String> {
+        let registry = &self.registry;
+        let theme = Rc::new(registry.widgets.select_list_theme());
+        crate::widget_lists::select_roles(&theme)
+            .into_iter()
+            .map(|style| registry.insert(Capability::Style(style)).map(StyleEndpoint))
+            .collect()
+    }
+
+    /// Builds a frame writer's writer widget, or admits draining its terminal's input.
+    fn frame_writer(&self, message: WidgetMessage) {
+        let registry = &self.registry;
+        match message {
+            WidgetMessage::Writer(api, tui, reply) => {
+                let writer = registry.events_of(api).and_then(|events| {
+                    let writer = Widget::writer(registry.terminal(&tui)?, events);
+                    registry.insert(Capability::Widget(Rc::new(writer)))
+                });
+                let _ = reply.send(writer.map(WidgetEndpoint));
+            }
+            WidgetMessage::Drain(id, limits, reply, admission) => {
+                self.drain(id, limits, reply, admission);
+            }
+            _ => {}
+        }
+    }
+
+    /// Admits discarding the terminal's pending input until the native drain settles.
+    fn drain(
+        &self,
+        id: u64,
+        (max, idle): (Option<f64>, Option<f64>),
+        reply: tokio::sync::oneshot::Sender<Result<(), String>>,
+        admission: super::Admission,
+    ) {
+        let tui = match self.registry.capability(id).as_deref() {
+            Some(Capability::Widget(widget)) => widget.tui().cloned(),
+            _ => None,
+        };
+        let Some(tui) = tui else {
+            let _ = reply.send(Err("the widget is no frame writer".to_owned()));
+            return;
+        };
+        let duration = |ms: Option<f64>| {
+            ms.map(|ms| std::time::Duration::try_from_secs_f64(ms / 1000.0))
+                .transpose()
+                .map_err(|error| error.to_string())
+        };
+        let limits = duration(max).and_then(|max| Ok((max, duration(idle)?)));
+        let draining = limits.map(|(max, idle)| tui.terminal().borrow_mut().drain_input(max, idle));
+        match draining {
+            Ok(draining) => self.admit(
+                Box::pin(async move {
+                    let _ = reply.send(draining.await.map_err(|error| error.to_string()));
+                }),
+                admission,
+            ),
+            Err(error) => drop(reply.send(Err(error))),
+        }
+    }
+
+    /// Reads the original frame writer's redraw counter.
+    fn full_redraws(&self, id: u64, reply: &crate::widget_reads::Reply<u64>) {
+        let result = match self.registry.capability(id).as_deref() {
+            Some(Capability::Tui(tui)) => {
+                u64::try_from(tui.full_redraws()).map_err(|error| error.to_string())
+            }
+            _ => Err("extension terminal resource ended".to_owned()),
+        };
+        let _ = reply.send(result);
     }
 
     /// Applies a lent style or runs the lent highlighting.

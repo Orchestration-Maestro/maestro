@@ -16,8 +16,9 @@ use crate::{
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
 mod component;
-use component::{LocalKey, LocalRender, LocalUnit};
+use component::{LocalFocus, LocalKey, LocalRender, LocalUnit};
 mod credentials;
+mod custom;
 mod editors;
 mod ui;
 use ui::{
@@ -215,6 +216,12 @@ pub(super) enum LocalCall {
     /// A retained component key-release query.
     #[component(name = "key")]
     Key(LocalKey),
+    /// A retained component's optional focus state.
+    #[component(name = "focused")]
+    Focused(LocalKey),
+    /// A retained component's synchronous focus assignment.
+    #[component(name = "set-focused")]
+    SetFocused(LocalFocus),
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
@@ -260,6 +267,12 @@ pub(super) enum LocalCall {
     /// A component factory.
     #[component(name = "factory")]
     Factory(LocalFactory),
+    /// A custom factory's synchronous prefix.
+    #[component(name = "custom-factory")]
+    CustomFactory(custom::Prefix),
+    /// An independently owned custom factory continuation.
+    #[component(name = "custom-future")]
+    CustomFuture(u32),
     /// A tool rendering.
     #[component(name = "tool-render")]
     ToolRender(LocalToolRender),
@@ -305,6 +318,9 @@ pub(super) enum LocalResult {
     /// Key-release preference or the authored error.
     #[component(name = "key")]
     Key(Result<bool, String>),
+    /// Optional focus state or an ordinary error.
+    #[component(name = "focused")]
+    Focused(Result<Option<bool>, String>),
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
@@ -335,6 +351,9 @@ pub(super) enum LocalResult {
     /// The built component identities, or the authored error.
     #[component(name = "factory")]
     Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// A completed custom prefix or its owned continuation.
+    #[component(name = "custom-factory")]
+    CustomFactory(Result<crate::guest_calls::custom::Built, String>),
     /// The rendered component and new row state identities, or the authored error.
     #[component(name = "tool-render")]
     ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
@@ -387,6 +406,7 @@ pub(super) fn lower(
             emitter: table.push(emitter.clone())?,
         }),
         Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
+        Call::Custom(call) => custom::lower(table, call)?,
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
@@ -483,6 +503,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::Custom(call), value) => custom::settle(store, call, value)?,
         (Call::Credential(call), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
@@ -497,6 +518,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
+            let _ = reply.send(value);
+        }
+        (Call::Component(ComponentCall::Focused(_, _, reply)), LocalResult::Focused(value)) => {
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {

@@ -2600,3 +2600,42 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
     });
     assert!(elsewhere.join().unwrap());
 }
+
+#[test]
+fn retained_ui_errors_share_live_runner_listeners_and_original_extension_attribution() {
+    let bus = LocalBus::new();
+    let loaded = loaded("/original-extension", bus.controller.for_extension());
+    let runner = runner(&loaded.owners);
+    let host = ExtensionUIContext::new(Rc::new(limited_host::Limited));
+    runner.set_ui_context_binding(Some(ExtensionUIContextBinding::borrowed(&host)));
+    let retained = runner.get_ui_context();
+    runner.set_ui_context(None);
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let output = seen.clone();
+    let remove = runner.on_error(Rc::new(move |error| {
+        output.borrow_mut().push(error.clone());
+        Ok(())
+    }));
+    let report = loaded.api.ui_error_reporter(&retained).unwrap();
+    drop(retained);
+    report("custom.visibility", &"hidden failure".into()).unwrap();
+    let expected = maestro_extensions::ExtensionError {
+        extension_path: "/original-extension".into(),
+        event: "custom.visibility".into(),
+        error: "hidden failure".into(),
+        stack: None,
+    };
+    assert_eq!(*seen.borrow(), std::slice::from_ref(&expected));
+    runner.emit_error(&expected).unwrap();
+    assert_eq!(*seen.borrow(), [expected.clone(), expected]);
+    remove();
+    report("custom.visibility", &"hidden failure".into()).unwrap();
+    assert_eq!(seen.borrow().len(), 2);
+    let _remove = runner.on_error(Rc::new(|_| Err("listener refused".into())));
+    assert_eq!(
+        report("custom.visibility", &"hidden failure".into())
+            .unwrap_err()
+            .to_string(),
+        "listener refused"
+    );
+}

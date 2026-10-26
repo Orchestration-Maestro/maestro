@@ -15,6 +15,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
+pub(crate) mod custom;
 pub(crate) mod editors;
 pub(crate) mod events;
 pub(crate) mod factories;
@@ -69,6 +70,8 @@ pub(crate) enum Call<H = Handle> {
     TerminalInput(terminal::Input<H>),
     /// Builds one component with the terminal and theme the native owner lent.
     Factory(factories::FactoryCall<H>),
+    /// Builds a custom component or awaits its owned continuation.
+    Custom(custom::Invocation<H>),
     /// Renders one tool row through its authored renderer.
     ToolRender(tool_renders::ToolRenderCall<H>),
     /// Calls an authored styling or highlighting function for a host widget.

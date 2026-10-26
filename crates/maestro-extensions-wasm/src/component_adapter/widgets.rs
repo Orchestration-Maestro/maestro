@@ -102,6 +102,13 @@ impl<I: WidgetImports> HostWidget<I> {
             change: RefCell::default(),
         })
     }
+    /// The identity `component` was added under, when it is an authored child.
+    pub(super) fn guest(&self, component: &Component) -> Option<u32> {
+        let guests = self.guests.borrow();
+        guests
+            .iter()
+            .find_map(|(added, id)| added.same(component).then_some(*id))
+    }
     /// Retains a built widget.
     fn retain(imports: &I, widget: I::Widget) -> Widget {
         Widget::new(Self::shared(imports, widget))
@@ -314,6 +321,12 @@ pub(super) fn host_style<I: WidgetImports>(imports: &I, style: I::Style) -> Styl
 }
 
 impl<I: super::providers::EditorImports> WidgetHost for Builder<I> {
+    fn overlay_options(
+        &self,
+        options: crate::OverlayOptions,
+    ) -> ExtensionResult<crate::OverlayOptionsHandle> {
+        super::overlays::options(&self.0, &options)
+    }
     fn theme(&self) -> ExtensionResult<crate::Theme> {
         Ok(super::theme::theme(self.0.clone(), self.0.global_theme()?))
     }

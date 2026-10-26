@@ -18,12 +18,21 @@ interface guest {
     retain-schema: func(handler: borrow<callback>, retained: callback) -> result<_, diagnostic-error-info>;
     /// Renderer input with owned theme and complete message document.
     record render-request { message: string, expanded: bool, theme: theme }
+    use host.{custom-input, custom-built};
+    /// Runs a custom factory's synchronous prefix and returns its owned outcome.
+    invoke-custom-factory: async func(handler: borrow<callback>, input: custom-input, emitter: borrow<callback-emitter>) -> result<custom-built, string>;
+    /// Awaits the owned continuation returned by a custom prefix.
+    invoke-custom-future: async func(handler: borrow<callback>) -> result<factory-component, string>;
     /// Renders one retained authored component.
     component-render: async func(handler: borrow<callback>, width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
     /// Delivers input to one retained authored component.
     component-handle-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Reads the key-release preference of one retained authored component.
     component-wants-key-release: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<bool, string>;
+    /// Reads focus state, absent when the authored component cannot focus.
+    component-focused: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<option<bool>, string>;
+    /// Assigns focus synchronously to an authored component.
+    component-set-focused: async func(handler: borrow<callback>, focused: bool, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Invalidates one retained authored component.
     component-invalidate: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a synchronous renderer and transfers the identity of its returned component.

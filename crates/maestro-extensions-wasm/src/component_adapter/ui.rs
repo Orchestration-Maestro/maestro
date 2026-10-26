@@ -38,6 +38,23 @@ fn follow<I: Imports>(
 }
 
 impl<I: Imports> ExtensionUIContextPort for Ui<I> {
+    fn custom_component(
+        &self,
+        factory: crate::CustomComponentFactory,
+        options: Option<crate::CustomUIOptions>,
+    ) -> ExtensionFuture<'static, ()> {
+        let (imports, resource) = self.owned();
+        Box::pin(async move {
+            let identity = super::callbacks::Scoped::new(&imports, factory);
+            let retained = options
+                .map(|options| super::custom::Retained::new(&imports, options))
+                .transpose()?;
+            let options = retained.as_ref().map(super::custom::Retained::operands);
+            imports
+                .ui_custom(&resource, &identity.handle, options)
+                .await
+        })
+    }
     fn notify(&self, message: &str, kind: Option<NotificationType>) -> ExtensionResult<()> {
         self.imports.ui_notify(&self.resource, message, kind)
     }

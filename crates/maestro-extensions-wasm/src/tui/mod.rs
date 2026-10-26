@@ -26,6 +26,10 @@ pub trait ComponentView {
     fn wants_key_release(&self, _emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
         Ok(false)
     }
+    /// The focus capability, absent for components without one.
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        None
+    }
     /// Invalidates retained rendering state.
     /// # Errors
     /// Returns the author's failure.
@@ -35,7 +39,23 @@ pub trait ComponentView {
 #[macro_use]
 mod widgets;
 pub(crate) use widgets::host as widget_host;
+mod custom;
 mod editors;
+pub use custom::{
+    CustomClose, CustomComponentFactory, CustomDone, CustomFactory, CustomFactoryOutcome,
+    CustomUIOptions, OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource,
+};
+mod focus;
+mod overlays;
+mod terminal;
+pub use focus::{CURSOR_MARKER, Focusable, is_focusable};
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) use overlays::OverlayOptionsPort;
+pub use overlays::{
+    OverlayAnchor, OverlayHandle, OverlayHandlePort, OverlayMargin, OverlayMarginValue,
+    OverlayOptions, OverlayOptionsHandle, OverlayVisible, SizeValue,
+};
+pub use terminal::{Terminal, TerminalPort};
 mod keys;
 mod lists;
 pub use editors::{
@@ -130,15 +150,62 @@ impl Component {
 }
 
 port! {
-    /// Requests to the terminal a factory received.
-    TuiPort for TUI via _port {}
+    /// Requests to the frame writer a factory received.
+    TuiPort for TUI via port {
+        /// The host frame writer's current count of full redraws.
+        fn full_redraws() -> u64;
+        /// The terminal the frame writer draws on.
+        fn terminal() -> Terminal;
+        /// Appends a component to the frame.
+        fn add_child(component: &Component) -> ();
+        /// Removes the first occurrence of a component; a missing one is ignored.
+        fn remove_child(component: &Component) -> ();
+        /// Removes every component of the frame.
+        fn clear() -> ();
+        /// Drops the cached rows of every component and overlay.
+        fn invalidate() -> ();
+        /// Renders the frame's components at `width`.
+        fn render(width: u32) -> Vec<String>;
+        /// Whether the hardware cursor is shown where a component asks for it.
+        fn get_show_hardware_cursor() -> bool;
+        /// Shows the hardware cursor where a component asks for it, or hides it.
+        fn set_show_hardware_cursor(enabled: bool) -> ();
+        /// Whether shrinking content clears the screen.
+        fn get_clear_on_shrink() -> bool;
+        /// Changes whether shrinking content clears the screen.
+        fn set_clear_on_shrink(enabled: bool) -> ();
+        /// Moves keyboard focus to `component`, or nowhere.
+        fn set_focus(component: Option<&Component>) -> ();
+        /// Shows `component` above the frame with the shared placement.
+        fn show_overlay(
+            component: &Component,
+            options: Option<&OverlayOptionsHandle>
+        ) -> OverlayHandle;
+        /// Removes the most recently shown overlay and restores focus.
+        fn hide_overlay() -> ();
+        /// Whether any overlay is visible.
+        fn has_overlay() -> bool;
+        /// Starts the terminal and requests a frame.
+        fn start() -> ();
+        /// Moves the cursor past the frame and stops the terminal.
+        fn stop() -> ();
+        /// Requests a frame; `force` redraws the whole screen.
+        fn request_render(force: bool) -> ();
+        /// Adds a listener that sees input before the focused component; unsubscribing
+        /// removes it.
+        fn add_input_listener(listener: crate::TerminalInputHandler) -> crate::Subscription;
+        /// Removes the listener added as `listener`; another one is ignored.
+        fn remove_input_listener(listener: &crate::TerminalInputHandler) -> ();
+        /// Replaces or removes the callback the debug key runs before the focused component.
+        fn set_on_debug(callback: Option<WidgetNotice>) -> ();
+    }
 }
 
 /// The terminal a component factory received; clones share its host owner.
 #[derive(Clone)]
 pub struct TUI {
     /// The owner of this capability, kept while the author holds the terminal.
-    _port: Rc<dyn TuiPort>,
+    port: Rc<dyn TuiPort>,
     /// The host resource behind a terminal the host lent, which a widget can pass back.
     #[cfg(any(test, target_arch = "wasm32"))]
     host: Option<Rc<dyn std::any::Any>>,
@@ -148,7 +215,7 @@ impl TUI {
     #[must_use]
     pub fn new(port: Rc<dyn TuiPort>) -> Self {
         Self {
-            _port: port,
+            port,
             #[cfg(any(test, target_arch = "wasm32"))]
             host: None,
         }
@@ -157,7 +224,7 @@ impl TUI {
     #[cfg(any(test, target_arch = "wasm32"))]
     pub(crate) fn supplied<P: TuiPort + 'static>(port: Rc<P>) -> Self {
         Self {
-            _port: port.clone(),
+            port: port.clone(),
             host: Some(port),
         }
     }

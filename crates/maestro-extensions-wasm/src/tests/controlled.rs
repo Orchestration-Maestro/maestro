@@ -62,7 +62,7 @@ impl Drop for Lease {
 /// Owner handle of a callback identity; the host sees it dropped.
 pub struct Callback {
     /// Key of the identity.
-    id: u32,
+    pub(super) id: u32,
     /// What the host observed.
     observed: Rc<RefCell<Observed>>,
 }
@@ -173,7 +173,7 @@ impl Drop for Theme {
 #[derive(Clone, Default)]
 pub struct Controlled {
     /// What the host observed.
-    observed: Rc<RefCell<Observed>>,
+    pub(super) observed: Rc<RefCell<Observed>>,
     /// Components factory widgets built, by the handle their slots name.
     widgets: Rc<RefCell<std::collections::HashMap<u32, crate::ExtensionComponent>>>,
 }
@@ -181,6 +181,24 @@ pub struct Controlled {
 /// Terminal lent to a component factory, with a counted lifetime.
 pub struct Tui {
     /// Counted owner.
+    _lease: Lease,
+}
+impl Tui {
+    /// Lends a counted terminal or overlay handle.
+    pub(super) fn lent(observed: &Rc<RefCell<Observed>>) -> Self {
+        Self {
+            _lease: Lease::new(observed),
+        }
+    }
+}
+
+/// Retained placement and its counted host capability.
+pub struct OverlayOptions {
+    /// The shared record.
+    pub(super) value: super::overlay_host::Options,
+    /// The identity of the record's visibility check, shared by its owners.
+    pub(super) visible: Rc<std::cell::Cell<Option<u32>>>,
+    /// Counted resource lifetime.
     _lease: Lease,
 }
 
@@ -1410,7 +1428,80 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    type CustomClose = super::custom_host::Close;
+    fn custom_close(&self, close: &Self::CustomClose) -> ExtensionResult<bool> {
+        Ok(close.close())
+    }
+    fn ui_custom<'a>(
+        &'a self,
+        resource: &'a Ui,
+        factory: &'a Callback,
+        options: Option<crate::component_adapter::custom::CustomOptionsRef<'a, Self>>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            ui_call(&self.observed, resource.key, "custom", &json!([]))?;
+            match options {
+                Some(options) if options.overlay == Some(true) => {
+                    self.custom_overlay(factory, options).await
+                }
+                _ => self.custom(factory).await,
+            }
+        })
+    }
+    type OverlayOptions = OverlayOptions;
+    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<OverlayOptions> {
+        Ok(OverlayOptions {
+            value: super::overlay_host::Options::new(encoded)?,
+            visible: Rc::default(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn overlay_options_get(&self, options: &OverlayOptions) -> ExtensionResult<String> {
+        options.value.get()
+    }
+    fn overlay_options_set(&self, options: &OverlayOptions, encoded: &str) -> ExtensionResult<()> {
+        options.value.set(encoded)
+    }
+    fn overlay_options_share(&self, options: &OverlayOptions) -> OverlayOptions {
+        OverlayOptions {
+            value: options.value.clone(),
+            visible: options.visible.clone(),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+    fn overlay_options_set_visible(
+        &self,
+        options: &OverlayOptions,
+        visible: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observe()
+            .log(format!("overlay visible {}", visible.is_some()));
+        options.visible.set(visible.map(|visible| visible.id));
+        Ok(())
+    }
+    type OverlayHandle = Tui;
+    fn overlay_handle_request(
+        &self,
+        _: &Tui,
+        request: crate::component_adapter::overlays::OverlayRequest,
+    ) -> ExtensionResult<Option<bool>> {
+        use crate::component_adapter::overlays::OverlayRequest;
+        let (line, flag) = match request {
+            OverlayRequest::Hide => ("hide".to_owned(), None),
+            OverlayRequest::SetHidden(hidden) => (format!("setHidden {hidden}"), None),
+            OverlayRequest::IsHidden => ("isHidden".to_owned(), Some(false)),
+            OverlayRequest::Focus => ("focus".to_owned(), None),
+            OverlayRequest::Unfocus => ("unfocus".to_owned(), None),
+            OverlayRequest::IsFocused => ("isFocused".to_owned(), Some(true)),
+        };
+        self.observe().log(format!("overlay handle {line}"));
+        Ok(flag)
+    }
     type Tui = Tui;
+    fn tui_full_redraws(&self, _: &Tui) -> ExtensionResult<u64> {
+        self.observe().log("tui fullRedraws");
+        Ok(17)
+    }
     type Invalidator = Invalidator;
     fn invalidate(&self, invalidator: &Invalidator) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();
@@ -2554,5 +2645,55 @@ impl Imports for Controlled {
         let mut command = self.command_context(&context.session.cwd);
         command.setup = context.setup.clone();
         command
+    }
+}
+
+impl Controlled {
+    /// Constructs both custom factory forms without retaining their borrowed emitter.
+    async fn custom(&self, factory: &Callback) -> ExtensionResult<()> {
+        let (built, close) = self.custom_build(factory).await?;
+        self.custom_input(built, &super::bus_host::Emitter { key: 0 })?;
+        assert!(close.is_closed());
+        Ok(())
+    }
+    /// Runs a custom factory's prefix, then awaits its owned continuation when there is one.
+    pub(super) async fn custom_build(
+        &self,
+        factory: &Callback,
+    ) -> ExtensionResult<(crate::ExtensionComponent, super::custom_host::Close)> {
+        let close = super::custom_host::Close::default();
+        let lent = crate::component_adapter::custom::Lent {
+            tui: Tui::lent(&self.observed),
+            theme: self.theme("dark"),
+            keybindings: super::widget_controlled::Keybindings(0),
+            close: close.clone(),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let built = Exports::new(self.clone()).invoke_custom_factory(factory.id, lent, &emitter)?;
+        let built = match built {
+            crate::CustomFactoryOutcome::Ready(built) => built,
+            crate::CustomFactoryOutcome::Async(building) => building.await?,
+        };
+        Ok((built, close))
+    }
+    /// Exercises the view after the prefix returns, then disposes it before releasing it.
+    fn custom_input(
+        &self,
+        built: crate::ExtensionComponent,
+        emitter: &super::bus_host::Emitter,
+    ) -> ExtensionResult<()> {
+        use super::renderer_host::{Call, Reply, invoke};
+        assert_eq!(built.width, Some(13.0));
+        assert_eq!(
+            invoke(&built.component, Call::Render(20), self, 0)?,
+            Reply::Lines(vec!["custom 23".into()])
+        );
+        invoke(&built.component, Call::Input("commit"), self, 0)?;
+        if let Some(dispose) = built.dispose {
+            crate::component_adapter::renderers::with_emitter(self, emitter, |emitter| {
+                dispose(emitter)
+            })?;
+        }
+        Ok(())
     }
 }

@@ -5,8 +5,10 @@
     clippy::excessive_nesting
 )]
 
-use super::widgets::{Hosted, Widget, host};
-use super::{Component, ComponentView, EditorTheme, KeybindingsManager, Style, TUI, WidgetNotice};
+use super::widgets::{Widget, host};
+use super::{
+    Component, ComponentView, EditorTheme, Focusable, KeybindingsManager, Style, TUI, WidgetNotice,
+};
 use crate::{
     AutocompleteProvider, CallbackEmitter, CustomEditorComponent, EditorComponent, ExtensionResult,
 };
@@ -138,7 +140,19 @@ impl Editor {
     }
 }
 
+impl Focusable for Editor {
+    fn focused(&self, _: CallbackEmitter<'_>) -> ExtensionResult<bool> {
+        Editor::focused(self)
+    }
+    fn set_focused(&self, focused: bool, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Editor::set_focused(self, focused)
+    }
+}
+
 impl ComponentView for Editor {
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        Some(self)
+    }
     fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
         Editor::render(self, width)
     }
@@ -222,7 +236,7 @@ impl EditorComponent for Editor {
 
 impl From<&Editor> for Component {
     fn from(editor: &Editor) -> Self {
-        Component::hosted(Hosted(editor.widget.clone()), editor.widget.clone())
+        Component::hosted(editor.clone(), editor.widget.clone())
     }
 }
 
@@ -293,7 +307,19 @@ impl Deref for CustomEditor {
     }
 }
 
+impl Focusable for CustomEditor {
+    fn focused(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
+        Focusable::focused(&self.editor, emitter)
+    }
+    fn set_focused(&self, focused: bool, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        Focusable::set_focused(&self.editor, focused, emitter)
+    }
+}
+
 impl ComponentView for CustomEditor {
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        Some(self)
+    }
     fn render(&self, width: u32, emitter: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
         ComponentView::render(&self.editor, width, emitter)
     }

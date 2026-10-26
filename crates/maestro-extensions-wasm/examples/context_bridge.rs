@@ -52,28 +52,12 @@ mod retained;
 mod signals;
 
 #[cfg(target_arch = "wasm32")]
-#[path = "../src/tests/editor_factory_author.rs"]
-mod editor_factory_author;
-
-#[cfg(target_arch = "wasm32")]
-#[path = "../src/tests/stacked_provider_author.rs"]
-mod stacked_provider_author;
-
-#[cfg(target_arch = "wasm32")]
-#[path = "../src/tests/factory_component_author.rs"]
-mod factory_component_author;
-
-#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/ui.rs"]
 mod ui;
 
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/theme.rs"]
 mod theme;
-
-#[cfg(target_arch = "wasm32")]
-#[path = "../src/tests/widget_author.rs"]
-mod widget_author;
 
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/schema.rs"]
@@ -260,6 +244,12 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Some(answer) = ui::custom(&context, &args).await {
+            return Err(answer?);
+        }
+        if args == "ui writer-drain" {
+            return Err(ui::writer_author::drain().await?);
+        }
         if args.starts_with("credential ") || args.starts_with("provider ") {
             return Err(credential_command(&api, &context, &args).await?.to_string());
         }
@@ -309,19 +299,28 @@ fn context_command(
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());
         }
-        if args == "trap" || args == "pending" {
-            context.get_system_prompt()?;
-            context.wait_for_idle().await?;
-            if args == "trap" {
-                std::arch::wasm32::unreachable();
-            }
-        }
-        Err(format!(
-            "command:{args}|{}|{}",
-            context.cwd()?,
-            context.get_system_prompt()?
-        ))
+        observed(&args, &context).await
     })
+}
+
+/// Traps or waits when asked, then reports the command's arguments and context.
+#[cfg(target_arch = "wasm32")]
+async fn observed(
+    args: &str,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+) -> maestro_extensions_wasm::ExtensionResult<()> {
+    if args == "trap" || args == "pending" {
+        context.get_system_prompt()?;
+        context.wait_for_idle().await?;
+        if args == "trap" {
+            std::arch::wasm32::unreachable();
+        }
+    }
+    Err(format!(
+        "command:{args}|{}|{}",
+        context.cwd()?,
+        context.get_system_prompt()?
+    ))
 }
 
 /// Sends a displayed custom message whose rendering the host may run before returning.

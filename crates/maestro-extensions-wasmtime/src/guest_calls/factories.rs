@@ -106,21 +106,7 @@ impl Handle {
             }))
         });
         let built = built.map_err(EventError::from)?;
-        let view = crate::guest_component::GuestComponent::new(
-            built.component,
-            registry.clone(),
-            api.events.clone(),
-        );
-        Ok(ExtensionComponent {
-            component: Rc::new(view) as ComponentHandle,
-            dispose: built
-                .dispose
-                .map(|dispose| dispose.disposer(registry.clone(), api)),
-            set_expanded: built
-                .set_expanded
-                .map(|handler| handler.expansion(registry.clone(), api)),
-            width: built.width,
-        })
+        Ok(built.into_component(registry, api))
     }
 
     /// A retained expansion callback using each caller's original frame.
@@ -148,5 +134,30 @@ impl Handle {
             self.synchronous(&registry, SynchronousKind::Dispose, String::new(), emitter)
                 .map_err(EventError::from)
         })
+    }
+}
+
+impl RetainedComponent {
+    /// Wraps the transferred component and callbacks using the original native toolkit.
+    pub(crate) fn into_component(
+        self,
+        registry: &Registry,
+        api: &ExtensionAPI<Local>,
+    ) -> ExtensionComponent {
+        let view = crate::guest_component::GuestComponent::new(
+            self.component,
+            registry.clone(),
+            api.events.clone(),
+        );
+        ExtensionComponent {
+            component: Rc::new(view) as ComponentHandle,
+            dispose: self
+                .dispose
+                .map(|dispose| dispose.disposer(registry.clone(), api)),
+            set_expanded: self
+                .set_expanded
+                .map(|handler| handler.expansion(registry.clone(), api)),
+            width: self.width,
+        }
     }
 }

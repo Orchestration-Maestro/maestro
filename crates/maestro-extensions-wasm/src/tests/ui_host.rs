@@ -1184,6 +1184,14 @@ async fn settled(
 }
 
 impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
+    async fn custom(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        factory: Resource<super::host::Identity>,
+        options: Option<host::CustomUiOptions>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        super::custom_host::run(accessor, this, factory, options).await
+    }
     async fn select(
         accessor: &Accessor<State, Self>,
         this: Resource<Ui>,
@@ -1253,6 +1261,18 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
 }
 
 impl host::HostTui for State {
+    fn full_redraws(&mut self, _: Resource<Tui>) -> wasmtime::Result<Result<u64, String>> {
+        self.observed.log("tui fullRedraws");
+        Ok(Ok(17))
+    }
+    fn writer(
+        &mut self,
+        _: Resource<Tui>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        Ok(Err(
+            "the component test host lends no frame writer".to_owned()
+        ))
+    }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)
     }

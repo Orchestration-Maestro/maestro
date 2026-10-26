@@ -13,7 +13,7 @@ use super::widget_imports::WidgetImports;
 use super::{Exports, callbacks};
 use crate::{
     CallbackEmitter, ComponentView, EditorComponent, EditorFactory, EditorFactoryOutcome,
-    ExtensionResult, Style, TUI, TextHandler,
+    ExtensionResult, Style, TextHandler,
 };
 
 /// The current editor factory: absent, one this extension set by identity, or another
@@ -118,7 +118,7 @@ impl<I: super::providers::EditorImports> Exports<I> {
         lent: LentEditor<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<EditorFactoryOutcome> {
-        let tui = TUI::supplied(Rc::new(Terminal::<I> { tui: lent.tui }));
+        let tui = Terminal::lent(&self.imports, lent.tui);
         let theme = super::keys::editor_theme(&self.imports, lent.theme)?;
         let keybindings = super::keys::lend(&self.imports, lent.keybindings);
         let factory = callbacks::find::<EditorFactory>(handler)?;
