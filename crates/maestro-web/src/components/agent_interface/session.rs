@@ -34,6 +34,13 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
                 Box::pin(std::future::ready(Ok(())))
             });
         self.subscription.replace(Some(session.subscribe(listener)));
+        let message = session
+            .state()
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .streaming_message()
+            .cloned();
+        report(self.stream.borrow().set_message(message, true));
     }
     /// End the current subscription.
     pub(super) fn unsubscribe(&self) {

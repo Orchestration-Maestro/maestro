@@ -601,6 +601,90 @@ pub async fn agent_interface_detach_reconnect_keeps_draft_and_subscription(
         assert_eq!(interface.editor().attachments().len(), 1);
         interface.root().remove();
     }
+    reconnect_during_pending_tool(&page).await;
+}
+
+/// Completing a detached response clears its partial before reconnecting during tool execution.
+async fn reconnect_during_pending_tool(page: &wasm_bindgen::JsValue) {
+    let reply = completed_reply().replace(
+        concat!("event: message_delta\ndata: ", r#"{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}"#),
+        concat!(
+            "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"held\",\"name\":\"held_tool\",\"input\":{}}}\n\n",
+            "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1}\n\n",
+            "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":1}}"
+        ),
+    );
+    let _fetch = Fetch::install(vec![
+        (200, "text/event-stream", reply),
+        (200, "text/event-stream", completed_reply()),
+    ]);
+    let session = session(haiku(), Vec::new());
+    let (interface, parent) = mounted(props(&session, &Rc::default(), vec![]), 400);
+    let (partial, finish_message, _updates) = hold_event(&session, |event| {
+        matches!(event, maestro_app::AgentEvent::MessageUpdate { message, .. }
+            if message.read().unwrap().content.iter().any(|content|
+                matches!(content, maestro_app::AssistantContent::Text(text) if text.text == "ok")))
+    });
+    let (tool, finish_tool, _tools) = hold_event(&session, |event| {
+        matches!(event, maestro_app::AgentEvent::ToolExecutionStart { .. })
+    });
+    let run = session.prompt(maestro_app::PromptInput::Text {
+        text: "hold the tool".into(),
+        images: Vec::new(),
+    });
+    partial.await.unwrap();
+    frames(page, 2).await;
+    let stream = interface
+        .root()
+        .query_selector(".maestro-stream")
+        .unwrap()
+        .unwrap();
+    assert!(text(&stream).contains("ok"), "the partial is published");
+    interface.root().remove();
+    finish_message.send(()).unwrap();
+    tool.await.unwrap();
+    {
+        let state = session.state().read().unwrap();
+        assert!(state.is_streaming());
+        assert!(state.streaming_message().is_none());
+        assert_eq!(state.pending_tool_calls().as_ref(), ["held"]);
+    }
+    parent.append_child(interface.root()).unwrap();
+    assert_eq!(roles(&session), ["user", "assistant"]);
+    assert!(!stream.parent_element().unwrap().has_attribute("hidden"));
+    assert!(
+        text(&stream).trim().is_empty(),
+        "reconnect clears the completed partial while a tool is pending"
+    );
+    finish_tool.send(()).unwrap();
+    run.await.unwrap();
+}
+
+/// Pause the first matching event after the view has observed it, exposing entry and release.
+fn hold_event(
+    session: &Rc<BrowserSession>,
+    matches: fn(&maestro_app::AgentEvent<Browser>) -> bool,
+) -> (
+    tokio::sync::oneshot::Receiver<()>,
+    tokio::sync::oneshot::Sender<()>,
+    maestro_app::Subscription<Browser, maestro_app::Local>,
+) {
+    let (entered, entering) = tokio::sync::oneshot::channel();
+    let (release, pending) = tokio::sync::oneshot::channel();
+    let gate = Rc::new(RefCell::new(Some((entered, pending))));
+    let subscription = session.subscribe(Rc::new(move |event, _| {
+        let gate = matches(&event.read().unwrap())
+            .then(|| gate.borrow_mut().take())
+            .flatten();
+        Box::pin(async move {
+            if let Some((entered, pending)) = gate {
+                entered.send(()).unwrap();
+                pending.await.unwrap();
+            }
+            Ok(())
+        })
+    }));
+    (entering, release, subscription)
 }
 
 /// Hold one send at its pre-send hook, returning its release and completion.

@@ -53,7 +53,7 @@ pub(super) struct Session<C: CustomAgentMessages + 'static> {
     /// Parent of the stable history.
     history: Element,
     /// The streaming response.
-    pub(super) stream: RefCell<StreamingMessageContainer<BrowserMessages<C>>>,
+    pub(super) stream: RefCell<StreamingMessageContainer<C>>,
     /// The streaming response's mounted root.
     stream_root: RefCell<Option<DomRoot>>,
     /// Hidden while nothing streams.
