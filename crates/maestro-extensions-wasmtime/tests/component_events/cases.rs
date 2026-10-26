@@ -500,6 +500,28 @@ async fn tool_result(harness: &Harness, input: &Value, mut recorded: Value) -> (
     (outcome(observed, &run), recorded)
 }
 
+/// Each handler appends to the content the previous handler returned.
+pub(super) async fn appended_content(harness: &Harness) {
+    let handler = |suffix: &str| vec![json!([{ "suffix": suffix }])];
+    let run = harness
+        .prepare("tool_result", &[handler("ext1"), handler("ext2")])
+        .await;
+    let event: ToolResultEvent = typed(json!({
+        "toolName": "read", "toolCallId": "id", "input": {},
+        "content": [{ "type": "text", "text": "base" }], "details": { "initial": true }, "isError": false,
+    }));
+    let result = run.runner.emit_tool_result(&event).await.unwrap();
+    let text = |text: &str| json!({ "type": "text", "text": text });
+    assert_eq!(
+        result.as_ref().map(encoded),
+        Some(json!({
+            "content": [text("base"), text("ext1"), text("ext2")],
+            "details": { "initial": true }, "isError": false,
+        }))
+    );
+    assert_eq!(run.errors(), json!([]));
+}
+
 /// Images supplied to an agent start, as a caller passes them.
 pub(super) fn images() -> Presence<Vec<ImageContent>> {
     Presence::Present(vec![typed(

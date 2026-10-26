@@ -121,6 +121,17 @@ impl Harness {
         for (index, steps) in handlers.iter().enumerate() {
             self.install(&run, index, event, steps).await;
         }
+        let registered = handlers.iter().any(|steps| !steps.is_empty());
+        assert_eq!(run.runner.has_handlers(event), registered, "{event}");
+        let other = if event == "input" {
+            "tool_call"
+        } else {
+            "input"
+        };
+        assert!(
+            !run.runner.has_handlers(other),
+            "{event} handlers answer {other}"
+        );
         run
     }
 
@@ -201,6 +212,15 @@ fn without_stacks(mut output: Value) -> Value {
         }
     }
     output
+}
+
+#[test]
+fn component_hooks_read_what_earlier_handlers_returned() {
+    local(async {
+        let harness = Harness::load().await;
+        input::reading(&harness).await;
+        cases::appended_content(&harness).await;
+    });
 }
 
 #[test]

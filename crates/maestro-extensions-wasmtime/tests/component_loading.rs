@@ -96,6 +96,8 @@ fn component_paths_use_the_domain_loader() {
     for (component, directory) in [(LOCATION, "first"), (HOOKS, "second"), (LOCATION, "third")] {
         place(component, &root.join(directory).join("index.wasm"));
     }
+    // A discoverable decoy: explicit loading reads only the supplied paths.
+    place(LOCATION, &root.join(".maestro/extensions/decoy.wasm"));
     let [first, second, third] =
         ["first", "second", "third"].map(|name| spelled(&root.join(name).join("index.wasm")));
     local(async {
@@ -566,10 +568,27 @@ async fn refreshes_bound_tools(
     .await
     .unwrap();
     assert_eq!(refreshed.get(), 1);
-    let names: Vec<_> = runner
-        .get_all_registered_tools()
+    let registered = runner.get_all_registered_tools();
+    let names: Vec<_> = registered
         .iter()
         .map(|tool| tool.definition.metadata().definition.name)
         .collect();
     assert_eq!(names, ["shared", "own", "late"]);
+    let late = maestro_extensions::wrap_registered_tool(&registered[2], runner.clone());
+    let result = (late.execute)(
+        "late call".into(),
+        json!({"n":1}),
+        None,
+        Some(Rc::new(|_| {})),
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(result.content).unwrap(),
+        json!([{"type":"text","text":"late"}])
+    );
+    assert_eq!(
+        result.details,
+        Some(json!({"id":"late call","params":{"n":1}}))
+    );
 }
