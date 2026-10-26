@@ -17,8 +17,8 @@ pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
 pub(crate) mod schema;
-mod terminal;
 mod streams;
+mod terminal;
 pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.

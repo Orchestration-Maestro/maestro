@@ -164,7 +164,10 @@ fn selected_signal(selected: &PayloadHookInput) -> ExtensionResult<host::Payload
         .as_ref()
         .map(|signal| Mirror::new(&Generated, Some(signal)))
         .transpose()?;
-    let signal = binding.as_ref().and_then(|binding| binding.signal()).map(host::AbortSignal::retain);
+    let signal = binding
+        .as_ref()
+        .and_then(|binding| binding.signal())
+        .map(host::AbortSignal::retain);
     let owner = binding.map(|binding| {
         let value: super::super::streams::Value = Rc::new(binding);
         Identity::new(&Generated).transfer(value)

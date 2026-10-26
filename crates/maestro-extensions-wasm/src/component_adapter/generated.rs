@@ -3,8 +3,8 @@
 
 use std::marker::PhantomData;
 
+use super::Imports;
 use super::imports::Dialog;
-use super::{Capabilities, Imports};
 use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};

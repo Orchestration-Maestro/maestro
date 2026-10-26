@@ -17,6 +17,8 @@ use crate::{
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
+mod tool;
+
 /// Owned operands of one nested renderer call.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -484,7 +486,7 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
                     .transpose()?,
             },
         }),
-        Call::Tool(call) => tool(table, call)?,
+        Call::Tool(call) => tool::lower(table, call)?,
         Call::Setup(handler, writer, _) => LocalCall::Setup(LocalSetup {
             target: handler.id,
             writer: table.push(writer.clone())?,
@@ -508,42 +510,6 @@ fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::R
         }),
         _ => return Err(wasmtime::format_err!("extension call cannot run nested")),
     })
-}
-
-/// Marshals one tool execution with its per-call capabilities.
-fn tool(table: &mut ResourceTable, call: &ToolCall<Callback>) -> wasmtime::Result<LocalCall> {
-    let ToolCall::Execute {
-        handler,
-        id,
-        params,
-        context,
-        signal,
-        update,
-        ..
-    } = call
-    else {
-        return Err(wasmtime::format_err!(
-            "extension preparation is synchronous"
-        ));
-    };
-    Ok(LocalCall::Tool(LocalTool {
-        target: handler.id,
-        invocation: ToolInvocation {
-            tool_call_id: id.clone(),
-            params: params.clone(),
-        },
-        resources: ToolResources {
-            ctx: table.push(Context(context.clone()))?,
-            signal: signal
-                .clone()
-                .map(|signal| table.push(signal))
-                .transpose()?,
-            update: update
-                .clone()
-                .map(|update| table.push(update))
-                .transpose()?,
-        },
-    }))
 }
 
 /// Delivers a nested call's own result to the native caller that asked for it.

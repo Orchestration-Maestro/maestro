@@ -130,4 +130,3 @@ impl<I: Imports> Exports<I> {
         listener(data, CallbackEmitter::new(&port))
     }
 }
-
