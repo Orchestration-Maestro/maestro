@@ -2,6 +2,10 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Preorder metadata values, with container lengths and numbers kept outside JSON.
+    variant frontmatter-token { null, boolean(bool), number(f64), text(string), sequence(u32), mapping(list<string>) }
+    record frontmatter-document { values: list<frontmatter-token>, body: string }
+    native-frontmatter: func(content: string) -> result<frontmatter-document, string>;
     /// Synchronous ordinary helper operands; metadata numbers use a separate typed boundary.
     native-helper: func(operation: string, data: string) -> result<string, string>;
     /// Receiver of unmodified command-output bytes.

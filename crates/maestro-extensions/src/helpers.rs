@@ -1,5 +1,6 @@
 //! Ordinary component helper operands delegate to their existing domain owners.
 use serde::{Serialize, de::DeserializeOwned};
+mod fuzzy;
 mod keys;
 
 /// Dispatches a synchronous helper without retaining any operands.
@@ -7,6 +8,9 @@ mod keys;
 /// # Errors
 /// Returns malformed operands or the native owner's failure unchanged.
 pub fn call(operation: &str, data: &str) -> Result<String, String> {
+    if operation.starts_with("fuzzy.") {
+        return fuzzy::call(operation, data);
+    }
     if operation.starts_with("keys.") {
         return keys::call(operation, data);
     }
@@ -93,6 +97,16 @@ fn columns(operation: &str, data: &str) -> Result<String, String> {
                 &serde_json::json!({"before":segments.before,"beforeWidth":segments.before_width,"after":segments.after,"afterWidth":segments.after_width}),
             )
         }
+        "strip_frontmatter" => {
+            let (text,): (String,) = decode(data)?;
+            encode(
+                &maestro_resources::frontmatter::strip_frontmatter(&text)
+                    .map_err(|error| error.to_string())?,
+            )
+        }
         _ => Err(format!("Unknown native helper: {operation}")),
     }
 }
+
+/// Complete native metadata model, not a JSON number projection.
+pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter};

@@ -8,6 +8,10 @@
 use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult};
 use serde_json::Value;
 use std::rc::Rc;
+#[path = "helper_capabilities/frontmatter.rs"]
+mod frontmatter;
+#[path = "helper_capabilities/fuzzy.rs"]
+mod fuzzy;
 #[path = "helper_capabilities/keys.rs"]
 mod keys;
 #[path = "helper_capabilities/text.rs"]
@@ -44,6 +48,18 @@ fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
         .is_some_and(|op| op.starts_with("k."))
     {
         return keys::observe(api, request);
+    }
+    if request["operation"]
+        .as_str()
+        .is_some_and(|op| op.starts_with("f."))
+    {
+        return fuzzy::observe(api, request);
+    }
+    if request["operation"]
+        .as_str()
+        .is_some_and(|op| op.starts_with("fm."))
+    {
+        return frontmatter::observe(api, request);
     }
     let args = &request["args"];
     text::observe(api, request["operation"].as_str().unwrap_or_default(), args)

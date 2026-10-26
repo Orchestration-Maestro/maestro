@@ -11,6 +11,12 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
+        self.0.native_frontmatter(content)
+    }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.0.native_helper(operation, data)
     }

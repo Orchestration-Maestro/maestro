@@ -603,12 +603,27 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn native_frontmatter(
+        &mut self,
+        content: String,
+    ) -> wasmtime::Result<Result<host::FrontmatterDocument, String>> {
+        if content != "---\nx: .nan\n---\nbody" {
+            return Ok(Err("unknown controlled metadata fixture".into()));
+        }
+        Ok(Ok(host::FrontmatterDocument {
+            values: vec![
+                host::FrontmatterToken::Mapping(vec!["x".into()]),
+                host::FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
+        }))
+    }
     fn native_helper(
         &mut self,
-        _operation: String,
+        operation: String,
         _data: String,
     ) -> wasmtime::Result<Result<String, String>> {
-        Ok(self.observed.actions.record())
+        Ok(self.observed.actions.record_for(&operation))
     }
     fn callback_emit(
         &mut self,

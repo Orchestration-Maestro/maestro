@@ -2068,5 +2068,1224 @@
       "kittyProtocolActive": false
     },
     "ok": false
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "",
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -139.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ac",
+      "a/c"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -22.8
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "z",
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": false,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "a2",
+      "2a"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -119.9
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "2a",
+      "a2"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -119.9
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ab",
+      "a﻿b"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -22.8
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ab",
+      "ab"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -12.8
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "",
+      "anything"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "longquery",
+      "short"
+    ],
+    "context": {},
+    "ok": {
+      "matches": false,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "test",
+      "test"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -159.4
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "aXbXc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -10.4
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "cba"
+    ],
+    "context": {},
+    "ok": {
+      "matches": false,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ABC",
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -139.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "ABC"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -139.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "foo",
+      "foobar"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -39.699999999999996
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "foo",
+      "f_o_o_bar"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -30.400000000000002
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "fb",
+      "foo-bar"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -18.6
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "fb",
+      "afbx"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -4.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "codex52",
+      "gpt-5.2-codex"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -64.99999999999999
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      " ﻿\t"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "ab"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        2,
+        0
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "a b"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "x"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        3
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "apple",
+        "banana",
+        "cherry"
+      ],
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "apple",
+        "banana",
+        "cherry"
+      ],
+      "an"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1
+      ],
+      "calls": [
+        0,
+        1,
+        2
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "a_p_p",
+        "app",
+        "application"
+      ],
+      "app"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        2,
+        0
+      ],
+      "calls": [
+        0,
+        1,
+        2
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "clone",
+        "cl"
+      ],
+      "cl"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        0
+      ],
+      "calls": [
+        0,
+        1
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "foo",
+        "bar",
+        "foobar"
+      ],
+      "foo"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        2
+      ],
+      "calls": [
+        0,
+        1,
+        2
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_callbacks_keep_live_edits",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "in-place"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1
+      ],
+      "calls": [
+        0,
+        1
+      ],
+      "aborted": false,
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_callbacks_keep_live_edits",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "abort"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0
+      ],
+      "calls": [
+        0,
+        1
+      ],
+      "aborted": true,
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "a\r\nb\rc"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "a\nb\nc"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: 1\n---\n ﻿body﻿ "
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": 1.0
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\r\nx: true\r\n---\r\n body "
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "bool",
+              "value": true
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: [a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "sequence",
+              "value": [
+                {
+                  "kind": "string",
+                  "value": "a"
+                },
+                {
+                  "kind": "string",
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n---\nx"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "x"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: 1"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "---\nx: 1"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n42\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "number",
+        "value": 42.0
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nnull\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nfalse\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "bool",
+        "value": false
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n[a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "sequence",
+        "value": [
+          {
+            "kind": "string",
+            "value": "a"
+          },
+          {
+            "kind": "string",
+            "value": "b"
+          }
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: .nan\ny: .inf\nz: -.inf\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "NaN"
+              }
+            }
+          ],
+          [
+            "y",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "Infinity"
+              }
+            }
+          ],
+          [
+            "z",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "-Infinity"
+              }
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nstr\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "string",
+        "value": "str"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: -0.0\ny: null\nz: true\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "-0"
+              }
+            }
+          ],
+          [
+            "y",
+            {
+              "kind": "null"
+            }
+          ],
+          [
+            "z",
+            {
+              "kind": "bool",
+              "value": true
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n{2: b, 1: a, z: c}\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "1",
+            {
+              "kind": "string",
+              "value": "a"
+            }
+          ],
+          [
+            "2",
+            {
+              "kind": "string",
+              "value": "b"
+            }
+          ],
+          [
+            "z",
+            {
+              "kind": "string",
+              "value": "c"
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nname: \"skill-name\"\ndescription: 'A desc'\nfoo-bar: value\n---\n\nBody text"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "name",
+            {
+              "kind": "string",
+              "value": "skill-name"
+            }
+          ],
+          [
+            "description",
+            {
+              "kind": "string",
+              "value": "A desc"
+            }
+          ],
+          [
+            "foo-bar",
+            {
+              "kind": "string",
+              "value": "value"
+            }
+          ]
+        ]
+      },
+      "body": "Body text"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\r\nname: test\r\n---\r\nLine one\r\nLine two"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "name",
+            {
+              "kind": "string",
+              "value": "test"
+            }
+          ]
+        ]
+      },
+      "body": "Line one\nLine two"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\ndescription: |\n  Line one\n  Line two\n---\n\nBody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "description",
+            {
+              "kind": "string",
+              "value": "Line one\nLine two\n"
+            }
+          ]
+        ]
+      },
+      "body": "Body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "Just text\nsecond line"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "Just text\nsecond line"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nname: test\nBody without terminator"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "---\nname: test\nBody without terminator"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n# just a comment\n---\nBody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "Body"
+    }
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "a\r\nb\rc"
+    ],
+    "context": {},
+    "ok": "a\nb\nc"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: 1\n---\n ﻿body﻿ "
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\r\nx: true\r\n---\r\n body "
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: [a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\n---\nx"
+    ],
+    "context": {},
+    "ok": "x"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: 1"
+    ],
+    "context": {},
+    "ok": "---\nx: 1"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\n42\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nnull\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nfalse\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\n[a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: .nan\ny: .inf\nz: -.inf\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: [\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "error": "while parsing a flow sequence, expected ',' or ']' at byte 4 line 2 column 1"
+    }
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: [\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "error": "while parsing a flow sequence, expected ',' or ']' at byte 4 line 2 column 1"
+    }
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nkey: value\n---\n\nBody\n"
+    ],
+    "context": {},
+    "ok": "Body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "\n  No frontmatter body  \n"
+    ],
+    "context": {},
+    "ok": "\n  No frontmatter body  \n"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nfoo: [bar\n---\nBody"
+    ],
+    "context": {},
+    "ok": {
+      "error": "while parsing a flow sequence, expected ',' or ']' at byte 9 line 2 column 1"
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "x",
+      4
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44mx   \u001b[0m",
+      "calls": [
+        "x   "
+      ]
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "ab"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        2,
+        0
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: .nan\n---\nbody"
+    ],
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "NaN"
+              }
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
   }
 ]

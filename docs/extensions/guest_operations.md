@@ -38,3 +38,27 @@ Matching, parsing, printable decoding, repeat and release checks use native
 terminal input handling. Optional keys and scalars return `None` when absent.
 The enhanced keyboard flag is shared with the native host and other API handles;
 setting it is a process-wide effect, not component-local state.
+
+## Fuzzy matching
+
+`fuzzy_match` returns the native match and score. `fuzzy_filter` accepts any
+borrowed item slice and a borrowing `FnMut` getter, with no serialization bounds.
+Empty and whitespace-only queries call no getter. Other queries project each item
+once in input order; native ranking returns checked positions into the original
+slice. Returned references retain item identity and stable score ties.
+
+The slice's membership stays fixed during the call. Interior-mutable payloads
+remain live: an earlier getter may edit what a later getter reads. Getters are
+never retained, including on error. Cancellation policy stays with the caller.
+
+## Metadata
+
+`frontmatter::parse_frontmatter` returns a complete `FrontmatterValue` tree,
+including scalar and sequence roots, nested nulls, signed zero, NaN and both
+infinities. Numbers cross a typed floating-point boundary, not a JSON number.
+Mappings enumerate canonical array-index keys first, then other keys in insertion
+order. YAML parsing remains entirely native.
+
+`strip_frontmatter` parses before returning the body. Both operations preserve
+native parser causes and coordinates. Ordinary text is not trimmed; a present
+header selects the native trimmed body and newline normalization.

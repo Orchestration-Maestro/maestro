@@ -45,6 +45,12 @@ pub use keys::{
     Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
     is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
 };
+/// Native fuzzy matching over original caller-owned items.
+pub mod fuzzy;
+pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};
+/// Native metadata parsing with complete typed values.
+pub mod frontmatter;
+pub use frontmatter::{parse_frontmatter, strip_frontmatter};
 mod tui;
 mod types;
 pub use tui::*;

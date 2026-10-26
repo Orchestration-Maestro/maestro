@@ -87,6 +87,7 @@ impl Imports for Generated {
         signal_abort(signal: &Self::Signal) => abort();
     } }
     forward_resources! { functions {
+        native_frontmatter(content: &str) -> ExtensionResult<host::FrontmatterDocument> => host::native_frontmatter;
         native_helper(operation: &str, data: &str) -> ExtensionResult<String> => host::native_helper;
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;

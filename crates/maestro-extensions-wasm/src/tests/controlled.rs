@@ -518,8 +518,24 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
-    fn native_helper(&self, _operation: &str, _data: &str) -> ExtensionResult<String> {
-        self.observe().actions.record()
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
+        use crate::bindings::maestro::extension::host::{FrontmatterDocument, FrontmatterToken};
+        if content != "---\nx: .nan\n---\nbody" {
+            return Err("unknown controlled metadata fixture".into());
+        }
+        Ok(FrontmatterDocument {
+            values: vec![
+                FrontmatterToken::Mapping(vec!["x".into()]),
+                FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
+        })
+    }
+    fn native_helper(&self, operation: &str, _data: &str) -> ExtensionResult<String> {
+        self.observe().actions.record_for(operation)
     }
     type BashOutput = super::shell_host::NativeReceiver;
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {

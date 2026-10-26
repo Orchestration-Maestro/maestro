@@ -48,6 +48,9 @@ pub struct CommandOptions {
 port! {
     /// Registrations and ordinary actions a host provides; each method forwards one request.
     ExtensionHost for ExtensionAPI via 0 {
+        /// Reads complete typed metadata through the installed host.
+        #[doc(hidden)]
+        fn native_frontmatter(content: &str) -> crate::bindings::maestro::extension::host::FrontmatterDocument;
         /// Forwards ordinary helper operands to their native owners.
         #[doc(hidden)]
         fn native_helper(operation: &str, data: &str) -> String;

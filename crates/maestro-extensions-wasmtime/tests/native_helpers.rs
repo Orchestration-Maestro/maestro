@@ -77,6 +77,36 @@ fn helper_key_matching_keeps_modifier_negatives() {
     check("helper_key_matching_keeps_modifier_negatives");
 }
 
+#[test]
+fn helper_fuzzy_match_keeps_scores_and_swap() {
+    check("helper_fuzzy_match_keeps_scores_and_swap");
+}
+
+#[test]
+fn helper_fuzzy_filter_keeps_identity_and_getter_order() {
+    check("helper_fuzzy_filter_keeps_identity_and_getter_order");
+}
+
+#[test]
+fn helper_fuzzy_callbacks_keep_live_edits() {
+    check("helper_fuzzy_callbacks_keep_live_edits");
+}
+
+#[test]
+fn helper_frontmatter_preserves_document_kinds() {
+    check("helper_frontmatter_preserves_document_kinds");
+}
+
+#[test]
+fn helper_strip_frontmatter_keeps_parse_failures() {
+    check("helper_strip_frontmatter_keeps_parse_failures");
+}
+
+#[test]
+fn helper_adapter_swaps_without_author_changes() {
+    check("helper_adapter_swaps_without_author_changes");
+}
+
 /// Executes every recorded row of one behavior through the unchanged author fixture.
 fn check(name: &str) {
     if name.starts_with("helper_key") && maestro_test_process::run_alone(name).unwrap() {
