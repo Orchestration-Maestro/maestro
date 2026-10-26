@@ -8,22 +8,31 @@ use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
 };
 use serde_json::{Value, json};
-use std::rc::Rc;
+use std::{cell::Cell, rc::Rc};
 
 use maestro_extensions_wasm::wasi;
 #[path = "network.rs"]
 mod network;
+#[path = "stdio.rs"]
+mod stdio;
 use std::io::Write;
 
 /// Installs the ordinary callback and reports its observations through the existing event bus.
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Ok(request) = std::env::var("MAESTRO_WASI_STARTUP_OUTPUT") {
+            let request: Value =
+                serde_json::from_str(&request).map_err(|error| error.to_string())?;
+            stdio::output(&request).await?;
+        }
         let reporter = api.clone();
+        let calls = Rc::new(Cell::new(0));
         api.on(
             "resources_discover",
             Rc::new(move |event, context| {
                 let reporter = reporter.clone();
-                Box::pin(dispatch(event, context, reporter))
+                calls.set(calls.get() + 1);
+                Box::pin(dispatch(event, context, reporter, calls.get()))
             }),
         )
     })
@@ -34,17 +43,23 @@ async fn dispatch(
     event: &mut ExtensionEvent,
     context: ExtensionContext,
     reporter: ExtensionAPI,
+    calls: u32,
 ) -> Result<Option<ExtensionEventResult>, String> {
     let result = resources(event, context).await?;
     let ExtensionEvent::ResourcesDiscover(request) = event else {
         return Err("unexpected callback".into());
     };
     let request: Value = serde_json::from_str(&request.cwd).map_err(|error| error.to_string())?;
-    let value = match request["op"].as_str() {
+    let mut value = match request["op"].as_str() {
         Some("pending") => network::connect(&request, &reporter.events()).await?,
         Some("basics") => basics(&request)?,
+        Some("stdio") => {
+            stdio::inherited(request["generation"].as_str().ok_or("missing generation")?).await?
+        }
+        Some("output") => stdio::output(&request).await?,
         _ => observe(),
     };
+    value["calls"] = json!(calls);
     reporter.events().emit("trace", value).await?;
     Ok(result)
 }
@@ -55,7 +70,9 @@ fn resources(
     context: ExtensionContext,
 ) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
-        let _ = context.get_system_prompt()?;
+        if context.get_system_prompt()? != "wasi context" {
+            return Err("wrong native context".into());
+        }
         Ok(None)
     })
 }

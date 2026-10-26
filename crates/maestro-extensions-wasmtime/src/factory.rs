@@ -18,8 +18,28 @@ use wasmtime::{
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
 pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
+    factory(path, None)
+}
+
+/// Creates an artifact factory whose standard output uses the supplied byte writer.
+///
+/// The writer is shared across initialization and later callbacks on the Store thread.
+/// Closing one guest output view does not close the caller's sink. The caller owns
+/// terminal lifecycle and supplies the `terminal` observation. Other streams stay inherited.
+#[must_use]
+pub fn artifact_factory_with_stdout(
+    path: String,
+    stdout: Box<dyn std::io::Write + Send>,
+    terminal: bool,
+) -> ExtensionFactory<Local> {
+    factory(path, Some(crate::wasi::Output::new(stdout, terminal)))
+}
+
+/// Retains artifact operands across each invocation of the existing factory lifecycle.
+fn factory(path: String, output: Option<crate::wasi::Output>) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
+        let output = output.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api)?;
@@ -31,7 +51,7 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path)
+            let state = lifecycle::State::new(endpoint, callbacks, &path, output)
                 .map_err(|error| error.to_string())?;
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())

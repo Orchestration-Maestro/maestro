@@ -25,3 +25,23 @@ leave cwd, but the pinned filesystem implementation rejects absolute symbolic
 links; support remains open in #2642. Atomic saves, file modes and Windows root
 qualification remain undelivered. Final application-mode output routing remains
 separate from these host capabilities.
+
+## Supplied stdout
+
+`artifact_factory_with_stdout(path, writer, terminal)` retains a standard
+`Write + Send` sink across initialization and later callbacks. Both standard
+output generations share that sink and report the supplied terminal observation.
+Closing one guest output view does not close the sink. The ordinary
+`artifact_factory` continues to inherit stdout.
+
+`ProcessTerminal::output_writer()` returns a cloneable, `Send + Sync` writer
+while queued terminal output runs. Each write copies its bytes once into the
+same ordered ingress as complete host frames. Flush checks admission; it does
+not wait for physical delivery. Stop closes admission, drains accepted bytes
+through the existing partial-write owner, then restores descriptor flags.
+Retained handles return `BrokenPipe` after closure. Stopped terminals and
+synchronous regular-file destinations return no handle.
+
+The executable's final selection of this supplied route is not wired here.
+The ordered-output guarantee applies to active queued destinations, not to
+inherited stdout redirected to a regular file.

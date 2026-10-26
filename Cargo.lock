@@ -3709,9 +3709,11 @@ dependencies = [
  "maestro-process",
  "maestro-rpc",
  "maestro-test-directory",
+ "maestro-test-process",
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
+ "rustix",
  "serde_json",
  "tokio",
 ]

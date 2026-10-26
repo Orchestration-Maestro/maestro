@@ -2,7 +2,7 @@
 #![cfg(test)]
 use super::components::TracedBus;
 use maestro_extensions::{
-    ExtensionRunner, Local, ResourcesDiscoverReason, create_extension_runtime,
+    ExtensionFactory, ExtensionRunner, Local, ResourcesDiscoverReason, create_extension_runtime,
     load_extension_from_factory,
 };
 use maestro_extensions_wasmtime::artifact_factory;
@@ -33,10 +33,15 @@ pub struct Harness {
 impl Harness {
     /// Loads the actual artifact without substituting a host or a recorder for standard I/O.
     pub async fn load(path: &Path) -> Self {
+        Self::factory(artifact_factory(path.to_str().unwrap().into())).await
+    }
+
+    /// Uses the same real host with a caller-selected standard output route.
+    pub async fn factory(factory: ExtensionFactory<Local>) -> Self {
         let bus = TracedBus::new();
         let runtime = create_extension_runtime::<Local>();
         let owner = load_extension_from_factory(
-            artifact_factory(path.to_str().unwrap().into()),
+            factory,
             "/work".into(),
             bus.controller.for_extension(),
             runtime.clone(),
@@ -67,17 +72,21 @@ impl Harness {
 
     /// Invokes an ordinary resource callback on this instance, with literal fixture operands.
     pub async fn request(&self, request: Value) -> Value {
+        self.outcome(request).await.unwrap()
+    }
+
+    /// Captures only the existing callback/fault diagnostic when an operation fails.
+    pub async fn outcome(&self, request: Value) -> Result<Value, Vec<String>> {
         self.runner
             .emit_resources_discover(request.to_string(), ResourcesDiscoverReason::Startup)
             .await
             .unwrap();
-        assert!(
-            self.errors.borrow().is_empty(),
-            "{:?}",
-            self.errors.borrow()
-        );
+        let errors = self.errors.take();
+        if !errors.is_empty() {
+            return Err(errors);
+        }
         let observations = self.bus.take();
         assert_eq!(observations.len(), 1, "{observations:?}");
-        observations.into_iter().next().unwrap()
+        Ok(observations.into_iter().next().unwrap())
     }
 }

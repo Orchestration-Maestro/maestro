@@ -160,6 +160,14 @@ impl OutputPort for Output {
         }
     }
 
+    /// Keeps only the sendable ingress in the caller's handle.
+    fn output_writer(&self) -> Option<crate::terminal::output::OutputWriter> {
+        self.0
+            .borrow()
+            .as_ref()
+            .map(|writer| writer.output_writer())
+    }
+
     /// Takes the writer out of service before draining any retained front.
     fn finish(&self) -> io::Result<()> {
         let writer = self.0.take();

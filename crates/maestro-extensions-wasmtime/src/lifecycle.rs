@@ -86,9 +86,14 @@ impl State {
     /// Constructs the one instance state before canonical linking.
     ///
     /// The instance reads `path`, the artifact it is loaded from, as `MAESTRO_EXTENSION_PATH`.
-    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> wasmtime::Result<Self> {
+    pub(crate) fn new(
+        api: Endpoint,
+        callbacks: Callbacks,
+        path: &str,
+        output: Option<crate::wasi::Output>,
+    ) -> wasmtime::Result<Self> {
         Ok(Self {
-            wasi: crate::wasi::build(path)?,
+            wasi: crate::wasi::build(path, output)?,
             table: ResourceTable::new(),
             api,
             callbacks,

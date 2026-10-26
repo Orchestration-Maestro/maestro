@@ -135,6 +135,7 @@ fn component_environment_keeps_native_string_conversion() {
     }
 }
 
+#[cfg(unix)]
 #[test]
 fn component_standard_basics_work_beside_pending_native_io() {
     if maestro_test_process::selection().is_child() {
@@ -145,6 +146,7 @@ fn component_standard_basics_work_beside_pending_native_io() {
 }
 
 /// Captures guest stdout before allowing the pending native peer to complete.
+#[cfg(unix)]
 fn mixed_parent() {
     use maestro_test_process::TestProcess;
     use std::{
@@ -186,6 +188,7 @@ fn mixed_parent() {
 }
 
 /// Keeps one real native read pending while another callback uses the standard library.
+#[cfg(unix)]
 async fn mixed_host() {
     use futures_util::future::{Either, select};
     use std::io::Read;
@@ -226,16 +229,82 @@ async fn mixed_host() {
     peer.shutdown().await.unwrap();
     let completed = invocation.await;
     assert_eq!(completed["bytes"], json!(b"native completion\0\xff"));
+    assert_eq!(completed["calls"], 1);
     let healthy = host.request(json!({"op":"environment"})).await;
     assert_eq!(healthy["p2"][0], "mixed Ω");
+    assert_eq!(healthy["calls"], 3);
 }
 
 /// Observes file, environment and instance identity before the native read is released.
+#[cfg(unix)]
 async fn assert_mixed_basics(host: &Harness, path: &Path) {
     let basics = host.request(json!({"op":"basics","path":path})).await;
+    assert_eq!(basics["calls"], 2);
     assert_eq!(basics["before"], json!(b"original\0\xfe"));
     assert_eq!(basics["after"], json!(b"updated\0\xff"));
     assert_eq!(basics["env"]["p2"][0], "mixed Ω");
     assert_eq!(basics["env"]["p3"][0], json!(["mixed Ω"]));
     assert_eq!(basics["env"]["p2"][1], std::env::var(COMPONENT).unwrap());
+}
+
+#[test]
+fn component_inherits_separate_standard_streams() {
+    let selected = maestro_test_process::selection();
+    for generation in ["p2", "p3"] {
+        for (index, input) in [b"".as_slice(), b"input\0\xff\x1b\xce\xa9".as_slice()]
+            .into_iter()
+            .enumerate()
+        {
+            let case = format!("{generation}-{index}");
+            if !selected.is_child() {
+                stdio_parent(&case, input);
+            } else if selected.runs_case(&case) {
+                run(stdio_host(generation, input));
+            }
+        }
+    }
+}
+
+/// Checks actual captured pipes, including binary input and EOF, independently of notifications.
+fn stdio_parent(case: &str, input: &[u8]) {
+    use maestro_test_process::TestProcess;
+    use std::{io::Write, process::Stdio};
+    let mut child = TestProcess::current("component_inherits_separate_standard_streams")
+        .unwrap()
+        .case(case)
+        .quiet()
+        .nocapture()
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(input).unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{case}: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let body = output.stdout.strip_prefix(b"\nrunning 1 test\n").unwrap();
+    let mut stdout = b"OUT[".to_vec();
+    stdout.extend_from_slice(input);
+    stdout.push(b']');
+    let mut stderr = b"ERR[".to_vec();
+    stderr.extend(input.iter().rev());
+    stderr.push(b']');
+    assert!(body.starts_with(&stdout), "{case}: {body:?}");
+    assert!(
+        body[stdout.len()..].starts_with(b".\ntest result: ok."),
+        "{case}: {body:?}"
+    );
+    assert_eq!(output.stderr, stderr, "{case}");
+}
+
+/// Drives each standard generation's real descriptors in a checked isolated host.
+async fn stdio_host(generation: &str, input: &[u8]) {
+    let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+    let observed = host
+        .request(json!({"op":"stdio","generation":generation}))
+        .await;
+    assert_eq!(observed["input"], json!(input), "{generation} EOF");
 }

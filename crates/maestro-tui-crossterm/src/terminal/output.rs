@@ -13,6 +13,30 @@ use tokio::time::{Instant, MissedTickBehavior, interval_at};
 use super::{ProcessTerminal, Shared};
 use crate::output_errors::FailureSource;
 
+/// Cloneable byte admission into the running terminal's ordered output.
+///
+/// Each write owns its bytes and returns after admission, not physical delivery.
+/// Flush checks admission; the terminal's stop operation drains accepted bytes.
+/// Retained handles return `BrokenPipe` once the terminal closes its writer.
+#[derive(Clone)]
+pub struct OutputWriter {
+    /// Admission ends when the owning terminal closes its receiver.
+    pub(super) sender: tokio::sync::mpsc::UnboundedSender<Vec<u8>>,
+}
+impl Write for OutputWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.sender
+            .send(bytes.to_vec())
+            .map_err(|_| io::ErrorKind::BrokenPipe)?;
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.sender
+            .send(Vec::new())
+            .map_err(|_| io::ErrorKind::BrokenPipe.into())
+    }
+}
+
 /// Enables bracketed paste.
 pub(super) const PASTE_ON: &str = "\x1b[?2004h";
 
