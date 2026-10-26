@@ -260,7 +260,10 @@
     "message_editor_overlapping_batches_respect_the_limit",
     "message_editor_waits_for_every_attachment_batch",
     "agent_interface_pending_admission_preserves_newer_drafts",
-    "agent_interface_detach_reconnect_keeps_draft_and_subscription"
+    "agent_interface_detach_reconnect_keeps_draft_and_subscription",
+    "chat_panel_agent_tools_runtime_factory_and_restore",
+    "chat_panel_artifact_counts_breakpoint_and_native_actions",
+    "chat_panel_overlay_dims_and_blurs_behind_a_sharp_panel"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

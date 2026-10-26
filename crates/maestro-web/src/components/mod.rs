@@ -2,6 +2,9 @@
 /// The session view composing the transcript and the editor.
 pub mod agent_interface;
 pub mod attachment_tile;
+/// Native connection callbacks for retained component roots.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod connection;
 pub mod diff;
 /// Native single-line input.
 #[cfg(target_arch = "wasm32")]
