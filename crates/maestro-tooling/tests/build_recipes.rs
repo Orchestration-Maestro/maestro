@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+#[cfg(unix)]
 use crate::toolchain_support;
 
 use std::fs;
