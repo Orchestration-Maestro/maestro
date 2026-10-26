@@ -19,6 +19,7 @@ pub struct Rpc {
 }
 impl Rpc {
     /// The actual root process whose inherited descriptors a child receives.
+    #[cfg(target_os = "linux")]
     pub fn pid(&self) -> u32 {
         self.child.id()
     }
