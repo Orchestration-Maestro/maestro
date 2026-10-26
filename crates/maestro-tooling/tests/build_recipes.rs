@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+#[cfg(unix)]
 use crate::toolchain_support;
 
 use std::fs;
@@ -260,8 +261,8 @@ fn native_workspace(workspace: &Workspace) {
         &workspace.path().join("bin/cargo"),
     );
     assert!(
-        toolchain_support::command(env!("CARGO"))
-            .current_dir(workspace.path())
+        workspace
+            .toolchain_command(env!("CARGO"))
             .arg("generate-lockfile")
             .status()
             .unwrap()
@@ -747,8 +748,8 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     ).unwrap();
     fs::write(workspace.path().join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
-        toolchain_support::command(env!("CARGO"))
-            .current_dir(workspace.path())
+        workspace
+            .toolchain_command(env!("CARGO"))
             .arg("generate-lockfile")
             .status()
             .unwrap()
@@ -814,8 +815,8 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     assert!(
-        toolchain_support::command(env!("CARGO"))
-            .current_dir(workspace.path())
+        workspace
+            .toolchain_command(env!("CARGO"))
             .args(["build", "-p", "maestro-tooling", "--bin", "development"])
             .status()
             .unwrap()
@@ -1166,8 +1167,8 @@ fn assert_native_doctests(workspace: &Workspace) {
             .any(|line| line.contains("PASS") && line.contains("ignored_behavior"))
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
-    let output = toolchain_support::command(env!("CARGO"))
-        .current_dir(workspace.path())
+    let output = workspace
+        .toolchain_command(env!("CARGO"))
         .args(["test", "-p", "maestro-models", "--locked", "--doc"])
         .output()
         .unwrap();

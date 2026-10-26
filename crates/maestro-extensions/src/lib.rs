@@ -45,6 +45,10 @@ pub use event_bus::{
 
 /// The read-only footer metadata extension footers receive.
 pub mod footer_data_provider;
+/// Native helper delegation used by component adapters.
+#[doc(hidden)]
+#[cfg(not(target_arch = "wasm32"))]
+pub mod helpers;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
@@ -56,10 +60,13 @@ pub use maestro_catalog::{
     ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
 };
 pub use maestro_models::{
-    AssistantMessageEventStream, Base, Context, EventStream, OAuthError, ParameterSchema,
-    PayloadHookInput, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
-    SchemaCallback, SchemaCode, SchemaNode, SimpleStreamOptions, StreamOptions, schema_transport,
-    stream_for, stream_simple_for,
+    AssistantMessageEvent, AssistantMessageEventStream, AssistantMessageEventStreamPort, Base,
+    BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Invoke,
+    OAuthError, ParameterSchema, PayloadHookInput, ProviderCall, ProviderExecution,
+    ProviderInvocation, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
+    SchemaCallback, SchemaCode, SchemaNode, SharedAssistantMessage, SimpleStreamOptions,
+    StopReason, StreamFunction, StreamOptions, StreamOptionsInput, Threaded,
+    faux_assistant_message, schema_transport, stream_for, stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;

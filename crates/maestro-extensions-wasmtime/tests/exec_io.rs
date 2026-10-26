@@ -139,6 +139,40 @@ async fn started(
     (task, ready(&listener).await)
 }
 
+/// Advances the paused clock to just before `boundary`, then checks that the execution
+/// has not settled and the child has not closed its socket.
+async fn assert_running_until(
+    execution: &tokio::task::JoinHandle<Value>,
+    socket: &tokio::net::TcpStream,
+    boundary: tokio::time::Instant,
+) {
+    let before = boundary - std::time::Duration::from_millis(1);
+    tokio::time::advance(before.saturating_duration_since(tokio::time::Instant::now())).await;
+    tokio::task::yield_now().await;
+    assert!(!execution.is_finished(), "settled before the boundary");
+    let open = socket.try_read(&mut [0; 1]).unwrap_err().kind();
+    assert_eq!(
+        open,
+        std::io::ErrorKind::WouldBlock,
+        "ended before the boundary"
+    );
+}
+
+/// Advances the paused clock just past `boundary`, then waits for the child to close its
+/// socket. The blocking read holds the clock still, so only a deadline already passed can
+/// end the child; a later one never fires.
+async fn assert_ended_by(socket: tokio::net::TcpStream, boundary: tokio::time::Instant) {
+    let after = boundary + std::time::Duration::from_millis(1);
+    tokio::time::advance(after.saturating_duration_since(tokio::time::Instant::now())).await;
+    let mut socket = socket.into_std().unwrap();
+    socket.set_nonblocking(false).unwrap();
+    let read =
+        tokio::task::spawn_blocking(move || std::io::Read::read(&mut socket, &mut [0; 1]).unwrap())
+            .await
+            .unwrap();
+    assert_eq!(read, 0, "the child ended once the boundary passed");
+}
+
 /// Lets a pending child finish normally.
 fn release(socket: tokio::net::TcpStream) -> Option<tokio::net::TcpStream> {
     assert_eq!(socket.try_write(b"g").unwrap(), 1);
@@ -357,10 +391,16 @@ fn exec_deadline_is_optional_and_milliseconds() {
                 "{options}"
             );
         }
-        let started = std::time::Instant::now();
-        let held = pending(&runner, json!({"options":{"cwd":"", "timeout":2500}}), Some).await;
-        assert!(started.elapsed() >= std::time::Duration::from_millis(2500));
-        assert_eq!(serde_json::from_str::<Value>(&held).unwrap(), expired);
+        let begun = tokio::time::Instant::now();
+        let (held, socket) = started(&runner, &json!({"options":{"cwd":"", "timeout":2500}})).await;
+        // The deadline starts between `begun` and READY; the clock stays at each side of it.
+        let boundary = (begun, tokio::time::Instant::now());
+        tokio::time::pause();
+        let deadline = std::time::Duration::from_millis(2500);
+        assert_running_until(&held, &socket, boundary.0 + deadline).await;
+        assert_ended_by(socket, boundary.1 + deadline).await;
+        assert_eq!(held.await.unwrap(), expired);
+        tokio::time::resume();
         let fractional = released_with(&runner, json!({"cwd":"", "timeout":0.5})).await;
         assert_eq!(serde_json::from_str::<Value>(&fractional).unwrap(), expired);
 
@@ -602,22 +642,30 @@ fn exec_term_resistance_uses_existing_escalation() {
         let fields =
             json!({"args":["-c", STUBBORN, "", "partial-out", "partial-err"], "signal":"relay"});
         let (execution, mut socket) = started(&runner, &fields).await;
-        signal.abort();
-        let aborted = tokio::time::Instant::now();
-        let mut answer = [0; 1];
-        socket.read_exact(&mut answer).await.unwrap();
-        assert_eq!(&answer, b"T", "terminated, still running");
         tokio::time::pause();
+        let aborted = tokio::time::Instant::now();
+        signal.abort();
+        let mut answer = [0; 1];
+        // Keep virtual time still until the real child acknowledges TERM.
+        loop {
+            tokio::select! {
+                biased;
+                result = socket.read_exact(&mut answer) => {
+                    result.unwrap();
+                    break;
+                }
+                () = tokio::task::yield_now() => {}
+            }
+        }
+        assert_eq!(&answer, b"T", "terminated, still running");
+        // The clock stood still from the abort, so the escalation ends exactly five seconds later.
+        let escalation = aborted + std::time::Duration::from_secs(5);
+        assert_running_until(&execution, &socket, escalation).await;
+        assert_ended_by(socket, escalation).await;
         let result = execution.await.unwrap();
-        assert!(aborted.elapsed() >= std::time::Duration::from_secs(5));
         assert_eq!(
             result,
             json!({"stdout":"partial-out", "stderr":"partial-err", "code":0, "killed":true, "before":false, "notified":1, "after":true})
-        );
-        assert_eq!(
-            socket.read(&mut [0; 1]).await.unwrap(),
-            0,
-            "killed and reaped"
         );
     });
 }

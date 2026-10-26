@@ -1,8 +1,13 @@
 //! Browser attachment components.
+/// The session view composing the transcript and the editor.
+pub mod agent_interface;
 pub mod attachment_tile;
 pub mod diff;
-/// Retained single-line browser input.
+/// Native single-line input.
+#[cfg(target_arch = "wasm32")]
 pub mod input;
+/// Message composer with attachments, reasoning level and model choice.
+pub mod message_editor;
 /// Completed transcript history placed by emitted position.
 pub mod message_list;
 /// Open custom-message role callbacks.
@@ -11,6 +16,8 @@ pub mod message_renderer_registry;
 pub mod messages;
 /// The message being streamed, published once per frame.
 pub mod streaming_message_container;
+/// Light, dark and system appearance cycling.
+pub mod theme_toggle;
 /// Retained reasoning disclosure.
 pub mod thinking_block;
 
@@ -41,5 +48,8 @@ pub mod custom_provider_card;
 pub(crate) mod mode_toggle;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
+/// Masked provider key entry tested before saving.
+#[cfg(target_arch = "wasm32")]
+pub mod provider_key_input;
 
 pub mod expandable_section;

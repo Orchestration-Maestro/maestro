@@ -1,4 +1,215 @@
-# Authored editor and completion contracts
+# Guest UI
+
+A component reaches the host's user interface through the `ExtensionUIContext` its
+context hands it: requests, the factories behind widgets, headers and footers, themes,
+terminal input and dialogs. The [extension guide](guest.md#tool-renderers) describes
+tool renderers and custom message components.
+
+## Requests
+
+`ExtensionUIContext` sends these synchronous requests to the installed host and
+returns its rejection as a recoverable `ExtensionResult` error:
+
+| Method | Request |
+| --- | --- |
+| `notify` | A literal message with an optional `NotificationType`. |
+| `set_status` | Text for one status key, or that key's clearing. |
+| `set_working_message` | Literal working text, or the host default. |
+| `set_working_visible` | Show or hide the working loader row. |
+| `set_working_indicator` | `WorkingIndicatorOptions` with independent optional `frames` and `interval_ms`, or the host default. |
+| `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
+| `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
+| `set_title` | A literal terminal title. |
+| `paste_to_editor` | Literal text the host editor receives as a paste, through its paste handling. |
+| `set_editor_text` | Literal replacement text for the host editor. |
+| `get_editor_text` | Reads the host editor's current text, returned unchanged. |
+
+The four option types are generated from the same interface file and re-exported at
+the author root. `None` and a present empty value stay different requests. The text
+methods forward what the caller supplied, so `Some("")` is an empty string the host
+keeps, while `None` means what its method says: `set_status` clears that key's text,
+`set_widget` removes the keyed widget, and `set_working_message`,
+`set_working_indicator` and `set_hidden_thinking_label` ask the host to restore its
+own default. `notify` without a severity leaves the notification's kind to the host.
+Inside the option records, an absent `placement` or an absent `frames` or
+`interval_ms` member stays absent, so the host applies its own default. Literal text
+crosses unchanged, including whitespace, Unicode and styling bytes. Indicator frames
+are supplied verbatim and `interval_ms` crosses as `f64` without serialization,
+clamping or a guest timer. An empty frame list hides the indicator while `None`
+restores the animated default; both the animation and the placement defaults stay
+with the host.
+
+A request borrows its text and lines only for the synchronous call; the host owns
+anything it retains. Clones of the facade share the acquired resource, so a handle
+kept past its callback keeps reading that resource, and a second acquisition stays
+independent.
+
+`set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
+factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
+and returns an `ExtensionComponent`: the component, optional disposal and expansion
+callbacks, and an optional implicit width. See [factory component capabilities](#factory-component-capabilities)
+for callback ownership and errors. The host
+runs the disposal of the widget a key already shows before it runs the new factory, and
+both finish before the setter returns. `set_widget` with lines or `None` disposes a
+factory widget under the same key too. The factory's captures stay usable while the
+host shows the component and are released after the host removes it. A factory error
+is the setter's error.
+
+`set_footer` replaces the footer with the component a `FooterFactory` builds from the
+terminal, the theme and the `FooterData` the host lends, or restores the host's footer
+with `None`; the host disposes the custom footer it replaces first. `FooterData` reads
+the current branch, extension statuses in insertion order and provider count on every
+call, so a retained footer sees later changes. `on_branch_change` keeps its
+`BranchChangeListener` until the returned subscription is unsubscribed; dropping the
+subscription keeps it.
+
+`set_header` replaces the header with the component a factory builds, or restores the
+host's header with `None`. The host disposes the custom header it replaces first, and a
+host that has not built its own header yet runs no factory.
+
+### Host widgets
+
+`Text`, `Box`, `Container`, `Spacer`, `Markdown` and `DynamicBorder` are widgets the host
+builds and keeps; each facade forwards to the host's widget. Building one needs no UI, so
+an extension may build widgets in any mode, and only showing them goes through the UI.
+`From<&Text>` and the other conversions make a widget a `Component`, which a factory
+returns or a container holds; the host keeps such a child as the widget itself.
+
+| Widget | Operations beside `render` and `invalidate` |
+| --- | --- |
+| `Text::new(text, padding_x, padding_y, custom_bg_fn)` | `set_text`, `set_custom_bg_fn` |
+| `Box::new(padding_x, padding_y, bg_fn)` | `add_child`, `remove_child`, `clear`, `set_bg_fn` |
+| `Container::new()` | `add_child`, `remove_child`, `clear` |
+| `Spacer::new(lines)` | `set_lines` |
+| `Markdown::new(text, padding_x, padding_y, theme, default_text_style)` | `set_text` |
+| `DynamicBorder::new(color)` | none |
+
+A container or box renders host widgets and authored components in insertion order; the
+same component may be added more than once, `remove_child` removes its first occurrence and
+an absent child changes nothing. A removed child stays usable. An authored component may
+render host widgets from its own `render`, which runs while the host renders its parent.
+
+A `Style` styles text: `Style::new` wraps an authored function, which the host calls while
+it renders. `get_markdown_theme` returns a `MarkdownTheme` whose styles read the live theme
+and whose `Highlight` is the host's code highlighting; those go back to the host as its own
+when a widget uses them. An authored `MarkdownTheme` may supply its own styles, highlighting
+and code-block indent. The first failure of an authored style or highlighting is the next
+`render` or `invalidate` error of the widget that uses it. `DynamicBorder` without a color
+paints with the live border color.
+
+`SelectList` shows `SelectItem` choices: `set_filter` keeps the choices whose value starts
+with the filter, ignoring case; `set_selected_index` clamps to the rows; `get_selected_item`
+reads the selection; and `set_on_select`, `set_on_cancel` and `set_on_selection_change`
+replace or remove the handlers its input runs. `SelectListLayoutOptions` sets the narrowest
+and widest primary column and may replace the primary truncation with an authored
+`TruncatePrimary`. `SettingsList` shows `SettingItem` rows whose `values` cycle and whose
+`Submenu` opens a component with a `SubmenuDone`; closing it with a value reports the change
+to the list's `SettingChange` callback, and `update_value` changes a value without reporting
+it. `BorderedLoader` builds the application's loader from a lent `TUI` and `Theme`, so it is
+built inside a factory; its `signal` reports a cancellation, `set_on_abort` replaces the
+handler a cancellation runs, `dispose` stops the animation and its rows take children. A
+loader built with `cancellable: Some(false)` ignores input. `get_select_list_theme` and
+`get_settings_list_theme` lend the live theme's styles; a `RowStyle` also receives whether
+its row is selected. The first failure of an authored handler or style is the next `render`
+or `handle_input` error of its widget.
+
+`KeybindingsManager` is a manager the host keeps. `KeybindingsManager::new` and
+`KeybindingsManager::create` build one of the application's keybindings, with user bindings
+and the file `reload` reads, or loaded from `keybindings.json` in an agent directory;
+`from_definitions` builds one of supplied `KeybindingDefinition`s; `get_keybindings` returns
+the keybindings the host's terminal uses. A manager matches input, reads keys, definitions,
+conflicts, user, resolved and effective bindings, and replaces its user bindings; a manager
+without a file keeps its bindings on `reload`. `key_text`, `key_hint` and `raw_key_hint`
+format keybinding hints with the host's keybindings and live theme, and `get_editor_theme`
+lends the live editor styles.
+
+`Editor::new` builds the host's multiline editor on a lent terminal, with an `EditorTheme` and
+`EditorOptions`; `CustomEditor::new` builds the application's editor with a keybindings
+manager. An editor reads and replaces its text, lines, cursor, history, padding, completion
+rows, submission and focus, and takes submission and change handlers; replacing or inserting
+text runs the change handler first. A custom editor also offers input to its
+`set_on_extension_shortcut` interceptor, which consumes the input by answering `true`, then
+runs its interrupt, exit and image-paste handlers and the `on_action` handlers of the
+application actions its manager binds; replacing an action keeps its place.
+
+The [authored editor and completion contracts](#authored-editor-and-completion-contracts) describe `EditorComponent`,
+`AutocompleteProvider` and their optional operations. The host-backed editor facades implement
+the editor traits, and [an editor factory](#editor-factories) replaces the host's
+editor with an authored one.
+
+### Themes and tool expansion
+
+`theme` returns the UI's live theme, which reads the host's later selections.
+`get_all_themes` lists `ThemeInfo` records in the host's order, with an absent `path`
+for a theme without a file. `get_theme` loads a theme by name without selecting it and
+returns `None` for an unknown name. `set_theme` selects a theme with
+`ThemeSelection::Name` or a host-supplied `ThemeSelection::Theme` and returns the host's
+`ThemeSetResult`, whose `error` explains a selection that did not apply; a theme the
+author built itself cannot be passed back and returns an error. A host rejection is an
+error, not a failed selection. `get_tools_expanded` and `set_tools_expanded` read and
+change the tool output expansion.
+
+`Theme::get_thinking_border_color` and `Theme::get_bash_mode_border_color` return a
+`BorderColor` callback that asks the theme's owner to color text with the border color
+of a `ModelThinkingLevel` or of the shell mode. The level-to-color choice stays with the
+host's theme, and each call reads the theme the handle currently observes.
+
+### Terminal input
+
+`on_terminal_input` adds a listener that sees each raw chunk of terminal input before
+the focused component does. It runs synchronously with a callback emitter, like the
+other synchronous callbacks, and returns `None` to leave the chunk as it is or a
+`TerminalInputResult`: `consume: Some(true)` stops the chunk, `data` replaces it for the
+listeners after it, and absent members leave it unchanged. When both are set,
+consumption wins. A listener's error reaches the host with its message. `unsubscribe`
+on the returned `Subscription` removes the listener; dropping the subscription keeps
+it. The host owns the order of listeners and the delivery of what remains.
+
+### Dialogs
+
+`select`, `confirm`, `input` and `editor` ask the host for an answer and return a
+future that owns its operands, so it may outlive the handle that started it:
+
+| Method | Request | Dismissal |
+| --- | --- | --- |
+| `select` | A title and the ordered choices, repetitions and empty entries included. | `None` |
+| `confirm` | A title and a message. | `false` |
+| `input` | A title and an optional placeholder. | `None` |
+| `editor` | A title and optional prefilled text. | `None` |
+
+`ExtensionUIDialogOptions::timeout` reaches the host's dialog as the supplied
+milliseconds, without a guest timer or a changed value. A supplied `signal` gets a
+host signal of its own for that dialog: an abort before the call, or while the dialog
+waits, reaches the host, which decides what the dialog answers. The guest adds no
+deadline or dismissal of its own. When the dialog returns, its listener on the
+caller's signal is removed, so the caller can keep the signal, abort it later or
+pass it to another dialog. An absent placeholder or prefill stays distinct from an
+empty one, and an empty answer stays distinct from a dismissal. A host rejection
+resolves to its message; the guest never turns it into a dismissal.
+
+## Resources and their native counterparts
+
+Each guest handle wraps one resource from `crates/maestro-extensions-wasm/wit/host.wit`.
+The host answers it with the native owner in the right-hand column, so the guest
+holds no copy of the UI logic.
+
+| Resource | Guest type | Native counterpart |
+| --- | --- | --- |
+| `extension-ui-context` | `ExtensionUIContext` | `maestro_extensions::ExtensionUIContext` |
+| `theme` | `Theme` | `maestro_theme::LiveTheme` over `maestro_theme::Theme` |
+| `tui` | `TUI` | `maestro_tui::TUI` |
+| `footer-data` | `FooterData` | `maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider` |
+| `tool-invalidator` | `ToolRenderContext::invalidate` | `maestro_tools::ToolRenderContext::invalidate` |
+| `subscription` | `Subscription` | `maestro_extensions::Subscription` |
+| `callback-emitter` | `CallbackEmitter` | `maestro_extensions::CallbackEmitter` |
+| `abort-signal` | `AbortSignal` | The caller's signal, followed by a host signal for each dialog. |
+
+Components cross as `callback` resources: a guest `Component` becomes a
+`maestro_tui::Component` on the host, and a factory's optional disposal becomes the
+native `ExtensionComponent` disposal. A terminal input answer becomes a native
+`InputListenerResult`.
+
+## Authored editor and completion contracts
 
 The guest library defines `EditorComponent` and `AutocompleteProvider` for authored
 editors and completion providers. An editor factory installs an authored editor in

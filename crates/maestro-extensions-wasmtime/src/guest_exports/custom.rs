@@ -74,8 +74,12 @@ impl Exports {
         handler: Callback,
         reply: Reply<RetainedComponent>,
     ) -> wasmtime::Result<()> {
-        let callback = accessor
-            .with(|mut access| access.get().ctx().table.push(Callback { id: handler.id }))?;
+        let callback = accessor.with(|mut access| {
+            access.get().ctx().table.push(Callback {
+                id: handler.id,
+                schema: None,
+            })
+        })?;
         let result = self
             .1
             .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))

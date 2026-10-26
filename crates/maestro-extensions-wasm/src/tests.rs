@@ -76,6 +76,7 @@ mod prompt_customizer_example;
 mod protected_paths_example;
 mod provider_catalog;
 mod provider_component;
+mod provider_composition;
 pub(crate) mod provider_host;
 pub(crate) mod reader_host;
 mod registration_callbacks;
@@ -619,6 +620,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]extension-ui-context.select",
             "[method]model-registry.get-api-key-and-headers",
             "[method]model-registry.get-api-key-for-provider",
+            "[method]provider-controls.invoke",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
             "[method]widget.drain-input",
@@ -1112,8 +1114,11 @@ fn assert_async_exports(contract: &Contract) {
             "component-set-focused",
             "component-wants-key-release",
             "invoke-abort",
+            "invoke-assistant",
             "invoke-auth-backend",
             "invoke-auth-fallback",
+            "invoke-autocomplete",
+            "invoke-autocomplete-factory",
             "invoke-branch-change",
             "invoke-command",
             "invoke-compaction-complete",
@@ -1131,7 +1136,6 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-model-hook",
             "invoke-prepare",
             "invoke-provider",
-            "invoke-provider-factory",
             "invoke-renderer",
             "invoke-schema",
             "invoke-set-expanded",
@@ -1183,3 +1187,4 @@ fn assert_model_hook_contract(contract: &Contract) {
 mod tool_record_views;
 
 mod credential_host;
+mod native_helpers;

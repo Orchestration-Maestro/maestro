@@ -427,7 +427,7 @@ impl IndexedDBStorageBackend {
     }
 }
 /// Probe only the requested storage capability, preserving platform failures.
-fn storage_support(method: &str) -> Result<Option<web_sys::StorageManager>, JsValue> {
+pub(crate) fn storage_support(method: &str) -> Result<Option<web_sys::StorageManager>, JsValue> {
     let navigator = Reflect::get(&js_sys::global(), &"navigator".into())?;
     let storage = Reflect::get(&navigator, &"storage".into())?;
     if storage.is_null()

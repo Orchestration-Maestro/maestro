@@ -10,9 +10,15 @@ impl host::HostAuthStorage for State {
     fn set_fallback_resolver(
         &mut self,
         this: Resource<Reader>,
-        _resolver: Resource<super::host::Identity>,
+        resolver: Resource<super::host::Identity>,
     ) -> wasmtime::Result<Resource<super::host::Route>> {
-        let result = self.table.get(&this)?.unit("set_fallback_resolver", &[]);
+        let reader = self.table.get(&this)?.clone();
+        let result = reader.unit("set_fallback_resolver", &[]);
+        if result.is_ok() {
+            reader.1.lock().unwrap().fallback = Some(resolver.rep());
+            self.observed
+                .register("credential-fallback".into(), resolver.rep());
+        }
         self.routed(result)
     }
     fn set_runtime_api_key(
@@ -37,8 +43,9 @@ impl host::HostAuthStorage for State {
             .unit("remove_runtime_api_key", &[json!(provider)]))
     }
     fn reload(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<super::host::Route>> {
-        let result = self.table.get(&this)?.unit("reload", &[]);
-        self.routed(result)
+        let reader = self.table.get(&this)?.clone();
+        let result = reader.unit("reload", &[]).map(|()| host::RouteValue::Unit);
+        self.credential_backend_route(&reader, result)
     }
     fn get(
         &mut self,
@@ -57,7 +64,8 @@ impl host::HostAuthStorage for State {
             .table
             .get(&this)?
             .unit("set", &[json!(provider), json!(credential)]);
-        self.routed(result)
+        let reader = self.table.get(&this)?.clone();
+        self.credential_backend_route(&reader, result.map(|()| host::RouteValue::Unit))
     }
     fn remove(
         &mut self,
@@ -89,35 +97,23 @@ impl host::HostAuthStorage for State {
         this: Resource<Reader>,
         provider: String,
     ) -> wasmtime::Result<Resource<super::host::Route>> {
-        let result = self
-            .table
-            .get(&this)?
+        let reader = self.table.get(&this)?.clone();
+        let result = reader
             .flag("has_auth", &[json!(provider)])
             .map(host::RouteValue::Boolean);
-        self.push(super::host::Route {
-            steps: std::collections::VecDeque::new(),
-            running: None,
-            rows: None,
-            result: Some(result),
-        })
+        self.credential_fallback_route(&reader, provider, result)
     }
     fn get_auth_status(
         &mut self,
         this: Resource<Reader>,
         provider: String,
     ) -> wasmtime::Result<Resource<super::host::Route>> {
-        let result = self
-            .table
-            .get(&this)?
+        let reader = self.table.get(&this)?.clone();
+        let result = reader
             .record("get_auth_status", &[json!(provider)])
             .and_then(|value| value.ok_or("missing credential record".into()))
             .map(host::RouteValue::Text);
-        self.push(super::host::Route {
-            steps: std::collections::VecDeque::new(),
-            running: None,
-            rows: None,
-            result: Some(result),
-        })
+        self.credential_fallback_route(&reader, provider, result)
     }
     fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self
@@ -146,19 +142,33 @@ impl host::HostAuthStorage for State {
     }
 }
 impl host::HostAuthStorageWithStore<State> for Imports {
-    fn get_api_key(
+    async fn get_api_key(
         accessor: &Accessor<State, Self>,
         this: Resource<Reader>,
         provider: String,
         include_fallback: Option<bool>,
-    ) -> impl Future<Output = wasmtime::Result<Result<Option<String>, String>>> {
-        std::future::ready(accessor.with(|mut access| {
-            Ok(access
-                .get()
-                .table
-                .get(&this)?
-                .optional("get_api_key", &[json!(provider), json!(include_fallback)]))
-        }))
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let (reader, guest, hold) = accessor.with(|mut access| {
+            let state = access.get();
+            Ok::<_, wasmtime::Error>((
+                state.table.get(&this)?.clone(),
+                state.guest.clone().unwrap(),
+                state.observed.take_hold(),
+            ))
+        })?;
+        super::observed::pause(hold).await;
+        if include_fallback != Some(false) && scripted_fallback(&reader, &provider) {
+            let target = reader.1.lock().unwrap().fallback.unwrap();
+            let actual = guest
+                .call_invoke_auth_fallback(accessor, Resource::new_borrow(target), provider.clone())
+                .await?;
+            let expected = reader.optional("fallback_result", &[json!(provider)]);
+            assert_eq!(actual, expected);
+            if let Err(error) = actual {
+                return Ok(Err(error));
+            }
+        }
+        Ok(reader.optional("get_api_key", &[json!(provider), json!(include_fallback)]))
     }
 }
 
@@ -190,5 +200,76 @@ impl host::HostAuthLockUpdateWithStore<State> for Imports {
                 .get(&this)?
                 .optional("lock_update_async", &[json!(current)]))
         }))
+    }
+}
+
+/// The script, not a duplicated key-selection algorithm, chooses callback entry.
+pub fn scripted_fallback(reader: &Reader, provider: &str) -> bool {
+    reader.1.lock().unwrap().fallback.is_some()
+        && reader
+            .0
+            .lock()
+            .unwrap()
+            .replies
+            .iter()
+            .any(|reply| reply.method == "fallback_result" && reply.args == [json!(provider)])
+}
+
+impl State {
+    /// Runs the authored backend on the existing value-returning continuation.
+    pub(super) fn credential_backend_route(
+        &mut self,
+        reader: &Reader,
+        result: Result<host::RouteValue, String>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let mut steps = std::collections::VecDeque::new();
+        let target = reader.1.lock().unwrap().backend;
+        if let Some(target) = target {
+            let expected = reader
+                .optional("backend_result", &[])
+                .map_err(wasmtime::Error::msg)?;
+            let update = self.push(reader.clone())?;
+            steps.push_back((
+                host::LocalCall::AuthBackend(host::LocalAuthBackend {
+                    target,
+                    update,
+                    asynchronous: false,
+                }),
+                super::ui_host::Nested::CredentialBackend(expected),
+            ));
+        }
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            rows: None,
+            result: Some(result),
+        })
+    }
+    /// Requires the callback's actual non-unit result before publishing scripted metadata.
+    fn credential_fallback_route(
+        &mut self,
+        reader: &Reader,
+        provider: String,
+        result: Result<host::RouteValue, String>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let mut steps = std::collections::VecDeque::new();
+        if scripted_fallback(reader, &provider) {
+            let resource = reader.1.lock().unwrap().fallback.unwrap();
+            let target = self
+                .table
+                .get(&Resource::<super::host::Identity>::new_borrow(resource))?
+                .0;
+            let expected = reader.optional("fallback_result", &[json!(provider)]);
+            steps.push_back((
+                host::LocalCall::AuthFallback(host::LocalAuthFallback { target, provider }),
+                super::ui_host::Nested::CredentialFallback(expected),
+            ));
+        }
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            rows: None,
+            result: Some(result),
+        })
     }
 }

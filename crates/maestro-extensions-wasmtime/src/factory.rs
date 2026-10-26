@@ -8,22 +8,25 @@ use maestro_extensions::{ExtensionFactory, ExtensionWidgets, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
-    Config, Engine, Store,
+    Cache, Config, Engine, Store,
     component::{Component, Linker},
 };
 
 /// Creates a local factory for one authored extension component at the supplied path, whose
 /// host widgets `widgets` builds.
 ///
+/// The application supplies its installation version; components do not choose it.
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
 pub fn artifact_factory(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
+    installation_version: String,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let (path, widgets) = (path.clone(), widgets.clone());
+        let installation_version = installation_version.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new(widgets);
             let endpoint = pump.registry().api(api)?;
@@ -35,7 +38,7 @@ pub fn artifact_factory(
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path);
+            let state = lifecycle::State::new(endpoint, callbacks, &path, installation_version);
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {
@@ -84,6 +87,8 @@ async fn execute(
 ) -> wasmtime::Result<()> {
     let mut config = Config::new();
     config.wasm_component_model_async(true);
+    // The user cache is optional; unavailable storage must not prevent loading.
+    config.cache(Cache::from_file(None).ok());
     let engine = Engine::new(&config)?;
     let component = Component::from_file(&engine, path)?;
     let mut linker = Linker::new(&engine);

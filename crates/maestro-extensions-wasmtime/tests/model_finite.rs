@@ -1,28 +1,39 @@
-//! Nonfinite authored option data never reaches the registered native adapter.
+//! Guest aliases preserve finite data at native consumers and retain opaque local owners.
 #![cfg(test)]
 use maestro_models::*;
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
-};
-/// A dispatched request is a validation failure, regardless of the returned setup error.
+use serde_json::{Value, json};
+use std::sync::{Arc, Mutex};
+
+/// Only data actually consumed by the native registered adapter is recorded.
 #[derive(Default)]
-struct Count(AtomicUsize);
-impl<E: ProviderExecution, O> Invoke<E, ProviderCall<E, O>> for Count {
+struct Consumed(Mutex<Vec<Value>>);
+impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>>
+    for Consumed
+{
     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
-    fn invoke(&self, _: ProviderCall<E, O>) -> Self::Return {
-        self.0.fetch_add(1, Ordering::SeqCst);
-        Err(DiagnosticErrorInfo::error("unexpected native dispatch"))
+    fn invoke(&self, call: ProviderCall<E, O>) -> Self::Return {
+        assert_eq!(call.model.id, "finite-model");
+        assert!(call.context.messages.is_empty());
+        let row = match call.options.unwrap().into() {
+            StreamOptionsInput::Raw(options) => json!({
+                "simple":false, "common":options.common, "extra":options.extra,
+            }),
+            StreamOptionsInput::Simple(options) => json!({
+                "simple":true, "common":options.common, "budgets":options.thinking_budgets,
+            }),
+        };
+        self.0.lock().unwrap().push(row);
+        Err(DiagnosticErrorInfo::error("native finite accepted"))
     }
 }
 #[test]
-fn model_imports_reject_nonfinite_options_before_dispatch() {
-    let count = Arc::new(Count::default());
+fn guest_stream_options_keep_finite_data_and_opaque_owners() {
+    let consumed = Arc::new(Consumed::default());
     register_api_provider(
         ApiProvider {
             api: "component-finite-options".into(),
-            stream: count.clone(),
-            stream_simple: count.clone(),
+            stream: consumed.clone(),
+            stream_simple: consumed.clone(),
         },
         Some("component-finite-options".into()),
     );
@@ -44,16 +55,71 @@ fn model_imports_reject_nonfinite_options_before_dispatch() {
             .await
             .unwrap_err()
             .to_string();
-        let output: Vec<String> =
-            serde_json::from_str(&output).unwrap_or_else(|_| panic!("{output}"));
-        assert_eq!(output.len(), 42);
+        let output: Value = serde_json::from_str(&output).unwrap_or_else(|_| panic!("{output}"));
+        let errors = output["rejected"].as_array().unwrap();
+        assert_eq!(errors.len(), 42);
         assert!(
-            output
+            errors
                 .iter()
                 .all(|error| error == "extension wrote a non-finite number (Infinity or NaN)")
         );
-        assert_eq!(count.0.load(Ordering::SeqCst), 0);
+        assert_eq!(output["finite"], 56);
+        check_finite(&consumed.0.lock().unwrap());
         bus.clear();
+        super::model_lifetimes::retained(false, Some("first:opaque-drop")).await;
     });
     unregister_api_providers("component-finite-options");
+}
+
+/// Every finite common and budget field keeps its bits and leaves all negative neighbors absent.
+fn check_finite(rows: &[Value]) {
+    assert_eq!(rows.len(), 56);
+    let fields = [
+        "temperature",
+        "maxTokens",
+        "timeoutMs",
+        "maxRetries",
+        "maxRetryDelayMs",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+    ];
+    let mut rows = rows.iter();
+    for simple in [false, true] {
+        for (index, field) in fields[..if simple { 9 } else { 5 }].iter().enumerate() {
+            for value in [0.0_f64, -0.0, -1.25, 1.5] {
+                let row = rows.next().unwrap();
+                check_field(row, (simple, index), field, value);
+            }
+        }
+    }
+    assert!(rows.next().is_none());
+}
+
+/// Compare one supplied field without losing its independently known IEEE representation.
+fn check_field(row: &Value, case: (bool, usize), field: &str, value: f64) {
+    let (simple, index) = case;
+    assert_eq!(row["simple"], simple);
+    let selected = if index < 5 {
+        &row["common"]
+    } else {
+        &row["budgets"]
+    };
+    assert_eq!(selected[field].as_f64().unwrap().to_bits(), value.to_bits());
+    assert_eq!(selected.as_object().unwrap().len(), 1);
+    check_neighbors(row, index);
+}
+
+/// Raw extras and empty common/budget records remain separate at the native consumer.
+fn check_neighbors(row: &Value, index: usize) {
+    if row["simple"] == true {
+        if index < 5 {
+            assert_eq!(row["budgets"], json!({}));
+        } else {
+            assert_eq!(row["common"], json!({}));
+        }
+    } else {
+        assert_eq!(row["extra"], json!({"uninterpreted":false}));
+    }
 }

@@ -37,13 +37,13 @@ impl State {
             Ok(current) => current,
             Err(error) => return self.routed(Err(error)),
         };
-        let call = host::LocalProviderFactory {
+        let call = host::LocalAutocompleteFactory {
             target: self.table.get(factory)?.0,
             current: self.push(current)?,
             emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
         };
         let mut steps = std::collections::VecDeque::new();
-        steps.push_back((host::LocalCall::ProviderFactory(call), Nested::Provider));
+        steps.push_back((host::LocalCall::AutocompleteFactory(call), Nested::Provider));
         self.push(Route {
             steps,
             running: None,

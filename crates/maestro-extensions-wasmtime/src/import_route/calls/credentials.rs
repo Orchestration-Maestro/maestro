@@ -1,6 +1,27 @@
 //! Nested credential callbacks retain their original update capability.
-use super::{Call, Callback, LocalBackend, LocalCall, LocalFallback};
-use wasmtime::component::ResourceTable;
+use super::{Call, Callback, LocalCall};
+use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
+
+/// Owned operands of one nested credential backend method.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalBackend {
+    /// Authored backend identity.
+    target: u32,
+    /// Invocation-local native update.
+    update: Resource<crate::local_resources::credential_scope::Endpoint>,
+    /// Whether the author must await its update.
+    asynchronous: bool,
+}
+/// Owned operands of one nested fallback lookup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalFallback {
+    /// Authored resolver identity.
+    target: u32,
+    /// Literal provider.
+    provider: String,
+}
 
 /// Marshals one credential callback with its original update capability.
 pub(super) fn lower(

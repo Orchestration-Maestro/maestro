@@ -50,12 +50,14 @@ impl Call {
             Self::Widget(call) => attach(&call.reply, completion),
             Self::EditorFactory(call) => attach(&call.reply, completion),
             Self::Editor(call) => attach(&call.reply, completion),
-            Self::ProviderFactory(call) => attach(&call.reply, completion),
-            Self::Provider(call) => attach(&call.reply, completion),
+            Self::AutocompleteFactory(call) => attach(&call.reply, completion),
+            Self::Autocomplete(call) => attach(&call.reply, completion),
             Self::Paint(crate::guest_calls::paints::PaintCall::Highlight(_, _, _, reply)) => {
                 attach(reply, completion);
             }
             Self::Stream(call) => attach(&call.reply, completion),
+            Self::Provider(call) => attach(&call.reply, completion),
+            Self::Assistant(call) => attach(&call.reply, completion),
             Self::ModelHook(call) => attach(&call.reply, completion),
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Credential(call) => match call {

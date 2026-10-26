@@ -118,6 +118,8 @@ kinds! {
         ProviderFactory(crate::AutocompleteProviderFactory),
         Provider(std::rc::Rc<dyn crate::AutocompleteProvider>),
         StreamValue(super::streams::Value),
+        ProviderStream(crate::StreamFunction<crate::StreamOptionsInput>),
+        AssistantStream(crate::AssistantMessageEventStream),
         ModelPayload(crate::OnPayload),
         ModelResponse(crate::OnResponse),
         StreamClassifier(super::streams::Classifier),

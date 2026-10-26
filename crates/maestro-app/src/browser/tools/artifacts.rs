@@ -97,7 +97,7 @@ pub enum ArtifactLogError {
 pub type ArtifactLogReader = Arc<dyn Fn() -> String + Send + Sync>;
 /// Retained browser-local log operation.
 #[cfg(target_arch = "wasm32")]
-pub type ArtifactLogReader = Arc<dyn Fn() -> String>;
+pub type ArtifactLogReader = std::rc::Rc<dyn Fn() -> String>;
 /// Replaceable artifact view and clock operations.
 pub trait ArtifactPresentation {
     /// Observe the current date.

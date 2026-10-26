@@ -40,6 +40,8 @@ mod keys;
 
 #[path = "generated_editors.rs"]
 mod editors;
+#[path = "generated_provider_streams.rs"]
+pub(crate) mod provider_streams;
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
@@ -48,11 +50,11 @@ struct Generated;
 impl Imports for Generated {
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
-        registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, stream: Option<&Self::Callback>) => register_provider(name, config, stream);
         registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
     } }
     forward_resources! { routed functions {
-        register_provider(name: &str, config: &str) => host::register_provider;
+        register_provider(name: &str, config: &str, stream: Option<&Self::Callback>) => host::register_provider;
         unregister_provider(name: &str) => host::unregister_provider;
     } }
     fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {
@@ -139,7 +141,7 @@ impl Imports for Generated {
             listing
                 .schemas
                 .into_iter()
-                .map(|b| (b.tool, b.pointer, b.handler))
+                .map(|b| (b.tool, b.pointer, b.handler, b.shape, b.local))
                 .collect(),
         ))
     }
@@ -154,6 +156,20 @@ impl Imports for Generated {
                 Err(std::rc::Rc::new(factory) as std::rc::Rc<dyn std::any::Any>)
             }
         }))
+    }
+
+    fn schema_invoke(
+        &self,
+        callback: &Self::Callback,
+        operation: host::SchemaOperation,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        let invocation = callback.schema_invoke(operation, node, path);
+        route::drive(&invocation).map_err(crate::schema_code::DiagnosticErrorInfo::error)?;
+        invocation
+            .schema_result()
+            .map_err(crate::schema_error::from_wire)
     }
 
     fn callback_emit(
@@ -204,6 +220,9 @@ impl Imports for Generated {
         signal_abort(signal: &Self::Signal) => abort();
     } }
     forward_resources! { functions {
+        native_format_size(bytes: f64) -> ExtensionResult<String> => host::native_format_size;
+        native_frontmatter(content: &str) -> ExtensionResult<host::FrontmatterDocument> => host::native_frontmatter;
+        native_helper(operation: &str, data: &str) -> ExtensionResult<String> => host::native_helper;
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;
         get_commands() -> ExtensionResult<String> => host::get_commands;

@@ -214,6 +214,16 @@ impl State {
 impl session::Host for State {}
 
 impl host::HostCallback for State {
+    fn schema_invoke(
+        &mut self,
+        _: Resource<Identity>,
+        _: host::SchemaOperation,
+        _: Resource<JsonNode>,
+        _: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.routed(Err("foreign schemas use the production runtime".into()))
+    }
+
     fn new(&mut self) -> wasmtime::Result<Resource<Identity>> {
         let identity = self.observed.next_identity();
         Ok(self.table.push(Identity(identity, None))?)
@@ -561,6 +571,18 @@ impl State {
 }
 
 impl host::HostImportRoute for State {
+    fn schema_result(
+        &mut self,
+        _: Resource<Route>,
+    ) -> wasmtime::Result<Result<String, host::DiagnosticErrorInfo>> {
+        Ok(Err(host::DiagnosticErrorInfo {
+            name: None,
+            message: "foreign schemas use the production runtime".into(),
+            stack: None,
+            code: None,
+        }))
+    }
+
     fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
         let route = self.table.get_mut(&this)?;
         if let Some((call, nested)) = route.steps.pop_front() {
@@ -866,6 +888,35 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn native_format_size(&mut self, _bytes: f64) -> wasmtime::Result<Result<String, String>> {
+        Ok(self
+            .observed
+            .actions
+            .record_for("format_size")
+            .and_then(|value| serde_json::from_str(&value).map_err(|error| error.to_string())))
+    }
+    fn native_frontmatter(
+        &mut self,
+        content: String,
+    ) -> wasmtime::Result<Result<host::FrontmatterDocument, String>> {
+        if content != "---\nx: .nan\n---\nbody" {
+            return Ok(Err("unknown controlled metadata fixture".into()));
+        }
+        Ok(Ok(host::FrontmatterDocument {
+            values: vec![
+                host::FrontmatterToken::Mapping(vec!["x".into()]),
+                host::FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
+        }))
+    }
+    fn native_helper(
+        &mut self,
+        operation: String,
+        _data: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.observed.actions.record_for(&operation))
+    }
     fn callback_emit(
         &mut self,
         emitter: Resource<super::bus_host::Emitter>,
@@ -1154,40 +1205,49 @@ impl host::Host for State {
 
     fn auth_storage_from_backend(
         &mut self,
-        _backend: Resource<Identity>,
+        backend: Resource<Identity>,
     ) -> wasmtime::Result<Resource<Route>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_from_backend", &[])?;
-            self.table
-                .push(reader)
-                .map(host::RouteValue::Credentials)
-                .map_err(|error| error.to_string())
-        });
-        self.push(Route {
-            steps: std::collections::VecDeque::new(),
-            running: None,
-            rows: None,
-            result: Some(result),
-        })
+        let reader = match self.observed.readers.acquire() {
+            Ok(reader) => reader.fresh(),
+            Err(error) => return self.routed(Err(error)),
+        };
+        if let Err(error) = reader.unit("auth_storage_from_backend", &[]) {
+            return self.routed(Err(error));
+        }
+        reader.1.lock().unwrap().backend = Some(self.table.get(&backend)?.0);
+        self.observed
+            .register("credential-backend".into(), backend.rep());
+        let owner = self.push(reader.clone())?;
+        self.credential_backend_route(&reader, Ok(host::RouteValue::Credentials(owner)))
     }
     fn create_auth_storage(
         &mut self,
         path: Option<String>,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn auth_storage_in_memory(
         &mut self,
         data: String,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn create_model_registry(
@@ -1213,6 +1273,7 @@ impl host::Host for State {
         &mut self,
         name: String,
         config: String,
+        _stream: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));

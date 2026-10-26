@@ -92,6 +92,14 @@ fn payload(
             }
             context.wait_for_idle().await?;
             match action.as_str() {
+                "null" => input.payload = serde_json::Value::Null,
+                "false" => input.payload = json!(false),
+                "zero" => input.payload = json!(0),
+                "empty-string" => input.payload = json!(""),
+                "number" => input.payload = json!(7.5),
+                "string" => input.payload = json!("replacement 雪"),
+                "object" => input.payload = json!({"selected":true}),
+                "array" => input.payload = json!([null, false, 0]),
                 "edit" => input.payload["temperature"] = json!(0.75),
                 "replace" => {
                     input.payload =

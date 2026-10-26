@@ -144,7 +144,7 @@ pub async fn provider(
         .store
         .run_concurrent(async |accessor| {
             exports
-                .call_invoke_provider(accessor, borrow(provider), request, signal)
+                .call_invoke_autocomplete(accessor, borrow(provider), request, signal)
                 .await
         })
         .await??;

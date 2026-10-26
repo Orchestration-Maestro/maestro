@@ -295,7 +295,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     crate::widget_list_imports::add_to_linker(host)?;
     crate::keys_imports::add_to_linker(host)?;
     crate::widget_editor_imports::add_to_linker(host)?;
-    crate::provider_imports::add_to_linker(host)?;
+    crate::completion_imports::add_to_linker(host)?;
     crate::foreign_editor_imports::add_to_linker(host)?;
     lent(host)
 }

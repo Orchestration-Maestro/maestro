@@ -36,7 +36,7 @@ impl GuestProvider {
     /// Runs a request that answers at once.
     fn synchronous(&self, request: Request) -> Result<Answer, String> {
         self.owner.endpoint().synchronous(&self.registry, |reply| {
-            Ok(Call::Provider(ProviderCall {
+            Ok(Call::Autocomplete(ProviderCall {
                 handler: self.owner.clone(),
                 request,
                 signal: None,
@@ -105,7 +105,7 @@ impl AutocompleteProvider for GuestProvider {
                 .owner
                 .endpoint()
                 .call(&self.registry, |reply| {
-                    Call::Provider(ProviderCall {
+                    Call::Autocomplete(ProviderCall {
                         handler: self.owner.clone(),
                         request,
                         signal: Some(signal),

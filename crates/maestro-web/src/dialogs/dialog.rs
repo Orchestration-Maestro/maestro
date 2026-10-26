@@ -1,292 +1,240 @@
-//! Dialog templates with retained native children and canvas controls.
-mod ui_error;
-use super::dialog_base::{DialogBase, DialogContext};
-use crate::browser::attachment_content::{ReadingContent, ReadingLayout};
-use maestro_theme::BrandPresentation;
+//! Modal backdrop, panel and Close control mounted as native page content.
+use crate::{
+    browser::{
+        attachment_content::browser::{append, element, host_error},
+        event_subscription::EventSubscription,
+    },
+    components::input::{classes, unique_id},
+    dom::{DomRoot, DomView, icon},
+    tools::types::ToolUiError,
+};
 use std::rc::Rc;
-pub use ui_error::DialogUiError;
-/// Caller-owned controls painted against the complete native measurement.
-pub type RenderContent = dyn Fn(
-    &mut egui::Ui,
-    egui::Id,
-    &ReadingLayout,
-    &BrandPresentation<'_>,
-) -> Result<(), DialogUiError>;
-/// Owned native body with its canvas control painter.
-#[derive(Clone)]
-pub struct DialogBody {
-    /// Native reading factory.
-    pub reading: Rc<ReadingContent>,
-    /// Actual canvas control dimensions.
-    pub control_sizes: Vec<(egui::Id, egui::Vec2)>,
-    /// Owned canvas control painter.
-    pub render_content: Rc<RenderContent>,
-}
-/// Live standalone dialog operands.
+use wasm_bindgen::{JsCast as _, closure::Closure};
+use web_sys::{Document, Element, Event, KeyboardEvent, Node};
+
+/// Dialog operands; `on_close` is notified by the backdrop, the Close control and Escape.
 #[derive(Clone)]
 pub struct DialogProps {
-    /// Whether the shell is mounted.
+    /// Whether the dialog is shown; a closed dialog mounts nothing.
     pub is_open: bool,
-    /// Optional notification after removal.
+    /// Notified once for each close request.
     pub on_close: Option<Rc<dyn Fn()>>,
-    /// Owned mixed content.
-    pub children: DialogBody,
-    /// Literal native CSS width.
+    /// Panel children in order.
+    pub children: Vec<Node>,
+    /// Literal CSS width of the panel.
     pub width: String,
-    /// Literal native CSS height.
+    /// Literal CSS height of the panel.
     pub height: String,
+    /// Panel classes appended after the panel class.
+    pub class_name: String,
+    /// Backdrop classes appended after the backdrop class.
+    pub backdrop_class_name: String,
 }
 impl DialogProps {
-    /// Supply standalone dimensions.
+    /// An open dialog showing `children` at the standard width and automatic height.
     #[must_use]
-    pub fn new(is_open: bool, children: DialogBody) -> Self {
+    pub fn new(children: Vec<Node>) -> Self {
         Self {
-            is_open,
+            is_open: true,
             on_close: None,
             children,
             width: "min(600px, 90vw)".into(),
             height: "auto".into(),
+            class_name: String::new(),
+            backdrop_class_name: String::new(),
         }
     }
 }
-/// Retain a standalone shell, eagerly admitting open props.
+/// Native listener retained with a mounted dialog.
+type Listener = EventSubscription<Closure<dyn Fn(Event)>>;
+/// Listeners that live exactly as long as the mounted dialog.
+struct Mounted {
+    /// Backdrop, panel, Close and document Escape registrations.
+    _listeners: Vec<Listener>,
+}
+/// Mount an open dialog as a backdrop holding its panel, or nothing when closed.
+///
+/// The returned root owns the document Escape listener, so dropping it releases that route.
 /// # Errors
-/// Returns reached platform failures.
-pub fn dialog(context: &DialogContext, props: DialogProps) -> Result<DialogBase, DialogUiError> {
-    let owner = DialogBase::new(context.clone(), props.children.clone());
-    owner.set_props(props)?;
-    Ok(owner)
+/// Returns a localization, icon or native failure.
+pub fn dialog(view: &DomView, props: &DialogProps) -> Result<Option<DomRoot>, ToolUiError> {
+    if !props.is_open {
+        return Ok(None);
+    }
+    let document = &view.document;
+    let backdrop = element(
+        document,
+        "div",
+        &classes("maestro-dialog-backdrop", &props.backdrop_class_name),
+    )?;
+    let panel = element(
+        document,
+        "div",
+        &classes("maestro-dialog", &props.class_name),
+    )?;
+    for (name, value) in [
+        ("role", "dialog"),
+        ("aria-modal", "true"),
+        (
+            "style",
+            &format!("width: {}; height: {};", props.width, props.height),
+        ),
+    ] {
+        panel
+            .set_attribute(name, value)
+            .map_err(|e| host_error(&e))?;
+    }
+    for child in &props.children {
+        panel.append_child(child).map_err(|e| host_error(&e))?;
+    }
+    name_panel(&panel)?;
+    let close = element(document, "button", "maestro-dialog-close")?;
+    close
+        .set_attribute("type", "button")
+        .map_err(|e| host_error(&e))?;
+    close
+        .set_attribute("aria-label", &view.i18n.text("Close")?)
+        .map_err(|e| host_error(&e))?;
+    let glyph = icon(document, "X", "maestro-dialog-close-glyph")?;
+    append(&close, &glyph)?;
+    append(&panel, &close)?;
+    append(&backdrop, &panel)?;
+    let listeners = listeners(document, &backdrop, &panel, &close, props.on_close.as_ref())?;
+    Ok(Some(DomRoot {
+        node: backdrop.into(),
+        owner: Some(Box::new(Mounted {
+            _listeners: listeners,
+        })),
+    }))
 }
-
-/// One frame's owned operands, never borrowed across native or caller effects.
-struct Placement<'a> {
-    /// Retained handle for this frame only.
-    state: &'a Rc<super::dialog_base::State>,
-    /// Mount identity captured before any draw effects.
-    mount: u64,
-    /// Live caller snapshot.
-    props: DialogProps,
-    /// Caller-selected colors and typography.
-    presentation: &'a BrandPresentation<'a>,
-}
-impl Placement<'_> {
-    /// Reuse the retained body identity, adding semantics only on the browser target.
-    fn reading(&self) -> Rc<ReadingContent> {
-        #[cfg(target_arch = "wasm32")]
-        {
-            browser::prepare(self.state, &self.props.children.reading)
+/// Name the panel by its first heading, so assistive technology announces the title.
+fn name_panel(panel: &Element) -> Result<(), ToolUiError> {
+    if let Some(heading) = panel.query_selector("h2").map_err(|e| host_error(&e))? {
+        if heading.id().is_empty() {
+            heading.set_id(&unique_id("maestro-dialog-title"));
         }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            Rc::clone(&self.props.children.reading)
-        }
-    }
-    /// Stage or publish this body's native placement.
-    fn place(
-        &self,
-        ui: &egui::Ui,
-        rect: egui::Rect,
-        phase: crate::browser::attachment_content::ReadingPhase,
-        occluders: Vec<egui::Rect>,
-    ) -> Result<(), DialogUiError> {
-        use crate::browser::attachment_content::{
-            AttachmentContent, AttachmentSurface, ReadingPlacement,
-        };
-        self.state
-            .context
-            .host()
-            .present(
-                AttachmentSurface {
-                    id: self.state.id,
-                    rect,
-                    clip_rect: ui.clip_rect(),
-                    pixels_per_point: ui.ctx().pixels_per_point(),
-                    opacity: 1.,
-                    occluders,
-                    content: AttachmentContent::Reading(ReadingPlacement {
-                        intrinsic_width: false,
-                        content: self.reading(),
-                        phase,
-                        sizes: &self.props.children.control_sizes,
-                        modal: Some(self.state.id),
-                        context: ui.ctx(),
-                    }),
-                },
-                self.presentation,
-            )
-            .map_err(DialogUiError::Host)
-    }
-    /// Measure first, then use the complete snapshot for native placement and controls.
-    fn render(&self, ui: &mut egui::Ui, close_name: &str) -> Result<bool, DialogUiError> {
-        use crate::browser::attachment_content::{self as content, ReadingPhase};
-        #[cfg(target_arch = "wasm32")]
-        browser::configure(self.state, close_name)?;
-        self.place(ui, ui.ctx().content_rect(), ReadingPhase::Measure, vec![])?;
-        let rect = self
-            .state
-            .context
-            .host()
-            .dialog_bounds(self.state.id, [&self.props.width, &self.props.height])?;
-        let layout = self.state.context.host().reading_layout(self.state.id)?;
-        let mut holes: Vec<_> = layout
-            .controls
-            .iter()
-            .map(|(_, slot)| slot.translate(rect.min.to_vec2()))
-            .collect();
-        holes.push(close_rect(rect));
-        self.place(ui, rect, ReadingPhase::Publish, holes)?;
-        #[cfg(target_arch = "wasm32")]
-        browser::commit(self.state);
-        let radius = content::points(self.presentation.radii["panel"]);
-        let border = content::color(self.presentation, "border")
-            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
-        content::panel_shadow(ui, rect, radius, border);
-        ui.painter().rect(
-            rect,
-            radius,
-            content::color(self.presentation, "background")
-                .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
-            egui::Stroke::new(1., border),
-            egui::StrokeKind::Inside,
-        );
-        let mut body = ui.new_child(egui::UiBuilder::new().max_rect(rect));
-        body.set_clip_rect(rect.intersect(ui.clip_rect()));
-        (self.props.children.render_content)(&mut body, self.state.id, &layout, self.presentation)?;
-        if self.state.mount.get() != self.mount {
-            return Ok(false);
-        }
-        self.controls(ui, rect, close_name)
-    }
-    /// Draw the sixteen-point control and admit only full two-endpoint gestures.
-    fn controls(
-        &self,
-        ui: &mut egui::Ui,
-        rect: egui::Rect,
-        name: &str,
-    ) -> Result<bool, DialogUiError> {
-        use crate::browser::attachment_content::reading::controls::pointer_actions;
-        let close = close_rect(rect);
-        let response = ui
-            .interact(
-                close.intersect(ui.clip_rect()),
-                self.state.id.with("close"),
-                egui::Sense::click(),
-            )
-            .on_hover_cursor(egui::CursorIcon::PointingHand);
-        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, name));
-        #[cfg(target_arch = "wasm32")]
-        let native_focus = browser::focused(self.state);
-        #[cfg(not(target_arch = "wasm32"))]
-        let native_focus = false;
-        self.paint_control(ui, close, &response, native_focus)?;
-        let screen = ui.ctx().content_rect();
-        let mut slots = vec![(true, close.intersect(ui.clip_rect()), ui.layer_id())];
-        for outside in outside_rects(screen, rect) {
-            if outside.is_positive() {
-                slots.push((false, outside.intersect(ui.clip_rect()), ui.layer_id()));
-            }
-        }
-        let events = ui.input(|input| input.events.clone());
-        let mut pressed = self.state.pressed.take();
-        let clicked = !pointer_actions(&events, &mut pressed, &slots, ui.ctx()).is_empty();
-        *self.state.pressed.borrow_mut() = pressed;
-        Ok(clicked || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary)))
-    }
-    /// Sample mounted properties once, then paint without retaining their borrow.
-    fn paint_control(
-        &self,
-        ui: &mut egui::Ui,
-        close: egui::Rect,
-        response: &egui::Response,
-        native_focus: bool,
-    ) -> Result<(), DialogUiError> {
-        let operands = close::Operands::resolve(self.presentation, response, native_focus)?;
-        let now = ui.input(|input| input.time);
-        let paint = {
-            let mut mounted = self.state.transitions.borrow_mut();
-            mounted
-                .get_or_insert_with(|| close::CloseTransitions::new(&operands))
-                .sample(now, &operands)
-        };
-        paint.draw(
-            ui,
-            close,
-            self.presentation,
-            &mut self.state.ring.borrow_mut(),
-        )
-    }
-}
-/// Paint one retained shell without borrowing its live props across effects.
-pub(super) fn draw<F: ?Sized>(
-    state: &Rc<super::dialog_base::State>,
-    i18n: &crate::I18n<F>,
-    presentation: &BrandPresentation<'_>,
-) -> Result<(), DialogUiError> {
-    let mount = state.mount.get();
-    let props = state.props.borrow().clone();
-    let name = i18n.text("Close")?;
-    let context = state.context.drawing();
-    let screen = context.content_rect();
-    let layer = egui::LayerId::new(egui::Order::Foreground, state.id);
-    context.memory_mut(|memory| memory.set_modal_layer(layer));
-    let result = egui::Area::new(state.id)
-        .order(egui::Order::Foreground)
-        .fixed_pos(screen.min)
-        .fade_in(false)
-        .show(context, |area| {
-            area.set_min_size(screen.size());
-            // The viewport is known; do not hide its first paint behind Area's sizing pass.
-            let mut ui = egui::Ui::new(
-                context.clone(),
-                state.id.with("shell"),
-                egui::UiBuilder::new().layer_id(layer).max_rect(screen),
-            );
-            Placement {
-                state,
-                mount,
-                props,
-                presentation,
-            }
-            .render(&mut ui, &name)
-        })
-        .inner?;
-    if result {
-        state.close(true)?;
+        panel
+            .set_attribute("aria-labelledby", &heading.id())
+            .map_err(|e| host_error(&e))?;
     }
     Ok(())
 }
-
-#[cfg(target_arch = "wasm32")]
-pub use browser::{DialogContentProps, DialogHeaderProps, dialog_content, dialog_header};
-#[cfg(target_arch = "wasm32")]
-pub(super) mod browser;
-
-/// Source control extent measured from the panel's inner border.
-fn close_rect(panel: egui::Rect) -> egui::Rect {
-    egui::Rect::from_min_size(
-        egui::pos2(panel.right() - 33., panel.top() + 17.),
-        egui::vec2(16., 16.),
-    )
-}
-
-/// Disjoint outside regions preserve child/content click propagation.
-fn outside_rects(screen: egui::Rect, rect: egui::Rect) -> [egui::Rect; 4] {
+/// Register the close routes; each delivers `on_close` once per request.
+fn listeners(
+    document: &Document,
+    backdrop: &Element,
+    panel: &Element,
+    close: &Element,
+    on_close: Option<&Rc<dyn Fn()>>,
+) -> Result<Vec<Listener>, ToolUiError> {
+    let notify = {
+        let on_close = on_close.cloned();
+        move || {
+            if let Some(callback) = &on_close {
+                callback();
+            }
+        }
+    };
+    let outside = {
+        let notify = notify.clone();
+        let backdrop = backdrop.clone();
+        Closure::<dyn Fn(Event)>::new(move |event: Event| {
+            if event
+                .target()
+                .is_some_and(|target| backdrop.is_same_node(target.dyn_ref()))
+            {
+                notify();
+            }
+        })
+    };
+    let contained = Closure::<dyn Fn(Event)>::new(|event: Event| event.stop_propagation());
+    let button = {
+        let notify = notify.clone();
+        Closure::<dyn Fn(Event)>::new(move |_: Event| notify())
+    };
+    let escape = Closure::<dyn Fn(Event)>::new(move |event: Event| {
+        if event
+            .dyn_ref::<KeyboardEvent>()
+            .is_some_and(|key| key.key() == "Escape")
+        {
+            notify();
+        }
+    });
     [
-        egui::Rect::from_min_max(screen.min, egui::pos2(screen.right(), rect.top())),
-        egui::Rect::from_min_max(egui::pos2(screen.left(), rect.bottom()), screen.max),
-        egui::Rect::from_min_max(
-            egui::pos2(screen.left(), rect.top()),
-            egui::pos2(rect.left(), rect.bottom()),
-        ),
-        egui::Rect::from_min_max(
-            egui::pos2(rect.right(), rect.top()),
-            egui::pos2(screen.right(), rect.bottom()),
-        ),
+        (backdrop.clone().into(), "click", outside),
+        (panel.clone().into(), "click", contained),
+        (close.clone().into(), "click", button),
+        (document.clone().into(), "keydown", escape),
     ]
+    .into_iter()
+    .map(|(target, name, callback)| {
+        EventSubscription::new(target, name, callback).map_err(|e| host_error(&e).into())
+    })
+    .collect()
 }
-
-/// Mounted Close property values and shadow composition.
-pub(super) mod close;
-
-/// Fractional raster coverage for Close decoration.
-pub(super) mod ring;
+/// Literal heading and optional description operands.
+#[derive(Clone, Default)]
+pub struct DialogHeaderProps {
+    /// Heading text, including an empty heading.
+    pub title: String,
+    /// Description below the heading; absent or empty omits it.
+    pub description: Option<String>,
+    /// Wrapper classes appended after the header class.
+    pub class_name: String,
+}
+/// A heading with its optional description; text is never parsed as markup.
+/// # Errors
+/// Returns a native failure.
+pub fn dialog_header(
+    document: &Document,
+    props: &DialogHeaderProps,
+) -> Result<Element, ToolUiError> {
+    let root = element(
+        document,
+        "div",
+        &classes("maestro-dialog-header", &props.class_name),
+    )?;
+    let title = element(document, "h2", "")?;
+    title.set_text_content(Some(&props.title));
+    append(&root, &title)?;
+    if let Some(description) = props.description.as_deref().filter(|text| !text.is_empty()) {
+        title.set_class_name("maestro-dialog-described");
+        let text = element(document, "p", "")?;
+        text.set_text_content(Some(description));
+        append(&root, &text)?;
+    }
+    Ok(root)
+}
+/// The padded content column holding `children` in order.
+/// # Errors
+/// Returns a native failure.
+pub fn dialog_content(
+    document: &Document,
+    children: &[Node],
+    class_name: &str,
+) -> Result<Element, ToolUiError> {
+    wrap(document, "maestro-dialog-content", children, class_name)
+}
+/// The action row holding `children` in order.
+/// # Errors
+/// Returns a native failure.
+pub fn dialog_footer(
+    document: &Document,
+    children: &[Node],
+    class_name: &str,
+) -> Result<Element, ToolUiError> {
+    wrap(document, "maestro-dialog-footer", children, class_name)
+}
+/// A classed wrapper holding `children` in order.
+fn wrap(
+    document: &Document,
+    base: &str,
+    children: &[Node],
+    class_name: &str,
+) -> Result<Element, ToolUiError> {
+    let root = element(document, "div", &classes(base, class_name))?;
+    for child in children {
+        root.append_child(child).map_err(|e| host_error(&e))?;
+    }
+    Ok(root)
+}

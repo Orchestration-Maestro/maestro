@@ -38,6 +38,8 @@ pub(crate) use tools::ToolCall;
 pub(crate) struct Callback {
     /// Stable key used by the authored closure table.
     pub(crate) id: u32,
+    /// An enumerated foreign node retained by the existing native registry.
+    pub(crate) schema: Option<crate::local_resources::schema::Endpoint>,
 }
 
 /// Invocations consumed by the single Store driver, not by a replacement executor.
@@ -82,12 +84,16 @@ pub(crate) enum Call<H = Handle> {
     EditorFactory(editors::FactoryCall<H>),
     /// Runs one native request on an authored editor.
     Editor(editors::EditorCall<H>),
-    /// Runs a provider factory on the lent current provider.
-    ProviderFactory(providers::FactoryCall<H>),
+    /// Runs a completion provider factory on the lent current provider.
+    AutocompleteFactory(providers::FactoryCall<H>),
     /// Runs one native request on an authored completion provider.
-    Provider(providers::ProviderCall<H>),
+    Autocomplete(providers::ProviderCall<H>),
     /// Awaits an authored hook on the original pending native model invocation.
     ModelHook(crate::model_calls::Invocation<H>),
+    /// Sets up the original registered guest provider.
+    Provider(crate::provider_calls::Invocation<H>),
+    /// Operates on the original returned authored stream.
+    Assistant(crate::provider_calls::Assistant<H>),
     /// Invokes an authored stream callback on the retained local event.
     Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
@@ -153,7 +159,7 @@ impl Callbacks {
         self.next = id
             .checked_add(1)
             .ok_or_else(|| "extension callback identity exhausted".to_owned())?;
-        Ok(Callback { id })
+        Ok(Callback { id, schema: None })
     }
 
     /// Retains one callback admission, shared by every native alias of this identity.

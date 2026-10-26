@@ -41,14 +41,7 @@ impl WireControls {
                 .transpose()?,
             objects: self
                 .objects
-                .map(|object| {
-                    let id = state.ctx().table.get(&object)?.id;
-                    let admission = state.api().admission();
-                    state
-                        .callbacks()
-                        .retain_object(id, admission)
-                        .map_err(wasmtime::Error::msg)
-                })
+                .map(|object| crate::callback_imports::retain_object(state, &object))
                 .transpose()?,
         })
     }
@@ -57,6 +50,7 @@ impl WireControls {
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
+    crate::provider_imports::add_to_linker(host)?;
     crate::context_imports::add_resource::<T, Endpoint>(host, "assistant-stream")?;
     host.func_wrap(
         "model-stream",

@@ -163,6 +163,11 @@ impl DomContent for HtmlArtifact {
         body::mount(self, view)
     }
     fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
+        use wasm_bindgen::JsCast as _;
+        crate::tools::artifacts::artifact_element::filename(
+            root.node.unchecked_ref(),
+            &self.filename,
+        )?;
         root.owner
             .as_ref()
             .and_then(|owner| owner.downcast_ref::<body::Mounted>())

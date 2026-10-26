@@ -604,6 +604,29 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
+        serde_json::from_str(&self.observe().actions.record_for("format_size")?)
+            .map_err(|error| error.to_string())
+    }
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
+        use crate::bindings::maestro::extension::host::{FrontmatterDocument, FrontmatterToken};
+        if content != "---\nx: .nan\n---\nbody" {
+            return Err("unknown controlled metadata fixture".into());
+        }
+        Ok(FrontmatterDocument {
+            values: vec![
+                FrontmatterToken::Mapping(vec!["x".into()]),
+                FrontmatterToken::Number(f64::NAN),
+            ],
+            body: "body".into(),
+        })
+    }
+    fn native_helper(&self, operation: &str, _data: &str) -> ExtensionResult<String> {
+        self.observe().actions.record_for(operation)
+    }
     type LockUpdate = Reader;
     fn lock_update(
         &self,
@@ -626,29 +649,32 @@ impl Imports for Controlled {
         })
     }
     fn auth_storage_from_backend(&self, backend: &Self::Callback) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+        let data = self.observed.borrow().readers.acquire()?.fresh();
         data.unit("auth_storage_from_backend", &[])?;
         let resource = Reader {
             data,
             _lease: Lease::new(&self.observed),
         };
-        crate::component_adapter::auth_storage::invoke_backend(
-            self,
-            self.callback_id(backend),
-            &resource,
-        )?;
+        let id = self.callback_id(backend);
+        resource.data.1.lock().unwrap().backend = Some(id);
+        self.observe().register("credential-backend".into(), id);
+        self.credential_backend(&resource)?;
         Ok(resource)
     }
     fn credentials_set_fallback(
         &self,
         owner: &Reader,
-        _resolver: &Self::Callback,
+        resolver: &Self::Callback,
     ) -> ExtensionResult<()> {
-        owner.data.unit("set_fallback_resolver", &[])
+        owner.data.unit("set_fallback_resolver", &[])?;
+        let id = self.callback_id(resolver);
+        owner.data.1.lock().unwrap().fallback = Some(id);
+        self.observe().register("credential-fallback".into(), id);
+        Ok(())
     }
     type Credentials = Reader;
     fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+        let data = self.observed.borrow().readers.acquire()?.fresh();
         data.unit("create_auth_storage", &[serde_json::json!(path)])?;
         Ok(Reader {
             data,
@@ -656,7 +682,7 @@ impl Imports for Controlled {
         })
     }
     fn auth_storage_in_memory(&self, data: &str) -> ExtensionResult<Reader> {
-        let reader = self.observed.borrow().readers.acquire()?;
+        let reader = self.observed.borrow().readers.acquire()?.fresh();
         reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
         Ok(Reader {
             data: reader,
@@ -705,7 +731,8 @@ impl Imports for Controlled {
             .unit("remove_runtime_api_key", &[serde_json::json!(provider)])
     }
     fn credentials_reload(&self, resource: &Reader) -> ExtensionResult<()> {
-        resource.data.unit("reload", &[])
+        resource.data.unit("reload", &[])?;
+        self.credential_backend(resource)
     }
     fn credentials_get(
         &self,
@@ -723,7 +750,8 @@ impl Imports for Controlled {
         resource.data.unit(
             "set",
             &[serde_json::json!(provider), serde_json::json!(credential)],
-        )
+        )?;
+        self.credential_backend(resource)
     }
     fn credentials_remove(&self, resource: &Reader, provider: &str) -> ExtensionResult<()> {
         resource.data.unit("remove", &[serde_json::json!(provider)])
@@ -741,6 +769,7 @@ impl Imports for Controlled {
         resource.data.flag("has", &[serde_json::json!(provider)])
     }
     fn credentials_has_auth(&self, resource: &Reader, provider: &str) -> ExtensionResult<bool> {
+        Self::credential_fallback(resource, provider)?;
         resource
             .data
             .flag("has_auth", &[serde_json::json!(provider)])
@@ -750,6 +779,7 @@ impl Imports for Controlled {
         resource: &Reader,
         provider: &str,
     ) -> ExtensionResult<String> {
+        Self::credential_fallback(resource, provider)?;
         resource
             .data
             .record("get_auth_status", &[serde_json::json!(provider)])?
@@ -777,6 +807,11 @@ impl Imports for Controlled {
         include_fallback: Option<bool>,
     ) -> ExtensionFuture<'a, Option<String>> {
         Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if include_fallback != Some(false) {
+                Self::credential_fallback(resource, &provider)?;
+            }
             resource.data.optional(
                 "get_api_key",
                 &[
@@ -1067,6 +1102,17 @@ impl Imports for Controlled {
         o.actions.check()?;
         serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
     }
+    fn schema_invoke(
+        &self,
+        _: &Self::Callback,
+        _: crate::bindings::maestro::extension::host::SchemaOperation,
+        _: &Self::JsonNode,
+        _: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        Err(crate::schema_code::DiagnosticErrorInfo::error(
+            "foreign schemas use the production runtime",
+        ))
+    }
     fn get_all_tools(
         &self,
     ) -> ExtensionResult<crate::component_adapter::ToolListing<Self::Callback>> {
@@ -1083,7 +1129,8 @@ impl Imports for Controlled {
                     },
                 )
                 .map_err(|error| error.message)?;
-            retained.push((tool, pointer, handle));
+            let shape = Exports::<Self>::describe_schema(id).map_err(|error| error.message)?;
+            retained.push((tool, pointer, handle, shape, true));
         }
         Ok((metadata, retained))
     }
@@ -1901,7 +1948,7 @@ impl Imports for Controlled {
     type ReplacedContext = ReplacedContext;
 
     fn session_manager(&self, _context: &Context) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+        let data = self.observed.borrow().readers.acquire()?.fresh();
         Ok(Reader {
             data,
             _lease: Lease::new(&self.observed),
@@ -2241,6 +2288,7 @@ impl Imports for Controlled {
         resource: &Reader,
         name: &str,
         config: &str,
+        _stream: Option<&Self::Callback>,
     ) -> ExtensionResult<()> {
         resource.data.unit(
             "registerProvider",
@@ -2512,7 +2560,12 @@ impl Imports for Controlled {
         Ok(())
     }
 
-    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()> {
+    fn register_provider(
+        &self,
+        name: &str,
+        config: &str,
+        _stream: Option<&Self::Callback>,
+    ) -> ExtensionResult<()> {
         self.observed
             .borrow_mut()
             .log(format!("provider register {name} {config}"));
@@ -2693,6 +2746,32 @@ impl Controlled {
             crate::component_adapter::renderers::with_emitter(self, emitter, |emitter| {
                 dispose(emitter)
             })?;
+        }
+        Ok(())
+    }
+    /// Calls the actual backend body and verifies the script's native-owner error channel.
+    fn credential_backend(&self, resource: &Reader) -> ExtensionResult<()> {
+        let target = resource.data.1.lock().unwrap().backend;
+        if let Some(target) = target {
+            let result =
+                crate::component_adapter::auth_storage::invoke_backend(self, target, resource);
+            let expected = resource.data.optional("backend_result", &[])?;
+            assert_eq!(result.err(), expected);
+        }
+        Ok(())
+    }
+    /// Scripted metadata must agree with the callback's actual result before returning.
+    fn credential_fallback(resource: &Reader, provider: &str) -> ExtensionResult<()> {
+        let target = resource.data.1.lock().unwrap().fallback;
+        if let Some(target) =
+            target.filter(|_| super::credential_host::scripted_fallback(&resource.data, provider))
+        {
+            let result = crate::component_adapter::auth_storage::invoke_fallback(target, provider);
+            let expected = resource
+                .data
+                .optional("fallback_result", &[serde_json::json!(provider)]);
+            assert_eq!(result, expected);
+            result?;
         }
         Ok(())
     }

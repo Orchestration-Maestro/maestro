@@ -466,8 +466,12 @@ shared-types container.
 
 Shared invocation options also live in `maestro-request::types`: `ThinkingBudgets`,
 `CacheRetention`, `Transport`, `ProviderResponse`, `StreamOptions`,
-`ProviderStreamOptions` and `SimpleStreamOptions`. `StreamOptionSlots` selects the
-signal, payload hook, response hook and fetch representations without operations.
+`ProviderStreamOptions`, `SimpleStreamOptions` and `StreamOptionsInput<C, O, T>`.
+The input enum preserves the original raw or simple variant, parametrizing only
+common options, opaque objects and tool choice; native and guest aliases retain
+their own capability types. It borrows the common options without converting
+between the variants. `StreamOptionSlots` selects the signal, payload hook,
+response hook and fetch representations without operations.
 Native aliases specialize the fetch slot so unannotated SDK constructors still
 coerce transport closures; they retain execution-family identity and defaults. Guest aliases
 retain local capabilities. Provider execution, opaque native objects and tool
@@ -997,8 +1001,16 @@ text. The guest carries the declared kinds only inside its opaque internal regis
 and enumeration transport. Executable nodes use invocation-local JSON resources
 and independently retained identities in the existing callback table. Same-origin
 guest enumeration keeps the original callbacks and captures, with bindings per
-tool. Foreign guest entries remain data-only; live foreign schema reuse and
-invocation are tracked in [the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
+tool. Foreign guest and native schemas retain live callbacks through the receiving
+guest's existing native capability registry. Synchronous invocation uses the existing
+native import route and scoped operand wait, preserving edits and structured schema
+errors without copying the operand. Nested calls into the receiving instance run
+locally through that route, including A→B→A. Final release uses the existing pumps;
+an unloaded origin rejects later entry while already-admitted calls finish.
+An absent child view passed to a foreign callback returns a clear error rather than
+substituting null. See [foreign schema calls](../extensions/guest.md#foreign-schema-calls)
+for the owning path and pinned runtime contracts. Ordinary result and string APIs
+are unchanged.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring

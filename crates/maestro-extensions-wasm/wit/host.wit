@@ -2,6 +2,14 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Formats a native floating-point byte count without a JSON-number boundary.
+    native-format-size: func(bytes: f64) -> result<string, string>;
+    /// Preorder metadata values, with container lengths and numbers kept outside JSON.
+    variant frontmatter-token { null, boolean(bool), number(f64), text(string), sequence(u32), mapping(list<string>) }
+    record frontmatter-document { values: list<frontmatter-token>, body: string }
+    native-frontmatter: func(content: string) -> result<frontmatter-document, string>;
+    /// Synchronous ordinary helper operands; metadata numbers use a separate typed boundary.
+    native-helper: func(operation: string, data: string) -> result<string, string>;
     /// A native update borrowed only while the author's backend is running.
     resource auth-lock-update {
         update: func(current: option<string>) -> result<option<string>, string>;
@@ -84,9 +92,8 @@ interface host {
         delete: func(path: string, key: string) -> result<_, string>;
         splice: func(path: string, range: tuple<u32, u32>, values: list<string>) -> result<list<string>, string>;
     }
-    /// Bindings belong to their own tool and contain only this guest's callbacks.
-    /// Foreign tool records carry only schema data.
-    record schema-binding { tool: u32, pointer: string, handler: callback }
+    /// Independently retained callbacks, with author affinity and their original shape.
+    record schema-binding { tool: u32, pointer: string, handler: callback, shape: schema-shape, local: bool }
     /// Opaque metadata with independently retained executable annotations.
     record tool-listing { metadata: string, schemas: list<schema-binding> }
     /// Host-owned identity of one guest closure.
@@ -94,7 +101,8 @@ interface host {
         constructor();
         /// Stable key of this identity, equal for the owner handle and every borrow.
         id: func() -> u32;
-
+        /// Invoke a foreign node through the current synchronous native import route.
+        schema-invoke: func(operation: schema-operation, node: borrow<json-node>, path: string) -> import-route;
     }
 
     /// Independently retained author value, never encoded as JSON.
@@ -113,6 +121,18 @@ interface host {
     record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
     /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
     model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Retained original native options, including hooks and opaque controls.
+    resource provider-controls {
+        invoke: async func(phase: model-hook, data: string, model: string, signal: option<borrow<abort-signal>>, owner: option<borrow<callback>>) -> result<payload-selection, string>;
+    }
+    /// Capabilities lent to the registered guest provider independently of its caller.
+    record provider-input { controls: provider-controls, signal: option<abort-signal>, payload: bool, response: bool }
+    /// Setup on the original authored provider.
+    record local-provider { target: u32, data: string, input: provider-input }
+    /// Operations on the original returned assistant stream.
+    enum assistant-operation { push, end, next, %result }
+    /// An operation with ordinary event or result data, never a stream identity.
+    record local-assistant { target: u32, operation: assistant-operation, data: option<string>, signal: option<abort-signal> }
     /// Native phase calling an awaited authored hook.
     enum model-hook { payload, response }
     /// Selected payload and optional original or replacement cancellation.
@@ -180,9 +200,9 @@ interface host {
     /// One nested same-instance request on an authored editor.
     record local-editor { target: u32, request: authored-editor-request, emitter: callback-emitter }
     /// One nested same-instance request on an authored completion provider.
-    record local-provider { target: u32, request: provider-request, signal: option<abort-signal> }
+    record local-autocomplete { target: u32, request: provider-request, signal: option<abort-signal> }
     /// One nested same-instance completion provider factory.
-    record local-provider-factory { target: u32, current: completion-provider, emitter: callback-emitter }
+    record local-autocomplete-factory { target: u32, current: completion-provider, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
     enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
     /// One nested same-instance synchronous callback prefix.
@@ -243,6 +263,8 @@ interface host {
         synchronous(local-synchronous),
         schema(local-schema),
         %stream(local-stream),
+        provider(local-provider),
+        assistant(local-assistant),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -261,8 +283,8 @@ interface host {
         widget(local-widget),
         editor-factory(local-editor-factory),
         editor(local-editor),
-        provider(local-provider),
-        provider-factory(local-provider-factory),
+        autocomplete(local-autocomplete),
+        autocomplete-factory(local-autocomplete-factory),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -276,6 +298,8 @@ interface host {
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
         %stream(result<stream-selection, string>),
+        provider(result<callback, string>),
+        assistant(result<option<string>, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
@@ -288,8 +312,8 @@ interface host {
         widget(result<widget-answer, string>),
         editor-factory(result<editor-built, string>),
         editor(result<authored-editor-answer, string>),
-        provider(result<provider-answer, string>),
-        provider-factory(result<callback, string>),
+        autocomplete(result<provider-answer, string>),
+        autocomplete-factory(result<callback, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-value {
@@ -308,6 +332,8 @@ interface host {
         resume: func(value: local-result);
         /// Releases the native caller once the nested call's prefix ran; its result follows.
         defer: func() -> local-settlement;
+        /// Take a completed schema import's original structured result.
+        schema-result: func() -> result<string, diagnostic-error-info>;
     }
     /// A nested call whose prefix ran and whose result the guest delivers later.
     resource local-settlement { finish: func(value: local-result); }
@@ -863,7 +889,7 @@ interface host {
         get-provider-display-name: func(provider: string) -> result<string, string>;
         is-using-oauth: func(model: string) -> result<bool, string>;
         /// Registers JSON provider data directly in this catalog.
-        register-provider: func(name: string, config: string) -> import-route;
+        register-provider: func(name: string, config: string, %stream: option<borrow<callback>>) -> import-route;
         unregister-provider: func(name: string) -> import-route;
         get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
@@ -967,7 +993,7 @@ interface host {
     /// Registers authored tool data and callbacks.
     register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
     /// Registers JSON provider data, queued until the host binds.
-    register-provider: func(name: string, config: string) -> import-route;
+    register-provider: func(name: string, config: string, %stream: option<borrow<callback>>) -> import-route;
     /// Unregisters a provider, including its queued registrations.
     unregister-provider: func(name: string) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.

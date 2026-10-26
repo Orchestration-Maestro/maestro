@@ -68,9 +68,7 @@ fn start(route: &host::ImportRoute, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
-        host::LocalCall::AuthFallback(call) => host::LocalResult::AuthFallback(
-            super::super::auth_storage::invoke_fallback(call.target, &call.provider),
-        ),
+        host::LocalCall::AuthFallback(call) => auth_fallback(&call),
         host::LocalCall::AuthBackend(call) => return backend(call),
         call @ (host::LocalCall::Renderer(_)
         | host::LocalCall::Render(_)
@@ -104,7 +102,7 @@ fn dispatch(call: host::LocalCall) -> Running {
         | host::LocalCall::Widget(_)
         | host::LocalCall::EditorFactory(_)
         | host::LocalCall::Editor(_)
-        | host::LocalCall::ProviderFactory(_)) => ui(call),
+        | host::LocalCall::AutocompleteFactory(_)) => ui(call),
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))
@@ -201,7 +199,7 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
             call.request,
             &call.emitter,
         )),
-        host::LocalCall::ProviderFactory(call) => host::LocalResult::ProviderFactory(
+        host::LocalCall::AutocompleteFactory(call) => host::LocalResult::AutocompleteFactory(
             super::editors::provider_factory(call.target, call.current, &call.emitter),
         ),
         host::LocalCall::Style(call) => {
@@ -215,6 +213,14 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
         ),
         _ => host::LocalResult::Unit(Err("expected a UI callback".to_owned())),
     }
+}
+
+/// Invoke the retained credential fallback through its original author adapter.
+fn auth_fallback(call: &host::LocalAuthFallback) -> host::LocalResult {
+    host::LocalResult::AuthFallback(super::super::auth_storage::invoke_fallback(
+        call.target,
+        &call.provider,
+    ))
 }
 
 /// Runs one nested synchronous callback prefix.
@@ -263,6 +269,18 @@ fn asynchronous(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     Box::pin(async move {
         match call {
+            host::LocalCall::Provider(call) => host::LocalResult::Provider(
+                super::provider_streams::invoke(call.target, &call.data, call.input),
+            ),
+            host::LocalCall::Assistant(call) => host::LocalResult::Assistant(
+                super::provider_streams::assistant(
+                    call.target,
+                    call.operation,
+                    call.data,
+                    call.signal,
+                )
+                .await,
+            ),
             host::LocalCall::Event(call) => {
                 host::LocalResult::Event(event(call.target, call.event, call.resources).await)
             }
@@ -295,7 +313,7 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }
-            host::LocalCall::Provider(call) => host::LocalResult::Provider(
+            host::LocalCall::Autocomplete(call) => host::LocalResult::Autocomplete(
                 super::editors::provider(call.target, call.request, call.signal).await,
             ),
             _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),

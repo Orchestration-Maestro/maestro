@@ -4,6 +4,7 @@ use maestro_app::configuration::{
     version_check::VersionCheckOptions,
 };
 use maestro_cli::{MainOptions, packages::PackageCommandContext, startup::main::MainHost};
+use maestro_extensions_wasmtime::artifact_factory;
 use maestro_theme::{ThemeState, supports_color};
 use std::{
     cell::{Cell, RefCell},
@@ -158,9 +159,10 @@ fn module_loader(theme: maestro_theme::LiveTheme) -> maestro_app::ModuleLoader<m
     let widgets = Rc::new(std::cell::OnceCell::new());
     Rc::new(move |path: &str| {
         let factory = extension_widgets(&widgets, &theme).map(|widgets| {
-            Some(maestro_extensions_wasmtime::artifact_factory(
+            Some(artifact_factory(
                 path.to_owned(),
                 widgets,
+                config::VERSION.into(),
             ))
         });
         Box::pin(std::future::ready(factory))
