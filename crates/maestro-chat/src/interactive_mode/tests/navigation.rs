@@ -1,5 +1,6 @@
 //! Forking from an earlier user message and cloning the current leaf.
 mod escape;
+mod failures;
 mod flush;
 mod replacement;
 mod resume;
@@ -67,6 +68,7 @@ fn cancelling_forks() -> ExtensionFactory<Local> {
 
 #[test]
 fn clone_keeps_leaf_position_and_outcome_order() {
+    failures::clone_failures();
     isolated_case(
         "clone_keeps_leaf_position_and_outcome_order",
         "leaf",
@@ -137,6 +139,7 @@ async fn cancelling_a_clone_keeps_the_session(directory: &Path) {
 
 #[test]
 fn fork_selector_owns_focus_selection_and_restore() {
+    failures::fork_outcomes();
     isolated_case(
         "fork_selector_owns_focus_selection_and_restore",
         "empty",
@@ -172,7 +175,7 @@ fn fork_selector_owns_focus_selection_and_restore() {
 async fn select_forks_before_the_chosen_message(directory: &Path) {
     let world = started(directory).await;
     append_user(&world, "first");
-    let newest = append_user(&world, "second");
+    append_user(&world, "second");
     world.mode.editor.set_text("/fork");
     submit(&world.mode, "/fork");
     assert!(world.runtime.drain_futures().is_empty());
@@ -184,12 +187,18 @@ async fn select_forks_before_the_chosen_message(directory: &Path) {
     let rows = maestro_app::strip_ansi(&list.render(80).concat()).unwrap();
     assert!(rows.contains("first"));
     assert!(rows.contains("second"));
-    let select = list.on_select().expect("the selection callback");
-    select(&newest);
+    assert!(rows.find("first").unwrap() < rows.find("second").unwrap());
+    assert!(
+        rows.contains("› second"),
+        "the newest message is selected: {rows}"
+    );
+    world.terminal.send_input("\r");
     assert!(world.runtime.drain_futures().is_empty());
     assert!(fork_panel(&world).is_none());
     assert_eq!(user_texts(&world), ["first"]);
     assert_eq!(world.mode.editor.get_text(), "second");
+    world.terminal.send_input("!");
+    assert_eq!(world.mode.editor.get_text(), "second!");
     assert!(shows(&world.mode.chat_container, "Forked to new session"));
 }
 
@@ -197,17 +206,25 @@ async fn select_forks_before_the_chosen_message(directory: &Path) {
 async fn cancelling_restores_the_editor(directory: &Path) {
     let world = started(directory).await;
     append_user(&world, "only");
-    submit(&world.mode, "/fork");
+    world.mode.editor.set_text("retained draft");
+    super::actions::run_action(&world, "app.session.fork");
     let panel = fork_panel(&world).expect("the fork panel");
-    let cancel = panel
-        .get_message_list()
-        .on_cancel()
-        .expect("the cancellation callback");
-    cancel();
+    let select = panel.get_message_list().on_select().unwrap();
+    let cancel = panel.get_message_list().on_cancel().unwrap();
+    world.terminal.send_input("\x1b");
     assert!(world.runtime.drain_futures().is_empty());
     assert!(fork_panel(&world).is_none());
     assert_eq!(user_texts(&world), ["only"]);
     assert!(!shows(&world.mode.chat_container, "Forked to new session"));
+    assert_eq!(world.mode.editor.get_text(), "retained draft");
+    world.terminal.send_input("!");
+    assert_eq!(world.mode.editor.get_text(), "retained draft!");
+    let weak = Rc::downgrade(&world.mode);
+    drop(world.mode);
+    assert!(weak.upgrade().is_none());
+    select("retired");
+    cancel();
+    assert!(weak.upgrade().is_none());
 }
 
 #[test]
@@ -248,4 +265,73 @@ async fn cancellable(directory: &Path) -> World {
     super::start(&world).await;
     world.runtime.settle().unwrap();
     world
+}
+
+#[test]
+fn fork_selector_preserves_user_order_and_selected_identity() {
+    super::isolated(
+        "fork_selector_preserves_user_order_and_selected_identity",
+        ordered_forks,
+    );
+}
+
+/// Selects the earlier of two equal user texts through the configured fork key.
+async fn ordered_forks(directory: &Path) {
+    let selected = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let seen = selected.clone();
+    let extension: ExtensionFactory<Local> = Rc::new(move |api| {
+        let seen = seen.clone();
+        api.on::<SessionBeforeForkEvent, SessionBeforeForkResult>(
+            "session_before_fork".into(),
+            Rc::new(move |event, _| {
+                seen.borrow_mut()
+                    .push((event.entry_id.clone(), event.position));
+                Box::pin(async { Ok(None) })
+            }),
+        )
+        .unwrap();
+        Box::pin(async { Ok(()) })
+    });
+    std::fs::write(
+        directory.join("keybindings.json"),
+        r#"{"app.session.fork":"alt+f"}"#,
+    )
+    .unwrap();
+    let world = Setup {
+        extension: Some(extension),
+        ..Setup::default()
+    }
+    .build(directory);
+    super::start(&world).await;
+    append_user(&world, "first");
+    world
+        .host
+        .session()
+        .session_manager()
+        .borrow_mut()
+        .append_message(super::transcript::assistant(
+            &serde_json::json!([{"type":"text","text":"not a user"}]),
+            "stop",
+            None,
+        ))
+        .unwrap();
+    let middle = append_user(&world, "same");
+    append_user(&world, "same");
+    world.terminal.send_input("\x1bf");
+    let list = fork_panel(&world).unwrap().get_message_list().clone();
+    let rows = maestro_app::strip_ansi(&list.render(80).join("\n")).unwrap();
+    assert!(rows.find("first").unwrap() < rows.find("same").unwrap());
+    assert_eq!(rows.matches("same").count(), 2);
+    assert!(!rows.contains("not a user"));
+    assert!(rows.contains("› same"));
+    world.terminal.send_input("\x1b[A");
+    world.terminal.send_input("\r");
+    tree::finish(&world).await;
+    assert_eq!(
+        *selected.borrow(),
+        [(middle, maestro_app::ForkPosition::Before)]
+    );
+    assert_eq!(user_texts(&world), ["first"]);
+    assert_eq!(world.mode.editor.get_text(), "same");
+    assert!(shows(&world.mode.chat_container, "Forked to new session"));
 }

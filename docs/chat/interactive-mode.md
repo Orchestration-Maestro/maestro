@@ -308,6 +308,10 @@ The synchronous startup warnings come in this order, before any prompt:
 - `model_fallback_message` as a warning, when it is not empty. Text made only of
   white space is still shown.
 
+After the fallback notice and before the first prompt, the mode starts the
+subscription-auth warning check. It uses the same once-only warning owner as model
+selection and sign-in. Prompts do not wait for that asynchronous check to finish.
+
 The first prompt is `initial_message`, sent unless it is absent or empty. Startup
 text is never trimmed. `initial_images` go with that first prompt only, and they are
 not sent when there is no first prompt. Absent and empty image lists stay distinct
@@ -321,9 +325,6 @@ session refuses a prompt, such as one sent without credentials, the mode shows t
 session's message once as an error and goes on to the next prompt. An answer that
 fails after the prompt was accepted stays a session event; the mode adds no notice
 for it.
-
-Still to come: rendering the session's events in the transcript, queued input,
-commands, update notices and the startup check of subscription-based credentials.
 
 ## Session replay
 

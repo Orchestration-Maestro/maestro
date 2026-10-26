@@ -85,13 +85,16 @@ fn wrapper(
 
 /// Completes a unique built-in command through the real editor's installed provider.
 fn complete(world: &World) {
-    world.mode.editor.set_text("/sett");
+    world.mode.current_editor().try_set_text("/sett").unwrap();
     for _ in 0..2 {
         world.terminal.send_input("\t");
         assert!(world.runtime.drain_futures().is_empty());
         world.runtime.settle().unwrap();
     }
-    assert_eq!(world.mode.editor.get_text(), "/settings ");
+    assert_eq!(
+        world.mode.current_editor().try_get_text().unwrap(),
+        "/settings "
+    );
 }
 
 /// Checks the complete call sequence, then starts a new observation.
@@ -117,7 +120,14 @@ fn autocomplete_wrappers_stack_over_fresh_base_and_share_the_installed_handle() 
             let trace = Trace::default();
             let handles = Rc::new(RefCell::new(Vec::new()));
             let (seen, captured) = (trace.clone(), handles.clone());
+            let knobs = Rc::new(super::super::extension_editors::Knobs::default());
+            let supplied = knobs.clone();
+            let editor = Rc::new(RefCell::new(None));
+            let built = editor.clone();
             let (world, factories) = with_factories(directory, move |api| {
+                built.replace(Some(super::super::extension_editors::probe_factory(
+                    api, &supplied, true, None,
+                )));
                 vec![
                     wrapper(api, "A", seen.clone(), captured.clone()),
                     wrapper(api, "B", seen.clone(), captured.clone()),
@@ -159,8 +169,26 @@ fn autocomplete_wrappers_stack_over_fresh_base_and_share_the_installed_handle() 
                 &trace,
                 "B:trigger A:trigger B:suggest A:suggest B:apply A:apply",
             );
+            complete_both_editors(&world, editor.take().unwrap(), &knobs, &trace);
         },
     );
+}
+
+/// Completes through the custom editor and then the restored default editor.
+fn complete_both_editors(
+    world: &World,
+    factory: maestro_app::EditorFactory,
+    knobs: &super::super::extension_editors::Knobs,
+    trace: &Trace,
+) {
+    let ui = port(&world.mode);
+    ui.set_editor_component(Some(factory)).unwrap();
+    complete(world);
+    assert_eq!(knobs.editor().inner.get_text(), "/settings ");
+    trace_is(trace, "B:suggest A:suggest B:apply A:apply");
+    ui.set_editor_component(None).unwrap();
+    complete(world);
+    trace_is(trace, "B:suggest A:suggest B:apply A:apply");
 }
 
 /// Appends one factory during its first invocation and observes the nested installation.
