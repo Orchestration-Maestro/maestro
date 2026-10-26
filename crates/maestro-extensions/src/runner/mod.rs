@@ -17,7 +17,7 @@ mod transforms;
 mod ui;
 use crate::{
     ErrorReporter, ExtensionCommandContextActions, ExtensionExecution,
-    types::{ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
+    types::{ActivityGuard, ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
 };
 pub(crate) use binding::ContextBinding;
 pub use binding::ExtensionRunnerSession;
@@ -60,14 +60,13 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         warning_reporter: ErrorReporter<E>,
         theme: LiveTheme,
     ) -> Self {
-        let state = Arc::clone(&runtime.state);
         let no_ui = ExtensionUIContext::no_ui(theme);
         Self {
             extensions,
             runtime,
             error_listeners: Rc::default(),
             binding: Rc::new(ContextBinding {
-                runtime: state,
+                activity: ActivityGuard::default(),
                 session,
                 actions: RefCell::default(),
                 command_actions: RefCell::new(ExtensionCommandContextActions::unbound()),

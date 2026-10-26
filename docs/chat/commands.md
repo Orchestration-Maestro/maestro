@@ -10,17 +10,82 @@ waiting input and never enters the editor history. Any other text, including
 
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
-`/debug`, `/hotkeys`, `/share`, `/copy`, `/new`, `/compact` and `/quit`. The offline
-viewer and packaged asset injection are not delivered yet (see
+`/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume`, `/new`,
+`/compact`, `/reload` and `/quit`. The offline viewer and packaged asset injection are not
+delivered yet (see
 [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
 methods. Each method reads the runtime's current session when it is called, so it
 follows a session switch.
 
-Editor submission routes `/name` or `/name ` followed by a name, `/session` and
-`/debug` to those methods. Other text, such as `/names` or `/session extra`, is
-ordinary input. When a command fails, the failure goes to the terminal host.
+Editor submission routes `/name` or `/name ` followed by a name, `/session`,
+`/hotkeys` and `/debug` to those methods. Other text, such as `/names` or
+`/session extra`, is ordinary input. When a command fails, the failure goes to
+the terminal host.
+
+Extensions use the same mode through the [extension UI](extension-ui.md): dialogs
+restore the current editor when they settle, completion wrappers rebuild at once,
+and notifications use the transcript's status, warning and error rows.
+
+## Forking and cloning
+
+`/fork` and the configurable `app.session.fork` action open the earlier-message
+panel. It lists user messages in chronological order, with the newest selected.
+Enter forks before the selected message, replays the new session and puts that
+message's text in the editor. The panel closes with `Forked to new session`.
+With no user messages, the mode shows `No messages to fork from` instead.
+
+Escape closes the fork panel, restores editor focus and keeps the draft that was
+there when the panel opened. This draft restoration differs from a successful
+fork, which replaces the draft with the selected message's text. An extension
+can veto a fork; that also closes the panel and keeps the draft.
+
+`/clone` copies the current branch through its exact leaf into a new session.
+After replacement callbacks finish, it replays that session, clears the editor
+and shows `Cloned to new session`. Without a leaf, it shows `Nothing to clone yet`.
+Cloning has no Escape cancellation; an extension can veto it. A veto leaves the
+session and transcript alone. A submitted command has already cleared the editor.
+Fork and clone failures show an error rather than a success notice.
+
+## Session tree
+
+`/tree` opens the current session's tree at its current leaf, using the saved tree
+filter. The configurable `app.session.tree` action opens the same panel. Selecting
+another entry offers `No summary`, `Summarize` and `Summarize with custom prompt`.
+The `branchSummary.skipPrompt` setting skips this question and navigates without a
+summary. Selecting the current leaf shows `Already at this point` instead.
+
+Custom instructions may be empty. Cancelling their editor returns to the summary
+choices; cancelling the choices reopens the tree at the same entry. A summary
+shows a loader whose interrupt key cancels it. Cancelling a summary reopens that
+entry, while an extension veto closes navigation without changing the transcript.
+
+Successful navigation replays the selected branch and delivers input captured
+during compaction. Returned message text fills an empty or whitespace-only editor;
+an existing draft is kept. The panel's label action records or removes the selected
+entry's label through the session manager.
+
+Pressing the interrupt key twice on an empty or whitespace-only editor opens the
+tree or the earlier-message fork panel, as the `doubleEscapeAction` setting says;
+`none` turns this off. The second press must come strictly less than 500 ms after
+the first, and the setting is read on each press. A streaming response, a running
+shell command and shell mode take the interrupt key first.
+
+## Resuming a session
+
+`/resume` and the configurable `app.session.resume` action list the saved sessions
+of the current project; the selector's scope key lists every project instead.
+Choosing one closes the panel and resumes it through the runtime, then replays it
+and shows `Resumed session`. An extension can cancel the switch, which changes
+nothing. Cancelling the selector puts the editor back, its exit key shuts the mode
+down, and its rename action records a trimmed, nonblank name in the chosen file.
+
+When the saved session's directory no longer exists, the mode asks whether to
+resume in the current directory instead. Declining shows `Resume cancelled`;
+accepting retries there and shows `Resumed session in current cwd`. A failed retry
+goes to the terminal host. Any other failure to resume is fatal: the mode shows
+`Failed to resume session: <reason>` and the process exits with status 1.
 
 ## `/quit`
 
@@ -70,6 +135,45 @@ The compaction's own events show what happened: a summary row on success,
 `Error: Compaction cancelled` when an extension cancels it, or
 `Error: Compaction failed: <failure>`. Input submitted while it runs is delivered
 to the session once it ends. The command adds no message of its own.
+
+## `/reload`
+
+Exact `/reload` clears the editor and reloads keybindings, extensions, skills,
+prompts and themes. `/reload extra` is ordinary input. A streaming response or a
+compaction refuses reload with a warning; a running shell command does not.
+
+The command resets extension UI, cancels abandoned dialogs and paints a bordered
+loading box before awaiting the application reload. It then refreshes the header,
+themes, editor and terminal settings, completion, extension shortcuts and the
+transcript, before restoring the current editor with focus. Resource diagnostics
+and model-file errors appear even with quiet startup, followed by
+`Reloaded keybindings, extensions, skills, prompts, themes`.
+
+A failure after the box appears restores the editor captured after UI reset and
+shows `Reload failed: <reason>`. Changes made before the failure remain applied;
+the command does not roll them back. A reset failure goes to the terminal host
+instead, before application reload starts.
+
+## Extension command contexts
+
+Extension commands receive the interactive mode's session controls. Creating a
+session stops working progress and clears the status area; a successful creation
+replays the new session without the `/new` command's notice. Forking replays the
+new session, replaces the draft with the selected text (or empty text), and shows
+`Forked to new session`. An extension veto leaves the transcript and draft alone.
+A creation or fork failure uses the fatal runtime error route.
+
+Tree navigation forwards the supplied summary controls and label. On success it
+replays the selected branch, fills a still-blank editor with nonempty returned
+text, shows `Navigated to selected point`, and starts delivery of input captured
+during compaction without waiting for that delivery. Cancellation changes no
+presentation; a navigation failure returns its original error to the caller.
+
+Switching sessions uses the same resume operation and missing-directory prompt
+as `/resume`. Reload uses the same presentation and refusal conditions as
+`/reload`, but does not clear the draft first. Waiting for idle reads the current
+agent. These callbacks do not retain the mode when inactive; an admitted operation
+keeps it alive until it settles, and retired command contexts remain stale.
 
 ## Shell input
 

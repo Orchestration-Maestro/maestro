@@ -143,7 +143,8 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the failure of the replay, of the stored record or of the summary's row.
     fn append_compaction_summary(&self, result: &CompactionResult) -> Result<(), Box<dyn Error>> {
-        self.rebuild_chat_from_messages()?;
+        self.rebuild_chat_from_messages()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
         let summary = create_compaction_summary_message(
             result.summary.clone(),
@@ -153,7 +154,8 @@ impl InteractiveMode {
         let message = AgentMessage::Custom(Arc::new(RwLock::new(
             CustomAgentMessages::CompactionSummary(summary),
         )));
-        self.add_message_to_chat(&message, false)?;
+        self.add_message_to_chat(&message, false)
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.footer.invalidate();
         Ok(())
     }
@@ -259,7 +261,11 @@ impl InteractiveMode {
 
     /// Builds a loader in the status container's own colours and sizes; an absent message
     /// is the loader's own, which a countdown replaces on its first tick.
-    fn progress_loader(&self, message: Option<String>, spinner: ThemeColor) -> Loader {
+    pub(in crate::interactive_mode) fn progress_loader(
+        &self,
+        message: Option<String>,
+        spinner: ThemeColor,
+    ) -> Loader {
         let theme = self.themes.theme();
         Loader::new(
             self.ui.as_ref().clone(),

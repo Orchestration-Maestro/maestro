@@ -210,6 +210,7 @@ fn shutdown_precedes_invalidation_and_rebinding() {
         runtime.set_before_session_invalidate(Some(Rc::new(move || {
             assert_eq!(before.cwd().unwrap(), cwd);
             seen.borrow_mut().push("before_invalidate");
+            Ok(())
         })));
         let seen = Rc::clone(&phases);
         runtime.set_rebind_session(Some(Rc::new(move |_| {

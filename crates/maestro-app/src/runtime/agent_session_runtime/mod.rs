@@ -61,6 +61,10 @@ pub type CreateAgentSessionRuntimeFactory =
 /// Rebinds a host to a replacement session before the caller continues against it.
 pub type RebindSession = Rc<dyn Fn(Rc<AgentSession>) -> RuntimeFuture<()>>;
 
+/// Host teardown that runs before the current session is invalidated; its failure stops
+/// the teardown before the session is disposed.
+pub type BeforeSessionInvalidate = Rc<dyn Fn() -> Result<(), EventError>>;
+
 /// Why a runtime operation failed.
 #[derive(Debug)]
 pub enum AgentSessionRuntimeError {
@@ -141,7 +145,7 @@ pub struct AgentSessionRuntime {
     /// Rebinds the host to each replacement.
     rebind_session: RefCell<Option<RebindSession>>,
     /// Runs after the shutdown handlers and before the session is invalidated.
-    before_session_invalidate: RefCell<Option<Rc<dyn Fn()>>>,
+    before_session_invalidate: RefCell<Option<BeforeSessionInvalidate>>,
 }
 
 impl AgentSessionRuntime {
@@ -202,8 +206,12 @@ impl AgentSessionRuntime {
 
     /// Sets a synchronous callback that runs after the shutdown handlers finish and before
     /// the current session is invalidated, for host teardown that must not wait, such as
-    /// detaching extension components before their context becomes stale.
-    pub fn set_before_session_invalidate(&self, before_session_invalidate: Option<Rc<dyn Fn()>>) {
+    /// detaching extension components before their context becomes stale. Its failure is
+    /// the operation's failure, and the session is then neither invalidated nor disposed.
+    pub fn set_before_session_invalidate(
+        &self,
+        before_session_invalidate: Option<BeforeSessionInvalidate>,
+    ) {
         *self.before_session_invalidate.borrow_mut() = before_session_invalidate;
     }
 
@@ -293,7 +301,7 @@ impl AgentSessionRuntime {
     }
 
     /// Shuts the current session down for `reason`, runs the invalidation callback and
-    /// disposes the session.
+    /// disposes the session; a callback failure stops before the disposal.
     async fn teardown_current(
         &self,
         reason: SessionShutdownReason,
@@ -309,7 +317,7 @@ impl AgentSessionRuntime {
             .map_err(thrown)?;
         let callback = self.before_session_invalidate.borrow().clone();
         if let Some(callback) = callback {
-            callback();
+            callback().map_err(thrown)?;
         }
         session.dispose();
         Ok(())

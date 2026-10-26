@@ -94,6 +94,8 @@ impl Handle {
         Ok(ExtensionComponent {
             component: Rc::new(view) as ComponentHandle,
             dispose: dispose.map(|dispose| dispose.disposer(registry.clone(), api)),
+            set_expanded: None,
+            width: None,
         })
     }
 
