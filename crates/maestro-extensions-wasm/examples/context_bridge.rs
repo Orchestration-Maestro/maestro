@@ -297,11 +297,7 @@ fn context_command(
             return Err(reads::observe(&context)?.to_string());
         }
         if args == "trap" || args == "pending" {
-            context.get_system_prompt()?;
-            context.wait_for_idle().await?;
-            if args == "trap" {
-                std::arch::wasm32::unreachable();
-            }
+            suspend_command(&context, &args).await?;
         }
         Err(format!(
             "command:{args}|{}|{}",
@@ -490,6 +486,20 @@ fn check_start(api: &ExtensionAPI) -> Result<(), String> {
         Some(maestro_extensions_wasm::FlagValue::Boolean(true))
     ) {
         return Err("guest startup failure".into());
+    }
+    Ok(())
+}
+
+/// Waits for caller-controlled resumption before taking the requested trap branch.
+#[cfg(target_arch = "wasm32")]
+async fn suspend_command(
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+    args: &str,
+) -> Result<(), String> {
+    context.get_system_prompt()?;
+    context.wait_for_idle().await?;
+    if args == "trap" {
+        std::arch::wasm32::unreachable();
     }
     Ok(())
 }

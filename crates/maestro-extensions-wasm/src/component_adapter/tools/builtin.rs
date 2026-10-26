@@ -10,6 +10,29 @@ use std::rc::Rc;
 
 /// Constructs the native read with independently retained replacement observations.
 pub(super) fn read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<ToolDefinition> {
+    definition(native_read(cwd, options)?)
+}
+
+/// Projects only executable metadata and a context-free invocation onto the same owner.
+pub(super) fn executable_read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<crate::Tool> {
+    let tool = native_read(cwd, options)?;
+    let metadata = metadata(&tool)?;
+    Ok(crate::Tool {
+        name: metadata.name,
+        label: metadata.label,
+        description: metadata.description,
+        parameters: metadata.parameters,
+        prepare_arguments: None,
+        execution_mode: metadata.execution_mode,
+        execute: Rc::new(move |id, args, signal, _update| {
+            let tool = tool.clone();
+            Box::pin(async move { invoke(&tool, id, args, signal, || Ok(None)).await })
+        }),
+    })
+}
+
+/// Constructs one native resource, retaining supplied observations only after admission.
+fn native_read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<Rc<host::BuiltinTool>> {
     let operations = options.operations.map(|operations| {
         let identity = Identity::new(&Generated);
         identity.stage(operations);
@@ -23,14 +46,20 @@ pub(super) fn read(cwd: &str, options: ReadToolOptions) -> ExtensionResult<ToolD
     if let Some(identity) = operations {
         identity.settle(tool.is_ok());
     }
-    definition(Rc::new(tool?))
+    Ok(Rc::new(tool?))
+}
+
+/// Reads the original shared schema transport without converting it to JSON text.
+fn metadata(tool: &host::BuiltinTool) -> ExtensionResult<crate::ToolMetadata> {
+    let (mut metadata, parameters): (crate::ToolMetadata, _) =
+        maestro_request::parameter_schema::transport::decode_metadata(&tool.metadata()?)?;
+    metadata.parameters = parameters;
+    Ok(metadata)
 }
 
 /// Projects read metadata and callbacks from its retained native definition.
 fn definition(tool: Rc<host::BuiltinTool>) -> ExtensionResult<ToolDefinition> {
-    let (mut metadata, parameters): (crate::ToolMetadata, _) =
-        maestro_request::parameter_schema::transport::decode_metadata(&tool.metadata()?)?;
-    metadata.parameters = parameters;
+    let metadata = metadata(&tool)?;
     Ok(ToolDefinition {
         metadata,
         prepare_arguments: None,
@@ -44,16 +73,25 @@ fn definition(tool: Rc<host::BuiltinTool>) -> ExtensionResult<ToolDefinition> {
 fn execute(tool: Rc<host::BuiltinTool>) -> crate::ToolExecute {
     Rc::new(move |id, args, signal, _update, context| {
         let tool = tool.clone();
-        Box::pin(async move {
-            let mirror = Mirror::new(&Generated, signal.as_ref())?;
-            let model = context.model()?.as_ref().map(encode_value).transpose()?;
-            let result = tool
-                .execute(id, encode_value(&args)?, model, mirror.signal())
-                .await;
-            let text = mirror.settle(result)?;
-            super::super::session::decode(&text)
-        })
+        Box::pin(async move { invoke(&tool, id, args, signal, || context.model()).await })
     })
+}
+
+/// Attaches cancellation before reading the supplied model and invoking the native owner.
+async fn invoke(
+    tool: &host::BuiltinTool,
+    id: String,
+    args: serde_json::Value,
+    signal: Option<crate::AbortSignal>,
+    model: impl FnOnce() -> ExtensionResult<Option<crate::Model>>,
+) -> ExtensionResult<crate::AgentToolResult> {
+    let mirror = Mirror::new(&Generated, signal.as_ref())?;
+    let model = model()?.as_ref().map(encode_value).transpose()?;
+    let result = tool
+        .execute(id, encode_value(&args)?, model, mirror.signal())
+        .await;
+    let text = mirror.settle(result)?;
+    super::super::session::decode(&text)
 }
 
 /// Forwards call operands independently of the row's public observations.

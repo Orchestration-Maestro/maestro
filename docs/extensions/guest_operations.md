@@ -5,6 +5,17 @@ read definition. Construction does not read a file. Its metadata, schema,
 execution and renderers come from the native tool owner. See [read](../tools-read.md)
 for its file, image and output rules.
 
+## Execute without an extension context
+
+`ExtensionAPI::create_read_tool(cwd, options)` returns a `Tool`. Its `execute`
+callback takes the call ID, JSON arguments, optional signal and optional progress
+callback. It does not read a command or event context, even when called from one.
+
+The executable keeps the native name, label, description, parameter schema,
+preparation and execution mode. The parameter schema remains the shared
+`ParameterSchema<SchemaCode>`, not a JSON string. Prompt fields and renderers
+belong to definitions only.
+
 ## Wrap and register a read definition
 
 ```rust

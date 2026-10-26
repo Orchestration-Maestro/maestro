@@ -31,6 +31,13 @@ pub(crate) mod model_streams;
 struct Generated;
 
 impl Imports for Generated {
+    fn create_read_tool(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_read(&cwd, options)
+    }
     fn create_read_tool_definition(
         &self,
         cwd: String,

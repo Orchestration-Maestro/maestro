@@ -40,7 +40,12 @@ async fn composed_contexts() {
         let registered = owner.read().unwrap();
         assert_eq!(
             registered.commands.keys().collect::<Vec<_>>(),
-            ["builtin-read", "builtin-prepare-edit", "bridge-observe"]
+            [
+                "builtin-read",
+                "builtin-read-executable",
+                "builtin-prepare-edit",
+                "bridge-observe"
+            ]
         );
         assert_eq!(
             registered.handlers.keys().collect::<Vec<_>>(),

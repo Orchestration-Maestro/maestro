@@ -518,6 +518,13 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn create_read_tool(
+        &self,
+        _: String,
+        _: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
     fn create_read_tool_definition(
         &self,
         _: String,

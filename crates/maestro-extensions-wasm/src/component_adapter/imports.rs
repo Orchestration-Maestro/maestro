@@ -43,6 +43,14 @@ pub struct Dialog<'a, S> {
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Constructs an original native executable without selecting an extension context.
+    /// # Errors
+    /// Returns native construction or resource admission failures.
+    fn create_read_tool(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::Tool>;
     /// Constructs the original native read definition with owned replacement observations.
     /// # Errors
     /// Returns native construction or resource admission failures.

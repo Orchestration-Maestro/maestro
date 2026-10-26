@@ -168,3 +168,43 @@ async fn native_read_result(mime: Option<String>) -> (serde_json::Value, bool) {
         .unwrap();
     (serde_json::to_value(result).unwrap(), prepares)
 }
+
+/// The executable carries native metadata and runs after factory return without a context.
+#[test]
+fn builtin_read_executable_keeps_native_metadata_without_context() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch.path().join("executable.txt");
+        std::fs::write(&path, "four arguments 雪\0\n").unwrap();
+        let native = maestro_extensions::local::wrap_tool_definition(
+            maestro_extensions::local::create_read_tool_definition::<()>("/".into(), maestro_extensions::ReadToolOptions::default()), None);
+        let mut metadata = serde_json::to_value(&native.definition).unwrap();
+        metadata["label"] = json!(native.label);
+        if let Some(mode) = native.execution_mode {
+            metadata["executionMode"] = serde_json::to_value(mode).unwrap();
+        }
+        let expected = (native.execute)("native".into(), json!({"path":path}), None, None).await.unwrap();
+        let runner = super::builtin_author::loaded().await;
+        let calls = std::rc::Rc::new(std::cell::Cell::new(0));
+        let observed = calls.clone();
+        runner.bind_core(
+            <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            maestro_extensions::ExtensionContextActions {
+                get_model: std::rc::Rc::new(move || {
+                    observed.set(observed.get() + 1);
+                    Err("executable must not read context".into())
+                }),
+                ..Default::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        ).unwrap();
+        let command = runner.get_command("builtin-read-executable").unwrap().command;
+        let result = (command.handler)(path.to_str().unwrap().into(), runner.create_command_context()).await;
+        let observed: serde_json::Value = serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        assert_eq!(observed, json!({"metadata":metadata,"prepares":native.prepare_arguments.is_some(),"result":expected}));
+        assert_eq!(calls.get(), 0);
+    });
+}

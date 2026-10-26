@@ -61,19 +61,7 @@ fn dispatch(call: host::LocalCall) -> Running {
             super::super::auth_storage::invoke_fallback(call.target, &call.provider),
         ),
         host::LocalCall::AuthBackend(call) => return backend(call),
-        host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
-            exports
-                .invoke_renderer(
-                    call.target,
-                    renderers::RenderRequest {
-                        message: &call.message,
-                        expanded: call.expanded,
-                        theme: call.theme,
-                        emitter: &call.emitter,
-                    },
-                )
-                .map(|view| renderers::retain(&Generated, view)),
-        ),
+        host::LocalCall::Renderer(call) => host::LocalResult::Renderer(renderer(call)),
         host::LocalCall::Render(call) => host::LocalResult::Render(exports.invoke_component(
             call.target,
             &call.emitter,
@@ -116,6 +104,21 @@ fn dispatch(call: host::LocalCall) -> Running {
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))
+}
+
+/// Runs a nested message renderer with its original theme and emission frame.
+fn renderer(call: host::LocalRenderer) -> ExtensionResult<Option<host::Callback>> {
+    Exports::new(Generated)
+        .invoke_renderer(
+            call.target,
+            renderers::RenderRequest {
+                message: &call.message,
+                expanded: call.expanded,
+                theme: call.theme,
+                emitter: &call.emitter,
+            },
+        )
+        .map(|view| renderers::retain(&Generated, view))
 }
 
 /// Runs one nested synchronous callback prefix.
