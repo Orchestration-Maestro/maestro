@@ -244,8 +244,8 @@ conventional directory for a present settings filter. Manifest exclusions have
 already removed their candidates. See [configured resolution](packages.md#configured-resource-resolution)
 and [file patterns](package-patterns.md) for the exact selection rules.
 
-For conventional discovery, a `.gitignore` inside the package can contain
-`prompts/drafts/` to prune that directory. Manifest positive globs instead expand
+For conventional discovery, `<package>/prompts/.gitignore` can contain
+`drafts/` to prune the drafts directory. Manifest positive globs instead expand
 without consulting ignore files. To exclude a matched manifest entry, put
 `!prompts/drafts/**` in `maestro.prompts` beside its positive entries.
 
