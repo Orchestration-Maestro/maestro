@@ -82,7 +82,7 @@ impl AuthStorage {
             return Ok((None, None));
         };
         if (self.clock)() < credentials.expires {
-            return Ok((Some(provider.get_api_key(&credentials)?.to_owned()), None));
+            return Ok((Some(provider.get_api_key(&credentials)?.into_owned()), None));
         }
         let selected = IndexMap::from([(provider_id.to_owned(), credentials)]);
         let Some(refreshed) = get_oauth_api_key(provider_id, &selected, None).await? else {

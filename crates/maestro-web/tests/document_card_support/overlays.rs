@@ -1,114 +1,80 @@
-//! Opened attachments reach one containing receiver through every document path.
+//! Independently opened native previews survive errors and containing-row removal.
 #![cfg(all(test, target_arch = "wasm32"))]
 use super::{
-    escape, file_subset,
+    browser::Card,
+    downloads::{close, open},
+    file_subset,
     forwarding::{Header, TileRecipe, registration},
-    prepare,
 };
-use crate::{
-    markdown_support::{Surface, check},
-    support::{reading_view::view, tool_output::TextOnlyOutput as _},
-};
+use crate::contributions_support::{container, host, select, text, view};
 use maestro_web::{
-    AssistantMessage, AssistantMessageProps, AttachmentOverlay, ExpandableSection, ToolMessage,
-    ToolMessageProps, UserMessage, UserMessageInput, tools::types::ToolRenderState,
+    AssistantMessage, ExpandableSection, ToolMessage, UserMessage,
+    dom::{DomContent, DomView, MountedContent},
 };
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::Cell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
+use wasm_bindgen::JsCast as _;
+use web_sys::HtmlElement;
 
-fn label(surface: &Surface, name: &str) -> egui::Pos2 {
-    surface
-        .painted
-        .iter()
-        .find(|(text, _)| text == name)
-        .expect("tile label is painted")
-        .1
-        .center()
+/// An assistant with one reached registered-tool call.
+fn assistant() -> maestro_app::SharedAssistantMessage {
+    Arc::new(RwLock::new(serde_json::from_value(serde_json::json!({"role":"assistant","content":[{"type":"toolCall","id":"call","name":"document-owner","arguments":{}}],"api":"openai-completions","provider":"openai","model":"controlled","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0})).unwrap()))
 }
-fn preview(surface: &mut Surface, overlay: &mut AttachmentOverlay) -> bool {
-    surface.draw(|ui, frame| {
-        overlay
-            .render(ui.ctx(), frame.i18n, frame.presentation)
-            .unwrap()
-    })
+/// Open before failing a refresh, then release the containing row without closing its preview.
+fn survives(content: &dyn DomContent, fail: &Cell<bool>, view: &DomView) {
+    let parent = container();
+    let mut slot = MountedContent::default();
+    slot.show(content, &parent, view).unwrap();
+    select(&parent, "[data-open]")
+        .unchecked_ref::<HtmlElement>()
+        .click();
+    let overlay = view
+        .document
+        .query_selector("attachment-overlay")
+        .unwrap()
+        .unwrap();
+    fail.set(true);
+    assert!(slot.show(content, &parent, view).is_err());
+    slot.clear();
+    parent.remove();
+    assert!(overlay.is_connected());
+    assert!(text(&overlay).contains("<literal>"));
+    close(&overlay);
 }
-fn close(surface: &mut Surface, overlay: &mut AttachmentOverlay) {
-    surface.events = vec![escape()];
-    assert!(!preview(surface, overlay));
-}
-fn assistant() -> maestro_app::AssistantMessage {
-    serde_json::from_value(serde_json::json!({"role":"assistant","content":[{"type":"toolCall","id":"call","name":"document-owner","arguments":{}}],"api":"openai-completions","provider":"openai","model":"controlled","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0})).unwrap()
-}
-
-pub fn assistant_and_children() {
+/// Assistant, rich header, captured section and custom-role paths keep independent native effects.
+pub fn assistant_and_children(import: &js_sys::Function) {
+    let view = view();
+    let _elements = host(&view, import);
     for header in [Header::Plain, Header::Rich] {
-        let fail = registration("document-owner", false, header);
-        let mut surface = Surface::new();
-        let host = surface.host();
-        let mut row = AssistantMessage::new(host.clone());
-        let message = assistant();
-        surface.draw(|ui, frame| {
-            row.render::<serde_json::Value>(
-                ui,
-                &message,
-                AssistantMessageProps::default(),
-                view(&host, frame),
-            )
-            .assert_no_overlays()
-            .unwrap()
-        });
-        let at = label(&surface, "note.txt");
-        fail.set(true);
-        let mut receiver = Vec::new();
-        surface.click(at, |ui, frame| {
-            let output = row.render::<serde_json::Value>(ui, &message, AssistantMessageProps::default(), view(&host, frame));
-            receiver.extend(output.overlays);
-            assert!(matches!(output.response, Err(maestro_web::tools::types::ToolUiError::Presentation(ref message)) if message == "controlled later child failure"));
-        });
-        assert_eq!(receiver.len(), 1);
-        drop(row);
-        assert!(preview(&mut surface, &mut receiver[0]));
-        check("document.body.textContent.includes('<literal>')");
-        close(&mut surface, &mut receiver[0]);
+        let fail = registration("document-owner", header);
+        let row = AssistantMessage::<serde_json::Value> {
+            message: Some(assistant()),
+            ..AssistantMessage::default()
+        };
+        survives(&row, &fail, &view);
     }
-    generic_and_custom();
-}
-fn generic_and_custom() {
-    let mut surface = Surface::new();
-    let host = surface.host();
     let fail = Rc::new(Cell::new(false));
     let record = crate::attachment_support::attachment();
     let child = TileRecipe {
         record: record.clone(),
         fail: fail.clone(),
     };
-    let mut section = ExpandableSection::new(host.clone(), vec![Box::new(child)]);
+    let mut section = ExpandableSection::new(vec![Box::new(child)]);
     section.default_expanded = true;
-    surface.draw(|ui, frame| {
-        section
-            .render(ui, view(&host, frame))
-            .assert_no_overlays()
-            .unwrap()
-    });
-    let at = label(&surface, "note.txt");
-    fail.set(true);
-    let mut receiver = Vec::new();
-    surface.click(at, |ui, frame| {
-        let output = section.render(ui, view(&host, frame));
-        receiver.extend(output.overlays);
-        assert!(output.response.is_err());
-    });
-    assert_eq!(receiver.len(), 1);
-    drop(section);
-    assert!(preview(&mut surface, &mut receiver[0]));
-    close(&mut surface, &mut receiver[0]);
-    drop(receiver);
-    custom(record);
+    survives(&section, &fail, &view);
+    fail.set(false);
+    custom(record, &fail, &view);
+    drop(
+        maestro_web::tools::renderer_registry::TOOL_RENDERERS
+            .with(|all| all.borrow_mut().shift_remove("document-owner")),
+    );
 }
-fn custom(record: Rc<std::cell::RefCell<maestro_web::Attachment>>) {
+/// The role map prepares the same original tile, without a tool dispatch or JSON transport.
+fn custom(record: maestro_web::SharedAttachment, fail: &Rc<Cell<bool>>, view: &DomView) {
     use crate::message_renderer_support::{Renderer, message};
-    let mut surface = Surface::new();
-    let host = surface.host();
-    let fail = Rc::new(Cell::new(false));
     let captured = fail.clone();
     maestro_web::register_message_renderer(
         "document-custom",
@@ -121,137 +87,91 @@ fn custom(record: Rc<std::cell::RefCell<maestro_web::Attachment>>) {
     );
     let input = message(
         "document-custom",
-        std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0)),
+        Arc::new(std::sync::atomic::AtomicU32::new(0)),
     );
-    let recipe = maestro_web::tools::types::ToolRenderResult {
-        content: maestro_web::render_message(&input).unwrap().unwrap(),
-        is_custom: true,
-    };
-    let mut state = ToolRenderState::default();
-    surface.draw(|ui, frame| {
-        recipe
-            .render(ui, view(&host, frame), &mut state)
-            .assert_no_overlays()
-            .unwrap()
-    });
-    let at = label(&surface, "note.txt");
-    fail.set(true);
-    let mut receiver = Vec::new();
-    surface.click(at, |ui, frame| {
-        let output = recipe.render(ui, view(&host, frame), &mut state);
-        receiver.extend(output.overlays);
-        assert!(output.response.is_err());
-    });
-    assert_eq!(receiver.len(), 1);
-    drop(state);
-    assert!(preview(&mut surface, &mut receiver[0]));
-    close(&mut surface, &mut receiver[0]);
+    let recipe = maestro_web::render_message(&input).unwrap().unwrap();
+    survives(recipe.as_ref(), fail, view);
+    maestro_web::register_message_renderer(
+        "document-custom",
+        Rc::new(Renderer(Rc::new(|_| {
+            Ok(Box::new(crate::contributions_support::Text("retired")))
+        }))),
+    );
 }
-
-pub fn returned_files() {
-    super::browser::rows(|r| {
-        r.group == "fileViews"
-            || r.test
-                .as_deref()
-                .is_some_and(|name| name.starts_with("repl_downloads_"))
-    });
-    let row = file_subset(&[0, 1, 2]);
-    let recipe = prepare(&row).unwrap();
-    let mut surface = Surface::new();
-    let host = surface.host();
-    let mut state = ToolRenderState::default();
-    surface.draw(|ui, frame| {
-        recipe
-            .render(ui, view(&host, frame), &mut state)
-            .assert_no_overlays()
-            .unwrap()
-    });
-    let image = crate::markdown_support::js(
-        "(()=>{const r=document.querySelector('img[alt=\"image.png\"]').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()",
+/// Image and text files open independently while their tool disclosure stays collapsed.
+pub fn returned_files(import: &js_sys::Function) {
+    let view = view();
+    let _elements = host(&view, import);
+    let card = Card::new(view, &file_subset(&[0, 1, 2]));
+    assert!(
+        select(&card.root(), ".maestro-tool-body")
+            .class_list()
+            .contains("max-h-0")
     );
-    let image = js_sys::Float32Array::new(&image);
-    let positions = [
-        egui::pos2(image.get_index(0), image.get_index(1)),
-        label(&surface, "雪.txt"),
-        label(&surface, "a.json"),
-    ];
-    let mut receiver = Vec::new();
-    for at in positions {
-        surface.click(at, |ui, frame| {
-            let output = recipe.render(ui, view(&host, frame), &mut state);
-            receiver.extend(output.overlays);
-            output.response.unwrap();
-        });
+    let overlays: Vec<_> = (0..3).map(|index| open(&card, index)).collect();
+    drop(card);
+    for overlay in &overlays {
+        assert!(overlay.is_connected());
     }
-    assert_eq!(receiver.len(), 3);
-    drop(state);
-    assert!(preview(&mut surface, &mut receiver[0]));
-    check("document.querySelector('img[alt=\"image.png\"]')!==null");
-    assert!(preview(&mut surface, &mut receiver[1]));
-    check("document.body.textContent.includes('雪')");
-    assert!(preview(&mut surface, &mut receiver[2]));
-    close(&mut surface, &mut receiver[2]);
-    receiver.pop();
-    assert!(preview(&mut surface, &mut receiver[1]));
-    close(&mut surface, &mut receiver[1]);
-    receiver.pop();
-    assert!(preview(&mut surface, &mut receiver[0]));
-    close(&mut surface, &mut receiver[0]);
+    assert!(
+        overlays[0]
+            .query_selector("img[alt=\"image.png\"]")
+            .unwrap()
+            .is_some()
+    );
+    assert!(text(&overlays[1]).contains('雪'));
+    for overlay in overlays.iter().rev() {
+        close(overlay);
+    }
 }
-
-pub fn user_and_tool() {
-    let mut surface = Surface::new();
-    let host = surface.host();
-    let mut user = UserMessage::new(host.clone());
+/// User and tool rows use the same page-owned overlay route, not a containing canvas receiver.
+pub fn user_and_tool(import: &js_sys::Function) {
+    use maestro_app::{
+        AgentMessage, UserContent,
+        browser::components::messages::{CustomAgentMessages, UserMessageWithAttachments},
+    };
+    let view = view();
+    let _elements = host(&view, import);
     let record = crate::attachment_support::attachment();
-    record.borrow_mut().file_name = "user.txt".into();
-    let records = [record];
-    let content = maestro_app::UserContent::Text(String::new());
-    let input = UserMessageInput::WithAttachments {
-        content: &content,
-        attachments: Some(&records),
+    record.write().unwrap().file_name = "user.txt".into();
+    let user = UserMessage::<maestro_app::NoCustomMessages> {
+        message: Some(AgentMessage::Custom(Arc::new(RwLock::new(
+            CustomAgentMessages::UserWithAttachments(UserMessageWithAttachments {
+                content: UserContent::Text(String::new()),
+                timestamp: 0.,
+                attachments: Some(vec![record]),
+            }),
+        )))),
     };
-    let mut tool = ToolMessage::new();
-    let call: maestro_app::ToolCall = serde_json::from_value(serde_json::json!({"type":"toolCall","id":"call","name":"javascript_repl","arguments":{"title":"Download","code":""}})).unwrap();
-    let result = crate::recipes::message(Some(
-        serde_json::json!({"files":[{"fileName":"tool.txt","mimeType":"text/plain","size":3,"contentBase64":"6Zuq"}]}),
-    ));
-    let props = ToolMessageProps {
-        tool_call: &call,
-        tool: None,
-        result: Some(&result),
-        pending: false,
-        aborted: false,
-        is_streaming: false,
+    let tool = ToolMessage {
+        tool_call: Some(Rc::new(serde_json::from_value(serde_json::json!({"type":"toolCall","id":"call","name":"javascript_repl","arguments":{"title":"Download","code":""}})).unwrap())),
+        result: Some(Rc::new(crate::recipes::message(Some(serde_json::json!({"files":[{"fileName":"tool.txt","mimeType":"text/plain","size":3,"contentBase64":"6Zuq"}]}))))),
+        ..ToolMessage::new()
     };
-    let mut receiver = Vec::new();
-    let mut draw = |ui: &mut egui::Ui,
-                    frame: maestro_web::components::code_block::CodeBlockView<
-        '_,
-        maestro_web::TranslationFunction,
-    >| {
-        for output in [
-            user.render(ui, input, view(&host, frame)),
-            tool.render(ui, props, view(&host, frame)),
-        ] {
-            receiver.extend(output.overlays);
-            output.response.unwrap();
-        }
-    };
-    surface.draw(&mut draw);
-    let positions = [label(&surface, "user.txt"), label(&surface, "tool.txt")];
-    for at in positions {
-        surface.click(at, &mut draw);
+    let mut overlays = Vec::new();
+    for content in [&user as &dyn DomContent, &tool] {
+        let parent = container();
+        let mut slot = MountedContent::default();
+        slot.show(content, &parent, &view).unwrap();
+        select(&parent, "[data-open]")
+            .unchecked_ref::<HtmlElement>()
+            .click();
+        overlays.push(
+            view.document
+                .query_selector_all("attachment-overlay")
+                .unwrap()
+                .item(u32::try_from(overlays.len()).unwrap())
+                .unwrap()
+                .unchecked_into::<web_sys::Element>(),
+        );
+        slot.clear();
+        parent.remove();
     }
-    assert_eq!(receiver.len(), 2);
-    drop(user);
-    drop(tool);
-    assert!(preview(&mut surface, &mut receiver[0]));
-    assert!(preview(&mut surface, &mut receiver[1]));
-    check("document.body.textContent.includes('雪')");
-    close(&mut surface, &mut receiver[1]);
-    receiver.pop();
-    assert!(preview(&mut surface, &mut receiver[0]));
-    check("document.body.textContent.includes('<literal>')");
-    close(&mut surface, &mut receiver[0]);
+    drop((user, tool));
+    assert!(text(&overlays[0]).contains("<literal>"));
+    assert!(text(&overlays[1]).contains('雪'));
+    for overlay in overlays.iter().rev() {
+        assert!(overlay.is_connected());
+        close(overlay);
+    }
 }

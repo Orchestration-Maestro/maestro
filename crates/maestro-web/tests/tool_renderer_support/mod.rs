@@ -14,21 +14,6 @@ pub fn cases() -> serde_json::Value {
     serde_json::from_str(include_str!("cases.json")).unwrap()
 }
 #[cfg(target_arch = "wasm32")]
-pub mod browser;
-
-#[cfg(target_arch = "wasm32")]
-mod headers;
-
-#[cfg(target_arch = "wasm32")]
-pub(crate) mod styles;
-
-#[cfg(target_arch = "wasm32")]
-mod console_updates;
-#[cfg(target_arch = "wasm32")]
-mod heights;
-#[cfg(target_arch = "wasm32")]
 mod lifetimes;
-#[cfg(target_arch = "wasm32")]
-mod listings;
 
 pub mod forwarding;

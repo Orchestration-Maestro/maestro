@@ -70,3 +70,13 @@ pub fn assert_argv(case: &Recorded) {
 pub fn assert_argv_title(title: &str) {
     assert_argv(&case_by_title("args", title));
 }
+
+/// Isolated missing-directory presentation harness.
+pub mod missing_cwd;
+
+/// Final dispatch recording presentations and streams.
+pub mod mode_dispatch;
+
+/// The startup entry over controlled effects.
+#[cfg(unix)]
+pub mod entry;

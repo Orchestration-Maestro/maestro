@@ -69,7 +69,7 @@ pub(super) async fn search(
 
 /// Build native glob operands without validating or rewriting basename syntax.
 fn command(program: &str, root: &str, pattern: &str, limit: f64) -> Command {
-    let mut command = Command::new(program);
+    let mut command = maestro_process::command(program);
     command.args([
         "--glob",
         "--color=never",

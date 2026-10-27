@@ -875,7 +875,7 @@ fn invalid_stream() -> SharedHandle<RwLock<ProviderConfig>> {
     {
         let mut c = stream.write().unwrap();
         c.api = None;
-        c.stream_simple = Some(Arc::new(
+        c.callbacks.stream_simple = Some(Arc::new(
             super::bound_catalog::original_options::OptionsProvider::default(),
         ));
     }

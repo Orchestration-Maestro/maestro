@@ -9,10 +9,11 @@ use crate::{
 };
 use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-};
+#[cfg(target_arch = "wasm32")]
+use std::rc::Weak;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Weak;
+use std::{collections::BTreeMap, sync::RwLock};
 
 /// Failure of an action called before a runner binds the runtime.
 pub(crate) const NOT_INITIALIZED: &str =
@@ -35,8 +36,8 @@ pub(crate) struct ProviderRoute<E: ExtensionExecution> {
 pub(crate) struct BoundProviders<E: ExtensionExecution> {
     /// Operations supplied by the binder.
     pub(crate) actions: ProviderActions<E>,
-    /// The runner's catalog.
-    pub(crate) catalog: SharedHandle<ModelRegistry>,
+    /// The runner owns the catalog; its credentials may retain component callbacks.
+    pub(crate) catalog: Weak<ModelRegistry>,
 }
 
 impl<E: ExtensionExecution> BoundProviders<E> {
@@ -51,15 +52,19 @@ impl<E: ExtensionExecution> BoundProviders<E> {
     ) -> Result<(), EventError> {
         match &self.actions.register_provider {
             Some(register) => register(name, config),
-            None => Ok(self.catalog.register_provider(&name, config)?),
+            None => Ok(self.catalog()?.register_provider(&name, config)?),
         }
     }
     /// Unregisters through the bound operation, or through the catalog when absent.
     pub(crate) fn unregister_provider(&self, name: &str) -> Result<(), EventError> {
         match &self.actions.unregister_provider {
             Some(unregister) => unregister(name.to_owned()),
-            None => Ok(self.catalog.unregister_provider(name)?),
+            None => Ok(self.catalog()?.unregister_provider(name)?),
         }
+    }
+    /// Upgrades only for the current call, without retaining the session through its callbacks.
+    fn catalog(&self) -> Result<SharedHandle<ModelRegistry>, EventError> {
+        self.catalog.upgrade().ok_or_else(|| NOT_INITIALIZED.into())
     }
 }
 
@@ -68,7 +73,10 @@ impl<E: ExtensionExecution> BoundProviders<E> {
 #[must_use]
 pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionRuntime<E>> {
     E::share(ExtensionRuntime {
-        state: Arc::new(ExtensionRuntimeState::default()),
+        construction: RwLock::new(None),
+        #[cfg(not(target_arch = "wasm32"))]
+        tool_construction: RwLock::new(None),
+        state: ExtensionRuntimeState::default(),
         actions: RwLock::new(E::unbound_actions()),
         pending_provider_registrations: RwLock::new(BTreeMap::new()),
         providers: RwLock::new(ProviderRoute {

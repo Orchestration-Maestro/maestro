@@ -105,27 +105,27 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Moves to `target_id` in the same session, optionally summarizing the branch left. Once
-    /// started, the move belongs to the session: dropping the returned future leaves it
-    /// running, and `abort_branch_summary` stops its summary.
+    /// Starts moving to `target_id` when called, optionally summarizing the branch left.
+    /// The move belongs to the session: dropping even the never-polled result future leaves
+    /// it running, and `abort_branch_summary` stops its summary.
     ///
     /// # Errors
     /// Returns `Entry <id> not found`, an authentication, summary, recording or extension
     /// failure, or the failure when the navigation's task ended before it did.
-    pub async fn navigate_tree(
+    pub fn navigate_tree(
         self: &Rc<Self>,
         target_id: &str,
         options: NavigateTreeOptions,
-    ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<Output = Result<NavigateTreeResult, DiagnosticErrorInfo>> + use<E>
+    {
         let session = Rc::clone(self);
         let target_id = target_id.to_owned();
-        self.start_operation(async move {
+        let result = self.start_operation(async move {
             let navigated = session.navigate(&target_id, options).await;
             session.state.borrow_mut().branch_summary_signal = None;
             navigated
-        })
-        .await
-        .map_err(thrown)?
+        });
+        async move { result.await.map_err(thrown)? }
     }
 
     /// The navigation the session runs, before its summary signal is cleared.

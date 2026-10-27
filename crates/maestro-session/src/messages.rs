@@ -330,11 +330,7 @@ pub(crate) fn project_summary(
                     Some("toolCall") => Some((|| {
                         Ok(SummaryBlock::Tool(
                             <&str>::deserialize(&block["name"])?,
-                            block["arguments"].as_object().ok_or_else(|| {
-                                <serde_json::Error as serde::de::Error>::custom(
-                                    "expected arguments object",
-                                )
-                            })?,
+                            &block["arguments"],
                         ))
                     })()),
                     _ => None,

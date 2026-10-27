@@ -441,7 +441,7 @@ fn platform_opener(path: &str) {
         ),
         _ => ("xdg-open", vec![path.to_owned()]),
     };
-    let mut command = tokio::process::Command::new(program);
+    let mut command = maestro_process::command(program);
     command.args(arguments);
     drop(crate::spawn(command, None));
 }

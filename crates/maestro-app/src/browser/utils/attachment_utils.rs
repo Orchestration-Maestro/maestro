@@ -42,6 +42,9 @@ pub struct Attachment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview: Option<String>,
 }
+/// A live attachment retained independently of its containing collection.
+pub type SharedAttachment = std::sync::Arc<std::sync::RwLock<Attachment>>;
+
 /// A URL or bytes already read by a frontend.
 pub enum AttachmentSource<'a> {
     /// Fetch the literal URL.

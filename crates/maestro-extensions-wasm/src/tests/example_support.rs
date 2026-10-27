@@ -105,13 +105,6 @@ pub fn observations(lines: &[String]) -> Vec<Observation> {
         .collect()
 }
 
-/// Parses `text` and decodes the JSON document it carries at `member`.
-pub fn decoded(text: &str, member: &str) -> Value {
-    let mut value: Value = serde_json::from_str(text).unwrap();
-    value[member] = serde_json::from_str(value[member].as_str().unwrap()).unwrap();
-    value
-}
-
 /// Parses one registration record without the transport's declared-kinds member.
 pub fn registered_metadata(text: &str) -> Value {
     let mut value: Value = serde_json::from_str(text).unwrap();
@@ -119,9 +112,9 @@ pub fn registered_metadata(text: &str) -> Value {
     value
 }
 
-/// Decodes the SDK's opaque details document before comparing a caller-visible result.
+/// Parses the caller-visible result without re-decoding its structured details.
 pub fn result_value(encoded: &str) -> Value {
-    decoded(encoded, "details")
+    serde_json::from_str(encoded).unwrap()
 }
 
 /// Releases every registration in the order the host received it, asserting the host admitted

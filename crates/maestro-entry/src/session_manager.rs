@@ -173,14 +173,14 @@ pub struct SessionInfoEntry {
 }
 
 /// Identity and parent metadata for a new session.
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewSessionOptions<P: Omittable> {
     /// Session identity; absent generates one.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     /// Session file the new session starts from.
-    #[serde(skip_serializing_if = "Omittable::is_omitted")]
+    #[serde(default, skip_serializing_if = "Omittable::is_omitted")]
     pub parent_session: P,
 }
 
@@ -218,7 +218,7 @@ pub enum ForkPosition {
     /// At the entry.
     At,
 }
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Independently optional tree navigation choices.
 pub struct NavigateTreeOptions {

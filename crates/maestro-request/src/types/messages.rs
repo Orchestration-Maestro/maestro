@@ -1,5 +1,5 @@
 //! Typed conversation messages and their tagged content.
-use super::{Api, JsonObject, Provider};
+use super::{Api, Provider};
 use crate::diagnostics::AssistantMessageDiagnostic;
 use crate::presence::Presence;
 use serde::{Deserialize, Serialize};
@@ -71,7 +71,7 @@ pub struct ImageContent {
     /// Mime type.
     pub mime_type: String,
 }
-/// Carry a tagged tool invocation with open argument fields.
+/// Carry a tagged tool invocation with its complete JSON argument value.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type", rename = "toolCall")]
 pub struct ToolCall {
@@ -79,8 +79,8 @@ pub struct ToolCall {
     pub id: String,
     /// Name.
     pub name: String,
-    /// Arguments.
-    pub arguments: JsonObject,
+    /// Arguments, of any JSON root kind.
+    pub arguments: serde_json::Value,
     /// Thought signature.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thought_signature: Option<String>,
@@ -290,13 +290,25 @@ pub enum Message {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Tool {
+#[serde(bound(serialize = "", deserialize = "C: Default"))]
+pub struct Tool<C = ()> {
     /// Name.
     pub name: String,
     /// Description.
     pub description: String,
     /// Parameters.
-    pub parameters: crate::parameter_schema::ParameterSchema,
+    pub parameters: crate::parameter_schema::ParameterSchema<C>,
+}
+impl<C> Tool<C> {
+    /// Project provider data without retaining or invoking executable annotations.
+    #[must_use]
+    pub fn data(&self) -> Tool {
+        Tool {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            parameters: self.parameters.data(),
+        }
+    }
 }
 /// Supply conversation messages with optional system prompt and tools.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

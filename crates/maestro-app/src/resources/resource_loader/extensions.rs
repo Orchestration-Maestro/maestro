@@ -4,7 +4,8 @@ use super::{DefaultResourceLoader, overrides::apply};
 use crate::utils::lock::{read, write};
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
-    create_event_bus_for, load_extension_from_factory, load_extensions,
+    create_event_bus_for, create_extension_runtime, load_extension_from_factory,
+    load_extensions_with_runtime,
 };
 use maestro_models::{Execution, Local, Threaded};
 use maestro_resources::is_local_path;
@@ -117,11 +118,31 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
     /// and missing explicit paths, applies the override and stores the result with each
     /// extension's provenance.
     pub(super) async fn load_extension_resources(&self, paths: Vec<String>) -> io::Result<()> {
-        let mut result = load_extensions(
+        let runtime = create_extension_runtime::<E>();
+        if let Some(services) = &self.options.tool_construction {
+            runtime.set_tool_construction(services.clone());
+        }
+        let auth_root = self.agent_dir.clone();
+        let models_root = self.agent_dir.clone();
+        runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
+            auth_path: Arc::new(move || {
+                Ok(crate::configuration::config::paths::get_auth_path(
+                    &auth_root,
+                ))
+            }),
+            models_path: Arc::new(move || {
+                Ok(crate::configuration::config::paths::get_models_path(
+                    &models_root,
+                ))
+            }),
+            config_values: crate::runtime::agent_session_services::native_config_values(),
+        });
+        let mut result = load_extensions_with_runtime(
             paths,
             &self.cwd,
             &self.event_bus,
             &self.options.module_loader,
+            runtime,
         )
         .await?;
         for (index, factory) in self.options.extension_factories.iter().enumerate() {

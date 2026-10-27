@@ -41,6 +41,9 @@ fn subscription_refresh_omits_scope() {
 struct Manual;
 #[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Manual {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, true, false)
+    }
     fn on_auth(
         &self,
         info: maestro_models::OAuthAuthInfo,

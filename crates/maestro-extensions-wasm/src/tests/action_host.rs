@@ -21,6 +21,14 @@ impl Bank {
     pub fn check(&self) -> Result<(), String> {
         self.error.clone().map_or(Ok(()), Err)
     }
+    /// Selects an operation's canned reply without implementing that helper.
+    pub fn record_for(&self, operation: &str) -> Result<String, String> {
+        self.check()?;
+        Ok(self
+            .raw
+            .clone()
+            .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
+    }
     /// Supply raw selected record input without changing decoder policy.
     pub fn record(&self) -> Result<String, String> {
         self.check()?;
@@ -50,11 +58,12 @@ pub fn compact(
     instructions: Option<&str>,
     complete: Option<u32>,
     error: Option<u32>,
+    present: bool,
 ) -> Result<(), String> {
     observed.actions.check()?;
     let request = observed.compactions;
     observed.compactions += 1;
-    observed.log(format!("compact admission {}",json!({"instructions":instructions.map_or(json!({"present":false}),|v|json!({"present":true,"value":v})),"complete":complete.is_some(),"error":error.is_some()})));
+    observed.log(format!("compact admission {}",json!({"present":present,"instructions":instructions.map_or(json!({"present":false}),|v|json!({"present":true,"value":v})),"complete":complete.is_some(),"error":error.is_some()})));
     if let Some(id) = complete {
         observed.register(format!("compact {request} complete"), id);
     }

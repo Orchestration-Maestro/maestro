@@ -60,7 +60,7 @@ impl InteractiveMode {
         };
         let indicator = self.working.working_indicator_options.borrow().clone();
         Loader::new(
-            self.ui.clone(),
+            self.ui.as_ref().clone(),
             color(ThemeColor::Accent),
             color(ThemeColor::Muted),
             Some(self.get_working_loader_message()),
@@ -75,11 +75,16 @@ impl InteractiveMode {
         drop(self.working.loading_animation.replace(Some(loader)));
     }
 
-    /// Stops and releases the working row, then empties the status rows.
-    pub(super) fn stop_working_loader(&self) {
+    /// Stops and releases the working row without changing the status rows.
+    pub(super) fn release_working_loader(&self) {
         if let Some(loader) = self.working.loading_animation.take() {
             loader.stop();
         }
+    }
+
+    /// Stops and releases the working row, then empties the status rows.
+    pub(super) fn stop_working_loader(&self) {
+        self.release_working_loader();
         self.status_container.clear();
     }
 
@@ -119,6 +124,23 @@ impl InteractiveMode {
             loader.set_indicator(options.map(loader_indicator));
         }
         self.ui.request_render(false);
+    }
+
+    /// Restores the default working message, visibility and indicator, shows the default
+    /// message with the interrupt key on a running working row, then restores the default
+    /// hidden-thinking label.
+    pub(super) fn reset_working(&self) {
+        drop(self.working.working_message.take());
+        self.working.working_visible.set(true);
+        self.set_working_indicator(None);
+        let loader = self.working.loading_animation.borrow().clone();
+        if let Some(loader) = loader {
+            let interrupt = maestro_app::key_text("app.interrupt");
+            loader.set_message(format!(
+                "{DEFAULT_WORKING_MESSAGE} ({interrupt} to interrupt)"
+            ));
+        }
+        self.set_hidden_thinking_label(None);
     }
 
     /// Sets the hidden-thinking label, `None` restoring the default, on every assistant row

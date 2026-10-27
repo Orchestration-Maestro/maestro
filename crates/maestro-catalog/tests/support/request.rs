@@ -146,11 +146,11 @@ impl maestro_models::OAuthProviderInterface for OAuth {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_models::OAuthCredentials,
-    ) -> Result<&'a str, maestro_models::OAuthError> {
+    ) -> Result<std::borrow::Cow<'a, str>, maestro_models::OAuthError> {
         if self.fail_key {
             Err(super::dynamic::account_failure("extraction failed"))
         } else {
-            Ok(&credentials.access)
+            Ok(std::borrow::Cow::Borrowed(&credentials.access))
         }
     }
     fn modify_models<'m>(

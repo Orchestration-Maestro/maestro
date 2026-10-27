@@ -73,6 +73,12 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Supplied native byte resources and exact operand observations.
+    pub native_io: super::native_io_host::Bank,
+    /// Supplied HTTP responses and forwarded request operands.
+    pub native_http: super::native_http_host::Bank,
+    /// Supplied file watch registration observations.
+    pub native_watch: super::native_watch_host::Bank,
     /// Raw shell byte receiver observations.
     pub shell: super::shell_host::Bank,
     /// Replacement-operation host decisions.
@@ -101,6 +107,10 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    pub schemas: Vec<(String, String, u32)>,
+    pub schema_request_bytes: usize,
+    pub schema_response_bytes: usize,
+    pub schema_checks: usize,
     /// Delivered partial results in observation order.
     pub updates: Vec<String>,
     /// Partial result number to refuse, counted from zero, with the host's message.
@@ -111,6 +121,10 @@ pub struct Observed {
     pub catalog: super::catalog_host::Bank,
     /// Retained UI acquisition identities and supplied rejections.
     pub ui: super::ui_host::Bank,
+    /// Themes the host publishes under each handed-out key.
+    pub themes: super::theme_host::Bank,
+    /// The guest state identity of each tool row, by tool call id.
+    pub tool_rows: HashMap<String, u32>,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -191,11 +205,15 @@ impl Observed {
     pub fn register_tool(
         &mut self,
         metadata: &str,
-        prepare: Option<u32>,
-        execute: u32,
+        (prepare, execute): (Option<u32>, u32),
+        (render_call, render_result): (Option<u32>, Option<u32>),
     ) -> Result<(), String> {
-        let value: serde_json::Value = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
-        let name = value["name"].as_str().ok_or("missing tool name")?;
+        #[derive(serde::Deserialize)]
+        struct Named {
+            /// The registration identity observed by the host.
+            name: String,
+        }
+        let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }
@@ -205,6 +223,12 @@ impl Observed {
         self.tools.push(metadata.into());
         if let Some(prepare) = prepare {
             self.register(format!("prepare {name}"), prepare);
+        }
+        if let Some(render) = render_call {
+            self.register(format!("render-call {name}"), render);
+        }
+        if let Some(render) = render_result {
+            self.register(format!("render-result {name}"), render);
         }
         self.register(format!("tool {name}"), execute);
         Ok(())
@@ -266,6 +290,9 @@ impl Observed {
         }
         if custom_type == "ui-control" {
             self.ui.control(data.expect("control document"));
+        }
+        if custom_type == "theme-control" {
+            self.themes.control(data.expect("control document"));
         }
         self.log(format!("entry {custom_type} {}", data.unwrap_or("none")));
     }

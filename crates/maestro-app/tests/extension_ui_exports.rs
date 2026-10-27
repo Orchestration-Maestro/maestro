@@ -50,6 +50,11 @@ fn source() -> Arc<RwLock<SourceInfo>> {
 
 #[test]
 fn native_ui_exports_share_the_existing_records() {
+    let remove: maestro_app::UIUnsubscribe = Rc::new(|| Ok(()));
+    let owner: maestro_extensions::types::UIUnsubscribe = remove;
+    let mut listeners = maestro_app::Listeners::default();
+    listeners.add(owner);
+    listeners.snapshot()[0]().unwrap();
     let options = MessageRenderOptions { expanded: true };
     let session: maestro_session::messages::MessageRenderOptions = options;
     let _: maestro_extensions::MessageRenderOptions = session;

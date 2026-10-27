@@ -337,9 +337,9 @@ fn maestro_prepare_arguments_can_emit_before_return() -> ExtensionResult<()> {
 }
 
 /// Reports destruction by emitting through the same host, exercising table reentry.
-struct Reenter {
+pub(super) struct Reenter {
     /// Alternate adapter retained by the capture.
-    host: Controlled,
+    pub(super) host: Controlled,
 }
 impl Drop for Reenter {
     fn drop(&mut self) {
@@ -638,11 +638,15 @@ impl crate::Extension for CaptureApi {
         Box::pin(async { Ok(()) })
     }
 }
+/// The actual adapter-backed API a factory receives from `host`.
+pub(super) fn captured_api(host: &Controlled) -> ExtensionResult<crate::ExtensionAPI> {
+    super::block_on(Exports::new(host.clone()).start::<CaptureApi>())?;
+    Ok(CAPTURED_API.with(RefCell::take).expect("captured API"))
+}
 #[test]
 fn maestro_bus_facades_retain_the_same_host_resources() -> ExtensionResult<()> {
     let host = Controlled::default();
-    super::block_on(Exports::new(host.clone()).start::<CaptureApi>())?;
-    let api = CAPTURED_API.with(RefCell::take).expect("captured API");
+    let api = captured_api(&host)?;
     let alias = api.clone();
     let bus = api.events();
     let bus_alias = bus.clone();

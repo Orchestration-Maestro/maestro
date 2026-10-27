@@ -334,6 +334,6 @@ fn cases() -> Vec<Case> {
             serde_json::to_string(&case.input).unwrap()
         )));
     }
-    assert_eq!(cases.len(), 467);
+    assert_eq!(cases.len(), 470);
     cases
 }

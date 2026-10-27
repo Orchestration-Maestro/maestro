@@ -1,5 +1,9 @@
 //! The extension UI host over the retained mode: theme, editor, title, expansion and
 //! typed errors through the installed port.
+mod dialogs;
+mod input;
+mod notifications;
+
 use super::transcript::tool_params;
 use super::{Setup, World, dark, isolated, light, roles, started};
 use crate::InteractiveMode;
@@ -7,9 +11,8 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterFileStats, FooterOperations, FsWatcher, WatchOperations, WatchTimer,
 };
 use maestro_app::{
-    DiagnosticErrorInfo, ExtensionUIContext, ExtensionUIContextPort, SettingsManager,
-    SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate, TextContent,
-    ThemeSelection, UserBlock,
+    DiagnosticErrorInfo, ExtensionUIContext, SettingsManager, SettingsScope, SettingsStorage,
+    SettingsStorageError, SettingsUpdate, TextContent, ThemeSelection, UserBlock,
 };
 use maestro_theme::{
     ColorMode, LiveTheme, Theme, ThemeColor, ThemeDirectories, ThemeInfo, ThemeOptions,
@@ -35,13 +38,13 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_extensi
 const PASTED: &str = "paste\n界";
 
 /// A started mode whose registry reads the shipped theme documents of `directory`.
-fn registered(directory: &Path) -> World {
+async fn registered(directory: &Path) -> World {
     let world = Setup {
         directories: Some(theme_dirs(directory)),
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -59,11 +62,15 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
     super::cases(FIXTURES, test)
 }
 
-/// The installed extension UI host of `mode`.
+/// The current runner's UI context after the mode's native binding.
 pub(super) fn port(mode: &Rc<InteractiveMode>) -> ExtensionUIContext {
-    let shared = Rc::clone(mode);
-    let host: Rc<dyn ExtensionUIContextPort> = shared;
-    ExtensionUIContext::new(host)
+    let context = mode
+        .runtime_host
+        .session()
+        .extension_runner()
+        .create_context();
+    assert!(context.has_ui().unwrap(), "startup installed the native UI");
+    context.ui().unwrap()
 }
 
 /// Copies the shipped theme documents into `root` and names the registry directories.
@@ -82,7 +89,7 @@ fn theme_dirs(root: &Path) -> ThemeDirectories {
 }
 
 /// Adds one custom theme document to the registry directories of `root`.
-fn with_custom_theme(root: &Path) -> ThemeDirectories {
+pub(super) fn with_custom_theme(root: &Path) -> ThemeDirectories {
     let directories = theme_dirs(root);
     let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-theme/assets/theme");
     let document = std::fs::read_to_string(shipped.join("light.json"))
@@ -206,14 +213,14 @@ fn saved_themes(
 
 /// Watch effects recording each registration and whether it was closed.
 #[derive(Default)]
-struct RecordingWatcher {
+pub(super) struct RecordingWatcher {
     /// Each registration's watched directory and its closed flag.
     watches: RefCell<Vec<(String, Rc<Cell<bool>>)>>,
 }
 
 impl RecordingWatcher {
     /// The watched directories, in registration order.
-    fn paths(&self) -> Vec<String> {
+    pub(super) fn paths(&self) -> Vec<String> {
         self.watches
             .borrow()
             .iter()
@@ -222,7 +229,7 @@ impl RecordingWatcher {
     }
 
     /// Whether the registration at `index` was closed.
-    fn closed(&self, index: usize) -> bool {
+    pub(super) fn closed(&self, index: usize) -> bool {
         self.watches.borrow()[index].1.get()
     }
 }
@@ -394,7 +401,7 @@ enum Expected {
 #[test]
 fn named_theme_switch_persists_before_redraw() {
     let test = "named_theme_switch_persists_before_redraw";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::SetTheme { name },
@@ -408,7 +415,7 @@ fn named_theme_switch_persists_before_redraw() {
             else {
                 panic!("a theme selection case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let (storage, receiver) = recording_storage("dark");
             record_settings(&world, &storage);
             let outcome = port(&world.mode)
@@ -430,7 +437,7 @@ fn named_theme_switch_persists_before_redraw() {
 #[test]
 fn unchanged_theme_does_not_enqueue_a_setting_write() {
     let test = "unchanged_theme_does_not_enqueue_a_setting_write";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::SetTheme { name },
@@ -444,7 +451,7 @@ fn unchanged_theme_does_not_enqueue_a_setting_write() {
             else {
                 panic!("a theme selection case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let (storage, receiver) = recording_storage("dark");
             record_settings(&world, &storage);
             let outcome = port(&world.mode)
@@ -467,7 +474,7 @@ fn unchanged_theme_does_not_enqueue_a_setting_write() {
 #[test]
 fn theme_rejection_does_not_persist_or_redraw() {
     let test = "theme_rejection_does_not_persist_or_redraw";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::SetTheme { name },
@@ -486,7 +493,7 @@ fn theme_rejection_does_not_persist_or_redraw() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
             let (storage, receiver) = recording_storage("dark");
             record_settings(&world, &storage);
@@ -510,7 +517,7 @@ fn theme_rejection_does_not_persist_or_redraw() {
 #[test]
 fn theme_instances_publish_without_changing_the_saved_name() {
     let test = "theme_instances_publish_without_changing_the_saved_name";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::SetThemeInstance,
@@ -524,7 +531,7 @@ fn theme_instances_publish_without_changing_the_saved_name() {
             else {
                 panic!("a theme instance case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let (storage, receiver) = recording_storage("dark");
             record_settings(&world, &storage);
             let instance = light();
@@ -555,7 +562,7 @@ fn theme_instances_publish_without_changing_the_saved_name() {
 #[test]
 fn theme_queries_keep_lookup_separate_from_live_publication() {
     let test = "theme_queries_keep_lookup_separate_from_live_publication";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::ThemeQueries,
@@ -569,7 +576,7 @@ fn theme_queries_keep_lookup_separate_from_live_publication() {
             else {
                 panic!("a theme query case");
             };
-            let world = registered(directory);
+            let world = registered(directory).await;
             let host = port(&world.mode);
             let listed: Vec<ThemeInfo> = host.get_all_themes().unwrap();
             assert_eq!(
@@ -607,7 +614,7 @@ fn theme_queries_keep_lookup_separate_from_live_publication() {
 fn named_theme_switch_reuses_the_supplied_watch_owner() {
     isolated(
         "named_theme_switch_reuses_the_supplied_watch_owner",
-        |directory| {
+        async |directory| {
             let directories = with_custom_theme(directory);
             let custom_dir = directories.custom_themes_dir.clone();
             let watcher = Rc::new(RecordingWatcher::default());
@@ -618,7 +625,7 @@ fn named_theme_switch_reuses_the_supplied_watch_owner() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
             assert_eq!(watcher.paths(), vec![custom_dir.clone()]);
             assert!(!watcher.closed(0), "the chosen custom theme is watched");
@@ -640,14 +647,14 @@ fn named_theme_switch_reuses_the_supplied_watch_owner() {
 #[test]
 fn editor_context_uses_bracketed_paste_and_expanded_text() {
     let test = "editor_context_uses_bracketed_paste_and_expanded_text";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (Input::EditorAccess { text }, Expected::Editor { set, pasted, raw }) =
                 (input, expected)
             else {
                 panic!("an editor access case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let host = port(&world.mode);
             host.set_editor_text(text.clone()).unwrap();
             assert_eq!(host.get_editor_text().unwrap(), set);
@@ -661,12 +668,12 @@ fn editor_context_uses_bracketed_paste_and_expanded_text() {
 #[test]
 fn terminal_title_forwards_the_supplied_text() {
     let test = "terminal_title_forwards_the_supplied_text";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (Input::SetTitle { text }, Expected::Title { title }) = (input, expected) else {
                 panic!("a title case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let written = Rc::new(RefCell::new(Vec::new()));
             let sink = Rc::clone(&written);
             world
@@ -686,7 +693,7 @@ fn terminal_title_forwards_the_supplied_text() {
 #[test]
 fn ui_tool_expansion_reaches_the_existing_transcript_owner() {
     let test = "ui_tool_expansion_reaches_the_existing_transcript_owner";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::ToolExpansionForward { expanded },
@@ -696,7 +703,7 @@ fn ui_tool_expansion_reaches_the_existing_transcript_owner() {
                 panic!("an expansion case");
             };
             assert_eq!(expanded, before);
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.tool_output_expanded.set(before);
             // The walk must reach a tool row; its own paint comes from its renderer.
             let row =
@@ -738,8 +745,8 @@ fn ui_tool_expansion_reaches_the_existing_transcript_owner() {
 fn ui_notice_and_tool_failures_keep_their_original_error_types() {
     isolated(
         "ui_notice_and_tool_failures_keep_their_original_error_types",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let row =
                 Rc::new(crate::ToolExecutionComponent::new(tool_params(&world, "row")).unwrap());
             row.update_result(output("one"), false).unwrap();
@@ -747,9 +754,20 @@ fn ui_notice_and_tool_failures_keep_their_original_error_types() {
             let empty =
                 Rc::new(Theme::new([], [], ColorMode::Truecolor, ThemeOptions::default()).unwrap());
             world.themes.set_theme_instance(empty).unwrap();
-            let error: maestro_theme::ThemeError = world.mode.show_error("refused").unwrap_err();
-            assert!(!error.to_string().is_empty(), "{error}");
             let host = port(&world.mode);
+            let children = world.mode.chat_container.children().borrow().len();
+            for kind in [
+                None,
+                Some(maestro_app::NotificationType::Warning),
+                Some(maestro_app::NotificationType::Error),
+            ] {
+                let error = host.notify("refused".to_owned(), kind).unwrap_err();
+                assert!(error.downcast_ref::<maestro_theme::ThemeError>().is_some());
+                assert_eq!(
+                    world.mode.chat_container.children().borrow().len(),
+                    children
+                );
+            }
             let error = host.set_tools_expanded(true).unwrap_err();
             let diagnostic = error
                 .downcast_ref::<DiagnosticErrorInfo>()

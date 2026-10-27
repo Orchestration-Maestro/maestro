@@ -113,7 +113,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 0,
-        wrapped: &["\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f1e8}\u{1f1e6}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
         strict_slice: ("", 0),
@@ -122,7 +122,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 1,
-        wrapped: &["\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f1e8}\u{1f1e6}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f1e8}\u{1f1e6}", 2),
         strict_slice: ("", 0),
@@ -131,7 +131,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 2,
-        wrapped: &["\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f1e8}\u{1f1e6}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "\u{1f1e8}\u{1f1e6}\u{1b}[0m",
         slice: ("\u{1f1e8}\u{1f1e6}", 2),
         strict_slice: ("\u{1f1e8}\u{1f1e6}", 2),
@@ -248,7 +248,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 0,
-        wrapped: &["e\u{301}", "\u{1b}[31mX"],
+        wrapped: &["e\u{301}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
         strict_slice: ("", 0),
@@ -257,7 +257,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 1,
-        wrapped: &["e\u{301}", "\u{1b}[31mX"],
+        wrapped: &["e\u{301}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "e\u{301}\u{1b}[0m",
         slice: ("e\u{301}", 1),
         strict_slice: ("e\u{301}", 1),
@@ -383,7 +383,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 0,
-        wrapped: &["\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f44d}\u{1f3fd}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
         strict_slice: ("", 0),
@@ -392,7 +392,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 1,
-        wrapped: &["\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f44d}\u{1f3fd}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f44d}\u{1f3fd}", 2),
         strict_slice: ("", 0),
@@ -401,7 +401,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 2,
-        wrapped: &["\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f44d}\u{1f3fd}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "\u{1f44d}\u{1f3fd}\u{1b}[0m",
         slice: ("\u{1f44d}\u{1f3fd}", 2),
         strict_slice: ("\u{1f44d}\u{1f3fd}", 2),
@@ -563,7 +563,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 0,
-        wrapped: &["\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
         strict_slice: ("", 0),
@@ -572,7 +572,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 1,
-        wrapped: &["\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f468}\u{200d}\u{1f4bb}", 2),
         strict_slice: ("", 0),
@@ -581,7 +581,7 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 2,
-        wrapped: &["\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
+        wrapped: &["\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31m", "\u{1b}[31mX"],
         truncated: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[0m",
         slice: ("\u{1f468}\u{200d}\u{1f4bb}", 2),
         strict_slice: ("\u{1f468}\u{200d}\u{1f4bb}", 2),

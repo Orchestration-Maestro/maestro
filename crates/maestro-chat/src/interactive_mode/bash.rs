@@ -10,11 +10,11 @@ use maestro_app::{
     AgentSession, BashOperations, BashResult, DiagnosticErrorInfo, Presence, TruncationResult,
     UserBashEvent, UserBashEventResult,
 };
-use maestro_tui::EditorComponent;
-use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
+use maestro_tui::TUI;
+use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc};
 
 /// The callable operations an extension supplies for one shell command.
-type ShellOperations = Arc<dyn BashOperations>;
+pub(super) type ShellOperations = Rc<dyn BashOperations<maestro_app::Local>>;
 
 /// The shell command a submission selected, which an extension cannot rewrite.
 #[derive(Clone, Copy)]
@@ -40,7 +40,7 @@ pub(super) fn selected_shell_command(text: &str) -> Option<(&str, bool)> {
 }
 
 /// The address of the component `handle` holds, so two handles to one component share it.
-fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
+pub(super) fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
     Rc::as_ptr(handle).cast::<()>() as usize
 }
 
@@ -154,7 +154,7 @@ impl InteractiveMode {
     ) -> Rc<BashExecutionComponent> {
         let row = Rc::new(BashExecutionComponent::new(
             command.to_owned(),
-            self.ui.clone(),
+            TUI::clone(&self.ui),
             self.themes.theme(),
             exclude_from_context,
         ));
@@ -212,7 +212,9 @@ impl InteractiveMode {
         exclude_from_context: bool,
     ) {
         if self.runtime_host.session().is_bash_running() {
-            self.editor.set_text(text);
+            if let Err(error) = self.current_editor().try_set_text(text) {
+                return self.report(Err(error));
+            }
             self.report(
                 self.show_warning(
                     "A bash command is already running. Press Esc to cancel it first.",
@@ -221,7 +223,9 @@ impl InteractiveMode {
             );
             return;
         }
-        self.editor.add_to_history(text);
+        if let Err(error) = self.current_editor().try_add_to_history(text) {
+            return self.report(Err(error));
+        }
         let mode = Rc::clone(self);
         let command = command.to_owned();
         self.tool_environment
@@ -240,8 +244,7 @@ impl InteractiveMode {
 
 /// Runs `command` through `options`, delivering every chunk to `row` before it completes.
 ///
-/// The session's callback is sendable while the row and the terminal are local, so the
-/// chunks cross on a channel this runtime drains. A row whose update fails ends the
+/// Queued chunks reach the row before command completion. A row whose update fails ends
 /// delivery and reports through the runtime's error route.
 ///
 /// # Errors
