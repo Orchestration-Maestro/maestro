@@ -1,0 +1,74 @@
+name: Single question red proof
+"on":
+  push:
+    branches: ['ci/2255-proof-*']
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '3'
+      CARGO_INCREMENTAL: '0'
+      NEXTEST_TEST_THREADS: '3'
+      RUST_TEST_THREADS: '3'
+      SCCACHE_GHA_ENABLED: 'false'
+      SCCACHE_DIR: /tmp/maestro-sccache
+      SCCACHE_CACHE_SIZE: '1073741824'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Toolchain and cache identity
+        id: cache
+        shell: bash
+        run: |
+          git rev-parse HEAD
+          rustup show
+          rustup target add wasm32-wasip2
+          toolchain=$(rustup show active-toolchain)
+          echo "RUSTUP_TOOLCHAIN=${toolchain%% *}" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess
+          compiler = subprocess.check_output(['rustc', '-vV'], text=True)
+          identity = [os.environ['GITHUB_REPOSITORY'], '.', 'Linux', 'X64', compiler, 'tests-plain']
+          digest = hashlib.sha256(json.dumps(identity, ensure_ascii=True, separators=(',', ':')).encode()).hexdigest()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'prefix=maestro-compile-v1-{digest}-\n')
+          PY
+      - uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: /tmp/maestro-sccache
+          key: ${{ steps.cache.outputs.prefix }}proof-${{ github.run_id }}
+          restore-keys: ${{ steps.cache.outputs.prefix }}
+      - name: Install checked test tools
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          printf '#!/bin/sh\nexec "$@"\n' > "$HOME/.local/bin/capped"
+          chmod +x "$HOME/.local/bin/capped"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl --fail --retry 3 -L https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.148/cargo-nextest-0.9.148-x86_64-unknown-linux-musl.tar.gz -o /tmp/nextest.tar.gz
+          echo 'bf92cb81450872d960ffa13857a83084d557ec0cdc141663d263bb23ef756f97  /tmp/nextest.tar.gz' | sha256sum -c
+          tar -xzf /tmp/nextest.tar.gz -C "$HOME/.local/bin" cargo-nextest
+          curl --fail --retry 3 -L https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/sccache.tar.gz
+          echo '45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89  /tmp/sccache.tar.gz' | sha256sum -c
+          tar -xzf /tmp/sccache.tar.gz -C "$HOME/.local/bin" --strip-components=1 sccache-v0.18.0-x86_64-unknown-linux-musl/sccache
+          echo 'RUSTC_WRAPPER=sccache' >> "$GITHUB_ENV"
+      - name: Registered tool behavioral red
+        shell: bash
+        run: |
+          mkdir -p target/2255-proof
+          ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasm --lib question_headless 2>&1 | tee target/2255-proof/red.log
+      - name: Cache statistics
+        if: always()
+        run: sccache --show-stats
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: question-red-proof
+          path: target/2255-proof
