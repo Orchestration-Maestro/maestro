@@ -69,11 +69,13 @@ fn served() -> Served {
 
 /// Whether the process `pid` has ended: gone, or a zombie nobody reaped yet.
 fn ended(pid: &str) -> bool {
-    std::fs::read_to_string(format!("/proc/{pid}/stat")).map_or(true, |stat| {
-        stat.rsplit(") ")
-            .next()
-            .is_some_and(|rest| rest.starts_with('Z'))
-    })
+    let state = std::process::Command::new("ps")
+        .args(["-o", "stat=", "-p", pid])
+        .output()
+        .unwrap()
+        .stdout;
+    let state = String::from_utf8(state).unwrap();
+    state.trim().is_empty() || state.trim().starts_with('Z')
 }
 
 /// A first SIGTERM or SIGHUP kills the shell commands still running, disposes the session
