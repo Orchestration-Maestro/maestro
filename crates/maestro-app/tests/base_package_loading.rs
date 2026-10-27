@@ -830,3 +830,179 @@ fn aliased_base_entrypoints_load_once_at_their_ordinary_position() {
         );
     });
 }
+
+/// Missing layer keys cannot remove accepted settings; explicit null still can.
+#[test]
+fn base_layer_removal_requires_an_explicit_null() {
+    for explicit_null in [false, true] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path().to_string_lossy();
+        let agent = format!("{root}/agent");
+        let cwd = format!("{root}/project");
+        let base = format!("{root}/base");
+        for dir in [&agent, &cwd] {
+            std::fs::create_dir_all(dir).unwrap();
+        }
+        package(&base, "base");
+        on_task_set(|local| async move {
+            let settings = Rc::new(RefCell::new(maestro_settings::SettingsManager::in_memory(
+                maestro_settings::Settings::default(),
+            )));
+            let layer = maestro_settings::BaseSettingsLayer {
+                settings: maestro_settings::Settings(
+                    serde_json::from_value(json!({"theme":"locked"})).unwrap(),
+                ),
+                locked: ["theme".into()].into_iter().collect(),
+                source: "accepted".into(),
+                recorded_at: "now".into(),
+            };
+            settings
+                .borrow_mut()
+                .publish_base_layer(maestro_settings::SettingsScope::Global, Some(layer.clone()));
+            let input = if explicit_null {
+                json!({"scope":"user","layer":null})
+            } else {
+                json!({"scope":"user"})
+            };
+            let mut resources: ResourceLoaderOptions<Local> = ResourceLoaderOptions::new(
+                local,
+                contributing_modules(json!({"baseLayers":[input]}), Rc::default()),
+            );
+            resources.base_package_sources = vec![base];
+            let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+                cwd,
+                agent_dir: agent,
+                settings_manager: Some(Rc::clone(&settings)),
+                resources,
+            });
+            loader.reload().await.unwrap();
+            let result = loader.get_extensions();
+            if explicit_null {
+                assert!(result.errors.is_empty());
+                assert!(settings.borrow().get_base_layer().is_none());
+                assert!(!settings.borrow().is_key_path_locked("theme", &[]));
+            } else {
+                assert_eq!(result.errors.len(), 1);
+                assert!(result.errors[0].path.ends_with("base.wasm"));
+                assert!(result.errors[0].error.contains("missing field `layer`"));
+                assert_eq!(settings.borrow().get_base_layer(), Some(&layer));
+                assert!(settings.borrow().is_key_path_locked("theme", &[]));
+                assert_eq!(settings.borrow().get_theme().as_deref(), Some("locked"));
+            }
+        });
+    }
+}
+
+/// Records registration and removal collisions without publishing load-time inputs.
+fn provider_modules() -> ModuleLoader<Local> {
+    Rc::new(|path: &str| {
+        let base = path.ends_with("base.wasm");
+        let initialize: ExtensionFactory<Local> = Rc::new(move |api| {
+            let endpoint = if base { "base" } else { "project" };
+            for name in [
+                "shared",
+                if base {
+                    "removed-by-project"
+                } else {
+                    "removed-by-base"
+                },
+            ] {
+                api.register_provider(
+                    name.into(),
+                    std::sync::Arc::new(std::sync::RwLock::new(
+                        maestro_extensions::types::ProviderConfig {
+                            base_url: Some(endpoint.into()),
+                            ..Default::default()
+                        },
+                    )),
+                )
+                .unwrap();
+            }
+            api.unregister_provider(if base {
+                "removed-by-base"
+            } else {
+                "removed-by-project"
+            })
+            .unwrap();
+            Box::pin(async { Ok(()) })
+        });
+        Box::pin(async move { Ok(Some(initialize)) })
+    })
+}
+
+/// Queued registrations and removals follow ordinary positions, including canonical reuse.
+#[test]
+fn base_provider_operations_follow_ordinary_extension_order() {
+    for explicit_alias in [false, true] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path().to_string_lossy();
+        let agent = format!("{root}/agent");
+        let cwd = format!("{root}/project");
+        let base = format!("{root}/base");
+        let alias = format!("{root}/alias");
+        package(&base, "base");
+        std::fs::create_dir_all(&agent).unwrap();
+        std::fs::create_dir_all(format!("{cwd}/.maestro/extensions")).unwrap();
+        std::fs::write(format!("{cwd}/.maestro/extensions/project.wasm"), "").unwrap();
+        std::os::unix::fs::symlink(&base, &alias).unwrap();
+        on_task_set(|local| async move {
+            let mut resources: ResourceLoaderOptions<Local> =
+                ResourceLoaderOptions::new(local, provider_modules());
+            resources.base_package_sources = vec![base];
+            if explicit_alias {
+                resources.additional_extension_paths = vec![format!("{alias}/base.wasm")];
+            }
+            let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+                cwd,
+                agent_dir: agent,
+                settings_manager: None,
+                resources,
+            });
+            loader.reload().await.unwrap();
+            let result = loader.get_extensions();
+            assert!(result.errors.is_empty());
+            assert_provider_operations(&result, explicit_alias);
+        });
+    }
+}
+
+/// Checks the exact queue consumed by session services and runner binding.
+fn assert_provider_operations(
+    result: &maestro_extensions::LoadExtensionsResult<Local>,
+    explicit_alias: bool,
+) {
+    let pending = result
+        .runtime
+        .pending_provider_registrations
+        .read()
+        .unwrap();
+    let operations: Vec<_> = pending
+        .values()
+        .map(|entry| {
+            (
+                entry.name.clone(),
+                entry.config.read().unwrap().base_url.clone().unwrap(),
+            )
+        })
+        .collect();
+    let expected = if explicit_alias {
+        vec![
+            ("shared", "base"),
+            ("shared", "project"),
+            ("removed-by-base", "project"),
+        ]
+    } else {
+        vec![
+            ("shared", "project"),
+            ("shared", "base"),
+            ("removed-by-project", "base"),
+        ]
+    };
+    assert_eq!(
+        operations,
+        expected
+            .into_iter()
+            .map(|(name, url)| (name.into(), url.into()))
+            .collect::<Vec<_>>()
+    );
+}
