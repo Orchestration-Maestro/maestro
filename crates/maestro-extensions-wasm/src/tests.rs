@@ -116,6 +116,7 @@ mod system_prompt_header_example;
 pub(crate) mod theme_host;
 mod tool_callbacks;
 mod tool_events;
+mod tools_example;
 mod trigger_compact_example;
 pub(crate) mod ui_host;
 pub(crate) mod widget_component;

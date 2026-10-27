@@ -156,6 +156,8 @@ pub struct Bank {
     answer: Option<Value>,
     /// Recorded palette the UI's live theme reads; absent reads the dark palette.
     theme: Option<String>,
+    /// Supplied custom-view inputs and expected frames.
+    pub custom_script: Option<super::custom_host::Script>,
     /// Factory widgets in the order they were shown.
     pub widgets: Vec<WidgetSlot>,
     /// The header container.
@@ -1291,9 +1293,7 @@ impl host::HostTui for State {
         &mut self,
         _: Resource<Tui>,
     ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
-        Ok(Err(
-            "the component test host lends no frame writer".to_owned()
-        ))
+        Ok(Ok(self.push(super::widget_component::WidgetResource(0))?))
     }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)

@@ -103,6 +103,16 @@ pub struct List {
 #[derive(Default)]
 pub struct Lists(HashMap<u32, List>);
 
+impl Lists {
+    /// Takes the callbacks kept by list event slots, leaving those slots empty.
+    pub fn take_handlers(&mut self) -> Vec<u32> {
+        self.0
+            .values_mut()
+            .flat_map(|list| std::mem::take(&mut list.handlers).into_values())
+            .collect()
+    }
+}
+
 /// The list under `key`.
 pub fn list(observed: &mut Observed, key: u32) -> Result<&mut List, String> {
     observed

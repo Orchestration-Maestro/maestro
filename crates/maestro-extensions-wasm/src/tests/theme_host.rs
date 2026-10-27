@@ -86,7 +86,7 @@ impl Bank {
     }
 
     /// The current state behind `key`.
-    fn theme(&mut self, key: &str) -> &mut Palette {
+    pub fn theme(&mut self, key: &str) -> &mut Palette {
         self.themes
             .entry(key.to_owned())
             .or_insert_with(|| corpus().palettes.remove(key).unwrap())
