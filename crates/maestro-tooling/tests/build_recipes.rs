@@ -1291,7 +1291,14 @@ fn maestro_source_recipes_preserve_invocation_directory() {
             .arg(workspace.path().join("justfile"))
             .arg(recipe)
             .current_dir(&outside)
-            .args(["", "a space", "'quoted'", "\u{feff}\u{85}\u{2003}"])
+            .args([
+                "",
+                "a space",
+                "'quoted'",
+                "unmatched'quote",
+                "$(exit 91); * $HOME",
+                "\u{feff}\u{85}\u{2003}",
+            ])
             .output()
             .unwrap();
         assert!(
@@ -1307,7 +1314,7 @@ fn maestro_source_recipes_preserve_invocation_directory() {
     let manifest = workspace.path().join("Cargo.toml");
     let log = workspace.log();
     for recipe in ["run-source", "run-source-windows"] {
-        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}", manifest.display())), "{log}");
+        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|unmatched'quote|$(exit 91); * $HOME|\u{feff}\u{85}\u{2003}", manifest.display())), "{log}");
     }
 }
 
