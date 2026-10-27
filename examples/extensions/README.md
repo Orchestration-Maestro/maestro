@@ -42,6 +42,9 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `snake.rs` | A `/snake` custom view with arrow/WASD controls, 100 ms ticks and saved games in session entries. |
+| `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
+| `snake/render.rs` | The bordered Snake board and input hints. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
@@ -103,6 +106,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- snake_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -443,6 +448,26 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the Snake game does
+
+Build with `--example snake`, then load the component into a component-enabled
+interactive host with custom UI, keyboard helpers, native waits and a WASI random
+source. Loading and playing are opt-in; no model, provider or network is needed.
+Run `/snake` to open the 40 by 15 board. Arrow keys or WASD steer; each food is
+worth 10 points. Escape saves the current game in a `snake-save` session entry
+and closes the view. Q closes it and clears the save. A restored game starts
+paused: any key except Escape or Q resumes it; those two keys close it without
+changing the saved game. After a collision, R or Space restarts with the high
+score retained. The newest save is read from the whole session, not only the
+current branch. A finished saved game starts a new game with its high score.
+
+The controlled `snake_` runs use the built component with supplied terminal
+input, random bytes, history and tick completions. Closing the view cancels its
+pending native wait and removes its event listener. The example never writes a
+file directly; saving and clearing append ordinary session entries through the
+host. Narrow views show fewer columns without changing the game's collision
+boundaries.
 
 ### What the audited read override does
 
