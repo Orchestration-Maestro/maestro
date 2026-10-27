@@ -94,6 +94,8 @@ mod tests {
     use super::{call, win32_guest_path};
 
     /// Windows drive, share and verbatim paths reach the component's roots.
+    /// Share names uppercase one UTF-16 unit at a time, as Windows compares
+    /// them, so shares Windows tells apart keep separate roots.
     #[test]
     fn windows_paths_take_the_component_spelling() {
         for (native, guest) in [
@@ -104,6 +106,10 @@ mod tests {
             (r"\\?\C:\Users\me", "/C:/Users/me"),
             (r"\\server\share\dir", "/SERVER/SHARE/dir"),
             (r"\\Server\sHare Ω\Dir", "/SERVER/SHARE Ω/Dir"),
+            (r"\\server\ω\Dir", "/SERVER/Ω/Dir"),
+            (r"\\localhost\straße\x", "/LOCALHOST/STRAßE/x"),
+            (r"\\localhost\strasse\x", "/LOCALHOST/STRASSE/x"),
+            (r"\\localhost\𐐨\x", "/LOCALHOST/𐐨/x"),
             (r"\\?\UNC\server\share\dir", "/SERVER/SHARE/dir"),
             ("//server/share", "/SERVER/SHARE"),
             ("//server", "/SERVER"),
