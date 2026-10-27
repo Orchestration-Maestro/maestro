@@ -42,3 +42,39 @@ fn resolved_packages_keep_project_pin_and_empty_filtered_roots() {
     );
     assert_eq!(result.packages[1].installed_path, fixture.agent("empty"));
 }
+
+#[test]
+fn explicit_descriptors_keep_npm_pins_and_temporary_local_scope() {
+    let fixture = Fixture::new(&json!({}));
+    let npm = fixture
+        .scratch
+        .path()
+        .join("project/.maestro/npm/node_modules/example");
+    std::fs::create_dir_all(&npm).unwrap();
+    std::fs::write(
+        npm.join("package.json"),
+        r#"{"version":"1.2.3","maestro":{}}"#,
+    )
+    .unwrap();
+    let result = block_on(
+        fixture
+            .manager
+            .resolve_extension_sources(&["npm:example@1.2.3".into()], Some(SourceScope::Project)),
+    )
+    .unwrap();
+    assert!(result.extensions.is_empty());
+    assert_eq!(result.packages.len(), 1);
+    assert_eq!(result.packages[0].identity, "npm:example");
+    assert_eq!(result.packages[0].source, "npm:example@1.2.3");
+    assert_eq!(result.packages[0].scope, SourceScope::Project);
+    assert_eq!(result.packages[0].installed_path, npm.to_str().unwrap());
+    let local = npm.to_str().unwrap().to_owned();
+    let result = block_on(
+        fixture
+            .manager
+            .resolve_extension_sources(std::slice::from_ref(&local), Some(SourceScope::Temporary)),
+    )
+    .unwrap();
+    assert_eq!(result.packages[0].scope, SourceScope::Temporary);
+    assert_eq!(result.packages[0].installed_path, local);
+}
