@@ -4,46 +4,33 @@ use std::collections::BTreeMap;
 
 use maestro_settings::BaseSettingsLayer;
 
-use super::super::model::LoadedConfig;
+use super::{super::model::LoadedConfig, FieldSource};
 
-/// Stored namespace and declared members of a rejected semantic area.
-pub(super) struct AreaSchema {
-    /// Authored namespace used by this area's decoder.
-    pub root: &'static str,
-    /// Declared record members, or empty for a scalar area.
-    pub fields: &'static [&'static str],
+/// Declared decoder sources for rejected semantic areas.
+pub(super) type AreaSchemas = BTreeMap<&'static str, Vec<FieldSource>>;
+
+/// Ask the owner about exactly the sources consumed by the decoder.
+fn sources_locked(layer: &BaseSettingsLayer, sources: &[FieldSource]) -> bool {
+    sources.iter().any(|source| {
+        if source.fields.is_empty() {
+            return path_locked(layer, source.root, None);
+        }
+        source
+            .fields
+            .iter()
+            .any(|key| path_locked(layer, source.root, Some(key)))
+    })
 }
 
-/// Decoder metadata for rejected semantic areas.
-pub(super) type AreaSchemas = BTreeMap<&'static str, AreaSchema>;
-
-impl AreaSchema {
-    /// Ask the owner whether any declared input is constrained.
-    fn is_locked(&self, layer: &BaseSettingsLayer, area: &str) -> bool {
-        if self.fields.is_empty() {
-            return self.path_locked(layer, area, None);
-        }
-        self.fields
-            .iter()
-            .any(|key| self.path_locked(layer, area, Some(key)))
-    }
-
-    /// Keep flattened fields attached to their authored namespaces.
-    fn path_locked(&self, layer: &BaseSettingsLayer, area: &str, key: Option<&str>) -> bool {
-        let root = match (area, key) {
-            ("update", Some("detectionCatalogCheck")) | ("experimental", Some("paneHistory")) => {
-                "daemon"
-            }
-            _ => self.root,
-        };
-        let mut path = root.split('.');
-        let Some(field) = path.next() else {
-            return false;
-        };
-        let mut keys: Vec<_> = path.collect();
-        keys.extend(key);
-        layer.is_key_path_locked(field, &keys)
-    }
+/// Turn a declared source location into the owner's literal-path query.
+fn path_locked(layer: &BaseSettingsLayer, root: &str, key: Option<&str>) -> bool {
+    let mut path = root.split('.');
+    let Some(field) = path.next() else {
+        return false;
+    };
+    let mut keys: Vec<_> = path.collect();
+    keys.extend(key);
+    layer.is_key_path_locked(field, &keys)
 }
 
 /// Replace rejected locked areas with validated base values instead of stale values.
@@ -88,7 +75,7 @@ fn should_recover(
         && !invalid_base.iter().any(|name| name == area)
         && schemas
             .get(area)
-            .is_some_and(|schema| schema.is_locked(layer, area))
+            .is_some_and(|sources| sources_locked(layer, sources))
 }
 
 /// Preserve the original type error while explaining the temporary base fallback.

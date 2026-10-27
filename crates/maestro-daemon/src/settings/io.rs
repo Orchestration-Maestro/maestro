@@ -19,7 +19,33 @@ use serde_json::Value;
 
 use super::model::{Config, LoadedConfig};
 use ignored::{Decoder, Segment, ValueRef, format_path, path_key};
-use retention::{AreaSchema, AreaSchemas, recover_locked_areas};
+use retention::{AreaSchemas, recover_locked_areas};
+
+/// One declared group of fields selected from an authored namespace.
+struct FieldSource {
+    /// Namespace used to read the supplied settings document.
+    root: &'static str,
+    /// The same members supplied to the typed decoder.
+    fields: &'static [&'static str],
+}
+
+/// Decoder input retaining origins that flattening would otherwise discard.
+struct AreaInput<'a> {
+    /// Borrowed value or selected members consumed by Serde.
+    value: ValueRef<'a>,
+    /// Declared selections, including members absent from this document.
+    sources: Vec<FieldSource>,
+}
+
+impl<'a> AreaInput<'a> {
+    /// Use the decoder's own declared fields for an unflattened input.
+    fn unmapped(value: ValueRef<'a>) -> Self {
+        Self {
+            value,
+            sources: Vec::new(),
+        }
+    }
+}
 
 /// Client experimental keys stored alongside interface preferences.
 const EXPERIMENTAL_KEYS: &[&str] = &[
@@ -92,8 +118,6 @@ fn project_global_settings_with_base(
 /// Decode each original area independently after selecting its stored keys.
 fn project_areas(settings: &Settings, loaded: &mut LoadedConfig, schemas: &mut AreaSchemas) {
     let mux = settings.0.get("multiplexer");
-    let daemon = settings.0.get("daemon");
-    let update = settings.0.get("update");
     macro_rules! area {
         ($field:ident, $root:literal, $value:expr) => {
             if let Some(value) = decode_area($value, $root, stringify!($field), loaded, schemas) {
@@ -109,42 +133,46 @@ fn project_areas(settings: &Settings, loaded: &mut LoadedConfig, schemas: &mut A
     area!(
         terminal,
         "daemon",
-        selected(daemon, &["paneShell", "paneShellMode", "newPaneCwd"])
+        selected(
+            settings,
+            "daemon",
+            &["paneShell", "paneShellMode", "newPaneCwd"]
+        )
     );
     area!(
         session,
         "daemon",
-        selected(daemon, &["resumeAgentsOnRestore"])
+        selected(settings, "daemon", &["resumeAgentsOnRestore"])
     );
     area!(
         server,
         "daemon",
-        selected(daemon, &["headlessCols", "headlessRows"])
+        selected(settings, "daemon", &["headlessCols", "headlessRows"])
     );
     area!(
         advanced,
         "daemon",
-        selected(daemon, &["scrollbackLimitBytes"])
+        selected(settings, "daemon", &["scrollbackLimitBytes"])
     );
     area!(
         worktrees,
         "daemon",
-        selected(daemon, &["worktreesDirectory"])
+        selected(settings, "daemon", &["worktreesDirectory"])
     );
     area!(
         update,
         "update",
         combined(
-            selected(update, &["channel", "versionCheck"]),
-            selected(daemon, &["detectionCatalogCheck"])
+            selected(settings, "update", &["channel", "versionCheck"]),
+            selected(settings, "daemon", &["detectionCatalogCheck"])
         )
     );
     area!(
         experimental,
         "multiplexer",
         combined(
-            selected(mux, EXPERIMENTAL_KEYS),
-            selected(daemon, &["paneHistory"])
+            selected(settings, "multiplexer", EXPERIMENTAL_KEYS),
+            selected(settings, "daemon", &["paneHistory"])
         )
     );
 }
@@ -154,10 +182,10 @@ fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig, schemas: &
     if mux.is_some_and(|value| !value.is_object()) {
         schemas.insert(
             "onboarding",
-            AreaSchema {
+            vec![FieldSource {
                 root: "multiplexer.onboarding",
                 fields: &[],
-            },
+            }],
         );
         reject_area("onboarding", "multiplexer must be an object", loaded);
     } else if let Some(value) = decode_area(
@@ -172,17 +200,21 @@ fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig, schemas: &
 }
 
 /// Select a nested record, preserving a malformed container for typed rejection.
-fn nested<'a>(container: Option<&'a Value>, key: &str, fallback: &'a Value) -> ValueRef<'a> {
-    ValueRef::Value(match container {
+fn nested<'a>(container: Option<&'a Value>, key: &str, fallback: &'a Value) -> AreaInput<'a> {
+    AreaInput::unmapped(ValueRef::Value(match container {
         None => fallback,
         Some(Value::Object(values)) => values.get(key).unwrap_or(fallback),
         Some(value) => value,
-    })
+    }))
 }
 
 /// Select flattened keys for one original semantic area.
-fn selected<'a>(container: Option<&'a Value>, keys: &[&str]) -> ValueRef<'a> {
-    match container {
+fn selected<'a>(
+    settings: &'a Settings,
+    root: &'static str,
+    keys: &'static [&'static str],
+) -> AreaInput<'a> {
+    let value = match settings.0.get(root) {
         None => ValueRef::Fields(Vec::new()),
         Some(Value::Object(values)) => ValueRef::Fields(
             values
@@ -192,12 +224,16 @@ fn selected<'a>(container: Option<&'a Value>, keys: &[&str]) -> ValueRef<'a> {
                 .collect(),
         ),
         Some(value) => ValueRef::Value(value),
+    };
+    AreaInput {
+        value,
+        sources: vec![FieldSource { root, fields: keys }],
     }
 }
 
 /// Interface fields and unknown siblings, excluding independently decoded areas.
-fn ui_values(container: Option<&Value>) -> ValueRef<'_> {
-    match container {
+fn ui_values(container: Option<&Value>) -> AreaInput<'_> {
+    AreaInput::unmapped(match container {
         None => ValueRef::Fields(Vec::new()),
         Some(Value::Object(values)) => ValueRef::Fields(
             values
@@ -210,29 +246,32 @@ fn ui_values(container: Option<&Value>) -> ValueRef<'_> {
                 .collect(),
         ),
         Some(value) => ValueRef::Value(value),
-    }
+    })
 }
 
 /// Join fields split between namespaces without hiding a malformed source.
-fn combined<'a>(first: ValueRef<'a>, second: ValueRef<'a>) -> ValueRef<'a> {
-    match (first, second) {
+fn combined<'a>(first: AreaInput<'a>, second: AreaInput<'a>) -> AreaInput<'a> {
+    let sources = first.sources.into_iter().chain(second.sources).collect();
+    let value = match (first.value, second.value) {
         (ValueRef::Fields(mut first), ValueRef::Fields(second)) => {
             first.extend(second);
             first.sort_unstable_by_key(|(key, _)| *key);
             ValueRef::Fields(first)
         }
         (ValueRef::Fields(_), invalid) | (invalid, _) => invalid,
-    }
+    };
+    AreaInput { value, sources }
 }
 
 /// Decode once and publish ignored paths only after the complete area succeeds.
 fn decode_area<T: DeserializeOwned>(
-    value: ValueRef<'_>,
+    input: AreaInput<'_>,
     root: &'static str,
     area: &'static str,
     loaded: &mut LoadedConfig,
     schemas: &mut AreaSchemas,
 ) -> Option<T> {
+    let AreaInput { value, mut sources } = input;
     let ignored = RefCell::new(Vec::new());
     let declared = Cell::new(None);
     match T::deserialize(Decoder {
@@ -254,13 +293,13 @@ fn decode_area<T: DeserializeOwned>(
             Some(config)
         }
         Err(error) => {
-            schemas.insert(
-                area,
-                AreaSchema {
+            if sources.is_empty() {
+                sources.push(FieldSource {
                     root,
                     fields: declared.get().unwrap_or(&[]),
-                },
-            );
+                });
+            }
+            schemas.insert(area, sources);
             reject_area(area, &error.to_string(), loaded);
             None
         }
