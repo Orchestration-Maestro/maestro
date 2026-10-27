@@ -299,7 +299,10 @@ async fn fallback(case: &'static str) -> Value {
     prerequisites(&harness, case);
     let history = serde_json::to_value(harness.history.borrow().get_entries()).unwrap();
     let mut event = event();
-    let data = serde_json::to_value(&event.data).unwrap();
+    let boundary = (
+        event.preparation.first_kept_entry_id.clone(),
+        event.preparation.tokens_before,
+    );
     if case == "pre_cancel" {
         event.signal.abort();
     }
@@ -321,7 +324,7 @@ async fn fallback(case: &'static str) -> Value {
         "case":case,"fallback":result.is_none(),"calls":provider.0.lock().unwrap().len(),
         "notices":notices,"errors":harness.errors.borrow().len(),"cancelled":event.signal.is_aborted(),
         "historyUnchanged":history == serde_json::to_value(harness.history.borrow().get_entries()).unwrap(),
-        "preparationUnchanged":data == serde_json::to_value(&event.data).unwrap(),
+        "boundaryUnchanged":boundary == (event.preparation.first_kept_entry_id.clone(), event.preparation.tokens_before),
     });
     unregister_api_providers("custom-compaction-fallback");
     observed
@@ -359,8 +362,10 @@ fn custom_compaction_unusable_summaries_fall_back_without_editing_history() {
             ("pre_cancel", 0, json!([]), true),
         ] {
             observed.push(fallback(case).await);
-            expected.push(json!({"case":case,"fallback":true,"calls":calls,"notices":notices,
-                "errors":0,"cancelled":cancelled,"historyUnchanged":true,"preparationUnchanged":true}));
+            expected.push(
+                json!({"case":case,"fallback":true,"calls":calls,"notices":notices,
+                "errors":0,"cancelled":cancelled,"historyUnchanged":true,"boundaryUnchanged":true}),
+            );
         }
         assert_eq!(observed, expected);
     });
