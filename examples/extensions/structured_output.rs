@@ -26,6 +26,9 @@ struct StructuredOutputDetails {
 }
 
 /// Renders the complete answer in either expansion state, or its first text block.
+///
+/// # Errors
+/// Returns an error if details cannot be decoded or a theme or text host call fails.
 fn render_result(result: &AgentToolResult, theme: &Theme) -> ExtensionResult<Component> {
     let details = result
         .details
@@ -54,6 +57,9 @@ fn render_result(result: &AgentToolResult, theme: &Theme) -> ExtensionResult<Com
 }
 
 /// Registers the structured answer tool on the supplied host.
+///
+/// # Errors
+/// The returned future fails if the host rejects tool registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
