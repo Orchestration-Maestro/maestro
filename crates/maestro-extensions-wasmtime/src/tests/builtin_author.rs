@@ -69,3 +69,35 @@ pub(super) async fn loaded_with_reporter(
     );
     (runner, events)
 }
+
+/// Runs a real-search witness with pinned executables, never the runner's search PATH.
+pub(super) fn with_search_tools(test: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return true;
+    }
+    let bin = maestro_test_directory::Scratch::new().unwrap();
+    for (name, variable) in [("rg", "MAESTRO_TEST_RG"), ("fd", "MAESTRO_TEST_FD")] {
+        let source = std::env::var_os(variable)
+            .unwrap_or_else(|| panic!("{name}: nextest must supply {variable}"));
+        let target = bin
+            .path()
+            .join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+        std::fs::copy(&source, target)
+            .unwrap_or_else(|error| panic!("{name}: cannot copy pinned executable: {error}"));
+    }
+    let output = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .case("search-tools")
+        .nocapture()
+        .env("PATH", bin.path())
+        .env("MAESTRO_TEST_SEARCH_BIN", bin.path())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    false
+}
