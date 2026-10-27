@@ -88,7 +88,7 @@ fn switch_dialog_cases() -> Vec<Case> {
             let result = if decision == true {
                 None
             } else {
-                requests.push(json!(["notify", [cancelled, "info"]]));
+                requests.push(json!(["notify", [cancelled, "Info"]]));
                 Some(json!({"cancel":true}))
             };
             rows.push(Case {
@@ -164,7 +164,7 @@ fn switch_rejection_cases() -> Vec<Case> {
                             null
                         ]
                     ],
-                    ["notify", ["Clear cancelled", "info"]]
+                    ["notify", ["Clear cancelled", "Info"]]
                 ])
             },
             ended: Ended::Failed("UI refused".into()),
