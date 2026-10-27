@@ -178,18 +178,23 @@ impl Overlay {
 
     /// The field's text before its cursor, the character under it and the text after,
     /// scrolled to fit in `cells` with the cursor kept near the middle of a long field.
+    ///
+    /// The field is measured joined: characters on either side of the cursor can form one
+    /// wider cell, such as a sign and the variation selector after it.
     fn window(&self, item: &Item, cells: usize) -> ExtensionResult<(String, char, String)> {
         let (before, rest) = item.text.split_at(item.cursor);
         let mut before: String = before.iter().collect();
         let under = rest.first().copied().unwrap_or(' ');
         let mut after: String = rest.iter().skip(1).collect();
-        let column = visible_width(&self.api, &before)?;
-        let total = column + visible_width(&self.api, &format!("{under}{after}"))?;
+        let total = visible_width(&self.api, &format!("{before}{under}{after}"))?;
         if total > cells {
+            let column = visible_width(&self.api, &before)?;
             let start = column.saturating_sub(cells / 2).min(total - cells);
             before = slice_by_column(&self.api, &before, start, column - start, true)?;
-            let used = visible_width(&self.api, &format!("{before}{under}"))?;
-            after = slice_by_column(&self.api, &after, 0, cells.saturating_sub(used), true)?;
+            let joined = format!("{before}{under}{after}");
+            let shown = slice_by_column(&self.api, &joined, 0, cells, true)?;
+            let kept = shown.get(before.len() + under.len_utf8()..);
+            kept.unwrap_or_default().clone_into(&mut after);
         }
         Ok((before, under, after))
     }
