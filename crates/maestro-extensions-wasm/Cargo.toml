@@ -41,13 +41,13 @@ path = "../../examples/extensions/file_trigger.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "github_issue_autocomplete"
-path = "../../examples/extensions/github_issue_autocomplete.rs"
+name = "git_checkpoint"
+path = "../../examples/extensions/git_checkpoint.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "git_checkpoint"
-path = "../../examples/extensions/git_checkpoint.rs"
+name = "github_issue_autocomplete"
+path = "../../examples/extensions/github_issue_autocomplete.rs"
 crate-type = ["cdylib"]
 
 [[example]]
