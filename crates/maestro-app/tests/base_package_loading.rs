@@ -438,3 +438,80 @@ fn session_services_apply_contributed_models_before_user_models() {
         assert_eq!(model.cost.output.to_bits(), 2.0_f64.to_bits());
     });
 }
+
+/// Registers distinct first defaults and replacement metadata in each factory.
+fn reading_flag_modules(observations: Rc<RefCell<Vec<serde_json::Value>>>) -> ModuleLoader<Local> {
+    Rc::new(move |path: &str| {
+        let base = path.ends_with("base.wasm");
+        let observations = Rc::clone(&observations);
+        let initialize: ExtensionFactory<Local> = Rc::new(move |api| {
+            let first = if base { "base first" } else { "project first" };
+            for default in [first, "replacement"] {
+                api.register_flag(
+                    "shared".into(),
+                    maestro_extensions::types::ExtensionFlagOptions {
+                        description: None,
+                        r#type: maestro_extensions::types::FlagType::String,
+                        default: Some(maestro_app::FlagValue::String(default.into())),
+                    },
+                )
+                .unwrap();
+            }
+            api.register_flag(
+                "optional".into(),
+                maestro_extensions::types::ExtensionFlagOptions {
+                    description: None,
+                    r#type: maestro_extensions::types::FlagType::String,
+                    default: base.then(|| maestro_app::FlagValue::String("base fallback".into())),
+                },
+            )
+            .unwrap();
+            if !base {
+                observations.borrow_mut().push(json!([
+                    api.get_flag("shared").unwrap(),
+                    api.get_flag("optional").unwrap()
+                ]));
+            }
+            Box::pin(async { Ok(()) })
+        });
+        Box::pin(async move { Ok(Some(initialize)) })
+    })
+}
+
+/// Ordinary factories see their own first defaults before later base defaults are restored.
+#[test]
+fn ordinary_factories_read_their_first_registered_flag_defaults() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    package(&base, "base");
+    std::fs::create_dir_all(&agent).unwrap();
+    std::fs::create_dir_all(format!("{cwd}/.maestro/extensions")).unwrap();
+    std::fs::write(format!("{cwd}/.maestro/extensions/project.wasm"), "").unwrap();
+    on_task_set(|local| async move {
+        let observed = Rc::new(RefCell::new(Vec::new()));
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, reading_flag_modules(Rc::clone(&observed)));
+        resources.base_package_sources = vec![base];
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: None,
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert_eq!(&*observed.borrow(), &[json!(["project first", null])]);
+        let values = loader.get_extensions();
+        let flags = values.runtime.flag_values.read().unwrap();
+        assert_eq!(
+            flags["shared"],
+            maestro_app::FlagValue::String("project first".into())
+        );
+        assert_eq!(
+            flags["optional"],
+            maestro_app::FlagValue::String("base fallback".into())
+        );
+    });
+}
