@@ -50,6 +50,8 @@ the workspace integration-test conventions.
 | `bookmark.rs` | Entry bookmarks: commands that label session entries, so that the tree view can find the important points of a conversation again. |
 | `commands.md` | Commands |
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
+| `custom_footer.md` | Custom footer |
+| `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `dynamic_tools.md` | Dynamic tools |
 | `dynamic_tools.rs` | Dynamic tools: one echo tool registered when a session starts, and a command that adds more echo tools while the session runs. |
 | `event_bus.md` | Event bus |
@@ -62,6 +64,8 @@ the workspace integration-test conventions.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `input_transform.md` | Input transform |
+| `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `notify.md` | Notify |
 | `notify.rs` | Sends an opt-in desktop notification when the agent is ready for input. |
 | `permission_gate.md` | Permission gate |
