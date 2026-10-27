@@ -48,6 +48,22 @@ pub fn group(name: &str) {
         replay(input, &expected);
     }
 }
+#[cfg(unix)]
+#[test]
+fn absolute_resource_patterns_do_not_depend_on_temporary_directory_spelling() {
+    let _guard = super::keybindings::bindings_guard();
+    let rows = super::selector::load(include_str!("../fixtures/resource_configuration.json"));
+    let (input, expected) = super::selector::cases::<Input, Expected>(
+        rows,
+        &OWNERS,
+        "resource_patterns_replace_exact_signed_entries_in_order",
+    )
+    .into_iter()
+    .next()
+    .unwrap();
+    replay(input, &expected);
+}
+
 /// Replays each operation against its own complete independent observation.
 fn replay(input: Input, expected: &Expected) {
     let width = input.width;

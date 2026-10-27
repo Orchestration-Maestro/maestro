@@ -175,9 +175,7 @@ fn grep_failures_keep_acquisition_path_and_exit_precedence() {
 #[cfg(unix)]
 #[test]
 fn grep_single_file_includes_basename() {
-    let Some(root) = crate::grep_support::tree() else {
-        return;
-    };
+    let root = crate::grep_support::tree().expect("ordinary search fixtures are portable");
     for c in crate::grep_support::cases("grep_single_file_includes_basename") {
         crate::grep_support::check_native(&c, &root);
     }
@@ -186,9 +184,7 @@ fn grep_single_file_includes_basename() {
 #[cfg(unix)]
 #[test]
 fn grep_global_limit_includes_requested_context() {
-    let Some(root) = crate::grep_support::tree() else {
-        return;
-    };
+    let root = crate::grep_support::tree().expect("ordinary search fixtures are portable");
     for c in crate::grep_support::cases("grep_global_limit_includes_requested_context") {
         crate::grep_support::check_native(&c, &root);
     }
@@ -197,9 +193,7 @@ fn grep_global_limit_includes_requested_context() {
 #[cfg(unix)]
 #[test]
 fn grep_flag_like_pattern_never_runs_commands() {
-    let Some(root) = crate::grep_support::tree() else {
-        return;
-    };
+    let root = crate::grep_support::tree().expect("ordinary search fixtures are portable");
     crate::find_support::executable(
         &root,
         "payload.sh",
@@ -217,9 +211,7 @@ fn grep_flag_like_pattern_never_runs_commands() {
 #[test]
 fn grep_native_files_and_protocol_bytes() {
     use crate::grep_support as g;
-    let Some(root) = g::tree() else {
-        return;
-    };
+    let root = g::tree().expect("ordinary search fixtures are portable");
     for c in g::cases("grep_native_files_and_protocol_bytes") {
         g::check_native(&c, &root);
     }
@@ -249,9 +241,7 @@ fn grep_native_files_and_protocol_bytes() {
 #[test]
 fn grep_native_search_options_reach_ripgrep() {
     use crate::grep_support as g;
-    let Some(root) = g::tree() else {
-        return;
-    };
+    let root = g::tree().expect("ordinary search fixtures are portable");
     for c in g::cases("grep_native_search_options_reach_ripgrep") {
         g::check_native(&c, &root);
     }
@@ -283,9 +273,7 @@ fn sorted_lines(result: &serde_json::Value) -> Vec<&str> {
 #[test]
 fn grep_native_nested_ignores_hidden_and_metadata() {
     use crate::grep_support as g;
-    let Some(root) = g::tree() else {
-        return;
-    };
+    let root = g::tree().expect("ordinary search fixtures are portable");
     let case = g::cases("grep_native_nested_ignores_hidden_and_metadata").remove(0);
     assert_eq!(case.op, "native-rg");
     assert_eq!(

@@ -123,6 +123,35 @@ fn native_directories_follow_links_without_filtering_hidden_entries() {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn native_link_and_missing_queries_need_no_distinct_unicode_names() {
+    use fixtures::completion_native::Tree;
+    let tree = Tree::new().expect("temporary directory created");
+    tree.directory("z dir").expect("fixture entry created");
+    std::os::unix::fs::symlink("z dir", tree.path().join("dir-link")).unwrap();
+    std::os::unix::fs::symlink("missing", tree.path().join("broken-link")).unwrap();
+    let provider = CombinedAutocompleteProvider::new(
+        vec![],
+        tree.authored(),
+        None,
+        NativeAutocompleteOperations::default(),
+    );
+    for (text, value) in [("./dir", "./dir-link/"), ("./broken", "./broken-link")] {
+        let found = query(&provider, text).expect("provider succeeds").unwrap();
+        assert_eq!(found.prefix, text);
+        assert_eq!(found.items.len(), 1);
+        assert_eq!(found.items[0].value, value);
+        assert_eq!(found.items[0].label, value.trim_start_matches("./"));
+        assert_eq!(found.items[0].description, None);
+    }
+    assert!(
+        query(&provider, "./none")
+            .expect("provider succeeds")
+            .is_none()
+    );
+}
+
 /// Direct-native query expectations, including all candidate fields.
 #[cfg(unix)]
 type NativePath = (

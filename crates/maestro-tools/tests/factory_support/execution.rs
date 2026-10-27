@@ -466,9 +466,7 @@ fn unlimited_find(root: &read_support::Scratch) {
 #[cfg(unix)]
 fn ignored_search() {
     for repository in [false, true] {
-        let Some(root) = grep_support::tree() else {
-            return;
-        };
+        let root = grep_support::tree().expect("ordinary traversal fixtures are portable");
         if repository {
             assert!(
                 std::process::Command::new("git")
