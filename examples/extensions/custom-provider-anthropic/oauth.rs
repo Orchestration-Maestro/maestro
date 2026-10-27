@@ -16,7 +16,7 @@ const TOKEN_URL: &str = "https://console.anthropic.com/v1/oauth/token";
 /// The provider's hosted authorization-code page.
 const REDIRECT_URI: &str = "https://console.anthropic.com/oauth/code/callback";
 
-/// Authorization effects retained independently of the registration callback.
+/// Provider effects retained independently of the registration callback.
 #[derive(Clone)]
 pub struct CustomAnthropic {
     /// The host's independently retained HTTP operations.
