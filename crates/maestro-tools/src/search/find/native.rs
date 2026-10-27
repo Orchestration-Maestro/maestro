@@ -110,9 +110,16 @@ fn arguments(root: &str, pattern: &str, limit: f64, windows: bool) -> Vec<String
     arguments
 }
 
-/// The regex fd compiles from `glob` on Windows; `None` keeps fd's own glob matching.
-fn either_separator(_glob: &str) -> Option<String> {
-    None
+/// The regex fd compiles from `glob` on Windows, with each `/` widened to `[/\\]`; inside a
+/// class this nests as a union, which the regex syntax accepts. `None` leaves an invalid glob
+/// to fd, which reports it.
+fn either_separator(glob: &str) -> Option<String> {
+    let glob = globset::GlobBuilder::new(glob)
+        .literal_separator(true)
+        .backslash_escape(false)
+        .build()
+        .ok()?;
+    Some(glob.regex().replace('/', r"[/\\]"))
 }
 
 #[cfg(test)]
