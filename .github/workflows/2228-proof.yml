@@ -1,0 +1,11 @@
+name: Dynamic tools merge proof
+"on":
+  push:
+    branches: [ci/2228-proof-*]
+permissions:
+  contents: read
+jobs:
+  proof:
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@be12ba727a7870cd044f6e29cedddeb3d7f709cc
+    with:
+      checkout-ref: af5ce5d3ecc905bbdf451cfac4d6bf49516bb33d
