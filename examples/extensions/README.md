@@ -40,7 +40,7 @@ inserts at its own place instead of appending at the end of each list.
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
-| `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. Directory names containing a literal backslash on Unix are not copied exactly. |
+| `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |

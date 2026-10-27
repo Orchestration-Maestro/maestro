@@ -42,6 +42,7 @@ impl Driver {
     /// Registers the example without running an event.
     fn new() -> Result<Self, String> {
         let (host, exports) = super::block_on(start::<TitlebarSpinner>())?;
+        host.observe().actions.raw = Some(json!("project").to_string());
         assert_eq!(host.observed().bus.listeners.len(), 1);
         assert!(titles(&host.observed()).is_empty());
         let listener = host.observed().bus.listeners[0].1;
@@ -209,11 +210,22 @@ fn titlebar_spinner_lifecycle_cancels_pending_waits() -> Result<(), String> {
         }
     }
     assert!(driver.host.observed().bus.listeners.is_empty());
+    driver.host.observe().actions.raw = Some(json!("").to_string());
     driver.event("session_shutdown", "/")?;
     assert_eq!(
         titles(&driver.host.observed()).last().unwrap(),
         "Maestro - after - "
     );
+    Ok(())
+}
+
+/// The title uses the host's basename, preserving a literal POSIX backslash.
+#[test]
+fn titlebar_spinner_uses_host_basename() -> Result<(), String> {
+    let driver = Driver::new()?;
+    driver.host.observe().actions.raw = Some(json!(r"a\b").to_string());
+    driver.event("agent_end", r"/work/a\b")?;
+    assert_eq!(titles(&driver.host.observed()), [r"Maestro - a\b"]);
     Ok(())
 }
 
@@ -228,6 +240,8 @@ fn titlebar_spinner_base_titles_and_rejections() -> Result<(), String> {
         ("/a/b///", "Maestro - b"),
         (r"C:\a\b\", "Maestro - b"),
     ] {
+        driver.host.observe().actions.raw =
+            Some(json!(expected.trim_start_matches("Maestro - ")).to_string());
         driver.event("agent_end", cwd)?;
         assert_eq!(titles(&driver.host.observed()).last().unwrap(), expected);
     }
@@ -306,6 +320,7 @@ async fn component_event(
 
 /// Runs the component's animation concurrently with the lifecycle event that cancels it.
 fn component_lifecycle(harness: &mut super::host::Harness, ending: &str) -> wasmtime::Result<()> {
+    harness.store.data_mut().observed.actions.raw = Some(json!("project").to_string());
     let start = harness.callback("event agent_start")?;
     let end = harness.callback(&format!("event {ending}"))?;
     let context = harness.ordinary("/controlled/project/")?;

@@ -9,7 +9,7 @@ use std::{cell::RefCell, future::poll_fn, rc::Rc, task::Waker, time::Duration};
 
 use maestro_extensions_wasm::{
     EventListener, ExtensionAPI, ExtensionContext, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, Subscription,
+    ExtensionResult, Subscription, tools::path_utils,
 };
 
 /// Frames in display order, one every 80 milliseconds.
@@ -30,18 +30,7 @@ struct Animation {
 
 /// Reads the current name and directory, without caching either between frames.
 fn base_title(api: &ExtensionAPI, context: &ExtensionContext) -> ExtensionResult<String> {
-    let cwd = context.cwd()?;
-    let path = if cwd.as_bytes().get(1) == Some(&b':') && cwd.as_bytes()[0].is_ascii_alphabetic() {
-        &cwd[2..]
-    } else {
-        &cwd
-    };
-    // shortcut: Unix backslashes are separators, use host path semantics if those names are needed.
-    let basename = path
-        .trim_end_matches(['/', '\\'])
-        .rsplit(['/', '\\'])
-        .next()
-        .unwrap_or("");
+    let basename = path_utils::basename(api, &context.cwd()?)?;
     // Matches maestro-chat/src/interactive_mode/events.rs:489-497 and configuration/config/mod.rs:24.
     Ok(
         match api.get_session_name()?.filter(|name| !name.is_empty()) {
