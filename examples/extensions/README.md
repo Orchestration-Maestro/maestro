@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
@@ -42,6 +43,7 @@ inserts at its own place instead of appending at the end of each list.
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `timed_confirm.rs` | `/timed`, `/timed-select` and `/timed-signal` commands that cancel dialogs after five or ten seconds. |
+| `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
@@ -72,6 +74,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- file_trigger_
@@ -99,6 +103,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- timed_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- titlebar_spinner_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -271,6 +277,23 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 Its controlled run, listed with the others above, calls the registered tool with
 every recorded duration text.
 
+### What the event bus example does
+
+`/emit [message]` trims its argument and sends it on the fixed `my:notification`
+channel with `"from": "/emit command"`, defaulting to `hello` when nothing is
+left. The argument is always the message: the command takes no event name, so
+`/emit other:event payload` sends that whole text to the same channel.
+
+A retained listener reports each `my:notification` payload through the current
+session context's UI as `Event from {from}: {message}` at information severity.
+The example reports one notification at session start, keeps the latest session
+context when a session is replaced, and reports nothing before the first session
+starts.
+
+Any extension can emit on the same channel with an object holding string
+`message` and `from` members; other members are ignored. Loading the component
+into an application is opt-in and needs that application's component runtime.
+
 ### What the compaction trigger example does
 
 `turn_end` records the context usage the host reports and requests compaction when
@@ -395,3 +418,21 @@ adapter. Separate dialog and clock barriers distinguish approval, cancellation
 and expiration without wall-clock waits. No provider, credentials or installation
 is needed. Loading the component is opt-in and needs a component-enabled host with
 dialog UI and native-wait support.
+
+### What the titlebar spinner does
+
+`agent_start` restores the base title, then shows the ten braille frames in order
+at 80 ms intervals. The first frame waits for that interval. Each frame reads the
+current session name and working directory again, producing
+`<frame> Maestro - <session> - <directory>`, or omitting the session part when the
+name is absent or empty. Restarting cancels the old wait and starts at the first
+frame; `agent_end` and `session_shutdown` cancel the wait and restore the base
+title. Shutdown also removes the example's event-bus listener.
+
+Build with `--example titlebar_spinner` using the command above. Loading it is
+opt-in and needs a component-enabled host with native waits, event-tail execution
+and terminal-title UI. The controlled runs supply wait-completion gates and
+session names, so they need no provider, paid service or terminal installation.
+The example starts no process and reads no files. A title-write or name-read
+failure ends the callback or animation with the host's error; tail errors go to
+the host's event-bus reporter.
