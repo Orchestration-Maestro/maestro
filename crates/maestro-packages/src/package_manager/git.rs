@@ -23,15 +23,21 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         git: &GitSource,
         scope: SourceScope,
     ) -> io::Result<SourceAcquisition> {
-        let (root, target) = self.git_locations(git, scope);
+        let (_, target) = self.git_locations(git, scope);
         if Path::new(&target).exists() {
             return self.repin_git(git, &target).await;
         }
-        if let Some(root) = &root {
-            super::npm::ensure_file(root, ".gitignore", GITIGNORE)?;
-        }
+        self.prepare_git_root(git, scope)?;
         self.install_missing_git(git, &target).await?;
         Ok(SourceAcquisition::Prepared)
+    }
+    /// Initializes the managed root before preparing an installed checkout.
+    fn prepare_git_root(&self, git: &GitSource, scope: SourceScope) -> io::Result<String> {
+        let (root, target) = self.git_locations(git, scope);
+        if let Some(root) = root {
+            super::npm::ensure_file(&root, ".gitignore", GITIGNORE)?;
+        }
+        Ok(target)
     }
     /// Prepares a fresh checkout before publishing it at the installed path.
     async fn install_missing_git(&self, git: &GitSource, target: &str) -> io::Result<()> {
@@ -59,7 +65,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
     }
     /// Prepares ordinary installation before replacing any existing managed checkout.
-    pub(super) async fn reinstall_git(&self, git: &GitSource, target: &str) -> io::Result<()> {
+    pub(super) async fn reinstall_git(
+        &self,
+        git: &GitSource,
+        scope: SourceScope,
+    ) -> io::Result<()> {
+        let target = self.prepare_git_root(git, scope)?;
+        let target = target.as_str();
         std::fs::create_dir_all(dirname(target))?;
         let mut stage = GitStaging::new(&dirname(target))?;
         let fresh = join(&[stage.path(), "checkout"]);
@@ -100,7 +112,16 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             )
             .await?;
             self.run_command("git", &["clean", "-ffdx"].map(str::to_owned), Some(path))
-                .await
+                .await?;
+            if !self.tracked_pin_paths(path, expected).await?.is_empty()
+                || !self
+                    .git_capture(path, &["ls-files", "--others", "-z"], &[])
+                    .await?
+                    .is_empty()
+            {
+                return Err(io::Error::other("Pinned checkout still contains drift"));
+            }
+            Ok(())
         }
         .await;
         match result {
@@ -350,7 +371,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 }
 
 /// A staging directory removed unless successfully published.
-struct GitStaging {
+pub(super) struct GitStaging {
     /// Exclusively allocated path.
     path: String,
     /// Whether cleanup still belongs to this guard.
@@ -358,14 +379,14 @@ struct GitStaging {
 }
 impl GitStaging {
     /// Allocates before a clone can write into the directory.
-    fn new(parent: &str) -> io::Result<Self> {
+    pub(super) fn new(parent: &str) -> io::Result<Self> {
         Ok(Self {
             path: create_temp_dir(parent)?,
             owned: true,
         })
     }
     /// Borrows the owned path while preparation is running.
-    fn path(&self) -> &str {
+    pub(super) fn path(&self) -> &str {
         &self.path
     }
     /// Publishes the prepared path, disarming deletion only on success.

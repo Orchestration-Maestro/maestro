@@ -95,19 +95,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             .git_capture(&path, &["ls-files", "--others", "-z"], &[])
             .await?;
         let expected = crate::trim(&expected);
-        if !expected.is_empty() {
-            for mode in ["--cached", "--no-ext-diff"] {
-                paths.push_str(
-                    &self
-                        .git_capture(
-                            &path,
-                            &["diff", mode, "--name-only", "-z", expected, "--"],
-                            &[],
-                        )
-                        .await?,
-                );
-            }
-        }
+        let comparison = if expected.is_empty() {
+            crate::trim(&head)
+        } else {
+            expected
+        };
+        paths.push_str(&self.tracked_pin_paths(&path, comparison).await?);
         let mut changed_paths: Vec<_> = paths
             .split('\0')
             .filter(|path| !path.is_empty())
@@ -120,6 +113,50 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             head_commit: Some(crate::trim(&head).to_owned()),
             changed_paths,
         })
+    }
+    /// Compares the real index and an unsuppressed index against the selected commit.
+    pub(super) async fn tracked_pin_paths(&self, path: &str, commit: &str) -> io::Result<String> {
+        let stage = super::git::GitStaging::new(&maestro_path::dirname(path))?;
+        let index = std::fs::canonicalize(stage.path())?.join("index");
+        let index = index.to_string_lossy();
+        let env = [("GIT_INDEX_FILE", index.as_ref())];
+        self.git_capture(path, &["read-tree", "--no-sparse-checkout", commit], &env)
+            .await?;
+        let mut paths = self
+            .git_capture(
+                path,
+                &[
+                    "diff",
+                    "--cached",
+                    "--no-renames",
+                    "--ignore-submodules=none",
+                    "--name-only",
+                    "-z",
+                    commit,
+                    "--",
+                ],
+                &[],
+            )
+            .await?;
+        paths.push_str(
+            &self
+                .git_capture(
+                    path,
+                    &[
+                        "diff",
+                        "--no-ext-diff",
+                        "--no-renames",
+                        "--ignore-submodules=none",
+                        "--name-only",
+                        "-z",
+                        commit,
+                        "--",
+                    ],
+                    &env,
+                )
+                .await?,
+        );
+        Ok(paths)
     }
     /// Restores the exact commit even when HEAD has not moved.
     pub(super) async fn repair_pin(
@@ -141,9 +178,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             }
         }
         if self.offline() {
-            return Err(io::Error::other("Pinned commit is unavailable offline"));
+            return Err(io::Error::other(
+                "Pinned checkout could not be restored offline",
+            ));
         }
-        self.reinstall_git(&git, &path).await
+        self.reinstall_git(&git, scope.resource_scope()).await
     }
 }
 
