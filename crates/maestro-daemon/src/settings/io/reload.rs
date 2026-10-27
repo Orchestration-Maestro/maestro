@@ -6,7 +6,7 @@ use maestro_settings::{SettingsError, SettingsErrorKind, SettingsManager, Settin
 
 use super::{
     super::model::{Config, ConfigReloadReport, ConfigReloadStatus, LoadedConfig},
-    project_global_settings,
+    project_global_settings_with_base,
 };
 
 /// Load startup preferences from the supplied, newly initialized manager.
@@ -38,7 +38,8 @@ pub fn load_config(
             other,
         );
     }
-    let mut loaded = project_global_settings(&settings, agent_dir);
+    let mut loaded =
+        project_global_settings_with_base(&settings, manager.get_global_base_layer(), agent_dir);
     if !loaded.invalid_sections.is_empty() {
         tracing::warn!(err = ?loaded.diagnostics, "config parse error, using defaults");
         for diagnostic in &mut loaded.diagnostics {
@@ -93,7 +94,8 @@ pub async fn load_live_config(
             other,
         );
     }
-    let mut loaded = project_global_settings(&settings, agent_dir);
+    let mut loaded =
+        project_global_settings_with_base(&settings, manager.get_global_base_layer(), agent_dir);
     loaded.diagnostics.append(&mut diagnostics);
     (Ok(loaded), other)
 }

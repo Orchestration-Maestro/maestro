@@ -2,19 +2,24 @@
 
 mod ignored;
 mod reload;
+mod retention;
 
 #[cfg(target_os = "linux")]
 pub(crate) use reload::apply_loaded;
 pub use reload::{config_diagnostic_summary, load_config, load_live_config, reload_config};
 
-use std::{cell::RefCell, path::Path};
+use std::{
+    cell::{Cell, RefCell},
+    path::Path,
+};
 
-use maestro_settings::Settings;
+use maestro_settings::{BaseSettingsLayer, Settings};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use super::model::{Config, LoadedConfig};
 use ignored::{Decoder, Segment, ValueRef, format_path, path_key};
+use retention::{AreaSchema, AreaSchemas, recover_locked_areas};
 
 /// Client experimental keys stored alongside interface preferences.
 const EXPERIMENTAL_KEYS: &[&str] = &[
@@ -42,12 +47,28 @@ const DAEMON_KEYS: &[&str] = &[
 /// Decode only the accepted global document without changing its raw members.
 #[must_use]
 pub fn project_global_settings(settings: &Settings, agent_dir: &Path) -> LoadedConfig {
+    project_global_settings_with_base(settings, None, agent_dir)
+}
+
+/// Decode global preferences, using the base for invalid areas containing a lock.
+fn project_global_settings_with_base(
+    settings: &Settings,
+    base_layer: Option<&BaseSettingsLayer>,
+    agent_dir: &Path,
+) -> LoadedConfig {
     let mut loaded = LoadedConfig {
         config: Config::default(),
         diagnostics: Vec::new(),
         invalid_sections: Vec::new(),
     };
-    project_areas(settings, &mut loaded);
+    let mut schemas = AreaSchemas::new();
+    project_areas(settings, &mut loaded, &mut schemas);
+    if !loaded.invalid_sections.is_empty()
+        && let Some(layer) = base_layer
+    {
+        let base = project_global_settings(&layer.settings, agent_dir);
+        recover_locked_areas(&mut loaded, base, layer, &schemas);
+    }
     unknown_namespace_keys(
         settings.0.get("daemon"),
         "daemon",
@@ -69,19 +90,19 @@ pub fn project_global_settings(settings: &Settings, agent_dir: &Path) -> LoadedC
 }
 
 /// Decode each original area independently after selecting its stored keys.
-fn project_areas(settings: &Settings, loaded: &mut LoadedConfig) {
+fn project_areas(settings: &Settings, loaded: &mut LoadedConfig, schemas: &mut AreaSchemas) {
     let mux = settings.0.get("multiplexer");
     let daemon = settings.0.get("daemon");
     let update = settings.0.get("update");
     macro_rules! area {
         ($field:ident, $root:literal, $value:expr) => {
-            if let Some(value) = decode_area($value, $root, stringify!($field), loaded) {
+            if let Some(value) = decode_area($value, $root, stringify!($field), loaded, schemas) {
                 loaded.config.$field = value;
             }
         };
     }
     let empty = Value::Object(serde_json::Map::new());
-    project_onboarding(mux, loaded);
+    project_onboarding(mux, loaded, schemas);
     area!(theme, "multiplexer.theme", nested(mux, "theme", &empty));
     area!(remote, "multiplexer.remote", nested(mux, "remote", &empty));
     area!(ui, "multiplexer", ui_values(mux));
@@ -129,14 +150,22 @@ fn project_areas(settings: &Settings, loaded: &mut LoadedConfig) {
 }
 
 /// Optional onboarding still requires its enclosing namespace to be an object.
-fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig) {
+fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig, schemas: &mut AreaSchemas) {
     if mux.is_some_and(|value| !value.is_object()) {
+        schemas.insert(
+            "onboarding",
+            AreaSchema {
+                root: "multiplexer.onboarding",
+                fields: &[],
+            },
+        );
         reject_area("onboarding", "multiplexer must be an object", loaded);
     } else if let Some(value) = decode_area(
         nested(mux, "onboarding", &Value::Null),
         "multiplexer.onboarding",
         "onboarding",
         loaded,
+        schemas,
     ) {
         loaded.config.onboarding = value;
     }
@@ -199,11 +228,13 @@ fn combined<'a>(first: ValueRef<'a>, second: ValueRef<'a>) -> ValueRef<'a> {
 /// Decode once and publish ignored paths only after the complete area succeeds.
 fn decode_area<T: DeserializeOwned>(
     value: ValueRef<'_>,
-    root: &str,
-    area: &str,
+    root: &'static str,
+    area: &'static str,
     loaded: &mut LoadedConfig,
+    schemas: &mut AreaSchemas,
 ) -> Option<T> {
     let ignored = RefCell::new(Vec::new());
+    let declared = Cell::new(None);
     match T::deserialize(Decoder {
         value,
         path: root
@@ -211,6 +242,7 @@ fn decode_area<T: DeserializeOwned>(
             .map(|key| Segment::Key(key.to_owned()))
             .collect(),
         ignored: &ignored,
+        declared: &declared,
     }) {
         Ok(config) => {
             let mut paths = ignored.into_inner();
@@ -222,6 +254,13 @@ fn decode_area<T: DeserializeOwned>(
             Some(config)
         }
         Err(error) => {
+            schemas.insert(
+                area,
+                AreaSchema {
+                    root,
+                    fields: declared.get().unwrap_or(&[]),
+                },
+            );
             reject_area(area, &error.to_string(), loaded);
             None
         }

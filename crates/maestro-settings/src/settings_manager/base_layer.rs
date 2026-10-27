@@ -24,6 +24,14 @@ pub struct BaseSettingsLayer {
 }
 
 impl BaseSettingsLayer {
+    /// Reports a lock on this literal field/key path, any ancestor or any descendant.
+    /// Sibling paths are independent. This query performs no mutation or I/O.
+    #[must_use]
+    pub fn is_key_path_locked(&self, field: &str, keys: &[&str]) -> bool {
+        let path: Vec<&str> = std::iter::once(field).chain(keys.iter().copied()).collect();
+        self.locked_path(&path).is_some()
+    }
+
     /// Finds a lock on a path, one of its parents or one of its children.
     fn locked_path(&self, path: &[&str]) -> Option<&str> {
         self.locked.iter().find_map(|locked| {
@@ -38,7 +46,8 @@ impl BaseSettingsLayer {
         for path in &self.locked {
             let edit = Edit::dotted(path);
             let value = edit.value_in(&self.settings.0).cloned();
-            if edit.value_in(settings) != value.as_ref() {
+            let malformed = value.is_none() && edit.remove_malformed_ancestor(settings);
+            if malformed || edit.value_in(settings) != value.as_ref() {
                 ignored(path);
             }
             edit.apply(settings, value);
@@ -62,7 +71,14 @@ impl SettingsManager {
     pub fn get_base_layer(&self) -> Option<&BaseSettingsLayer> {
         self.base_layers[SettingsScope::Project as usize]
             .as_ref()
-            .or(self.base_layers[SettingsScope::Global as usize].as_ref())
+            .or(self.get_global_base_layer())
+    }
+
+    /// Returns the cached global layer, ignoring any project layer.
+    /// This performs no I/O; [`Self::effective_global_settings`] refreshes the record.
+    #[must_use]
+    pub fn get_global_base_layer(&self) -> Option<&BaseSettingsLayer> {
+        self.base_layers[SettingsScope::Global as usize].as_ref()
     }
 
     /// Rereads the persisted global base layer and resolves accepted user preferences.
@@ -90,12 +106,12 @@ impl SettingsManager {
         Settings(settings)
     }
 
-    /// Reports a lock on this literal field/key path, any ancestor or any descendant.
-    /// Sibling paths are independent. This query performs no mutation or I/O.
+    /// Queries the current layer, with a project layer taking precedence.
+    /// See [`BaseSettingsLayer::is_key_path_locked`] for path semantics.
     #[must_use]
     pub fn is_key_path_locked(&self, field: &str, keys: &[&str]) -> bool {
-        let path: Vec<&str> = std::iter::once(field).chain(keys.iter().copied()).collect();
-        self.locked_path(&path).is_some()
+        self.get_base_layer()
+            .is_some_and(|layer| layer.is_key_path_locked(field, keys))
     }
 
     /// Loads persisted layers once; reload retains the accepted publication.

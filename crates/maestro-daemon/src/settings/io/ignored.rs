@@ -1,6 +1,9 @@
 //! JSON deserialization that records paths consumed as ignored values.
 
-use std::{cell::RefCell, slice};
+use std::{
+    cell::{Cell, RefCell},
+    slice,
+};
 
 use serde::de::{DeserializeSeed, IntoDeserializer, MapAccess, SeqAccess, Visitor};
 use serde_json::Value;
@@ -30,6 +33,8 @@ pub(super) struct Decoder<'a> {
     pub path: Vec<Segment>,
     /// Paths ignored by the typed decoder.
     pub ignored: &'a RefCell<Vec<Vec<Segment>>>,
+    /// First record's declared fields, retained even when decoding fails.
+    pub declared: &'a Cell<Option<&'static [&'static str]>>,
 }
 
 impl<'de> serde::Deserializer<'de> for Decoder<'de> {
@@ -42,12 +47,14 @@ impl<'de> serde::Deserializer<'de> for Decoder<'de> {
                 pending: None,
                 path: self.path,
                 ignored: self.ignored,
+                declared: self.declared,
             }),
             ValueRef::Value(Value::Object(values)) => visitor.visit_map(Members {
                 iter: values.iter().map(|(key, value)| (key.as_str(), value)),
                 pending: None,
                 path: self.path,
                 ignored: self.ignored,
+                declared: self.declared,
             }),
             ValueRef::Value(Value::Array(values)) => visitor.visit_seq(Elements {
                 iter: values.iter(),
@@ -89,9 +96,12 @@ impl<'de> serde::Deserializer<'de> for Decoder<'de> {
     fn deserialize_struct<V: Visitor<'de>>(
         self,
         _name: &'static str,
-        _fields: &'static [&'static str],
+        fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error> {
+        if self.declared.get().is_none() {
+            self.declared.set(Some(fields));
+        }
         if matches!(self.value, ValueRef::Value(value) if !value.is_object()) {
             return Err(serde::de::Error::custom(
                 "settings record must be an object",
@@ -121,6 +131,8 @@ struct Members<'a, I> {
     path: Vec<Segment>,
     /// Shared ignored paths.
     ignored: &'a RefCell<Vec<Vec<Segment>>>,
+    /// Root record fields shared with nested traversal.
+    declared: &'a Cell<Option<&'static [&'static str]>>,
 }
 
 impl<'de, I: ExactSizeIterator<Item = (&'de str, &'de Value)>> MapAccess<'de> for Members<'de, I> {
@@ -151,6 +163,7 @@ impl<'de, I: ExactSizeIterator<Item = (&'de str, &'de Value)>> MapAccess<'de> fo
             value: ValueRef::Value(value),
             path,
             ignored: self.ignored,
+            declared: self.declared,
         })
     }
 
@@ -186,6 +199,7 @@ impl<'de> SeqAccess<'de> for Elements<'de> {
             value: ValueRef::Value(value),
             path,
             ignored: self.parent.ignored,
+            declared: self.parent.declared,
         })
         .map(Some)
     }

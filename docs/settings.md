@@ -124,10 +124,14 @@ A publisher can supply a `BaseSettingsLayer`: a settings document, dotted locked
 paths, a source release and its recorded time. `publish_base_layer(scope, layer)`
 replaces that scope's layer; `None` clears it. `get_base_layer` borrows the current
 layer. A project layer takes precedence over a global layer.
+`get_global_base_layer` borrows only the cached global layer, without rereading
+its persisted record.
 
 Effective settings merge the base, global and project documents in that order,
 using the same one-level merge. Locked paths then take the base value; an absent
-base leaf uses the getter's engine default. Raw scope snapshots, pending edits
+base leaf uses the getter's engine default. A malformed ancestor is replaced by
+an object containing the locked base value, or removed when that value is absent.
+This repair reports the locked path once. Raw scope snapshots, pending edits
 and saved preferences never include the base. Stored conflicts produce diagnostics
 through `drain_errors`, without rewriting either preference file.
 `SettingsError::kind` distinguishes `StoredValueIgnored` diagnostics from
@@ -142,7 +146,8 @@ edit. A batch with one locked member is refused as a whole, including an edit
 that replaces or removes a locked leaf's parent. Refusal records one diagnostic naming the path, source release, recorded time and how to
 refresh it. Setter signatures are unchanged. `is_key_path_locked(field, keys)`
 lets a caller check a literal path before its own effects; it also detects locks
-on ancestors and descendants, but not siblings.
+on ancestors and descendants, but not siblings. The same query is available on
+`BaseSettingsLayer` for a caller holding a particular layer.
 
 Publication uses the existing write queue; `flush` waits for its persistence and
 `drain_errors` reports failures. A fresh manager reads persisted layers without a
@@ -472,8 +477,12 @@ Earlier errors and new project errors are returned for their own reporting path.
 
 The independent areas are onboarding, theme, UI (including sidebar, toast and
 sound), terminal, restore, server, update, advanced, worktrees, experimental and
-remote. A malformed area retains its previous values without blocking valid
-siblings; removed members return to defaults. Required fields reject wrong JSON
+remote. A malformed unlocked area retains its previous values without blocking
+valid siblings. If the area contains a global lock, it follows the global base
+instead: absent base fields use engine defaults, and a diagnostic explains that
+the area follows the locked base until the invalid value is fixed. Correcting the
+user value restores ordinary overrides of unlocked fields. Project-only locks do
+not change this behavior. Removed members return to defaults. Required fields reject wrong JSON
 kinds, including positional arrays in place of records. Optional null values
 remain absent. Unknown nested keys produce sorted, deduplicated paths after their
 area decodes successfully; unknown global settings stay silent. Typed projection
