@@ -62,17 +62,37 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
   resources.
 - **Internal mode:** Running without a manifest; foundation behaviour.
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
+- **Manifest package:** The default-on base package that selects, installs, reads
+  and enforces a manifest through the core hooks.
 - **Manifest area:** One folder of a manifest (common, standard, core, language or
-  team package) whose content enters the manifest layer in a fixed order.
-- **Policy:** The combined locks, bounds, allowed models, required entries and role
-  constraints of a manifest; the settings owner decides every governed change.
+  capability) whose content enters the manifest layer in a fixed order.
+- **Capability:** A manifest area that is one package bundling a team's roles,
+  skills, instructions, prompt templates and workflows, selected by name.
+- **Capability group:** The folder that groups capabilities, usually after the
+  organization's team structure.
+- **Authored artifact:** A file a user, project or manifest writes to configure or
+  drive Maestro, such as a role, skill or workflow; distinct from a browser
+  artifact.
+- **Artifact kind:** The type of an authored artifact, with one format valid
+  locally and in a manifest.
+- **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
+  file.
+- **Base layer:** A read-only settings document with locked keys, published by a
+  package below the user layer.
+- **Blueprint:** The catalog's description of one artifact kind: its properties
+  and the relations its entries have.
+- **Policy:** The combined locks, bounds, allowed models, required entries, role
+  constraints and release rules of a manifest; the manifest package decides every
+  governed change.
 - **Lock:** A policy entry fixing a value that local layers cannot change.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.
+- **Minimum release:** The lowest manifest release a session may run; a release
+  below it is updated at the next session start.
 - **Permission growth:** A manifest release change that adds role tools, widens
-  allowed models or a bound, removes a lock or required entry, or adds an extension
-  or MCP server.
+  allowed models or a bound, removes a lock or required entry, or adds an
+  extension, package or MCP server.
 
 ### Execution
 
