@@ -29,6 +29,7 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
+| `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
@@ -92,6 +93,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_header_component_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -192,6 +195,24 @@ Build it with the command above using `--example commands`. The controlled
 `commands_` runs need no provider, credentials or installation. Loading the built
 component is opt-in and needs a component-enabled host; browsing commands also
 needs that host's selector and confirmation UI.
+
+### What the custom header example does
+
+On `session_start`, a host with UI receives a custom header factory. Its retained
+view draws a block-character North Star over an M, with a `Custom header`
+subtitle. It uses the live theme supplied to the factory, ignores the render
+width and needs no image support. Headless startup makes no UI request.
+
+`/builtin-header` restores the built-in header and its keybinding hints, then
+reports `Built-in header restored`. The command forwards both requests even in a
+headless host, where the host decides how to handle them. A later session start
+installs the custom header again.
+
+The controlled run builds and instantiates the component, supplies the session
+and theme observations, renders its retained view and invokes its reset command.
+It needs no provider, credentials or installation. Loading the component into an
+application is opt-in and needs that application's component runtime; displaying
+the header also needs an interactive UI host.
 
 ### What the file trigger example does
 
