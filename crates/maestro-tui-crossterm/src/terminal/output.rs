@@ -70,8 +70,8 @@ impl Write for OutputWriter {
 /// A standard byte writer that follows its terminal's output lifecycle.
 ///
 /// Writes join the existing admission sender while queued output runs. Before start,
-/// after stop and for synchronous destinations, they write and flush inherited stdout.
-/// A queued write or flush checks admission, not physical delivery.
+/// after stop and for synchronous destinations, they use inherited stdout; flush makes
+/// buffered bytes visible. A queued write or flush checks admission, not physical delivery.
 #[derive(Clone, Default)]
 pub struct StandardOutput {
     /// Serializes foreign writes with output acquisition and final drain.
@@ -83,10 +83,7 @@ impl Write for StandardOutput {
         if let Some(writer) = active.as_mut() {
             writer.write(bytes)
         } else {
-            let mut stdout = io::stdout().lock();
-            stdout.write_all(bytes)?;
-            stdout.flush()?;
-            Ok(bytes.len())
+            io::stdout().lock().write(bytes)
         }
     }
     fn flush(&mut self) -> io::Result<()> {

@@ -55,9 +55,10 @@ admission sender on every call, including after reload and suspend/resume. Stop
 holds inherited writes behind the final drain and descriptor restoration. A
 failed queued writer reports its error until stop; it does not bypass the queue.
 
-Before start, after stop and for regular files, the durable writer writes and
-flushes actual inherited stdout synchronously. Print, JSON and RPC therefore keep
-stdout, not a suppressed stream or a stderr substitute. Extensions that write
+Before start, after stop and for regular files, the durable writer uses inherited
+stdout. Writes report partial progress; explicit flush calls deliver buffered bytes
+and report flush errors. Both guest output generations forward flush to that writer.
+Print, JSON and RPC therefore keep stdout, not a suppressed stream or a stderr substitute. Extensions that write
 stdout in protocol modes can still interfere with their protocol records. The
 ordered-output guarantee applies only while queued terminal output runs; it does
 not add a second queue or writer task. Windows interactive startup remains tracked
