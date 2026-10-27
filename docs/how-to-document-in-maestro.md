@@ -32,7 +32,7 @@ enforces are in [AGENTS.md](../AGENTS.md#documentation).
 | Decision record | `docs/adr/<decision>.md` | Maintainers who later wonder why something was built this way. |
 | Glossary | `CONTEXT.md` | Everyone: one definition per domain term. |
 | Rustdoc | `//!` and `///` comments in each crate | Callers of a crate's interface. |
-| Changelog | `CHANGELOG.md` | Release readers. It is generated at release time ([AGENTS.md](../AGENTS.md#documentation)). |
+| Changelog | `CHANGELOG.md` | Release readers; [AGENTS.md](../AGENTS.md#documentation) says how it is produced. |
 
 The default system prompt points the agent at the README, the `docs` folder and
 the `examples` folder, and names the guide page for each common topic (for
@@ -98,9 +98,8 @@ Pick the kind of page by the reader's question:
    option, with its type, default and effect.
 5. **Say what can go wrong.** End a task guide with its common failures, each
    with the message the user sees and the fix.
-6. **Mark platform differences in place** ("On Windows, ..."). Give an
-   environment its own platform setup page only when its setup differs from start
-   to finish.
+6. **Mark platform differences in place** ("On Windows, ..."), and give a
+   platform its own setup page when it needs its own steps or configuration.
 7. **Make it findable.** List every user guide in the documentation index, in
    reading order: quickstart first, then task guides, references, concepts and
    platform setup. The agent finds user guides through the same folder, so a guide
@@ -180,9 +179,9 @@ then use the term everywhere. [Domain docs](agents/domain.md) explains how the
 glossary and decision records are read.
 
 **Decision records.** `docs/adr/<decision>.md` records a resolved decision that
-needs one ([domain docs](agents/domain.md)). A record has two sections,
-*Decision* and *Trade-off*, as in
-[agent execution affinity](adr/agent-execution-affinity.md).
+needs one ([domain docs](agents/domain.md)). A record opens with the *Decision*
+and its *Trade-off*, and adds sections only where the decision needs them, as
+[agent execution affinity](adr/agent-execution-affinity.md) does.
 
 ## Write rustdoc and comments
 
