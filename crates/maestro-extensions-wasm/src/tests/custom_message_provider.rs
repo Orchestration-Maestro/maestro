@@ -490,3 +490,39 @@ fn custom_message_provider_preabort_settles_without_http() -> ExtensionResult<()
     assert!(super::block_on(output.next())?.is_none());
     Ok(())
 }
+
+#[test]
+fn custom_message_provider_requires_credentials_before_http() -> ExtensionResult<()> {
+    for key in [None, Some(String::new())] {
+        let host = Controlled::default();
+        host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
+        let provider = authorization(&host);
+        let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
+            maestro_models::AssistantMessageEventStream::new(),
+        )));
+        let options = crate::SimpleStreamOptions {
+            common: crate::StreamOptions {
+                api_key: key,
+                ..crate::StreamOptions::default()
+            },
+            ..crate::SimpleStreamOptions::default()
+        };
+        super::block_on(provider.stream_custom_anthropic(
+            model(),
+            conversation(),
+            Some(options.into()),
+            output.clone(),
+        ))?;
+        let result = super::block_on(output.result())?;
+        let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
+        assert_eq!(value["stopReason"], "error");
+        assert!(
+            value["errorMessage"]
+                .as_str()
+                .unwrap()
+                .contains("authentication")
+        );
+        assert!(host.observed().native_http.requests.is_empty());
+    }
+    Ok(())
+}
