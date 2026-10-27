@@ -15,13 +15,18 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
+pub(crate) mod custom;
 pub(crate) mod edit;
+pub(crate) mod editors;
 pub(crate) mod events;
 pub(crate) mod factories;
 pub(crate) mod find;
 pub(crate) mod grep;
 pub(crate) mod ls;
+pub(crate) mod paints;
+pub(crate) mod providers;
 pub(crate) mod read;
+pub(crate) mod widget_calls;
 pub(crate) mod write;
 pub(crate) use events::EventCall;
 pub(crate) mod credentials;
@@ -77,6 +82,8 @@ pub(crate) enum Call<H = Handle> {
     Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
     Tool(ToolCall<H>),
+    /// Invokes the original OAuth interaction callback.
+    OAuth(crate::oauth_callbacks::Invocation<H>),
     /// Calls an authored credential backend with its native scoped update.
     Credential(credentials::CredentialCall<H>),
     /// The original weak schema allocation and guest callback admission.
@@ -85,10 +92,28 @@ pub(crate) enum Call<H = Handle> {
     TerminalInput(terminal::Input<H>),
     /// Builds one component with the terminal and theme the native owner lent.
     Factory(factories::FactoryCall<H>),
+    /// Builds a custom component or awaits its owned continuation.
+    Custom(custom::Invocation<H>),
     /// Renders one tool row through its authored renderer.
     ToolRender(tool_renders::ToolRenderCall<H>),
+    /// Calls an authored styling or highlighting function for a host widget.
+    Paint(paints::PaintCall<H>),
+    /// Calls an authored handler, style, truncation or submenu of a host list or loader.
+    Widget(widget_calls::WidgetCall<H>),
+    /// Builds one editor with what the native owner lent.
+    EditorFactory(editors::FactoryCall<H>),
+    /// Runs one native request on an authored editor.
+    Editor(editors::EditorCall<H>),
+    /// Runs a completion provider factory on the lent current provider.
+    AutocompleteFactory(providers::FactoryCall<H>),
+    /// Runs one native request on an authored completion provider.
+    Autocomplete(providers::ProviderCall<H>),
     /// Awaits an authored hook on the original pending native model invocation.
     ModelHook(crate::model_calls::Invocation<H>),
+    /// Sets up the original registered guest provider.
+    Provider(crate::provider_calls::Invocation<H>),
+    /// Operates on the original returned authored stream.
+    Assistant(crate::provider_calls::Assistant<H>),
     /// Invokes an authored stream callback on the retained local event.
     Stream(crate::stream_calls::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
@@ -400,6 +425,9 @@ pub(crate) enum SynchronousKind {
     /// Native branch change of a footer's metadata; its export takes no data.
     #[component(name = "branch-change")]
     BranchChange,
+    /// Native file notification; its export takes no data.
+    #[component(name = "watch")]
+    Watch,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.

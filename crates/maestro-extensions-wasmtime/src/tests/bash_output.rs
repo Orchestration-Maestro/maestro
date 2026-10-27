@@ -9,7 +9,7 @@ fn overlapping_output_frames_preserve_chunks_results_and_retirement() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let registry = pump.registry();
             let (one, mut first) = registry.bash_output().unwrap();
             let (two, mut second) = registry.bash_output().unwrap();
@@ -64,7 +64,7 @@ fn dropping_an_output_consumer_retires_its_retained_guest_key() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (endpoint, output) = pump.registry().bash_output().unwrap();
             drop(output);
             let worker = std::thread::spawn(move || {

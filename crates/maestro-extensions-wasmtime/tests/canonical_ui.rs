@@ -616,13 +616,13 @@ fn canonical_themes_and_tool_expansion_reach_the_original_ui() {
 }
 
 /// Application widgets build each factory as soon as it is set, like the interactive mode.
-struct Widgets {
+pub(super) struct Widgets {
     /// The terminal factories receive.
-    tui: maestro_tui::TUI,
+    pub(super) tui: maestro_tui::TUI,
     /// The theme factories receive.
-    theme: maestro_theme::LiveTheme,
+    pub(super) theme: maestro_theme::LiveTheme,
     /// The component each key shows.
-    shown: RefCell<Vec<(String, maestro_extensions::types::ExtensionComponent)>>,
+    pub(super) shown: RefCell<Vec<(String, maestro_extensions::types::ExtensionComponent)>>,
 }
 impl Widgets {
     /// Disposes every shown component, then builds `factory` when there is one.
@@ -893,7 +893,7 @@ fn canonical_footer_factories_read_live_metadata_and_branch_changes() {
 }
 
 /// A terminal writer over a recording terminal and a manual runtime.
-fn screen() -> (
+pub(super) fn screen() -> (
     maestro_tui::TUI,
     super::recording_terminal::RecordingTerminal,
 ) {

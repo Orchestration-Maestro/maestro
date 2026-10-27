@@ -12,6 +12,8 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+#[path = "generated_oauth.rs"]
+mod oauth;
 #[path = "generated_route.rs"]
 mod route;
 #[path = "generated_streams.rs"]
@@ -19,6 +21,7 @@ mod streams;
 pub(crate) use streams::new_event_stream;
 
 #[path = "tools/builtin.rs"]
+#[macro_use]
 mod builtin;
 
 #[path = "generated_glue.rs"]
@@ -26,112 +29,92 @@ mod glue;
 #[path = "generated_model_streams.rs"]
 pub(crate) mod model_streams;
 
+#[path = "generated_widgets.rs"]
+mod widgets;
+
+#[path = "generated_overlays.rs"]
+#[macro_use]
+mod overlays;
+
+#[path = "generated_widget_events.rs"]
+mod widget_events;
+
+#[path = "generated_writer.rs"]
+mod writer;
+
+#[path = "generated_keys.rs"]
+mod keys;
+
+#[path = "generated_editors.rs"]
+mod editors;
+#[path = "generated_provider_streams.rs"]
+pub(crate) mod provider_streams;
+
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;
 
+#[path = "generated_native.rs"]
+mod native;
+
 impl Imports for Generated {
-    forward_resources! { functions {
-        create_coding_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::Tool>> => builtin::selection::tool_list[host::ToolPreset::Coding, &cwd, options];
-        create_coding_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::ToolDef>> => builtin::selection::definition_list[host::ToolPreset::Coding, &cwd, options];
-        create_read_only_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::Tool>> => builtin::selection::tool_list[host::ToolPreset::ReadOnly, &cwd, options];
-        create_read_only_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::ToolDef>> => builtin::selection::definition_list[host::ToolPreset::ReadOnly, &cwd, options];
-        create_all_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> => builtin::selection::tools[host::ToolPreset::All, &cwd, options];
-        create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> => builtin::selection::definitions[host::ToolPreset::All, &cwd, options];
+    builtin_tool_forwarding!();
 
-        create_tool(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::Tool> => builtin::selection::executable[tool_name, &cwd, options];
-        create_tool_definition(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::ToolDef> => builtin::selection::definition[tool_name, &cwd, options];
-        create_local_bash_operations(shell_path: Option<String>) -> ExtensionResult<crate::BashOperations> => builtin::local_operations[shell_path.as_deref()];
-        create_read_tool(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_read[&cwd, options];
-        create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::read[&cwd, options];
-        create_bash_tool(cwd: String, options: crate::BashToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_bash[&cwd, options];
-        create_bash_tool_definition(cwd: String, options: crate::BashToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::bash[&cwd, options];
-        with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ExtensionFuture<'static, ()> => builtin::with_file_mutation_queue[&file_path, operation];
-    } }
-
-    fn create_grep_tool(
+    type OAuthProvider = host::OauthProvider;
+    fn credentials_oauth_providers(
         &self,
-        cwd: String,
-        options: crate::GrepToolOptions,
-    ) -> ExtensionResult<crate::Tool> {
-        builtin::executable_grep(&cwd, options)
+        owner: &Self::Credentials,
+    ) -> ExtensionResult<Vec<Self::OAuthProvider>> {
+        owner.get_oauth_providers()
     }
-
-    fn create_grep_tool_definition(
-        &self,
-        cwd: String,
-        options: crate::GrepToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition> {
-        builtin::grep(&cwd, options)
+    fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String> {
+        provider.info()
     }
-
-    fn create_ls_tool(
-        &self,
-        cwd: String,
-        options: crate::LsToolOptions,
-    ) -> ExtensionResult<crate::Tool> {
-        builtin::executable_ls(&cwd, options)
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.login(handler, options, signal))
     }
-
-    fn create_ls_tool_definition(
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Self::Credentials,
+        provider: String,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(owner.login(provider, handler, options, signal))
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.refresh_token(credentials))
+    }
+    fn oauth_models(&self, provider: &Self::OAuthProvider, data: &str) -> ExtensionResult<String> {
+        route::text(&provider.modify_models(data))
+    }
+    fn oauth_key(
         &self,
-        cwd: String,
-        options: crate::LsToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition> {
-        builtin::ls(&cwd, options)
+        provider: &Self::OAuthProvider,
+        credentials: &str,
+    ) -> ExtensionResult<String> {
+        route::text(&provider.get_api_key(credentials))
     }
 
-    fn create_find_tool(
-        &self,
-        cwd: String,
-        options: crate::FindToolOptions,
-    ) -> ExtensionResult<crate::Tool> {
-        builtin::executable_find(&cwd, options)
-    }
-
-    fn create_find_tool_definition(
-        &self,
-        cwd: String,
-        options: crate::FindToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition> {
-        builtin::find(&cwd, options)
-    }
-
-    fn create_edit_tool(
-        &self,
-        cwd: String,
-        options: crate::EditToolOptions,
-    ) -> ExtensionResult<crate::Tool> {
-        builtin::executable_edit(&cwd, options)
-    }
-    fn create_edit_tool_definition(
-        &self,
-        cwd: String,
-        options: crate::EditToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition> {
-        builtin::edit(&cwd, options)
-    }
-    fn create_write_tool(
-        &self,
-        cwd: String,
-        options: crate::WriteToolOptions,
-    ) -> ExtensionResult<crate::Tool> {
-        builtin::executable_write(&cwd, options)
-    }
-    fn create_write_tool_definition(
-        &self,
-        cwd: String,
-        options: crate::WriteToolOptions,
-    ) -> ExtensionResult<crate::ToolDefinition> {
-        builtin::write(&cwd, options)
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher> {
+        host::watch(&path, listener)
     }
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
-        registry_register_provider(resource: &Self::Registry, name: &str, config: &str) => register_provider(name, config);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => register_provider(name, config, callbacks);
         registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
     } }
     forward_resources! { routed functions {
-        register_provider(name: &str, config: &str) => host::register_provider;
+        register_provider(name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => host::register_provider;
         unregister_provider(name: &str) => host::unregister_provider;
     } }
     fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {
@@ -223,6 +206,18 @@ impl Imports for Generated {
         ))
     }
 
+    fn ui_get_editor_component(
+        &self,
+        ui: &host::ExtensionUiContext,
+    ) -> ExtensionResult<super::CurrentFactory> {
+        Ok(ui.get_editor_component()?.map(|current| match current {
+            host::CurrentEditorFactory::Authored(id) => Ok(id),
+            host::CurrentEditorFactory::Host(factory) => {
+                Err(std::rc::Rc::new(factory) as std::rc::Rc<dyn std::any::Any>)
+            }
+        }))
+    }
+
     fn schema_invoke(
         &self,
         callback: &Self::Callback,
@@ -274,6 +269,8 @@ impl Imports for Generated {
         ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
         ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
         ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
+        ui_set_editor_component(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_editor_component(factory);
+        ui_add_autocomplete_provider(resource: &Self::Ui, factory: &Self::Callback) => add_autocomplete_provider(factory);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
@@ -424,7 +421,11 @@ impl Imports for Generated {
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
+    overlay_forwarding!();
     type Tui = host::Tui;
+    fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {
+        tui.full_redraws()
+    }
     type Invalidator = host::ToolInvalidator;
     fn register_tool(
         &self,
@@ -499,7 +500,6 @@ impl Imports for Generated {
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Theme = host::Theme;
-    type Signal = host::AbortSignal;
     type Context = host::Context;
     type CommandContext = host::CommandContext;
     type ReplacedContext = host::ReplacedSessionContext;

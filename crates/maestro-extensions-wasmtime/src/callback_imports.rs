@@ -54,19 +54,6 @@ pub(crate) fn retain<T: CallbackView>(
         .map_err(wasmtime::Error::msg)
 }
 
-/// Retains a borrowed authored object whose final destruction waits for Store quiescence.
-pub(crate) fn borrowed_object<T: CallbackView>(
-    store: &mut T,
-    object: &Resource<Callback>,
-) -> wasmtime::Result<Handle> {
-    let id = store.ctx().table.get(object)?.id;
-    let admission = store.api().admission();
-    store
-        .callbacks()
-        .retain_object(id, admission)
-        .map_err(wasmtime::Error::msg)
-}
-
 /// Takes ownership of an authored object the guest returned under a fresh identity.
 pub(crate) fn transferred<T: CallbackView>(
     store: &mut T,
@@ -86,4 +73,17 @@ pub(crate) fn optional<T: CallbackView>(
     callback: Option<&Resource<Callback>>,
 ) -> wasmtime::Result<Option<Handle>> {
     callback.map(|callback| retain(store, callback)).transpose()
+}
+
+/// Retain a borrowed authored value with destruction deferred until Store quiescence.
+pub(crate) fn retain_object<T: CallbackView>(
+    store: &mut T,
+    object: &Resource<Callback>,
+) -> wasmtime::Result<Handle> {
+    let id = store.ctx().table.get(object)?.id;
+    let admission = store.api().admission();
+    store
+        .callbacks()
+        .retain_object(id, admission)
+        .map_err(wasmtime::Error::msg)
 }

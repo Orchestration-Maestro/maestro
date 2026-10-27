@@ -24,7 +24,11 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
         }),
     );
     let owner = maestro_extensions::load_extension_from_factory(
-        crate::artifact_factory(path.clone(), "local-shell-test".into()),
+        crate::artifact_factory(
+            path.clone(),
+            crate::tests::support::widgets(),
+            "local-shell-test".into(),
+        ),
         "/".into(),
         events.for_extension(),
         runtime.clone(),

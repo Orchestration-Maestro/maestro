@@ -34,7 +34,7 @@ fn pump_retirement_keeps_the_live_runtime_runnable_until_the_worker_can_exit() {
         .build()
         .unwrap();
     let finished = runtime.block_on(async {
-        let (pump, admission) = Pump::new();
+        let (pump, admission) = Pump::new(crate::tests::support::widgets());
         let (release, released) = std::sync::mpsc::channel();
         let (entered, observed) = tokio::sync::oneshot::channel();
         let finished = own_worker(&pump, move |shutdown| {
@@ -60,7 +60,7 @@ fn local_set_retirement_joins_the_worker_after_its_runtime_has_shut_down() {
         .unwrap();
     let local = tokio::task::LocalSet::new();
     let finished = local.block_on(&runtime, async {
-        let (pump, admission) = Pump::new();
+        let (pump, admission) = Pump::new(crate::tests::support::widgets());
         let finished = own_worker(&pump, |shutdown| wait_for_shutdown(&shutdown));
         let (started, observed) = tokio::sync::oneshot::channel();
         tokio::task::spawn_local(async move {
@@ -83,7 +83,7 @@ fn pump_retirement_joins_the_worker_when_runtime_shutdown_discards_the_offloaded
         .build()
         .unwrap();
     let handle = runtime.handle().clone();
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let finished = own_worker(&pump, |shutdown| wait_for_shutdown(&shutdown));
     drop(runtime);
     let context = handle.enter();
@@ -95,7 +95,7 @@ fn pump_retirement_joins_the_worker_when_runtime_shutdown_discards_the_offloaded
 
 #[test]
 fn pump_retirement_ends_a_faulted_store_while_native_senders_remain() {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let (calls, receiver) = tokio::sync::mpsc::unbounded_channel();
     let finished = own_worker(&pump, move |shutdown| {
         let mut incoming = crate::lifecycle::Incoming::new(receiver, shutdown);
@@ -112,7 +112,7 @@ fn pump_retirement_ends_a_faulted_store_while_native_senders_remain() {
 
 #[test]
 fn pump_retirement_disconnects_queued_native_replies_before_joining_the_worker() {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let (reply, response) = std::sync::mpsc::channel();
     registry

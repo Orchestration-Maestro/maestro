@@ -186,3 +186,104 @@ fn canonical_theme_borders_follow_each_level() {
         bus.clear();
     });
 }
+
+/// Loads with the standalone palette independently of the renderer's supplied theme and UI.
+async fn global_runner(
+    live: maestro_theme::LiveTheme,
+) -> (
+    maestro_extensions::ExtensionRunner<Local>,
+    maestro_extensions::EventBusController<Local>,
+) {
+    let bus = create_event_bus_for::<Local>(
+        Rc::new(|_| panic!("no tails")),
+        Rc::new(|_| panic!("no errors")),
+    );
+    let runtime = maestro_extensions::create_extension_runtime::<Local>();
+    let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
+    let owner = maestro_extensions::load_extension_from_factory(
+        maestro_extensions_wasmtime::artifact_factory(
+            path.clone(),
+            super::support::widgets_over(live),
+            "installed-component-host".into(),
+        ),
+        "/global-theme".into(),
+        bus.for_extension(),
+        runtime.clone(),
+        Some(path),
+    )
+    .await
+    .unwrap();
+    let runner = maestro_extensions::ExtensionRunner::<Local>::new(
+        Rc::new(std::sync::RwLock::new(vec![owner])),
+        runtime,
+        super::session::runner_session("/global-theme").0,
+        Rc::new(|_| {}),
+        maestro_theme::LiveTheme::default(),
+    );
+    super::support::bind_prompt(&runner, "renderer barrier");
+    (runner, bus)
+}
+
+#[test]
+fn canonical_standalone_theme_keeps_live_palette_without_ui() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let state = ThemeState::new(ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: String::new(),
+        });
+        let (runner, bus) = global_runner(state.theme()).await;
+        let events = bus.for_extension();
+        let view = |method| {
+            super::retained_components::view(&runner, &events, &format!("global-theme {method}"))
+                .unwrap()
+                .unwrap()
+        };
+        let expectations = [
+            ("name", json!(" literal theme "), Value::Null),
+            ("source-path", json!("./literal/../theme"), Value::Null),
+            ("source-info", source(), Value::Null),
+            ("get-color-mode", json!("color256"), json!("truecolor")),
+            (
+                "get-fg-ansi",
+                json!("\u{1b}[38;5;7m"),
+                json!("\u{1b}[38;5;9m"),
+            ),
+        ];
+        let views: Vec<_> = expectations
+            .into_iter()
+            .map(|(method, first, last)| (view(method), first, last))
+            .collect();
+        assert_eq!(
+            views[0].0.try_render(80).unwrap_err().to_string(),
+            "Theme not initialized. Call initTheme() first."
+        );
+        state.set_theme_instance(prepared()).unwrap();
+        for (view, first, _) in &views {
+            assert_eq!(view.try_render(80).unwrap(), [first.to_string()]);
+        }
+        state.set_theme_instance(replacement()).unwrap();
+        for (view, _, last) in &views {
+            assert_eq!(view.try_render(80).unwrap(), [last.to_string()]);
+        }
+        bus.clear();
+    });
+}
+
+/// A replacement without metadata, using a different foreground and color mode.
+fn replacement() -> Rc<Theme> {
+    Rc::new(
+        Theme::new(
+            [(
+                ThemeColor::Named(" literal color ".into()),
+                ColorValue::Index(9),
+            )],
+            [],
+            ColorMode::Truecolor,
+            ThemeOptions::default(),
+        )
+        .unwrap(),
+    )
+}

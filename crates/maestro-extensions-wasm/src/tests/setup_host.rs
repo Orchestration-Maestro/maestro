@@ -46,6 +46,7 @@ pub fn call(
             value: args[0].clone(),
             raw: None,
             error: None,
+            once: false,
         });
     }
     Ok(observed.setup.value.clone())
@@ -63,6 +64,7 @@ pub fn reader(name: &str) -> Reader {
         value: json!(name),
         raw: None,
         error: None,
+        once: false,
     });
     reader
 }

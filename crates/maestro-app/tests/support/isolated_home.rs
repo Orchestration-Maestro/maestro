@@ -32,16 +32,18 @@ pub fn with_environment_without(
         |scratch| scratch.path().display().to_string(),
     );
     let environment = |(): &()| {
+        let home = std::path::Path::new(&base)
+            .join("home")
+            .display()
+            .to_string();
+        // The cost report reads `HOME` on every platform; Windows lookups read `USERPROFILE`.
         let mut environment = BTreeMap::from([
-            (
-                if cfg!(windows) { "USERPROFILE" } else { "HOME" }.to_owned(),
-                std::path::Path::new(&base)
-                    .join("home")
-                    .display()
-                    .to_string(),
-            ),
+            ("HOME".to_owned(), home.clone()),
             (BASE.to_owned(), base.clone()),
         ]);
+        if cfg!(windows) {
+            environment.insert("USERPROFILE".to_owned(), home);
+        }
         for (key, value) in variables {
             environment.insert((*key).to_owned(), value.replace("$BASE", &base));
         }

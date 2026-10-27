@@ -93,17 +93,16 @@ impl State {
         callbacks: Callbacks,
         path: &str,
         installation_version: String,
-    ) -> Self {
-        Self {
+        output: Option<crate::wasi::Output>,
+    ) -> wasmtime::Result<Self> {
+        Ok(Self {
             installation_version,
-            wasi: wasmtime_wasi::WasiCtxBuilder::new()
-                .env("MAESTRO_EXTENSION_PATH", path)
-                .build(),
+            wasi: crate::wasi::build(path, output)?,
             table: ResourceTable::new(),
             api,
             callbacks,
             exports: None,
-        }
+        })
     }
 }
 impl WasiView for State {
@@ -133,16 +132,21 @@ impl crate::callback_imports::CallbackView for State {
 /// Installs each canonical import once against its existing domain owner.
 pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
     crate::helper_imports::add_to_linker(&mut host)?;
     crate::exec_imports::add_to_linker(&mut host)?;
     crate::builtin_imports::add_to_linker(&mut host)?;
     crate::native_render_imports::link(&mut host)?;
+    crate::local_resources::native_io::add_to_linker(&mut host)?;
+    crate::native_imports::add_to_linker(&mut host)?;
+
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
     crate::ui_imports::add_to_linker(&mut host)?;
     crate::ui_themes::add_to_linker(&mut host)?;
+    crate::widget_imports::add_to_linker(&mut host)?;
     crate::footer_data::add_to_linker(&mut host)?;
     crate::theme_imports::add_to_linker(&mut host)?;
     crate::command_imports::add_to_linker(&mut host)?;

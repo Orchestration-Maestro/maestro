@@ -64,7 +64,7 @@ fn cancelled_started_native_caller_releases_once_before_fault_settlement() {
 
 #[test]
 fn fault_releases_trapped_release_admission_while_task_operands_survive() {
-    let (_pump, admission) = crate::local_resources::Pump::new();
+    let (_pump, admission) = crate::local_resources::Pump::new(crate::tests::support::widgets());
     let replies = Replies::default();
     let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
     let weak = calls.downgrade();
@@ -89,7 +89,8 @@ fn fault_releases_trapped_release_admission_while_task_operands_survive() {
 #[test]
 fn healthy_release_and_stale_skip_each_complete_once() {
     for stale in [false, true] {
-        let (_pump, admission) = crate::local_resources::Pump::new();
+        let (_pump, admission) =
+            crate::local_resources::Pump::new(crate::tests::support::widgets());
         let replies = Replies::default();
         let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
         let mut callbacks = crate::guest_calls::Callbacks::new(calls.downgrade(), replies);

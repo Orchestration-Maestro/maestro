@@ -96,6 +96,11 @@ macro_rules! port {
 /// Implements resource and function forwarding without duplicating a body per import.
 #[cfg(target_arch = "wasm32")]
 macro_rules! forward_resources {
+    (static functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path[$($value:expr),* $(,)?];)* }) => {
+        $(fn $name($($arg: $ty),*) -> $ret {
+            $function($($value),*)
+        })*
+    };
     (routed functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) => $function:path;)* }) => {
         $(fn $name(&self $(, $arg: $ty)*) -> ExtensionResult<()> {
             route::drive(&$function($($arg),*))

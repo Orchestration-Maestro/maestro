@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::callbacks::Identity;
 use super::exports::encode_value;
 use super::imports::{Imports, ToolCallbacks};
-use super::signals::Mirror;
+use super::signals::Binding;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 
@@ -190,6 +190,10 @@ impl<I: Imports> ExtensionHost for Host<I> {
     ) -> ExtensionResult<crate::ToolDefinition> {
         self.0.create_read_tool_definition(cwd, options)
     }
+
+    fn native_io(&self) -> std::rc::Rc<dyn crate::io::NativeIo> {
+        std::rc::Rc::new(super::io::Io(self.0.clone()))
+    }
     fn native_format_size(&self, bytes: f64) -> ExtensionResult<String> {
         self.0.native_format_size(bytes)
     }
@@ -251,9 +255,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move {
             let data = encode_value(&(command, args, options.as_ref()))?;
             let caller = options.and_then(|options| options.signal);
-            let mirror = Mirror::new(&self.0, caller.as_ref())?;
-            let result = self.0.call("exec", data, mirror.signal()).await;
-            mirror
+            let binding = Binding::new(&self.0, caller.as_ref())?;
+            let result = self.0.call("exec", data, binding.signal()).await;
+            binding
                 .settle(result)
                 .and_then(|data| super::session::decode(&data))
         })
@@ -465,7 +469,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
     }
     fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
-        self.0.register_provider(name, &encode_value(&config)?)
+        super::provider_registration::register(&self.0, config, |text, callbacks| {
+            self.0.register_provider(name, text, callbacks)
+        })
     }
     fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
         self.0.unregister_provider(name)

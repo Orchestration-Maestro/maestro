@@ -52,7 +52,7 @@ fn run_auth(assert_started: bool) {
                     key: "!bridge-key".into(),
                 }),
             );
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump.registry().catalog(catalog.clone()).unwrap();
             let model = model_support::model("auth-owned").read().unwrap().clone();
             let worker = std::thread::spawn(move || {

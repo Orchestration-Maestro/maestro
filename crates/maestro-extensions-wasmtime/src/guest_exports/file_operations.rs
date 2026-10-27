@@ -1,5 +1,8 @@
 //! Canonical file callback borrowing shared by native read, write and edit effects.
-use crate::{guest_calls::Callback, lifecycle::replies::Reply};
+use crate::{
+    guest_calls::{Call, Callback},
+    lifecycle::replies::Reply,
+};
 use maestro_extensions::DiagnosticErrorInfo;
 use wasmtime::component::{Accessor, ComponentType, Lift, Lower, Resource, TypedFunc};
 use wasmtime_wasi::WasiView;
@@ -31,4 +34,51 @@ where
     accessor.with(|mut access| access.get().ctx().table.delete(handler))?;
     let _ = reply.send(Ok(result?.0.map_err(Into::into)));
     Ok(())
+}
+
+impl super::Exports {
+    /// Enters retained asynchronous operations through their original guest exports.
+    pub(super) async fn io<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::Bash(call) => self.bash.invoke(accessor, call).await,
+            call @ (Call::Grep(_) | Call::Find(_) | Call::Ls(_)) => {
+                self.search(accessor, call).await
+            }
+            Call::Edit(call) => {
+                invoke(
+                    &self.edit,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Read(call) => {
+                invoke(
+                    &self.read,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Write(call) => {
+                invoke(
+                    &self.write,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            _ => Err(wasmtime::format_err!("extension operation has no export")),
+        }
+    }
 }

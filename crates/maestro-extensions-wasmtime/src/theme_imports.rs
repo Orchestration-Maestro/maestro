@@ -31,6 +31,27 @@ impl From<maestro_extensions::ColorMode> for ColorMode {
     }
 }
 
+/// Installs standalone access to the widget host's live palette.
+pub(crate) fn add_global<T: crate::api_imports::ApiView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "global-theme",
+        |mut store: StoreContextMut<'_, T>, (): ()| {
+            let theme = store.data().api().0.request(|_, reply| {
+                crate::local_resources::Message::Widgets(
+                    crate::widget_reads::WidgetMessage::GlobalTheme(reply),
+                )
+            });
+            let theme = match theme {
+                Ok(theme) => Ok(store.data_mut().ctx().table.push(theme)?),
+                Err(error) => Err(error),
+            };
+            Ok((theme,))
+        },
+    )
+}
+
 /// Installs every canonical method on the existing retained theme resource.
 pub(crate) fn add_to_linker<T: WasiView + 'static>(
     host: &mut LinkerInstance<'_, T>,

@@ -443,3 +443,104 @@ impl ComponentView for View {
         }
     }
 }
+
+/// Delegates the built-in import declarations through the existing resource forwarder.
+macro_rules! builtin_tool_forwarding {
+    () => {
+    forward_resources! { functions {
+        create_coding_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::Tool>> => builtin::selection::tool_list[host::ToolPreset::Coding, &cwd, options];
+        create_coding_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::ToolDef>> => builtin::selection::definition_list[host::ToolPreset::Coding, &cwd, options];
+        create_read_only_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::Tool>> => builtin::selection::tool_list[host::ToolPreset::ReadOnly, &cwd, options];
+        create_read_only_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::ToolDef>> => builtin::selection::definition_list[host::ToolPreset::ReadOnly, &cwd, options];
+        create_all_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> => builtin::selection::tools[host::ToolPreset::All, &cwd, options];
+        create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> => builtin::selection::definitions[host::ToolPreset::All, &cwd, options];
+
+        create_tool(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::Tool> => builtin::selection::executable[tool_name, &cwd, options];
+        create_tool_definition(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::ToolDef> => builtin::selection::definition[tool_name, &cwd, options];
+        create_local_bash_operations(shell_path: Option<String>) -> ExtensionResult<crate::BashOperations> => builtin::local_operations[shell_path.as_deref()];
+        create_read_tool(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_read[&cwd, options];
+        create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::read[&cwd, options];
+        create_bash_tool(cwd: String, options: crate::BashToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_bash[&cwd, options];
+        create_bash_tool_definition(cwd: String, options: crate::BashToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::bash[&cwd, options];
+        with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ExtensionFuture<'static, ()> => builtin::with_file_mutation_queue[&file_path, operation];
+    } }
+
+    fn create_grep_tool(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_grep(&cwd, options)
+    }
+
+    fn create_grep_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::grep(&cwd, options)
+    }
+
+    fn create_ls_tool(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_ls(&cwd, options)
+    }
+
+    fn create_ls_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::ls(&cwd, options)
+    }
+
+    fn create_find_tool(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_find(&cwd, options)
+    }
+
+    fn create_find_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::find(&cwd, options)
+    }
+
+    fn create_edit_tool(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_edit(&cwd, options)
+    }
+    fn create_edit_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::edit(&cwd, options)
+    }
+    fn create_write_tool(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        builtin::executable_write(&cwd, options)
+    }
+    fn create_write_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        builtin::write(&cwd, options)
+    }
+
+    };
+}

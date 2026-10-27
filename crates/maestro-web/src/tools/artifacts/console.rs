@@ -16,7 +16,9 @@ use std::{
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::Element;
 
+mod element;
 mod values;
+pub(crate) use element::define;
 use values::value_text;
 
 /// Kind of a console line.
@@ -106,10 +108,11 @@ struct Mounted {
     /// Native event registrations with weak owner backedges.
     clicks: RefCell<Vec<Click>>,
 }
-impl DomContent for Console {
-    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
+impl Console {
+    /// Build the existing native console inside its source-owned root.
+    fn build(&self, view: &DomView, root: Element) -> Result<DomRoot, ToolUiError> {
         let document = &view.document;
-        let root = element(document, "div", "maestro-artifact-console")?;
+        root.set_class_name("maestro-artifact-console");
         let header = element(document, "div", "maestro-artifact-console-header")?;
         let summary = element(document, "button", "maestro-artifact-summary")?;
         let glyph = element(document, "span", "")?;
@@ -150,6 +153,16 @@ impl DomContent for Console {
             node: root.into(),
             owner: Some(Box::new(mounted)),
         })
+    }
+}
+impl DomContent for Console {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
+        let link: Rc<RefCell<std::rc::Weak<Mounted>>> = Rc::default();
+        let node = crate::dom::create_with(&view.document, "artifact-console", Rc::clone(&link))
+            .map_err(|error| ToolUiError::native(&error))?;
+        let root = self.build(view, node)?;
+        *link.borrow_mut() = Rc::downgrade(mounted(&root)?);
+        Ok(root)
     }
     fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
         let mounted = mounted(root)?;

@@ -203,8 +203,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `SlashCommandSource`, re-exported by resources, application presentation data and
   guest authoring rather than redeclared.
   Shared invocation options (`ThinkingBudgets`, `CacheRetention`, `Transport`,
-  `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`)
-  and the data-only `StreamOptionSlots` family belong here; executable operations
+  `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`
+  and `StreamOptionsInput`) and the data-only `StreamOptionSlots` family belong here;
+  executable operations
   remain with their native or guest owners.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper, plus the

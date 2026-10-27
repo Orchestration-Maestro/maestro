@@ -103,7 +103,7 @@ fn operands<T: CallbackView>(
         .transpose()?;
     let authored = authored
         .as_ref()
-        .map(|last| crate::callback_imports::borrowed_object(store, last))
+        .map(|last| crate::callback_imports::retain_object(store, last))
         .transpose()?;
     let last = match (native, authored) {
         (Some(native), None) => Some(Previous::Native(native)),

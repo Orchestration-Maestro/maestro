@@ -38,7 +38,7 @@ async fn observe_faulted_store(release_trap: bool) {
     let (owner, mut api) = api::api(native.clone());
     let bus = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
     api.events = bus.for_extension();
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump.registry().api(api).unwrap();
     let (calls, incoming) = mpsc::unbounded_channel();
     let shutdown = Arc::new(tokio::sync::Notify::new());
@@ -50,7 +50,7 @@ async fn observe_faulted_store(release_trap: bool) {
     let retained = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let version = "installed-component-host".into();
-    let mut state = lifecycle::State::new(endpoint, callbacks, &path, version);
+    let mut state = lifecycle::State::new(endpoint, callbacks, &path, version, None).unwrap();
     let count = Arc::new(AtomicUsize::new(0));
     let (dropped, observed) = tokio::sync::oneshot::channel();
     state

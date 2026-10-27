@@ -174,3 +174,8 @@ they are not an off-thread credential backend. The registration facade does not
 retain the bound session catalog. Acquired catalog and credential handles retain
 their owners; resolver captures release after their final owner and selected
 invocations end.
+
+A rejected constructor leaves its selected file untouched. Catalog construction
+rejects credentials from another host before resolving the model path. Rejected
+backend or resolver admission releases its captures without retiring a sibling
+credential resource.

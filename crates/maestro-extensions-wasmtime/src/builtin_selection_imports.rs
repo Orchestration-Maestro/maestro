@@ -68,7 +68,7 @@ fn retain_options<T: CallbackView>(
     let mut retain = |callback: Option<Resource<Callback>>| {
         callback
             .as_ref()
-            .map(|callback| crate::callback_imports::borrowed_object(store, callback))
+            .map(|callback| crate::callback_imports::retain_object(store, callback))
             .transpose()
     };
     Ok(crate::local_resources::builtin_selection::Options {

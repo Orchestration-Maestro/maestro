@@ -45,7 +45,11 @@ pub(super) async fn loaded_with_reporter(
     runtime.set_tool_construction(services);
     let events = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), report);
     let owner = maestro_extensions::load_extension_from_factory(
-        crate::artifact_factory(path.clone(), "builtin-test-version".into()),
+        crate::artifact_factory(
+            path.clone(),
+            crate::tests::support::widgets(),
+            "builtin-test-version".into(),
+        ),
         "/".into(),
         events.for_extension(),
         runtime.clone(),

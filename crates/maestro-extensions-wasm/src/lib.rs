@@ -15,6 +15,10 @@ pub use utils::event_stream::create_assistant_message_event_stream;
 pub use utils::event_stream::{AssistantMessageEventStream, EventStream, EventStreamPort};
 mod autocomplete;
 pub use autocomplete::*;
+mod editor_component;
+pub use editor_component::{
+    CustomEditorComponent, EditorComponent, EditorFactory, EditorFactoryOutcome,
+};
 mod event_bus;
 pub use event_bus::*;
 mod bash_executor;
@@ -33,8 +37,18 @@ pub use tools::{
 };
 #[doc(hidden)]
 pub mod bindings;
+/// Native child resources.
+pub mod child_process;
 pub mod compaction;
 mod exec;
+/// Native filesystem notifications.
+pub mod fs;
+/// Native HTTP resources.
+pub mod http;
+/// Native operation capability.
+pub mod io;
+/// Raw byte resources.
+pub mod streams;
 pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
@@ -42,6 +56,8 @@ mod loader;
 mod messages;
 mod slash_commands;
 pub use slash_commands::*;
+mod oauth;
+pub use oauth::*;
 mod auth_storage;
 pub use auth_storage::*;
 mod model_registry;
@@ -115,3 +131,5 @@ mod schema_error;
 pub mod stream;
 #[cfg(target_arch = "wasm32")]
 pub use stream::{complete, complete_simple, stream, stream_simple};
+
+pub mod wasi;

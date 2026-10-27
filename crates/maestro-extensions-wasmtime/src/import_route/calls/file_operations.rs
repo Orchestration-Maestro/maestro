@@ -113,3 +113,38 @@ pub(super) fn lower(
         _ => return Err(wasmtime::format_err!("extension call cannot run nested")),
     })
 }
+
+/// Returns each file observation to its original typed reply without changing its diagnostic.
+pub(super) fn settle(
+    call: crate::guest_calls::Call<crate::guest_calls::Callback>,
+    value: super::LocalResult,
+) -> wasmtime::Result<()> {
+    use super::LocalResult;
+    use crate::guest_calls::Call;
+    match (call, value) {
+        (Call::Grep(call), LocalResult::Grep(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Ls(call), LocalResult::Ls(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Find(call), LocalResult::Find(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Edit(call), LocalResult::Edit(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Write(call), LocalResult::Write(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        (Call::Read(call), LocalResult::Read(value)) => {
+            let _ = call.reply.send(Ok(value.map_err(Into::into)));
+        }
+        _ => {
+            return Err(wasmtime::format_err!(
+                "extension route result kind mismatch"
+            ));
+        }
+    }
+    Ok(())
+}

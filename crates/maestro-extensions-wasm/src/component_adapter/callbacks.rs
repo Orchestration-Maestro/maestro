@@ -91,6 +91,7 @@ kinds! {
         CompactionComplete(crate::CompactionComplete),
         CompactionError(crate::CompactionError),
         Listener(crate::EventListener),
+        Watch(super::io::WatchCallback),
         Command(CommandHandler),
         Completion(crate::ArgumentCompletions),
         Shortcut(crate::ShortcutHandler),
@@ -107,14 +108,27 @@ kinds! {
         Schema(crate::schema_code::Handler),
         CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
         CredentialFallback(crate::FallbackResolver),
+        OAuthCallbacks(std::rc::Rc<super::oauth::Interaction>),
+        OAuthProvider(std::rc::Rc<dyn crate::OAuthProviderInterface>),
         TerminalInput(crate::TerminalInputHandler),
         ComponentFactory(crate::ComponentFactory),
+        CustomFactory(crate::CustomComponentFactory),
+        ComponentExpansion(crate::ComponentExpansionHandler),
         ToolRenderCall(crate::ToolRenderCall),
         ToolRenderResult(crate::ToolRenderResult),
         ToolRow(std::rc::Rc<crate::types::ToolRow>),
         FooterFactory(crate::FooterFactory),
         BranchChange(crate::BranchChangeListener),
+        Style(crate::Style),
+        Highlight(crate::Highlight),
+        Widget(std::rc::Rc<super::lists::WidgetHandler>),
+        EditorFactory(crate::EditorFactory),
+        Editor(std::rc::Rc<dyn crate::EditorComponent>),
+        ProviderFactory(crate::AutocompleteProviderFactory),
+        Provider(std::rc::Rc<dyn crate::AutocompleteProvider>),
         StreamValue(super::streams::Value),
+        ProviderStream(crate::StreamFunction<crate::StreamOptionsInput>),
+        AssistantStream(crate::AssistantMessageEventStream),
         ModelPayload(crate::OnPayload),
         ModelResponse(crate::OnResponse),
         StreamClassifier(super::streams::Classifier),
@@ -122,6 +136,7 @@ kinds! {
     }
     once {
         Abort(crate::AbortListener),
+        CustomFuture(crate::ExtensionFuture<'static, crate::ExtensionComponent>),
         WithSession(WithSession),
         Setup(crate::SetupSession),
         Tail(crate::ExtensionFuture<'static, ()>),
@@ -152,6 +167,11 @@ pub(super) struct Identity<I: Imports> {
 }
 
 impl<I: Imports> Identity<I> {
+    /// Key of the identity.
+    pub(super) fn id(&self) -> u32 {
+        self.id
+    }
+
     /// Asks the host for a fresh identity.
     pub(super) fn new(imports: &I) -> Self {
         let (id, handle) = imports.new_callback();

@@ -57,6 +57,8 @@ port! {
         fn set(provider: &str, credential: AuthCredential) -> ();
         /// Removes one provider credential.
         fn remove(provider: &str) -> ();
+        /// Returns callable OAuth providers in native registration order.
+        fn get_oauth_providers() -> Vec<Rc<dyn crate::OAuthProviderInterface>>;
         /// Lists all stored provider names in insertion order.
         fn list() -> Vec<String>;
         /// Checks stored presence, including untyped entries.
@@ -75,6 +77,10 @@ port! {
     asynchronous {
         /// Resolves a key using the owner's retained effects and source precedence.
         fn get_api_key<'a>(provider: &'a str, options: Option<GetApiKeyOptions>) -> Option<String>;
+    }
+    owned {
+        /// Logs in through the native credential owner, which accepts and persists the result.
+        fn login(provider: &str, callbacks: Rc<crate::OAuthLoginCallbacks>) -> ();
     }
 }
 

@@ -20,7 +20,7 @@ use serde_json::json;
 
 /// A cancellation flag the test controls.
 #[derive(Clone, Default)]
-pub struct Flag(std::sync::Arc<std::sync::atomic::AtomicBool>);
+pub struct Flag(pub(super) std::sync::Arc<std::sync::atomic::AtomicBool>);
 
 impl Flag {
     /// Shared flag for controlled receiver cancellation.
@@ -62,7 +62,7 @@ impl Drop for Lease {
 /// Owner handle of a callback identity; the host sees it dropped.
 pub struct Callback {
     /// Key of the identity.
-    id: u32,
+    pub(super) id: u32,
     /// What the host observed.
     observed: Rc<RefCell<Observed>>,
 }
@@ -155,7 +155,7 @@ pub struct Node {
 /// Counted theme owner with its literal identity.
 pub struct Theme {
     /// Supplied identity.
-    key: String,
+    pub(super) key: String,
     /// Shared observations.
     observed: Rc<RefCell<Observed>>,
     /// Owned resource count.
@@ -173,7 +173,7 @@ impl Drop for Theme {
 #[derive(Clone, Default)]
 pub struct Controlled {
     /// What the host observed.
-    observed: Rc<RefCell<Observed>>,
+    pub(super) observed: Rc<RefCell<Observed>>,
     /// Components factory widgets built, by the handle their slots name.
     widgets: Rc<RefCell<std::collections::HashMap<u32, crate::ExtensionComponent>>>,
 }
@@ -181,6 +181,24 @@ pub struct Controlled {
 /// Terminal lent to a component factory, with a counted lifetime.
 pub struct Tui {
     /// Counted owner.
+    _lease: Lease,
+}
+impl Tui {
+    /// Lends a counted terminal or overlay handle.
+    pub(super) fn lent(observed: &Rc<RefCell<Observed>>) -> Self {
+        Self {
+            _lease: Lease::new(observed),
+        }
+    }
+}
+
+/// Retained placement and its counted host capability.
+pub struct OverlayOptions {
+    /// The shared record.
+    pub(super) value: super::overlay_host::Options,
+    /// The identity of the record's visibility check, shared by its owners.
+    pub(super) visible: Rc<std::cell::Cell<Option<u32>>>,
+    /// Counted resource lifetime.
     _lease: Lease,
 }
 
@@ -239,6 +257,25 @@ impl Controlled {
         Ok(handle)
     }
 
+    /// Keeps a component an authored widget callback returned, under a fresh identity.
+    pub(super) fn keep_component(&self, component: crate::Component) -> u32 {
+        let handle = self.observed.borrow_mut().next_identity();
+        let kept = crate::ExtensionComponent {
+            component,
+            dispose: None,
+            set_expanded: None,
+            width: None,
+        };
+        self.widgets.borrow_mut().insert(handle, kept);
+        handle
+    }
+
+    /// The component kept under `handle`.
+    pub(super) fn kept_component(&self, handle: u32) -> Option<crate::Component> {
+        let kept = self.widgets.borrow();
+        kept.get(&handle).map(|kept| kept.component.clone())
+    }
+
     /// The redraw capability of the tool row `row`.
     pub fn invalidator(&self, row: &str) -> Invalidator {
         Invalidator {
@@ -280,11 +317,60 @@ impl Controlled {
     }
 
     /// Runs one widget disposal with a lent emitter.
+    /// Runs an editor factory with the host's terminal, editor styles and keybindings, and
+    /// shows what it built.
+    fn build_editor_component(&self, factory: u32) -> ExtensionResult<()> {
+        let roles = [
+            "selectedPrefix",
+            "selectedText",
+            "description",
+            "scrollInfo",
+            "noMatch",
+        ];
+        let lent = crate::component_adapter::LentEditor {
+            tui: Tui {
+                _lease: Lease::new(&self.observed),
+            },
+            theme: (
+                super::widget_controlled::Style("borderMuted".to_owned()),
+                roles
+                    .map(|role| super::widget_controlled::Style(role.to_owned()))
+                    .into(),
+            ),
+            keybindings: super::widget_controlled::Keybindings(0),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let outcome = Exports::new(self.clone()).invoke_editor_factory(factory, lent, &emitter)?;
+        let (component, editor, custom) =
+            crate::component_adapter::keep_editor(self, &outcome, |widget| widget.0)?;
+        let slot = super::ui_host::EditorSlot {
+            factory,
+            component,
+            editor,
+            custom,
+        };
+        super::ui_host::show_editor(&mut self.observed.borrow_mut(), slot);
+        Ok(())
+    }
+
     fn dispose(&self, dispose: &crate::ComponentDisposer) -> ExtensionResult<()> {
         let emitter = super::bus_host::Emitter { key: 0 };
         crate::component_adapter::renderers::with_emitter(self, &emitter, |emitter| {
             dispose(emitter)
         })
+    }
+
+    /// The complete component the factory under `key` built.
+    pub fn widget_built(&self, key: &str) -> Option<crate::ExtensionComponent> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .widgets
+            .iter()
+            .find(|slot| slot.key == key)?
+            .component;
+        self.widgets.borrow().get(&slot).cloned()
     }
 
     /// The component the factory widget under `key` shows.
@@ -517,6 +603,159 @@ impl Controlled {
     }
 }
 
+impl crate::component_adapter::NativeImports for Controlled {
+    type Watcher = super::native_watch_host::Watcher;
+    fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
+        watch.close();
+        Ok(())
+    }
+    type Signal = Signal;
+    fn fetch<'a>(
+        &'a self,
+        request: crate::bindings::maestro::extension::host::HttpRequest,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, Self::Response> {
+        Box::pin(async move {
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            let mut response =
+                self.observe()
+                    .native_http
+                    .fetch(super::native_http_host::Request {
+                        url: request.url,
+                        method: request.method,
+                        headers: request.headers,
+                        body: request.body,
+                        signal: signal.map(|signal| signal.flag.key()),
+                    })?;
+            response.body = response
+                .body
+                .map(|body| body.with_signal(signal.map(|s| s.flag.shared())));
+            Ok(response)
+        })
+    }
+    fn sleep<'a>(
+        &'a self,
+        duration: (u64, u32),
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                return Err("Aborted".into());
+            }
+            self.observe()
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if signal.is_some_and(|signal| self.aborted(signal)) {
+                Err("Aborted".into())
+            } else {
+                Ok(())
+            }
+        })
+    }
+
+    type Response = super::native_http_host::Response;
+    fn response_json<'a>(
+        &'a self,
+        response: &'a Self::Response,
+    ) -> ExtensionFuture<'a, serde_json::Value> {
+        Box::pin(async move { response.json() })
+    }
+    fn response_text<'a>(&'a self, response: &'a Self::Response) -> ExtensionFuture<'a, String> {
+        Box::pin(async move { response.text() })
+    }
+    fn response_status_text(&self, response: &Self::Response) -> String {
+        response.status_text.clone()
+    }
+    fn response_headers(&self, response: &Self::Response) -> Vec<(String, String)> {
+        response.headers.clone()
+    }
+    fn response_body(&self, response: &Self::Response) -> Option<Self::Readable> {
+        response.body.clone()
+    }
+    fn response_status(&self, response: &Self::Response) -> u16 {
+        response.status
+    }
+
+    type Child = super::native_io_host::Child;
+    type Readable = super::native_io_host::Reader;
+    type Writable = super::native_io_host::Writer;
+    fn spawn(
+        &self,
+        command: String,
+        args: Vec<String>,
+        options: crate::child_process::SpawnOptions,
+    ) -> ExtensionFuture<'_, Self::Child> {
+        Box::pin(async move { self.observe().native_io.spawn(command, args, options) })
+    }
+    fn kill(&self, pid: i32, signal: Option<String>) -> ExtensionResult<()> {
+        self.observe().native_io.kill(pid, signal)
+    }
+    fn child_pid(&self, child: &Self::Child) -> Option<u32> {
+        Some(child.pid)
+    }
+    fn child_stdin(&self, child: &Self::Child) -> Option<Self::Writable> {
+        child.stdin.clone()
+    }
+    fn child_stdout(&self, child: &Self::Child) -> Option<Self::Readable> {
+        child.stdout.clone()
+    }
+    fn child_stderr(&self, child: &Self::Child) -> Option<Self::Readable> {
+        child.stderr.clone()
+    }
+    fn child_wait<'a>(
+        &'a self,
+        child: &'a Self::Child,
+    ) -> ExtensionFuture<'a, crate::child_process::ExitStatus> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            Ok(child.wait())
+        })
+    }
+    fn child_kill(&self, child: &Self::Child, signal: Option<String>) -> ExtensionResult<bool> {
+        Ok(child.kill(signal))
+    }
+    fn readable_read<'a>(
+        &'a self,
+        reader: &'a Self::Readable,
+    ) -> ExtensionFuture<'a, Option<Vec<u8>>> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            reader.read()
+        })
+    }
+    fn readable_close(&self, reader: &Self::Readable) -> ExtensionResult<()> {
+        reader.close();
+        Ok(())
+    }
+    fn writable_write<'a>(
+        &'a self,
+        writer: &'a Self::Writable,
+        bytes: &'a [u8],
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            writer.write(bytes)
+        })
+    }
+    fn writable_end<'a>(&'a self, writer: &'a Self::Writable) -> ExtensionFuture<'a, ()> {
+        writer
+            .ended
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+
 impl Imports for Controlled {
     fn create_coding_tools(
         &self,
@@ -687,6 +926,81 @@ impl Imports for Controlled {
     ) -> ExtensionResult<crate::ToolDefinition> {
         Err("built-in tools require the production host".into())
     }
+
+    type OAuthProvider = Reader;
+    fn credentials_oauth_providers(&self, owner: &Reader) -> ExtensionResult<Vec<Reader>> {
+        owner.data.oauth_providers().map(|providers| {
+            providers
+                .into_iter()
+                .map(|data| Reader {
+                    data,
+                    _lease: Lease::new(&self.observed),
+                })
+                .collect()
+        })
+    }
+    fn oauth_info(&self, provider: &Reader) -> ExtensionResult<String> {
+        provider.data.string("oauth_info")
+    }
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Reader,
+        handler: &'a Self::Callback,
+        _controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            super::super::component_adapter::oauth::invoke(
+                handler.id,
+                crate::bindings::maestro::extension::host::OauthCallback::Progress,
+                "controlled login",
+                None,
+            )
+            .await?;
+            provider
+                .data
+                .optional("oauth_login", &[])?
+                .ok_or_else(|| "missing OAuth login result".into())
+        })
+    }
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Reader,
+        provider: String,
+        _handler: &'a Self::Callback,
+        _controls: ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move { owner.data.unit("login", &[json!(provider)]) })
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Reader,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            provider
+                .data
+                .optional("oauth_refresh", &[serde_json::json!(credentials)])?
+                .ok_or_else(|| "missing OAuth refresh result".into())
+        })
+    }
+    fn oauth_models(&self, provider: &Reader, data: &str) -> ExtensionResult<String> {
+        provider
+            .data
+            .optional("oauth_models", &[serde_json::json!(data)])?
+            .ok_or_else(|| "missing OAuth model result".into())
+    }
+    fn oauth_key(&self, provider: &Reader, credentials: &str) -> ExtensionResult<String> {
+        provider
+            .data
+            .optional("oauth_key", &[serde_json::json!(credentials)])?
+            .ok_or_else(|| "missing OAuth key".into())
+    }
+
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher> {
+        self.observe()
+            .native_watch
+            .watch(path, self.callback_id(listener))
+    }
     fn native_format_size(&self, _bytes: f64) -> ExtensionResult<String> {
         serde_json::from_str(&self.observe().actions.record_for("format_size")?)
             .map_err(|error| error.to_string())
@@ -732,29 +1046,32 @@ impl Imports for Controlled {
         })
     }
     fn auth_storage_from_backend(&self, backend: &Self::Callback) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+        let data = self.observed.borrow().readers.acquire()?.fresh();
         data.unit("auth_storage_from_backend", &[])?;
         let resource = Reader {
             data,
             _lease: Lease::new(&self.observed),
         };
-        crate::component_adapter::auth_storage::invoke_backend(
-            self,
-            self.callback_id(backend),
-            &resource,
-        )?;
+        let id = self.callback_id(backend);
+        resource.data.1.lock().unwrap().backend = Some(id);
+        self.observe().register("credential-backend".into(), id);
+        self.credential_backend(&resource)?;
         Ok(resource)
     }
     fn credentials_set_fallback(
         &self,
         owner: &Reader,
-        _resolver: &Self::Callback,
+        resolver: &Self::Callback,
     ) -> ExtensionResult<()> {
-        owner.data.unit("set_fallback_resolver", &[])
+        owner.data.unit("set_fallback_resolver", &[])?;
+        let id = self.callback_id(resolver);
+        owner.data.1.lock().unwrap().fallback = Some(id);
+        self.observe().register("credential-fallback".into(), id);
+        Ok(())
     }
     type Credentials = Reader;
     fn create_auth_storage(&self, path: Option<&str>) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+        let data = self.observed.borrow().readers.acquire()?.fresh();
         data.unit("create_auth_storage", &[serde_json::json!(path)])?;
         Ok(Reader {
             data,
@@ -762,7 +1079,7 @@ impl Imports for Controlled {
         })
     }
     fn auth_storage_in_memory(&self, data: &str) -> ExtensionResult<Reader> {
-        let reader = self.observed.borrow().readers.acquire()?;
+        let reader = self.observed.borrow().readers.acquire()?.fresh();
         reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
         Ok(Reader {
             data: reader,
@@ -811,7 +1128,8 @@ impl Imports for Controlled {
             .unit("remove_runtime_api_key", &[serde_json::json!(provider)])
     }
     fn credentials_reload(&self, resource: &Reader) -> ExtensionResult<()> {
-        resource.data.unit("reload", &[])
+        resource.data.unit("reload", &[])?;
+        self.credential_backend(resource)
     }
     fn credentials_get(
         &self,
@@ -829,7 +1147,8 @@ impl Imports for Controlled {
         resource.data.unit(
             "set",
             &[serde_json::json!(provider), serde_json::json!(credential)],
-        )
+        )?;
+        self.credential_backend(resource)
     }
     fn credentials_remove(&self, resource: &Reader, provider: &str) -> ExtensionResult<()> {
         resource.data.unit("remove", &[serde_json::json!(provider)])
@@ -847,6 +1166,7 @@ impl Imports for Controlled {
         resource.data.flag("has", &[serde_json::json!(provider)])
     }
     fn credentials_has_auth(&self, resource: &Reader, provider: &str) -> ExtensionResult<bool> {
+        Self::credential_fallback(resource, provider)?;
         resource
             .data
             .flag("has_auth", &[serde_json::json!(provider)])
@@ -856,6 +1176,7 @@ impl Imports for Controlled {
         resource: &Reader,
         provider: &str,
     ) -> ExtensionResult<String> {
+        Self::credential_fallback(resource, provider)?;
         resource
             .data
             .record("get_auth_status", &[serde_json::json!(provider)])?
@@ -883,6 +1204,11 @@ impl Imports for Controlled {
         include_fallback: Option<bool>,
     ) -> ExtensionFuture<'a, Option<String>> {
         Box::pin(async move {
+            let hold = self.observe().take_hold();
+            pause(hold).await;
+            if include_fallback != Some(false) {
+                Self::credential_fallback(resource, &provider)?;
+            }
             resource.data.optional(
                 "get_api_key",
                 &[
@@ -1546,7 +1872,80 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    type CustomClose = super::custom_host::Close;
+    fn custom_close(&self, close: &Self::CustomClose) -> ExtensionResult<bool> {
+        Ok(close.close())
+    }
+    fn ui_custom<'a>(
+        &'a self,
+        resource: &'a Ui,
+        factory: &'a Callback,
+        options: Option<crate::component_adapter::custom::CustomOptionsRef<'a, Self>>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            ui_call(&self.observed, resource.key, "custom", &json!([]))?;
+            match options {
+                Some(options) if options.overlay == Some(true) => {
+                    self.custom_overlay(factory, options).await
+                }
+                _ => self.custom(factory).await,
+            }
+        })
+    }
+    type OverlayOptions = OverlayOptions;
+    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<OverlayOptions> {
+        Ok(OverlayOptions {
+            value: super::overlay_host::Options::new(encoded)?,
+            visible: Rc::default(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn overlay_options_get(&self, options: &OverlayOptions) -> ExtensionResult<String> {
+        options.value.get()
+    }
+    fn overlay_options_set(&self, options: &OverlayOptions, encoded: &str) -> ExtensionResult<()> {
+        options.value.set(encoded)
+    }
+    fn overlay_options_share(&self, options: &OverlayOptions) -> OverlayOptions {
+        OverlayOptions {
+            value: options.value.clone(),
+            visible: options.visible.clone(),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+    fn overlay_options_set_visible(
+        &self,
+        options: &OverlayOptions,
+        visible: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observe()
+            .log(format!("overlay visible {}", visible.is_some()));
+        options.visible.set(visible.map(|visible| visible.id));
+        Ok(())
+    }
+    type OverlayHandle = Tui;
+    fn overlay_handle_request(
+        &self,
+        _: &Tui,
+        request: crate::component_adapter::overlays::OverlayRequest,
+    ) -> ExtensionResult<Option<bool>> {
+        use crate::component_adapter::overlays::OverlayRequest;
+        let (line, flag) = match request {
+            OverlayRequest::Hide => ("hide".to_owned(), None),
+            OverlayRequest::SetHidden(hidden) => (format!("setHidden {hidden}"), None),
+            OverlayRequest::IsHidden => ("isHidden".to_owned(), Some(false)),
+            OverlayRequest::Focus => ("focus".to_owned(), None),
+            OverlayRequest::Unfocus => ("unfocus".to_owned(), None),
+            OverlayRequest::IsFocused => ("isFocused".to_owned(), Some(true)),
+        };
+        self.observe().log(format!("overlay handle {line}"));
+        Ok(flag)
+    }
     type Tui = Tui;
+    fn tui_full_redraws(&self, _: &Tui) -> ExtensionResult<u64> {
+        self.observe().log("tui fullRedraws");
+        Ok(17)
+    }
     type Invalidator = Invalidator;
     fn invalidate(&self, invalidator: &Invalidator) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();
@@ -1692,6 +2091,8 @@ impl Imports for Controlled {
                 key: key.to_owned(),
                 component: handle,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             });
         Ok(())
     }
@@ -1710,6 +2111,8 @@ impl Imports for Controlled {
                 key: "footer".to_owned(),
                 component,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             });
         }
         Ok(())
@@ -1739,6 +2142,8 @@ impl Imports for Controlled {
                 key: "header".to_owned(),
                 component: self.build(factory, false)?,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             }),
         };
         self.observed.borrow_mut().ui.header.install(slot);
@@ -1765,6 +2170,50 @@ impl Imports for Controlled {
     }
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
+    fn ui_set_editor_component(
+        &self,
+        resource: &Ui,
+        factory: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        let target = factory.map(|factory| factory.id);
+        let old = super::ui_host::set_editor_component(
+            &mut self.observed.borrow_mut(),
+            resource.key,
+            target,
+        )?;
+        if let Some(old) = old {
+            let mut observed = self.observed.borrow_mut();
+            observed.register(format!("editor component {}", old.component), old.component);
+            observed.register(format!("editor {}", old.editor), old.editor);
+        }
+        target.map_or(Ok(()), |factory| self.build_editor_component(factory))
+    }
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Ui,
+        factory: &Callback,
+    ) -> ExtensionResult<()> {
+        let current = super::provider_host::add(&mut self.observed.borrow_mut(), resource.key)?;
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let exports = Exports::new(self.clone());
+        let provider = exports.invoke_provider_factory(factory.id, current, &emitter)?;
+        let id = crate::component_adapter::keep_provider(self, provider);
+        super::provider_host::push(&mut self.observed.borrow_mut(), id);
+        Ok(())
+    }
+    fn ui_get_editor_component(
+        &self,
+        resource: &Ui,
+    ) -> ExtensionResult<crate::component_adapter::CurrentFactory> {
+        let current =
+            super::ui_host::get_editor_component(&mut self.observed.borrow_mut(), resource.key)?;
+        Ok(current.map(|current| {
+            current.map_err(|custom| {
+                std::rc::Rc::new(super::widget_controlled::ForeignFactory(custom))
+                    as std::rc::Rc<dyn std::any::Any>
+            })
+        }))
     }
     fn ui_theme(&self, resource: &Ui) -> ExtensionResult<Theme> {
         let key = self.ui_themed(resource, "theme", &serde_json::Value::Null)?;
@@ -1890,13 +2339,12 @@ impl Imports for Controlled {
     type Node = Node;
     type Update = Update;
     type Callback = Callback;
-    type Signal = Signal;
     type Context = Context;
     type CommandContext = CommandContext;
     type ReplacedContext = ReplacedContext;
 
     fn session_manager(&self, _context: &Context) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+        let data = self.observed.borrow().readers.acquire()?.fresh();
         Ok(Reader {
             data,
             _lease: Lease::new(&self.observed),
@@ -2236,6 +2684,7 @@ impl Imports for Controlled {
         resource: &Reader,
         name: &str,
         config: &str,
+        _callbacks: crate::component_adapter::ProviderRegistration<'_, Self::Callback>,
     ) -> ExtensionResult<()> {
         resource.data.unit(
             "registerProvider",
@@ -2507,7 +2956,12 @@ impl Imports for Controlled {
         Ok(())
     }
 
-    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()> {
+    fn register_provider(
+        &self,
+        name: &str,
+        config: &str,
+        _callbacks: crate::component_adapter::ProviderRegistration<'_, Self::Callback>,
+    ) -> ExtensionResult<()> {
         self.observed
             .borrow_mut()
             .log(format!("provider register {name} {config}"));
@@ -2640,5 +3094,81 @@ impl Imports for Controlled {
         let mut command = self.command_context(&context.session.cwd);
         command.setup = context.setup.clone();
         command
+    }
+}
+
+impl Controlled {
+    /// Constructs both custom factory forms without retaining their borrowed emitter.
+    async fn custom(&self, factory: &Callback) -> ExtensionResult<()> {
+        let (built, close) = self.custom_build(factory).await?;
+        self.custom_input(built, &super::bus_host::Emitter { key: 0 })?;
+        assert!(close.is_closed());
+        Ok(())
+    }
+    /// Runs a custom factory's prefix, then awaits its owned continuation when there is one.
+    pub(super) async fn custom_build(
+        &self,
+        factory: &Callback,
+    ) -> ExtensionResult<(crate::ExtensionComponent, super::custom_host::Close)> {
+        let close = super::custom_host::Close::default();
+        let lent = crate::component_adapter::custom::Lent {
+            tui: Tui::lent(&self.observed),
+            theme: self.theme("dark"),
+            keybindings: super::widget_controlled::Keybindings(0),
+            close: close.clone(),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let built = Exports::new(self.clone()).invoke_custom_factory(factory.id, lent, &emitter)?;
+        let built = match built {
+            crate::CustomFactoryOutcome::Ready(built) => built,
+            crate::CustomFactoryOutcome::Async(building) => building.await?,
+        };
+        Ok((built, close))
+    }
+    /// Exercises the view after the prefix returns, then disposes it before releasing it.
+    fn custom_input(
+        &self,
+        built: crate::ExtensionComponent,
+        emitter: &super::bus_host::Emitter,
+    ) -> ExtensionResult<()> {
+        use super::renderer_host::{Call, Reply, invoke};
+        assert_eq!(built.width, Some(13.0));
+        assert_eq!(
+            invoke(&built.component, Call::Render(20), self, 0)?,
+            Reply::Lines(vec!["custom 23".into()])
+        );
+        invoke(&built.component, Call::Input("commit"), self, 0)?;
+        if let Some(dispose) = built.dispose {
+            crate::component_adapter::renderers::with_emitter(self, emitter, |emitter| {
+                dispose(emitter)
+            })?;
+        }
+        Ok(())
+    }
+    /// Calls the actual backend body and verifies the script's native-owner error channel.
+    fn credential_backend(&self, resource: &Reader) -> ExtensionResult<()> {
+        let target = resource.data.1.lock().unwrap().backend;
+        if let Some(target) = target {
+            let result =
+                crate::component_adapter::auth_storage::invoke_backend(self, target, resource);
+            let expected = resource.data.optional("backend_result", &[])?;
+            assert_eq!(result.err(), expected);
+        }
+        Ok(())
+    }
+    /// Scripted metadata must agree with the callback's actual result before returning.
+    fn credential_fallback(resource: &Reader, provider: &str) -> ExtensionResult<()> {
+        let target = resource.data.1.lock().unwrap().fallback;
+        if let Some(target) =
+            target.filter(|_| super::credential_host::scripted_fallback(&resource.data, provider))
+        {
+            let result = crate::component_adapter::auth_storage::invoke_fallback(target, provider);
+            let expected = resource
+                .data
+                .optional("fallback_result", &[serde_json::json!(provider)]);
+            assert_eq!(result, expected);
+            result?;
+        }
+        Ok(())
     }
 }

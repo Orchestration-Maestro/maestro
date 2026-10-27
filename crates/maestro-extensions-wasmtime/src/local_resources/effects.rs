@@ -67,7 +67,16 @@ impl InvalidatorEndpoint {
 #[derive(Clone)]
 pub(crate) struct TuiEndpoint {
     /// Releases the retained terminal with the last holder.
-    _lease: Arc<Lease>,
+    pub(super) lease: Arc<Lease>,
+}
+
+impl TuiEndpoint {
+    /// Reads the original frame writer, without keeping a second counter.
+    pub(crate) fn full_redraws(&self) -> Result<u64, String> {
+        self.lease.request(|id, reply| {
+            Message::Widgets(crate::widget_reads::WidgetMessage::FullRedraws(id, reply))
+        })
+    }
 }
 
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
@@ -142,6 +151,14 @@ impl Registry {
         let remove = ui
             .on_terminal_input(listener)
             .map_err(|error| error.to_string())?;
+        self.ui_subscription(remove)
+    }
+
+    /// Retains the explicit remover of a terminal input listener.
+    pub(crate) fn ui_subscription(
+        &self,
+        remove: Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>>,
+    ) -> Result<SubscriptionEndpoint, String> {
         self.insert(Capability::UiSubscription(remove))
             .map(SubscriptionEndpoint)
     }
@@ -173,10 +190,15 @@ impl Registry {
             .map(SubscriptionEndpoint)
     }
 
-    /// Retains the native terminal lent to one component factory.
-    pub(crate) fn tui(&self, tui: maestro_extensions::TUI) -> Result<TuiEndpoint, String> {
-        self.insert(Capability::Tui { _owner: tui })
-            .map(|lease| TuiEndpoint { _lease: lease })
+    /// Retains the native terminal lent to one component factory, with the reporter of
+    /// failures of the callbacks it runs.
+    pub(crate) fn tui(
+        &self,
+        tui: maestro_extensions::TUI,
+        reporter: Option<maestro_extensions::types::UIErrorReporter>,
+    ) -> Result<TuiEndpoint, String> {
+        self.insert(Capability::Tui(tui, reporter))
+            .map(|lease| TuiEndpoint { lease })
     }
 
     /// Retains the native theme supplied to one renderer invocation.

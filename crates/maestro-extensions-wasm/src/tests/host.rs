@@ -673,6 +673,8 @@ pub struct Route {
     pub(super) running: Option<super::ui_host::Nested>,
     /// The operation's own result.
     pub(super) result: Option<Result<host::RouteValue, String>>,
+    /// A rendering's pieces, which its nested results complete into its rows.
+    pub(super) rows: Option<super::widget_component::Rows>,
 }
 
 /// A deferred nested call; the test host never makes one.
@@ -693,10 +695,18 @@ impl State {
         &mut self,
         result: Result<(), String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        self.routed_value(result.map(|()| host::RouteValue::Unit))
+    }
+    /// Preserves a non-unit routed result for a controlled resource operation.
+    pub(super) fn routed_value(
+        &mut self,
+        result: Result<host::RouteValue, String>,
+    ) -> wasmtime::Result<Resource<Route>> {
         self.push(Route {
             steps: std::collections::VecDeque::new(),
             running: None,
-            result: Some(result.map(|()| host::RouteValue::Unit)),
+            rows: None,
+            result: Some(result),
         })
     }
 }
@@ -720,12 +730,34 @@ impl host::HostImportRoute for State {
             route.running = Some(nested);
             return Ok(host::RouteStep::Invoke(call));
         }
+        if let Some(rows) = route.rows.as_mut() {
+            return Ok(host::RouteStep::Done(
+                rows.rows().map(host::RouteValue::Lines),
+            ));
+        }
         Ok(host::RouteStep::Done(
             route.result.take().unwrap_or(Ok(host::RouteValue::Unit)),
         ))
     }
     fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
-        let nested = self.table.get_mut(&this)?.running.take();
+        let route = self.table.get_mut(&this)?;
+        let nested = route.running.take();
+        if let Some(rows) = route.rows.as_mut() {
+            rows.results.push_back(value);
+            return Ok(());
+        }
+        if let Some(super::ui_host::Nested::Shortcut(key, data)) = &nested
+            && let host::LocalResult::Widget(Ok(host::WidgetAnswer::Consumed(false))) = &value
+        {
+            let continued = super::widget_editors::proceed(&mut self.observed, *key, data);
+            match continued {
+                Ok(calls) => {
+                    let steps = self.steps(*key, calls)?;
+                    self.table.get_mut(&this)?.steps.extend(steps);
+                }
+                Err(error) => self.table.get_mut(&this)?.result = Some(Err(error)),
+            }
+        }
         let failure = match nested {
             Some(nested) => self.settle_nested(nested, value)?,
             None => None,
@@ -757,6 +789,252 @@ impl host::Host for State {
         wasmtime::bail!("file mutation queues require the production host")
     }
 
+    fn new_overlay_options(
+        &mut self,
+        encoded: String,
+    ) -> wasmtime::Result<Result<Resource<super::overlay_host::Options>, String>> {
+        super::overlay_host::create(self, &encoded)
+    }
+    fn new_text(
+        &mut self,
+        text: String,
+        padding_x: u32,
+        padding_y: u32,
+        background: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(background.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "text",
+            text,
+            padding: (padding_x, padding_y),
+            paint,
+            ..Default::default()
+        })
+    }
+    fn new_box(
+        &mut self,
+        padding_x: u32,
+        padding_y: u32,
+        background: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(background.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "box",
+            padding: (padding_x, padding_y),
+            paint,
+            ..Default::default()
+        })
+    }
+    fn new_container(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_widget(super::widget_host::Build {
+            kind: "container",
+            ..Default::default()
+        })
+    }
+    fn new_spacer(
+        &mut self,
+        lines: u32,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_widget(super::widget_host::Build {
+            kind: "spacer",
+            lines,
+            ..Default::default()
+        })
+    }
+    fn new_markdown(
+        &mut self,
+        text: String,
+        padding_x: u32,
+        padding_y: u32,
+        theme: host::MarkdownStyles,
+        style: Option<host::DefaultTextStyle>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_markdown(text, (padding_x, padding_y), &theme, style.as_ref())
+    }
+    fn new_dynamic_border(
+        &mut self,
+        color: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(color.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "border",
+            paint,
+            ..Default::default()
+        })
+    }
+    fn global_theme(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::renderer_host::Theme>, String>> {
+        Ok(Ok(self
+            .table
+            .push(super::renderer_host::Theme("dark".into()))?))
+    }
+    fn get_markdown_theme(&mut self) -> wasmtime::Result<Result<host::MarkdownTheme, String>> {
+        self.markdown_theme().map(Ok)
+    }
+    fn new_select_list(
+        &mut self,
+        items: Vec<host::SelectItem>,
+        max_visible: u32,
+        theme: host::SelectListStyles,
+        layout: host::SelectLayout,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_select_list(items, max_visible, &theme, &layout)
+    }
+    fn new_settings_list(
+        &mut self,
+        items: Vec<host::SettingItem>,
+        max_visible: u32,
+        theme: host::SettingsListStyles,
+        on_change: Resource<Identity>,
+        on_cancel: Resource<Identity>,
+        enable_search: bool,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let callbacks = (self.table.get(&on_change)?.0, self.table.get(&on_cancel)?.0);
+        self.build_settings_list((items, max_visible), &theme, callbacks, enable_search)
+    }
+    fn new_editor(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: host::EditorStyles,
+        options: host::EditorOptions,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_editor(&theme, None, options)
+    }
+    fn new_custom_editor(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: host::EditorStyles,
+        keybindings: Resource<super::widget_component::KeybindingsResource>,
+        options: host::EditorOptions,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let keys = self.table.get(&keybindings)?.0;
+        self.build_editor(&theme, Some(keys), options)
+    }
+    fn new_bordered_loader(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: Resource<super::renderer_host::Theme>,
+        message: String,
+        cancellable: Option<bool>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_loader(&theme, message, cancellable)
+    }
+    fn get_select_list_theme(&mut self) -> wasmtime::Result<Result<host::SelectListTheme, String>> {
+        self.observed.log("getSelectListTheme");
+        let mut role =
+            |name: &str| self.push(super::widget_component::StyleResource(name.to_owned()));
+        Ok(Ok(host::SelectListTheme {
+            selected_prefix: role("selectedPrefix")?,
+            selected_text: role("selectedText")?,
+            description: role("description")?,
+            scroll_info: role("scrollInfo")?,
+            no_match: role("noMatch")?,
+        }))
+    }
+    fn new_keybindings_manager(
+        &mut self,
+        user_bindings: Vec<(String, Option<host::KeybindingKeys>)>,
+        config_path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let user = super::widget_component::config(user_bindings);
+        self.keep_keys(None, user, config_path)
+    }
+    fn create_keybindings_manager(
+        &mut self,
+        agent_dir: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let path = format!(
+            "{}/keybindings.json",
+            agent_dir.as_deref().unwrap_or("/agent")
+        );
+        self.keep_keys(None, Vec::new(), Some(path))
+    }
+    fn new_keybindings_with_definitions(
+        &mut self,
+        definitions: Vec<(String, host::KeybindingDefinition)>,
+        user_bindings: Vec<(String, Option<host::KeybindingKeys>)>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let definitions = super::widget_component::definitions(definitions);
+        let user = super::widget_component::config(user_bindings);
+        self.keep_keys(Some(definitions), user, None)
+    }
+    fn get_keybindings(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        self.observed.log("getKeybindings");
+        Ok(Ok(
+            self.push(super::widget_component::KeybindingsResource(0))?
+        ))
+    }
+    fn key_text(&mut self, keybinding: String) -> wasmtime::Result<Result<String, String>> {
+        Ok(Ok(super::widget_keys::hint(
+            &mut self.observed,
+            Some(&keybinding),
+            None,
+            None,
+        )))
+    }
+    fn key_hint(
+        &mut self,
+        keybinding: String,
+        description: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let hint = super::widget_keys::hint(
+            &mut self.observed,
+            Some(&keybinding),
+            None,
+            Some(&description),
+        );
+        Ok(Ok(hint))
+    }
+    fn raw_key_hint(
+        &mut self,
+        key: String,
+        description: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let hint =
+            super::widget_keys::hint(&mut self.observed, None, Some(&key), Some(&description));
+        Ok(Ok(hint))
+    }
+    fn get_editor_theme(&mut self) -> wasmtime::Result<Result<host::EditorTheme, String>> {
+        self.editor_theme().map(Ok)
+    }
+    fn get_settings_list_theme(
+        &mut self,
+    ) -> wasmtime::Result<Result<host::SettingsListTheme, String>> {
+        self.observed.log("getSettingsListTheme");
+        Ok(Ok(host::SettingsListTheme {
+            label: self.push(super::widget_component::RowStyleResource(
+                "label".to_owned(),
+            ))?,
+            value: self.push(super::widget_component::RowStyleResource(
+                "value".to_owned(),
+            ))?,
+            description: self.push(super::widget_component::StyleResource(
+                "description".to_owned(),
+            ))?,
+            cursor: "→ ".to_owned(),
+            hint: self.push(super::widget_component::StyleResource("hint".to_owned()))?,
+        }))
+    }
+
+    fn watch(
+        &mut self,
+        _path: String,
+        _listener: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::native_watch_host::Watcher>, String>> {
+        Ok(Err("native file watch requires the production host".into()))
+    }
+    fn kill(&mut self, pid: i32, signal: Option<String>) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.observed.native_io.kill(pid, signal))
+    }
     fn model_stream(
         &mut self,
         _: bool,
@@ -1159,39 +1437,49 @@ impl host::Host for State {
 
     fn auth_storage_from_backend(
         &mut self,
-        _backend: Resource<Identity>,
+        backend: Resource<Identity>,
     ) -> wasmtime::Result<Resource<Route>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_from_backend", &[])?;
-            self.table
-                .push(reader)
-                .map(host::RouteValue::Credentials)
-                .map_err(|error| error.to_string())
-        });
-        self.push(Route {
-            steps: std::collections::VecDeque::new(),
-            running: None,
-            result: Some(result),
-        })
+        let reader = match self.observed.readers.acquire() {
+            Ok(reader) => reader.fresh(),
+            Err(error) => return self.routed(Err(error)),
+        };
+        if let Err(error) = reader.unit("auth_storage_from_backend", &[]) {
+            return self.routed(Err(error));
+        }
+        reader.1.lock().unwrap().backend = Some(self.table.get(&backend)?.0);
+        self.observed
+            .register("credential-backend".into(), backend.rep());
+        let owner = self.push(reader.clone())?;
+        self.credential_backend_route(&reader, Ok(host::RouteValue::Credentials(owner)))
     }
     fn create_auth_storage(
         &mut self,
         path: Option<String>,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn auth_storage_in_memory(
         &mut self,
         data: String,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn create_model_registry(
@@ -1217,6 +1505,10 @@ impl host::Host for State {
         &mut self,
         name: String,
         config: String,
+        _callbacks: (
+            Option<Resource<super::host::Identity>>,
+            Option<(Resource<super::host::Identity>, String, Option<bool>)>,
+        ),
     ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));
@@ -1510,6 +1802,7 @@ pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Compon
 fn component_linker(engine: &Engine) -> wasmtime::Result<Linker<State>> {
     let mut linker = Linker::new(engine);
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
     Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
     Ok(linker)
 }
@@ -1716,6 +2009,56 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn fetch(
+        accessor: &Accessor<State, Self>,
+        request: host::HttpRequest,
+        signal: Option<Resource<Flag>>,
+    ) -> impl Future<
+        Output = wasmtime::Result<Result<Resource<super::native_http_host::Response>, String>>,
+    > {
+        std::future::ready(super::native_http_host::fetch(accessor, request, signal))
+    }
+    fn spawn(
+        accessor: &Accessor<State, Self>,
+        command: String,
+        args: Vec<String>,
+        options: host::SpawnOptions,
+    ) -> impl Future<Output = wasmtime::Result<Result<Resource<super::native_io_host::Child>, String>>>
+    {
+        std::future::ready(super::native_io_host::spawn(
+            accessor, command, args, options,
+        ))
+    }
+
+    async fn sleep(
+        accessor: &Accessor<State, Self>,
+        duration: (u64, u32),
+        signal: Option<Resource<Flag>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let aborted = |a: &Accessor<State, Self>| {
+            a.with(|mut a| {
+                signal
+                    .as_ref()
+                    .is_some_and(|s| a.get().table.get(s).unwrap().0.load(Ordering::SeqCst))
+            })
+        };
+        if aborted(accessor) {
+            return Ok(Err("Aborted".into()));
+        }
+        let hold = accessor.with(|mut a| {
+            a.get()
+                .observed
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            a.get().observed.take_hold()
+        });
+        pause(hold).await;
+        Ok(if aborted(accessor) {
+            Err("Aborted".into())
+        } else {
+            Ok(())
+        })
+    }
+
     async fn call(
         accessor: &Accessor<State, Self>,
         operation: String,

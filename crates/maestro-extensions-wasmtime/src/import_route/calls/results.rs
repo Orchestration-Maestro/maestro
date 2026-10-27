@@ -6,6 +6,9 @@ use wasmtime::component::{ComponentType, Lift};
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(in crate::import_route) enum LocalResult {
+    /// Original OAuth interaction result.
+    #[component(name = "oauth")]
+    OAuth(Result<Option<String>, String>),
     /// Exact optional fallback value or authored error.
     #[component(name = "auth-fallback")]
     AuthFallback(Result<Option<String>, String>),
@@ -21,6 +24,9 @@ pub(in crate::import_route) enum LocalResult {
     /// Key-release preference or the authored error.
     #[component(name = "key")]
     Key(Result<bool, String>),
+    /// Optional focus state or an ordinary error.
+    #[component(name = "focused")]
+    Focused(Result<Option<bool>, String>),
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<crate::guest_exports::tools::PreparedArguments, String>),
@@ -36,6 +42,12 @@ pub(in crate::import_route) enum LocalResult {
     /// Selected terminal classification or retained result.
     #[component(name = "stream")]
     Stream(Result<crate::stream_calls::WireSelection, String>),
+    /// Original returned authored stream.
+    #[component(name = "provider")]
+    Provider(Result<Resource<Callback>, String>),
+    /// Ordinary returned-stream operation result.
+    #[component(name = "assistant")]
+    Assistant(Result<Option<String>, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -51,6 +63,9 @@ pub(in crate::import_route) enum LocalResult {
     /// The built component identities, or the authored error.
     #[component(name = "factory")]
     Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// A completed custom prefix or its owned continuation.
+    #[component(name = "custom-factory")]
+    CustomFactory(Result<crate::guest_calls::custom::Built, String>),
     /// The rendered component and new row state identities, or the authored error.
     #[component(name = "tool-render")]
     ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
@@ -72,4 +87,25 @@ pub(in crate::import_route) enum LocalResult {
     /// Original edit observation or structured diagnostic.
     #[component(name = "edit")]
     Edit(Result<crate::guest_calls::read::Output, crate::schema_wire::Error>),
+    /// The styled text, or the authored error.
+    #[component(name = "style")]
+    Style(Result<String, String>),
+    /// The highlighted rows, or the authored error.
+    #[component(name = "highlight")]
+    Highlight(Result<Vec<String>, String>),
+    /// The widget callback's answer, or the authored error.
+    #[component(name = "widget")]
+    Widget(Result<crate::guest_calls::widget_calls::Answer, String>),
+    /// The built editor's identities, or the authored error.
+    #[component(name = "editor-factory")]
+    EditorFactory(Result<crate::guest_calls::editors::Built, String>),
+    /// The authored editor's answer, or its error.
+    #[component(name = "editor")]
+    Editor(Result<crate::guest_calls::editors::Answer, String>),
+    /// The authored completion provider's answer, or its error.
+    #[component(name = "autocomplete")]
+    Autocomplete(Result<crate::guest_calls::providers::Answer, String>),
+    /// The returned completion provider's identity, or the authored error.
+    #[component(name = "autocomplete-factory")]
+    AutocompleteFactory(Result<Resource<Callback>, String>),
 }

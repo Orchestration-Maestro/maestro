@@ -45,7 +45,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                             .transpose()?,
                         update
                             .as_ref()
-                            .map(|update| crate::callback_imports::borrowed_object(state, update))
+                            .map(|update| crate::callback_imports::retain_object(state, update))
                             .transpose()?,
                         state.api().clone(),
                     ))
@@ -80,7 +80,7 @@ fn add_factories<T: CallbackView + 'static>(
             let operations = operations
                 .as_ref()
                 .map(|operations| {
-                    crate::callback_imports::borrowed_object(store.data_mut(), operations)
+                    crate::callback_imports::retain_object(store.data_mut(), operations)
                 })
                 .transpose()?;
             let result = store.data().api().create_read(cwd, resize, operations);
@@ -128,7 +128,7 @@ fn add_mutating_factories<T: CallbackView + 'static>(
             let operations = operations
                 .as_ref()
                 .map(|operations| {
-                    crate::callback_imports::borrowed_object(store.data_mut(), operations)
+                    crate::callback_imports::retain_object(store.data_mut(), operations)
                 })
                 .transpose()?;
             let result = create(store.data().api(), cwd, operations);
@@ -170,7 +170,7 @@ fn add_bash_factory<T: CallbackView + 'static>(
                 callback
                     .as_ref()
                     .map(|callback| {
-                        crate::callback_imports::borrowed_object(store.data_mut(), callback)
+                        crate::callback_imports::retain_object(store.data_mut(), callback)
                     })
                     .transpose()
             };

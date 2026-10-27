@@ -5,7 +5,7 @@
 mod dimensions;
 mod input;
 mod lifecycle;
-mod output;
+pub mod output;
 #[cfg(any(windows, test))]
 mod producer;
 #[cfg(any(windows, test))]
@@ -52,6 +52,11 @@ trait OutputPort {
 
     /// Writes `text`, or accepts it for the writer.
     fn write(&self, text: &str) -> io::Result<()>;
+
+    /// Clones active queued admission; synchronous destinations have no handle.
+    fn output_writer(&self) -> Option<output::OutputWriter> {
+        None
+    }
 
     /// Ends the writer, writing what it still holds; nothing by default.
     fn finish(&self) -> io::Result<()> {
@@ -200,6 +205,16 @@ impl Shared {
 }
 
 impl ProcessTerminal {
+    /// Returns the active queued writer, or `None` while stopped or writing synchronously.
+    ///
+    /// The handle may cross threads; it never shares the terminal's local byte queue.
+    #[must_use]
+    pub fn output_writer(&self) -> Option<output::OutputWriter> {
+        self.running
+            .as_ref()
+            .and_then(|_| self.shared.output.output_writer())
+    }
+
     /// Creates a terminal that has acquired nothing yet. Tasks run on `local`, which the
     /// caller drives inside a Tokio runtime with the I/O, time and signal drivers enabled.
     #[must_use]

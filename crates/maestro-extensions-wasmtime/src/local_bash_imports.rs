@@ -38,7 +38,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                                 .as_ref()
                                 .map(|signal| state.ctx().table.get(signal).cloned())
                                 .transpose()?,
-                            output: crate::callback_imports::borrowed_object(state, &output)?,
+                            output: crate::callback_imports::retain_object(state, &output)?,
                             api: state.api().clone(),
                         },
                     ))

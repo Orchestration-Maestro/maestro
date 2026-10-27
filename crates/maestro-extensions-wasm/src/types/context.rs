@@ -94,6 +94,14 @@ port! {
         fn set_editor_text(text: &str) -> ();
         /// Reads the host editor's current text.
         fn get_editor_text() -> String;
+        /// Replaces the host editor with the editor `factory` builds, or restores the host's
+        /// editor; the factory runs before the request returns.
+        fn set_editor_component(factory: Option<crate::EditorFactory>) -> ();
+        /// The current editor factory, or `None` while the host's own editor is in use.
+        fn get_editor_component() -> Option<crate::EditorFactory>;
+        /// Stacks `factory` on the current completion provider; the host keeps it for later
+        /// rebuilds and runs it before the request returns.
+        fn add_autocomplete_provider(factory: crate::AutocompleteProviderFactory) -> ();
         /// Adds a raw terminal input listener; dropping the subscription keeps it.
         fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
         /// The UI's live theme; it observes later selections.
@@ -110,6 +118,8 @@ port! {
         fn set_tools_expanded(expanded: bool) -> ();
     }
     owned {
+        /// Shows a custom component until its host accepts closing it.
+        fn custom_component(factory: crate::CustomComponentFactory, options: Option<crate::CustomUIOptions>) -> ();
         /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.
         fn select(
             title: String,
@@ -174,19 +184,44 @@ pub trait SignalPort {
 /// Cancellation flag of an operation. Clones share the host flag and may outlive the
 /// callback that received them.
 #[derive(Clone)]
-pub struct AbortSignal(Rc<dyn SignalPort>);
+pub struct AbortSignal {
+    /// Cancellation observations supplied by the signal's owner.
+    port: Rc<dyn SignalPort>,
+    /// Original host resource, retained when the host supplied this signal.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    host: Option<Rc<dyn std::any::Any>>,
+}
 
 impl AbortSignal {
     /// Wraps the host's flag.
     #[must_use]
     pub fn new(port: Rc<dyn SignalPort>) -> Self {
-        Self(port)
+        Self {
+            port,
+            #[cfg(any(test, target_arch = "wasm32"))]
+            host: None,
+        }
+    }
+
+    /// Keeps a supplied host resource available for later operations.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn supplied<P: SignalPort + 'static>(port: Rc<P>) -> Self {
+        Self {
+            port: port.clone(),
+            host: Some(port),
+        }
+    }
+
+    /// Recovers the retained host resource without creating another signal.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
+        self.host.clone()?.downcast().ok()
     }
 
     /// Whether the operation was cancelled when this is called.
     #[must_use]
     pub fn aborted(&self) -> bool {
-        self.0.aborted()
+        self.port.aborted()
     }
 
     /// Registers `listener` to run once when the operation is cancelled.
@@ -199,7 +234,7 @@ impl AbortSignal {
     /// # Errors
     /// Returns the host rejection; a rejected listener is not retained.
     pub fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription> {
-        self.0.subscribe(listener)
+        self.port.subscribe(listener)
     }
 }
 

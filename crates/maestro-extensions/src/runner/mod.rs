@@ -6,6 +6,7 @@ mod contexts;
 mod dispatch;
 pub use dispatch::{RunnerEmitEvent, emit_session_shutdown_event};
 mod errors;
+pub(crate) use errors::event_error;
 pub use errors::retained_diagnostic;
 mod input;
 mod registration;
@@ -71,6 +72,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 actions: RefCell::default(),
                 command_actions: RefCell::new(ExtensionCommandContextActions::unbound()),
                 ui: RefCell::new(no_ui.clone().into()),
+                ui_error_reporter: RefCell::default(),
                 no_ui,
             }),
             warning_reporter,

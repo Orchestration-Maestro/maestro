@@ -36,16 +36,24 @@ impl Call {
             | Self::WithSession(_, _, reply)
             | Self::Tail(_, reply) => attach(reply, completion),
             Self::Renderer(call) => attach(&call.reply, completion),
-            Self::Component(call) => match call {
-                ComponentCall::Render(_, _, _, reply) => attach(reply, completion),
-                ComponentCall::Unit(_, _, _, reply) => attach(reply, completion),
-                ComponentCall::WantsKeyRelease(_, _, reply) => attach(reply, completion),
-            },
+            Self::Component(call) => attach_component(call, completion),
             Self::Synchronous(call) => attach(&call.completion, completion),
             Self::TerminalInput(call) => attach(&call.reply, completion),
             Self::Factory(call) => attach(&call.reply, completion),
+            Self::Custom(call) => attach_custom(call, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
+            Self::Widget(call) => attach(&call.reply, completion),
+            Self::EditorFactory(call) => attach(&call.reply, completion),
+            Self::Editor(call) => attach(&call.reply, completion),
+            Self::AutocompleteFactory(call) => attach(&call.reply, completion),
+            Self::Autocomplete(call) => attach(&call.reply, completion),
+            Self::Paint(crate::guest_calls::paints::PaintCall::Highlight(_, _, _, reply)) => {
+                attach(reply, completion);
+            }
             Self::Stream(call) => attach(&call.reply, completion),
+            Self::OAuth(call) => attach(&call.reply, completion),
+            Self::Provider(call) => attach(&call.reply, completion),
+            Self::Assistant(call) => attach(&call.reply, completion),
             Self::ModelHook(call) => attach(&call.reply, completion),
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Credential(call) => match call {
@@ -71,7 +79,10 @@ impl Call {
                 RegisteredCall::Completion(_, _, reply) => attach(reply, completion),
             },
             Self::Tool(ToolCall::Prepare { reply, .. }) => attach(reply, completion),
-            Self::Tool(ToolCall::Execute { reply, .. }) => attach(reply, completion),
+            Self::Tool(ToolCall::Execute { reply, .. })
+            | Self::Paint(crate::guest_calls::paints::PaintCall::Style(_, _, reply)) => {
+                attach(reply, completion);
+            }
             Self::Release(release) => {
                 if let Some(reply) = &release.completion {
                     attach(reply, completion);
@@ -82,8 +93,26 @@ impl Call {
     }
 }
 
+/// Attaches completion to a custom factory prefix's or continuation's reply.
+fn attach_custom(call: &crate::guest_calls::custom::Invocation, completion: &Completion) {
+    match call {
+        crate::guest_calls::custom::Invocation::Prefix(call) => attach(&call.reply, completion),
+        crate::guest_calls::custom::Invocation::Future(_, reply) => attach(reply, completion),
+    }
+}
+
 /// Retains only a started reply's once-only completion action.
 fn attach<T: Send + 'static>(reply: &super::replies::Reply<T>, completion: &Completion) {
     let completion = completion.clone();
     reply.before(move || completion.finish());
+}
+
+/// Attaches completion to the original retained component reply.
+fn attach_component(call: &ComponentCall, completion: &Completion) {
+    match call {
+        ComponentCall::Render(_, _, _, reply) => attach(reply, completion),
+        ComponentCall::Unit(_, _, _, reply) => attach(reply, completion),
+        ComponentCall::WantsKeyRelease(_, _, reply) => attach(reply, completion),
+        ComponentCall::Focused(_, _, reply) => attach(reply, completion),
+    }
 }

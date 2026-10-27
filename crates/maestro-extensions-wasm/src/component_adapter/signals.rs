@@ -9,11 +9,11 @@ use crate::types::{AbortListener, AbortSignal, ExtensionResult, SignalPort};
 use crate::{CallbackEmitter, Subscription};
 
 /// Host signal behind the facade.
-struct Signal<I: Imports> {
+pub(super) struct Signal<I: Imports> {
     /// The host the signal belongs to.
     imports: I,
     /// The host's cancellation flag.
-    signal: I::Signal,
+    pub(super) signal: I::Signal,
 }
 
 impl<I: Imports> SignalPort for Signal<I> {
@@ -31,8 +31,42 @@ impl<I: Imports> SignalPort for Signal<I> {
     }
 }
 
+/// Original host cancellation, or a mirror for a caller-defined signal port.
+pub(super) enum Binding<I: Imports> {
+    /// Keeps the exact resource the host supplied without subscribing to it again.
+    Original(Rc<Signal<I>>),
+    /// Follows an author-defined port through one temporary host signal.
+    Mirrored(Mirror<I>),
+}
+
+impl<I: Imports> Binding<I> {
+    /// Borrows an original host signal when available, otherwise follows its port.
+    pub(super) fn new(imports: &I, caller: Option<&AbortSignal>) -> ExtensionResult<Self> {
+        if let Some(original) = caller.and_then(AbortSignal::host::<Signal<I>>) {
+            return Ok(Self::Original(original));
+        }
+        Mirror::new(imports, caller).map(Self::Mirrored)
+    }
+
+    /// The signal resource this native operation receives.
+    pub(super) fn signal(&self) -> Option<&I::Signal> {
+        match self {
+            Self::Original(original) => Some(&original.signal),
+            Self::Mirrored(mirror) => mirror.signal(),
+        }
+    }
+
+    /// Removes only a mirror's observer after this operation settles.
+    pub(super) fn settle<T>(self, result: ExtensionResult<T>) -> ExtensionResult<T> {
+        match self {
+            Self::Original(_) => result,
+            Self::Mirrored(mirror) => mirror.settle(result),
+        }
+    }
+}
+
 /// A caller's signal listener, removed when its host call settles or is dropped.
-struct Listening(Option<Subscription>);
+pub(super) struct Listening(pub(super) Option<Subscription>);
 
 impl Listening {
     /// Removes the listener once, returning the host's rejection.
@@ -55,6 +89,8 @@ pub(super) struct Mirror<I: Imports> {
     native: Option<Rc<I::Signal>>,
     /// The caller-signal listener that aborts it.
     listening: Listening,
+    /// Keep arbitrary caller-local signal storage alive until its listener is removed.
+    _caller: Option<AbortSignal>,
 }
 
 impl<I: Imports> Mirror<I> {
@@ -73,7 +109,11 @@ impl<I: Imports> Mirror<I> {
                 })
                 .transpose()?,
         );
-        let mirror = Self { native, listening };
+        let mirror = Self {
+            native,
+            listening,
+            _caller: caller.cloned(),
+        };
         if caller.is_some_and(AbortSignal::aborted)
             && let Some(native) = mirror.signal()
         {
@@ -97,7 +137,7 @@ impl<I: Imports> Mirror<I> {
 
 /// Wraps a host signal.
 pub(crate) fn signal<I: Imports>(imports: &I, signal: I::Signal) -> AbortSignal {
-    AbortSignal::new(Rc::new(Signal {
+    AbortSignal::supplied(Rc::new(Signal {
         imports: imports.clone(),
         signal,
     }))

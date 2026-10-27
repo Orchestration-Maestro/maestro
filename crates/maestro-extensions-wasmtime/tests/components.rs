@@ -4,7 +4,6 @@ use maestro_extensions::{
     EventBusController, ExtensionRunner, Local, ModuleLoader, Subscription, create_event_bus_for,
     types::ExtensionHandle,
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use serde_json::Value;
 use std::{cell::RefCell, path::Path, rc::Rc};
 
@@ -25,9 +24,8 @@ pub fn place(component: &str, artifact: &Path) {
 /// Loads every module path through the artifact factory, as an application's module loader does.
 pub fn loader() -> ModuleLoader<Local> {
     Rc::new(|path: &str| {
-        Box::pin(std::future::ready(Ok(Some(artifact_factory(
+        Box::pin(std::future::ready(Ok(Some(crate::artifact(
             path.to_owned(),
-            "installed-component-host".into(),
         )))))
     })
 }

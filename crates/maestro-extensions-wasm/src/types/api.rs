@@ -169,6 +169,8 @@ port! {
         fn with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ();
     }
     infallible {
+        /// Returns independently retained native operations.
+        fn native_io() -> Rc<dyn crate::io::NativeIo>;
         /// Returns the supplied host bus.
         fn events() -> crate::EventBus;
     }

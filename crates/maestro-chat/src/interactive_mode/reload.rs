@@ -58,6 +58,9 @@ impl InteractiveMode {
     }
 
     /// Builds the loading card with live borders, one-row spacers and muted text.
+    ///
+    /// # Errors
+    /// Returns the failure to read the current theme or to color the muted text.
     fn reload_box(&self) -> Result<Rc<Container>, EventError> {
         let container = Rc::new(Container::new());
         container.add_child(Rc::new(DynamicBorder::new(self.themes.theme(), None)));
@@ -74,6 +77,10 @@ impl InteractiveMode {
 
     /// Refreshes keys, header expansion, themes, settings, completion, shortcuts and chat
     /// in that order, leaving already-applied effects intact if a later operation fails.
+    ///
+    /// # Errors
+    /// Returns the failure of the header expansion, the theme selection or its error
+    /// notice, the editor settings, the completion setup or the chat rebuild.
     fn refresh_reloaded_resources(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         self.keybindings.reload();
         let custom = self.custom_header.borrow().clone();
@@ -115,6 +122,10 @@ impl InteractiveMode {
 
     /// Applies editor settings to the default editor and independently to a distinct
     /// current editor, then applies the terminal's cursor and shrink policies.
+    ///
+    /// # Errors
+    /// Returns the custom editor's refusal of the padding or the completion height, or
+    /// the terminal's failure to show or hide the hardware cursor.
     fn apply_reload_editor_settings(&self) -> Result<(), EventError> {
         let session = self.runtime_host.session();
         let settings = session.settings_manager().borrow();

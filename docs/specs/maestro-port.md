@@ -452,7 +452,9 @@ option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and the guest. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared
 optional-field helper; `Presence<T>` stays single-source here. Its `oauth` module owns
-`OAuthCredentials` and its `auth_storage` module owns `ApiKeyCredential`,
+`OAuthCredentials`, `OAuthPrompt`, `OAuthAuthInfo`, `OAuthSelectOption` and
+`OAuthSelectPrompt`, re-exported by models and the guest. Its `auth_storage`
+module owns `ApiKeyCredential`,
 `AuthCredential`, `AuthStorageData`, `AuthSource` and `AuthStatus` with their
 serialization; models and credentials re-export them, and parsing, stored-record
 construction, locking, key selection and persistence stay with credentials. Its
@@ -466,8 +468,12 @@ shared-types container.
 
 Shared invocation options also live in `maestro-request::types`: `ThinkingBudgets`,
 `CacheRetention`, `Transport`, `ProviderResponse`, `StreamOptions`,
-`ProviderStreamOptions` and `SimpleStreamOptions`. `StreamOptionSlots` selects the
-signal, payload hook, response hook and fetch representations without operations.
+`ProviderStreamOptions`, `SimpleStreamOptions` and `StreamOptionsInput<C, O, T>`.
+The input enum preserves the original raw or simple variant, parametrizing only
+common options, opaque objects and tool choice; native and guest aliases retain
+their own capability types. It borrows the common options without converting
+between the variants. `StreamOptionSlots` selects the signal, payload hook,
+response hook and fetch representations without operations.
 Native aliases specialize the fetch slot so unannotated SDK constructors still
 coerce transport closures; they retain execution-family identity and defaults. Guest aliases
 retain local capabilities. Provider execution, opaque native objects and tool

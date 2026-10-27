@@ -90,8 +90,8 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
         models_path: Arc::new(|| Err("default path must remain lazy".into())),
         config_values: values.clone(),
     });
-    let (first, _first_admission) = Pump::new();
-    let (other, _other_admission) = Pump::new();
+    let (first, _first_admission) = Pump::new(crate::tests::support::widgets());
+    let (other, _other_admission) = Pump::new(crate::tests::support::widgets());
     let accepted = Arc::new(maestro_extensions::AuthStorage::in_memory(
         maestro_extensions::AuthStorageData::default(),
     ));
@@ -113,6 +113,12 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
             .has_auth("valid")
             .unwrap()
     );
+    rejected_catalog_keeps_paths_lazy(
+        &api,
+        &other.registry(),
+        endpoint.clone(),
+        "extension credential resource belongs to another host",
+    );
     runtime.invalidate(Some("literal constructor rejection".into()));
     assert_eq!(
         api.create_auth_storage(path.to_str()).err(),
@@ -120,6 +126,90 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
     );
     assert!(!path.exists());
     assert!(accepted.has_auth("valid").unwrap());
+    rejected_json_keeps_credentials(&accepted, &first.registry());
+    rejected_catalog_keeps_paths_lazy(
+        &api,
+        &other.registry(),
+        endpoint.clone(),
+        "literal constructor rejection",
+    );
+    released_credentials_reject(endpoint, first);
+}
+
+/// Malformed transport text is rejected before accepting any credential mutation.
+fn rejected_json_keeps_credentials(
+    owner: &maestro_extensions::AuthStorage,
+    registry: &crate::local_resources::Registry,
+) {
+    let (reply, result) = std::sync::mpsc::channel();
+    crate::credential_reads::Request::Set("valid".into(), "{".into(), reply)
+        .answer(owner, registry);
+    assert_eq!(
+        result.recv().unwrap(),
+        Err("EOF while parsing an object at line 1 column 1".into())
+    );
+    assert!(owner.get_all().is_empty());
+    assert!(owner.has_auth("valid").unwrap());
+}
+
+/// Provenance and stale facade rejection precede file selection and creation.
+fn rejected_catalog_keeps_paths_lazy(
+    api: &maestro_extensions::ExtensionAPI<maestro_extensions::Local>,
+    registry: &crate::local_resources::Registry,
+    endpoint: crate::credential_reads::Endpoint,
+    expected: &str,
+) {
+    let (reply, result) = std::sync::mpsc::channel();
+    crate::construction::Request::Catalog(endpoint, crate::construction::Source::File(None), reply)
+        .answer(api, registry);
+    assert_eq!(result.recv().unwrap().err().as_deref(), Some(expected));
+}
+
+/// A retired native capability rejects subsequent work without invalidating a sibling.
+fn released_credentials_reject(endpoint: crate::credential_reads::Endpoint, mut pump: Pump) {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let registry = pump.registry();
+            let survivor = registry
+                .credentials(
+                    Arc::new(maestro_extensions::AuthStorage::in_memory(
+                        maestro_extensions::AuthStorageData::default(),
+                    )),
+                    registry.credential_owner(&endpoint).unwrap().1,
+                )
+                .unwrap();
+            let route = endpoint
+                .0
+                .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+            assert!(pump.answer_next().await);
+            drop(route);
+            assert_eq!(
+                registry.credential_owner(&endpoint).err().as_deref(),
+                Some("extension credential resource ended")
+            );
+            let valid = survivor.clone();
+            let worker = std::thread::spawn(move || {
+                use crate::read_imports::ReadEndpoint;
+                assert_eq!(
+                    endpoint.read(crate::credential_reads::Request::List),
+                    Err("extension credential resource ended".into())
+                );
+                valid.read(crate::credential_reads::Request::List)
+            });
+            assert!(pump.answer_next().await);
+            assert!(pump.answer_next().await);
+            assert_eq!(worker.join().unwrap(), Ok(Vec::<String>::new()));
+            assert!(
+                registry
+                    .credential_owner(&survivor)
+                    .unwrap()
+                    .0
+                    .list()
+                    .is_empty()
+            );
+        });
 }
 
 /// Distinguishable configured-command effects supplied by the selected credential resource.
@@ -148,7 +238,7 @@ fn catalog_constructors_keep_selected_credential_command_effects() {
                 crate::construction::Source::File(Some(String::new())),
                 crate::construction::Source::Memory,
             ] {
-                let (pump, admission) = Pump::new();
+                let (pump, admission) = Pump::new(crate::tests::support::widgets());
                 let registry = pump.registry();
                 let owner = Arc::new(maestro_extensions::AuthStorage::in_memory(
                     maestro_extensions::AuthStorageData::default(),
@@ -189,7 +279,7 @@ fn native_backend() -> (
     Arc<Backend>,
     tokio::sync::mpsc::UnboundedReceiver<Call>,
 ) {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let (_owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<
         maestro_extensions::Local,

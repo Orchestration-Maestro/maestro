@@ -8,7 +8,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use maestro_extensions_wasm::{ColorMode, CommandOptions, ExtensionAPI, ExtensionResult, Theme};
+use maestro_extensions_wasm::{
+    ColorMode, CommandOptions, ExtensionAPI, ExtensionResult, Theme, ThemeBg, ThemeColor,
+};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -43,8 +45,14 @@ fn perform(theme: &Theme, method: &str, args: &[Value]) -> ExtensionResult<Value
             theme.set_source_info(source)?;
             Value::Null
         }
-        "fg" => json!(theme.fg(text(args, 0)?, text(args, 1)?)?),
-        "bg" => json!(theme.bg(text(args, 0)?, text(args, 1)?)?),
+        "fg" => {
+            let color: &ThemeColor = text(args, 0)?;
+            json!(theme.fg(color, text(args, 1)?)?)
+        }
+        "bg" => {
+            let color: &ThemeBg = text(args, 0)?;
+            json!(theme.bg(color, text(args, 1)?)?)
+        }
         "bold" => json!(theme.bold(text(args, 0)?)?),
         "italic" => json!(theme.italic(text(args, 0)?)?),
         "underline" => json!(theme.underline(text(args, 0)?)?),
@@ -69,6 +77,10 @@ fn perform(theme: &Theme, method: &str, args: &[Value]) -> ExtensionResult<Value
 
 /// Runs one command request: a method call, a host publication or the release of every theme.
 fn dispatch(api: &ExtensionAPI, themes: &RefCell<Vec<Theme>>, args: &str) -> ExtensionResult<()> {
+    if args == "global" {
+        themes.borrow_mut().push(maestro_extensions_wasm::theme()?);
+        return Ok(());
+    }
     if args == "release" {
         drop(themes.take());
         return Ok(());

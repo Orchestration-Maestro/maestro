@@ -11,7 +11,7 @@ fn overlapping_native_callbacks_share_fault_and_later_calls_never_enqueue() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let replies = Replies::default();
             let mut callbacks = Callbacks::new(calls.downgrade(), replies.clone());

@@ -118,3 +118,6 @@ pub struct ExtensionError {
 
 /// Receives each attributed extension failure.
 pub type ExtensionErrorListener = Rc<dyn Fn(&ExtensionError) -> Result<(), crate::EventError>>;
+/// Reports a retained UI callback's failure under its event name, attributed to the extension
+/// that registered it.
+pub type UIErrorReporter = Rc<dyn Fn(&str, &crate::EventError) -> Result<(), crate::EventError>>;

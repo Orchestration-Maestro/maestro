@@ -45,6 +45,7 @@ impl<D> ToolMessage<D> {
 fn dispatch<D: 'static>(
     props: &ToolMessage<D>,
     call: &ToolCall,
+    view: &crate::dom::DomView,
 ) -> Result<ToolRenderResult, ToolUiError> {
     let aborted = if props.aborted {
         let timestamp = js_sys::Date::now();
@@ -65,6 +66,7 @@ fn dispatch<D: 'static>(
         .filter(|name| !name.is_empty())
         .unwrap_or(&call.name);
     crate::tools::render_call(
+        view,
         name,
         &call.arguments,
         aborted.as_ref().or(props.result.as_deref()),

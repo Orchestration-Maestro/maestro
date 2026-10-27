@@ -92,9 +92,9 @@ mod native {
         fn get_api_key<'a>(
             &self,
             credentials: &'a maestro_models::OAuthCredentials,
-        ) -> Result<&'a str, maestro_models::OAuthError> {
+        ) -> Result<std::borrow::Cow<'a, str>, maestro_models::OAuthError> {
             self.record("key");
-            Ok(&credentials.access)
+            Ok(std::borrow::Cow::Borrowed(&credentials.access))
         }
         fn modify_models<'m>(
             &self,

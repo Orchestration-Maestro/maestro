@@ -12,7 +12,7 @@ fn callback_aliases_release_once_without_a_store_sender_cycle() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (calls, mut incoming) = mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let first = callbacks.allocate().unwrap();
@@ -31,7 +31,11 @@ fn callback_aliases_release_once_without_a_store_sender_cycle() {
                 panic!("missing release")
             };
             assert_eq!(callbacks.release(&release), Some(first.id));
-            assert!(callbacks.retain(second.id, Pump::new().1).is_ok());
+            assert!(
+                callbacks
+                    .retain(second.id, Pump::new(crate::tests::support::widgets()).1)
+                    .is_ok()
+            );
             drop(release);
             let Some(Call::Release(admitted)) = incoming.recv().await else {
                 panic!("missing newly admitted release")
@@ -39,7 +43,11 @@ fn callback_aliases_release_once_without_a_store_sender_cycle() {
             assert_eq!(callbacks.release(&admitted), Some(second.id));
             drop(admitted);
             assert!(incoming.recv().await.is_none());
-            assert!(callbacks.retain(second.id, Pump::new().1).is_err());
+            assert!(
+                callbacks
+                    .retain(second.id, Pump::new(crate::tests::support::widgets()).1)
+                    .is_err()
+            );
             pump.serve().await;
         });
 }
@@ -50,7 +58,7 @@ fn queued_release_cannot_retire_a_callback_retained_again_before_dispatch() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (calls, mut incoming) = mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let callback = callbacks.allocate().unwrap();
