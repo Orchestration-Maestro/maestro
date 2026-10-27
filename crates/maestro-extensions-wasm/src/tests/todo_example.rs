@@ -397,6 +397,7 @@ fn list_ui(host: &mut Host, populated: bool, close: &str) {
             width: None,
             inputs: vec!["x".into(), close.into()],
             frames: vec![rows; 3],
+            ..Default::default()
         });
     });
 }
