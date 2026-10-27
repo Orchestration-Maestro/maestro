@@ -449,3 +449,190 @@ fn registered_metadata(metadata: maestro_extensions::types::ToolDefinitionMetada
     }
     value
 }
+
+/// Every factory executes defaults, independent members and unequal read/shell controls.
+#[test]
+fn builtin_options_reach_only_the_selected_operations() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let cwd = scratch.path().to_str().unwrap();
+        let manager = Arc::new(
+            maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true)),
+        );
+        let (runner, _) = super::builtin_author::loaded_with_tool_services(
+            maestro_extensions::ToolConstruction {
+                tools_manager: manager.clone(),
+                bin_dir: cwd.into(),
+            },
+        )
+        .await;
+        let mut args = arguments();
+        args[1] = json!({"command":"printf default"});
+        reset_files(scratch.path());
+        std::fs::write(
+            scratch.path().join("read.txt"),
+            include_bytes!("read_resize.png"),
+        )
+        .unwrap();
+        let expected = native_observations(cwd, manager, &args).await;
+        assert!(
+            expected.iter().all(|tool| tool.get("result").is_some()),
+            "{expected:#?}"
+        );
+        for case in option_cases() {
+            for form in 0..10 {
+                reset_matrix_files(scratch.path());
+                let mut request = case.clone();
+                request["cwd"] = json!(cwd);
+                request["form"] = json!(form);
+                request["bytes"] = json!(include_bytes!("read_resize.png").as_slice());
+                request["args"] = ["read", "bash", "edit", "write", "grep", "find", "ls"]
+                    .into_iter()
+                    .zip(args.iter().cloned())
+                    .collect();
+                let command = runner.get_command("bridge-observe").unwrap().command;
+                let result = (command.handler)(
+                    format!("builtin-options {request}"),
+                    runner.create_command_context(),
+                )
+                .await;
+                let observed: Value =
+                    serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+                assert_option_execution(&observed, &request, &expected).await;
+            }
+        }
+    });
+}
+
+/// Typed default construction has no separate missing-member wire representation.
+fn option_cases() -> Vec<Value> {
+    let names = ["read", "bash", "edit", "write", "grep", "find", "ls"];
+    let mut cases = vec![json!({"members":[]})];
+    cases.extend(names.map(|name| json!({"members":[name]})));
+    cases.extend([
+        json!({"members":names}),
+        json!({"members":[],"resize":true}),
+        json!({"members":[],"resize":false}),
+        json!({"members":[],"prefix":"printf prefix;"}),
+        json!({"members":[],"shell":"/missing-matrix-shell"}),
+        json!({"members":[],"hook":true}),
+        json!({"members":names,"resize":false,"prefix":"printf prefix;","shell":"/missing-matrix-shell","hook":true}),
+        json!({"members":names,"resize":true,"prefix":"","hook":true}),
+    ]);
+    cases
+}
+
+/// Independent literal callback operands detect option leakage and wrong selected cwd.
+async fn assert_option_execution(observed: &Value, request: &Value, defaults: &[Value]) {
+    let mut calls = Vec::new();
+    let members = request["members"].as_array().unwrap();
+    let cwd = request["cwd"].as_str().unwrap();
+    let names = ["read", "bash", "edit", "write", "grep", "find", "ls"];
+    let selected: &[usize] = match request["form"].as_u64().unwrap() {
+        4 | 5 => &[0, 1, 2, 3],
+        6 | 7 => &[0, 4, 5, 6],
+        _ => &[0, 1, 2, 3, 4, 5, 6],
+    };
+    let results = observed["results"].as_array().unwrap();
+    assert_eq!(results.len(), selected.len());
+    for (result, &index) in results.iter().zip(selected) {
+        let name = names[index];
+        assert_eq!(result["name"], name);
+        let supplied = members.iter().any(|member| member == name);
+        if index == 1 {
+            assert_matrix_bash(result, request, &mut calls).await;
+        } else if index == 0 {
+            if supplied {
+                calls.extend(
+                    ["read.access", "read.mime", "read.read_file"]
+                        .map(|stage| json!([stage, format!("{cwd}/read.txt")])),
+                );
+            }
+            let expected = super::builtin_operations::native_read_case(
+                &json!({"bytes":request["bytes"],"mime":"image/png","resize":request["resize"]}),
+                None,
+            )
+            .await;
+            assert_eq!(result["result"], expected, "read form {}", request["form"]);
+        } else if supplied {
+            calls.push(matrix_first_call(index, cwd));
+            assert!(result["error"].is_string(), "{result}");
+        } else {
+            assert_eq!(
+                result["result"], defaults[index]["result"],
+                "{name}, {request}"
+            );
+        }
+    }
+    assert_eq!(observed["calls"], json!(calls), "case {request}");
+}
+
+/// Restores mutations while retaining the same resize-sensitive native input.
+fn reset_matrix_files(root: &std::path::Path) {
+    reset_files(root);
+    std::fs::write(root.join("read.txt"), include_bytes!("read_resize.png")).unwrap();
+}
+
+/// Literal first-phase operands for families whose deeper behavior has separate witnesses.
+fn matrix_first_call(index: usize, cwd: &str) -> Value {
+    let (stage, path) = match index {
+        2 => ("edit.access", format!("{cwd}/edit.txt")),
+        3 => ("write.mkdir", cwd.to_owned()),
+        4 => ("grep.is_directory", format!("{cwd}/search")),
+        5 => ("find.exists", format!("{cwd}/search")),
+        6 => ("ls.exists", format!("{cwd}/search")),
+        _ => panic!("not a failing matrix family"),
+    };
+    json!([stage, path])
+}
+
+/// Prefix/hook operands and final shell output are consumed independently of image policy.
+async fn assert_matrix_bash(result: &Value, request: &Value, calls: &mut Vec<Value>) {
+    let cwd = request["cwd"].as_str().unwrap();
+    let command = if request["prefix"].as_str().is_some_and(|p| !p.is_empty()) {
+        "printf prefix;\nprintf default"
+    } else {
+        "printf default"
+    };
+    if request["hook"] == true {
+        calls.push(json!(["bash.hook", command, cwd]));
+    }
+    if request["members"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|name| name == "bash")
+    {
+        calls.push(json!(["bash.exec", command, cwd]));
+        assert_eq!(
+            result["result"],
+            json!({"content":[{"type":"text","text":"routed shell"}]})
+        );
+        return;
+    }
+    let definition = maestro_extensions::local::create_bash_tool_definition::<()>(
+        cwd.into(),
+        cwd.into(),
+        maestro_extensions::local::BashToolOptions {
+            command_prefix: request["prefix"].as_str().map(str::to_owned),
+            shell_path: request["shell"].as_str().map(str::to_owned),
+            ..Default::default()
+        },
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    match (tool.execute)(
+        "matrix-native".into(),
+        json!({"command":"printf default"}),
+        None,
+        None,
+    )
+    .await
+    {
+        Ok(expected) => assert_eq!(result["result"], serde_json::to_value(expected).unwrap()),
+        Err(expected) => assert_eq!(result["error"], expected.to_string()),
+    }
+}

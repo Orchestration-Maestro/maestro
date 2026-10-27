@@ -40,6 +40,9 @@ mod builtin_lifetimes;
 #[path = "context_bridge/builtin_ls.rs"]
 mod builtin_ls;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_options.rs"]
+mod builtin_options;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_progress.rs"]
 mod builtin_progress;
 #[cfg(target_arch = "wasm32")]

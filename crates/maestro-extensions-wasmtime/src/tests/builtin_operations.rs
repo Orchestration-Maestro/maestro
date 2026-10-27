@@ -516,7 +516,7 @@ fn read_model(vision: Option<bool>) -> Option<maestro_extensions::Model> {
 }
 
 /// Uses the public native factory and wrapper with the same authored observations.
-async fn native_read_case(
+pub(super) async fn native_read_case(
     request: &serde_json::Value,
     model: Option<maestro_extensions::Model>,
 ) -> serde_json::Value {
