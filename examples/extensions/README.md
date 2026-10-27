@@ -42,6 +42,8 @@ inserts at its own place instead of appending at the end of each list.
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
+| `todo/view.rs` | The todo example's themed tool rows and interactive list view. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
@@ -99,6 +101,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- todo_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -394,3 +398,25 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the branch-aware todo example does
+
+The `todo` tool accepts `list`, `add` with nonempty `text`, `toggle` with an `id`,
+and `clear`. Text is kept verbatim, including whitespace. Every result carries
+all items and the next identifier in its details, even when an action reports an
+error. Clearing removes all items and restarts identifiers at one. These are
+session-history snapshots, not files and not the default todo package.
+
+On `session_start` and `session_tree`, the example replays only `todo` tool
+results on the host's current branch. The newest snapshot wins; a branch without
+one starts empty. Tool rows show themed calls and results, with five items in a
+collapsed list and all items when expanded.
+
+`/todos` shows all items and their completion count. Escape or Ctrl+C closes the
+view. Without UI it reports `/todos requires interactive mode`. Build with
+`--example todo`; `todo/view.rs` is its support module, not a separate target.
+The controlled `todo_` runs invoke the registered callbacks with supplied branch,
+terminal, helper and theme inputs. They need no provider, credentials or files.
+Loading the component is opt-in and needs a component-enabled host; the list view
+also needs that host's custom UI, key and terminal-width helpers. Using the tool
+through a real model can incur provider charges.

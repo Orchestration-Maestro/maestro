@@ -54,6 +54,7 @@ mod file_trigger_example;
 pub(crate) mod file_trigger_path;
 mod finite_records;
 pub(crate) mod stream_host;
+mod todo_example;
 mod tui_ui;
 #[macro_use]
 mod fixtures;
