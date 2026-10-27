@@ -38,6 +38,7 @@ mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
+mod commands_example;
 mod completion_contract;
 mod component_driver;
 mod context_catalog;
