@@ -539,6 +539,12 @@ async fn qualify_links(target: &Path, denied: &Path) {
         for path in ["absolute-file", "absolute-directory/bytes"] {
             assert_eq!(std::fs::read(path).unwrap(), bytes, "native {path}");
         }
+        let mut names: Vec<_> = std::fs::read_dir("absolute-directory")
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        names.sort();
+        assert_eq!(names, ["bytes", "denied"]);
         assert_eq!(
             std::fs::read("dangling").unwrap_err().kind(),
             std::io::ErrorKind::NotFound
