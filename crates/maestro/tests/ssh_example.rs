@@ -354,7 +354,13 @@ fn ssh_enabled_routes_coding_tools_shell_and_session_context() {
         let runner = session.extension_runner();
         let local = root.path("project");
         let ui = Rc::new(Ui::default());
-        runner.set_ui_context(Some(maestro_app::ExtensionUIContext::new(ui.clone())));
+        session
+            .bind_extensions(maestro_app::ExtensionBindings {
+                ui_context: Some(maestro_app::ExtensionUIContext::new(ui.clone()).into()),
+                ..maestro_app::ExtensionBindings::default()
+            })
+            .await
+            .unwrap();
         let remote = fixture("remote");
         start(&runner, &format!("user@controlled:{}", remote.display())).await;
         remote_files(&runner, &local).await;
