@@ -75,6 +75,7 @@ pub(crate) mod native_http_host;
 mod native_io;
 pub(crate) mod native_io_host;
 pub(crate) mod native_watch_host;
+mod notify_example;
 mod observed;
 pub(crate) mod overlay_host;
 mod parameter_schemas;

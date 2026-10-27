@@ -31,6 +31,7 @@ inserts at its own place instead of appending at the end of each list.
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
@@ -78,6 +79,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -180,6 +183,24 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+
+### What the notification example does
+
+Build with `--example notify` using the command above. Loading the component is
+opt-in and needs a native component-enabled host with inherited environment and
+stdout. On every `agent_end` it sends `Maestro` / `Ready for input`. A nonempty
+`WT_SESSION` selects `powershell.exe` (including from WSL); otherwise a nonempty
+`KITTY_WINDOW_ID` selects Kitty's two-part OSC 99 notification. Other environments
+use OSC 777, supported by Ghostty, iTerm2, WezTerm and rxvt-unicode. The terminal
+must permit desktop notifications. Windows needs `powershell.exe` on PATH and
+Windows toast support; the callback waits for that command to finish.
+
+Notification text cannot inject OSC fields or control sequences, and PowerShell
+apostrophes are quoted before the Windows DOM creates XML text nodes. The
+controlled `notify_` tests capture terminal bytes and supply child-process
+results: they send no desktop notifications and need no provider or credentials.
+The example registers no command and adds no built-in notification setting.
+
 ### What the permission gate does
 
 `tool_call` leaves non-bash tools and commands outside its three patterns alone.
