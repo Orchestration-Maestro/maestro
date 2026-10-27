@@ -1292,10 +1292,16 @@ async fn observe_snapshot_edit(
 struct SnapshotEdit {
     source: Vec<u8>,
     written: Option<String>,
+    access_error: Option<String>,
 }
 impl maestro_extensions::EditOperations for SnapshotEdit {
     fn access(&self, _: String) -> ReadFuture<()> {
-        Box::pin(std::future::ready(Ok(())))
+        let result = self.access_error.as_ref().map_or(Ok(()), |error| {
+            Err(maestro_extensions::DiagnosticErrorInfo::error(
+                error.clone(),
+            ))
+        });
+        Box::pin(std::future::ready(result))
     }
     fn read_file(&self, _: String) -> ReadFuture<Vec<u8>> {
         Box::pin(std::future::ready(Ok(self.source.clone())))
@@ -1318,6 +1324,7 @@ async fn native_snapshot_edit(
             operations: Some(std::sync::Arc::new(SnapshotEdit {
                 source: source.as_bytes().to_vec(),
                 written: written.map(str::to_owned),
+                access_error: None,
             })),
         },
     );
@@ -3045,4 +3052,265 @@ fn assert_lifetime_result(result: &str, label: &str) {
         serde_json::from_str::<serde_json::Value>(result).unwrap(),
         json!({"content":[{"type":"text","text":label}]})
     );
+}
+
+/// Custom bytes, interception and ordering survive the final registered-tool consumer.
+#[test]
+fn builtin_custom_operations_work_through_registered_extension_tool() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        for aggregate in [false, true] {
+            let (runner, events) = super::builtin_author::loaded_with_events().await;
+            let runner = std::rc::Rc::new(runner);
+            let calls = EditCalls::default();
+            let subscription = registered_custom_effects(&events, &calls);
+            let command = runner.get_command("bridge-observe").unwrap().command;
+            (command.handler)(
+                format!(
+                    "builtin-register-custom {}",
+                    json!({"aggregate":aggregate,"cwd":scratch.path()})
+                ),
+                runner.create_command_context(),
+            )
+            .await
+            .unwrap();
+            let registered = runner
+                .get_all_registered_tools()
+                .into_iter()
+                .find(|tool| tool.definition.name() == "registered-custom-edit")
+                .unwrap();
+            registered_custom_success(&runner, &registered, &calls, scratch.path()).await;
+            registered_custom_failure(&runner, &registered, &calls, scratch.path()).await;
+            registered_custom_cancellation(&runner, &registered, &calls, scratch.path()).await;
+            registered_custom_ordering(&runner, &registered, &calls, (&events, scratch.path()))
+                .await;
+            subscription.unsubscribe();
+        }
+    });
+}
+
+/// Native preparation and validation precede the intercepted execute callback.
+async fn registered_custom_success(
+    runner: &std::rc::Rc<maestro_extensions::ExtensionRunner<maestro_extensions::Local>>,
+    registered: &maestro_extensions::types::RegisteredTool<maestro_extensions::Local>,
+    calls: &EditCalls,
+    root: &std::path::Path,
+) {
+    calls.borrow_mut().clear();
+    let path = root.join("success.txt");
+    std::fs::write(&path, "a\nc\n").unwrap();
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    let mut retained =
+        json!({"path":"success.txt","edits":"[{\"oldText\":\"a\",\"newText\":\"é😀\"}]"});
+    let args = tool.prepare_arguments.as_ref().unwrap()(&mut retained).unwrap();
+    assert_eq!(
+        args,
+        json!({"path":"success.txt","edits":[{"oldText":"a","newText":"é😀"}]})
+    );
+    assert_eq!(retained, args);
+    assert!(calls.borrow().is_empty());
+    let call = maestro_models::ToolCall {
+        id: "registered".into(),
+        name: tool.definition.name.clone(),
+        arguments: args.clone(),
+        thought_signature: None,
+    };
+    let args = maestro_models::validate_tool_arguments(&tool.definition, &call).unwrap();
+    let updates = EditCalls::default();
+    let seen = updates.clone();
+    let update = std::rc::Rc::new(move |result| {
+        seen.borrow_mut()
+            .push(serde_json::to_value(result).unwrap());
+    });
+    let result = (tool.execute)("registered".into(), args.clone(), None, Some(update))
+        .await
+        .unwrap();
+    assert_eq!(
+        *updates.borrow(),
+        vec![json!({"content":[{"type":"text","text":"intercepted"}]})]
+    );
+    assert_registered_write(calls, &path);
+    assert_eq!(std::fs::read(&path).unwrap(), "é😀\nc\n".as_bytes());
+    std::fs::write(&path, "a\nc\n").unwrap();
+    let expected = native_registered_edit(root, args).await.unwrap();
+    assert_eq!(serde_json::to_value(result).unwrap(), expected);
+}
+
+/// A custom access diagnostic reaches the existing native formatter without later effects.
+async fn registered_custom_failure(
+    runner: &std::rc::Rc<maestro_extensions::ExtensionRunner<maestro_extensions::Local>>,
+    registered: &maestro_extensions::types::RegisteredTool<maestro_extensions::Local>,
+    calls: &EditCalls,
+    root: &std::path::Path,
+) {
+    calls.borrow_mut().clear();
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    let result = (tool.execute)(
+        "failure".into(),
+        json!({"path":"error.txt","edits":[{"oldText":"a","newText":"b"}]}),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        native_registered_access_error(root).await
+    );
+    assert!(calls.borrow().is_empty());
+    assert!(!root.join("error.txt").exists());
+}
+
+/// Aborting pending custom read work prevents the final registered tool from writing.
+async fn registered_custom_cancellation(
+    runner: &std::rc::Rc<maestro_extensions::ExtensionRunner<maestro_extensions::Local>>,
+    registered: &maestro_extensions::types::RegisteredTool<maestro_extensions::Local>,
+    calls: &EditCalls,
+    root: &std::path::Path,
+) {
+    calls.borrow_mut().clear();
+    let path = root.join("gate.txt");
+    std::fs::write(&path, "untouched").unwrap();
+    let (started, release) = read_gate(runner);
+    let signal = maestro_extensions::Cancellation::new();
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    let work = Box::pin((tool.execute)(
+        "cancel".into(),
+        json!({"path":"gate.txt","edits":[{"oldText":"a","newText":"b"}]}),
+        Some(signal.clone()),
+        None,
+    ));
+    let work = until_queue_notice(work, started).await;
+    signal.abort();
+    release.send(()).unwrap();
+    assert_eq!(work.await.unwrap_err().to_string(), "Operation aborted");
+    assert_eq!(
+        *calls.borrow(),
+        vec![json!(["access", path]), json!(["read", path])]
+    );
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "untouched");
+}
+
+/// An earlier native admission blocks registered effects before a later native write.
+async fn registered_custom_ordering(
+    runner: &std::rc::Rc<maestro_extensions::ExtensionRunner<maestro_extensions::Local>>,
+    registered: &maestro_extensions::types::RegisteredTool<maestro_extensions::Local>,
+    calls: &EditCalls,
+    supplied: (
+        &maestro_extensions::EventBusController<maestro_extensions::Local>,
+        &std::path::Path,
+    ),
+) {
+    let (events, root) = supplied;
+    calls.borrow_mut().clear();
+    let path = root.join("ordered.txt");
+    std::fs::write(&path, "a\nc\n").unwrap();
+    let held =
+        maestro_extensions::with_file_mutation_queue(path.to_str().unwrap(), || async { Ok(()) });
+    let (admitted, notice) = queue_notice(events, "builtin-registered-admitted");
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    let work = Box::pin((tool.execute)(
+        "ordered".into(),
+        json!({"path":"ordered.txt","edits":[{"oldText":"a","newText":"é😀"}]}),
+        None,
+        None,
+    ));
+    let work = until_queue_notice(work, admitted).await;
+    assert!(
+        calls.borrow().is_empty(),
+        "registered effects ran before native queue release"
+    );
+    let write = maestro_extensions::local::wrap_tool_definition(
+        maestro_extensions::local::create_write_tool_definition::<()>(
+            root.to_str().unwrap().into(),
+            maestro_extensions::WriteToolOptions::default(),
+        ),
+        None,
+    );
+    let following = (write.execute)(
+        "following".into(),
+        json!({"path":"ordered.txt","content":"native last"}),
+        None,
+        None,
+    );
+    held.await.unwrap();
+    let (registered_result, native_result) = futures_util::future::join(work, following).await;
+    registered_result.unwrap();
+    native_result.unwrap();
+    assert_registered_write(calls, &path);
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "native last");
+    notice.unsubscribe();
+}
+
+/// The individual native definition owns the complete expected result and diff.
+async fn native_registered_edit(
+    root: &std::path::Path,
+    args: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let definition = maestro_extensions::local::create_edit_tool_definition::<()>(
+        root.to_str().unwrap().into(),
+        maestro_extensions::EditToolOptions::default(),
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    let result = (tool.execute)("native-registered".into(), args, None, None)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+/// Complete reached custom effects, independent of the native result comparator.
+fn assert_registered_write(calls: &EditCalls, path: &std::path::Path) {
+    assert_eq!(
+        *calls.borrow(),
+        vec![
+            json!(["access", path]),
+            json!(["read", path]),
+            json!(["write", path, "é😀\nc\n"])
+        ]
+    );
+}
+
+/// Applies authored write effects only when the original native operation requests them.
+fn registered_custom_effects(
+    events: &maestro_extensions::EventBusController<maestro_extensions::Local>,
+    calls: &EditCalls,
+) -> maestro_extensions::Subscription<maestro_extensions::Local> {
+    let observed = calls.clone();
+    events.on(
+        "builtin-edit-effect",
+        std::rc::Rc::new(move |value, _| {
+            observed.borrow_mut().push((*value).clone());
+            if value[0] == "write" {
+                std::fs::write(value[1].as_str().unwrap(), value[2].as_str().unwrap()).unwrap();
+            }
+            Ok(None)
+        }),
+    )
+}
+
+/// Reuses the original native access formatter rather than copying its diagnostic template.
+async fn native_registered_access_error(root: &std::path::Path) -> String {
+    let definition = maestro_extensions::local::create_edit_tool_definition::<()>(
+        root.to_str().unwrap().into(),
+        maestro_extensions::EditToolOptions {
+            operations: Some(std::sync::Arc::new(SnapshotEdit {
+                source: Vec::new(),
+                written: None,
+                access_error: Some("authored registered failure é".into()),
+            })),
+        },
+    );
+    let tool = maestro_extensions::local::wrap_tool_definition(definition, None);
+    (tool.execute)(
+        "native-failure".into(),
+        json!({"path":"error.txt","edits":[{"oldText":"a","newText":"b"}]}),
+        None,
+        None,
+    )
+    .await
+    .unwrap_err()
+    .to_string()
 }

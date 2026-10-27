@@ -53,6 +53,24 @@ fn register_read(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
 }
 ```
 
+The [compiled registration example](../../crates/maestro-extensions-wasm/examples/context_bridge/builtin_registered.rs)
+replaces edit operations, wraps `execute` to report progress, and registers the
+retained definition. It also selects the same definition from
+`create_all_tool_definitions`. The production-host tests invoke preparation,
+execution, cancellation and results through that registration, after the
+constructing command returns.
+
+Build its component with:
+
+```sh
+~/.local/bin/capped mise exec -- cargo build --locked -p maestro-extensions-wasm \
+  --example context_bridge --target wasm32-wasip2 --release
+```
+
+This example is part of the `context_bridge` test component, not a standalone
+program. Its custom file effects are observed by the native test driver. Native
+matching, result formatting and per-file ordering are unchanged.
+
 Pass the received render context when delegating. Its opaque `native_row` keeps
 the original native environment, state and invalidation capability. Public row
 observations may be changed on a clone. Call arguments, result options and the

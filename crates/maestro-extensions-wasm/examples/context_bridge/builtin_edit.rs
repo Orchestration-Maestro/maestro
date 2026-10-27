@@ -156,7 +156,7 @@ pub(super) fn register(api: &ExtensionAPI, request: &str) -> ExtensionResult<()>
 }
 
 /// Supplies byte observations whose complete reached effects are visible to the native caller.
-fn registration_operations(events: maestro_extensions_wasm::EventBus) -> EditOperations {
+pub(super) fn registration_operations(events: maestro_extensions_wasm::EventBus) -> EditOperations {
     let access = events;
     let read = access.clone();
     let write = access.clone();

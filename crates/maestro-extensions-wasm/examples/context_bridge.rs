@@ -52,6 +52,9 @@ mod builtin_queue;
 #[path = "context_bridge/builtin_read.rs"]
 mod builtin_read;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_registered.rs"]
+mod builtin_registered;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_render.rs"]
 mod builtin_render;
 #[cfg(target_arch = "wasm32")]
