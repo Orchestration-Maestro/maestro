@@ -1689,3 +1689,31 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     assert!(transcript.contains("watch phase: ready\n"));
     assert!(transcript.contains("phase: blocked waiting for controller\n"));
 }
+
+#[test]
+fn maestro_codeql_scans_main_weekly_and_on_demand() {
+    let workflow = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),
+    )
+    .unwrap();
+    let triggers: Vec<&str> = workflow
+        .lines()
+        .skip_while(|line| *line != "\"on\":")
+        .skip(1)
+        .take_while(|line| line.starts_with("  "))
+        .filter(|line| !line.starts_with("   "))
+        .map(str::trim)
+        .collect();
+    assert_eq!(triggers, ["push:", "schedule:", "workflow_dispatch:"]);
+    assert!(workflow.contains("\n  push:\n    branches: [main]\n"));
+    let languages: Vec<&str> = workflow
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("- language: "))
+        .collect();
+    assert_eq!(languages, ["actions", "javascript-typescript", "rust"]);
+    assert_eq!(
+        workflow.matches("build-mode: none").count(),
+        languages.len()
+    );
+    assert!(!workflow.contains("queries:"));
+}
