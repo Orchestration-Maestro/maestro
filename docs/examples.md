@@ -29,7 +29,11 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
-session start.
+session start. `extensions/git_checkpoint.rs` creates opt-in Git stash
+checkpoints for session entries and asks before applying one when forking; its
+controlled run uses disposable repositories and scripted UI choices. Loading it
+requires Git and a committed repository, and approving a restore can change
+tracked files or leave conflicts.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
