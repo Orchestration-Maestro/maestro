@@ -54,6 +54,7 @@ pub(crate) mod stream_host;
 mod tui_ui;
 #[macro_use]
 mod fixtures;
+mod custom_header_example;
 pub(crate) mod custom_host;
 pub(crate) mod editor_component;
 mod editor_driver;

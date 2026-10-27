@@ -1204,6 +1204,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/bookmark.rs"),
     ),
     (
+        "examples/extensions/custom_header.rs",
+        include_str!("../../../examples/extensions/custom_header.rs"),
+    ),
+    (
         "examples/extensions/hello.rs",
         include_str!("../../../examples/extensions/hello.rs"),
     ),
@@ -1620,6 +1624,10 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
+    assert_eq!(
+        fs::read(destination.join("examples/extensions/custom_header.rs")).unwrap(),
+        include_str!("../../../examples/extensions/custom_header.rs").as_bytes()
+    );
     // The shipped example reaches the standalone copy byte for byte.
     assert_eq!(
         fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
