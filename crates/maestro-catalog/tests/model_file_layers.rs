@@ -18,6 +18,13 @@ fn assert_layers(registry: &ModelRegistry) {
     assert_eq!(retained.name, "Base retained");
     assert_eq!(retained.max_tokens.to_bits(), 777.0_f64.to_bits());
     assert_eq!(retained.base_url, "https://base.invalid/v1");
+    assert_eq!(
+        retained.compat.as_ref().unwrap().0,
+        serde_json::json!({"openRouterRouting":{"order":["base"],"max_price":{"prompt":3}}})
+            .as_object()
+            .unwrap()
+            .clone()
+    );
     let replaced = registry.find("layered", "replaced").unwrap();
     let replaced = replaced.read().unwrap();
     assert_eq!(replaced.name, "User replaced");
