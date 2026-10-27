@@ -459,6 +459,75 @@ fn component_windows_roots_reach_a_share_working_directory() {
     std::env::set_current_dir(original).unwrap();
 }
 
+#[cfg(windows)]
+#[test]
+fn probe_windows_reach() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("file Ω name");
+    std::fs::write(&target, b"probe").unwrap();
+    let local = plain(&target);
+    println!(
+        "PROBE cwd {:?} target {local}",
+        std::env::current_dir().unwrap()
+    );
+    run(probe(scratch.path().to_path_buf(), local));
+}
+
+#[cfg(windows)]
+async fn probe(dir: std::path::PathBuf, local: String) {
+    let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+    let free = ('M'..='Z')
+        .rev()
+        .find(|letter| !Path::new(&format!(r"{letter}:\")).exists())
+        .unwrap();
+    let subst = std::process::Command::new("subst")
+        .arg(format!("{free}:"))
+        .arg(plain(&dir))
+        .status();
+    println!(
+        "PROBE subst {free}: after load: {subst:?} native read {:?}",
+        std::fs::read(format!(r"{free}:\file Ω name"))
+    );
+    let drive = &local[..1];
+    let rest = local[3..].replace('\\', "/");
+    let cases = [
+        ("drive", local.clone()),
+        (
+            "other-share",
+            format!(r"\\localhost\{drive}${}", &local[2..]),
+        ),
+        (
+            "other-share-verbatim",
+            format!(r"\\?\UNC\localhost\{drive}${}", &local[2..]),
+        ),
+        ("late-drive", format!(r"{free}:\file Ω name")),
+        ("unc-root", format!("/probe-unc/localhost/{drive}$/{rest}")),
+        ("server-root", format!("/probe-server/{drive}$/{rest}")),
+        (
+            "plain-server-root",
+            format!("/probe-plain-server/{drive}$/{rest}"),
+        ),
+        ("dos-root-drive", format!("/probe-dos/{drive}:/{rest}")),
+        (
+            "dos-root-unc",
+            format!("/probe-dos/UNC/localhost/{drive}$/{rest}"),
+        ),
+        ("device-root", format!("/probe-device/{drive}:/{rest}")),
+    ];
+    for generation in ["p2", "p3"] {
+        for (label, path) in &cases {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":path,"write":false,"bytes":[]}))
+                .await;
+            println!("PROBE {generation} {label} {path}: {observed}");
+        }
+    }
+    let _ = std::process::Command::new("subst")
+        .arg(format!("{free}:"))
+        .arg("/D")
+        .status();
+}
+
 #[cfg(unix)]
 #[test]
 fn component_filesystem_failures_remain_os_failures() {

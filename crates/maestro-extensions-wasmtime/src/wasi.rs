@@ -75,6 +75,19 @@ fn windows_roots(builder: &mut WasiCtxBuilder, cwd: Option<&str>) {
         .map(|letter| format!(r"{letter}:\"))
         .chain(cwd_root.map(str::to_owned))
         .collect();
+    for (host, name) in [
+        (r"\\?\UNC\", "/probe-unc"),
+        (r"\\?\UNC\localhost\", "/probe-server"),
+        (r"\\localhost\", "/probe-plain-server"),
+        (r"\\?\GLOBALROOT\??\", "/probe-dos"),
+        (r"\\.\", "/probe-device"),
+    ] {
+        let result = builder.preopened_dir(host, name, wasmtime_wasi::FsPerms::ReadWrite);
+        println!(
+            "PROBE preopen {host} as {name}: {:?}",
+            result.map(|_| ()).map_err(|e| format!("{e:#}"))
+        );
+    }
     for root in roots {
         let name = guest_path(&root);
         let _unavailable = builder.preopened_dir(
