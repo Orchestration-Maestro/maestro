@@ -7,8 +7,9 @@ lists each one with its owner.
 ## Usage
 
 An extension crate is a `cdylib` whose root names its factory. The
-[extension guide](../../docs/extensions/guest.md) describes the interface the
-factory registers.
+[extension guide](../../docs/extensions.md) covers project setup, building,
+packaging and loading. The [guest API](../../docs/extensions/guest.md) describes
+the interface the factory registers.
 
 Maestro discovers extensions in two directories, in this order:
 
