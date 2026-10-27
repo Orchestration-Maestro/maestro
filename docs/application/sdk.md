@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))]);
         let auth = Arc::new(AuthStorage::in_memory(Default::default()));
         auth.set_runtime_api_key("faux", "controlled-key");
-        let registry = Arc::new(ModelRegistry::in_memory(auth.clone(), Arc::new(NoCommands)).unwrap());
+        let registry = Arc::new(ModelRegistry::in_memory(auth.clone(), Arc::new(NoCommands))?);
         let module_loader: ModuleLoader<Local> =
             Rc::new(|_| Box::pin(std::future::ready(Ok(None))));
         let mut resources = ResourceLoaderOptions::new(Rc::clone(&local), module_loader);
@@ -105,13 +105,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             no_tools: Some(NoTools::All), tools: None, custom_tools: Vec::new(),
             resources: SessionResources::Default(Box::new(resources)),
             session_manager: Some(Rc::new(RefCell::new(
-                SessionManager::in_memory(Some(&cwd)).unwrap(),
+                SessionManager::in_memory(Some(&cwd))?,
             ))),
             settings_manager: Some(Rc::new(RefCell::new(
                 SettingsManager::in_memory(Default::default()),
             ))),
             session_start_event: None, theme: Default::default(), offline: Some(true),
-        }).await.unwrap();
+        }).await?;
         assert!(created.model_fallback_message.is_none());
         assert!(created.extensions_result.errors.is_empty());
         let session = created.session;
@@ -136,10 +136,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         session.abort().await;
         session.dispose();
         provider.unregister();
-        result.unwrap();
+        result?;
         assert_eq!(&*text.borrow(), "Ready.");
         assert_eq!(provider.state.call_count(), 1);
-    }));
+        Ok::<(), Box<dyn std::error::Error>>(())
+    }))?;
     Ok(())
 }
 ```
@@ -172,7 +173,7 @@ customize the assembled prompt:
 | Need | Loader input | What to retain |
 | --- | --- | --- |
 | Replace the base instructions | `system_prompt` or `system_prompt_override` | The assembled prompt still includes context, appended text and eligible skills. |
-| Add instructions | `append_system_prompt` or `append_system_prompt_override` | Entries may be text or file paths; an empty list prevents file discovery. |
+| Add instructions | `append_system_prompt` or `append_system_prompt_override` | `append_system_prompt` accepts text or file paths; an empty list prevents file discovery. The override returns final text, without resolving paths. |
 | Supply skills | `additional_skill_paths` or `skills_override` | Keep diagnostics when extending the existing `LoadSkillsResult`; each skill needs its file path and source. |
 | Supply context | `agents_files_override` | Append or replace `ContextFile` records with a path and content. |
 | Add slash templates | `additional_prompt_template_paths` or `prompts_override` | Keep template source metadata and diagnostics; the prompt name selects it. |

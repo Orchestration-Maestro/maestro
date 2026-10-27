@@ -110,7 +110,7 @@ struct Recorded {
 ///         ))]);
 ///         let auth = Arc::new(AuthStorage::in_memory(Default::default()));
 ///         auth.set_runtime_api_key("faux", "controlled-key");
-///         let registry = Arc::new(ModelRegistry::in_memory(auth.clone(), Arc::new(NoCommands)).unwrap());
+///         let registry = Arc::new(ModelRegistry::in_memory(auth.clone(), Arc::new(NoCommands))?);
 ///         let module_loader: ModuleLoader<Local> =
 ///             Rc::new(|_| Box::pin(std::future::ready(Ok(None))));
 ///         let mut resources = ResourceLoaderOptions::new(Rc::clone(&local), module_loader);
@@ -129,13 +129,13 @@ struct Recorded {
 ///             no_tools: Some(NoTools::All), tools: None, custom_tools: Vec::new(),
 ///             resources: SessionResources::Default(Box::new(resources)),
 ///             session_manager: Some(Rc::new(RefCell::new(
-///                 SessionManager::in_memory(Some(&cwd)).unwrap(),
+///                 SessionManager::in_memory(Some(&cwd))?,
 ///             ))),
 ///             settings_manager: Some(Rc::new(RefCell::new(
 ///                 SettingsManager::in_memory(Default::default()),
 ///             ))),
 ///             session_start_event: None, theme: Default::default(), offline: Some(true),
-///         }).await.unwrap();
+///         }).await?;
 ///         assert!(created.model_fallback_message.is_none());
 ///         assert!(created.extensions_result.errors.is_empty());
 ///         let session = created.session;
@@ -160,10 +160,11 @@ struct Recorded {
 ///         session.abort().await;
 ///         session.dispose();
 ///         provider.unregister();
-///         result.unwrap();
+///         result?;
 ///         assert_eq!(&*text.borrow(), "Ready.");
 ///         assert_eq!(provider.state.call_count(), 1);
-///     }));
+///         Ok::<(), Box<dyn std::error::Error>>(())
+///     }))?;
 ///     Ok(())
 /// }
 /// ```
