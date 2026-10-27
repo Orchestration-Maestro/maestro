@@ -29,7 +29,7 @@ impl OutputLog {
         }
     }
     /// Drops control introducers even when an escape is split across streamed chunks.
-    fn literal(text: &str) -> String {
+    pub(super) fn literal(text: &str) -> String {
         let text: String = text
             .chars()
             .filter(|scalar| !scalar.is_control() || *scalar == '\t')

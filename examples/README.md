@@ -21,7 +21,7 @@ The client loads [rpc_demo.rs](extensions/rpc_demo.rs) and uses the
 [client.rs](sdk/rpc_extension_ui/client.rs) and
 [output_log.rs](sdk/rpc_extension_ui/output_log.rs) support modules.
 
-This client is opt-in and needs a Unix terminal, the pinned Rust toolchain and
+This client is opt-in and needs a Unix or Windows terminal, the pinned Rust toolchain and
 the `wasm32-wasip2` target. From the package root, build the executable and the
 shipped companion before running the client:
 
@@ -34,7 +34,7 @@ CARGO_TARGET_DIR=target CARGO_BUILD_JOBS=3 cargo run --locked \
   -p maestro-chat --example rpc_extension_ui
 ```
 
-The launcher uses `target/debug/maestro` and
+The launcher uses `target/debug/maestro` (`maestro.exe` on Windows) and
 `target/wasm32-wasip2/release/examples/rpc_demo.wasm` beside the package manifest.
 The commands above select that layout even when another Cargo target directory
 is configured. The backend runs without saved session history and loads only

@@ -267,20 +267,28 @@ impl Client {
     }
 
     /// Produces a callback repeating the exact active request identifier.
-    fn answer(&self, confirmed: bool) -> Rc<dyn Fn(&str)> {
+    fn answer(&self, cancelled: bool) -> Rc<dyn Fn(&str)> {
         let sender = self.actions.clone();
         let id = self
             .active
             .as_ref()
             .map(|dialog| dialog.request.id.clone())
             .unwrap_or_default();
+        let method = self.active.as_ref().map(|dialog| &dialog.request.method);
+        let confirmed = matches!(method, Some(Method::Confirm { .. }));
+        let selected = matches!(method, Some(Method::Select { .. }));
         Rc::new(move |value| {
-            let value = value.trim_matches(is_whitespace_scalar);
+            let value = if selected {
+                value
+            } else {
+                value.trim_matches(is_whitespace_scalar)
+            };
+            let cancelled = cancelled || (!selected && !confirmed && value.is_empty());
             let response = RpcExtensionUIResponse {
                 id: id.clone(),
-                value: (!confirmed && !value.is_empty()).then(|| value.into()),
-                confirmed: confirmed.then_some(value == "Yes"),
-                cancelled: (!confirmed && value.is_empty()).then_some(true),
+                value: (!confirmed && !cancelled).then(|| value.into()),
+                confirmed: confirmed.then_some(!cancelled && value == "Yes"),
+                cancelled: (!confirmed && cancelled).then_some(true),
             };
             let _ = sender.send(Action::Answer(response));
         })
@@ -296,9 +304,8 @@ impl Client {
         };
         let method = dialog.request.method.clone();
         self.active = Some(dialog);
-        let confirm = matches!(method, Method::Confirm { .. });
-        let answer = self.answer(confirm);
-        let cancel_answer = answer.clone();
+        let answer = self.answer(false);
+        let cancel_answer = self.answer(true);
         let cancel: Rc<dyn Fn()> = Rc::new(move || cancel_answer(""));
         let (title, body): (String, ComponentHandle) = match method {
             Method::Select { title, options, .. } => (title, self.select(options, answer, cancel)),
@@ -333,13 +340,13 @@ impl Client {
             }
             _ => return Err(io::Error::other("Notice queued as a dialog")),
         };
-        self.show_dialog(title, body);
+        self.show_dialog(&title, body);
         Ok(())
     }
     /// Replaces the bottom chrome while forwarding focus to the actual editor or list.
-    fn show_dialog(&mut self, title: String, body: ComponentHandle) {
+    fn show_dialog(&mut self, title: &str, body: ComponentHandle) {
         let bottom = Rc::new(Container::new());
-        bottom.add_child(Rc::new(Text::new(title, 0, 0, None)));
+        bottom.add_child(Rc::new(Text::new(OutputLog::literal(title), 0, 0, None)));
         bottom.add_child(body.clone());
         bottom.add_child(Rc::new(Text::new(
             "Enter to submit, Esc to cancel".into(),
@@ -360,7 +367,10 @@ impl Client {
         let items = options
             .into_iter()
             .map(|value| SelectItem {
-                label: value.clone(),
+                label: {
+                    let label = OutputLog::literal(&value);
+                    if label.is_empty() { " ".into() } else { label }
+                },
                 value,
                 description: None,
             })
@@ -467,11 +477,7 @@ impl Client {
             Action::OutputClosed => self.output_closed = true,
             Action::Submit(text) => self.submit(&text).await?,
             Action::Answer(response) => self.reply(response).await?,
-            Action::Escape if self.active.is_some() => (self.answer(
-                self.active
-                    .as_ref()
-                    .is_some_and(|dialog| matches!(dialog.request.method, Method::Confirm { .. })),
-            ))(""),
+            Action::Escape if self.active.is_some() => (self.answer(true))(""),
             Action::Escape if self.streaming => {
                 self.command(RpcSessionCommand::Abort).await?;
                 self.log.append("[aborted]");

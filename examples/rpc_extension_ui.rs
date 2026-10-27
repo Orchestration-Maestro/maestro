@@ -1,11 +1,11 @@
 //! A terminal client for streamed RPC events and extension dialogs.
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use serde_json::Value;
 use std::io;
 
 /// Reads the asynchronous pipe through the platform's physical-line interface.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 async fn read_events(
     reader: impl tokio::io::AsyncBufRead + Unpin,
     mut receive: impl FnMut(Value),
@@ -21,44 +21,32 @@ async fn read_events(
 }
 
 /// Starts the opt-in terminal demonstration.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn main() -> io::Result<std::process::ExitCode> {
     native::main()
 }
 
 /// Reports the unavailable native terminal adapter.
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 fn main() -> io::Result<()> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
-        "This example needs a Unix terminal.",
+        "This example needs a native terminal.",
     ))
 }
 
-#[cfg(all(test, unix))]
+#[cfg(all(test, any(unix, windows)))]
 use native::run_client;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[path = "sdk/rpc_extension_ui/client.rs"]
 mod client;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[path = "sdk/rpc_extension_ui/output_log.rs"]
 mod output_log;
 
-/// Reports the unavailable native runner while retaining its test call signature.
-#[cfg(all(test, windows))]
-async fn run_client(
-    _tui: maestro_tui::TUI,
-    _command: std::process::Command,
-) -> io::Result<std::process::ExitStatus> {
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "Native runner unavailable",
-    ))
-}
-
 /// Native terminal composition and the RPC conversation it retains.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 mod native {
     use super::client::Client;
     use maestro_app::{
@@ -72,7 +60,6 @@ mod native {
     use std::{
         cell::RefCell,
         io,
-        os::unix::process::ExitStatusExt,
         path::PathBuf,
         process::{Command, ExitCode, ExitStatus},
         rc::Rc,
@@ -217,12 +204,15 @@ mod native {
         reaped?;
         read?;
         errors?;
-        result.map(|status| status.unwrap_or_else(|| ExitStatus::from_raw(0)))
+        result.map(Option::unwrap_or_default)
     }
     /// Loads the shipped companion artifact and starts a native-only, opt-in RPC session.
     pub(super) fn main() -> io::Result<ExitCode> {
         let root = PathBuf::from(config::get_package_dir()?);
-        let binary = root.join("target/debug/maestro");
+        let binary = root.join(format!(
+            "target/debug/maestro{}",
+            std::env::consts::EXE_SUFFIX
+        ));
         let companion = root.join("target/wasm32-wasip2/release/examples/rpc_demo.wasm");
         if !binary.is_file() || !companion.is_file() {
             return Err(io::Error::other(
@@ -262,7 +252,7 @@ mod native {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, any(unix, windows)))]
 #[allow(
     dead_code,
     reason = "Shared terminal controls also serve other scenarios."
@@ -271,11 +261,11 @@ mod native {
 mod recording_terminal;
 
 #[cfg(test)]
+#[cfg(any(unix, windows))]
 mod tests {
     use super::*;
 
     /// A Unicode line separator belongs to the JSON string, not to the wire framing.
-    #[cfg(unix)]
     #[test]
     fn streamed_unicode_line_separator_arrives_as_one_event() {
         run_async(async {
