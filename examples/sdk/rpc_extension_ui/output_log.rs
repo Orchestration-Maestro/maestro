@@ -22,6 +22,20 @@ impl OutputLog {
             lines.pop_front();
         }
     }
+    /// Appends untrusted text without interpreting its terminal controls or line breaks.
+    pub(super) fn append_literal(&self, text: &str) {
+        for line in text.split('\n') {
+            self.append(Self::literal(line));
+        }
+    }
+    /// Drops control introducers even when an escape is split across streamed chunks.
+    fn literal(text: &str) -> String {
+        let text: String = text
+            .chars()
+            .filter(|scalar| !scalar.is_control() || *scalar == '\t')
+            .collect();
+        maestro_tui::text::expand_tabs(&text).into_owned()
+    }
     /// Extends streamed text without inventing line breaks between chunks.
     pub(super) fn append_raw(&self, text: &str) {
         for (index, part) in text.split('\n').enumerate() {
@@ -29,7 +43,7 @@ impl OutputLog {
                 self.append("");
             }
             if let Some(line) = self.lines.borrow_mut().back_mut() {
-                line.push_str(part);
+                line.push_str(&Self::literal(part));
             }
         }
     }

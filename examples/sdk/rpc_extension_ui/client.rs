@@ -167,7 +167,7 @@ impl Client {
             return Err(io::Error::other("Uncorrelated RPC response"));
         }
         if let Some(error) = error {
-            self.log.append(format!("[error] {error}"));
+            self.log.append_literal(&format!("[error] {error}"));
         }
         Ok(())
     }
@@ -186,7 +186,7 @@ impl Client {
                 self.log.append("");
             }
             Some("message_update") => self.message_update(&record["assistantMessageEvent"]),
-            Some("tool_execution_start") => self.log.append(format!(
+            Some("tool_execution_start") => self.log.append_literal(&format!(
                 "[tool: {}]",
                 record["toolName"].as_str().unwrap_or_default()
             )),
@@ -382,7 +382,7 @@ impl Client {
             return Ok(());
         }
         self.prompt.set_value(String::new());
-        self.log.append(format!("You: {text}"));
+        self.log.append_literal(&format!("You: {text}"));
         let method = match text {
             "/select" => Some(Method::Select {
                 title: "Pick a color".into(),
