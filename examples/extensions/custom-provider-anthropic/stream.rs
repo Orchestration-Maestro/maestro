@@ -1,7 +1,7 @@
 //! A custom message-stream implementation using the host's transport and event buffer.
 use super::oauth::CustomAnthropic;
 use maestro_extensions_wasm::{
-    AssistantMessageEventStream, Context, ExtensionFuture, ExtensionResult, Model,
+    AbortSignal, AssistantMessageEventStream, Context, ExtensionFuture, ExtensionResult, Model,
     StreamOptionsInput,
 };
 
@@ -36,8 +36,16 @@ impl CustomAnthropic {
                 stream,
                 (provider.now)(),
             );
-            let outcome = produce(&provider, &model, &context, options.as_ref(), &mut state).await;
-            state.finish(outcome)
+            let signal = options
+                .as_ref()
+                .and_then(|options| options.common().signal.as_ref());
+            state.begin()?;
+            let outcome = if signal.is_some_and(AbortSignal::aborted) {
+                Err("Request was aborted".into())
+            } else {
+                produce(&provider, &model, &context, options.as_ref(), &mut state).await
+            };
+            state.finish(outcome, signal.is_some_and(AbortSignal::aborted))
         })
     }
 }
@@ -50,7 +58,6 @@ async fn produce(
     options: Option<&StreamOptionsInput>,
     state: &mut response::ResponseState,
 ) -> ExtensionResult<()> {
-    state.begin()?;
     let response = provider
         .io
         .fetch(request::build(model, context, options)?)

@@ -363,9 +363,12 @@ impl ResponseState {
     }
 
     /// Publishes one terminal event and releases iteration without replacing its result.
-    pub fn finish(&self, outcome: ExtensionResult<()>) -> ExtensionResult<()> {
+    pub fn finish(&self, outcome: ExtensionResult<()>, aborted: bool) -> ExtensionResult<()> {
+        if aborted {
+            return self.fail("Request was aborted".into(), ErrorReason::Aborted);
+        }
         if let Err(error) = outcome {
-            return self.fail(error);
+            return self.fail(error, ErrorReason::Error);
         }
         let stop_reason = self
             .output
@@ -377,7 +380,7 @@ impl ResponseState {
             StopReason::Stop => DoneReason::Stop,
             StopReason::Length => DoneReason::Length,
             StopReason::ToolUse => DoneReason::ToolUse,
-            _ => return self.fail("Invalid terminal stop reason".into()),
+            _ => return self.fail("Invalid terminal stop reason".into(), ErrorReason::Error),
         };
         self.stream.push(Event::Done {
             reason,
@@ -387,17 +390,20 @@ impl ResponseState {
     }
 
     /// Retains partial content when the request fails.
-    fn fail(&self, error: String) -> ExtensionResult<()> {
+    fn fail(&self, error: String, reason: ErrorReason) -> ExtensionResult<()> {
         {
             let mut output = self
                 .output
                 .write()
                 .map_err(|_| "Assistant message lock poisoned")?;
-            output.stop_reason = StopReason::Error;
+            output.stop_reason = match &reason {
+                ErrorReason::Error => StopReason::Error,
+                ErrorReason::Aborted => StopReason::Aborted,
+            };
             output.error_message = Some(error);
         }
         self.stream.push(Event::Error {
-            reason: ErrorReason::Error,
+            reason,
             error: Arc::clone(&self.output),
         })?;
         self.stream.end(None)
