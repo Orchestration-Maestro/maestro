@@ -43,7 +43,7 @@ pub fn wire_tool_name(name: &str) -> String {
 /// Builds one HTTP attempt without introducing a second retry owner.
 ///
 /// # Errors
-/// Returns schema serialization failures or malformed raw reasoning controls.
+/// Returns missing authentication, schema serialization or malformed reasoning errors.
 pub fn build(
     model: &Model,
     context: &Context,
@@ -52,7 +52,8 @@ pub fn build(
     let common = options.map(StreamOptionsInput::common);
     let key = common
         .and_then(|common| common.api_key.as_deref())
-        .unwrap_or_default();
+        .filter(|key| !key.is_empty())
+        .ok_or("Missing custom provider authentication")?;
     let subscribed = subscription(key);
     let mut body = json!({
         "model":model.id, "messages":messages(&context.messages, subscribed),
