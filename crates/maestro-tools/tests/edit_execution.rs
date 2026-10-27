@@ -383,7 +383,7 @@ fn edit_execution_binds_expanded_paths_before_polling() {
         );
         assert!(ops.script.calls().is_empty());
         assert_eq!(result_json(&ready(&mut future).unwrap()), expected.result);
-        assert_eq!(ops.script.calls(), expected.calls);
+        assert_eq!(posix_rows(&ops.script.calls()), expected.calls);
     }
     cwd_binding();
 }

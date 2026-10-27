@@ -147,6 +147,10 @@ fn tool_override_reads_paths_and_numeric_line_ranges() {
 }
 
 #[test]
+#[cfg_attr(
+    windows,
+    ignore = "extension guests have no Windows filesystem roots yet"
+)]
 fn tool_override_preserves_authored_file_identity() {
     super::wasi_support::run(async {
         let scratch = maestro_test_directory::Scratch::new().unwrap();

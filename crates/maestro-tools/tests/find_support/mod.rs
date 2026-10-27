@@ -235,9 +235,11 @@ pub fn check_custom(test: &str) {
             assert_eq!(actual["updates"], json!(0));
             assert_eq!(c.expected["error_kind"], json!("required-cwd"));
         } else {
+            // Windows reports `\` as its separator, so a recorded name holding one is a
+            // path there, spelled with `/` like every other.
             assert_eq!(
                 canon(&posix_value(&actual)),
-                canon(&with_home(&c.expected)),
+                canon(&posix_value(&with_home(&c.expected))),
                 "case {}",
                 c.id
             );

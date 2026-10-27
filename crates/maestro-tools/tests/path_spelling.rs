@@ -181,8 +181,8 @@ fn path_resolution_keeps_every_existing_directory_spelling() {
         ),
     ] {
         assert_eq!(
-            resolve_existing_path(&ask, &cwd).unwrap(),
-            expected,
+            posix_spelling(&resolve_existing_path(&ask, &cwd).unwrap()),
+            posix_spelling(&expected),
             "{ask:?}"
         );
     }
