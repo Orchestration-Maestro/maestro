@@ -228,6 +228,62 @@ fn failed_base_layer_removal_can_be_retried() {
     }
 }
 
+/// A refused parent lookup reports the failed clear and allows retry after recovery.
+#[cfg(unix)]
+#[test]
+fn inaccessible_base_layer_removal_reports_error_and_can_be_retried() {
+    use crate::support::{Scratch, location};
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        let root = Scratch::new().unwrap();
+        let agent = location(root.path(), "agent");
+        let work = location(root.path(), "work");
+        let mut manager = SettingsManager::create(&work, &agent, ".maestro");
+        let base = layer(json!({"defaultModel":"base"}), &["defaultModel"]);
+        manager.publish_base_layer(scope, Some(base.clone()));
+        block_on(manager.flush());
+        assert!(manager.drain_errors().is_empty());
+        let parent = root.path().join(match scope {
+            SettingsScope::Global => "agent",
+            SettingsScope::Project => "agent/state",
+        });
+        let record = parent.join("base-settings.json");
+        let saved = std::fs::read(&record).unwrap();
+        let Some(restore) = maestro_test_directory::deny(&parent, 0o600).unwrap() else {
+            continue;
+        };
+        manager.publish_base_layer(scope, None);
+        block_on(manager.flush());
+        assert_eq!(manager.get_base_layer(), None);
+        assert!(!manager.is_key_path_locked("defaultModel", &[]));
+        let errors = manager.drain_errors();
+        assert_eq!(
+            errors.len(),
+            1,
+            "{scope:?}: clearing inaccessible storage must fail"
+        );
+        assert_eq!(errors[0].scope, scope);
+        assert_eq!(
+            errors[0]
+                .error
+                .downcast_ref::<std::io::Error>()
+                .unwrap()
+                .kind(),
+            std::io::ErrorKind::PermissionDenied
+        );
+        drop(restore);
+        assert_eq!(std::fs::read(&record).unwrap(), saved);
+        let stale = SettingsManager::create(&work, &agent, ".maestro");
+        assert_eq!(stale.get_base_layer(), Some(&base));
+        assert!(stale.is_key_path_locked("defaultModel", &[]));
+        manager.publish_base_layer(scope, None);
+        block_on(manager.flush());
+        assert!(manager.drain_errors().is_empty());
+        let fresh = SettingsManager::create(&work, &agent, ".maestro");
+        assert_eq!(fresh.get_base_layer(), None);
+        assert!(!fresh.is_key_path_locked("defaultModel", &[]));
+    }
+}
+
 /// Clearing an absent record creates neither directories nor record or lock files.
 #[test]
 fn clearing_missing_base_layers_leaves_storage_untouched() {
