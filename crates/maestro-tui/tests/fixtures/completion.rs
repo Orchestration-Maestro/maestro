@@ -273,8 +273,21 @@ pub fn run_suggestions(cases: &[SuggestionCase]) {
             .iter()
             .map(|call| call.iter().map(|s| (*s).into()).collect())
             .collect();
-        assert_eq!(*trace.borrow(), expected, "{}", case.id);
+        let observed = recorded_trace(&trace.borrow());
+        assert_eq!(observed, expected, "{}", case.id);
     }
+}
+
+/// The trace as the recording spells it: Windows joins the recorded POSIX base natively,
+/// as `\\work`, where the recording writes `/`.
+fn recorded_trace(trace: &[Vec<String>]) -> Vec<Vec<String>> {
+    if !cfg!(windows) {
+        return trace.to_vec();
+    }
+    trace
+        .iter()
+        .map(|call| call.iter().map(|part| part.replace('\\', "/")).collect())
+        .collect()
 }
 
 /// Command collections used by the source queries.

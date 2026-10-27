@@ -27,7 +27,9 @@ enum Node<'a> {
 fn at(root: &str, path: &str) -> String {
     match path {
         "/" => root.into(),
-        path if path.starts_with('/') => format!("{root}{path}"),
+        path if path.starts_with('/') => {
+            format!("{root}{}", path.replace('/', std::path::MAIN_SEPARATOR_STR))
+        }
         path => path.into(),
     }
 }

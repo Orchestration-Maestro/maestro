@@ -78,7 +78,15 @@ pub fn run_usage(values: &[&str]) -> std::io::Result<Run> {
 
 /// The sessions directory of `cwd` beneath `base`'s home, created with the files.
 pub fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
-    let directory = maestro_session::sessions_dir(&home(base, "sessions"), cwd);
+    // The reports resolve their working directory, so `/project` is `D:\\project` on Windows.
+    let cwd = maestro_path::resolve_with(
+        &[&[cwd]],
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
+    )
+    .expect("the process directory is readable")
+    .remove(0);
+    let directory = maestro_session::sessions_dir(&home(base, "sessions"), &cwd);
     let directory = directory.as_str();
     write_files(directory, files);
     directory.to_owned()

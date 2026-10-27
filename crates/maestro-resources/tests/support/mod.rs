@@ -18,7 +18,10 @@ impl Directory {
     /// Panics when a fixture has no parent or its directory/file cannot be written.
     #[must_use]
     pub fn file(&self, path: &str, content: &str) -> PathBuf {
-        let path = self.0.path().join(path);
+        // Authored `/` paths join by component, so a Windows path keeps one separator.
+        let path = path
+            .split('/')
+            .fold(self.0.path().to_path_buf(), |path, part| path.join(part));
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, content).unwrap();
         path

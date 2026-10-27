@@ -17,9 +17,10 @@ impl Repository {
         repo
     }
     pub fn path(&self, name: &str) -> String {
-        self.0
-            .path()
-            .join(name.trim_start_matches('/'))
+        // Join by component, so a Windows path keeps one separator throughout.
+        name.trim_start_matches('/')
+            .split('/')
+            .fold(self.0.path().to_path_buf(), |path, part| path.join(part))
             .to_string_lossy()
             .into_owned()
     }
