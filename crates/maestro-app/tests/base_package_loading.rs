@@ -1006,3 +1006,96 @@ fn assert_provider_operations(
             .collect::<Vec<_>>()
     );
 }
+
+/// Failed factories retain provider registrations and removals in base-source order.
+#[test]
+fn disabled_discovery_replays_failed_base_provider_operations() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let sources: Vec<_> = ["first", "failed", "last"]
+        .map(|name| format!("{root}/{name}"))
+        .into();
+    for (source, name) in sources.iter().zip(["project", "base", "project"]) {
+        package(source, name);
+    }
+    std::fs::create_dir_all(&agent).unwrap();
+    std::fs::create_dir_all(&cwd).unwrap();
+    on_task_set(|local| async move {
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, failing_provider_modules());
+        resources.base_package_sources = sources;
+        resources
+            .disabled
+            .insert(maestro_app::ResourceKind::Extensions);
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: None,
+            resources,
+        });
+        for _ in 0..2 {
+            loader.reload().await.unwrap();
+            let result = loader.get_extensions();
+            assert_eq!(result.errors.len(), 1);
+            assert!(result.errors[0].error.contains("base factory failed"));
+            assert_eq!(result.extensions.len(), 2);
+            let pending = result
+                .runtime
+                .pending_provider_registrations
+                .read()
+                .unwrap();
+            let operations: Vec<_> = pending
+                .values()
+                .map(|entry| {
+                    (
+                        entry.name.clone(),
+                        entry.config.read().unwrap().base_url.clone().unwrap(),
+                    )
+                })
+                .collect();
+            assert_eq!(
+                operations,
+                [
+                    ("shared".into(), "project".into()),
+                    ("shared".into(), "base".into()),
+                    ("shared".into(), "project".into()),
+                    ("removed-by-base".into(), "project".into()),
+                ]
+            );
+        }
+    });
+}
+
+/// Registers the controlled provider operations before failing the middle base factory.
+fn failing_provider_modules() -> ModuleLoader<Local> {
+    let modules = provider_modules();
+    Rc::new(move |path| {
+        let loaded = modules(path);
+        let failed = path.ends_with("base.wasm");
+        Box::pin(async move {
+            Ok(Some(fail_after_provider_operations(
+                loaded.await?.unwrap(),
+                failed,
+            )))
+        })
+    })
+}
+
+/// Wraps a factory with a failure after its provider operations have completed.
+fn fail_after_provider_operations(
+    initialize: ExtensionFactory<Local>,
+    failed: bool,
+) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let initialized = initialize(api);
+        Box::pin(async move {
+            initialized.await?;
+            if failed {
+                return Err("base factory failed".into());
+            }
+            Ok(())
+        })
+    })
+}
