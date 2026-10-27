@@ -47,6 +47,7 @@ inserts at its own place instead of appending at the end of each list.
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
+| `rpc_demo.rs` | A companion for the terminal RPC client: confirmation, selection, input/editor dialogs, notifications, title/status/widget updates and editor prefill. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
@@ -129,6 +130,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- qna_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- rpc_demo_companion_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -737,3 +740,16 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+## RPC companion
+
+`rpc_demo.rs` is loaded by the [terminal RPC client](../rpc_extension_ui.rs).
+The [package index](../README.md) lists both build targets and the Unix terminal
+prerequisites. `/rpc-input`, `/rpc-editor` and `/rpc-prefill` need no model or
+provider credentials. The extension also confirms `new_session` RPC requests,
+updates turn status and asks whether to allow illustrative dangerous bash
+commands. Its two pattern checks are a UI demonstration, not a security policy.
+
+The controlled root-executable case above uses isolated configuration and a
+loopback provider. Its tool calls run only `echo sudo`, so both approval and
+refusal can be exercised without a privileged or destructive command.

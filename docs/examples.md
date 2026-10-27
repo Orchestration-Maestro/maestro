@@ -7,8 +7,20 @@ Run them directly with Cargo in a disposable Unix terminal.
 ## Package examples
 
 The package directory holds an `examples/` folder, beside the README and the
-documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. Shipped extensions include:
+documentation. `examples/README.md` indexes the terminal RPC client and the
+`extensions/` and `sdk/` folders, which each have their own index page.
+
+The [terminal RPC client](../examples/rpc_extension_ui.rs) starts a separate
+backend, streams its output and answers extension selection, confirmation,
+input and multiline-editor requests. Its shipped `extensions/rpc_demo.rs`
+companion exercises those methods over RPC and publishes notifications,
+title/status/widget updates and editor prefill. The
+[package index](../examples/README.md) gives the two build targets, default
+artifact layout, controlled checks and opt-in prerequisites. Ordinary prompts
+can make paid model calls or run file-changing tools; local dialog demos and
+companion input/editor commands do neither.
+
+Shipped extensions include:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
