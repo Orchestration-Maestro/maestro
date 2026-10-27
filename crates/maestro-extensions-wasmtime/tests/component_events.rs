@@ -226,3 +226,22 @@ fn component_hooks_replay_recorded_domain_outcomes() {
         }
     });
 }
+
+#[test]
+fn component_handler_presence_tracks_registration() {
+    local(async {
+        let harness = Harness::load().await;
+        let empty = harness.prepare("input", &[vec![]]).await;
+        assert!(!empty.runner.has_handlers("input"));
+        assert!(!empty.runner.has_handlers("tool_call"));
+        harness.install(&empty, 0, "input", &[json!([])]).await;
+        assert!(empty.runner.has_handlers("input"));
+        assert!(!empty.runner.has_handlers("tool_call"));
+        harness.install(&empty, 0, "tool_call", &[json!([])]).await;
+        assert!(empty.runner.has_handlers("tool_call"));
+        assert!(!empty.runner.has_handlers("agent_end"));
+        let cleared = harness.prepare("input", &[vec![]]).await;
+        assert!(!cleared.runner.has_handlers("input"));
+        assert!(!cleared.runner.has_handlers("tool_call"));
+    });
+}
