@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod bash_spawn_hook_example;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;

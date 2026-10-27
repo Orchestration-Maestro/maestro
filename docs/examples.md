@@ -9,7 +9,10 @@ Run them directly with Cargo in a disposable Unix terminal.
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
 `sdk/`, and each folder has its own index page. Shipped extensions include:
-`extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
+`extensions/bash_spawn_hook.rs` overrides bash through the native factory to
+source a trusted `~/.profile` and add `MAESTRO_SPAWN_HOOK=1`; loading it is opt-in
+and needs a Unix component host with Bash. Its controlled run uses an isolated
+profile and environment. `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
 `extensions/protected_paths.rs` builds a tool-call hook that blocks writes and

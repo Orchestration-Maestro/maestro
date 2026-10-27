@@ -26,6 +26,7 @@ inserts at its own place instead of appending at the end of each list.
 
 | File | Registers |
 | --- | --- |
+| `bash_spawn_hook.rs` | An opt-in native bash override that sources `~/.profile` and adds `MAESTRO_SPAWN_HOOK=1` before each command. |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
@@ -81,6 +82,8 @@ example's source in the in-process controlled host;
 component. Both invoke its registered `before_agent_start` event handler:
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- bash_spawn_hook_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -160,6 +163,23 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 No provider, paid service or extension installation is required. Loading a
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the bash spawn hook does
+
+Build with `--example bash_spawn_hook` using the command above. Loading is
+opt-in and needs a native component-enabled Unix host with Bash and a readable
+`~/.profile`. The example overrides `bash` through the host's native tool factory;
+it keeps the extension's initial working directory, prefixes each command with
+`source ~/.profile\n`, and sets `MAESTRO_SPAWN_HOOK=1` in the inherited environment.
+It leaves native output handling, truncation, cancellation and timeouts alone.
+
+Sourcing a profile executes its shell code before every command. Use only a
+trusted profile; any directory or environment changes it makes also affect the
+command. A missing profile reports Bash's source error; the following command
+still runs unless shell options stop it. The example installs no profile or
+built-in policy. The controlled `bash_spawn_hook_` run loads the built component
+and executes the real bash tool in a disposable child with its own profile,
+working directory and environment. It needs Bash but no provider or credentials.
 
 ### What the command listing example does
 
