@@ -106,3 +106,31 @@ fn unavailable_pin_reinstalls_without_losing_checkout_on_failure() {
         1
     );
 }
+
+#[test]
+fn pin_integrity_includes_index_only_drift_and_nested_untracked_repositories() {
+    let fixture = RetryFixture::new("ordinary");
+    let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
+    let target = &fixture.repo.target;
+    std::fs::write(target.join("index-only"), "added then removed").unwrap();
+    git(target, &["add", "index-only"]);
+    std::fs::remove_file(target.join("index-only")).unwrap();
+    let status = fixture
+        .run(fixture.manager.verify_pin(&source, None))
+        .unwrap();
+    assert_eq!(status.changed_paths, ["index-only"]);
+    let nested = target.join("nested");
+    std::fs::create_dir(&nested).unwrap();
+    git(&nested, &["init"]);
+    std::fs::write(nested.join("file"), "untracked repo").unwrap();
+    fixture
+        .run(fixture.manager.restore_pin(&source, None))
+        .unwrap();
+    assert!(!nested.exists());
+    assert!(
+        fixture
+            .run(fixture.manager.verify_pin(&source, None))
+            .unwrap()
+            .is_clean()
+    );
+}
