@@ -205,6 +205,12 @@ impl Shared {
 }
 
 impl ProcessTerminal {
+    /// Returns a retained standard byte writer without starting the terminal.
+    #[must_use]
+    pub fn standard_output_writer(&self) -> output::StandardOutput {
+        output::StandardOutput
+    }
+
     /// Returns the active queued writer, or `None` while stopped or writing synchronously.
     ///
     /// The handle may cross threads; it never shares the terminal's local byte queue.

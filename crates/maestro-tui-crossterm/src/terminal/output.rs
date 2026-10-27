@@ -67,6 +67,18 @@ impl Write for OutputWriter {
     }
 }
 
+/// A retained standard byte writer, available before terminal startup.
+#[derive(Clone)]
+pub struct StandardOutput;
+impl Write for StandardOutput {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        io::stdout().write(bytes)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        io::stdout().flush()
+    }
+}
+
 /// Enables bracketed paste.
 pub(super) const PASTE_ON: &str = "\x1b[?2004h";
 

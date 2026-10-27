@@ -96,3 +96,35 @@ fn compose_frames() {
         assert_eq!(collector.join().unwrap(), expected);
     });
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn shipped_component_stdout_survives_blocked_output_and_reload() {
+    for generation in ["p2", "p3"] {
+        let root = crate::support::Root::new();
+        let environment = root.command(&[]);
+        let output = std::process::Command::new("python3")
+            .arg(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/fixtures/component_stdout.py"
+            ))
+            .arg(env!("CARGO_BIN_EXE_maestro"))
+            .arg(std::env::var_os("MAESTRO_WASI_COMPONENT").unwrap())
+            .arg(generation)
+            .arg(root.path("ack"))
+            .env_clear()
+            .envs(
+                environment
+                    .get_envs()
+                    .filter_map(|(key, value)| value.map(|value| (key, value))),
+            )
+            .current_dir(root.path("project"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{generation}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
