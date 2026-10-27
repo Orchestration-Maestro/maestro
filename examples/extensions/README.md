@@ -29,6 +29,7 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
+| `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
@@ -71,6 +72,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_header_component_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -147,6 +152,32 @@ and theme observations, renders its retained view and invokes its reset command.
 It needs no provider, credentials or installation. Loading the component into an
 application is opt-in and needs that application's component runtime; displaying
 the header also needs an interactive UI host.
+
+### What the file trigger example does
+
+Create `/tmp/agent-trigger.txt` before loading the component into a native host
+with filesystem and watch support. On each session start the example watches
+that fixed path and, when UI is available, reports `Watching /tmp/agent-trigger.txt`.
+To send a prompt from another process, write it to the existing file:
+
+```sh
+printf '%s\n' 'Run the tests' > /tmp/agent-trigger.txt
+```
+
+A change reads and trims the contents. Nonempty text becomes a displayed
+`file-trigger` custom message prefixed with `External trigger: `, with
+`triggerTurn: true`; the file is cleared only after the host accepts the message.
+Empty or unreadable contents do nothing. A missing file at startup fails watch
+creation, so create it first. Each new session replaces the previous watch;
+shutdown releases it through the existing watch owner.
+
+Loading this example is opt-in. Anyone able to write the trigger file can ask the
+agent to act; use it only in a trusted local environment. A real response uses the
+host's configured model and can incur provider charges. The controlled runs need
+no credentials or paid service: the component run uses a loopback provider. Tests
+create the fixed path exclusively and refuse to touch a file already there. The
+nextest file-trigger group runs those tests one at a time; do not run separate
+file-trigger test commands concurrently.
 
 ### What the shutdown example does
 
