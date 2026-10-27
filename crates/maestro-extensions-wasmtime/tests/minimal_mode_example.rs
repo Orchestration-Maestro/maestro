@@ -218,3 +218,6 @@ fn fg(role: &maestro_theme::ThemeColor, text: &str) -> String {
 
 /// Call rows through the native renderer interface.
 mod calls;
+
+/// Expanded and collapsed results through the native renderer interface.
+mod results;
