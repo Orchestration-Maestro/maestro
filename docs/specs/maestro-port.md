@@ -370,7 +370,7 @@ from the optional foundation utility described below.
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
-| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources` | 2 |
+| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources`, `maestro-lock` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners` | 3 |
@@ -537,15 +537,17 @@ Move the existing matchers only after this contract lands, through
 
 `maestro-watch` and `maestro-lock` are core leaves below layer 0, with no
 workspace dependencies, including the path utility. Only theme and application
-may depend on watch; only settings, credentials, workspace and detection may depend on lock.
+may depend on watch; only settings, credentials, workspace, detection and session
+may depend on lock.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
 retry and polling policy remain in their feature owners. Existing theme watch
 paths may re-export the same moved types, not retain a second implementation.
 
-`maestro-lock` acquires a caller-opened file-write lock with the existing bounded
-synchronous contention retry. It also owns byte-oriented atomic replacement: an
+`maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
+locks. Waiting acquisition uses the operating system's file lock, which is released
+when the holder exits. It also owns byte-oriented atomic replacement: an
 exclusive temporary sibling is written, synced, closed and renamed before the
 parent directory is synced. Workspace snapshot storage and detection catalog publication use this operation;
 feature owners retain serialization and symbolic-link policy. File creation for
