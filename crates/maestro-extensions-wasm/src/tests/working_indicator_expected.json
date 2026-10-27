@@ -1,0 +1,207 @@
+{
+  "startup": [
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "event": {"type": "session_start", "reason": "startup"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "event": {"type": "session_start", "reason": "resume"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "event": {"type": "session_start", "reason": "new"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "event": {"type": "session_start", "reason": "fork"}
+    }
+  ],
+  "modes": [
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m●\u001b[39m"], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: static dot\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: static dot", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: static dot"]}],
+      "args": " \tDoT\n"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: static dot", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m●\u001b[39m"], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: static dot\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: static dot"]}],
+      "event": {"type": "session_start", "reason": "startup"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": [], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: hidden\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: hidden", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: hidden"]}],
+      "args": "none"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: hidden", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": [], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: hidden\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: hidden"]}],
+      "event": {"type": "session_start", "reason": "resume"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m·\u001b[39m", "\u001b[38;2;255;255;186m•\u001b[39m", "\u001b[38;2;186;225;255m●\u001b[39m", "\u001b[38;2;218;186;255m•\u001b[39m"], "intervalMs": 120.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom pulse\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: custom pulse", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom pulse"]}],
+      "args": "pulse"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: custom pulse", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m·\u001b[39m", "\u001b[38;2;255;255;186m•\u001b[39m", "\u001b[38;2;186;225;255m●\u001b[39m", "\u001b[38;2;218;186;255m•\u001b[39m"], "intervalMs": 120.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom pulse\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom pulse"]}],
+      "event": {"type": "session_start", "reason": "new"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: custom spinner", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "args": "spinner"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: custom spinner", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m⠋\u001b[39m", "\u001b[38;2;255;223;186m⠙\u001b[39m", "\u001b[38;2;255;255;186m⠹\u001b[39m", "\u001b[38;2;186;255;201m⠸\u001b[39m", "\u001b[38;2;186;225;255m⠼\u001b[39m", "\u001b[38;2;218;186;255m⠴\u001b[39m", "\u001b[38;2;255;179;186m⠦\u001b[39m", "\u001b[38;2;255;223;186m⠧\u001b[39m", "\u001b[38;2;255;255;186m⠇\u001b[39m", "\u001b[38;2;186;255;201m⠏\u001b[39m"], "intervalMs": 80.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom spinner"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [null]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: Maestro default spinner\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: Maestro default spinner", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: Maestro default spinner"]}],
+      "args": "reset"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: Maestro default spinner", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [null]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: Maestro default spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: Maestro default spinner"]}],
+      "event": {"type": "session_start", "reason": "fork"}
+    }
+  ],
+  "queries": [
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: custom spinner", "Info"]}]
+    },
+    {
+      "args": " \n\t ",
+      "requests": [{"method": "notify", "operands": ["Working indicator: custom spinner", "Info"]}]
+    },
+    {
+      "args": "default",
+      "requests": [{"method": "notify", "operands": ["Usage: /working-indicator [dot|pulse|none|spinner|reset]", "Error"]}]
+    },
+    {
+      "args": "DOT PULSE",
+      "requests": [{"method": "notify", "operands": ["Usage: /working-indicator [dot|pulse|none|spinner|reset]", "Error"]}]
+    },
+    {
+      "args": "unknown",
+      "requests": [{"method": "notify", "operands": ["Usage: /working-indicator [dot|pulse|none|spinner|reset]", "Error"]}]
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: custom spinner", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m●\u001b[39m"], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: static dot\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: static dot", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: static dot"]}],
+      "args": "dot"
+    },
+    {
+      "args": "default",
+      "requests": [{"method": "notify", "operands": ["Usage: /working-indicator [dot|pulse|none|spinner|reset]", "Error"]}]
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: static dot", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m●\u001b[39m"], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: static dot\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: static dot"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    }
+  ],
+  "refusals": [
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m·\u001b[39m", "\u001b[38;2;255;255;186m•\u001b[39m", "\u001b[38;2;186;225;255m●\u001b[39m", "\u001b[38;2;218;186;255m•\u001b[39m"], "intervalMs": 120.0}]}],
+      "themes": [],
+      "args": "pulse",
+      "reject": "setWorkingIndicator"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: custom pulse", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m·\u001b[39m", "\u001b[38;2;255;255;186m•\u001b[39m", "\u001b[38;2;186;225;255m●\u001b[39m", "\u001b[38;2;218;186;255m•\u001b[39m"], "intervalMs": 120.0}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: custom pulse\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: custom pulse"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": [], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: hidden\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: hidden"]}],
+      "args": "none",
+      "reject": "setStatus"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: hidden", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": [], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: hidden\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: hidden"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m●\u001b[39m"], "intervalMs": null}]}, {"method": "theme", "operands": [null]}],
+      "themes": [],
+      "args": "dot",
+      "reject": "theme"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: static dot", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [{"frames": ["\u001b[38;2;255;179;186m●\u001b[39m"], "intervalMs": null}]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: static dot\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: static dot"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [null]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: Maestro default spinner\u001b[22m"]}, {"method": "notify", "operands": ["Working indicator set to: Maestro default spinner", "Info"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: Maestro default spinner"]}],
+      "args": "reset",
+      "reject": "notify"
+    },
+    {
+      "args": "",
+      "requests": [{"method": "notify", "operands": ["Working indicator: Maestro default spinner", "Info"]}]
+    },
+    {
+      "requests": [{"method": "setWorkingIndicator", "operands": [null]}, {"method": "theme", "operands": [null]}, {"method": "setStatus", "operands": ["working-indicator", "\u001b[2mIndicator: Maestro default spinner\u001b[22m"]}],
+      "themes": [{"method": "fg", "operands": ["dim", "Indicator: Maestro default spinner"]}],
+      "event": {"type": "session_start", "reason": "reload"}
+    }
+  ]
+}

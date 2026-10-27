@@ -43,6 +43,7 @@ inserts at its own place instead of appending at the end of each list.
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
+| `working_indicator.rs` | A `/working-indicator` command that selects a static dot, pulse, hidden indicator, custom spinner or the host default, with themed status. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
 
 ### Building an example
@@ -100,6 +101,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- widget_placement
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- working_indicator_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- working_message_
 ```
@@ -325,3 +328,21 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the working indicator command does
+
+`/working-indicator` reports the current mode. Its `dot`, `pulse`, `none` and
+`spinner` arguments choose a static dot, a four-frame pulse at 120 ms, no inline
+indicator, or a ten-frame spinner at 80 ms. `reset` restores the host's default
+spinner. Arguments ignore surrounding whitespace and case; an unknown argument
+reports usage without changing the selection.
+
+Each loaded instance starts with the custom spinner selected. Every
+`session_start` applies the selection and sets the `working-indicator` status to
+`Indicator: <mode description>`, coloured through the host theme's `dim` role.
+The example supplies frames and intervals; the host owns animation and timing.
+
+Build it with the command above using `--example working_indicator`. The
+controlled `working_indicator_` runs need no provider, credentials, timer or
+installation. Loading the built component is opt-in and needs a component-enabled
+host; showing the indicator and status also needs its interactive UI.
