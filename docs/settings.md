@@ -479,11 +479,14 @@ Earlier errors and new project errors are returned for their own reporting path.
 The independent areas are onboarding, theme, UI (including sidebar, toast and
 sound), terminal, restore, server, update, advanced, worktrees, experimental and
 remote. A malformed area retains its last accepted settings document without
-blocking valid siblings. Current global locks are restored in that document
-before decoding it again: locked fields follow the base, while unlocked fields
-keep their previous values. If the area has never decoded successfully, it uses
-the base with an empty user scope, as at startup. A diagnostic identifies the
-invalid area. Correcting the user value restores ordinary overrides of unlocked
+blocking valid siblings. Documents rejected by runtime checks, such as inverted
+sidebar bounds or zero terminal dimensions, do not replace accepted documents.
+Current global locks are restored in the retained document before decoding it
+again: locked fields follow the base, while unlocked fields keep their previous
+values. If the area has never decoded successfully, it uses the base with an
+empty user scope, as at startup. Without a base layer, rejected areas keep their
+current typed values and do not reapply UI interaction settings. A diagnostic
+identifies the invalid area. Correcting the user value restores ordinary overrides of unlocked
 fields. Project-only locks do not change this behavior. Removed members return
 to defaults. Required fields reject wrong JSON kinds, including positional arrays in place of records. Optional null values
 remain absent. Unknown nested keys produce sorted, deduplicated paths after their

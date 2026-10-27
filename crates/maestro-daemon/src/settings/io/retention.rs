@@ -16,6 +16,18 @@ impl AcceptedAreas {
         self.0.insert(area.to_owned(), settings.clone());
     }
 
+    /// Advances only accepted areas, retaining documents rejected by runtime checks.
+    pub(crate) fn accept(&mut self, loaded: &LoadedConfig) {
+        self.0.extend(
+            loaded
+                .accepted_areas
+                .0
+                .iter()
+                .filter(|(area, _)| !loaded.invalid_sections.contains(area))
+                .map(|(area, document)| (area.clone(), document.clone())),
+        );
+    }
+
     /// Re-decodes rejected areas after the settings owner restores current locks.
     pub(super) fn recover(
         &self,
@@ -59,7 +71,7 @@ impl AcceptedAreas {
         if let Some(previous) = self.0.get(area) {
             loaded.accepted_areas.remember(area, previous);
         }
-        let document = self.restored_document(area, layer);
+        let document = self.restored_document(area, layer?);
         let recovered = project_global_settings(&document, agent_dir);
         if recovered.invalid_sections.iter().any(|name| name == area) {
             return None;
@@ -70,15 +82,11 @@ impl AcceptedAreas {
     }
 
     /// Uses the accepted area document, or the ordinary empty-user startup view.
-    fn restored_document(&self, area: &str, layer: Option<&BaseSettingsLayer>) -> Settings {
+    fn restored_document(&self, area: &str, layer: &BaseSettingsLayer) -> Settings {
         let Some(mut document) = self.0.get(area).cloned() else {
-            return layer.map_or_else(Settings::default, |base| {
-                base.compose_settings(&Settings::default())
-            });
+            return layer.compose_settings(&Settings::default());
         };
-        if let Some(base) = layer {
-            base.restore_locked_settings(&mut document);
-        }
+        layer.restore_locked_settings(&mut document);
         document
     }
 }

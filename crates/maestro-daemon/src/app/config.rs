@@ -77,8 +77,7 @@ impl<C: FnMut() -> u128> App<C> {
             .iter()
             .any(|area| area == "experimental");
         let previous = self.config.clone();
-        self.accepted_config_areas
-            .clone_from(&loaded.accepted_areas);
+        self.accepted_config_areas.accept(&loaded);
         let report = apply_loaded(&mut self.config, loaded);
         self.clear_history_after_reload |=
             valid_experimental && !self.config.experimental.pane_history.0;
