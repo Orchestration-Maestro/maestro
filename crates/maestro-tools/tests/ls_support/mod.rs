@@ -439,7 +439,12 @@ impl LsOperations for Scripted {
 
     fn stat(&self, path: String) -> BoxFuture<Result<bool, DiagnosticErrorInfo>> {
         let stage = self.stat_stage(&path);
-        let name = path.rsplit('/').next().unwrap_or_default().to_owned();
+        // The entry name after the last separator; Windows joins with `\\`.
+        let name = path
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or_default()
+            .to_owned();
         let answer = match stage {
             Stage::RootStat => self.directory,
             _ => self.directories.contains(&name),
@@ -604,10 +609,18 @@ pub fn assert_outcome(case: &Case, outcome: &Outcome) {
             if let Some(cut) = result.pointer_mut("/details/truncation/content") {
                 *cut = Value::String(recorded_text(cut));
             }
-            assert_eq!(canon(actual), canon(&result), "result of {id}");
+            assert_eq!(
+                canon(&posix_value(actual)),
+                canon(&result),
+                "result of {id}"
+            );
         }
         (Err(actual), None, Some(error)) => {
-            assert_eq!(actual, &with_home(&json!(error)), "error of {id}");
+            assert_eq!(
+                &posix_spelling(actual),
+                &with_home(&json!(error)),
+                "error of {id}"
+            );
         }
         (observed, recorded, _) => panic!(
             "case {id} observed {} but records {}",

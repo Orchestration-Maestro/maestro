@@ -305,13 +305,14 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
         "upper",
         vec![("GOOGLE_APPLICATION_CREDENTIALS", link.as_str())],
     ));
+    let (home_name, home) = super::home_variable(&home);
     for (expected, mut variables) in cases {
-        variables.push(("HOME", home.as_str()));
+        variables.push((home_name, home.as_str()));
         let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()
-            .envs(variables.iter().copied())
+            .envs(super::settable(&variables))
             .case(expected)
             .output()
             .unwrap();
@@ -349,17 +350,13 @@ fn adc_selected_file_failures_do_not_fall_back() {
                 .unwrap()
                 .nocapture()
                 .env_clear()
-                .envs(
-                    [
-                        ("GOOGLE_APPLICATION_CREDENTIALS", selected.as_str()),
-                        ("google_application_credentials", valid.as_str()),
-                        ("HOME", directory.as_str()),
-                        ("METADATA_SERVER_DETECTION", "assume-present"),
-                        ("GCE_METADATA_HOST", host.as_str()),
-                    ]
-                    .iter()
-                    .copied(),
-                )
+                .envs(super::settable(&[
+                    ("GOOGLE_APPLICATION_CREDENTIALS", selected.as_str()),
+                    ("google_application_credentials", valid.as_str()),
+                    ("HOME", directory.as_str()),
+                    ("METADATA_SERVER_DETECTION", "assume-present"),
+                    ("GCE_METADATA_HOST", host.as_str()),
+                ]))
                 .case(index.to_string())
                 .output()
                 .unwrap();

@@ -259,7 +259,9 @@ fn native_path_host_lookups_are_lazy() {
         assert_eq!(expand_path("plain").unwrap(), "plain");
         assert!(resolve_to_cwd("rel", "relative-cwd").is_err());
     }
-    if isolated(test, "home-explicit", &[("HOME", Some("/explicit"))]) {
+    // Windows names the account home in `USERPROFILE`.
+    let home = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+    if isolated(test, "home-explicit", &[(home, Some("/explicit"))]) {
         assert_eq!(expand_path("~").unwrap(), "/explicit");
         assert_eq!(expand_path("~/x").unwrap(), "/explicit/x");
     }

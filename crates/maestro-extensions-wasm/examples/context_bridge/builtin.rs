@@ -8,6 +8,12 @@ use maestro_extensions_wasm::bindings::maestro::extension::host;
 use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionResult};
 use std::rc::Rc;
 
+/// Whether `path` ends in the `/`-separated components `tail`. The native tools join paths
+/// with the host separator, which is `\` on Windows.
+pub(super) fn ends_in(path: &str, tail: &str) -> bool {
+    path.replace('\\', "/").ends_with(&format!("/{tail}"))
+}
+
 /// Constructs once in the author factory, then invokes that same native owner later.
 pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
     register_read(api)?;

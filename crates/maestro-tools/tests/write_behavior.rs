@@ -164,7 +164,12 @@ fn write_resolves_paths_before_filesystem_work() {
             None,
         ))
         .unwrap();
-        assert_eq!(ops.calls(), expected.calls, "path {:?}", args.path);
+        assert_eq!(
+            posix_rows(&ops.calls()),
+            expected.calls,
+            "path {:?}",
+            args.path
+        );
         assert_eq!(json!({"content": content_json(&result)}), expected.result);
     }
     let dir = Scratch::new().unwrap();
@@ -525,8 +530,8 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
         let pending = start(&tool_over(&ops, "."), input("f.txt", "x"), None);
         std::env::set_current_dir(decoy.path()).unwrap();
         runtime::run(pending).unwrap();
-        let written =
-            std::fs::canonicalize(original.path().join("f.txt").parent().unwrap()).unwrap();
-        assert_eq!(ops.calls()[1][1], written.join("f.txt").to_str().unwrap());
+        // The scratch root is already canonical, without a Windows verbatim prefix.
+        let written = original.path().join("f.txt");
+        assert_eq!(ops.calls()[1][1], written.to_str().unwrap());
     }
 }

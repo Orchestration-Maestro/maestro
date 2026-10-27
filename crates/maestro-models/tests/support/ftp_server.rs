@@ -388,7 +388,16 @@ fn session(control: TcpStream, scenario: &Scenario, observed: &Observed) -> std:
         None => reply(&mut control, scenario.greeting)?,
     }
     if scenario.hang_up {
-        return Ok(());
+        // End the stream before the socket goes away, as an orderly hang-up does; a socket
+        // dropped with unread input is reset instead on Windows.
+        if let Err(error) = control.stream.shutdown(std::net::Shutdown::Write) {
+            return if vanished(&error) { Ok(()) } else { Err(error) };
+        }
+        let mut rest = Vec::new();
+        return match reader.read_to_end(&mut rest) {
+            Err(error) if vanished(&error) => Ok(()),
+            other => other.map(drop),
+        };
     }
     let mut data: Option<TcpListener> = None;
     loop {

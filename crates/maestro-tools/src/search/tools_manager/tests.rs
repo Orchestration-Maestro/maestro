@@ -392,7 +392,11 @@ fn output_matches(row: &Install, output: &[u8], bin: &str) {
     }
     if let Some(last) = &row.last_line_prefix {
         let expected = format!("{prefix}{}", expand(last, bin));
-        assert!(output.starts_with(&expected), "{} output prefix", row.id);
+        assert!(
+            output.starts_with(&expected),
+            "{} output prefix: {output:?}",
+            row.id
+        );
         let detail = output
             .strip_prefix(&expected)
             .unwrap()
