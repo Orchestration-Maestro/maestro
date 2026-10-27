@@ -527,6 +527,8 @@ the native floating-point domain, including signed zero and nonfinite values.
 `tools::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
 native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
+`tools::path_utils::basename(&api, path)` returns the final path component using
+the host's path flavor, preserving literal backslashes on POSIX hosts.
 
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
