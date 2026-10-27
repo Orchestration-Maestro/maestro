@@ -86,6 +86,10 @@ async fn show_log(runner: &ExtensionRunner<Local>) {
 }
 
 #[test]
+#[cfg_attr(
+    windows,
+    ignore = "extension guests have no Windows filesystem roots yet"
+)]
 fn tool_override_reads_paths_and_numeric_line_ranges() {
     super::wasi_support::run(async {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -171,6 +175,10 @@ fn tool_override_preserves_authored_file_identity() {
 }
 
 #[test]
+#[cfg_attr(
+    windows,
+    ignore = "extension guests have no Windows filesystem roots yet"
+)]
 fn tool_override_reduces_paths_before_access_checks() {
     super::wasi_support::run(async {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -207,6 +215,10 @@ fn tool_override_reduces_paths_before_access_checks() {
 }
 
 #[test]
+#[cfg_attr(
+    windows,
+    ignore = "extension guests have no Windows filesystem roots yet"
+)]
 fn tool_override_blocks_sensitive_paths_and_records_every_attempt() {
     super::wasi_support::run(async {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -284,6 +296,10 @@ async fn observe_read_failures(runner: &Rc<ExtensionRunner<Local>>, root: &Path)
 }
 
 #[test]
+#[cfg_attr(
+    windows,
+    ignore = "extension guests have no Windows filesystem roots yet"
+)]
 fn tool_override_displays_only_recent_access_records() {
     super::wasi_support::run(async {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
