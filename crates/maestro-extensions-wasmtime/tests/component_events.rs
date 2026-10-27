@@ -245,3 +245,38 @@ fn component_handler_presence_tracks_registration() {
         assert!(!cleared.runner.has_handlers("tool_call"));
     });
 }
+
+#[test]
+fn component_tool_results_consume_prior_content() {
+    local(async {
+        let harness = Harness::load().await;
+        let run = harness
+            .prepare(
+                "tool_result",
+                &[
+                    vec![json!([{"suffix":"first"}])],
+                    vec![json!([{"suffix":"second"}])],
+                ],
+            )
+            .await;
+        let event = cases::typed(json!({
+            "toolName":"read", "toolCallId":"call", "input":{},
+            "content":[{"type":"text", "text":"base"}],
+            "details":{"initial":true}, "isError":false,
+        }));
+        let result = run.runner.emit_tool_result(&event).await.unwrap().unwrap();
+        assert_eq!(
+            cases::encoded(&result),
+            json!({
+                "content":[
+                    {"type":"text", "text":"base"},
+                    {"type":"text", "text":"first"},
+                    {"type":"text", "text":"second"},
+                ],
+                "details":{"initial":true}, "isError":false,
+            })
+        );
+        assert_eq!(run.errors(), json!([]));
+        assert!(harness.bus.take().is_empty());
+    });
+}
