@@ -121,6 +121,7 @@ mod status_line_example;
 mod stream_events;
 mod system_prompt_header_example;
 pub(crate) mod theme_host;
+mod titlebar_spinner_example;
 mod tool_callbacks;
 mod tool_events;
 mod tools_example;

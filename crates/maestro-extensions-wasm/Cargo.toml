@@ -124,6 +124,11 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "titlebar_spinner"
+path = "../../examples/extensions/titlebar_spinner.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "todo"
 path = "../../examples/extensions/todo.rs"
 crate-type = ["cdylib"]
