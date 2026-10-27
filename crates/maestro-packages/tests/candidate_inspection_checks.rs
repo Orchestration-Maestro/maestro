@@ -64,18 +64,12 @@ fn candidate_reads_alternate_pins_without_installing_or_mutating_active_files() 
     assert!(tree.join("temp").is_dir());
 }
 
-/// Lets the fixture's existing native Git transport also execute ordinary npm installs.
+/// Lets the fixture's existing native Git transport also execute the configured dependency installer.
 fn enable_native_dependencies(fixture: &RetryFixture) {
     fixture.settings.borrow_mut().set_npm_command(Some(
-        [
-            "npm",
-            "--offline",
-            "--ignore-scripts=false",
-            "--no-audit",
-            "--no-fund",
-        ]
-        .map(|arg| maestro_settings::SettingsListEntry::String(arg.into()))
-        .to_vec(),
+        ["/bin/sh", "lifecycle.sh"]
+            .map(|arg| maestro_settings::SettingsListEntry::String(arg.into()))
+            .to_vec(),
     ));
     let hook = fixture.effects.run_hook.borrow().clone().unwrap();
     let native = Rc::new(NativePackageOperations::with_spawn(
@@ -172,9 +166,14 @@ fn candidate_inspection_offline_starts_no_command() {
 
 /// Publishes two tagged candidates with a real install-script sentinel.
 fn seed_candidate_releases(fixture: &RetryFixture) {
-    let manifest = r#"{"name":"candidate-fixture","version":"1.0.0","private":true,"scripts":{"preinstall":"node -e \"require('fs').writeFileSync('sentinel','installed')\""}}"#;
+    let manifest = r#"{"name":"candidate-fixture","version":"1.0.0","private":true,"scripts":{"preinstall":"sh lifecycle.sh"}}"#;
     std::fs::write(fixture.repo.seed.join("package.json"), manifest).unwrap();
-    git(&fixture.repo.seed, &["add", "package.json"]);
+    std::fs::write(
+        fixture.repo.seed.join("lifecycle.sh"),
+        "printf installed > sentinel\n",
+    )
+    .unwrap();
+    git(&fixture.repo.seed, &["add", "package.json", "lifecycle.sh"]);
     fixture.repo.commit("first candidate");
     git(&fixture.repo.seed, &["tag", "v1"]);
     std::fs::write(fixture.repo.seed.join("content"), [0, 255, 10, 13]).unwrap();
