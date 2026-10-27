@@ -169,7 +169,7 @@ fn custom_compaction_summarizes_both_spans_and_preserves_retention() {
         let result = serde_json::to_value(result).unwrap();
         assert_eq!(
             result,
-            json!({"compaction":{"summary":"# Summary\nAll work retained","firstKeptEntryId":"keep-this-entry","tokensBefore":12_345}})
+            json!({"compaction":{"summary":"# Summary\nAll work retained","firstKeptEntryId":"keep-this-entry","tokensBefore":12_345.0}})
         );
         assert_eq!(
             serde_json::to_value(harness.history.borrow().get_entries()).unwrap(),
@@ -184,7 +184,7 @@ fn custom_compaction_summarizes_both_spans_and_preserves_retention() {
         assert!(prompt.contains("previous decisions"));
         assert!(prompt.find("older goal").unwrap() < prompt.find("split turn detail").unwrap());
         assert!(prompt.contains("ENTIRE conversation history"));
-        assert_eq!(requests[0]["options"]["maxTokens"], 8192);
+        assert_eq!(requests[0]["options"]["maxTokens"], 8192.0);
         assert_eq!(requests[0]["options"]["apiKey"], "controlled-key");
         assert_eq!(
             requests[0]["options"]["headers"]["x-controlled"],
