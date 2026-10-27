@@ -1,10 +1,19 @@
-//! Authored paths expanded and resolved by the installed native host.
+//! Authored path operations delegated to the installed native host.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
 use crate::{ExtensionAPI, ExtensionResult};
+
+/// Returns the final path component using the host's path flavor.
+///
+/// # Errors
+/// Returns a host helper failure or an invalid response.
+pub fn basename(api: &ExtensionAPI, path: &str) -> ExtensionResult<String> {
+    api.helper("paths.basename", &(path,))
+}
+
 /// Expands the authored path using the host home, never the component environment.
 ///
 /// # Errors
