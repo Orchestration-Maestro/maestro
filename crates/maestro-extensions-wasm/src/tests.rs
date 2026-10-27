@@ -91,6 +91,7 @@ mod provider_catalog;
 mod provider_component;
 mod provider_composition;
 pub(crate) mod provider_host;
+mod rainbow_editor_example;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;

@@ -40,6 +40,7 @@ inserts at its own place instead of appending at the end of each list.
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `rainbow_editor.rs` | A custom editor that colors `ultrathink` in rainbow hues with a shine that moves every 60 ms. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
@@ -108,6 +109,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- rainbow_editor_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
