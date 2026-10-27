@@ -1,18 +1,33 @@
 //! A terminal client for streamed RPC events and extension dialogs.
 
-#[cfg(any(unix, test))]
+#[cfg(unix)]
 use serde_json::Value;
 use std::io;
-#[cfg(any(unix, test))]
+#[cfg(unix)]
 use std::io::BufRead;
 
 /// Reads one complete JSON event per physical line without splitting Unicode text.
-#[cfg(any(unix, test))]
-fn read_events(reader: impl BufRead, mut receive: impl FnMut(Value)) -> io::Result<()> {
+#[cfg(unix)]
+fn read_events_blocking(reader: impl BufRead, mut receive: impl FnMut(Value)) -> io::Result<()> {
     for line in reader.lines() {
         if let Ok(event) = serde_json::from_str(&line?) {
             receive(event);
         }
+    }
+    Ok(())
+}
+
+/// Reads the asynchronous pipe through the platform's physical-line interface.
+#[cfg(all(test, unix))]
+async fn read_events(
+    reader: impl tokio::io::AsyncBufRead + Unpin,
+    mut receive: impl FnMut(Value),
+) -> io::Result<()> {
+    use tokio::io::AsyncBufReadExt;
+    let _ = &mut receive;
+    let mut lines = reader.lines();
+    while let Some(line) = lines.next_line().await? {
+        drop(line);
     }
     Ok(())
 }
@@ -129,7 +144,7 @@ mod native {
     ) -> thread::JoinHandle<()> {
         thread::spawn(move || {
             let records = sender.clone();
-            if let Err(error) = super::read_events(BufReader::new(output), |record| {
+            if let Err(error) = super::read_events_blocking(BufReader::new(output), |record| {
                 let _ = records.send(Action::Record(record));
             }) {
                 let _ = sender.send(Action::Failed(error));
@@ -249,20 +264,43 @@ mod native {
 mod recording_terminal;
 
 #[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use super::*;
 
     /// A Unicode line separator belongs to the JSON string, not to the wire framing.
     #[test]
     fn streamed_unicode_line_separator_arrives_as_one_event() {
-        let wire = "{\"type\":\"message_update\",\"assistantMessageEvent\":{\"type\":\"text_delta\",\"delta\":\"first\u{2028}second\"}}\r\n";
-        let mut events = Vec::new();
-        read_events(wire.as_bytes(), |event| events.push(event)).unwrap();
-        assert_eq!(
-            events,
-            vec![serde_json::json!({"type":"message_update",
+        run_async(async {
+            let wire = "{\"type\":\"message_update\",\"assistantMessageEvent\":{\"type\":\"text_delta\",\"delta\":\"first\u{2028}second\"}}\r\n";
+            let mut events = Vec::new();
+            read_events(tokio::io::BufReader::new(wire.as_bytes()), |event| {
+                events.push(event);
+            })
+            .await
+            .unwrap();
+            assert_eq!(
+                events,
+                vec![serde_json::json!({"type":"message_update",
             "assistantMessageEvent":{"type":"text_delta","delta":"first\u{2028}second"}})]
-        );
+            );
+        });
+    }
+
+    /// Drives asynchronous cases without macro-owned lint overrides.
+    fn run_async(future: impl std::future::Future<Output = ()>) {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(future);
+    }
+
+    /// Delivers individual key reports as the terminal adapter does.
+    fn send_keys(terminal: &super::recording_terminal::RecordingTerminal, keys: &str) {
+        for key in keys.chars() {
+            terminal.send_input(&key.to_string());
+        }
     }
 
     /// Observations of a controlled peer and actual retained toolkit widgets.
@@ -280,12 +318,14 @@ mod tests {
 
     /// Runs one pipe peer while rendered prompts drive deterministic input.
     #[cfg(unix)]
-    async fn run_case(script: &str, steps: Vec<(&'static str, &'static str)>) -> Case {
+    async fn run_case(
+        peer: std::process::Command,
+        steps: Vec<(&'static str, &'static str)>,
+    ) -> Case {
         use maestro_tui::{TUI, TerminalImage};
         use maestro_tui_crossterm::ProcessTuiRuntime;
         use std::{
             cell::{Cell, RefCell},
-            process::Command,
             rc::Rc,
         };
 
@@ -303,9 +343,7 @@ mod tests {
             };
             if frame.contains(needle) {
                 observed.set(observed.get() + 1);
-                for key in keys.chars() {
-                    input.send_input(&key.to_string());
-                }
+                send_keys(&input, keys);
             }
         });
         let tui = TUI::new(
@@ -314,8 +352,6 @@ mod tests {
             TerminalImage::default(),
             None,
         );
-        let mut peer = Command::new("sh");
-        peer.args(["-c", script]);
         let status = local.run_until(super::run_client(tui, peer)).await.unwrap();
         Case {
             status,
@@ -325,93 +361,137 @@ mod tests {
         }
     }
 
+    /// Keeps the existing pipe fixtures as ordinary shell commands.
+    #[cfg(unix)]
+    fn shell(script: &str) -> std::process::Command {
+        let mut command = std::process::Command::new("sh");
+        command.args(["-c", script]);
+        command
+    }
+
+    /// Quitting gives the child its ordinary termination signal before reaping it.
+    #[cfg(unix)]
+    #[test]
+    fn quitting_delivers_ordinary_termination_before_reaping_the_rpc_child() {
+        run_async(async {
+            let root = maestro_test_directory::Scratch::new().unwrap();
+            let marker = root.path().join("terminated");
+            let mut peer = std::process::Command::new("python3");
+            peer.args(["-c", TERMINATION_PEER]).arg(&marker);
+            let case = run_case(peer, vec![("Waiting for termination", "\x04")]).await;
+            assert!(case.status.success());
+            assert_eq!(case.steps, 1);
+            assert_eq!(case.lifecycle, ["start", "stop"]);
+            assert_eq!(
+                std::fs::read_to_string(marker).ok().as_deref(),
+                Some("SIGTERM")
+            );
+        });
+    }
+
+    /// Blocks termination before readiness so even an early signal is consumed by sigwait.
+    #[cfg(unix)]
+    const TERMINATION_PEER: &str = r#"
+import json, signal, sys
+signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+print(json.dumps({"type":"extension_ui_request", "id":"ready", "method":"notify", "message":"Waiting for termination"}), flush=True)
+signal.sigwait({signal.SIGTERM})
+with open(sys.argv[1], "w", encoding="utf-8") as marker:
+    marker.write("SIGTERM")
+"#;
+
     /// The real toolkit receives keys while a controlled peer checks correlated wire replies.
     #[cfg(unix)]
-    #[tokio::test(flavor = "current_thread")]
-    async fn streamed_rpc_dialogs_keep_replies_and_terminal_lifecycle() {
-        let case = run_case(
-            RPC_PEER,
-            vec![
-                ("RPC Chat", "hello\r"),
-                ("Dangerous command?", "\r"),
-                ("Clear session?", "\r"),
-                ("Enter a value", "answer\r"),
-                ("Edit some text", "\r"),
-                ("Abort now", "\x1b"),
-            ],
-        )
-        .await;
-        assert_eq!(case.status.code(), Some(7));
-        assert_eq!(case.steps, 6);
-        assert!(case.raw.contains("\x1b]0;RPC Demo\x07"));
-        let output = maestro_app::strip_ansi(&case.raw).unwrap();
-        for expected in [
-            "first\u{2028}second",
-            "controlled refusal",
-            "Turns: 1",
-            "Loaded and ready.",
-            "Editor prefilled",
-            "preset",
-        ] {
-            assert!(output.contains(expected), "missing {expected}: {output}");
-        }
-        assert_eq!(case.lifecycle, ["start", "stop"]);
+    #[test]
+    fn streamed_rpc_dialogs_keep_replies_and_terminal_lifecycle() {
+        run_async(async {
+            let case = run_case(
+                shell(RPC_PEER),
+                vec![
+                    ("RPC Chat", "hello\r"),
+                    ("Dangerous command?", "\r"),
+                    ("Clear session?", "\r"),
+                    ("Enter a value", "answer\r"),
+                    ("Edit some text", "\r"),
+                    ("Abort now", "\x1b"),
+                ],
+            )
+            .await;
+            assert_eq!(case.status.code(), Some(7));
+            assert_eq!(case.steps, 6);
+            assert!(case.raw.contains("\x1b]0;RPC Demo\x07"));
+            let output = maestro_app::strip_ansi(&case.raw).unwrap();
+            for expected in [
+                "first\u{2028}second",
+                "controlled refusal",
+                "Turns: 1",
+                "Loaded and ready.",
+                "Editor prefilled",
+                "preset",
+            ] {
+                assert!(output.contains(expected), "missing {expected}: {output}");
+            }
+            assert_eq!(case.lifecycle, ["start", "stop"]);
+        });
     }
 
     /// Local dialogs preserve their authored results without emitting RPC commands.
     #[cfg(unix)]
-    #[tokio::test(flavor = "current_thread")]
-    async fn local_dialog_demonstrations_keep_success_and_cancel_results_off_the_wire() {
-        for (select, confirm, input, editor, results) in [
-            (
-                "\r",
-                "\r",
-                "Maestro\r",
-                "\r",
-                [
-                    "You picked: Red",
-                    "Confirmed: true",
-                    "You entered: Maestro",
-                    "Submitted: Hello, world!",
-                ],
-            ),
-            (
-                "\x1b",
-                "\x1b",
-                "\x1b",
-                "\x1b",
-                [
-                    "Selection cancelled",
-                    "Confirmed: false",
-                    "Input cancelled",
-                    "Editor cancelled",
-                ],
-            ),
-        ] {
-            let case = run_case(
-                LOCAL_PEER,
-                vec![
-                    ("RPC Chat", "/select\r"),
-                    ("Pick a color", select),
-                    (results[0], "/confirm\r"),
-                    ("Are you sure?", confirm),
-                    (results[1], "/input\r"),
-                    ("Enter your name", input),
-                    (results[2], "/editor\r"),
-                    ("Edit text", editor),
-                    (results[3], "after local\r"),
-                ],
-            )
-            .await;
-            assert_eq!(case.status.code(), Some(0));
-            assert_eq!(case.steps, 9);
-            assert_eq!(case.lifecycle, ["start", "stop"]);
-            let output = maestro_app::strip_ansi(&case.raw).unwrap();
-            assert!(!output.contains("Are you sure?:"), "{output}");
-            for result in results {
-                assert!(output.contains(result), "{output}");
+    #[test]
+    fn local_dialog_demonstrations_keep_success_and_cancel_results_off_the_wire() {
+        run_async(async {
+            for (select, confirm, input, editor, results) in [
+                (
+                    "\r",
+                    "\r",
+                    "Maestro\r",
+                    "\r",
+                    [
+                        "You picked: Red",
+                        "Confirmed: true",
+                        "You entered: Maestro",
+                        "Submitted: Hello, world!",
+                    ],
+                ),
+                (
+                    "\x1b",
+                    "\x1b",
+                    "\x1b",
+                    "\x1b",
+                    [
+                        "Selection cancelled",
+                        "Confirmed: false",
+                        "Input cancelled",
+                        "Editor cancelled",
+                    ],
+                ),
+            ] {
+                let case = run_case(
+                    shell(LOCAL_PEER),
+                    vec![
+                        ("RPC Chat", "/select\r"),
+                        ("Pick a color", select),
+                        (results[0], "/confirm\r"),
+                        ("Are you sure?", confirm),
+                        (results[1], "/input\r"),
+                        ("Enter your name", input),
+                        (results[2], "/editor\r"),
+                        ("Edit text", editor),
+                        (results[3], "after local\r"),
+                    ],
+                )
+                .await;
+                assert_eq!(case.status.code(), Some(0));
+                assert_eq!(case.steps, 9);
+                assert_eq!(case.lifecycle, ["start", "stop"]);
+                let output = maestro_app::strip_ansi(&case.raw).unwrap();
+                assert!(!output.contains("Are you sure?:"), "{output}");
+                assert!(
+                    results.iter().all(|result| output.contains(*result)),
+                    "{results:?}: {output}"
+                );
             }
-        }
+        });
     }
 
     /// The peer must receive only the final ordinary prompt with the first identifier.
