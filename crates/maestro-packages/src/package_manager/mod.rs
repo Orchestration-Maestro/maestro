@@ -23,7 +23,7 @@ mod resource_discovery;
 mod resource_patterns;
 mod sources;
 use maestro_resources::SourceScope;
-pub use resolution::{ResolvedPaths, ResolvedResource};
+pub use resolution::{ResolvedPackage, ResolvedPaths, ResolvedResource};
 mod update;
 use maestro_settings::SettingsManager;
 #[cfg(not(target_arch = "wasm32"))]

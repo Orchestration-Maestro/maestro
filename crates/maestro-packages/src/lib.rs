@@ -19,7 +19,8 @@ pub use package_manager::{
     CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager,
     InstalledSourceScope, MissingSourceAction, PackageFuture, PackageManager,
     PackageManagerOptions, PackageOperations, PackageUpdate, PackageUpdateType, ProgressAction,
-    ProgressCallback, ProgressEvent, ProgressEventType, ResolvedPaths, ResolvedResource,
+    ProgressCallback, ProgressEvent, ProgressEventType, ResolvedPackage, ResolvedPaths,
+    ResolvedResource,
 };
 
 pub use maestro_pattern::{PatternError, minimatch};
