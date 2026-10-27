@@ -131,7 +131,7 @@ Negative and fractional limits are left for fd to reject. Patterns containing `/
 use full-path mode, with `**/` prefixed unless already rooted or prefixed; `--`
 separates patterns from options. fd matches a full-path pattern against the native
 absolute path, so on Windows the glob reaches fd as the regex fd compiles from it,
-with each `/` matching `/` or `\`. NUL-delimited output keeps filename whitespace,
+with every separator it matches widened to `/` or `\`. NUL-delimited output keeps filename whitespace,
 embedded newlines and directory markers. Native nonzero exits with records return
 those records; without records they fail with trimmed stderr or an exit-code message.
 
