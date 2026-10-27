@@ -56,7 +56,9 @@ pub fn build(
     let subscribed = subscription(key);
     let mut body = json!({
         "model":model.id, "messages":messages(&context.messages, subscribed),
-        "max_tokens":common.and_then(|common| common.max_tokens).unwrap_or_else(|| (model.max_tokens / 3.0).floor()),
+        "max_tokens":common.and_then(|common| common.max_tokens)
+            .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
+            .unwrap_or_else(|| (model.max_tokens / 3.0).trunc()),
         "stream":true
     });
     let system = system(context.system_prompt.as_deref(), subscribed);
