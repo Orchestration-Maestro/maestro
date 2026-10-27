@@ -64,7 +64,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let mut stage = GitStaging::new(&dirname(target))?;
         let fresh = join(&[stage.path(), "checkout"]);
         self.install_missing_git(git, &fresh).await?;
-        self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(&fresh))
+        self.run_command("git", &["clean", "-ffdx"].map(str::to_owned), Some(&fresh))
             .await?;
         let previous = join(&[stage.path(), "previous"]);
         let existed = Path::new(target).exists();
@@ -95,7 +95,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 Some(path),
             )
             .await?;
-            self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(path))
+            self.run_command("git", &["clean", "-ffdx"].map(str::to_owned), Some(path))
                 .await
         }
         .await;

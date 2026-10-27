@@ -86,11 +86,17 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             .await?;
         let expected = crate::trim(&expected);
         if !expected.is_empty() {
-            paths.push_str(
-                &self
-                    .git_capture(&path, &["diff", "--name-only", "-z", expected, "--"], &[])
-                    .await?,
-            );
+            for mode in ["--cached", "--no-ext-diff"] {
+                paths.push_str(
+                    &self
+                        .git_capture(
+                            &path,
+                            &["diff", mode, "--name-only", "-z", expected, "--"],
+                            &[],
+                        )
+                        .await?,
+                );
+            }
         }
         let mut changed_paths: Vec<_> = paths
             .split('\0')
