@@ -56,9 +56,22 @@ fn title(theme: &Theme, text: &str) -> ExtensionResult<String> {
     theme.fg("toolTitle", &theme.bold(text)?)
 }
 
+/// Returns the displayed label for a native tool identity.
+fn tool_label(name: ToolName) -> &'static str {
+    match name {
+        ToolName::Read => "read",
+        ToolName::Bash => "bash",
+        ToolName::Write => "write",
+        ToolName::Edit => "edit",
+        ToolName::Find => "find",
+        ToolName::Grep => "grep",
+        ToolName::Ls => "ls",
+    }
+}
+
 /// Formats file operands, optional read bounds and the written line count.
 fn file_call(
-    name: &str,
+    name: ToolName,
     args: &Value,
     theme: &Theme,
     home: &str,
@@ -70,8 +83,8 @@ fn file_call(
     } else {
         theme.fg("accent", &path)?
     };
-    let mut text = format!("{} {path}", title(theme, name)?);
-    if name == "read" && (args.get("offset").is_some() || args.get("limit").is_some()) {
+    let mut text = format!("{} {path}", title(theme, tool_label(name))?);
+    if name == ToolName::Read && (args.get("offset").is_some() || args.get("limit").is_some()) {
         let start = args["offset"].as_f64().unwrap_or(1.0);
         let end = args["limit"].as_f64().map(|limit| start + limit - 1.0);
         let end = end
@@ -79,7 +92,7 @@ fn file_call(
             .map_or_else(String::new, |end| format!("-{end}"));
         text.push_str(&theme.fg("warning", &format!(":{start}{end}"))?);
     }
-    if name == "write" {
+    if name == ToolName::Write {
         let count = args["content"]
             .as_str()
             .filter(|text| !text.is_empty())
@@ -93,20 +106,20 @@ fn file_call(
 
 /// Formats search patterns, authored paths, glob filters and numeric limits.
 fn search_call(
-    name: &str,
+    name: ToolName,
     args: &Value,
     theme: &Theme,
     home: &str,
     separator: char,
 ) -> ExtensionResult<String> {
     let path = display_path(args, home, ".", separator);
-    let mut text = title(theme, name)?;
-    if name == "ls" {
+    let mut text = title(theme, tool_label(name))?;
+    if name == ToolName::Ls {
         text.push(' ');
         text.push_str(&theme.fg("accent", &path)?);
     } else {
         let pattern = args["pattern"].as_str().unwrap_or("");
-        let pattern = if name == "grep" {
+        let pattern = if name == ToolName::Grep {
             format!("/{pattern}/")
         } else {
             pattern.into()
@@ -114,14 +127,14 @@ fn search_call(
         text.push(' ');
         text.push_str(&theme.fg("accent", &pattern)?);
         text.push_str(&theme.fg("toolOutput", &format!(" in {path}"))?);
-        if name == "grep"
+        if name == ToolName::Grep
             && let Some(glob) = args["glob"].as_str().filter(|glob| !glob.is_empty())
         {
             text.push_str(&theme.fg("toolOutput", &format!(" ({glob})"))?);
         }
     }
     if let Some(limit) = args.get("limit") {
-        let suffix = if name == "grep" {
+        let suffix = if name == ToolName::Grep {
             format!(" limit {limit}")
         } else {
             format!(" (limit {limit})")
@@ -133,7 +146,7 @@ fn search_call(
 
 /// Selects only the display policy; built-in execution stays with the cached tool.
 fn render_call(
-    name: &str,
+    name: ToolName,
     args: Option<Value>,
     theme: &Theme,
     home: &str,
@@ -141,7 +154,7 @@ fn render_call(
 ) -> ExtensionResult<Component> {
     let args = args.unwrap_or(Value::Null);
     let text = match name {
-        "bash" => {
+        ToolName::Bash => {
             let command = args["command"]
                 .as_str()
                 .filter(|s| !s.is_empty())
@@ -152,8 +165,12 @@ fn render_call(
             }
             text
         }
-        "read" | "write" | "edit" => file_call(name, &args, theme, home, separator)?,
-        _ => search_call(name, &args, theme, home, separator)?,
+        ToolName::Read | ToolName::Write | ToolName::Edit => {
+            file_call(name, &args, theme, home, separator)?
+        }
+        ToolName::Find | ToolName::Grep | ToolName::Ls => {
+            search_call(name, &args, theme, home, separator)?
+        }
     };
     view(&text)
 }
@@ -187,16 +204,16 @@ fn output_lines(text: &str, theme: &Theme) -> ExtensionResult<Component> {
 
 /// Hides file and shell output; searches and listings retain their nonempty row count.
 fn collapsed(
-    name: &str,
+    name: ToolName,
     text: &str,
     api: &ExtensionAPI,
     theme: &Theme,
 ) -> ExtensionResult<Component> {
     let noun = match name {
-        "find" => "files",
-        "grep" => "matches",
-        "ls" => "entries",
-        _ => return view(""),
+        ToolName::Find => "files",
+        ToolName::Grep => "matches",
+        ToolName::Ls => "entries",
+        ToolName::Read | ToolName::Bash | ToolName::Write | ToolName::Edit => return view(""),
     };
     let count = trimmed(api, text)?
         .split('\n')
@@ -210,7 +227,7 @@ fn collapsed(
 
 /// Expands the first text block without introducing another output limit.
 fn render_result(
-    name: &str,
+    name: ToolName,
     result: &ToolRenderResultLike,
     options: ToolRenderResultOptions,
     theme: &Theme,
@@ -229,9 +246,9 @@ fn render_result(
         return collapsed(name, text, api, theme);
     }
     match name {
-        "read" => output_lines(text, theme),
-        "write" | "edit" => {
-            if name == "write" && text.is_empty() {
+        ToolName::Read => output_lines(text, theme),
+        ToolName::Write | ToolName::Edit => {
+            if name == ToolName::Write && text.is_empty() {
                 return view("");
             }
             let role = if result.is_error.present() == Some(&true) {
@@ -241,9 +258,9 @@ fn render_result(
             };
             view(&format!("\n{}", theme.fg(role, text)?))
         }
-        _ => {
+        ToolName::Bash | ToolName::Find | ToolName::Grep | ToolName::Ls => {
             let text = trimmed(api, text)?;
-            if name == "bash" && text.is_empty() {
+            if name == ToolName::Bash && text.is_empty() {
                 return view("");
             }
             output_lines(text, theme)
@@ -259,8 +276,6 @@ fn minimal_tool(
     original: &Tool,
     separator: char,
 ) -> ToolDefinition {
-    let label = original.name.clone();
-    let result_name = label.clone();
     let call_api = api.clone();
     let result_api = api.clone();
     ToolDefinition {
@@ -285,10 +300,10 @@ fn minimal_tool(
         }),
         render_call: Some(Rc::new(move |args, theme, _, _| {
             let home = path_utils::expand_path(&call_api, "~")?;
-            render_call(&label, args, &theme, &home, separator)
+            render_call(name, args, &theme, &home, separator)
         })),
         render_result: Some(Rc::new(move |result, options, theme, _, _| {
-            render_result(&result_name, &result, options, &theme, &result_api)
+            render_result(name, &result, options, &theme, &result_api)
         })),
     }
 }
