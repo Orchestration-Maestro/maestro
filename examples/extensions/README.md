@@ -558,8 +558,10 @@ inline text field; Preferences and Dismiss do not.
 The up and down arrows move the selection and stop at either end. On an entry
 with a field, typed characters go in at the cursor, Backspace deletes the
 character before it, and the left and right arrows move it within the text.
-Other control input is ignored. The cell under the cursor is drawn in reverse
-video. While the overlay has focus, it also places the terminal's hardware
+Other control input is ignored. A field too short for its text scrolls sideways
+to keep the cursor in view, centered until the cursor comes close to either end
+of the text; Enter still reports the whole text. The cell under the cursor is
+drawn in reverse video. While the overlay has focus, it also places the terminal's hardware
 cursor on that cell, so an input method can show its composition there. Enter
 closes the overlay and reports the entry, for example `Find: "query"`, or only
 its name when its field is empty or it has none. Escape closes it without a

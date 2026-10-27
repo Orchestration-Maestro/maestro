@@ -14,7 +14,7 @@ use maestro_extensions_wasm::{
     CURSOR_MARKER, CallbackEmitter, CommandOptions, Component, ComponentView, CustomDone,
     CustomFactoryOutcome, CustomUIOptions, ExtensionAPI, ExtensionCommandContext,
     ExtensionComponent, ExtensionFuture, ExtensionResult, Focusable, NotificationType, Theme,
-    keys::matches_key, visible_width,
+    keys::matches_key, utils::slice_by_column, visible_width,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -23,6 +23,8 @@ use std::{
 
 /// The overlay's width in cells, borders included.
 const WIDTH: u16 = 70;
+/// The cells between the borders.
+const INNER: u16 = WIDTH - 2;
 /// Wide characters filling all but one cell of their row.
 const WIDE: &str = "幅広い文字で枠線の位置を確かめる한글도함께점검中文繁體简体字";
 /// A joined sequence, a flag and single emoji, each two cells wide.
@@ -143,7 +145,9 @@ impl Overlay {
         Ok(rows)
     }
 
-    /// One menu row, with the field's cursor when the entry is selected.
+    /// One menu row. A selected field shows its cursor cell in reverse video; while
+    /// focused, the marker before that cell lets the host place the hardware cursor there
+    /// for input methods.
     fn entry(&self, item: &Item, selected: bool) -> ExtensionResult<String> {
         let (prefix, color) = if selected {
             (" ▶ ", "accent")
@@ -153,34 +157,47 @@ impl Overlay {
         if !item.has_input {
             return Ok(format!("{prefix}{}", self.theme.fg(color, item.label)?));
         }
-        let label = self.theme.fg(color, &format!("{}:", item.label))?;
-        let field = if selected {
-            self.field(item)
-        } else {
-            item.text.iter().collect()
-        };
-        Ok(format!("{prefix}{label} {field}"))
-    }
-
-    /// The selected field, its cursor cell in reverse video. While focused, the marker
-    /// before that cell lets the host place the hardware cursor there for input methods.
-    fn field(&self, item: &Item) -> String {
-        let (before, rest) = item.text.split_at(item.cursor);
-        let before: String = before.iter().collect();
-        let under = rest.first().copied().unwrap_or(' ');
-        let after: String = rest.iter().skip(1).collect();
+        let label = format!(
+            "{prefix}{} ",
+            self.theme.fg(color, &format!("{}:", item.label))?
+        );
+        let cells = usize::from(INNER).saturating_sub(visible_width(&self.api, &label)?);
+        let (before, under, after) = self.window(item, cells)?;
+        if !selected {
+            return Ok(format!("{label}{before}{under}{after}"));
+        }
         let marker = if self.focused.get() {
             CURSOR_MARKER
         } else {
             ""
         };
-        format!("{before}{marker}\x1b[7m{under}\x1b[27m{after}")
+        Ok(format!(
+            "{label}{before}{marker}\x1b[7m{under}\x1b[27m{after}"
+        ))
+    }
+
+    /// The field's text before its cursor, the character under it and the text after,
+    /// scrolled to fit in `cells` with the cursor kept near the middle of a long field.
+    fn window(&self, item: &Item, cells: usize) -> ExtensionResult<(String, char, String)> {
+        let (before, rest) = item.text.split_at(item.cursor);
+        let mut before: String = before.iter().collect();
+        let under = rest.first().copied().unwrap_or(' ');
+        let mut after: String = rest.iter().skip(1).collect();
+        let column = visible_width(&self.api, &before)?;
+        let total = column + visible_width(&self.api, &format!("{under}{after}"))?;
+        if total > cells {
+            let start = column.saturating_sub(cells / 2).min(total - cells);
+            before = slice_by_column(&self.api, &before, start, column - start, true)?;
+            let used = visible_width(&self.api, &format!("{before}{under}"))?;
+            after = slice_by_column(&self.api, &after, 0, cells.saturating_sub(used), true)?;
+        }
+        Ok((before, under, after))
     }
 }
 
 impl ComponentView for Overlay {
     fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
-        let inner = usize::from(WIDTH) - 2;
+        let inner = usize::from(INNER);
         let side = self.theme.fg("border", "│")?;
         let rule = "─".repeat(inner);
         let mut lines = vec![self.theme.fg("border", &format!("╭{rule}╮"))?];
