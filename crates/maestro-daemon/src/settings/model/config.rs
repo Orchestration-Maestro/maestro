@@ -90,7 +90,7 @@ impl Config {
 }
 
 /// Decoded preferences with warnings and rejected semantic areas.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoadedConfig {
     /// Accepted values, with defaults for invalid areas.
     pub config: Config,

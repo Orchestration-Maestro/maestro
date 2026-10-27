@@ -58,12 +58,12 @@ pub fn load_config(
 /// new global read failure rejects this reload. No storage or manager is created.
 pub async fn reload_config(
     manager: &mut SettingsManager,
-    current: &mut Config,
+    current: &mut LoadedConfig,
     agent_dir: &Path,
 ) -> (ConfigReloadReport, Vec<SettingsError>) {
     let (loaded, other) = load_live_config(manager, agent_dir).await;
     let report = match loaded {
-        Ok(loaded) => apply_loaded(current, loaded),
+        Ok(loaded) => apply_loaded(&mut current.config, loaded),
         Err(diagnostics) => ConfigReloadReport {
             status: ConfigReloadStatus::Failed,
             diagnostics,

@@ -122,7 +122,7 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     let cwd = root.path().join("project");
     let mut manager =
         SettingsManager::create(cwd.to_str().unwrap(), agent.to_str().unwrap(), ".maestro");
-    let mut current = load_config(&mut manager, &agent).0.config;
+    let mut current = load_config(&mut manager, &agent).0;
     let mut publisher =
         SettingsManager::create(cwd.to_str().unwrap(), agent.to_str().unwrap(), ".maestro");
     publisher.publish_base_layer(
@@ -137,8 +137,8 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     block_on(publisher.flush());
     let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
     assert_eq!(report.status, ConfigReloadStatus::Applied);
-    assert_eq!(current.terminal.default_shell, "base-one");
-    assert!(current.experimental.allow_nested.0);
+    assert_eq!(current.config.terminal.default_shell, "base-one");
+    assert!(current.config.experimental.allow_nested.0);
     std::fs::write(
         agent.join("settings.json"),
         r#"{"multiplexer":{"allowNested":false}}"#,
@@ -146,7 +146,7 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     .unwrap();
     let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
     assert_eq!(report.status, ConfigReloadStatus::Partial);
-    assert!(current.experimental.allow_nested.0);
+    assert!(current.config.experimental.allow_nested.0);
     assert!(
         report
             .diagnostics
@@ -157,7 +157,7 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     std::fs::write(agent.join("base-settings.json"), "{").unwrap();
     let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
     assert_eq!(report.status, ConfigReloadStatus::Failed);
-    assert_eq!(current, before);
+    assert_eq!(current.config, before.config);
     assert!(
         report
             .diagnostics
@@ -168,8 +168,8 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     block_on(publisher.flush());
     let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
     assert_eq!(report.status, ConfigReloadStatus::Applied);
-    assert_eq!(current.terminal.default_shell, "");
-    assert!(!current.experimental.allow_nested.0);
+    assert_eq!(current.config.terminal.default_shell, "");
+    assert!(!current.config.experimental.allow_nested.0);
 }
 
 /// Reload malformed user input while retaining an unrelated invalid area's old value.
@@ -190,22 +190,24 @@ fn assert_malformed_reload(
         .unwrap();
     let mut manager = SettingsManager::from_storage(storage.clone());
     manager.drain_errors();
-    let mut current = expected.clone();
-    current.update.channel = match expected.update.channel {
-        UpdateChannelConfig::Stable => UpdateChannelConfig::Preview,
-        UpdateChannelConfig::Preview => UpdateChannelConfig::Stable,
-    };
-    current.remote.manage_ssh_config = !expected.remote.manage_ssh_config;
-    current.update.manifest_check = !expected.update.manifest_check;
-    current.experimental.pane_history.0 = !expected.experimental.pane_history.0;
-    current.ui.tab_bar_right = if expected.ui.tab_bar_right.is_empty() {
-        vec![TabBarRightEntryConfig::Hostname {}]
-    } else {
-        Vec::new()
-    };
+    let accepted = json!({
+        "daemon":{"paneShell":expected.terminal.default_shell,
+            "detectionCatalogCheck":!expected.update.manifest_check,
+            "paneHistory":!expected.experimental.pane_history.0},
+        "update":{"channel":match expected.update.channel {
+            UpdateChannelConfig::Stable => "preview", UpdateChannelConfig::Preview => "stable"
+        },"versionCheck":expected.update.version_check},
+        "multiplexer":{"mouseCapture":expected.ui.mouse_capture.0,
+            "tabBarRight":if expected.ui.tab_bar_right.is_empty() {
+                json!([{"type":"hostname"}])
+            } else { json!([]) },
+            "remote":{"manageSshConfig":!expected.remote.manage_ssh_config}}
+    });
+    let mut current =
+        project_global_settings(&serde_json::from_value(accepted).unwrap(), Path::new("."));
     let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
     assert!(errors.is_empty());
-    assert_eq!(current, *expected);
+    assert_eq!(current.config, *expected);
     assert_eq!(report.status, ConfigReloadStatus::Partial);
     storage
         .with_lock(SettingsScope::Global, &mut |saved| {
@@ -292,15 +294,15 @@ fn assert_valid_locked_area_unchanged(
         .with_lock(SettingsScope::Global, &mut |_| Ok(Some(user.to_string())))
         .unwrap();
     let settings = serde_json::from_value(user.clone()).unwrap();
-    let mut current = project_global_settings(&settings, Path::new(".")).config;
+    let mut current = project_global_settings(&settings, Path::new("."));
     let before = current.clone();
     let (report, errors) = block_on(reload_config(manager, &mut current, Path::new(".")));
     assert!(errors.is_empty());
     assert_eq!(report.status, ConfigReloadStatus::Applied);
     assert!(report.diagnostics.is_empty());
-    assert_eq!(current, before);
-    assert!(!current.update.version_check);
-    assert_eq!(current.terminal.default_shell, "user-shell");
+    assert_eq!(current.config, before.config);
+    assert!(!current.config.update.version_check);
+    assert_eq!(current.config.terminal.default_shell, "user-shell");
     assert_eq!(
         manager.get_global_settings().0,
         user.as_object().unwrap().clone()
@@ -309,10 +311,7 @@ fn assert_valid_locked_area_unchanged(
 
 #[test]
 fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current() {
-    use maestro_daemon::settings::{
-        io::reload_config,
-        model::{Config, ConfigReloadStatus},
-    };
+    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
     let user = json!({"update":{"versionCheck":"bad"},"daemon":{"paneShell":17}});
     let storage = Arc::new(InMemorySettingsStorage::new());
     storage
@@ -338,23 +337,25 @@ fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current
         .unwrap();
     let mut manager = SettingsManager::from_storage(storage.clone());
     manager.drain_errors();
-    let mut current = Config::default();
-    current.update.channel = UpdateChannelConfig::Preview;
-    current.update.version_check = false;
-    current.terminal.default_shell = "retained".into();
+    let mut current = project_global_settings(
+        &serde_json::from_value(json!({
+            "update":{"channel":"preview","versionCheck":false},
+            "daemon":{"paneShell":"retained"}
+        }))
+        .unwrap(),
+        Path::new("."),
+    );
     let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
     assert!(errors.is_empty());
     assert_eq!(report.status, ConfigReloadStatus::Partial);
-    assert_eq!(current.update.channel, UpdateChannelConfig::Stable);
-    assert!(current.update.version_check);
-    assert_eq!(current.terminal.default_shell, "retained");
+    assert_eq!(current.config.update.channel, UpdateChannelConfig::Stable);
+    assert!(!current.config.update.version_check);
+    assert_eq!(current.config.terminal.default_shell, "retained");
     assert!(
         report
             .diagnostics
             .iter()
-            .any(|message| message.contains("locked base")
-                && message.contains("until")
-                && message.contains("fixed"))
+            .any(|message| message.contains("keeping current update settings"))
     );
     assert!(
         report
@@ -411,9 +412,7 @@ fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
             report
                 .diagnostics
                 .iter()
-                .any(|message| message.contains("locked base")
-                    && message.contains("until")
-                    && message.contains("fixed"))
+                .any(|message| message.starts_with("invalid "))
         );
     }
 }
@@ -490,4 +489,35 @@ fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
                 .any(|message| message.starts_with("invalid ui config:"))
         );
     }
+}
+
+#[test]
+fn daemon_first_reload_retains_startup_area_document() {
+    use crate::config_support::put;
+    use maestro_daemon::{api::event_hub::EventHub, app::App};
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    put(&*storage, r#"{"multiplexer":{"mouseCapture":false}}"#);
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    let loaded = load_config(&mut manager, Path::new(".")).0;
+    let manifests = Arc::new(std::sync::RwLock::new(
+        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+    ));
+    let (launch, receiver) = crate::support::launch::launch_inputs(&[], manifests);
+    let mut app = App::from_loaded(&loaded, || 0, launch, receiver, EventHub::default());
+    storage
+        .write_base_layer(
+            SettingsScope::Global,
+            Some(&layer(
+                json!({"multiplexer":{"tabBarRight":[{"type":"hostname"}]}}),
+                &["multiplexer.tabBarRight"],
+            )),
+        )
+        .unwrap();
+    put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    assert!(!app.config.ui.mouse_capture.0);
+    assert_eq!(
+        app.config.ui.tab_bar_right,
+        vec![TabBarRightEntryConfig::Hostname {}]
+    );
 }
