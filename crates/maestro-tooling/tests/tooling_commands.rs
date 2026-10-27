@@ -1240,10 +1240,6 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/preset/selector.rs"),
     ),
     (
-        "examples/extensions/preset/startup.rs",
-        include_str!("../../../examples/extensions/preset/startup.rs"),
-    ),
-    (
         "examples/extensions/prompt_customizer.rs",
         include_str!("../../../examples/extensions/prompt_customizer.rs"),
     ),

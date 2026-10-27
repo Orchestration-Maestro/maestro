@@ -37,7 +37,6 @@ inserts at its own place instead of appending at the end of each list.
 | `preset.rs` | A `--preset` flag, `/preset` selector and Ctrl+Shift+U shortcut for named model, thinking, tool and prompt configurations. |
 | [`preset/config.rs`](preset/config.rs) | Layered configuration loading for `preset.rs`. |
 | [`preset/selector.rs`](preset/selector.rs) | Retained, themed preset selector for `preset.rs`. |
-| [`preset/startup.rs`](preset/startup.rs) | Cancellable startup flag application through an existing event-bus listener tail. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
@@ -423,7 +422,7 @@ and `instructions` fields. For example:
 }
 ```
 
-`--preset plan` activates a name at startup without delaying session startup for
+`--preset plan` applies the preset before session startup completes, including
 model selection. `/preset plan` selects it directly; `/preset` opens **Select
 Preset**. Ctrl+Shift+U cycles names in sorted order, including `(none)` to clear.
 Clearing restores the model, thinking level and tools captured before the first
@@ -436,8 +435,7 @@ Active instructions append to the supplied system prompt. The footer shows
 `preset:<name>`. Turn-start entries retain the active name, including a cleared
 choice, on the current branch. Session start and tree navigation restore only
 the newest name on that branch, without reapplying model or tool settings.
-The flag takes precedence over the saved name. A new session, tree navigation,
-command, shortcut or shutdown cancels an outstanding startup application.
+The flag takes precedence over the saved name.
 
 Loading is opt-in and needs a component-enabled native host with filesystem and
 environment access; browsing the selector also needs custom UI and retained

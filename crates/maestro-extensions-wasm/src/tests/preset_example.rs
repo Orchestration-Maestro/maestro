@@ -311,34 +311,6 @@ impl Host {
             }
         }
     }
-    /// Drives the independent listener tails admitted by the last session start.
-    fn tails(&mut self) -> Result<(), String> {
-        let tails = self.observe(|o| std::mem::take(&mut o.bus.tails));
-        assert!(!tails.is_empty(), "startup admitted independent work");
-        for tail in tails {
-            self.tail(tail)?;
-        }
-        Ok(())
-    }
-    /// Drives one admitted tail without retaining a host borrow.
-    fn tail(&mut self, tail: u32) -> Result<(), String> {
-        match self {
-            Self::Controlled(_, _) => {
-                super::block_on(Exports::<Controlled>::invoke_tail(tail))?;
-            }
-            Self::Component(host) => {
-                let exports = host.exports.clone();
-                super::block_on(host.store.run_concurrent(async |accessor| {
-                    exports
-                        .call_invoke_tail(accessor, super::host::borrow(tail))
-                        .await
-                }))
-                .map_err(|e| e.to_string())?
-                .map_err(|e| e.to_string())??;
-            }
-        }
-        Ok(())
-    }
 }
 
 #[test]
@@ -510,7 +482,8 @@ fn preset_rejects_invalid_layers_without_losing_the_other_file() -> Result<(), S
 }
 
 #[test]
-fn preset_startup_flag_is_independent_cancellable_and_overrides_saved_name() -> Result<(), String> {
+fn preset_startup_flag_is_applied_before_returning_and_overrides_saved_name() -> Result<(), String>
+{
     for component in [false, true] {
         let mut host = Host::new(component)?;
         host.branch(&json!([saved(&json!("zeta"))]));
@@ -520,24 +493,18 @@ fn preset_startup_flag_is_independent_cancellable_and_overrides_saved_name() -> 
                 .insert("preset".into(), Ok(Some(json!("plan"))));
         });
         host.session("session_start")?;
-        assert!(
-            host.actions("setModel").is_empty(),
-            "session startup never waits for model application"
-        );
-        host.tails()?;
         assert_eq!(host.actions("setModel"), [json!([model("custom-model")])]);
+        assert_eq!(host.actions("setThinkingLevel"), [json!(["high"])]);
+        assert_eq!(host.actions("setActiveTools"), [json!([["read", "extra"]])]);
+        assert_eq!(
+            host.event(&prompt())?.ended,
+            super::documents::Ended::Returned(Some(
+                json!({"systemPrompt":" base \n\n\nProject instructions with more than thirty characters."})
+            ))
+        );
         assert!(
             host.notifications()
                 .contains(&json!(["Preset \"plan\" activated", "Info"]))
-        );
-        host.session("session_start")?;
-        host.session("session_shutdown")?;
-        let before = host.actions("setModel");
-        host.tails()?;
-        assert_eq!(
-            host.actions("setModel"),
-            before,
-            "shutdown cancels admitted startup work"
         );
         host.observe(|o| {
             o.registrations
@@ -716,7 +683,7 @@ fn preset_selector_renders_descriptions_marks_active_and_restores_fallback_tools
 }
 
 #[test]
-fn preset_pending_startup_is_dropped_when_a_command_replaces_it() -> Result<(), String> {
+fn preset_startup_waits_for_pending_model_before_the_first_turn() -> Result<(), String> {
     let mut host = Host::new(false)?;
     host.branch(&json!([]));
     host.observe(|o| {
@@ -724,28 +691,52 @@ fn preset_pending_startup_is_dropped_when_a_command_replaces_it() -> Result<(), 
             .values
             .insert("preset".into(), Ok(Some(json!("plan"))));
     });
-    host.session("session_start")?;
-    let tail = host.observe(|o| o.bus.tails[0]);
-    let (hold, started, _open) = super::observed::gate();
+    let key = host.observe(|o| o.callback("event session_start"))?;
+    let Host::Controlled(controlled, _) = &host else {
+        unreachable!();
+    };
+    let exports = Exports::new(controlled.clone());
+    let caps = Capabilities {
+        ctx: controlled.context("/work"),
+        signal: None,
+    };
+    let (hold, started, open) = super::observed::gate();
     host.observe(|o| o.hold_next_idle(hold));
-    let mut future = Box::pin(Exports::<Controlled>::invoke_tail(tail));
+    let mut future = Box::pin(exports.invoke_event(
+        key,
+        json!({"type":"session_start","reason":"startup"}).to_string(),
+        caps,
+    ));
     let waker = std::task::Waker::noop();
     let mut cx = std::task::Context::from_waker(waker);
-    assert!(std::future::Future::poll(future.as_mut(), &mut cx).is_pending());
+    assert!(
+        std::future::Future::poll(future.as_mut(), &mut cx).is_pending(),
+        "startup cannot complete while preset model selection is pending"
+    );
     super::block_on(started).map_err(|e| e.to_string())?;
-    host.command("alpha")?;
-    assert!(
-        std::future::Future::poll(future.as_mut(), &mut cx).is_ready(),
-        "replacement wakes and releases the pending application"
-    );
-    assert!(
-        host.actions("setModel").is_empty(),
-        "canceled model selection never settles into the old preset"
-    );
+    assert!(host.actions("setModel").is_empty());
+    assert!(host.actions("setThinkingLevel").is_empty());
+    assert!(host.actions("setActiveTools").is_empty());
+    open.send(()).map_err(|()| "model selection was dropped")?;
+    let delivered = super::block_on(future)?;
     assert_eq!(
-        host.notifications().last().unwrap(),
-        &json!(["Preset \"alpha\" activated", "Info"])
+        super::documents::Answer::of(super::guest_family::delivery(delivered))?.ended,
+        super::documents::Ended::Returned(None)
     );
+    assert_eq!(host.actions("setModel"), [json!([model("custom-model")])]);
+    assert_eq!(host.actions("setThinkingLevel"), [json!(["high"])]);
+    assert_eq!(host.actions("setActiveTools"), [json!([["read", "extra"]])]);
+    assert_eq!(
+        host.event(&prompt())?.ended,
+        super::documents::Ended::Returned(Some(
+            json!({"systemPrompt":" base \n\n\nProject instructions with more than thirty characters."})
+        ))
+    );
+    host.session("turn_start")?;
+    assert!(host.observe(|o| {
+        o.transcript
+            .contains(&"entry preset-state {\"name\":\"plan\"}".into())
+    }));
     Ok(())
 }
 

@@ -9,8 +9,6 @@
 mod config;
 #[path = "preset/selector.rs"]
 mod selector;
-#[path = "preset/startup.rs"]
-mod startup;
 use config::{Preset, Presets};
 use maestro_extensions_wasm::{
     BeforeAgentStartEventResult, CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent,
@@ -312,11 +310,7 @@ async fn cycle(
 }
 
 /// Registers the command, shortcut and string flag on the existing host facade.
-fn register_controls(
-    api: &ExtensionAPI,
-    state: &Rc<RefCell<State>>,
-    pending: &startup::Slot,
-) -> ExtensionResult<()> {
+fn register_controls(api: &ExtensionAPI, state: &Rc<RefCell<State>>) -> ExtensionResult<()> {
     api.register_flag(
         "preset",
         FlagOptions {
@@ -325,14 +319,13 @@ fn register_controls(
             default: None,
         },
     )?;
-    let (registered, chosen, slot) = (api.clone(), state.clone(), pending.clone());
+    let (registered, chosen) = (api.clone(), state.clone());
     api.register_command(
         "preset",
         CommandOptions {
             description: Some("Switch preset configuration".into()),
             get_argument_completions: None,
             handler: Rc::new(move |args, ctx| {
-                startup::cancel(&slot);
                 Box::pin(command(
                     registered.clone(),
                     chosen.clone(),
@@ -342,27 +335,22 @@ fn register_controls(
             }),
         },
     )?;
-    let (registered, chosen, slot) = (api.clone(), state.clone(), pending.clone());
+    let (registered, chosen) = (api.clone(), state.clone());
     api.register_shortcut(
         &Key::ctrl_shift(api, "u")?,
         ShortcutOptions {
             description: Some("Cycle presets".into()),
-            handler: Rc::new(move |ctx| {
-                startup::cancel(&slot);
-                Box::pin(cycle(registered.clone(), chosen.clone(), ctx))
-            }),
+            handler: Rc::new(move |ctx| Box::pin(cycle(registered.clone(), chosen.clone(), ctx))),
         },
     )
 }
 
-/// Loads configurations, then admits flag application without blocking session startup.
+/// Loads configurations and applies the flag before session startup completes.
 async fn start(
     api: ExtensionAPI,
     state: Rc<RefCell<State>>,
-    pending: startup::Slot,
     ctx: ExtensionContext,
 ) -> ExtensionResult<()> {
-    startup::cancel(&pending);
     state.borrow_mut().presets = config::load(&api, &ctx.cwd()?)?;
     restore(&ctx, &mut state.borrow_mut())?;
     if let Some(FlagValue::String(name)) = api.get_flag("preset")?
@@ -370,15 +358,7 @@ async fn start(
     {
         state.borrow_mut().active = None;
         if state.borrow().presets.contains_key(&name) {
-            let (selected, settings, context) = (api.clone(), state.clone(), ctx.clone());
-            startup::set(
-                &pending,
-                Box::pin(async move { choose(&selected, &settings, &name, &context).await }),
-            );
-            api.events()
-                .emit("preset:startup", serde_json::Value::Null)
-                .await?;
-            return Ok(());
+            return choose(&api, &state, &name, &ctx).await;
         }
         unknown(&ctx, &state.borrow(), &name, NotificationType::Warning)?;
     }
@@ -386,11 +366,7 @@ async fn start(
 }
 
 /// Registers instruction injection and persisted choices on the current session branch.
-fn register_state(
-    api: &ExtensionAPI,
-    state: &Rc<RefCell<State>>,
-    pending: &startup::Slot,
-) -> ExtensionResult<()> {
+fn register_state(api: &ExtensionAPI, state: &Rc<RefCell<State>>) -> ExtensionResult<()> {
     let injecting = state.clone();
     api.on(
         "before_agent_start",
@@ -436,11 +412,10 @@ fn register_state(
             Box::pin(std::future::ready(result.map(|()| None)))
         }),
     )?;
-    let (restoring, slot) = (state.clone(), pending.clone());
+    let restoring = state.clone();
     api.on(
         "session_tree",
         Rc::new(move |_, ctx| {
-            startup::cancel(&slot);
             let result = restore(&ctx, &mut restoring.borrow_mut());
             let result = result.and_then(|()| status(&ctx, &restoring.borrow()));
             Box::pin(std::future::ready(result.map(|()| None)))
@@ -456,26 +431,17 @@ fn register_state(
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         let state = Rc::new(RefCell::new(State::default()));
-        let pending = startup::Slot::default();
-        startup::register(&api, pending.clone())?;
-        register_controls(&api, &state, &pending)?;
-        register_state(&api, &state, &pending)?;
-        let (starting, loading, slot) = (state, api.clone(), pending.clone());
+        register_controls(&api, &state)?;
+        register_state(&api, &state)?;
+        let (starting, loading) = (state, api.clone());
         api.on(
             "session_start",
             Rc::new(move |_, ctx| {
-                let (state, api, pending) = (starting.clone(), loading.clone(), slot.clone());
+                let (state, api) = (starting.clone(), loading.clone());
                 Box::pin(async move {
-                    start(api, state, pending, ctx).await?;
+                    start(api, state, ctx).await?;
                     Ok(None)
                 })
-            }),
-        )?;
-        api.on(
-            "session_shutdown",
-            Rc::new(move |_, _| {
-                startup::cancel(&pending);
-                Box::pin(std::future::ready(Ok(None)))
             }),
         )
     })
