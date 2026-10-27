@@ -31,8 +31,12 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
-session start. `extensions/snake.rs` opens a custom Snake game with keyboard
-controls, timed movement and saved games in session entries.
+session start. `extensions/git_checkpoint.rs` creates opt-in Git stash
+checkpoints for session entries and asks before applying one when forking; its
+controlled run uses disposable repositories and scripted UI choices. Loading it
+requires Git and a committed repository, and approving a restore can change
+tracked files or leave conflicts. `extensions/snake.rs` opens a custom Snake game
+with keyboard controls, timed movement and saved games in session entries.
 `extensions/space_invaders.rs` opens a 60-by-24 alien game with held-key movement,
 firing, destructible shields and session-entry saves. Their index gives the
 build/run commands and interactive-host prerequisites.
