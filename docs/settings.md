@@ -77,8 +77,45 @@ key that holds an object in both scopes merges one level deep. Arrays, scalars a
 ```
 
 `apply_overrides` merges runtime preferences onto the effective settings the same
-way. Overrides are never saved. Any setter, and `reload`, rebuilds the effective
-settings and discards them.
+way. Overrides are never saved. Any accepted setter, and `reload`, rebuilds the
+effective settings and discards them.
+
+### Read-only base layer
+
+A publisher can supply a `BaseSettingsLayer`: a settings document, dotted locked
+paths, a source release and its recorded time. `publish_base_layer(scope, layer)`
+replaces that scope's layer; `None` clears it. `get_base_layer` borrows the current
+layer. A project layer takes precedence over a global layer.
+
+Effective settings merge the base, global and project documents in that order,
+using the same one-level merge. Locked paths then take the base value; an absent
+base leaf uses the getter's engine default. Raw scope snapshots, pending edits
+and saved preferences never include the base. Stored conflicts produce diagnostics
+through `drain_errors`, without rewriting either preference file. Reload retains
+the accepted layer and keeps the ordinary failed-scope rules.
+
+Setters and runtime overrides refuse a locked path before changing memory,
+pending edits or the write queue. A batch with one locked member is refused as a
+whole, including an edit that replaces or removes a locked leaf's parent. Refusal
+records one diagnostic naming the path, source release, recorded time and how to
+refresh it. Setter signatures are unchanged. `is_key_path_locked(field, keys)`
+lets a caller check a literal path before its own effects; it also detects locks
+on ancestors and descendants, but not siblings.
+
+Publication uses the existing write queue; `flush` waits for its persistence and
+`drain_errors` reports failures. A fresh manager reads persisted layers without a
+publisher. The native adapter stores the global record in
+`<agent_dir>/base-settings.json` and project records in
+`<agent_dir>/state/base-settings.json`, keyed by the lexically normalized absolute
+project root. Project state never enters the project folder. Clearing a record
+leaves an empty slot in the state file. Without a persisted or published layer,
+no additional file is opened or created.
+
+`SettingsStorage::read_base_layer` and `write_base_layer` are the persistence seam.
+Their defaults retain no record, so existing custom adapters remain valid. The
+in-memory adapter retains both scope records; the native adapter reuses its
+existing file transaction and sidecar lock. This owner does not read a manifest,
+validate policy or decide which settings may be governed.
 
 ## Writing
 

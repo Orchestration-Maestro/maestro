@@ -55,6 +55,7 @@ mod file_trigger_example;
 pub(crate) mod file_trigger_path;
 mod finite_records;
 pub(crate) mod stream_host;
+mod todo_example;
 mod tui_ui;
 #[macro_use]
 mod fixtures;
@@ -131,6 +132,7 @@ mod tool_events;
 mod tool_override_example;
 mod tools_example;
 mod trigger_compact_example;
+mod truncated_tool_example;
 pub(crate) mod ui_host;
 pub(crate) mod widget_component;
 mod widget_controlled;
