@@ -1145,8 +1145,9 @@ impl host::Host for State {
     fn native_helper(
         &mut self,
         operation: String,
-        _data: String,
+        data: String,
     ) -> wasmtime::Result<Result<String, String>> {
+        self.observed.helper_calls.push((operation.clone(), data));
         Ok(self.observed.actions.record_for(&operation))
     }
     fn callback_emit(

@@ -1495,4 +1495,5 @@ async fn shell_pending(
     proceed.send(()).unwrap();
 }
 
+mod custom_footer_example;
 pub(crate) mod schema_qualification;

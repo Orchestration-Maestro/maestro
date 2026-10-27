@@ -27,6 +27,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -64,6 +65,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -172,6 +175,25 @@ string stores them; nothing is trimmed, rebuilt or cached. `session_shutdown`
 removes the status under the same key, including when no start came before it.
 A host rejection is returned to the host unchanged. Loading the component into
 an application is opt-in.
+
+### What the custom footer does
+
+`/footer` switches between the host's default footer and one dimmed line showing
+input tokens, output tokens, total cost, the current model and the Git branch.
+Each render totals the assistant messages on the active session branch; it ignores
+other messages and entries. Counts below 1,000 are shown as numbers, larger counts
+as one decimal followed by `k`, and cost as dollars with three decimal places.
+Without a model the footer shows `no-model`; without a Git branch it omits the
+parenthesized branch. The host's terminal helpers measure and clip the line to
+its supplied width, preserving styling and whole graphemes.
+
+Branch changes request a render. Restoring the default footer disposes the custom
+one and unsubscribes its branch listener. The controlled run invokes the built
+component with supplied history, model, branch, theme and terminal-helper replies;
+it needs no provider, repository, credentials or installation. Loading the
+component is opt-in and needs an application with the component runtime and an
+interactive UI host. Build it with the command above using `custom_footer` as
+the example name.
 
 ### Building with-deps
 

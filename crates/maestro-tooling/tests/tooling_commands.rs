@@ -1204,6 +1204,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/bookmark.rs"),
     ),
     (
+        "examples/extensions/custom_footer.rs",
+        include_str!("../../../examples/extensions/custom_footer.rs"),
+    ),
+    (
         "examples/extensions/hello.rs",
         include_str!("../../../examples/extensions/hello.rs"),
     ),
@@ -1604,6 +1608,10 @@ fn maestro_package_assets_come_from_the_package_directory() {
         ("docs/.hidden", "hidden"),
         ("docs/guide.md", "guide"),
         ("examples/nested/demo.rs", "example"),
+        (
+            "examples/extensions/custom_footer.rs",
+            include_str!("../../../examples/extensions/custom_footer.rs"),
+        ),
         ("export-html/index.html", "viewer"),
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
