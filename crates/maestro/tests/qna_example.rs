@@ -196,6 +196,8 @@ impl ExtensionUIContextPort for LoaderUi {
     ) -> ExtensionUIFuture<()> {
         let closed = Rc::new(std::cell::Cell::new(false));
         let signal = Rc::new(tokio::sync::Notify::new());
+        let disposer = Rc::new(RefCell::new(None::<maestro_app::UIHostCall<(), ()>>));
+        let closing = disposer.clone();
         let (accepted, wake) = (closed.clone(), signal.clone());
         let built = factory.call((
             self.tui.clone(),
@@ -206,6 +208,9 @@ impl ExtensionUIContextPort for LoaderUi {
             },
             Rc::new(move || {
                 let first = !accepted.replace(true);
+                if first && let Some(dispose) = closing.borrow_mut().take() {
+                    dispose.call(())?;
+                }
                 wake.notify_one();
                 Ok(first)
             }),
@@ -214,15 +219,14 @@ impl ExtensionUIContextPort for LoaderUi {
             on_loader();
         }
         let (escape, clock, ui) = (self.escape, self.clock.clone(), self.ui.clone());
-        let (entered, release) = (
-            self.entered.borrow_mut().take(),
-            self.release.borrow_mut().take(),
-        );
+        let entered = self.entered.borrow_mut().take();
+        let release = self.release.borrow_mut().take();
         Box::pin(async move {
             let built = match built? {
                 CustomFactoryOutcome::Ready(built) => built,
                 CustomFactoryOutcome::Async(built) => built.await?,
             };
+            disposer.replace(built.dispose.clone());
             assert_loader(built.component.try_render(80).unwrap());
             assert!(clock.pending() > 0, "loader is animating");
             ui.requests.borrow_mut().push(json!(["loader"]));
@@ -239,7 +243,7 @@ impl ExtensionUIContextPort for LoaderUi {
             }
             signal.notified().await;
             assert!(closed.get());
-            built.dispose.unwrap().call(())?;
+            assert!(disposer.borrow().is_none(), "close disposes synchronously");
             for result in clock.advance_to(std::time::Duration::from_millis(clock.millis() + 80)) {
                 result.unwrap();
             }
@@ -470,6 +474,36 @@ fn qna_cancellation_and_missing_auth_leave_editor_unchanged() {
         );
         cancelled.join().unwrap();
         assert_eq!(ui.editor.get_text(), "unsent draft");
+    });
+}
+
+#[test]
+fn qna_provider_errors_leave_editor_unchanged() {
+    run(async |session| {
+        append(
+            &session,
+            "stop",
+            &json!([{"type":"text","text":"Question?"}]),
+        );
+        let ui = loader_ui(false);
+        bind(&session, ui.clone()).await;
+        for text in ["", "Q: Partial response?\nA: "] {
+            let (base, request) = completion(text, "content_filter", None);
+            provider(&session, &base).await;
+            ui.editor.set_text("unsent draft");
+            ui.ui.requests.borrow_mut().clear();
+            command(&session).await;
+            request.join().unwrap();
+            assert_eq!(ui.editor.get_text(), "unsent draft");
+            assert_eq!(
+                *ui.ui.requests.borrow(),
+                [
+                    json!(["loader"]),
+                    json!(["disposed"]),
+                    json!(["notify", "Cancelled", "Some(Info)"])
+                ]
+            );
+        }
     });
 }
 
