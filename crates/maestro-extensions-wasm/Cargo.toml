@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_footer"
+path = "../../examples/extensions/custom_footer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
@@ -134,6 +139,7 @@ serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
 regex.workspace = true
+ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-models = { path = "../maestro-models" }

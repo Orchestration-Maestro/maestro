@@ -1302,9 +1302,8 @@ impl host::HostTui for State {
         &mut self,
         _: Resource<Tui>,
     ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
-        Ok(Err(
-            "the component test host lends no frame writer".to_owned()
-        ))
+        // shortcut: redraw requests only; use a real frame writer for other requests.
+        Ok(Ok(self.push(super::widget_component::WidgetResource(0))?))
     }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)

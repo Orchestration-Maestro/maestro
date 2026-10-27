@@ -243,7 +243,7 @@ impl State {
     }
 }
 
-/// The answer of a frame writer request; the frame writer is exercised on the native host.
+/// Unsupported frame writer requests; only redraw requests are recorded here.
 const NO_WRITER: &str = "the component test host lends no frame writer";
 
 impl host::HostWidgetWithStore<State> for super::host::Imports {
@@ -261,8 +261,12 @@ impl host::HostWidget for State {
     fn writer(
         &mut self,
         _: Resource<WidgetResource>,
-        _: host::WriterRequest,
+        request: host::WriterRequest,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let host::WriterRequest::RequestRender(force) = request {
+            self.observed.log(format!("writer requestRender {force}"));
+            return self.routed(Ok(()));
+        }
         self.routed(Err(NO_WRITER.to_owned()))
     }
     fn add_input_listener(
