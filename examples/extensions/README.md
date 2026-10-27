@@ -519,9 +519,10 @@ the host's event-bus reporter.
 ### What the handoff example does
 
 `/handoff <goal>` selects the current branch's conversation. After compaction it
-uses the latest summary, the kept prefix and subsequent messages; other branches
-and non-message entries are excluded. It asks the selected model for a focused
-prompt, shows a cancellable loader, and opens **Edit handoff prompt** for review.
+uses the latest summary, the kept prefix and subsequent messages. Message and
+compaction entries are included; settings, labels and other entry kinds are not.
+It asks the selected model for a focused prompt, shows a cancellable loader, and
+opens **Edit handoff prompt** for review.
 Only response text enters the draft, with a newline between text blocks.
 
 Accepting the editor opens a new session with the current session file as its
