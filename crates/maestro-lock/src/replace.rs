@@ -99,6 +99,10 @@ fn remove_temporary(path: &Path) {
     #[cfg(windows)]
     if let Ok(metadata) = fs::metadata(path) {
         let mut permissions = metadata.permissions();
+        #[expect(
+            clippy::permissions_set_readonly_false,
+            reason = "clears the Windows read-only attribute; cfg(windows) excludes Unix world-writable permissions"
+        )]
         permissions.set_readonly(false);
         let _ = fs::set_permissions(path, permissions);
     }
