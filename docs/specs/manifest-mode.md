@@ -959,10 +959,15 @@ change only with the manifest.
    `tool-output`, `agent-output` or `prompt`, and whenever those rules change, the
    manifest package checks every saved session file in the background, with the
    same rules as live text, and rewrites each file that changes through the
-   session owner's single rewrite, which replaces the file atomically. The package
-   reads a file, checks it, and just before replacing it compares a hash of the
-   bytes it read with a fresh read; when another process changed the file in
-   between, it reads and checks again. A digest of the rules last applied is kept
+   session owner's single conditional rewrite, which replaces the file atomically.
+   Every session append and rewrite acquires the same stable sidecar file lock
+   through `maestro-lock::acquire`, with the settings owner's acquisition timeout
+   and recovery after a lock holder exits. The conditional rewrite holds that
+   lock across the final re-read, hash comparison and atomic replacement. The
+   package reads and checks a file before requesting the rewrite; if the hash of
+   those bytes differs from the locked re-read, it reads and checks again. An
+   append attempted after the final comparison waits until replacement finishes,
+   then appends to the published file. A digest of the rules last applied is kept
    in the configuration root's state, next to the persisted base layers, so an
    unchanged rule set is not swept again. The original text is not kept.
 
@@ -1037,7 +1042,8 @@ changes nothing, and enabling it only withholds text until checked.
   message-end hooks keep their existing coverage. User shell output is checked
   through the user-shell hook's supplied local shell operation. Saved sessions are
   cleaned with two host operations over the session owner's existing listing and
-  its single rewrite, which every caller uses. Expressions compile with the
+  its single conditional rewrite. Every append and rewrite caller uses the same
+  session-owned file exclusion (M20.8). Expressions compile with the
   workspace's existing `regex` crate. `holdUncheckedText` is read in exactly one
   place, the agent session's listener emission boundary for every event that
   carries assistant text or partial tool-result content or details, not only
@@ -1142,8 +1148,14 @@ changes nothing, and enabling it only withholds text until checked.
   command itself is not checked. A sweep rewrites every saved session that holds
   matching text, leaves clean files byte-identical, does not run again for the
   same rule digest, runs again when a rule changes, and reads and checks again
-  when another process appends during the check. A crash between writing and
-  replacing leaves the previous file whole.
+  when another process appends during the check. Attempt an append from another
+  process after the final hash comparison but before replacement: it waits for
+  publication, then its entry survives in the rewritten file. Exercise every
+  append and rewrite caller under the same exclusion. A terminated lock holder
+  does not prevent a later writer from acquiring the lock. Measure single-process
+  append delay with and without the coordination and record it in the
+  implementation pull request. A crash between writing and replacing leaves the
+  previous file whole.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
