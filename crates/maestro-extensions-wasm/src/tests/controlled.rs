@@ -3134,11 +3134,15 @@ impl Controlled {
             .custom_script
             .clone()
             .unwrap_or_default();
+        assert!(
+            script.ticks.is_empty(),
+            "independent tick scripts use the component host"
+        );
         assert_eq!(built.width, script.width);
         assert_eq!(script.frames.len(), script.inputs.len() + 1);
         for (index, frame) in script.frames.iter().enumerate() {
             assert_eq!(
-                invoke(&built.component, Call::Render(20), self, 0)?,
+                invoke(&built.component, Call::Render(script.columns), self, 0)?,
                 Reply::Lines(frame.clone())
             );
             if let Some(data) = script.inputs.get(index) {

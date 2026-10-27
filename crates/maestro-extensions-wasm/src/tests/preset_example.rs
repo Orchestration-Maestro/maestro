@@ -613,6 +613,7 @@ impl Host {
                     .iter()
                     .map(|index| selector_frame(*index, active))
                     .collect(),
+                ..Default::default()
             });
         });
     }

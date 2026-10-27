@@ -31,11 +31,13 @@ impl Bank {
             .clone()
             .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
     }
-    /// Supplies a helper reply for exact operands before falling back to operation replies.
+    /// Supplies an exact helper reply before falling back to operation replies.
     pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
         self.check()?;
+        let key = format!("{operation} {data}");
         self.helpers
-            .get(&format!("{operation} {data}"))
+            .get(&key)
+            .or_else(|| self.value.get(&key))
             .map_or_else(|| self.record_for(operation), |value| Ok(value.to_string()))
     }
     /// Reads a supplied boolean while preserving literal host refusal messages.
