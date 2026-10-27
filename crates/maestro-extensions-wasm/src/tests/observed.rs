@@ -69,10 +69,20 @@ impl Session {
     }
 }
 
+/// One tool registration the guest attempted, whether or not the host admitted it.
+pub struct Attempt {
+    /// The metadata document the guest sent.
+    pub metadata: String,
+    /// How many transcript lines the host recorded before the attempt.
+    pub position: usize,
+}
+
 /// Lines the host observed, the identities the extension dropped, how many resources the host
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Controlled native waits while a custom view script drives independent tails.
+    pub tick_clock: Option<super::custom_ticks::Clock>,
     /// Supplied native byte resources and exact operand observations.
     pub native_io: super::native_io_host::Bank,
     /// Supplied HTTP responses and forwarded request operands.
@@ -107,6 +117,8 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    /// Tool registrations the guest attempted, admitted or not, in attempt order.
+    pub attempts: Vec<Attempt>,
     pub schemas: Vec<(String, String, u32)>,
     pub schema_request_bytes: usize,
     pub schema_response_bytes: usize,
@@ -214,6 +226,10 @@ impl Observed {
             name: String,
         }
         let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
+        self.attempts.push(Attempt {
+            metadata: metadata.into(),
+            position: self.transcript.len(),
+        });
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }
@@ -317,6 +333,15 @@ impl Observed {
     pub fn take_registration(&mut self, name: &str) -> Option<u32> {
         let position = self.order.iter().position(|(queued, _)| queued == name)?;
         self.order.remove(position).map(|(_, key)| key)
+    }
+
+    /// Every key registered under `name`, in registration order.
+    pub fn registrations(&self, name: &str) -> Vec<u32> {
+        self.order
+            .iter()
+            .filter(|(queued, _)| queued == name)
+            .map(|(_, key)| *key)
+            .collect()
     }
 
     /// Takes the registration next in line for release, in registration order, then the

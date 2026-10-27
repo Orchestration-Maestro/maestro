@@ -12,3 +12,10 @@ use crate::{ExtensionAPI, ExtensionResult};
 pub fn version(api: &ExtensionAPI) -> ExtensionResult<String> {
     api.helper("version", &())
 }
+/// Reads the agent directory selected by the application's configuration owner.
+///
+/// # Errors
+/// Returns the host's failure or an invalid response.
+pub fn get_agent_dir(api: &ExtensionAPI) -> ExtensionResult<String> {
+    api.helper("config.get_agent_dir", &())
+}

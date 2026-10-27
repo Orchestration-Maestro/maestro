@@ -370,6 +370,7 @@ impl Host {
                 width: None,
                 inputs: vec![key.into()],
                 frames: vec![frame(expected, 20); 2],
+                ..super::custom_host::Script::default()
             });
         });
     }

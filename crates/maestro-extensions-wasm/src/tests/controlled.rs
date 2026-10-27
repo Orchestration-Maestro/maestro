@@ -2448,9 +2448,8 @@ impl Imports for Controlled {
     }
 
     fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
-        let _ = context;
         self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire();
+        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
         Ok(Ui {
             key,
             _lease: Lease::new(&self.observed),
@@ -2531,9 +2530,8 @@ impl Imports for Controlled {
         Ok(self.observed.borrow().catalog.data.prompt.clone())
     }
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
-        let _ = context;
         self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire();
+        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
         Ok(Ui {
             key,
             _lease: Lease::new(&self.observed),
@@ -3139,11 +3137,15 @@ impl Controlled {
             .custom_script
             .clone()
             .unwrap_or_default();
+        assert!(
+            script.ticks.is_empty(),
+            "independent tick scripts use the component host"
+        );
         assert_eq!(built.width, script.width);
         assert_eq!(script.frames.len(), script.inputs.len() + 1);
         for (index, frame) in script.frames.iter().enumerate() {
             assert_eq!(
-                invoke(&built.component, Call::Render(20), self, 0)?,
+                invoke(&built.component, Call::Render(script.columns), self, 0)?,
                 Reply::Lines(frame.clone())
             );
             if let Some(data) = script.inputs.get(index) {

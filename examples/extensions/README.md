@@ -28,8 +28,12 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
+| `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
+| `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
@@ -38,10 +42,16 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `snake.rs` | A `/snake` custom view with arrow/WASD controls, 100 ms ticks and saved games in session entries. |
+| `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
+| `snake/render.rs` | The bordered Snake board and input hints. |
 | `space_invaders.rs` | An `/invaders` custom terminal game with held-key movement, firing, destructible shields and session-entry saves. |
 | `space_invaders/game.rs` | Saved game records and deterministic simulation ticks for `space_invaders.rs`. |
 | `space_invaders/render.rs` | The game's sprites, ANSI colours, borders and status text. |
+| `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
+| `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
@@ -72,9 +82,19 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- dynamic_tools_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -90,9 +110,19 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- snake_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- space_invaders_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- status_line_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- titlebar_spinner_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- tool_override_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- tool_override_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -132,6 +162,32 @@ Build it with the command above using `--example commands`. The controlled
 component is opt-in and needs a component-enabled host; browsing commands also
 needs that host's selector and confirmation UI.
 
+### What the file trigger example does
+
+Create `/tmp/agent-trigger.txt` before loading the component into a native host
+with filesystem and watch support. On each session start the example watches
+that fixed path and, when UI is available, reports `Watching /tmp/agent-trigger.txt`.
+To send a prompt from another process, write it to the existing file:
+
+```sh
+printf '%s\n' 'Run the tests' > /tmp/agent-trigger.txt
+```
+
+A change reads and trims the contents. Nonempty text becomes a displayed
+`file-trigger` custom message prefixed with `External trigger: `, with
+`triggerTurn: true`; the file is cleared only after the host accepts the message.
+Empty or unreadable contents do nothing. A missing file at startup fails watch
+creation, so create it first. Each new session replaces the previous watch;
+shutdown releases it through the existing watch owner.
+
+Loading this example is opt-in. Anyone able to write the trigger file can ask the
+agent to act; use it only in a trusted local environment. A real response uses the
+host's configured model and can incur provider charges. The controlled runs need
+no credentials or paid service: the component run uses a loopback provider. Tests
+create the fixed path exclusively and refuse to touch a file already there. The
+nextest file-trigger group runs those tests one at a time; do not run separate
+file-trigger test commands concurrently.
+
 ### What the shutdown example does
 
 `/quit`, `finish_and_exit` and `deploy_and_exit` ask the host to shut down
@@ -151,6 +207,24 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+
+### What the notification example does
+
+Build with `--example notify` using the command above. Loading the component is
+opt-in and needs a native component-enabled host with inherited environment and
+stdout. On every `agent_end` it sends `Maestro` / `Ready for input`. A nonempty
+`WT_SESSION` selects `powershell.exe` (including from WSL); otherwise a nonempty
+`KITTY_WINDOW_ID` selects Kitty's two-part OSC 99 notification. Other environments
+use OSC 777, supported by Ghostty, iTerm2, WezTerm and rxvt-unicode. The terminal
+must permit desktop notifications. Windows needs `powershell.exe` on PATH and
+Windows toast support; the callback waits for that command to finish.
+
+Notification text cannot inject OSC fields or control sequences, and PowerShell
+apostrophes are quoted before the Windows DOM creates XML text nodes. The
+controlled `notify_` tests capture terminal bytes and supply child-process
+results: they send no desktop notifications and need no provider or credentials.
+The example registers no command and adds no built-in notification setting.
+
 ### What the permission gate does
 
 `tool_call` leaves non-bash tools and commands outside its three patterns alone.
@@ -198,6 +272,21 @@ message, and the label the example retains stays the one the command chose.
 Loading the component into an application is opt-in and needs a host that enables
 the component runtime.
 
+### What the turn status line example does
+
+`session_start` sets `status-demo` to dim `Ready`. Each `turn_start` increments
+this factory's counter and shows an accent `●` followed by dim ` Turn N...`.
+`turn_end` shows a success `✓` followed by dim ` Turn N complete`. Each hook
+reads the current UI theme; the counter stays in place across session starts
+and starts at zero in a new factory instance. A host rejection returns its
+message without undoing a counted turn.
+
+Build with `<name>` set to `status_line` in the build command above. The
+controlled runs invoke the built component with supplied theme and UI answers;
+they need no provider, credentials or installation. Loading it into an
+application is opt-in and needs that application's component runtime. A UI host
+must provide footer status and theme operations to show the status.
+
 ### What the system prompt status example does
 
 On `agent_start` the example reads the prompt the host supplies at that moment
@@ -223,6 +312,23 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 
 Its controlled run, listed with the others above, calls the registered tool with
 every recorded duration text.
+
+### What the event bus example does
+
+`/emit [message]` trims its argument and sends it on the fixed `my:notification`
+channel with `"from": "/emit command"`, defaulting to `hello` when nothing is
+left. The argument is always the message: the command takes no event name, so
+`/emit other:event payload` sends that whole text to the same channel.
+
+A retained listener reports each `my:notification` payload through the current
+session context's UI as `Event from {from}: {message}` at information severity.
+The example reports one notification at session start, keeps the latest session
+context when a session is replaced, and reports nothing before the first session
+starts.
+
+Any extension can emit on the same channel with an object holding string
+`message` and `from` members; other members are ignored. Loading the component
+into an application is opt-in and needs that application's component runtime.
 
 ### What the compaction trigger example does
 
@@ -250,6 +356,23 @@ milliseconds>` label. The controlled run replays every recorded case against
 the built component with a supplied wall clock, so it needs no provider and no
 installation; loading the component into an application is opt-in and needs
 that application's component runtime.
+
+### What the dynamic tools example does
+
+`session_start` registers one `echo_session` tool, and `/add-echo-tool
+<tool_name>` registers further echo tools while the session runs. The argument is
+trimmed and lowercased, then admitted only when it holds ASCII letters, digits
+and underscores, so `/add-echo-tool Shared_9` registers `shared_9`. Each tool
+echoes its message behind `[<name>] ` and returns the name and prefix as details,
+and a name that is already registered answers `Tool already registered: <name>`
+instead of replacing the first tool.
+
+The names belong to the factory instance, so two loaded copies register apart.
+A name stays registered when the host refuses its registration, and a host
+refusal ends the command with the host's message. The controlled run replays
+every recorded sequence against the built component and needs no provider and no
+installation; loading the component into an application is opt-in and needs that
+application's component runtime.
 
 ### What the runtime reload command does
 
@@ -356,3 +479,67 @@ controlled runs compare rendered ANSI frames and saved records with captured
 reference outputs, supply ticks and column choices, and check both adapters'
 registered commands. Shared CI's example line-coverage row is deferred to
 [workflow coverage support](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/207).
+
+### What the Snake game does
+
+Build with `--example snake`, then load the component into a component-enabled
+interactive host with custom UI, keyboard helpers, native waits and a WASI random
+source. Loading and playing are opt-in; no model, provider or network is needed.
+Run `/snake` to open the 40 by 15 board. Arrow keys or WASD steer; each food is
+worth 10 points. Escape saves the current game in a `snake-save` session entry
+and closes the view. Q closes it and clears the save. A restored game starts
+paused: any key except Escape or Q resumes it; those two keys close it without
+changing the saved game. After a collision, R or Space restarts with the high
+score retained. The newest save is read from the whole session, not only the
+current branch. A finished saved game starts a new game with its high score.
+
+The controlled `snake_` runs use the built component with supplied terminal
+input, random bytes, history and tick completions. Closing the view cancels its
+pending native wait and removes its event listener. The example never writes a
+file directly; saving and clearing append ordinary session entries through the
+host. Narrow views show fewer columns without changing the game's collision
+boundaries.
+
+### What the audited read override does
+
+`tool_override` replaces `read` only when you load it. It records each resolved
+path in `<agent_dir>/read-access.log` through the host's file-mutation queue,
+including blocked attempts and failed reads. Logging failures do not prevent a
+read. `/read-log` shows the last twenty records as an informational notification,
+or `No access log found` when the log cannot be read.
+
+The case-sensitive patterns block `.env`, `.env.<suffix>`, and paths containing
+`/.ssh/`, `/.aws/` or `/.gnupg/`. The secret/credential filename patterns ignore
+case and match singular or plural names ending in `.json`, `.yaml`, `.yml` or
+`.toml`. These are literal illustrative patterns, not a security sandbox:
+symlinks, alternate spellings and names outside them can bypass the checks.
+
+Allowed reads return text, with optional numeric `offset` and `limit`, and the
+total line count. The example decodes invalid UTF-8 with replacement characters
+and clips selected text at a whole UTF-8 scalar within 50 KiB, followed by
+`[Output truncated at 50KB]`. It supplies no custom renderer. This simplified
+reader does not preserve the built-in read tool's image and truncation features.
+
+Build with `--example tool_override` in the command above. Loading is opt-in and
+requires a component-enabled native host with filesystem access; recording also
+needs an existing writable agent directory. Log display needs the host's
+notification UI. Logs contain paths, timestamps and access decisions, not file
+contents. The controlled run uses disposable files and no provider or credentials.
+
+### What the titlebar spinner does
+
+`agent_start` restores the base title, then shows the ten braille frames in order
+at 80 ms intervals. The first frame waits for that interval. Each frame reads the
+current session name and working directory again, producing
+`<frame> Maestro - <session> - <directory>`, or omitting the session part when the
+name is absent or empty. Restarting cancels the old wait and starts at the first
+frame; `agent_end` and `session_shutdown` cancel the wait and restore the base
+title. Shutdown also removes the example's event-bus listener.
+
+Build with `--example titlebar_spinner` using the command above. Loading it is
+opt-in and needs a component-enabled host with native waits, event-tail execution
+and terminal-title UI. The controlled runs supply wait-completion gates and
+session names, so they need no provider, paid service or terminal installation.
+The example starts no process and reads no files. A title-write or name-read
+failure ends the callback or animation with the host's error; tail errors go to
+the host's event-bus reporter.

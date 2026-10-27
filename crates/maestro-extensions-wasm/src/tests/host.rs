@@ -442,11 +442,11 @@ macro_rules! context_methods {
             &mut self,
             this: Resource<$kind>,
         ) -> wasmtime::Result<Result<Resource<super::ui_host::Ui>, String>> {
-            let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
                 return Ok(Err(e));
             }
-            let key = self.observed.ui.acquire();
+            let cwd = &self.table.get(&this)?.0.cwd;
+            let key = self.observed.ui.acquire(cwd);
             Ok(Ok(self.push(super::ui_host::Ui(key))?))
         }
         fn has_ui(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<bool, String>> {
@@ -1841,6 +1841,17 @@ impl Harness {
         Self::start_on(engine, component, State::new()).await
     }
 
+    /// Instantiates a supplied component with controlled standard environment and streams.
+    pub async fn from_compiled_with_wasi(
+        engine: &Engine,
+        component: &Component,
+        wasi: WasiCtx,
+    ) -> wasmtime::Result<Self> {
+        let mut state = State::new();
+        state.wasi = wasi;
+        Self::start_on(engine, component, state).await
+    }
+
     /// Instantiates a supplied compiled component whose standard library reads `clock`.
     pub async fn from_compiled_with_clock(
         engine: &Engine,
@@ -1990,6 +2001,31 @@ impl Harness {
             })
             .await?
     }
+
+    /// Releases every registration in the order the host received it, reporting each name with
+    /// the outcome of its own release.
+    pub async fn release_all(&mut self) -> Vec<(String, wasmtime::Result<()>)> {
+        let mut released = Vec::new();
+        while let Some((name, key)) = self.store.data_mut().observed.next_to_release() {
+            let outcome = self.release(key).await;
+            released.push((name, outcome));
+        }
+        released
+    }
+}
+
+/// Emits `data` on `channel` through the host bus operation, reaching every registered
+/// listener of that channel.
+pub fn bus_emit(harness: &mut Harness, channel: &str, data: &str) -> Result<(), String> {
+    let channel = channel.to_owned();
+    let data = data.to_owned();
+    super::block_on(harness.store.run_concurrent(async |accessor| {
+        // The concurrent accessor projects the state as itself; the import runs as Imports.
+        let imports = accessor.with_getter::<Imports>(|state| state);
+        host::HostWithStore::event_emit(&imports, channel, data).await
+    }))
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())?
 }
 
 /// Cancels the retained tool signal after its entered barrier and releases execution.
@@ -2051,7 +2087,12 @@ impl host::HostWithStore<State> for Imports {
                 .log(format!("native-wait {} {}", duration.0, duration.1));
             a.get().observed.take_hold()
         });
-        pause(hold).await;
+        let clock = accessor.with(|mut access| access.get().observed.tick_clock.clone());
+        if let Some(clock) = clock {
+            clock.wait().await;
+        } else {
+            pause(hold).await;
+        }
         Ok(if aborted(accessor) {
             Err("Aborted".into())
         } else {

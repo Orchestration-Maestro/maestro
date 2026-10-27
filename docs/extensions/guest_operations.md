@@ -527,7 +527,19 @@ the native floating-point domain, including signed zero and nonfinite values.
 `tools::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
 native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
+`tools::path_utils::basename(&api, path)` returns the final path component using
+the host's path flavor, preserving literal backslashes on POSIX hosts.
+
+`tools::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
+with the host platform's path rules. It reduces `.` and `..` segments and
+trailing separators without filesystem lookup, Unicode-space replacement or
+`~`/`@` expansion.
 
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
-supply this value to `artifact_factory(path, widgets, installation_version)`.
+supply an `Installation { version, agent_dir }` to
+`artifact_factory(path, widgets, installation)`.
+
+`config::get_agent_dir(&api)` reads the agent directory the application supplies
+when composing the component host. Like `config::version(&api)`, it reads the
+host's installation facts, not the component's inherited environment.

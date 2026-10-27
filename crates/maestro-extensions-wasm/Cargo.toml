@@ -26,6 +26,21 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "dynamic_tools"
+path = "../../examples/extensions/dynamic_tools.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "event_bus"
+path = "../../examples/extensions/event_bus.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "file_trigger"
+path = "../../examples/extensions/file_trigger.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
@@ -53,6 +68,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "native_io_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "notify"
+path = "../../examples/extensions/notify.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -104,13 +124,33 @@ path = "../../examples/extensions/shutdown_command.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "snake"
+path = "../../examples/extensions/snake.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "space_invaders"
 path = "../../examples/extensions/space_invaders.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "status_line"
+path = "../../examples/extensions/status_line.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "titlebar_spinner"
+path = "../../examples/extensions/titlebar_spinner.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "tool_override"
+path = "../../examples/extensions/tool_override.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -153,6 +193,7 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 regex.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
