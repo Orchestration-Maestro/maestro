@@ -22,12 +22,22 @@ path = "../../examples/extensions/commands.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "confirm_destructive"
+path = "../../examples/extensions/confirm_destructive.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
 name = "custom_footer"
 path = "../../examples/extensions/custom_footer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "custom_header"
+path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -48,6 +58,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "git_checkpoint"
 path = "../../examples/extensions/git_checkpoint.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "handoff"
+path = "../../examples/extensions/handoff.rs"
 crate-type = ["cdylib"]
 
 [[example]]

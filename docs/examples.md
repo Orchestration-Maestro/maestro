@@ -21,6 +21,9 @@ can make paid model calls or run file-changing tools; local dialog demos and
 companion input/editor commands do neither.
 
 Shipped extensions include:
+`extensions/confirm_destructive.rs` asks before replacing or forking a session;
+its controlled runs supply history and dialog answers without changing a session.
+Loading is opt-in and interactive confirmation needs the host's UI.
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
@@ -68,6 +71,13 @@ is opt-in. Temporary output can contain private contents and remains until
 removed. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
+
+`extensions/handoff.rs` generates an editable prompt from the selected branch
+and opens a parent-linked session without submitting it. Loading it is opt-in
+and needs an interactive component host with custom UI, editor dialogs, event
+tails, session replacement and configured model credentials. Real generation
+sends the selected history to that model and can incur charges. The extension
+index lists the controlled `handoff_` run, which needs no live service.
 
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a

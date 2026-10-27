@@ -41,6 +41,7 @@ pub(crate) mod catalog_host;
 mod commands_example;
 mod completion_contract;
 mod component_driver;
+mod confirm_destructive_example;
 mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;
@@ -59,6 +60,7 @@ mod todo_example;
 mod tui_ui;
 #[macro_use]
 mod fixtures;
+mod custom_header_example;
 pub(crate) mod custom_host;
 pub(crate) mod editor_component;
 mod editor_driver;
