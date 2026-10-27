@@ -708,6 +708,37 @@ fn overlay_qa_tests_overflow_streams_process_output_within_the_width() {
 }
 
 #[test]
+fn overlay_qa_tests_overflow_joins_lines_split_across_reads() {
+    let (process, [out, err]) = Process::new();
+    run((80, 24), Some(process), async |host| {
+        let command = host.command("overlay-overflow");
+        host.shown(1).await;
+        let deseret = "\u{10400}".as_bytes();
+        let reads = [
+            (&out, b"ab".to_vec()),
+            (&out, b"cd\n".to_vec()),
+            (&err, b"fa".to_vec()),
+            (&err, b"iled\n".to_vec()),
+            (&out, deseret[..2].to_vec()),
+            (&out, [&deseret[2..], b" tail"].concat()),
+        ];
+        for (pipe, bytes) in reads {
+            pipe.send(bytes).unwrap();
+        }
+        drop((out, err));
+        until(|| host.shows(0, 80, "│ ✓ Exited | ↑↓ scroll | Esc close")).await;
+        let rows = host.rows(0, 80);
+        assert_eq!(received(&rows[0]), 3, "{rows:#?}");
+        for line in ["abcd", "failed", "\u{10400} tail"] {
+            let shown = format!("│ {line} ");
+            assert!(rows.iter().any(|row| row.starts_with(&shown)), "{rows:#?}");
+        }
+        host.press("\x1b");
+        host.finished(command).await;
+    });
+}
+
+#[test]
 fn overlay_qa_tests_edge_and_max_height_place_their_notices() {
     run((80, 24), None, async |host| {
         let command = host.command("overlay-edge");
@@ -803,6 +834,10 @@ fn overlay_qa_tests_passive_timer_leaves_typing_with_the_controller() {
         assert!(screen[8].contains("│ Focused: true, inputs: 3"));
         assert!(screen[9].contains("│ Last input: length 1, code 127"));
         assert!(screen[11].contains("│ > h "));
+        host.press("\u{10400}");
+        assert!(host.screen()[11].contains("│ > h\u{10400} "));
+        host.press("\x7f");
+        assert!(host.screen()[11].contains("│ > h "));
         elapse(Duration::from_secs(1)).await;
         until(|| host.screen()[2].contains("│ 00:01")).await;
         host.press("\x1b");
@@ -882,6 +917,10 @@ fn overlay_qa_tests_streaming_routes_typing_to_the_focused_panel() {
             host.screen()[6].contains("│ > x "),
             "input A receives typing"
         );
+        host.press("\u{10400}");
+        assert!(host.screen()[6].contains("│ > x\u{10400} "));
+        host.press("\x7f");
+        assert!(host.screen()[6].contains("│ > x "));
         host.press("\t");
         host.press("y");
         assert!(
