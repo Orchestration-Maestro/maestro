@@ -36,6 +36,7 @@ inserts at its own place instead of appending at the end of each list.
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
+| `message_renderer.rs` | A `/status [warn\|error] message` command that sends a status message, and the renderer that draws its colored level and, when expanded, the local time it was sent. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -105,6 +106,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- message_renderer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -353,6 +356,27 @@ it needs no provider, repository, credentials or installation. Loading the
 component is opt-in and needs an application with the component runtime and an
 interactive UI host. Build it with the command above using `custom_footer` as
 the example name.
+
+### What the message renderer example does
+
+`/status <message>` sends a displayed `status-update` custom message at the
+`info` level. A first word of `warn` or `error` sets the level instead, and the
+remaining words, joined by single spaces, become the message; with nothing after
+the level the message reads `Status update`. The message details hold the level
+and the send time in milliseconds since the Unix epoch.
+
+The renderer registered for `status-update` draws `[LEVEL]` in the theme's error,
+warning or success color, followed by the message text, inside a padded box over
+the theme's custom message background. A missing or non-text level draws as
+`[INFO]`. Expanded, a message with a nonzero timestamp adds a dimmed second line,
+`at <time>`, with the host's local time in the en-US twelve-hour form.
+
+Build it with the command above using `message_renderer` as the example name. The
+controlled `message_renderer_` runs send messages from the built component with a
+supplied wall clock, then draw each delivered message through its registered
+renderer with supplied theme, widget and local time answers. They need no
+provider, credentials or installation. Loading the component is opt-in and needs
+an application with the component runtime and an interactive transcript.
 
 ### Building with-deps
 

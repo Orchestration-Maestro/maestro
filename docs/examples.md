@@ -43,6 +43,9 @@ timed movement and saved games in session entries; its index gives the build/run
 commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
+`extensions/message_renderer.rs` sends status messages from a `/status` command
+and draws them with a registered renderer that shows the local send time when
+expanded; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
 through OSC 777, Kitty OSC 99 or Windows PowerShell; its
 [index entry](../examples/extensions/README.md#what-the-notification-example-does)

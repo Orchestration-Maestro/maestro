@@ -13,25 +13,25 @@ pub(super) fn local_date_time_string(data: &str) -> Result<String, String> {
 ///
 /// An instant outside the calendar's range reads as `Invalid Date`; malformed operands are errors.
 pub(super) fn local_time_string(data: &str) -> Result<String, String> {
-    let _ = data;
-    encode(&local_time_in(0, &Local).unwrap_or_default())
+    let (millis,): (i64,) = decode(data)?;
+    encode(&local_time_in(millis, &Local).unwrap_or_else(|| "Invalid Date".to_owned()))
 }
 
 /// Converts an instant through `zone` once and formats its clock fields, or `None` outside
 /// the calendar's range.
 fn local_time_in<Z: TimeZone>(millis: i64, zone: &Z) -> Option<String> {
-    let _ = (millis, zone);
-    DateTime::from_timestamp_millis(0).map(|at| format_local_time(at.naive_utc()))
+    DateTime::from_timestamp_millis(millis)
+        .map(|at| format_local_time(at.with_timezone(zone).naive_local()))
 }
 
 /// Formats local clock fields with the en-US twelve-hour pattern.
-fn format_local_time(_: NaiveDateTime) -> String {
-    String::new()
+fn format_local_time(at: NaiveDateTime) -> String {
+    at.format("%-I:%M:%S %p").to_string()
 }
 
 /// Formats local calendar fields with the en-US date and twelve-hour clock pattern.
 fn format_local_date_time(now: NaiveDateTime) -> String {
-    now.format("%-m/%-d/%Y, %-I:%M:%S %p").to_string()
+    format!("{}, {}", now.format("%-m/%-d/%Y"), format_local_time(now))
 }
 
 #[cfg(test)]
