@@ -55,6 +55,25 @@ fn trim<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
     Ok(&text[start..end])
 }
 
+/// Applies an approved checkpoint and announces success only after a clean completion.
+async fn restore(
+    api: &ExtensionAPI,
+    ctx: &ExtensionContext,
+    reference: String,
+) -> ExtensionResult<()> {
+    let result = api
+        .exec("git", &["stash".into(), "apply".into(), reference], None)
+        .await?;
+    if result.code != 0 || result.killed {
+        return Err(format!(
+            "Could not restore checkpoint (exit code {}, killed: {}): {}",
+            result.code, result.killed, result.stderr
+        ));
+    }
+    ctx.ui()?
+        .notify("Code restored to checkpoint", Some(NotificationType::Info))
+}
+
 /// Captures and restores objects without keeping a state borrow across a host await.
 fn on_event(
     event: &mut ExtensionEvent,
@@ -103,10 +122,7 @@ fn on_event(
                     )
                     .await?;
                 if choice.is_some_and(|choice| choice.starts_with("Yes")) {
-                    api.exec("git", &["stash".into(), "apply".into(), reference], None)
-                        .await?;
-                    ctx.ui()?
-                        .notify("Code restored to checkpoint", Some(NotificationType::Info))?;
+                    restore(&api, &ctx, reference).await?;
                 }
             }
             ExtensionEvent::AgentEnd(_) => checkpoints.borrow_mut().refs.clear(),

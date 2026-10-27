@@ -470,10 +470,11 @@ no checkpoint and keeps any previous one.
 Before a fork, a matching checkpoint and an available UI open **Restore code
 state?** with **Yes, restore code to that point** and **No, keep current code**.
 A selection starting with `Yes` awaits `git stash apply` and reports
-`Code restored to checkpoint`. Dismissal, another choice, a missing checkpoint
-or a headless host leave the working tree alone. As with an ordinary execution
-request, a nonzero Git exit is a result rather than a host error; inspect Git
-conflicts before continuing. The notification does not promise a clean apply.
+`Code restored to checkpoint` only if Git exits with code zero without being
+terminated. A nonzero exit or terminated command fails the callback with the
+exit code, termination flag and Git's standard error instead; inspect any partial
+changes or conflicts before continuing. Dismissal, another choice, a missing
+checkpoint or a headless host leave the working tree alone.
 
 `agent_end` clears the in-memory checkpoint map, not the remembered entry or
 Git's unreachable objects. There is no persistent recovery catalog, automatic
