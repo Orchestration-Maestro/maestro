@@ -1317,14 +1317,22 @@ impl host::Host for State {
     }
     fn get_active_tools(&mut self) -> wasmtime::Result<Result<Vec<String>, String>> {
         Ok(self.observed.actions.check().and_then(|()| {
-            serde_json::from_value(self.observed.actions.value.clone()).map_err(|e| e.to_string())
+            serde_json::from_value(
+                self.observed
+                    .actions
+                    .value
+                    .get("getActiveTools")
+                    .unwrap_or(&self.observed.actions.value)
+                    .clone(),
+            )
+            .map_err(|e| e.to_string())
         }))
     }
     fn get_commands(&mut self) -> wasmtime::Result<Result<String, String>> {
         Ok(self.observed.actions.record())
     }
     fn get_thinking_level(&mut self) -> wasmtime::Result<Result<String, String>> {
-        Ok(self.observed.actions.record())
+        Ok(self.observed.actions.record_for("getThinkingLevel"))
     }
 
     fn event_on(
@@ -1859,6 +1867,19 @@ impl Harness {
         Self::start_on(engine, component, State::new()).await
     }
 
+    /// Instantiates a component with explicitly supplied host replies and standard capabilities.
+    pub async fn from_compiled_with_inputs(
+        engine: &Engine,
+        component: &Component,
+        observed: Observed,
+        wasi: WasiCtx,
+    ) -> wasmtime::Result<Self> {
+        let mut state = State::new();
+        state.observed = observed;
+        state.wasi = wasi;
+        Self::start_on(engine, component, state).await
+    }
+
     /// Instantiates a supplied component with controlled standard environment and streams.
     pub async fn from_compiled_with_wasi(
         engine: &Engine,
@@ -2201,15 +2222,7 @@ impl host::HostWithStore<State> for Imports {
                 "setModel",
                 &serde_json::json!([serde_json::from_str::<serde_json::Value>(&model).unwrap()]),
             )?;
-            state.observed.actions.value.as_bool().ok_or_else(|| {
-                state
-                    .observed
-                    .actions
-                    .value
-                    .as_str()
-                    .unwrap_or("missing boolean reply")
-                    .to_owned()
-            })
+            state.observed.actions.boolean("setModel")
         }))
     }
 
