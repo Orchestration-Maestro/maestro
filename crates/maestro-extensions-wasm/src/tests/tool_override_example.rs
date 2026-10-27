@@ -26,7 +26,7 @@ fn tool_override_registered_callbacks_follow_host_paths() -> Result<(), String> 
     super::block_on(async {
         let host = super::controlled::Controlled::default();
         host.observe().actions.value =
-            json!({"config.get_agent_dir":"/controlled-agent", "paths.resolve_to_cwd":FIXTURE});
+            json!({"config.get_agent_dir":"/controlled-agent", "paths.resolve":FIXTURE});
         let exports = crate::component_adapter::Exports::new(host.clone());
         exports.start::<ToolOverride>().await?;
         let key = host.observed().callback("tool read")?;
@@ -47,7 +47,7 @@ fn tool_override_registered_callbacks_follow_host_paths() -> Result<(), String> 
                 json!({"error":true}),
             ),
         ] {
-            host.observe().actions.value = json!({"paths.resolve_to_cwd":path});
+            host.observe().actions.value = json!({"paths.resolve":path});
             let encoded = exports
                 .invoke_tool(
                     key,
@@ -93,7 +93,7 @@ fn tool_override_large_text_clips_at_whole_scalars() -> Result<(), String> {
             "/../../docs/specs/maestro-port.md"
         );
         host.observe().actions.value =
-            json!({"config.get_agent_dir":"/unused-agent", "paths.resolve_to_cwd":path});
+            json!({"config.get_agent_dir":"/unused-agent", "paths.resolve":path});
         let exports = crate::component_adapter::Exports::new(host.clone());
         exports.start::<ToolOverride>().await?;
         let key = host.observed().callback("tool read")?;

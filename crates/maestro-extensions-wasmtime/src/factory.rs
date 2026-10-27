@@ -13,7 +13,7 @@ use wasmtime::{
 };
 
 /// Application-supplied facts shared by the components it loads.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Installation {
     /// Version of the installed application, not the component.
     pub version: String,

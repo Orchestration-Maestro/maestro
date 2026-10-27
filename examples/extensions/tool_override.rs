@@ -11,7 +11,7 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use maestro_extensions_wasm::{
     AgentToolResult, CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult,
     NotificationType, Presence, TextContent, ToolDefinition, ToolMetadata, UserBlock, config,
-    tools::path_utils::resolve_to_cwd, utils::is_whitespace_char,
+    tools::path_utils::resolve, utils::is_whitespace_char,
 };
 use regex::RegexSet;
 use serde::Deserialize;
@@ -139,7 +139,7 @@ fn read_tool(api: ExtensionAPI, log: String) -> ExtensionResult<ToolDefinition> 
             let (api, log, blocked) = (api.clone(), log.clone(), blocked.clone());
             Box::pin(async move {
                 let params: ReadParams = serde_json::from_value(params).map_err(|error| error.to_string())?;
-                let path = resolve_to_cwd(&api, &params.path, &ctx.cwd()?)?;
+                let path = resolve(&api, &[&ctx.cwd()?, &params.path])?;
                 let denied = blocked.is_match(&path);
                 log_access(&api, &log, &path, denied).await;
                 if denied {
@@ -183,7 +183,7 @@ fn recent_log(api: &ExtensionAPI, log: &str) -> ExtensionResult<String> {
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        let log = resolve_to_cwd(&api, "read-access.log", &config::get_agent_dir(&api)?)?;
+        let log = resolve(&api, &[&config::get_agent_dir(&api)?, "read-access.log"])?;
         api.register_tool(read_tool(api.clone(), log.clone())?)?;
         let registered = api.clone();
         api.register_command(

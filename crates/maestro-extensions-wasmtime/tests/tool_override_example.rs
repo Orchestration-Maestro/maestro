@@ -143,6 +143,70 @@ fn tool_override_reads_paths_and_numeric_line_ranges() {
 }
 
 #[test]
+fn tool_override_preserves_authored_file_identity() {
+    super::wasi_support::run(async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path();
+        std::fs::write(root.join("report Q1.txt"), "plain space").unwrap();
+        std::fs::write(root.join("report\u{a0}Q1.txt"), "no-break space").unwrap();
+        std::fs::create_dir(root.join("~")).unwrap();
+        std::fs::write(root.join("~/x"), "literal tilde").unwrap();
+        let (runner, _) = loaded(root).await;
+        for (path, expected) in [
+            ("report\u{a0}Q1.txt", "no-break space"),
+            ("report Q1.txt", "plain space"),
+            ("~/x", "literal tilde"),
+        ] {
+            assert_eq!(
+                read(&runner, json!({"path":path})).await,
+                json!({"content":[{"type":"text","text":expected}],"details":{"lines":1}})
+            );
+            assert!(
+                std::fs::read_to_string(root.join("read-access.log"))
+                    .unwrap()
+                    .ends_with(&format!("ALLOWED: {}\n", root.join(path).display()))
+            );
+        }
+    });
+}
+
+#[test]
+fn tool_override_reduces_paths_before_access_checks() {
+    super::wasi_support::run(async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path();
+        std::fs::write(root.join("public.txt"), "public").unwrap();
+        let (runner, _) = loaded(root).await;
+        for path in [
+            root.join(".ssh/../public.txt"),
+            root.join("public.txt"),
+            "a/../public.txt".into(),
+            "public.txt/".into(),
+        ] {
+            assert_eq!(
+                read(&runner, json!({"path":path})).await,
+                json!({"content":[{"type":"text","text":"public"}],"details":{"lines":1}})
+            );
+            assert!(
+                std::fs::read_to_string(root.join("read-access.log"))
+                    .unwrap()
+                    .ends_with(&format!("ALLOWED: {}\n", root.join("public.txt").display()))
+            );
+        }
+        let value = read(&runner, json!({"path":root.join("public/../.ssh/key")})).await;
+        assert_eq!(value["details"], json!({"blocked":true}));
+        assert!(
+            std::fs::read_to_string(root.join("read-access.log"))
+                .unwrap()
+                .ends_with(&format!(
+                    "BLOCKED: {} (matches blocked pattern)\n",
+                    root.join(".ssh/key").display()
+                ))
+        );
+    });
+}
+
+#[test]
 fn tool_override_blocks_sensitive_paths_and_records_every_attempt() {
     super::wasi_support::run(async {
         let scratch = maestro_test_directory::Scratch::new().unwrap();

@@ -528,6 +528,11 @@ the native floating-point domain, including signed zero and nonfinite values.
 native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
 
+`tools::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
+with the host platform's path rules. It reduces `.` and `..` segments and
+trailing separators without filesystem lookup, Unicode-space replacement or
+`~`/`@` expansion.
+
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
 supply an `Installation { version, agent_dir }` to
