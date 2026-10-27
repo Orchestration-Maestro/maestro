@@ -535,7 +535,8 @@ next release's history from conventional commits. PRs never edit CHANGELOG.md.
 Approved libraries live in [docs/libraries/](docs/libraries/), one file per area.
 A ticket that adds a library adds or edits only its area's file.
 
-Tests wait for completion signals; shared CI bounds the job, not each test.
+Tests wait for completion signals; nextest bounds each test, and shared CI bounds
+the job.
 A test child that must answer a signal blocks it and takes it with `sigwait`:
 a handler can miss a signal that arrives just before a blocking call, and the
 test then waits forever.
