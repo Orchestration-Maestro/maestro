@@ -188,3 +188,35 @@ fn local_factory_resolves_empty_packages_with_project_precedence() {
         ]))]
     );
 }
+
+#[path = "host_operations_support/mod.rs"]
+mod git_command;
+
+#[test]
+fn factory_acquisition_selects_exact_pin_and_scope_without_editing_settings() {
+    let probe = Probe::new(json!({"untouched": null}), json!({"unknown": false}));
+    let before = probe.settings.borrow().get_global_settings();
+    let project =
+        std::path::Path::new(&probe.cwd).join(maestro_app::configuration::config::CONFIG_DIR_NAME);
+    for (scope, root) in [
+        (
+            OperationScope::User,
+            std::path::PathBuf::from(&probe.agent_dir),
+        ),
+        (OperationScope::Project, project),
+    ] {
+        let target = root.join("git/example.test/team/repo");
+        let pin = git_command::pinned_repository(&target);
+        let result = probe.run(vec![HostOperation::Acquire(
+            "https://example.test/team/repo@pin".into(),
+            scope,
+        )]);
+        assert_eq!(result, vec![Ok(serde_json::Value::Null)]);
+        assert_eq!(git_command::git(&target, &["rev-parse", "HEAD"]), pin);
+        assert_eq!(
+            std::fs::read_to_string(target.join("content")).unwrap(),
+            "pinned"
+        );
+    }
+    assert_eq!(probe.settings.borrow().get_global_settings(), before);
+}
