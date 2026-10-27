@@ -127,6 +127,12 @@ fn run_cases(test: &str, cases: &[LoadCase<'_>]) {
     }
     for case in cases {
         let dir = support::Directory::new();
+        let paths: Vec<&str> = case.entries.iter().map(|(path, _)| *path).collect();
+        let folded = dir.0.folded_names(&paths).unwrap();
+        if !folded.is_empty() {
+            eprintln!("{test} case needs names this host keeps apart: {folded:?}");
+            continue;
+        }
         let root = support::text(dir.0.path());
         let Some(_locks) = materialize(root, case.entries) else {
             continue;

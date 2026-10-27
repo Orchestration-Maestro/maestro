@@ -155,7 +155,15 @@ fn linked_supplied_parent_keeps_its_authored_spelling() {
 fn supplied_parent_keeps_non_unicode_path_bytes() {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
     let root = Scratch::new().unwrap();
-    let parent = root.path().join(OsStr::from_bytes(b"native-\xff"));
+    let name = OsStr::from_bytes(b"native-\xff");
+    if !root.keeps_distinct(&[name]).unwrap() {
+        eprintln!(
+            "the parent needs a host that stores the name bytes {:?}",
+            name.as_bytes()
+        );
+        return;
+    }
+    let parent = root.path().join(name);
     fs::create_dir(&parent).unwrap();
     let child = Scratch::new_in(&parent).unwrap();
     assert_eq!(

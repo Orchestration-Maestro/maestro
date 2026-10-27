@@ -37,10 +37,14 @@ fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
         });
         return;
     }
-    // Windows and macOS verify through the system store, which ignores SSL_CERT_FILE, so the
-    // test authority can be trusted only where the host reads that file.
-    let trusts: &[&str] = if cfg!(any(windows, target_os = "macos")) {
-        eprintln!("premise not met: this host's verifier does not read SSL_CERT_FILE");
+    // Only a verifier that reads a trust file takes `SSL_CERT_FILE`. macOS and Windows verify
+    // against the system store, which a test cannot extend, so there the trusted run states
+    // its premise instead.
+    let system_store = cfg!(any(target_vendor = "apple", windows));
+    if system_store {
+        eprintln!("the trusted run needs a host whose verifier reads SSL_CERT_FILE");
+    }
+    let trusts: &[&str] = if system_store {
         &["untrusted"]
     } else {
         &["untrusted", "trusted"]

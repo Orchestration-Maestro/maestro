@@ -409,7 +409,12 @@ fn component_non_unicode_cwd_keeps_absolute_access() {
     }
     let original = std::env::current_dir().unwrap();
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let cwd = scratch.path().join(OsString::from_vec(vec![b'c', 255]));
+    let name = OsString::from_vec(vec![b'c', 255]);
+    if !scratch.keeps_distinct(&[name.as_os_str()]).unwrap() {
+        eprintln!("the working directory needs a host that stores the name bytes {name:?}");
+        return;
+    }
+    let cwd = scratch.path().join(name);
     std::fs::create_dir(&cwd).unwrap();
     assert!(!Path::new(cwd.to_string_lossy().as_ref()).exists());
     let healthy = scratch.path().join("healthy");

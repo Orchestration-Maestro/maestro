@@ -328,10 +328,10 @@ fn native_process_reopens_and_shares_termination_delivery() {
 fn raise_termination(signal: maestro_app::TerminationSignal) {
     assert!(
         std::process::Command::new("kill")
+            // `kill -s` takes only names on some hosts; every host takes `-<number>`.
             .args([
-                "-s",
-                &signal.as_raw().to_string(),
-                &std::process::id().to_string()
+                format!("-{}", signal.as_raw()),
+                std::process::id().to_string()
             ])
             .status()
             .unwrap()

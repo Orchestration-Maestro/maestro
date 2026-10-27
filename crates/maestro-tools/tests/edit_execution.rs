@@ -683,6 +683,13 @@ fn native_adapter_routes(dir: &Scratch) {
             .unwrap()
             .is_symlink()
     );
+    // A host that folds canonically equivalent names finds the decomposed file under the
+    // precomposed spelling, so the edit would reach it there.
+    let pair = ["caf\u{e9}.txt", "cafe\u{301}.txt"].map(std::ffi::OsStr::new);
+    if !dir.keeps_distinct(&pair).unwrap() {
+        eprintln!("the fallback check needs a host that keeps {pair:?} apart");
+        return;
+    }
     dir.file("cafe\u{301}.txt", b"hello");
     assert!(
         run((tool.execute)(

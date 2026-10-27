@@ -473,6 +473,20 @@ fn online(test: &str) -> bool {
     false
 }
 
+/// Whether the host `tar` extracts an empty file as an archive, probed inside `dir`.
+fn accepts_empty_archive(dir: &str) -> bool {
+    let probe = Path::new(dir).join("empty.tar.gz");
+    std::fs::write(&probe, b"").unwrap();
+    let status = std::process::Command::new("tar")
+        .arg("xzf")
+        .arg(&probe)
+        .args(["-C", dir])
+        .status()
+        .unwrap();
+    std::fs::remove_file(probe).unwrap();
+    status.success()
+}
+
 /// Run the named installation group on its chosen hosts.
 async fn installs(name: &str) {
     if !online(name) {
@@ -490,6 +504,13 @@ async fn installs(name: &str) {
             continue;
         }
         let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
+        // A host `tar` that accepts an empty archive reaches the binary check instead of the
+        // recorded extraction failure.
+        let empty = (row.download.as_ref()).is_some_and(|body| body.text.as_deref() == Some(""));
+        if empty && accepts_empty_archive(&scratch.path) {
+            eprintln!("{} needs a host tar that refuses an empty archive", row.id);
+            continue;
+        }
         let bin = maestro_path::join(&[
             &scratch.path,
             if row.bin_exists { "bin" } else { "nested/bin" },
