@@ -130,4 +130,38 @@ mod tests {
             }
         }
     }
+
+    /// Only terminals, pipes and sockets wait for readiness; every other descriptor stays
+    /// synchronous, whichever ones the host's reactor would also accept.
+    #[test]
+    fn only_terminals_pipes_and_sockets_wait() {
+        use rustix::pty::{OpenptFlags, openpt};
+        use std::fs::File;
+        use std::os::fd::AsFd;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _entered = runtime.enter();
+        let (socket, _peer) = std::os::unix::net::UnixStream::pair().unwrap();
+        let (pipe, _writer) = rustix::pipe::pipe().unwrap();
+        let terminal = openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY).unwrap();
+        let regular = File::open(std::env::current_exe().unwrap()).unwrap();
+        let directory = File::open("/").unwrap();
+        let null = File::open("/dev/null").unwrap();
+        let random = File::open("/dev/random").unwrap();
+        let cases: [(&dyn AsFd, bool); 7] = [
+            (&socket, true),
+            (&pipe, true),
+            (&terminal, true),
+            (&regular, false),
+            (&directory, false),
+            (&null, false),
+            (&random, false),
+        ];
+        for (index, (fd, waits)) in cases.into_iter().enumerate() {
+            let source = Source::open(fd, Interest::READABLE).unwrap();
+            assert_eq!(source.reactor().is_some(), waits, "descriptor {index}");
+        }
+    }
 }
