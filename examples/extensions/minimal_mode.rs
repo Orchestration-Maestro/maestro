@@ -6,7 +6,8 @@
 )]
 use maestro_extensions_wasm::{
     Component, ExtensionAPI, ExtensionFuture, ExtensionResult, Presence, Text, Theme, Tool,
-    ToolDefinition, ToolMetadata, ToolName, ToolsOptions, tools::path_utils,
+    ToolDefinition, ToolMetadata, ToolName, ToolRenderResultLike, ToolRenderResultOptions,
+    ToolsOptions, UserBlock, tools::path_utils, utils,
 };
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -144,6 +145,99 @@ fn render_call(
     view(&text)
 }
 
+/// Trims with the native text owner's whitespace definition.
+fn trimmed<'a>(api: &ExtensionAPI, mut text: &'a str) -> ExtensionResult<&'a str> {
+    while let Some(ch) = text.chars().next() {
+        if !utils::is_whitespace_char(api, &ch.to_string())? {
+            break;
+        }
+        text = &text[ch.len_utf8()..];
+    }
+    while let Some(ch) = text.chars().next_back() {
+        if !utils::is_whitespace_char(api, &ch.to_string())? {
+            break;
+        }
+        text = &text[..text.len() - ch.len_utf8()];
+    }
+    Ok(text)
+}
+
+/// Paints each output line independently, retaining the leading blank row.
+fn output_lines(text: &str, theme: &Theme) -> ExtensionResult<Component> {
+    let output = text
+        .split('\n')
+        .map(|line| theme.fg("toolOutput", line))
+        .collect::<ExtensionResult<Vec<_>>>()?
+        .join("\n");
+    view(&format!("\n{output}"))
+}
+
+/// Hides file and shell output; searches and listings retain their nonempty row count.
+fn collapsed(
+    name: &str,
+    text: &str,
+    api: &ExtensionAPI,
+    theme: &Theme,
+) -> ExtensionResult<Component> {
+    let noun = match name {
+        "find" => "files",
+        "grep" => "matches",
+        "ls" => "entries",
+        _ => return view(""),
+    };
+    let count = trimmed(api, text)?
+        .split('\n')
+        .filter(|line| !line.is_empty())
+        .count();
+    if count == 0 {
+        return view("");
+    }
+    view(&theme.fg("muted", &format!(" → {count} {noun}"))?)
+}
+
+/// Expands the first text block without introducing another output limit.
+fn render_result(
+    name: &str,
+    result: &ToolRenderResultLike,
+    options: ToolRenderResultOptions,
+    theme: &Theme,
+    api: &ExtensionAPI,
+) -> ExtensionResult<Component> {
+    let Some(text) = result.result.content.iter().find_map(|block| {
+        if let UserBlock::Text(content) = block {
+            Some(content.text.as_str())
+        } else {
+            None
+        }
+    }) else {
+        return view("");
+    };
+    if !options.expanded {
+        return collapsed(name, text, api, theme);
+    }
+    match name {
+        "read" => output_lines(text, theme),
+        "write" | "edit" => {
+            if name == "write" && text.is_empty() {
+                return view("");
+            }
+            let role = if result.is_error.present() == Some(&true) {
+                "error"
+            } else {
+                "toolOutput"
+            };
+            view(&format!("\n{}", theme.fg(role, text)?))
+        }
+        _ => {
+            let text = trimmed(api, text)?;
+            if name == "bash" && text.is_empty() {
+                return view("");
+            }
+            output_lines(text, theme)
+        }
+    }
+}
+
 /// Wraps one original executable without retaining a caller context.
 fn minimal_tool(
     api: ExtensionAPI,
@@ -152,7 +246,9 @@ fn minimal_tool(
     original: &Tool,
 ) -> ToolDefinition {
     let label = original.name.clone();
+    let result_name = label.clone();
     let call_api = api.clone();
+    let result_api = api.clone();
     ToolDefinition {
         metadata: ToolMetadata {
             name: original.name.clone(),
@@ -177,7 +273,9 @@ fn minimal_tool(
             let home = path_utils::expand_path(&call_api, "~")?;
             render_call(&label, args, &theme, &home)
         })),
-        render_result: None,
+        render_result: Some(Rc::new(move |result, options, theme, _, _| {
+            render_result(&result_name, &result, options, &theme, &result_api)
+        })),
     }
 }
 
