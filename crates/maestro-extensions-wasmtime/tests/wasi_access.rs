@@ -336,15 +336,13 @@ fn component_root_access_reaches_sibling_paths() {
 }
 
 /// Each spelling independently writes and reads exact empty and binary file contents.
-#[cfg(unix)]
 async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
     let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
     let cwd = host.request(json!({"op":"cwd"})).await;
-    assert_eq!(
-        cwd["p2"]["path"],
-        json!(std::env::current_dir().unwrap()),
-        "standard cwd: {cwd}"
-    );
+    let native = std::env::current_dir().unwrap();
+    let guest = maestro_extensions::helpers::guest_path(native.to_str().unwrap());
+    assert_eq!(cwd["p2"]["path"], guest, "standard cwd: {cwd}");
+    assert_eq!(cwd["p3"], guest, "asynchronous cwd: {cwd}");
     for generation in ["p2", "p3"] {
         for path in paths {
             for bytes in [b"".as_slice(), b"file\0\xff\x1b\xce\xa9".as_slice()] {
@@ -362,6 +360,97 @@ async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
             }
         }
     }
+}
+
+/// The drive spelling of a native path, without the verbatim prefix a canonical path keeps.
+#[cfg(windows)]
+fn plain(path: &Path) -> String {
+    let path = path.to_str().unwrap();
+    path.strip_prefix(r"\\?\").unwrap_or(path).to_owned()
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_roots_reach_drive_spellings() {
+    if maestro_test_process::run_alone("component_windows_roots_reach_drive_spellings").unwrap() {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("cwd")).unwrap();
+    std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
+    std::env::set_current_dir(scratch.path().join("cwd")).unwrap();
+    let target = scratch.path().join(r"sibling Ω space\file Ω name");
+    let native = plain(&target);
+    let mut paths: Vec<std::path::PathBuf> = vec![
+        native.clone().into(),
+        native.replace('\\', "/").into(),
+        format!("{}{}", native[..1].to_ascii_lowercase(), &native[1..]).into(),
+        format!(r"\\?\{native}").into(),
+        r"..\sibling Ω space\file Ω name".into(),
+        "../sibling Ω space/file Ω name".into(),
+    ];
+    // An account the host refuses symbolic links has no relative-link spelling to offer.
+    if std::os::windows::fs::symlink_dir(
+        r"..\sibling Ω space",
+        scratch.path().join(r"cwd\relative-link"),
+    )
+    .is_ok()
+    {
+        paths.push(r"relative-link\file Ω name".into());
+    }
+    run(root_paths(&paths, &target));
+    std::env::set_current_dir(original).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_roots_reach_a_second_volume() {
+    let first = maestro_test_directory::Scratch::new().unwrap();
+    let drive = plain(first.path())[..1].to_ascii_uppercase();
+    // A host with one writable volume has no second root to reach.
+    let Some(scratch) = ('A'..='Z')
+        .filter(|letter| letter.to_string() != drive)
+        .find_map(|letter| {
+            maestro_test_directory::Scratch::new_in(Path::new(&format!(r"{letter}:\"))).ok()
+        })
+    else {
+        return;
+    };
+    let target = scratch.path().join("file Ω name");
+    let native = plain(&target);
+    run(root_paths(
+        &[native.clone().into(), native.replace('\\', "/").into()],
+        &target,
+    ));
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_roots_reach_a_share_working_directory() {
+    if maestro_test_process::run_alone("component_windows_roots_reach_a_share_working_directory")
+        .unwrap()
+    {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("cwd")).unwrap();
+    std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
+    let local = plain(scratch.path());
+    let share = format!(r"\\localhost\{}${}", &local[..1], &local[2..]);
+    // The administrative share is a host premise; without it no share is reachable.
+    if std::env::set_current_dir(format!(r"{share}\cwd")).is_err() {
+        return;
+    }
+    let target = scratch.path().join(r"sibling Ω space\file Ω name");
+    let paths = [
+        format!(r"{share}\sibling Ω space\file Ω name").into(),
+        format!(r"\\?\UNC\{}\sibling Ω space\file Ω name", &share[2..]).into(),
+        r"..\sibling Ω space\file Ω name".into(),
+    ];
+    run(root_paths(&paths, &target));
+    std::env::set_current_dir(original).unwrap();
 }
 
 #[cfg(unix)]
