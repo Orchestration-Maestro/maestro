@@ -42,7 +42,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         Ok((git, path))
     }
     /// Refuses linked worktrees and redirected repository metadata before mutation.
-    async fn check_pin_repository(&self, path: &str) -> io::Result<()> {
+    pub(super) async fn check_pin_repository(&self, path: &str) -> io::Result<()> {
         let target = std::fs::canonicalize(path)?;
         let metadata = target.join(".git");
         if !std::fs::symlink_metadata(&metadata)?.is_dir() {
@@ -61,6 +61,23 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         Ok(())
     }
+    /// Resolves a pin locally without fetching or treating it as a command option.
+    pub(super) async fn local_git_pin(
+        &self,
+        git: &GitSource,
+        path: &str,
+    ) -> io::Result<Option<String>> {
+        let reference = format!("{}^{{commit}}", git.r#ref.as_deref().unwrap_or_default());
+        let output = self
+            .git_capture(
+                path,
+                &["rev-parse", "--revs-only", "--end-of-options", &reference],
+                &[],
+            )
+            .await?;
+        let commit = crate::trim(&output);
+        Ok((!commit.is_empty()).then(|| commit.to_owned()))
+    }
     /// Observes the exact local commit and NUL-delimited tracked and untracked paths.
     pub(super) async fn inspect_pin(
         &self,
@@ -72,14 +89,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             return Ok(GitPinStatus::default());
         }
         self.check_pin_repository(&path).await?;
-        let reference = format!("{}^{{commit}}", git.r#ref.as_deref().unwrap_or_default());
-        let expected = self
-            .git_capture(
-                &path,
-                &["rev-parse", "--revs-only", "--end-of-options", &reference],
-                &[],
-            )
-            .await?;
+        let expected = self.local_git_pin(&git, &path).await?.unwrap_or_default();
         let head = self.git_capture(&path, &["rev-parse", "HEAD"], &[]).await?;
         let mut paths = self
             .git_capture(&path, &["ls-files", "--others", "-z"], &[])

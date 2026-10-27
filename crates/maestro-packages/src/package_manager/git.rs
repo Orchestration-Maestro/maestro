@@ -64,8 +64,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let mut stage = GitStaging::new(&dirname(target))?;
         let fresh = join(&[stage.path(), "checkout"]);
         self.install_missing_git(git, &fresh).await?;
-        self.run_command("git", &["clean", "-ffdx"].map(str::to_owned), Some(&fresh))
-            .await?;
+        self.check_pin_repository(&fresh).await?;
+        let commit = self
+            .local_git_pin(git, &fresh)
+            .await?
+            .ok_or_else(|| io::Error::other("Installed pin is unavailable"))?;
+        self.restore_git_commit(&fresh, &commit).await?;
         let previous = join(&[stage.path(), "previous"]);
         let existed = Path::new(target).exists();
         if existed {
