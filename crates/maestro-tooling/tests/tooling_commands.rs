@@ -3477,7 +3477,9 @@ fn example_test_modules_resolve_nested_modules() {
     .unwrap();
     fs::write(
         root.path().join("tests.rs"),
-        format!("include!({generated:?}); pub fn value() -> u8 {{ nested_example::value() }}"),
+        format!(
+            "include!({generated:?}); example_tests!(); pub fn value() -> u8 {{ nested_example::value() }}"
+        ),
     )
     .unwrap();
     let main = root.path().join("main.rs");

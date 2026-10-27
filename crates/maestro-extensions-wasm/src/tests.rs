@@ -26,6 +26,7 @@ macro_rules! on_both_adapters {
 }
 
 include!(concat!(env!("OUT_DIR"), "/example_tests.rs"));
+example_tests!();
 
 pub(crate) mod action_host;
 mod advanced_ui;

@@ -19,20 +19,21 @@ pub fn generate(directory: &Path) -> io::Result<String> {
         }
     }
     files.sort();
-    let mut result = String::new();
+    // The expansion keeps ordinary module ownership, including nested-file lookup.
+    let mut result = String::from(
+        "/// Declare discovered modules with their ordinary source directories.\nmacro_rules! example_tests { () => {\n",
+    );
     for file in files {
         let name = file
             .file_stem()
             .and_then(|name| name.to_str())
             .ok_or_else(|| io::Error::other("example test name is not UTF-8"))?;
-        let path = file
-            .to_str()
-            .ok_or_else(|| io::Error::other("example test path is not UTF-8"))?;
         writeln!(
             result,
-            "/// Controlled and component checks for `{name}`.\n#[path = {path:?}]\nmod {name};"
+            "/// Controlled and component checks for `{name}`.\nmod {name};"
         )
         .map_err(io::Error::other)?;
     }
+    result.push_str("} }\n");
     Ok(result)
 }
