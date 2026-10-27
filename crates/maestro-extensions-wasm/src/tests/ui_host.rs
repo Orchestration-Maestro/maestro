@@ -152,6 +152,8 @@ pub struct Bank {
     method: Option<String>,
     /// Message the request of `method` is rejected with.
     message: Option<String>,
+    /// Rules a test arms for requests of one invocation.
+    rules: Rules,
     /// Editor text each binding keeps.
     editors: HashMap<usize, String>,
     /// Decision the next dialog answers with; absent dismisses it.
@@ -227,6 +229,17 @@ pub fn themed(
     })
 }
 
+/// One-shot request rules a test arms directly, without a control document.
+#[derive(Default)]
+struct Rules {
+    /// Accepted requests before the next one is rejected, counted from the arming point.
+    reject_after: Option<usize>,
+    /// Identity of the binding that follows the next accepted request.
+    switch_after: Option<usize>,
+    /// Requests the host has accepted since the rule was armed.
+    accepted: usize,
+}
+
 /// A supplied refusal and the method it is limited to.
 struct Refusal {
     /// Method the refusal applies to; absent refuses the next request.
@@ -290,12 +303,12 @@ impl Bank {
         });
     }
 
-    /// Takes the refusal supplied for `method`, keeping one supplied for another method.
+    /// Takes a refusal supplied for exactly `method`, keeping one armed for every method.
     fn refusal(&mut self, method: &str) -> Option<String> {
         let supplied = self
             .error
             .as_ref()
-            .is_some_and(|refusal| refusal.method.as_deref().is_none_or(|it| it == method));
+            .is_some_and(|refusal| refusal.method.as_deref() == Some(method));
         if supplied {
             return self.error.take().map(|refusal| refusal.message);
         }
@@ -304,6 +317,13 @@ impl Bank {
         }
         self.method = None;
         self.message.take()
+    }
+
+    /// Restores the state a fresh host starts from.
+    pub fn reset(&mut self) {
+        self.binding = 0;
+        self.error = None;
+        self.rules = Rules::default();
     }
 
     /// Hands out the identity of the binding current at acquisition time and records the
@@ -318,6 +338,42 @@ impl Bank {
         self.method = Some(method.to_owned());
         self.message = Some(message.to_owned());
     }
+
+    /// Rejects the next request after `index` accepted ones with `error`, once.
+    pub fn reject_at(&mut self, index: usize, error: &str) {
+        self.rules.reject_after = Some(index);
+        self.rules.accepted = 0;
+        self.error = Some(Refusal {
+            method: None,
+            message: error.to_owned(),
+        });
+    }
+
+    /// Resolves the binding `binding` for acquisitions after the next accepted request.
+    pub fn switch_after_first(&mut self, binding: usize) {
+        self.rules.switch_after = Some(binding);
+    }
+
+    /// Applies the armed rules to the request recorded next, taking a refusal armed for every method.
+    fn settle(&mut self) -> Result<(), String> {
+        let reject = self
+            .rules
+            .reject_after
+            .is_none_or(|index| index == self.rules.accepted);
+        let general = self.error.as_ref().is_some_and(|it| it.method.is_none());
+        if reject
+            && general
+            && let Some(refusal) = self.error.take()
+        {
+            self.rules.reject_after = None;
+            return Err(refusal.message);
+        }
+        self.rules.accepted += 1;
+        if let Some(binding) = self.rules.switch_after.take() {
+            self.binding = binding;
+        }
+        Ok(())
+    }
 }
 
 /// Records one request against the acquisition `key`, then returns its supplied rejection.
@@ -328,7 +384,9 @@ pub fn call(
     operands: &Value,
 ) -> Result<(), String> {
     observed.log(format!("ui {key} {method} {operands}"));
-    observed.ui.refusal(method).map_or(Ok(()), Err)
+    let error = observed.ui.settle().err();
+    let error = error.or_else(|| observed.ui.refusal(method));
+    error.map_or(Ok(()), Err)
 }
 
 /// Records one replacement against the acquisition `key` and keeps its text for that binding.

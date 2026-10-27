@@ -989,6 +989,22 @@ that an interactive host keeps them across agent turns or loader recreation, whi
 belongs to the host's own working-loader operations. Loading the component into an
 application is opt-in and needs that application's component runtime.
 
+### Widgets above and below the editor
+
+[`examples/extensions/widget_placement.rs`](../../examples/extensions/widget_placement.rs)
+handles `session_start`. It reads `has_ui` once per start and requests nothing
+when the host has no UI. With a UI it requests the `widget-above` widget holding
+the single line `Above editor widget`, then the `widget-below` widget holding
+`Below editor widget` with the explicit below placement. The first request
+passes no options, so the host's own above-editor default applies.
+
+The callback acquires the UI context once per request, so a host that binds a
+different UI after the first accepted request serves the second one there. A
+rejected request ends the callback with that message; the example retries
+nothing and removes no widget the host already accepted. Loading it into an
+application is opt-in, and `examples/extensions/README.md` holds the build and
+controlled-run commands.
+
 ### User message delivery
 
 [`examples/extensions/send_user_message.rs`](../../examples/extensions/send_user_message.rs)
