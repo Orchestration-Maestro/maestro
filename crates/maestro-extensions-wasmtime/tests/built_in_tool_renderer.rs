@@ -217,6 +217,35 @@ fn shell_results(runner: &ExtensionRunner<Local>) {
 }
 
 #[test]
+fn built_in_tool_renderer_expands_timeout_and_cancellation_diagnostics() {
+    super::wasi_support::run(async {
+        let runner = loaded().await;
+        let bash = binding(&runner, "bash");
+        for reason in ["Command timed out after 5 seconds", "Command aborted"] {
+            let mut value = text(&format!("progress\n\n{reason}"));
+            value["isError"] = json!(true);
+            value["details"] = json!({"truncation":{"truncated":true}});
+            let heading = format!(
+                "{}{}{}",
+                fg(&ThemeColor::Error, "progress"),
+                fg(&ThemeColor::Dim, " (2 lines)"),
+                fg(&ThemeColor::Warning, " [truncated]")
+            );
+            assert_eq!(
+                paint(&bash, &value, [true, false]),
+                [
+                    heading.clone(),
+                    fg(&ThemeColor::Dim, "progress"),
+                    String::new(),
+                    fg(&ThemeColor::Dim, reason),
+                ]
+            );
+            assert_eq!(paint(&bash, &value, [false; 2]), [heading]);
+        }
+    });
+}
+
+#[test]
 fn built_in_tool_renderer_displays_progress_content_and_failures() {
     super::wasi_support::run(async {
         let runner = loaded().await;
@@ -512,7 +541,15 @@ fn built_in_tool_renderer_delegates_execution_and_displays_native_failures() {
             value["isError"] = json!(true);
             assert_eq!(
                 paint(&binding(&runner, name), &value, [false; 2]),
-                [fg(&ThemeColor::Error, "ENOENT: controlled")]
+                [if name == "bash" {
+                    format!(
+                        "{}{}",
+                        fg(&ThemeColor::Error, "ENOENT: controlled"),
+                        fg(&ThemeColor::Dim, " (2 lines)")
+                    )
+                } else {
+                    fg(&ThemeColor::Error, "ENOENT: controlled")
+                }]
             );
         }
     });
