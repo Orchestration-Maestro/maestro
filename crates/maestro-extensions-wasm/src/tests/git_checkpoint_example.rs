@@ -181,9 +181,11 @@ fn git_checkpoint_factory_rejects_failed_restores() -> Result<(), String> {
                 ))
             );
             let lines = host.observed().transcript[mark..].to_vec();
-            assert!(lines.contains(
-                &r#"action exec ["git",["stash","apply","object-id"],null]"#.to_owned()
-            ));
+            assert!(
+                lines.contains(
+                    &r#"action exec ["git",["stash","apply","object-id"],null]"#.to_owned()
+                )
+            );
             let receipts = super::ui_host::receipts(&lines);
             assert_eq!(receipts.len(), 1, "no success notification: {lines:?}");
         }

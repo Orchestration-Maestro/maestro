@@ -56,17 +56,17 @@ jobs:
           echo '45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89  /tmp/sccache.tar.gz' | sha256sum -c
           tar -xzf /tmp/sccache.tar.gz -C "$HOME/.local/bin" --strip-components=1 sccache-v0.18.0-x86_64-unknown-linux-musl/sccache
           echo 'RUSTC_WRAPPER=sccache' >> "$GITHUB_ENV"
-      - name: Failed restore red-first witness
-        shell: bash
+      - name: Component Clippy, strict documentation and build
         run: |
-          set +e
-          ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasm --lib -E 'test(git_checkpoint_factory_rejects_failed_restores)' > red.log 2>&1
-          status=$?
-          set -e
-          cat red.log
-          echo "RED_EXIT=$status"
-          test "$status" -eq 100
-          grep -q 'left: Returned(None)' red.log
+          ~/.local/bin/capped cargo clippy --locked -p maestro-extensions-wasm --target wasm32-wasip2 --example git_checkpoint -- -D warnings
+          RUSTDOCFLAGS='-D warnings -D missing_docs' ~/.local/bin/capped cargo doc --locked -p maestro-extensions-wasm --example git_checkpoint --target wasm32-wasip2 --release --no-deps
+          ~/.local/bin/capped cargo build --locked -p maestro-extensions-wasm --example git_checkpoint --target wasm32-wasip2 --release
+      - name: Final checkpoint behavior
+        run: ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasm -p maestro-extensions-wasmtime -E 'test(git_checkpoint_)'
+      - name: Shipped index and recursive standalone copy
+        run: |
+          ~/.local/bin/capped cargo nextest run --locked -p maestro-app --test integration -- shipped_examples
+          ~/.local/bin/capped cargo nextest run --locked -p maestro-tooling --test integration -- maestro_package_assets_come_from_the_package_directory maestro_standalone_assets_preserve_recursive_layout shipped_example_lists_stay_in_name_order
       - name: Cache statistics (no cache save)
         if: always()
         run: sccache --show-stats
