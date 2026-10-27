@@ -4,6 +4,7 @@ mod conversation;
 mod fuzzy;
 mod keys;
 mod paths;
+mod time;
 mod tools;
 
 /// Dispatches a synchronous helper without retaining any operands.
@@ -27,6 +28,7 @@ pub fn call(operation: &str, data: &str) -> Result<String, String> {
         return keys::call(operation, data);
     }
     match operation {
+        "time.local_date_time_string" => time::local_date_time_string(data),
         "visible_width" => {
             let (text,): (String,) = decode(data)?;
             encode(&maestro_tui::visible_width(&text))

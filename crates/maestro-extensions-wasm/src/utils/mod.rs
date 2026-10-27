@@ -1,4 +1,4 @@
-//! Host-backed stream and terminal text utilities.
+//! Host-backed clock, stream and terminal text utilities.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -7,6 +7,16 @@
 pub mod event_stream;
 
 use crate::{ExtensionAPI, ExtensionResult};
+
+/// Reads the host's current local date and time in the en-US twelve-hour format.
+///
+/// Other locale patterns are not selected; the host supplies its local time zone.
+///
+/// # Errors
+/// Returns the host's failure or an invalid response.
+pub fn local_date_time_string(api: &ExtensionAPI) -> ExtensionResult<String> {
+    api.helper("time.local_date_time_string", &())
+}
 
 /// Measures terminal cells, including the host's Unicode and escape handling.
 ///
