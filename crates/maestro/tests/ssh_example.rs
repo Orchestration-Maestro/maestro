@@ -137,7 +137,15 @@ fn fixture(name: &str) -> std::path::PathBuf {
 struct Ui(std::cell::RefCell<Vec<Value>>);
 impl maestro_app::ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {
-        maestro_theme::LiveTheme::default()
+        let theme = maestro_theme::load_theme_from_path(
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../maestro-theme/assets/theme/dark.json"
+            ),
+            Some(maestro_theme::ColorMode::Truecolor),
+        )
+        .unwrap();
+        maestro_theme::LiveTheme::from_theme(Rc::new(theme))
     }
     fn set_status(&self, key: String, text: Option<String>) -> Result<(), maestro_app::EventError> {
         self.0.borrow_mut().push(json!(["status", key, text]));
@@ -357,6 +365,9 @@ fn ssh_enabled_routes_coding_tools_shell_and_session_context() {
         session
             .bind_extensions(maestro_app::ExtensionBindings {
                 ui_context: Some(maestro_app::ExtensionUIContext::new(ui.clone()).into()),
+                on_error: Some(Rc::new(|error| {
+                    panic!("unexpected SSH callback error: {error:?}")
+                })),
                 ..maestro_app::ExtensionBindings::default()
             })
             .await
