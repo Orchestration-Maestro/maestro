@@ -29,7 +29,9 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/model_status.rs` sets the `model` status for each selected model
-and notifies only on an explicit selection or a cycle, never on a restore. The
+and notifies only on an explicit selection or a cycle, never on a restore.
+`extensions/widget_placement.rs` requests widgets above and below the editor on
+session start. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
