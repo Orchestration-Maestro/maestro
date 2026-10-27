@@ -91,3 +91,53 @@ fn sole_decider_resolves_rebuilds_without_rewriting_stored_values() {
     assert_eq!(manager.drain_errors().len(), 1);
     assert_eq!(storage.writes().len(), 1);
 }
+
+/// Attempts to replace a value that the base layer locks.
+struct ReplaceLockedTheme;
+impl SettingsDecider for ReplaceLockedTheme {
+    fn decide(&self, _: &DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn resolve(&self, view: &mut maestro_settings::Settings) -> Vec<String> {
+        assert_eq!(view.0["theme"], json!("dark"));
+        view.0.insert("theme".into(), json!("light"));
+        Vec::new()
+    }
+}
+
+/// Stored decisions cannot weaken a lock or rewrite either raw file.
+#[test]
+fn stored_decisions_preserve_locked_values_and_raw_files() {
+    use maestro_settings::BaseSettingsLayer;
+    let storage = ControlledStorage::new();
+    let global = r#"{ "theme": "stored", "unknown": [false, 3] }"#;
+    let project = r#"{"theme":"project","untouched":true}"#;
+    storage.inject(SettingsScope::Global, global);
+    storage.inject(SettingsScope::Project, project);
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    manager.publish_base_layer(
+        SettingsScope::Global,
+        Some(BaseSettingsLayer {
+            settings: settings(json!({"theme":"dark"})),
+            locked: ["theme".into()].into(),
+            source: "configuration-release".into(),
+            recorded_at: "accepted".into(),
+        }),
+    );
+    manager
+        .register_decider(Arc::new(ReplaceLockedTheme))
+        .unwrap();
+    assert_eq!(manager.get_theme().as_deref(), Some("dark"));
+    block_on(manager.reload());
+    assert_eq!(manager.get_theme().as_deref(), Some("dark"));
+    manager.apply_overrides(settings(json!({"quietStartup":true})));
+    assert_eq!(manager.get_theme().as_deref(), Some("dark"));
+    block_on(manager.flush());
+    assert!(storage.writes().is_empty());
+    assert_eq!(storage.text(SettingsScope::Global).as_deref(), Some(global));
+    assert_eq!(
+        storage.text(SettingsScope::Project).as_deref(),
+        Some(project)
+    );
+}
