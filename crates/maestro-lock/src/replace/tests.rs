@@ -363,6 +363,10 @@ fn creation_mode_maps_only_owner_write_to_windows_readonly() {
             assert_eq!(fs::read(&target).unwrap(), b"secret");
             assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
         }
+        #[expect(
+            clippy::permissions_set_readonly_false,
+            reason = "clears the Windows read-only attribute; cfg(windows) excludes Unix world-writable permissions"
+        )]
         permissions.set_readonly(false);
         fs::set_permissions(&target, permissions).unwrap();
         fs::remove_file(&target).unwrap();
