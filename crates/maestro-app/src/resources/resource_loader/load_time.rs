@@ -37,6 +37,8 @@ struct Inputs {
     base_system_prompt: Option<String>,
     /// Text preceding the ordinary appended prompt.
     base_append_text: Vec<String>,
+    /// Model files preceding the catalog's construction-time files.
+    model_files: Vec<String>,
     /// Scoped settings publications by one package owner.
     base_layers: Vec<LayerInput>,
 }
@@ -64,6 +66,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             let mut state = self.state.borrow_mut();
             state.base_system_prompt = None;
             state.base_append_text.clear();
+            state.model_files.clear();
         }
         let mut publisher = None;
         let mut packages = Vec::new();
@@ -117,6 +120,9 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             })
             .collect();
         let layers = layers?;
+        let model_files = self
+            .merge_paths(&inputs.model_files, [])
+            .map_err(|error| error.to_string())?;
         if !layers.is_empty() {
             publisher.get_or_insert_with(|| path.to_owned());
         }
@@ -130,6 +136,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             state.base_system_prompt = inputs.base_system_prompt;
         }
         state.base_append_text.extend(inputs.base_append_text);
+        state.model_files.extend(model_files);
         Ok(inputs.package_sources)
     }
 }

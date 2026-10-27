@@ -108,6 +108,10 @@ pub trait ResourceLoader<E: ExtensionExecution = Threaded> {
     fn get_system_prompt(&self) -> Option<Rc<str>>;
     /// The texts appended to the system prompt.
     fn get_append_system_prompt(&self) -> Rc<[String]>;
+    /// Contributed model files in order, ranked before the catalog's existing files.
+    fn get_model_files(&self) -> Vec<String> {
+        Vec::new()
+    }
     /// Adds extension-contributed locations and reloads each kind that gained some.
     ///
     /// # Errors
@@ -246,6 +250,8 @@ struct LoaderState<E: ExtensionExecution> {
     system_prompt: Option<Rc<str>>,
     /// The appended texts.
     append_system_prompt: Rc<[String]>,
+    /// Base model files in contribution order.
+    model_files: Vec<String>,
     /// The system prompt candidate below ordinary prompt inputs.
     base_system_prompt: Option<String>,
     /// Text that always precedes the ordinary append choice.
@@ -346,6 +352,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             agents_files: Rc::from([]),
             system_prompt: None,
             append_system_prompt: Rc::from([]),
+            model_files: Vec::new(),
             base_system_prompt: None,
             base_append_text: Vec::new(),
             skill_sources: Contributed::default(),
@@ -422,6 +429,9 @@ impl<E: DefaultEventBus> ResourceLoader<E> for DefaultResourceLoader<E> {
     }
     fn get_append_system_prompt(&self) -> Rc<[String]> {
         Rc::clone(&self.state.borrow().append_system_prompt)
+    }
+    fn get_model_files(&self) -> Vec<String> {
+        self.state.borrow().model_files.clone()
     }
     fn extend_resources(&self, paths: ResourceExtensionPaths) -> io::Result<()> {
         let contributions = [
