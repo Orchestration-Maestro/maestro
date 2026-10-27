@@ -26,10 +26,16 @@ pub struct Script {
     pub frames: Vec<Vec<String>>,
     /// Terminal input delivered in order.
     pub inputs: Vec<String>,
+    /// Native waits to complete before each frame; empty leaves tails with the caller.
+    pub ticks: Vec<usize>,
+    /// Terminal columns supplied to every render.
+    pub columns: u32,
 }
 impl Default for Script {
     fn default() -> Self {
         Self {
+            ticks: Vec::new(),
+            columns: 20,
             width: Some(13.0),
             frames: vec![vec!["custom 23".into()]; 2],
             inputs: vec!["commit".into()],
@@ -177,21 +183,36 @@ async fn view(
         .with(|mut access| access.get().observed.ui.custom_script.clone())
         .unwrap_or_default();
     assert_eq!(built.width, script.width);
-    if let Err(error) = drive_view(accessor, guest, (&built, &emitter), script).await? {
-        return Ok(Err(error));
+    let clock = (!script.ticks.is_empty()).then(super::custom_ticks::Clock::default);
+    accessor.with(|mut access| access.get().observed.tick_clock = clock.clone());
+    let work = async {
+        let result = drive_view(accessor, guest, (&built, &emitter), script).await;
+        if let Some(dispose) = &built.dispose {
+            let disposed = dispose_once(accessor, guest, dispose, &emitter).await;
+            if matches!(result, Ok(Ok(())))
+                && let Err(error) = disposed?
+            {
+                return Ok(Err(error));
+            }
+        }
+        result
+    };
+    let result = if clock.is_some() {
+        super::custom_ticks::drive(accessor, guest, work).await
+    } else {
+        work.await
+    };
+    if let Some(clock) = clock {
+        clock.assert_idle();
     }
-    if let Some(dispose) = &built.dispose
-        && let Err(error) = dispose_once(accessor, guest, dispose, &emitter).await?
-    {
-        return Ok(Err(error));
-    }
+    accessor.with(|mut access| access.get().observed.tick_clock = None);
     for callback in [Some(built.component), built.dispose, built.set_expanded]
         .into_iter()
         .flatten()
     {
         release(accessor, guest, callback).await?;
     }
-    Ok(Ok(()))
+    result
 }
 /// Renders supplied frames and delivers terminal input through the retained component.
 async fn drive_view(
@@ -216,12 +237,16 @@ async fn drive_view(
     })?;
     assert_eq!(script.frames.len(), script.inputs.len() + 1);
     for (index, frame) in script.frames.iter().enumerate() {
+        let clock = accessor.with(|mut access| access.get().observed.tick_clock.clone());
+        if let Some(clock) = clock {
+            clock.advance(*script.ticks.get(index).unwrap_or(&0)).await;
+        }
         let (rows,) = render
             .call_concurrent(
                 accessor,
                 (
                     Resource::new_borrow(built.component.rep()),
-                    20,
+                    script.columns,
                     Resource::new_borrow(emitter.rep()),
                 ),
             )
@@ -275,6 +300,16 @@ async fn release(
     guest: &Guest,
     callback: Resource<Identity>,
 ) -> wasmtime::Result<()> {
+    release_retained(accessor, guest, &callback).await?;
+    accessor.with(|mut access| access.get().table.delete(callback))?;
+    Ok(())
+}
+/// Releases a guest-owned callback; its original guest handle removes the host resource.
+pub(super) async fn release_retained(
+    accessor: &Accessor<State, Imports>,
+    guest: &Guest,
+    callback: &Resource<Identity>,
+) -> wasmtime::Result<()> {
     let function = accessor.with(|access| {
         guest
             .func_release()
@@ -284,6 +319,5 @@ async fn release(
     function
         .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
         .await?;
-    accessor.with(|mut access| access.get().table.delete(callback))?;
     Ok(())
 }
