@@ -319,6 +319,9 @@ async fn pump(source: Rc<dyn Readable>, state: &Output, errors: bool) -> Extensi
     loop {
         let read = source.read().await?;
         let eof = read.is_none();
+        if eof && pending.is_empty() {
+            return Ok(());
+        }
         pending.extend(read.unwrap_or_default());
         let end = if eof {
             pending.len()
