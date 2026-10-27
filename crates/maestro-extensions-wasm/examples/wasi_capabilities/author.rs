@@ -60,7 +60,8 @@ async fn dispatch(
         Some("listen") => network::listen(&request, &reporter.events()).await?,
         Some("file") => {
             let path = request["path"].as_str().ok_or("missing path")?;
-            filesystem::operate(&request, &guest_path(&reporter, path)?).await?
+            let path = if request["raw"] == true { path.to_owned() } else { guest_path(&reporter, path)? };
+            filesystem::operate(&request, &path).await?
         }
         Some("cwd") => filesystem::cwd(),
         Some("stdio") => {
