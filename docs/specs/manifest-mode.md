@@ -24,9 +24,9 @@ Maestro runs in one of two modes, chosen by settings.
 Manifest mode is a capability of the default-on `maestro-manifest` base package,
 a package crate in this workspace released with Maestro. The core holds no
 manifest code. It gains five generic hooks (H1 to H5, see
-[Core hooks](#core-hooks)) that any package may use, and the manifest package is
-their first user. Every manifest-mode behaviour is a difference with no
-reference source, listed in
+[Core hooks](#core-hooks)) and one generic setting that any package may use, and
+the manifest package is their first user. Every manifest-mode behaviour is a
+difference with no reference source, listed in
 [Differences with no reference source](#differences-with-no-reference-source).
 
 The same **authored artifacts** work without a manifest. A user or a project
@@ -186,6 +186,7 @@ answer questions about it.
 79. As a privacy officer, I want personal data replaced by a marker in tool output and prompts before the model sees them, and in agent output before it is saved or sent again, so that it never reaches a provider or a session file through Maestro.
 80. As a security reviewer, I want tool output that matches a prompt-injection rule withheld from the model with the reason, so that fetched content cannot instruct the agent.
 81. As a developer, I want guards only when a manifest is selected, so that Maestro without a manifest behaves as before.
+82. As a privacy officer, I want guarded replies to appear only once they are complete and checked, so that personal data never shows on screen or in event streams.
 
 ## Behaviour contract
 
@@ -344,6 +345,7 @@ Governed keys and what the manifest may do with them:
 | `transport`, `steeringMode`, `followUpMode`, `enableSkillCommands`, `images.autoResize` | lock; default |
 | `compaction.{enabled,reserveTokens,keepRecentTokens}`, `branchSummary.{reserveTokens,skipPrompt}`, `retry.{enabled,maxRetries,baseDelayMs}`, `retry.provider.{timeoutMs,maxRetries,maxRetryDelayMs}` | lock; bound (numeric members only); default |
 | `images.blockImages`, `enableInstallTelemetry` | lock (normally to `true` and `false`); default |
+| `holdAssistantText` | lock; default (locked to `true` whenever a guard rule targets `agent-output`, M20.7) |
 | `packages`, `extensions`, `skills`, `prompts`, `actions`, `contributions` | lock (no local additions); require entries |
 | `manifest`, `manifestAreas`, `manifestAutoUpdate` | lock; default (`manifestAreas`, `manifestAutoUpdate`) |
 | `multiplexer.tabBarRight` | lock; default |
@@ -861,9 +863,14 @@ change only with the manifest.
    |---|---|---|
    | `command` | The `command` argument of the `bash` tool, and the user's `!` and `!!` shell commands | Before the command runs |
    | `path` | The `path` argument of the `write` and `edit` tools, as given | Before the tool runs |
-   | `tool-output` | Each text block of a tool result | Before the result reaches the model or the session file |
-   | `agent-output` | Each text block of an assistant message | When the message ends, before it is saved or sent again |
-   | `prompt` | The text of the user's prompt | Before the prompt is sent |
+   | `tool-output` | Each text block of a tool result, and every string in its details, such as an edit's diff | Before the result reaches the model or the session file |
+   | `agent-output` | Each text block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
+   | `prompt` | Each text block of a user message from every route: typed prompts, steering and follow-up messages, SDK and RPC prompts, after prompt-template and skill expansion | When the message ends, before it is saved or sent |
+
+   The request to the provider is checked again with the same `tool-output`,
+   `agent-output` and `prompt` rules through the existing context hook, so the
+   provider receives only checked text, including from sessions saved before the
+   manifest was selected.
 
 4. **Actions.** Each rule names its own action. The manifest's files set the usual
    choices: `confirm` for destructive commands, `block` for protected paths,
@@ -872,18 +879,20 @@ change only with the manifest.
      `Blocked by guard <id>: <description>`, and the interactive mode shows the same
      text as a warning. A user shell command that matches does not run; its output
      is that text. A `tool-output` match replaces the result's text with
-     `Tool output withheld by guard <id>: <description>` and marks the result as an
-     error, so the model learns why. An `agent-output` match replaces the message's
-     text with `Response withheld by guard <id>: <description>`. A `prompt` match
-     stops the prompt before it is sent and reports the refusal the way the mode
-     reports errors.
+     `Tool output withheld by guard <id>: <description>`, replaces its details with
+     null and marks the result as an error, so the model learns why. An
+     `agent-output` match replaces the message's text with
+     `Response withheld by guard <id>: <description>`. A `prompt` match replaces the
+     message's text with `Prompt withheld by guard <id>: <description>`, and the
+     interactive mode shows the same text as a warning.
    - **`confirm`** (`command` and `path` only). The interactive mode shows the
      description with the command or path, and offers `Yes` and `No`. `No` refuses
      as `block` does, with the reason `Blocked by user`. Print mode, JSON mode and
      RPC without a user interface refuse as `block` does.
    - **`redact`** (`tool-output`, `agent-output` and `prompt` only). Each match
      becomes `[<FAMILY>:<id>]`, where `<FAMILY>` is the file's family in capitals,
-     for example `[PII:canada-sin]`.
+     for example `[PII:canada-sin]`, in text blocks and in every string in a tool
+     result's details.
    - **`warn`.** The operation goes ahead unchanged, and a warning names the rule.
 5. **Several matching rules.** Every rule for a target matches against the
    original text. A matching `block` rule wins, then a matching `confirm` rule; the
@@ -891,21 +900,30 @@ change only with the manifest.
    neither matches, the matching `redact` rules apply in file and list order, each
    to the text the previous one left. The warnings of matching `warn` rules are
    shown unless the operation is refused.
-6. **Other extensions.** The manifest package loads before other extensions (H4),
-   so its guards run first: a refused tool call reaches no other extension's
-   tool-call hook, and other extensions see redacted text. Guards check what the
-   agent and the user send. They do not check what another extension changes
-   afterwards, because extensions keep full user permissions (M8.5).
+6. **Other extensions.** The manifest package is the lowest package source in the
+   extension list (H4), so its guard hooks run after every other extension's hooks
+   for the same event. Guards therefore check the final command, path, result and
+   message that Maestro acts on, including changes other extensions made. Other
+   extensions see each value before the guards do, and an extension that handles
+   an operation itself, for example by supplying a user shell command's result,
+   takes that operation outside the guards. Extensions keep full user permissions
+   (M8.5); guards check what the agent and the user send through Maestro.
 7. **Saved sessions and streams.** Session files keep what the guards return:
-   redacted text, withheld results and withheld responses. Streamed assistant text
-   reaches the interactive view and JSON and RPC event streams as it arrives; when
-   the message ends, the redacted message replaces it, and only that message is
-   saved and sent again. Guards do not rewrite existing session files.
+   redacted text, withheld results and withheld responses. When any rule targets
+   `agent-output`, the manifest package sets the `holdAssistantText` setting to
+   `true` in its base layer and locks it (H1). While the setting is `true`, the
+   session sends no assistant text as it streams: each reply reaches the
+   interactive view, JSON and RPC event streams and SDK listeners only when its
+   message ends, after the guards have checked it. Thinking and tool progress
+   still stream. `/settings` shows the setting as locked, like any locked value.
+   With the setting `false`, the default, streaming is unchanged. Guards do not
+   rewrite existing session files.
 
 ## Core hooks
 
-The core gains five generic hooks. None reads a manifest, knows the manifest's
-governed-key table, or combines areas; the manifest package does that.
+The core gains five generic hooks and one generic setting, `holdAssistantText`
+(M20.7). None reads a manifest, knows the manifest's governed-key table, or
+combines areas; the manifest package does that.
 
 | Hook | Owner | Behaviour | Without a publisher |
 |---|---|---|---|
@@ -944,15 +962,16 @@ package resolves conflicts exactly as any other package does.
 
 ## Implementation decisions
 
-- **Placement.** The core holds only H1 to H5. This workspace gains one default-on
-  base package, a package crate released with Maestro like the other base packages
-  ([packages](packages.md#base-packages)): `maestro-manifest` (selection,
-  acquisition, area reading, prompt composition, instruction installation, policy
-  decoding and combination, decisions, guards, `/manifest`, release checks,
-  catalog kinds). No core crate depends on it. Workflow files run on the runner of
-  Maestro's subagent capability; roles stay with `maestro-subagents`; MCP servers
-  stay with `maestro-mcp`. Authored content, including instructions and the default
-  workflows, lives in manifests, not in packages.
+- **Placement.** The core holds only H1 to H5 and the `holdAssistantText` setting.
+  This workspace gains one default-on base package, a package crate released with
+  Maestro like the other base packages ([packages](packages.md#base-packages)):
+  `maestro-manifest` (selection, acquisition, area reading, prompt composition,
+  instruction installation, policy decoding and combination, decisions, guards,
+  `/manifest`, release checks, catalog kinds). No core crate depends on it.
+  Workflow files run on the runner of Maestro's subagent capability; roles stay
+  with `maestro-subagents`; MCP servers stay with `maestro-mcp`. Authored content,
+  including instructions and the default workflows, lives in manifests, not in
+  packages.
 - **Packages talk through existing routes.** The manifest package shares its
   selected area roots and required paths with the subagent capability (roles and
   workflow runner) over the extension event bus. No package copies another's
@@ -961,10 +980,13 @@ package resolves conflicts exactly as any other package does.
   manifest fails the load. There is no separate checker command or binary.
 - **Guards.** Matching is one pure module in the manifest package: rules and text
   in, a decision out, with no I/O and no hook types. A thin layer registers the
-  existing tool-call, user-shell, tool-result, message-end and input hooks and
+  existing tool-call, user-shell, tool-result, message-end and context hooks and
   applies the decision. Expressions compile with the workspace's existing `regex`
-  crate. No other package matches guard rules; a package that reacts to guarded
-  work builds on the manifest package's behaviour instead of matching again.
+  crate. `holdAssistantText` is read in exactly one place, the agent session's
+  emission of message updates to its listeners; the interactive view, JSON and RPC
+  modes and SDK listeners all read that emission, so none withholds text itself.
+  No other package matches guard rules; a package that reacts to guarded work
+  builds on the manifest package's behaviour instead of matching again.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
   applies the base layer, then the ordinary one-level user and project merge, then
   locked paths, then stored-value decisions. There is no new settings scope and no
@@ -1022,10 +1044,16 @@ package resolves conflicts exactly as any other package does.
   target and precedence case. Each target is then tested through the real host
   with a fixture manifest: a confirmed and a refused destructive command, a
   headless refusal, a refused user shell command, a refused protected-path write,
-  a redacted tool result and assistant message as saved in the session file, a
-  withheld injected tool result and a refused prompt. A failing example, an
-  expression that does not compile, a duplicate id and `confirm` on a text target
-  each fail the load.
+  a redacted tool result and assistant message as saved in the session file, an
+  edit result whose diff carries personal data, a withheld injected tool result,
+  and a typed prompt, a steering message, a follow-up message and an expanded
+  prompt template, each redacted in the session file and in the faux provider's
+  request. An earlier extension that edits a tool call's arguments has the edited
+  arguments checked. A failing example, an expression that does not compile, a
+  duplicate id and `confirm` on a text target each fail the load. With
+  `holdAssistantText` set to `true`, no assistant text delta reaches the
+  interactive, RPC or SDK listeners and message end delivers the checked text;
+  with `false`, the events are byte-identical to today's.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -1073,7 +1101,8 @@ Each item is a deliberate difference from the reference.
     redaction, and the personal-data and prompt-injection families. Confirming
     destructive commands and refusing protected paths follow the reference's
     example extensions, with their patterns taken from the manifest instead of the
-    code.
+    code. The `holdAssistantText` setting, which sends replies only when their
+    message ends.
 
 ## Corrected reference defect
 
@@ -1113,9 +1142,8 @@ owners keep their ordering and accepted-write semantics.
   supplies and installs the files.
 - New RPC or JSON fields.
 - Guards without a manifest, local guard files and settings that change guards;
-  checking thinking blocks, which providers sign and replay unchanged; withholding
-  streamed text before its message ends; rewriting existing session files; and
-  detection other than regular expressions.
+  checking thinking blocks, which providers sign and replay unchanged; rewriting
+  existing session files; and detection other than regular expressions.
 - Manifest mode in the browser application.
 
 ## Glossary
