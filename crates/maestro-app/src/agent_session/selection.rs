@@ -31,6 +31,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns `No API key for <provider>/<id>` without changes when the model has no
     /// configured credentials, or a credential, recording or listener failure.
+    /// An admission refusal returns before state, history or settings change.
     pub async fn set_model(&self, model: Arc<RwLock<Model>>) -> Result<(), DiagnosticErrorInfo> {
         self.set_model_checked(model).await.map_err(Into::into)
     }
@@ -90,7 +91,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// The `model_select` notification runs as [`set_model`](Self::set_model)'s does.
     ///
     /// # Errors
-    /// Returns a credential, recording or listener failure.
+    /// Returns an admission refusal before state, history or settings change,
+    /// or a credential, recording or listener failure.
     pub async fn cycle_model(
         &self,
         direction: CycleDirection,
@@ -152,7 +154,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Applies `level`, clamped to the model; records, saves and announces an effective change.
     ///
     /// # Errors
-    /// Returns a recording failure after the agent state changed.
+    /// Returns an admission refusal before state, history or settings change,
+    /// or a recording failure after the agent state changed.
     pub fn set_thinking_level(&self, level: ModelThinkingLevel) -> Result<(), DiagnosticErrorInfo> {
         let edits = self.prepare_thinking_selection(&level)?;
         self.apply_thinking_level(level, edits)
@@ -197,7 +200,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Selects the next supported level; `None` when the model cannot reason.
     ///
     /// # Errors
-    /// Returns a recording failure.
+    /// Returns an admission refusal before state, history or settings change,
+    /// or a recording failure after the agent state changed.
     pub fn cycle_thinking_level(&self) -> Result<Option<ModelThinkingLevel>, DiagnosticErrorInfo> {
         if !self.supports_thinking() {
             return Ok(None);
