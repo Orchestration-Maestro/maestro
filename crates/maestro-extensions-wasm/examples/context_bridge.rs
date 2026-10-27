@@ -49,6 +49,9 @@ mod builtin_read;
 #[path = "context_bridge/builtin_render.rs"]
 mod builtin_render;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_selection.rs"]
+mod builtin_selection;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_signals.rs"]
 mod builtin_signals;
 #[cfg(target_arch = "wasm32")]

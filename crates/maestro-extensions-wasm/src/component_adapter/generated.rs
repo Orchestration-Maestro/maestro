@@ -32,6 +32,8 @@ struct Generated;
 
 impl Imports for Generated {
     forward_resources! { functions {
+        create_tool(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::Tool> => builtin::selection::executable[tool_name, &cwd, options];
+        create_tool_definition(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::ToolDef> => builtin::selection::definition[tool_name, &cwd, options];
         create_local_bash_operations(shell_path: Option<String>) -> ExtensionResult<crate::BashOperations> => builtin::local_operations[shell_path.as_deref()];
         create_read_tool(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::Tool> => builtin::executable_read[&cwd, options];
         create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ExtensionResult<crate::ToolDefinition> => builtin::read[&cwd, options];

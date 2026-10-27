@@ -108,6 +108,10 @@ port! {
         fn create_grep_tool(cwd: String, options: crate::GrepToolOptions) -> crate::Tool;
         /// Constructs a native grep definition over the application's search manager.
         fn create_grep_tool_definition(cwd: String, options: crate::GrepToolOptions) -> ToolDefinition;
+        /// Selects an exact built-in executable name through the native factory.
+        fn create_tool(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> crate::Tool;
+        /// Selects an exact built-in definition name through the native factory.
+        fn create_tool_definition(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> crate::ToolDef;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.

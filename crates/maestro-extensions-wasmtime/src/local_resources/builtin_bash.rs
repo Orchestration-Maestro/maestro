@@ -53,11 +53,27 @@ impl Registry {
         options: Options,
     ) -> Result<Rc<dyn crate::builtin_tools::Definition>, String> {
         let services = self.tool_construction(api)?;
+        let options = self.bash_options(api, options)?;
+        Ok(Rc::new(RwLock::new(
+            maestro_extensions::local::create_bash_tool_definition::<crate::builtin_tools::Context>(
+                cwd,
+                services.bin_dir,
+                options,
+            ),
+        )))
+    }
+
+    /// Retains shell effects under the same emitter for individual and named factories.
+    pub(super) fn bash_options(
+        &self,
+        api: u64,
+        options: Options,
+    ) -> Result<maestro_extensions::local::BashToolOptions, String> {
         let capability = self.capability(api);
         let Some(Capability::Api(api)) = capability.as_deref() else {
             return Err("extension API resource ended".into());
         };
-        let options = maestro_extensions::local::BashToolOptions {
+        Ok(maestro_extensions::local::BashToolOptions {
             command_prefix: options.controls.command_prefix,
             shell_path: options.controls.shell_path,
             operations: options.operations.map(|owner| {
@@ -69,14 +85,7 @@ impl Registry {
                 Rc::new(move |context| intercept(context, &prepare))
                     as maestro_extensions::local::BashSpawnHook
             }),
-        };
-        Ok(Rc::new(RwLock::new(
-            maestro_extensions::local::create_bash_tool_definition::<crate::builtin_tools::Context>(
-                cwd,
-                services.bin_dir,
-                options,
-            ),
-        )))
+        })
     }
 }
 

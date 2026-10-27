@@ -818,6 +818,14 @@ impl host::Host for State {
     ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
         wasmtime::bail!("built-in tools require the production host")
     }
+    fn create_tool(
+        &mut self,
+        _: String,
+        _: String,
+        _: host::ToolFactoryOptions,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
     fn create_read_tool(
         &mut self,
         _: String,

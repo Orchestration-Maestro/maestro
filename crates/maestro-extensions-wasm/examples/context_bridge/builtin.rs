@@ -31,6 +31,10 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(request) = args.strip_prefix("builtin-unknown ") {
+        let result = super::builtin_factories::unknown(api, request);
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(request) = args.strip_prefix("builtin-defaults ") {
         let result = super::builtin_factories::defaults(api, request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));

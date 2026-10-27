@@ -17,6 +17,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     super::mutation_imports::add_to_linker(host)?;
     super::local_bash_imports::add_to_linker(host)?;
     add_bash_factory(host)?;
+    super::builtin_selection_imports::add_to_linker(host)?;
     add_factories(host)?;
     crate::read_imports::add_read(
         host,

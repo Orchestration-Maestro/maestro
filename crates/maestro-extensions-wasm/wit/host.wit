@@ -18,6 +18,21 @@ interface host {
         render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
         execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>, update: option<borrow<callback>>) -> result<string, string>;
     }
+    /// Independent controls and borrowed effects for native named selection.
+    record tool-factory-options {
+        read-auto-resize-images: option<bool>,
+        bash-controls: bash-tool-controls,
+        read-operations: option<borrow<callback>>,
+        bash-operations: option<borrow<callback>>,
+        edit-operations: option<borrow<callback>>,
+        write-operations: option<borrow<callback>>,
+        grep-operations: option<borrow<callback>>,
+        find-operations: option<borrow<callback>>,
+        ls-operations: option<borrow<callback>>,
+        spawn-hook: option<borrow<callback>>,
+    }
+    /// Exact names are selected by the native tools owner.
+    create-tool: func(name: string, cwd: string, options: tool-factory-options) -> result<builtin-tool, string>;
     /// Original native local backend, independent of the factory facade and its callers.
     resource local-bash-operations {
         exec: async func(request: bash-request, signal: option<borrow<abort-signal>>, on-data: borrow<callback>) -> result<option<f64>, string>;

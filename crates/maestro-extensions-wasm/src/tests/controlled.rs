@@ -518,6 +518,22 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn create_tool(
+        &self,
+        _: &str,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_tool_definition(
+        &self,
+        _: &str,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::ToolDef> {
+        Err("built-in tools require the production host".into())
+    }
     fn create_grep_tool(
         &self,
         _: String,

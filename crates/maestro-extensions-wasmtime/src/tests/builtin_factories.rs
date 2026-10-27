@@ -213,3 +213,53 @@ where
     }
     observation
 }
+
+/// Both selectors reject exact non-built-in spellings without probing the supplied directory.
+#[test]
+fn builtin_unknown_names_preserve_the_original_spelling() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        let names = [
+            "",
+            "Read",
+            "READ",
+            " read",
+            "read ",
+            "\u{feff}read",
+            "read\u{85}",
+            "custom 雪",
+            "__proto__",
+            "constructor",
+            "prototype",
+            "read\n",
+            "read\0",
+            "réad",
+            "雪",
+        ];
+        let expected: Vec<_> = names
+            .iter()
+            .map(|name| {
+                let message = format!("Unknown tool name: {name}");
+                json!([message, message])
+            })
+            .collect();
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let result = (command.handler)(
+            format!("builtin-unknown {}", json!(names)),
+            runner.create_command_context(),
+        )
+        .await;
+        let observed: Value = serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        assert_eq!(observed, json!({"errors": expected, "effects": []}));
+        assert!(
+            runner
+                .get_all_registered_tools()
+                .iter()
+                .any(|tool| tool.definition.name() == "custom 雪")
+        );
+    });
+}

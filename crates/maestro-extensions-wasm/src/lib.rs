@@ -27,9 +27,9 @@ pub use tools::{
     EditToolOptions, FindGlobOptions, FindOperations, FindToolDetails, FindToolInput,
     FindToolOptions, GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, LsOperations,
     LsToolDetails, LsToolInput, LsToolOptions, OperationFuture, ReadOperations, ReadToolDetails,
-    ReadToolInput, ReadToolOptions, ReplaceEdit, TruncationLimit, TruncationOptions,
-    TruncationResult, WriteOperations, WriteToolInput, WriteToolOptions, format_size,
-    truncate_head, truncate_line, truncate_tail,
+    ReadToolInput, ReadToolOptions, ReplaceEdit, ToolDef, ToolsOptions, TruncationLimit,
+    TruncationOptions, TruncationResult, WriteOperations, WriteToolInput, WriteToolOptions,
+    format_size, truncate_head, truncate_line, truncate_tail,
 };
 #[doc(hidden)]
 pub mod bindings;

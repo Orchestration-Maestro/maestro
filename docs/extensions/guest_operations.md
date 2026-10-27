@@ -16,6 +16,17 @@ preparation and execution mode. The parameter schema remains the shared
 `ParameterSchema<SchemaCode>`, not a JSON string. Prompt fields and renderers
 belong to definitions only.
 
+## Select a built-in by name
+
+`create_tool(name, cwd, ToolsOptions)` returns a context-free executable;
+`create_tool_definition(name, cwd, ToolsOptions)` returns a registerable `ToolDef`.
+`ToolDef` is the same `ToolDefinition` record used by individual factories.
+Each member of `ToolsOptions` keeps its individual default and affects only the
+selected tool. Selection is native-owned and accepts exactly `read`, `bash`,
+`edit`, `write`, `grep`, `find` and `ls`. Other spellings return
+`Unknown tool name: <original name>` without invoking supplied operations.
+This restriction does not apply to custom names assigned before registration.
+
 ## Wrap and register a read definition
 
 ```rust

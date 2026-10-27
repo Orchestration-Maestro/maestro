@@ -12,6 +12,10 @@ use crate::{
 };
 use std::rc::Rc;
 
+/// Named factories delegate selection to the native tools owner.
+#[path = "selection.rs"]
+pub(super) mod selection;
+
 /// Shell constructors retain the existing synchronous and returned-operation transports.
 #[path = "bash.rs"]
 mod bash;

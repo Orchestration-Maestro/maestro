@@ -97,3 +97,28 @@ fn individual(api: &ExtensionAPI, cwd: &str) -> ExtensionResult<Vec<(Tool, ToolD
         ),
     ])
 }
+
+/// Returns each selector's unmodified error and admits a separate custom-named definition.
+pub(super) fn unknown(api: &ExtensionAPI, request: &str) -> ExtensionResult<String> {
+    let names: Vec<String> = serde_json::from_str(request).map_err(|error| error.to_string())?;
+    let effects = super::builtin_selection::Effects::default();
+    let mut errors = Vec::new();
+    for name in names {
+        let executable = api.create_tool(
+            &name,
+            "/absent-selector-root".into(),
+            super::builtin_selection::options(&effects),
+        );
+        let definition = api.create_tool_definition(
+            &name,
+            "/absent-selector-root".into(),
+            super::builtin_selection::options(&effects),
+        );
+        errors.push(json!([executable.err(), definition.err()]));
+    }
+    let mut custom = api
+        .create_read_tool_definition("/absent-selector-root".into(), ReadToolOptions::default())?;
+    custom.metadata.name = "custom 雪".into();
+    api.register_tool(custom)?;
+    Ok(json!({"errors": errors, "effects": *effects.borrow()}).to_string())
+}

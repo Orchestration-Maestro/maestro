@@ -23,17 +23,7 @@ fn native(cwd: &str, options: BashToolOptions) -> ExtensionResult<Rc<host::Built
         identity.stage(operations);
         identity
     });
-    let hook = options.spawn_hook.map(|hook| {
-        let identity = Identity::new(&Generated);
-        let prepare: crate::PrepareArguments = Rc::new(move |args, emitter| {
-            let context =
-                serde_json::from_value(args.clone()).map_err(|error| error.to_string())?;
-            let context = hook(context, emitter)?;
-            serde_json::to_value(context).map_err(|error| error.to_string())
-        });
-        identity.stage(prepare);
-        identity
-    });
+    let hook = options.spawn_hook.map(spawn_hook);
     let controls = host::BashToolControls {
         command_prefix: options.command_prefix,
         shell_path: options.shell_path,
@@ -82,4 +72,16 @@ pub(crate) fn local_operations(shell_path: Option<&str>) -> ExtensionResult<Bash
             })
         }),
     })
+}
+
+/// Stages synchronous interception through the existing preparation callback frame.
+pub(super) fn spawn_hook(hook: crate::BashSpawnHook) -> Identity<Generated> {
+    let identity = Identity::new(&Generated);
+    let prepare: crate::PrepareArguments = Rc::new(move |args, emitter| {
+        let context = serde_json::from_value(args.clone()).map_err(|error| error.to_string())?;
+        let context = hook(context, emitter)?;
+        serde_json::to_value(context).map_err(|error| error.to_string())
+    });
+    identity.stage(prepare);
+    identity
 }

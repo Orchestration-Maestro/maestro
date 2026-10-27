@@ -3,6 +3,24 @@
 /// Declares native factories without creating a second adapter trait.
 macro_rules! builtin_tool_imports {
     () => {
+        /// Selects an original native executable without normalizing its name.
+        /// # Errors
+        /// Returns native selection or admission failures.
+        fn create_tool(
+            &self,
+            tool_name: &str,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<crate::Tool>;
+        /// Selects an original native definition without normalizing its name.
+        /// # Errors
+        /// Returns native selection or admission failures.
+        fn create_tool_definition(
+            &self,
+            tool_name: &str,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<crate::ToolDef>;
         /// Retains the original native local shell backend.
         /// # Errors
         /// Returns native construction or resource admission failures.

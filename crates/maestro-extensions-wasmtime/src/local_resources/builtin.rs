@@ -9,6 +9,8 @@ use std::{
 
 /// Constructor operands of native definitions, without executing their callbacks.
 pub(crate) enum Factory {
+    /// The original named definition selector with all independent options.
+    Selected(u64, String, String, Box<super::builtin_selection::Options>),
     /// Native shell construction on the original facade's supplied binary directory.
     Bash(u64, String, super::builtin_bash::Options),
     /// Read with its independently selected image policy.
@@ -28,6 +30,9 @@ impl Registry {
     /// Constructs the original typed definition and gives it an independent resource lease.
     pub(super) fn create_builtin(&self, factory: Factory) -> Result<Endpoint, String> {
         let definition: Rc<dyn crate::builtin_tools::Definition> = match factory {
+            Factory::Selected(api, name, cwd, options) => {
+                self.selected(api, &name, cwd, *options)?
+            }
             Factory::Bash(api, cwd, options) => self.bash(api, cwd, options)?,
             Factory::Ls(cwd, operations) => Self::ls(cwd, operations),
             Factory::Grep(api, cwd, operations) => self.grep(api, cwd, operations)?,

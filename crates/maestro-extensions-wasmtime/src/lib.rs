@@ -3,6 +3,8 @@ mod api_imports;
 mod api_reads;
 mod builtin_imports;
 mod builtin_reads;
+/// Native named factory selection on the canonical callback transport.
+mod builtin_selection_imports;
 mod builtin_tools;
 mod callback_imports;
 mod catalog_imports;
