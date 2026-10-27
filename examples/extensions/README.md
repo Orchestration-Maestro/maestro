@@ -27,6 +27,7 @@ inserts at its own place instead of appending at the end of each list.
 | File | Registers |
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `built_in_tool_renderer.rs` | Compact custom displays for read, bash, edit and write, retaining their original execution. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
@@ -83,6 +84,8 @@ component. Both invoke its registered `before_agent_start` event handler:
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- built_in_tool_renderer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
