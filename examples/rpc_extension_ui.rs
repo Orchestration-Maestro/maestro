@@ -1,9 +1,13 @@
 //! A terminal client for streamed RPC events and extension dialogs.
 
+#[cfg(any(unix, test))]
 use serde_json::Value;
-use std::io::{self, BufRead};
+use std::io;
+#[cfg(any(unix, test))]
+use std::io::BufRead;
 
 /// Reads one complete JSON event per physical line without splitting Unicode text.
+#[cfg(any(unix, test))]
 fn read_events(reader: impl BufRead, mut receive: impl FnMut(Value)) -> io::Result<()> {
     for line in reader.lines() {
         if let Ok(event) = serde_json::from_str(&line?) {
@@ -14,18 +18,226 @@ fn read_events(reader: impl BufRead, mut receive: impl FnMut(Value)) -> io::Resu
 }
 
 /// Starts the opt-in terminal demonstration.
-fn main() -> io::Result<()> {
-    read_events(io::stdin().lock(), |_| {})
+#[cfg(unix)]
+fn main() -> io::Result<std::process::ExitCode> {
+    native::main()
 }
 
-/// Runs the retained terminal client against its owned RPC child.
+/// Reports the unavailable native terminal adapter.
+#[cfg(not(unix))]
+fn main() -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "This example needs a Unix terminal.",
+    ))
+}
+
 #[cfg(all(test, unix))]
-fn run_client(
-    tui: maestro_tui::TUI,
-    command: std::process::Command,
-) -> std::future::Ready<io::Result<std::process::ExitStatus>> {
-    drop((tui, command));
-    std::future::ready(Err(io::Error::other("RPC client is not running")))
+use native::run_client;
+
+#[cfg(unix)]
+#[path = "sdk/rpc_extension_ui/client.rs"]
+mod client;
+#[cfg(unix)]
+#[path = "sdk/rpc_extension_ui/output_log.rs"]
+mod output_log;
+
+/// Native terminal composition and the RPC conversation it retains.
+#[cfg(unix)]
+mod native {
+    use super::client::Client;
+    use maestro_app::{
+        configuration::config, presentation_data::keybindings::KeybindingsManager,
+        rpc_types::RpcExtensionUIResponse,
+    };
+    use maestro_tui::tui::InputListenerResult;
+    use maestro_tui::{TUI, TerminalImage};
+    use maestro_tui_crossterm::{ProcessTerminal, ProcessTuiRuntime};
+    use serde_json::Value;
+    use std::{
+        cell::RefCell,
+        io::{self, BufReader, Read},
+        os::unix::process::ExitStatusExt,
+        path::PathBuf,
+        process::{Child, Command, ExitCode, ExitStatus, Stdio},
+        rc::Rc,
+        thread,
+    };
+    use tokio::sync::mpsc;
+
+    /// UI callbacks and the pipe reader hand work to the one conversation owner.
+    pub(super) enum Action {
+        /// A streamed child record.
+        Record(Value),
+        /// An ordinary prompt or local demonstration command.
+        Submit(String),
+        /// The active dialog's answer, paired with its original request.
+        Answer(RpcExtensionUIResponse),
+        /// Abort streaming, dismiss a dialog, or leave an idle client.
+        Escape,
+        /// Leave the client regardless of its current input.
+        Quit,
+        /// A pipe read failed.
+        Failed(io::Error),
+    }
+
+    /// The owned child is killed and reaped even when setup or terminal output fails.
+    struct Agent {
+        /// The process behind the RPC pipes.
+        child: Child,
+    }
+    impl Agent {
+        /// Terminates a still-running child and always reaps its status.
+        fn stop(&mut self) -> io::Result<()> {
+            if self.child.try_wait()?.is_none() {
+                self.child.kill()?;
+            }
+            self.child.wait().map(drop)
+        }
+    }
+    impl Drop for Agent {
+        fn drop(&mut self) {
+            let _ = self.stop();
+        }
+    }
+
+    /// Routes registered exit and interrupt actions before the focused toolkit editor.
+    fn keyboard(tui: &TUI, sender: mpsc::UnboundedSender<Action>) -> Box<dyn Fn()> {
+        let keys =
+            KeybindingsManager::new(maestro_tui::get_keybindings().get_user_bindings(), None);
+        tui.add_input_listener(Rc::new(move |data| {
+            let action = if keys.matches(data, "app.exit") {
+                Some(Action::Quit)
+            } else if keys.matches(data, "app.interrupt") {
+                Some(Action::Escape)
+            } else {
+                None
+            };
+            if let Some(action) = action {
+                let _ = sender.send(action);
+                InputListenerResult::Consume
+            } else {
+                InputListenerResult::Pass
+            }
+        }))
+    }
+
+    /// Hands physical stdout lines to the conversation without blocking terminal input.
+    fn read_pipe(
+        output: std::process::ChildStdout,
+        sender: mpsc::UnboundedSender<Action>,
+    ) -> thread::JoinHandle<()> {
+        thread::spawn(move || {
+            let records = sender.clone();
+            if let Err(error) = super::read_events(BufReader::new(output), |record| {
+                let _ = records.send(Action::Record(record));
+            }) {
+                let _ = sender.send(Action::Failed(error));
+            }
+        })
+    }
+
+    /// Runs the real terminal widgets against a caller-selected child process.
+    pub(super) async fn run_client(tui: TUI, mut command: Command) -> io::Result<ExitStatus> {
+        let mut agent = Agent {
+            child: command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?,
+        };
+        let input = agent
+            .child
+            .stdin
+            .take()
+            .ok_or_else(|| io::Error::other("Missing child stdin"))?;
+        let output = agent
+            .child
+            .stdout
+            .take()
+            .ok_or_else(|| io::Error::other("Missing child stdout"))?;
+        let mut errors = agent
+            .child
+            .stderr
+            .take()
+            .ok_or_else(|| io::Error::other("Missing child stderr"))?;
+        let (sender, receiver) = mpsc::unbounded_channel();
+        let mut client = Client::new(tui.clone(), input, sender.clone())?;
+        let remove = keyboard(&tui, sender.clone());
+        let reader = read_pipe(output, sender);
+        let diagnostics = thread::spawn(move || {
+            let mut bytes = Vec::new();
+            errors.read_to_end(&mut bytes).map(|_| bytes)
+        });
+        let result = async {
+            tui.start()?;
+            client.run(&mut agent.child, receiver).await
+        }
+        .await;
+        remove();
+        let stopped = tui.stop();
+        tui.set_focus(None);
+        tui.clear();
+        drop(client);
+        let reaped = agent.stop();
+        let read = reader
+            .join()
+            .map_err(|_| io::Error::other("RPC reader failed"));
+        let errors = diagnostics
+            .join()
+            .map_err(|_| io::Error::other("RPC stderr reader failed"))?;
+        if let Ok(bytes) = &errors
+            && !bytes.is_empty()
+        {
+            eprint!("{}", String::from_utf8_lossy(bytes));
+        }
+        stopped?;
+        reaped?;
+        read?;
+        errors?;
+        result.map(|status| status.unwrap_or_else(|| ExitStatus::from_raw(0)))
+    }
+    /// Loads the shipped companion artifact and starts a native-only, opt-in RPC session.
+    pub(super) fn main() -> io::Result<ExitCode> {
+        let root = PathBuf::from(config::get_package_dir()?);
+        let binary = root.join("target/debug/maestro");
+        let companion = root.join("target/wasm32-wasip2/release/examples/rpc_demo.wasm");
+        if !binary.is_file() || !companion.is_file() {
+            return Err(io::Error::other(
+                "Build maestro and the rpc_demo component first; see examples/README.md",
+            ));
+        }
+        let mut command = Command::new(binary);
+        command
+            .args([
+                "--mode",
+                "rpc",
+                "--no-session",
+                "--no-extensions",
+                "--extension",
+            ])
+            .arg(companion);
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        let local = Rc::new(tokio::task::LocalSet::new());
+        let tui = TUI::new(
+            Rc::new(RefCell::new(ProcessTerminal::new(local.clone()))),
+            Rc::new(ProcessTuiRuntime::new(local.clone())),
+            TerminalImage::default(),
+            None,
+        );
+        runtime
+            .block_on(local.run_until(run_client(tui, command)))
+            .map(|status| {
+                ExitCode::from(
+                    status
+                        .code()
+                        .and_then(|code| u8::try_from(code).ok())
+                        .unwrap_or(1),
+                )
+            })
+    }
 }
 
 #[cfg(all(test, unix))]
