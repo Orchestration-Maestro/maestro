@@ -274,6 +274,10 @@ fn minimal_mode_shortens_only_the_home_directory() {
             (home.clone(), "~".into()),
             (format!("{home}/src.rs"), "~/src.rs".into()),
             (
+                format!(r"{home}\sibling/src.rs"),
+                format!(r"{home}\sibling/src.rs"),
+            ),
+            (
                 format!("{home}-other/src.rs"),
                 format!("{home}-other/src.rs"),
             ),
