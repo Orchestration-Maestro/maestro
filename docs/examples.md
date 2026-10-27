@@ -30,6 +30,8 @@ a command that adds more echo tools while the session runs,
 friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
+`extensions/model_status.rs` sets the `model` status for each selected model
+and notifies only on an explicit selection or a cycle, never on a restore.
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start. `extensions/summarize.rs` completes a current-branch summary and
 shows it in a custom Markdown view, closing on Enter or Escape.

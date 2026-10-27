@@ -931,3 +931,75 @@ fn file_completion_consumes_the_search_owner_fd_path() {
         },
     );
 }
+
+#[test]
+fn search_preparation_honors_selected_offline_policy() {
+    search_download_policy("search_preparation_honors_selected_offline_policy", false);
+}
+
+#[test]
+fn interactive_initialization_honors_selected_offline_policy() {
+    search_download_policy(
+        "interactive_initialization_honors_selected_offline_policy",
+        true,
+    );
+}
+
+/// Exercises missing helpers through preparation or initialization in checked children.
+fn search_download_policy(test: &str, initialize: bool) {
+    for (case, offline, environment, expected) in [
+        ("flag", Some(true), "", 0),
+        ("online", Some(false), "", 2),
+        ("environment", None, "1", 0),
+    ] {
+        let mut envs = vec![("PATH", "missing-helpers")];
+        if !environment.is_empty() {
+            envs.push(("MAESTRO_OFFLINE", environment));
+        }
+        isolated_case(test, case, &envs, async |directory| {
+            assert_eq!(
+                std::env::var("MAESTRO_OFFLINE").ok().as_deref(),
+                (!environment.is_empty()).then_some(environment)
+            );
+            let requests = Arc::new(std::sync::Mutex::new(Vec::new()));
+            let observed = Arc::clone(&requests);
+            let world = Setup {
+                offline,
+                options: crate::InteractiveModeOptions {
+                    fetch: Some(rejected_search_fetch(observed)),
+                    ..Default::default()
+                },
+                ..Setup::default()
+            }
+            .build(directory);
+            if initialize {
+                start(&world).await;
+            } else {
+                world.mode.prepare_search_tools().await.unwrap();
+            }
+            let requests = requests.lock().unwrap();
+            assert_eq!(
+                requests.len(),
+                expected,
+                "unexpected search acquisitions: {requests:?}"
+            );
+            if expected == 2 {
+                assert!(requests.iter().any(|url| url.contains("/sharkdp/fd/")));
+                assert!(
+                    requests
+                        .iter()
+                        .any(|url| url.contains("/BurntSushi/ripgrep/"))
+                );
+            }
+            assert!(world.mode.fd_path.borrow().is_none());
+        });
+    }
+}
+
+/// Records release requests without contacting a server.
+fn rejected_search_fetch(requests: Arc<std::sync::Mutex<Vec<String>>>) -> maestro_app::Fetch {
+    Arc::new(move |request| {
+        requests.lock().unwrap().push(request.url);
+        Box::pin(async { Err(maestro_app::FetchError::Timeout) })
+    })
+}
