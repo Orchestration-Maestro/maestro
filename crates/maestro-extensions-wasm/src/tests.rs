@@ -128,6 +128,7 @@ pub(crate) mod widget_host;
 pub(crate) mod widget_keys;
 pub(crate) mod widget_lists;
 mod with_deps_example;
+mod working_indicator_example;
 mod working_message_example;
 mod writer_controlled;
 mod writer_ui;
