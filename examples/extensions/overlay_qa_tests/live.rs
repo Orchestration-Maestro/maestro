@@ -312,26 +312,43 @@ impl ComponentView for OutputView {
     }
 }
 
-/// Appends each chunk a pipe delivers; standard output also scrolls to the newest line.
+/// Appends each complete nonempty line a pipe delivers, and the unterminated rest at EOF;
+/// standard output also scrolls to the newest line.
 async fn pump(source: Rc<dyn Readable>, state: &Output, errors: bool) -> ExtensionResult<()> {
-    while let Some(bytes) = source.read().await? {
-        let text = String::from_utf8_lossy(&bytes);
-        if errors {
-            state
-                .lines
-                .borrow_mut()
-                .push(Line::Err(text.trim().to_owned()));
+    let mut pending = Vec::new();
+    loop {
+        let read = source.read().await?;
+        let eof = read.is_none();
+        pending.extend(read.unwrap_or_default());
+        let end = if eof {
+            pending.len()
         } else {
-            let lines = text.split('\n').filter(|line| !line.is_empty());
-            state
-                .lines
-                .borrow_mut()
-                .extend(lines.map(|line| Line::Out(line.to_owned())));
+            pending
+                .iter()
+                .rposition(|&byte| byte == b'\n')
+                .map_or(0, |at| at + 1)
+        };
+        let text = String::from_utf8_lossy(&pending[..end]).into_owned();
+        pending.drain(..end);
+        let lines = text
+            .split('\n')
+            .map(|line| if errors { line.trim() } else { line })
+            .filter(|line| !line.is_empty());
+        state.lines.borrow_mut().extend(lines.map(|line| {
+            if errors {
+                Line::Err(line.to_owned())
+            } else {
+                Line::Out(line.to_owned())
+            }
+        }));
+        if !errors {
             state.scroll.set(state.bottom());
         }
         state.screen.request()?;
+        if eof {
+            return Ok(());
+        }
     }
-    Ok(())
 }
 
 /// Runs the script, reading both pipes until the process exits.

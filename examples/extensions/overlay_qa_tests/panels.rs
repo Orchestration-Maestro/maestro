@@ -24,12 +24,12 @@ const COLORS: [&str; 3] = ["error", "success", "accent"];
 #[derive(Default)]
 struct Typed(RefCell<String>);
 impl Typed {
-    /// Applies Backspace or one printable UTF-16 unit; other input is ignored.
+    /// Applies Backspace or one printable character; other input is ignored.
     fn apply(&self, paint: &Paint, data: &str) -> ExtensionResult<()> {
-        let mut units = data.encode_utf16();
+        let mut chars = data.chars();
         if paint.is(data, &["backspace"])? {
             self.0.borrow_mut().pop();
-        } else if units.next().is_some_and(|unit| unit >= 32) && units.next().is_none() {
+        } else if chars.next().is_some_and(|char| !char.is_control()) && chars.next().is_none() {
             self.0.borrow_mut().push_str(data);
         }
         Ok(())
