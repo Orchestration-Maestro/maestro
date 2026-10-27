@@ -21,6 +21,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "file_trigger"
+path = "../../examples/extensions/file_trigger.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
