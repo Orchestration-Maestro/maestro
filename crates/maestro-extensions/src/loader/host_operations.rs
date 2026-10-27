@@ -1,0 +1,44 @@
+//! Factory-time settings and package operations supplied by the application.
+use crate::{ExtensionAPI, ExtensionExecution};
+use serde_json::Value;
+
+/// Scope of an installed source or raw preference document.
+#[derive(Clone, Copy, Debug)]
+pub enum OperationScope {
+    /// User configuration.
+    User,
+    /// Project configuration.
+    Project,
+}
+
+/// One operation on the loader's original settings and package owners.
+#[derive(Clone, Debug)]
+pub enum HostOperation {
+    /// Reads a raw preference document, without effective overrides.
+    ReadSettings(OperationScope),
+    /// Resolves configured packages, including packages without resources.
+    ResolvePackages,
+    /// Acquires contents without editing preferences.
+    Acquire(String, OperationScope),
+    /// Observes a managed pinned Git checkout without changing it.
+    VerifyPin(String, OperationScope),
+    /// Restores a managed pinned Git checkout through the package owner.
+    RestorePin(String, OperationScope),
+}
+
+impl<E: ExtensionExecution> ExtensionAPI<E> {
+    /// Calls the application operation installed before factory loading.
+    ///
+    /// # Errors
+    /// Returns missing-service, owner or native-operation failures.
+    pub fn host_operation(
+        &self,
+        _operation: HostOperation,
+    ) -> E::Future<'static, Result<Value, String>> {
+        let error = self.owner().err().map_or_else(
+            || "Extension host operations are not configured".to_owned(),
+            |error| error.to_string(),
+        );
+        E::failed_host_operation(error)
+    }
+}

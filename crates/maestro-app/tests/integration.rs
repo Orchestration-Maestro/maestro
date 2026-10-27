@@ -235,3 +235,5 @@ mod artifact_presentation_support;
 mod executable_schemas;
 
 mod session_decisions;
+
+mod host_operations;

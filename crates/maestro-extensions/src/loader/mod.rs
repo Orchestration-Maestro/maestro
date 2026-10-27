@@ -25,3 +25,5 @@ pub use discovery::discover_and_load_extensions;
 pub use factory::load_extension_from_factory;
 #[cfg(not(target_arch = "wasm32"))]
 pub use paths::{load_extensions, load_extensions_with_runtime};
+
+pub mod host_operations;
