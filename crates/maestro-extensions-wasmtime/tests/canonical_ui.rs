@@ -1243,24 +1243,30 @@ fn canonical_tool_renderer_options_are_independent_of_context() {
 
 /// A native read delegated twice must receive exactly the object the wrapper returned.
 #[test]
-fn builtin_retained_rendering_preserves_native_component_identity() {
+fn builtin_renderers_keep_native_paint_and_retained_state() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
         for own in [false, true] {
-            builtin_render_identity(own).await;
+            for flags in [
+                [false, true, false, true, false, true],
+                [true, false, true, false, true, false],
+            ] {
+                builtin_render_identity(own, flags).await;
+            }
         }
     });
 }
 
 /// Compares actual retained painting, not a serialized component identity.
-async fn builtin_render_identity(own: bool) {
+async fn builtin_render_identity(own: bool, flags: [bool; 6]) {
     let bus = maestro_extensions::create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no tails")),
         Rc::new(|_| panic!("no diagnostics")),
     );
     let counts = render_observations(&bus, "builtin-render-count");
+    let contexts = render_observations(&bus, "builtin-render-context");
     let trace = render_observations(&bus, "trace");
     let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
     let binding = builtin_binding(&runner, if own { "own" } else { "base" }).await;
@@ -1269,43 +1275,108 @@ async fn builtin_render_identity(own: bool) {
     let redraws = Rc::new(std::cell::Cell::new(0));
     let args = json!({"path":"second.rs"});
     let mut context = row_context(&args, &rows, &redraws);
+    context.cwd = "/work/雪".into();
+    context.tool_call_id = "paint-😀".into();
+    context.phase = maestro_extensions::ToolRenderPhase {
+        execution_started: flags[0],
+        args_complete: flags[1],
+        is_partial: flags[2],
+    };
+    context.expanded = flags[3];
+    context.show_images = flags[4];
+    context.is_error = flags[5];
     builtin_call_identity(
         binding.render_call.as_ref().unwrap(),
         &theme,
         &mut context,
         own,
     );
+    builtin_result_identity(&binding, &theme, &mut context, bus.for_extension());
+    assert_render_contexts(&contexts.borrow(), flags);
+    assert_eq!(
+        *trace.borrow(),
+        ["g1:native-highlight", "g2:native-highlight"]
+            .repeat(4)
+            .into_iter()
+            .map(Value::from)
+            .collect::<Vec<_>>(),
+        "the native highlighter reenters the same guest"
+    );
+    assert_eq!(
+        *counts.borrow(),
+        [json!(1), json!(2), json!(3), json!(4)],
+        "both slots share guest state"
+    );
+    assert_eq!(redraws.get(), 4, "invalidation reaches the native row");
+    bus.clear();
+}
+
+/// Reuses the actual result component while the native highlighter reenters its guest.
+fn builtin_result_identity(
+    binding: &ToolRendererBinding,
+    theme: &LiveTheme,
+    context: &mut ToolRenderContext<'_, ToolRendererState>,
+    events: maestro_extensions::EventBus<Local>,
+) {
     context.environment = Rc::new(maestro_extensions::ToolRenderEnvironment {
         runtime: context.environment.runtime.clone(),
         readme_path: "/work/README.md".into(),
         live_theme: theme.clone(),
-        highlighter: Rc::new(ReenterHighlight(bus.for_extension())),
+        highlighter: Rc::new(ReenterHighlight(events)),
         terminal_image: context.environment.terminal_image.clone(),
     });
     context.last_component = None;
-    context.is_error = true;
-    builtin_error_result(&binding, &theme, &context);
-    assert_eq!(
-        *trace.borrow(),
-        [
-            json!("g1:native-highlight"),
-            json!("g2:native-highlight"),
-            json!("g1:native-highlight"),
-            json!("g2:native-highlight")
-        ],
-        "the original highlighter reenters this guest before native rendering returns"
+    let first = builtin_error_result(binding, theme, context, "native 雪");
+    let before = first.try_render(60).unwrap();
+    context.last_component = Some(first.clone());
+    let second = builtin_error_result(binding, theme, context, "changed native 雪");
+    let after = second.try_render(60).unwrap();
+    assert_ne!(before, after);
+    assert_eq!(first.try_render(60).unwrap(), after);
+}
+
+/// Every supplied phase, path and presentation flag reaches the actual author callback.
+fn assert_render_contexts(observed: &[Value], flags: [bool; 6]) {
+    let expected: Vec<_> = [
+        ("call", "first.txt", false, Value::Null),
+        ("call", "second.rs", true, Value::Null),
+        ("result", "second.rs", false, json!([false, true])),
+        ("result", "second.rs", true, json!([false, true])),
+    ]
+    .into_iter()
+    .map(|(slot, path, previous, options)| {
+        json!({
+            "slot":slot,"args":{"path":path},"id":"paint-😀","cwd":"/work/雪",
+            "started":flags[0],"complete":flags[1],"partial":flags[2],
+            "expanded":flags[3],"images":flags[4],"error":flags[5],
+            "previous":previous,"options":options
+        })
+    })
+    .collect();
+    assert_eq!(observed, expected);
+}
+
+/// The individual native factory supplies the complete expected call paint independently.
+fn assert_native_call(
+    observed: &[String],
+    theme: &LiveTheme,
+    context: &ToolRenderContext<'_, ToolRendererState>,
+) {
+    let definition = maestro_extensions::local::create_read_tool_definition::<()>(
+        "/".into(),
+        maestro_extensions::ReadToolOptions::default(),
     );
-    assert_eq!(
-        *counts.borrow(),
-        [json!(1), json!(2), json!(3)],
-        "both slots share guest state"
-    );
-    assert_eq!(
-        redraws.get(),
-        3,
-        "invalidation reaches the original native row"
-    );
-    bus.clear();
+    let native = ToolRendererBinding::from_raw(&definition)
+        .unwrap()
+        .render_call
+        .unwrap();
+    let mut independent = context.with_state(context.state.clone());
+    independent.last_component = None;
+    let expected = native(context.args, theme, &independent)
+        .unwrap()
+        .try_render(60)
+        .unwrap();
+    assert_eq!(observed, expected);
 }
 
 /// Registers a real author wrapper, then reads its retained native registration.
@@ -1343,10 +1414,12 @@ fn builtin_call_identity(
     first_context.args = Some(&first_args);
     let first = render(first_context.args, theme, &first_context).unwrap();
     let before = first.try_render(60).unwrap();
+    assert_native_call(&before, theme, &first_context);
     drop(first_context);
     context.last_component = Some(first.clone());
     let second = render(context.args, theme, context).unwrap();
     let after = second.try_render(60).unwrap();
+    assert_native_call(&after, theme, context);
     assert_ne!(before, after);
     assert_eq!(
         first.try_render(60).unwrap(),
@@ -1359,9 +1432,9 @@ fn builtin_error_result(
     binding: &ToolRendererBinding,
     theme: &LiveTheme,
     context: &ToolRenderContext<'_, ToolRendererState>,
-) {
-    let output: Vec<_> =
-        serde_json::from_value(json!([{"type":"text","text":"native 雪"}])).unwrap();
+    text: &str,
+) -> maestro_tui::tui::ComponentHandle {
+    let output: Vec<_> = serde_json::from_value(json!([{"type":"text","text":text}])).unwrap();
     let result = maestro_extensions::ToolRenderResultLike {
         content: &output,
         details: None,
@@ -1378,11 +1451,8 @@ fn builtin_error_result(
         expanded: false,
         is_partial: true,
     };
-    let observed = prepared
-        .render(options, theme, context)
-        .unwrap()
-        .try_render(60)
-        .unwrap();
+    let component = prepared.render(options, theme, context).unwrap();
+    let observed = component.try_render(60).unwrap();
     let native = maestro_extensions::local::create_read_tool_definition::<()>(
         "/".into(),
         maestro_extensions::ReadToolOptions::default(),
@@ -1391,10 +1461,12 @@ fn builtin_error_result(
         .unwrap()
         .render_result
         .unwrap();
+    let mut independent = context.with_state(context.state.clone());
+    independent.last_component = None;
     let expected = native
         .prepare(result.with_details(result.details))
         .unwrap()
-        .render(options, theme, context)
+        .render(options, theme, &independent)
         .unwrap()
         .try_render(60)
         .unwrap();
@@ -1402,6 +1474,7 @@ fn builtin_error_result(
         observed, expected,
         "native environment and error-result painting survive delegation"
     );
+    component
 }
 
 /// A caller cannot invent native rendering effects by omitting the lent row.

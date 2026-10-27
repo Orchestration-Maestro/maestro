@@ -34,6 +34,9 @@ mod builtin_find;
 #[path = "context_bridge/builtin_grep.rs"]
 mod builtin_grep;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_lifetimes.rs"]
+mod builtin_lifetimes;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_ls.rs"]
 mod builtin_ls;
 #[cfg(target_arch = "wasm32")]

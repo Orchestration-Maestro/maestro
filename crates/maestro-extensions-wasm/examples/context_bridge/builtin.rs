@@ -31,6 +31,10 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(action) = args.strip_prefix("builtin-lifetimes ") {
+        let result = super::builtin_lifetimes::command(api, context, action).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(cwd) = args.strip_prefix("builtin-fresh ") {
         let result = super::builtin_factories::fresh(api, context, cwd).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));

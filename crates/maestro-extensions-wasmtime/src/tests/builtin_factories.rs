@@ -397,6 +397,13 @@ async fn registered_observation(
     mut args: Value,
 ) {
     let mut metadata = registered_metadata(registered.definition.metadata());
+    assert_eq!(
+        metadata["name"],
+        format!(
+            "factory-{}",
+            expected["definition"]["name"].as_str().unwrap()
+        )
+    );
     metadata["name"] = expected["definition"]["name"].clone();
     assert_eq!(metadata, expected["definition"]);
     let binding = registered.definition.renderer_binding().unwrap();

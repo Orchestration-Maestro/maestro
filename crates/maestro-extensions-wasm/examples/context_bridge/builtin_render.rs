@@ -24,6 +24,7 @@ pub(super) fn register(api: &ExtensionAPI, mode: &str) -> ExtensionResult<()> {
         let count = context.state::<usize>();
         *count.borrow_mut() += 1;
         emitter.emit("builtin-render-count", serde_json::json!(*count.borrow()))?;
+        observe("call", context, None, &emitter)?;
         (context.invalidate)()?;
         let mut delegated = context.clone();
         if missing {
@@ -48,11 +49,32 @@ pub(super) fn register(api: &ExtensionAPI, mode: &str) -> ExtensionResult<()> {
             let count = context.state::<usize>();
             *count.borrow_mut() += 1;
             emitter.emit("builtin-render-count", serde_json::json!(*count.borrow()))?;
+            observe("result", context, Some(options), &emitter)?;
             (context.invalidate)()?;
             result(result_value, options, theme, context, emitter)
         },
     ));
     api.register_tool(tool)
+}
+
+/// Records the actual row operands before delegating to its retained native renderer.
+fn observe(
+    slot: &str,
+    context: &maestro_extensions_wasm::ToolRenderContext,
+    options: Option<maestro_extensions_wasm::ToolRenderResultOptions>,
+    emitter: &CallbackEmitter<'_>,
+) -> ExtensionResult<()> {
+    emitter.emit(
+        "builtin-render-context",
+        serde_json::json!({
+            "slot":slot,"args":context.args,"id":context.tool_call_id,"cwd":context.cwd,
+            "started":context.phase.execution_started,"complete":context.phase.args_complete,
+            "partial":context.phase.is_partial,"expanded":context.expanded,
+            "images":context.show_images,"error":context.is_error,
+            "previous":context.last_component.is_some(),
+            "options":options.map(|value| serde_json::json!([value.expanded,value.is_partial]))
+        }),
+    )
 }
 
 /// A wrapper deliberately returning a different object from its native base.

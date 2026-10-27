@@ -2916,3 +2916,133 @@ fn builtin_bash_rejections_keep_native_status_and_output() {
         }
     });
 }
+
+/// Successful, failing and rejected factory captures release once, after their last consumer.
+#[test]
+fn builtin_callback_lifetimes_close_without_releasing_other_tools() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        let released = callback_releases(&runner);
+        let (started, resume) = read_gate(&runner);
+        assert_eq!(lifetime_step(&runner, "create").await, "create");
+        released.expect(&["rejected-capture"]).await;
+        assert_lifetime_result(&lifetime_step(&runner, "second").await, "second-capture");
+        assert_eq!(
+            lifetime_step(&runner, "error").await,
+            "owned callback failure 雪"
+        );
+        let pending = lifetime_step(&runner, "first");
+        let control = async {
+            started.await.unwrap();
+            lifetime_step(&runner, "drop-first").await;
+            lifetime_step(&runner, "drop-first-alias").await;
+            released.expect(&["rejected-capture"]).await;
+            assert_lifetime_result(&lifetime_step(&runner, "remaining").await, "second-capture");
+            lifetime_step(&runner, "drop-second").await;
+            released.expect(&["rejected-capture"]).await;
+            assert_eq!(
+                lifetime_step(&runner, "remaining").await,
+                "owned callback failure 雪"
+            );
+            lifetime_step(&runner, "drop-error").await;
+            // Object destruction waits until the other admitted call completes.
+            released.expect(&["rejected-capture"]).await;
+            resume.send(()).unwrap();
+        };
+        let (result, ()) = futures_util::future::join(pending, control).await;
+        assert_lifetime_result(&result, "first-capture");
+        released
+            .expect(&[
+                "error-capture",
+                "first-capture",
+                "rejected-capture",
+                "second-capture",
+            ])
+            .await;
+        lifetime_step(&runner, "barrier").await;
+        released
+            .expect(&[
+                "error-capture",
+                "first-capture",
+                "rejected-capture",
+                "second-capture",
+            ])
+            .await;
+    });
+}
+
+/// The existing application action records actual capture destruction.
+fn callback_releases(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+) -> std::rc::Rc<CallbackReleases> {
+    let released = std::rc::Rc::new(CallbackReleases::default());
+    let counted = released.clone();
+    let mut actions =
+        <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::unbound_actions();
+    actions.set_session_name = std::rc::Rc::new(move |label| {
+        counted.labels.borrow_mut().push(label);
+        counted.changed.notify_one();
+        Ok(())
+    });
+    runner
+        .bind_core(
+            actions,
+            maestro_extensions::ExtensionContextActions::default(),
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
+    released
+}
+
+/// Original application observations acknowledge actual callback destruction, without timers.
+#[derive(Default)]
+struct CallbackReleases {
+    /// Destructor effects, including failed callback-table reentry if one occurs.
+    labels: std::cell::RefCell<Vec<String>>,
+    /// Wakes only when a destructor reaches the native application.
+    changed: tokio::sync::Notify,
+}
+impl CallbackReleases {
+    /// Waits for positive release receipts and rejects early, duplicate or foreign destruction.
+    async fn expect(&self, expected: &[&str]) {
+        while self.labels.borrow().len() < expected.len() {
+            self.changed.notified().await;
+        }
+        let mut actual = self.labels.borrow().clone();
+        actual.sort();
+        assert_eq!(actual, expected);
+    }
+}
+
+/// A separate Store turn closes releases queued by the preceding invocation.
+async fn lifetime_step(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    action: &str,
+) -> String {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let result = (command.handler)(
+        format!("builtin-lifetimes {action}"),
+        runner.create_command_context(),
+    )
+    .await;
+    if action != "barrier" {
+        let barrier = (command.handler)(
+            "builtin-lifetimes barrier".into(),
+            runner.create_command_context(),
+        )
+        .await;
+        assert_eq!(barrier.unwrap_err().to_string(), "barrier");
+    }
+    result.unwrap_err().to_string()
+}
+
+/// Checks the complete final native read record rather than only the retained callback label.
+fn assert_lifetime_result(result: &str, label: &str) {
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(result).unwrap(),
+        json!({"content":[{"type":"text","text":label}]})
+    );
+}
