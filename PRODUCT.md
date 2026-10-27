@@ -32,7 +32,7 @@ frontends remain separate callers of the application layer.
 
 ## Capabilities and Constraints
 
-Screen layouts, wording and behaviour follow the established port contract.
+Screen layouts and behaviour follow the established port contract.
 The design system governs colour, type, the mark, glyph use, spacing where the
 surface has it, and presentation of existing component states. It does not
 redesign workflows or add states, controls or motion. The user's terminal font
