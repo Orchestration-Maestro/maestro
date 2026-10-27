@@ -118,6 +118,18 @@ impl CaseSelection {
     }
 }
 
+/// Whether a child's local time zone follows its `TZ` variable, the premise of a test
+/// that selects a zone that way. Unix hosts read `TZ`; Windows reads its system zone, so
+/// there this reports the unmet premise on standard error and returns `false`.
+#[must_use]
+pub fn local_zone_follows_tz() -> bool {
+    if cfg!(unix) {
+        return true;
+    }
+    eprintln!("premise not met: this host takes the local time zone from its settings, not TZ");
+    false
+}
+
 /// Return this process's typed case or environment-group selection.
 #[must_use]
 pub fn selection() -> CaseSelection {

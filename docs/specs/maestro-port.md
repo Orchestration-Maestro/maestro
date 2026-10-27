@@ -744,7 +744,9 @@ completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
 `TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
-temporary directory unless its case sets one.
+temporary directory unless its case sets one. `local_zone_follows_tz()` states the
+premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
+Windows reads its system zone, so such a test reports the premise and returns there.
 
 ### Test directory owner
 
