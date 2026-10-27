@@ -45,10 +45,16 @@ fn first_text(result: &AgentToolResult) -> &str {
 }
 /// Paints cancellation, custom input or the first matching supplied option number.
 pub(super) fn result(result: &AgentToolResult, theme: &Theme) -> ExtensionResult<Component> {
-    let Some(details) = result.details.present() else {
+    let details = result
+        .details
+        .present()
+        .map(|details| serde_json::from_str::<Value>(details))
+        .transpose()
+        .map_err(|e| e.to_string())?
+        .filter(maestro_json::is_truthy);
+    let Some(details) = details else {
         return Ok((&Text::new(first_text(result), 0, 0, None)?).into());
     };
-    let details: Value = serde_json::from_str(details).map_err(|e| e.to_string())?;
     let text = if details["answer"].is_null() {
         theme.fg("warning", "Cancelled")?
     } else {
