@@ -63,7 +63,7 @@ fn pane_kitty_graphics_write_requests_render_with_settle_backstop() {
     assert_eq!(synchronized.render_delay, None);
     process(&pane, b"\x1b[?2026l");
     pane.set_kitty_graphics_enabled(false);
-    assert_eq!(process(&pane, b"\x1b_Ga=d\x1b\\").render_delay, None);
+    assert_eq!(process(&pane, b"\x1b_Ga=d\x1b\\").render_delay, settle);
 }
 
 #[test]

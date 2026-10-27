@@ -786,7 +786,8 @@ fn fork_uses_target_cwd_and_explicit_or_default_directory() {
     assert_eq!(manager.get_session_dir(), explicit);
     assert!(!fs::exists(&agent).unwrap());
     let default = SessionManager::fork_from(&source, "/work/target", None, &agent).unwrap();
-    let directory = below(scratch.path(), "agent/sessions/--work-target--");
+    let sessions = scratch.path().join("agent").join("sessions");
+    let directory = below(&sessions, "--work-target--");
     assert_eq!(default.get_session_dir(), directory);
     for (manager, directory) in [
         (&manager, explicit.as_str()),

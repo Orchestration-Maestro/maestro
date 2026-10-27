@@ -129,6 +129,21 @@ fn footer_watch_selection_tracks_common_metadata() {
         assert_eq!(e.pending_timers(), 0);
         p.dispose();
     }
+    literal_pattern_worktree_links();
+}
+
+/// Worktree links through a directory whose name holds pattern characters stay literal.
+fn literal_pattern_worktree_links() {
+    let storage = std::ffi::OsStr::new("storage [one]*");
+    // Windows refuses `*` in a name, so the literal-pattern premise cannot be exercised there.
+    if !maestro_test_directory::Scratch::new()
+        .unwrap()
+        .keeps_distinct(&[storage])
+        .unwrap()
+    {
+        eprintln!("premise not met: this host refuses the name {storage:?}");
+        return;
+    }
     for link in [
         "/storage [one]*/worktrees/one",
         "../storage [one]*/worktrees/one",

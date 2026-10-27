@@ -696,14 +696,20 @@ fn maestro_skills_expand_all_home_path_forms() {
     assert!(result.skills.is_empty());
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
-        Some(support::text(&dir.0.path().join("\u{85}~/calendar")))
+        Some(support::text(&support::under(
+            dir.0.path(),
+            "\u{85}~/calendar"
+        )))
     );
 }
 
 /// The complete fixture tree yields exact retained files and diagnostic cardinality.
 #[test]
 fn maestro_skills_load_the_complete_fixture_tree() {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/skills");
+    let root = support::under(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
+        "tests/fixtures/skills",
+    );
     let result = load_skills_from_dir(LoadSkillsFromDirOptions {
         cwd: support::text(&std::env::temp_dir()),
         dir: support::text(&root),
@@ -738,9 +744,14 @@ fn maestro_skills_load_the_complete_fixture_tree() {
 /// Public loading keeps the first name and appends complete collision details last.
 #[test]
 fn maestro_skills_keep_first_discovered_name() {
-    let root =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/skills-collision");
-    let paths = [root.join("first/calendar"), root.join("second/calendar")];
+    let root = support::under(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
+        "tests/fixtures/skills-collision",
+    );
+    let paths = [
+        support::under(&root, "first/calendar"),
+        support::under(&root, "second/calendar"),
+    ];
     let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
         cwd: support::text(&root),
         home: support::text(&root),
@@ -1303,6 +1314,8 @@ fn maestro_skills_use_literal_dot_root_names() {
         let skill = &result.skills[0];
         assert_eq!(skill.name, root);
         assert_eq!(skill.base_dir.as_str(), root);
+        // The file is joined natively, so Windows spells `../SKILL.md` with `\`.
+        let expected_file = expected_file.replace('/', std::path::MAIN_SEPARATOR_STR);
         assert_eq!(skill.file_path.as_str(), expected_file);
         assert_eq!(result.diagnostics.len(), 1);
         assert_eq!(
@@ -1515,7 +1528,7 @@ fn maestro_skills_classify_exact_default_roots() {
             &format!("{root}/SKILL.md"),
             "---\nname: skills\ndescription: Meetings\n---",
         );
-        let paths = [support::text(&dir.0.path().join(root)).to_owned()];
+        let paths = [support::text(&support::under(dir.0.path(), root)).to_owned()];
         let result = load_skills(LoadSkillsOptions {
             cwd: support::text(dir.0.path()),
             home: support::text(dir.0.path()),
