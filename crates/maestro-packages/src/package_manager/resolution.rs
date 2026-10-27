@@ -107,6 +107,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
             let path = super::paths::resolve_local(path, &base, super::operations::home_dir)?;
+            if Path::new(&path).exists() {
+                result.package(source, scope, &path, &base)?;
+            }
             Self::collect_local(path, &mut metadata, filter, result);
             return Ok(());
         }
@@ -132,6 +135,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         {
             self.refresh_temporary_git(git, source).await;
         }
+        result.package(source, scope, &path, "")?;
         metadata.base_dir = Some(path.clone());
         Self::collect_package(&path, &metadata, filter, result)?;
         Ok(())
@@ -246,6 +250,22 @@ pub(super) struct Accumulator {
     seen: [HashMap<String, usize>; 5],
 }
 impl Accumulator {
+    /// Records an admitted package without deriving it from resource files.
+    fn package(
+        &mut self,
+        source: &str,
+        scope: SourceScope,
+        path: &str,
+        base: &str,
+    ) -> io::Result<()> {
+        self.paths.packages.push(ResolvedPackage {
+            source: source.to_owned(),
+            identity: super::configuration::identity_text(source, base)?,
+            scope,
+            installed_path: path.to_owned(),
+        });
+        Ok(())
+    }
     /// Stably ranks resources before retaining the first canonical identity.
     pub(super) fn finish(mut self) -> ResolvedPaths {
         for kind in ResourceType::ALL {
