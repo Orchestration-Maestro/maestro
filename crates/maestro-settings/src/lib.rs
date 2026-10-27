@@ -9,8 +9,8 @@ pub use settings_manager::{
     DoubleEscapeAction, FilteredPackage, ImageSettings, InMemorySettingsStorage, MarkdownSettings,
     MessageDeliveryMode, PackageSource, ProviderRetrySettings, ResolvedBranchSummarySettings,
     ResolvedCompactionSettings, ResolvedProviderRetrySettings, ResolvedRetrySettings,
-    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsError, SettingsListEntry,
-    SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError, SettingsStorageHandle,
-    SettingsUpdate, TerminalSettings, ThinkingBudgetsSettings, ThinkingLevel, TransportSetting,
-    TreeFilterMode, WarningSettings,
+    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsDeciderHandle, SettingsError,
+    SettingsListEntry, SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError,
+    SettingsStorageHandle, SettingsUpdate, TerminalSettings, ThinkingBudgetsSettings,
+    ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
 };

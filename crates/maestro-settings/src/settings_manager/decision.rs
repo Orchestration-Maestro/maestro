@@ -1,6 +1,11 @@
 //! Publisher-supplied decisions for explicit requests and stored preferences.
 
-use std::rc::Rc;
+/// The shared publisher handle; native managers can move between threads.
+#[cfg(not(target_arch = "wasm32"))]
+pub type SettingsDeciderHandle = std::sync::Arc<dyn SettingsDecider>;
+/// The shared publisher handle on a single-thread browser host.
+#[cfg(target_arch = "wasm32")]
+pub type SettingsDeciderHandle = std::rc::Rc<dyn SettingsDecider>;
 
 use super::{Settings, SettingsManager, SettingsScope};
 use serde_json::Value;
@@ -29,7 +34,7 @@ pub enum DecisionRequest<'a> {
 }
 
 /// The one publisher deciding explicit requests and resolving accepted preferences.
-pub trait SettingsDecider {
+pub trait SettingsDecider: super::preferences::thread_bound::StorageThreadBound {
     /// Allows a request or returns the refusal message its caller must report.
     ///
     /// # Errors
@@ -48,7 +53,7 @@ impl SettingsManager {
     ///
     /// # Errors
     /// Returns an error if a publisher is already registered, retaining the first one.
-    pub fn register_decider(&mut self, _decider: Rc<dyn SettingsDecider>) -> Result<(), String> {
+    pub fn register_decider(&mut self, _decider: SettingsDeciderHandle) -> Result<(), String> {
         Ok(())
     }
 }

@@ -4,7 +4,7 @@
 use crate::support::{ControlledStorage, assert_number, block_on, settings, text_entries};
 use maestro_settings::{DecisionRequest, SettingsDecider, SettingsManager, SettingsScope};
 use serde_json::json;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Refuses explicit requests without changing the stored-value view.
 struct Refuse;
@@ -20,7 +20,7 @@ fn refusing_decider_preserves_settings_and_pending_edits() {
     let storage = ControlledStorage::new();
     storage.inject(SettingsScope::Global, r#"{"defaultModel":"stored"}"#);
     let mut manager = SettingsManager::from_storage(storage.clone());
-    manager.register_decider(Rc::new(Refuse)).unwrap();
+    manager.register_decider(Arc::new(Refuse)).unwrap();
     manager.apply_overrides(settings(json!({"defaultModel":"override"})));
     manager.set_default_model_and_provider("new-provider".into(), "new-model".into());
     manager.set_global_key_path("compaction", &["enabled"], Some(json!(false)));
