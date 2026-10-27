@@ -1153,6 +1153,9 @@ impl host::Host for State {
         operation: String,
         data: String,
     ) -> wasmtime::Result<Result<String, String>> {
+        self.observed
+            .helper_calls
+            .push((operation.clone(), data.clone()));
         Ok(self.observed.actions.helper(&operation, &data))
     }
     fn callback_emit(
