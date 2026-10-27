@@ -92,6 +92,8 @@ fn component_paths_use_the_domain_loader() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     let cwd = spelled(root);
+    let decoy = root.join(".maestro").join("extensions").join("decoy.wasm");
+    place(HOOKS, &decoy);
     for (component, directory) in [(LOCATION, "first"), (HOOKS, "second"), (LOCATION, "third")] {
         place(component, &root.join(directory).join("index.wasm"));
     }
@@ -99,6 +101,21 @@ fn component_paths_use_the_domain_loader() {
         ["first", "second", "third"].map(|name| spelled(&root.join(name).join("index.wasm")));
     local(async {
         let bus = TracedBus::new();
+        let discovered = discover_and_load_extensions(
+            &[],
+            &cwd,
+            &spelled(&root.join("agent")),
+            &bus.controller,
+            &loader(),
+        )
+        .await
+        .unwrap();
+        assert!(discovered.errors.is_empty());
+        assert_eq!(discovered.extensions.len(), 1);
+        assert_eq!(
+            discovered.extensions[0].read().unwrap().resolved_path,
+            spelled(&decoy)
+        );
         let empty = load_extensions(Vec::new(), &cwd, &bus.controller, &loader())
             .await
             .unwrap();
