@@ -102,6 +102,7 @@ fn compose_frames() {
 fn shipped_component_stdout_survives_blocked_output_and_reload() {
     for generation in ["p2", "p3"] {
         let root = crate::support::Root::new();
+        root.models("http://127.0.0.1:1/v1");
         let environment = root.command(&[]);
         let output = std::process::Command::new("python3")
             .arg(concat!(
