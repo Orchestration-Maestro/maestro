@@ -31,7 +31,9 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
-session start.
+session start. `extensions/qna.rs` extracts questions from the latest complete
+assistant reply into the editor through the configured model, with a cancellable
+loader; real extraction is opt-in and requires interactive UI and credentials.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion

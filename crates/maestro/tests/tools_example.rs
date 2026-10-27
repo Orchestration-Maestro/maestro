@@ -107,6 +107,7 @@ fn tools_component_changes_native_session_and_restores_branch() {
             local.clone(),
             std::env::var("MAESTRO_TOOLS_COMPONENT").expect("nextest author-component setup"),
             None,
+            super::support::widgets(),
         )
         .await;
         exercise(session).await;
