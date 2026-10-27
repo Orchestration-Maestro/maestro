@@ -1,4 +1,4 @@
-//! Exclusive ownership of the authored trigger path for serialized Linux tests.
+//! Exclusive ownership of a trigger file in a caller-supplied directory.
 #![cfg(target_os = "linux")]
 /// Exclusively owns the authored trigger path, never an existing user's file.
 pub struct Trigger {
@@ -8,14 +8,12 @@ pub struct Trigger {
     path: std::path::PathBuf,
 }
 impl Trigger {
-    /// Refuses to touch an existing trigger; serial nextest admission prevents test collisions.
-    pub fn new_in(_root: &std::path::Path) -> Self {
-        Self {
-            file: std::fs::File::create_new("/tmp/agent-trigger.txt").expect(
-                "file-trigger test requires exclusive /tmp/agent-trigger.txt; existing file left untouched",
-            ),
-            path: "/tmp/agent-trigger.txt".into(),
-        }
+    /// Refuses to touch an existing file in the supplied directory.
+    pub fn new_in(root: &std::path::Path) -> Self {
+        let path = root.join("agent-trigger.txt");
+        let file = std::fs::File::create_new(&path)
+            .expect("file-trigger test requires exclusive ownership; existing file left untouched");
+        Self { file, path }
     }
 
     /// The host path this fixture owns.
@@ -35,10 +33,10 @@ impl Trigger {
 impl Drop for Trigger {
     fn drop(&mut self) {
         use std::os::unix::fs::MetadataExt;
-        if let Ok(current) = std::fs::metadata("/tmp/agent-trigger.txt") {
+        if let Ok(current) = std::fs::metadata(&self.path) {
             let owned = self.file.metadata().unwrap();
             if (current.dev(), current.ino()) == (owned.dev(), owned.ino()) {
-                let _ = std::fs::remove_file("/tmp/agent-trigger.txt");
+                let _ = std::fs::remove_file(&self.path);
             }
         }
     }
