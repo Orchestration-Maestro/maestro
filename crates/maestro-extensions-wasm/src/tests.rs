@@ -125,6 +125,7 @@ mod timed_confirm_example;
 mod titlebar_spinner_example;
 mod tool_callbacks;
 mod tool_events;
+mod tool_override_example;
 mod tools_example;
 mod trigger_compact_example;
 pub(crate) mod ui_host;

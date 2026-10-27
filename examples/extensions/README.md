@@ -44,6 +44,7 @@ inserts at its own place instead of appending at the end of each list.
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `timed_confirm.rs` | `/timed`, `/timed-select` and `/timed-signal` commands that cancel dialogs after five or ten seconds. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
+| `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
@@ -105,6 +106,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- timed_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- titlebar_spinner_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- tool_override_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- tool_override_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -418,6 +423,32 @@ adapter. Separate dialog and clock barriers distinguish approval, cancellation
 and expiration without wall-clock waits. No provider, credentials or installation
 is needed. Loading the component is opt-in and needs a component-enabled host with
 dialog UI and native-wait support.
+
+### What the audited read override does
+
+`tool_override` replaces `read` only when you load it. It records each resolved
+path in `<agent_dir>/read-access.log` through the host's file-mutation queue,
+including blocked attempts and failed reads. Logging failures do not prevent a
+read. `/read-log` shows the last twenty records as an informational notification,
+or `No access log found` when the log cannot be read.
+
+The case-sensitive patterns block `.env`, `.env.<suffix>`, and paths containing
+`/.ssh/`, `/.aws/` or `/.gnupg/`. The secret/credential filename patterns ignore
+case and match singular or plural names ending in `.json`, `.yaml`, `.yml` or
+`.toml`. These are literal illustrative patterns, not a security sandbox:
+symlinks, alternate spellings and names outside them can bypass the checks.
+
+Allowed reads return text, with optional numeric `offset` and `limit`, and the
+total line count. The example decodes invalid UTF-8 with replacement characters
+and clips selected text at a whole UTF-8 scalar within 50 KiB, followed by
+`[Output truncated at 50KB]`. It supplies no custom renderer. This simplified
+reader does not preserve the built-in read tool's image and truncation features.
+
+Build with `--example tool_override` in the command above. Loading is opt-in and
+requires a component-enabled native host with filesystem access; recording also
+needs an existing writable agent directory. Log display needs the host's
+notification UI. Logs contain paths, timestamps and access decisions, not file
+contents. The controlled run uses disposable files and no provider or credentials.
 
 ### What the titlebar spinner does
 
