@@ -518,6 +518,50 @@ printf '%s\n' '{"type":"extension_ui_request","id":"c","method":"notify","notify
 printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notifyType":"error","message":"failure"}'
 "#;
 
+    /// Selected strings retain whitespace and empty values in correlated replies.
+    #[test]
+    fn selection_replies_preserve_padded_and_empty_values() {
+        run_async(async {
+            let case = run_case(
+                shell(SELECTION_PEER),
+                vec![("Padded choice", "\r"), ("Empty choice", "\r")],
+            )
+            .await;
+            assert!(case.status.success(), "peer status: {}", case.status);
+            assert_eq!(case.steps, 2);
+        });
+    }
+
+    /// A peer validates both the identifier and exact serialized selection value.
+    const SELECTION_PEER: &str = r#"
+printf '%s\n' '{"type":"extension_ui_request","id":"padded","method":"select","title":"Padded choice","options":[" Allow "]}'
+read -r line || exit 11
+case "$line" in *'"id":"padded"'*'"value":" Allow "'*) ;; *) exit 12;; esac
+printf '%s\n' '{"type":"extension_ui_request","id":"empty","method":"select","title":"Empty choice","options":[""]}'
+read -r line || exit 13
+case "$line" in *'"id":"empty"'*'"value":""'*) ;; *) exit 14;; esac
+case "$line" in *'"cancelled":true'*) exit 15;; esac
+"#;
+
+    /// Dialog chrome and option labels cannot execute controls before approval.
+    #[test]
+    fn dialog_text_cannot_issue_clipboard_commands_before_approval() {
+        run_async(async {
+            let peer = r#"
+printf '%s\n' '{"type":"extension_ui_request","id":"approval","method":"select","title":"Approve sudo echo \u001b]52;c;YWJj\u0007?","options":["Allow \u001b]52;c;YWJj\u0007"]}'
+read -r line || exit 11
+case "$line" in *'"id":"approval"'*'"value":"Allow \u001b]52;c;YWJj\u0007"'*) ;; *) exit 12;; esac
+"#;
+            let case = run_case(shell(peer), vec![("Approve sudo echo", "\r")]).await;
+            assert!(case.status.success(), "peer status: {}", case.status);
+            assert_eq!(case.steps, 1);
+            assert!(
+                !case.raw.contains("\x1b]52;"),
+                "clipboard command reached terminal"
+            );
+        });
+    }
+
     /// Model text, tool names and protocol errors are literal data, not terminal commands.
     #[test]
     fn streamed_literal_text_cannot_issue_terminal_control_commands() {
