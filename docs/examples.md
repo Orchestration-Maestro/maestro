@@ -46,6 +46,9 @@ committed repository, and approving a restore can change tracked files or leave
 conflicts. `extensions/snake.rs` opens a custom Snake game with keyboard controls,
 timed movement and saved games in session entries; its index gives the build/run
 commands and interactive-host prerequisites.
+`extensions/overlay_test.rs` opens a floating overlay with inline text fields,
+wide characters, theme colors and emoji, for checking how the host composes an
+overlay and places the cursor; its index entry lists the controlled run.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
