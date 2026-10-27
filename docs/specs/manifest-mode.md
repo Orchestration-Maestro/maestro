@@ -1041,7 +1041,11 @@ package resolves conflicts exactly as any other package does.
 - Workflow runs use the reference's faux provider for agent steps; command steps run
   real programs in a temporary folder.
 - Guards: the matching module is tested with rules and text only, for every action,
-  target and precedence case. Each target is then tested through the real host
+  target and precedence case. Overlapping redactions use a name rule matching
+  `Alice Jones` followed by an address rule matching `Alice Jones, [^\n]+` on
+  `Alice Jones, 10 Main St`: the result is `[PII:name]`, with no address left.
+  Reverse the rule order and expect `[PII:address]`; disjoint matches keep their
+  own markers. Each target is then tested through the real host
   with a fixture manifest: a confirmed and a refused destructive command, a
   headless refusal, a refused user shell command, a refused protected-path write,
   a redacted tool result and assistant message as saved in the session file, an
@@ -1051,9 +1055,18 @@ package resolves conflicts exactly as any other package does.
   request. An earlier extension that edits a tool call's arguments has the edited
   arguments checked. A failing example, an expression that does not compile, a
   duplicate id and `confirm` on a text target each fail the load. With
-  `holdAssistantText` set to `true`, no assistant text delta reaches the
-  interactive, RPC or SDK listeners and message end delivers the checked text;
-  with `false`, the events are byte-identical to today's.
+  `holdAssistantText` set to `true`, no unchecked assistant text reaches the
+  interactive, JSON, RPC or SDK listeners in any payload: test text deltas,
+  a terminal-only response whose message start carries the completed reply, and
+  thinking and tool-call updates whose snapshots also contain text. Thinking
+  and tool progress still arrive; message end delivers only the checked text.
+  With `false`, the events are byte-identical to today's.
+- Summary guards: resume a session saved before manifest selection with personal
+  data in user, assistant and tool messages and in a previous summary. Manual and
+  automatic compaction, including split-turn summaries, and branch summaries send
+  only checked text to the faux provider. Matching summary responses are checked
+  before storage, notification and context reuse; a summary supplied by an
+  earlier extension is checked too. Existing session-file bytes stay unchanged.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
