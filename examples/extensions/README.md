@@ -42,6 +42,7 @@ inserts at its own place instead of appending at the end of each list.
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
@@ -52,6 +53,8 @@ inserts at its own place instead of appending at the end of each list.
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
+| `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
+| `todo/view.rs` | The todo example's themed tool rows and interactive list view. |
 | `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
@@ -116,6 +119,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- qna_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
@@ -129,6 +134,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- titlebar_spinner_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- todo_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- tool_override_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -618,6 +625,28 @@ The example starts no process and reads no files. A title-write or name-read
 failure ends the callback or animation with the host's error; tail errors go to
 the host's event-bus reporter.
 
+### What the branch-aware todo example does
+
+The `todo` tool accepts `list`, `add` with nonempty `text`, `toggle` with an `id`,
+and `clear`. Text is kept verbatim, including whitespace. Every result carries
+all items and the next identifier in its details, even when an action reports an
+error. Clearing removes all items and restarts identifiers at one. These are
+session-history snapshots, not files and not the default todo package.
+
+On `session_start` and `session_tree`, the example replays only `todo` tool
+results on the host's current branch. The newest snapshot wins; a branch without
+one starts empty. Tool rows show themed calls and results, with five items in a
+collapsed list and all items when expanded.
+
+`/todos` shows all items and their completion count. Escape or Ctrl+C closes the
+view. Without UI it reports `/todos requires interactive mode`. Build with
+`--example todo`; `todo/view.rs` is its support module, not a separate target.
+The controlled `todo_` runs invoke the registered callbacks with supplied branch,
+terminal, helper and theme inputs. They need no provider, credentials or files.
+Loading the component is opt-in and needs a component-enabled host; the list view
+also needs that host's custom UI, key and terminal-width helpers. Using the tool
+through a real model can incur provider charges.
+
 ### What the Git checkpoint example does
 
 Build with `--example git_checkpoint` using the command above. Loading it is
@@ -647,3 +676,24 @@ Git's unreachable objects. There is no persistent recovery catalog, automatic
 reset, stash push, or built-in checkpoint policy. The controlled runs load the
 built component through the production runner in disposable repositories with
 scripted UI choices. They need Git but no provider, credentials or paid service.
+
+### What the question extractor does
+
+`/qna` reads the latest complete assistant reply on the current branch. It skips
+non-text blocks and joins text blocks with newlines, without trimming them. An
+incomplete newest assistant reply is rejected rather than replaced with an older
+one. A reply without text blocks is skipped; a reply with one empty text block
+reports that no assistant messages were found.
+
+The command replaces the editor with a cancellable bordered loader while the
+selected model extracts questions. Escape cancels the view. Missing credentials,
+completion failures and aborted responses report `Cancelled` and leave the editor
+unchanged. A completed extraction replaces the editor text exactly as returned,
+so the user can fill in answers before submitting. Closing the view disposes the
+loader and releases its pending extraction.
+
+Build with `--example qna` using the command above. Loading is opt-in and needs a
+component-enabled interactive host, a selected model and its configured API key.
+A real extraction sends the assistant reply to that provider and can incur
+charges. The controlled `qna_` runs use a loopback provider and supplied terminal
+input; they require no credentials, paid service or installation.

@@ -116,6 +116,11 @@ path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "qna"
+path = "../../examples/extensions/qna.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
@@ -161,6 +166,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "titlebar_spinner"
 path = "../../examples/extensions/titlebar_spinner.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "todo"
+path = "../../examples/extensions/todo.rs"
 crate-type = ["cdylib"]
 
 [[example]]
