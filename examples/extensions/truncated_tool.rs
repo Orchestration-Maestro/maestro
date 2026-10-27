@@ -76,16 +76,25 @@ async fn search_output(
             .filter(|path| !path.is_empty())
             .unwrap_or_else(|| ".".into()),
     ]);
-    api.exec(
-        "rg",
-        &args,
-        Some(ExecOptions {
-            cwd: Some(cwd),
-            ..Default::default()
-        }),
-    )
-    .await
-    .map_err(|error| format!("ripgrep failed: {error}"))
+    let options = Some(ExecOptions {
+        cwd: Some(cwd),
+        ..Default::default()
+    });
+    let output = api
+        .exec("rg", &args, options.clone())
+        .await
+        .map_err(|error| format!("ripgrep failed: {error}"))?;
+    // The host maps startup failures to the same empty status 1 as a no-match exit.
+    if output.code == 1 && output.stdout.is_empty() && output.stderr.is_empty() {
+        let version = api
+            .exec("rg", &["--version".into()], options)
+            .await
+            .map_err(|error| format!("ripgrep failed: {error}"))?;
+        if version.code != 0 {
+            return Err("ripgrep failed: could not start rg".into());
+        }
+    }
+    Ok(output)
 }
 
 /// Saves complete output in a private directory, awaiting the native file queue.

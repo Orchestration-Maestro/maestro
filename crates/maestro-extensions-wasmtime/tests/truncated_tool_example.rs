@@ -23,7 +23,12 @@ const SEARCH_PROCESS: &str = r#"#!/usr/bin/python3
 import json, os, sys
 from pathlib import Path
 root = Path(__file__).parent
-(root / "invocation.json").write_text(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd()}))
+invocation = {"argv": sys.argv[1:], "cwd": os.getcwd()}
+if sys.argv[1:] == ["--version"]:
+    (root / "version.json").write_text(json.dumps(invocation))
+    print("ripgrep controlled fixture")
+    sys.exit(0)
+(root / "invocation.json").write_text(json.dumps(invocation))
 sys.stdout.buffer.write((root / "stdout").read_bytes())
 sys.stderr.buffer.write((root / "stderr").read_bytes())
 sys.exit(int((root / "code").read_text()))
@@ -48,14 +53,7 @@ fn isolated(name: &str) -> bool {
     )
     .unwrap();
     let environment = BTreeMap::from([
-        (
-            "PATH",
-            format!(
-                "{}:{}",
-                directory.path().display(),
-                std::env::var("PATH").unwrap()
-            ),
-        ),
+        ("PATH", directory.path().display().to_string()),
         (COMPONENT, component.to_str().unwrap().to_owned()),
     ]);
     maestro_test_process::run_per_environment(name, [()], |()| environment.clone())
@@ -157,6 +155,72 @@ fn truncated_tool_component_reports_no_matches_and_search_errors() {
         let error = search(&runner, json!({"pattern":"["})).await.unwrap_err();
         assert_eq!(error, "ripgrep failed: regex parse error: controlled error");
         assert_process(&root, &["--line-number", "--color=never", "--", "[", "."]);
+    });
+}
+
+#[test]
+fn truncated_tool_component_checks_empty_no_match_status() {
+    if isolated("truncated_tool_component_checks_empty_no_match_status") {
+        return;
+    }
+    run(async {
+        let root = Scratch::new().unwrap();
+        supply("", "", 1);
+        let runner = loaded(root.path()).await;
+        let result = search(&runner, json!({"pattern":"needle"})).await.unwrap();
+        assert_eq!(result["content"][0]["text"], "No matches found");
+        let version: Value =
+            serde_json::from_slice(&std::fs::read(process_file("version.json")).unwrap()).unwrap();
+        assert_eq!(version, json!({"argv":["--version"],"cwd":root.path()}));
+    });
+}
+
+#[test]
+fn truncated_tool_component_rejects_missing_executable() {
+    if isolated("truncated_tool_component_rejects_missing_executable") {
+        return;
+    }
+    run(async {
+        let root = Scratch::new().unwrap();
+        let runner = loaded(root.path()).await;
+        std::fs::remove_file(process_file("rg")).unwrap();
+        let error = search(&runner, json!({"pattern":"needle"}))
+            .await
+            .unwrap_err();
+        assert_eq!(error, "ripgrep failed: could not start rg");
+    });
+}
+
+#[test]
+fn truncated_tool_component_rejects_removed_working_directory() {
+    if isolated("truncated_tool_component_rejects_removed_working_directory") {
+        return;
+    }
+    run(async {
+        let root = Scratch::new().unwrap();
+        let runner = loaded(root.path()).await;
+        std::fs::remove_dir(root.path()).unwrap();
+        let error = search(&runner, json!({"pattern":"needle"}))
+            .await
+            .unwrap_err();
+        assert_eq!(error, "ripgrep failed: could not start rg");
+    });
+}
+
+#[test]
+fn truncated_tool_component_rejects_permission_denied() {
+    if isolated("truncated_tool_component_rejects_permission_denied") {
+        return;
+    }
+    run(async {
+        let root = Scratch::new().unwrap();
+        let runner = loaded(root.path()).await;
+        std::fs::set_permissions(process_file("rg"), std::fs::Permissions::from_mode(0o644))
+            .unwrap();
+        let error = search(&runner, json!({"pattern":"needle"}))
+            .await
+            .unwrap_err();
+        assert_eq!(error, "ripgrep failed: could not start rg");
     });
 }
 
