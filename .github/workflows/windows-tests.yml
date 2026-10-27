@@ -149,7 +149,15 @@ jobs:
           run_isolated env | sort
           started=$SECONDS
           set +e
-          if [ "$SHARD" = doctests ]; then
+          # A branch named ci/486-windows-tests-only-<package>[+<package>...] runs only those packages.
+          only=${GITHUB_REF_NAME#ci/486-windows-tests-only-}
+          if [ "$only" != "$GITHUB_REF_NAME" ]; then
+            [ "$SHARD" = 1 ] || exit 0
+            packages=()
+            IFS=+ read -r -a names <<< "$only"
+            for name in "${names[@]}"; do packages+=(-p "$name"); done
+            run_isolated cargo nextest run --tool-config-file "measure:$isolation/nextest.toml" --locked --no-fail-fast "${packages[@]}" 2>&1 | tee nextest.log
+          elif [ "$SHARD" = doctests ]; then
             run_isolated cargo test --workspace --locked --doc 2>&1 | tee nextest.log
           else
             run_isolated cargo nextest run --tool-config-file "measure:$isolation/nextest.toml" --workspace --locked --no-fail-fast --retries 2 --flaky-result pass --final-status-level flaky --partition "count:$SHARD/4" 2>&1 | tee nextest.log
