@@ -154,7 +154,7 @@ fn paint(binding: &ToolRendererBinding, value: &Value, flags: [bool; 2]) -> Vec<
         content: &content,
         details: value.get("details"),
         terminate: None,
-        is_error: Some(false),
+        is_error: Some(value["isError"] == true),
     };
     let rows = ToolRendererState::default();
     let args = json!({});
@@ -411,5 +411,94 @@ fn built_in_tool_renderer_compacts_calls_and_expanded_results() {
         compact_calls(&runner);
         content_previews(&runner);
         diff_preview(&runner);
+    });
+}
+
+/// Executes a registered tool through the same wrapper used by an application session.
+async fn execute(
+    runner: &Rc<ExtensionRunner<Local>>,
+    name: &str,
+    args: Value,
+) -> Result<Value, String> {
+    let registered = runner.get_all_registered_tools();
+    let registered = registered
+        .iter()
+        .find(|tool| tool.definition.name() == name)
+        .unwrap();
+    assert_eq!(registered.metadata().label, name);
+    assert!(!registered.metadata().definition.description.is_empty());
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    (tool.execute)("delegated".into(), args, None, None)
+        .await
+        .map(|result| serde_json::to_value(result).unwrap())
+        .map_err(|error| error.to_string())
+}
+
+/// Uses disposable files and a shell command with fixed text and no repository effects.
+async fn delegated_execution(runner: &Rc<ExtensionRunner<Local>>) -> String {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("note.txt");
+    let names: Vec<_> = runner
+        .get_all_registered_tools()
+        .iter()
+        .map(|tool| tool.definition.name())
+        .collect();
+    assert_eq!(names, ["read", "bash", "edit", "write"]);
+    let written = execute(runner, "write", json!({"path":path,"content":"alpha\n"}))
+        .await
+        .unwrap();
+    assert_eq!(
+        written["content"][0]["text"],
+        format!("Successfully wrote 6 bytes to {}", path.display())
+    );
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "alpha\n");
+    let read = execute(runner, "read", json!({"path":path})).await.unwrap();
+    assert_eq!(read["content"][0]["text"], "alpha\n");
+    let edited = execute(
+        runner,
+        "edit",
+        json!({"path":path,"edits":[{"oldText":"alpha","newText":"beta"}]}),
+    )
+    .await
+    .unwrap();
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "beta\n");
+    assert!(edited["details"]["diff"].as_str().unwrap().contains("beta"));
+    let shell = execute(runner, "bash", json!({"command":"printf 'controlled\\n'"}))
+        .await
+        .unwrap();
+    assert_eq!(shell["content"][0]["text"], "controlled\n");
+    execute(
+        runner,
+        "bash",
+        json!({"command":"printf controlled; exit 7"}),
+    )
+    .await
+    .unwrap_err()
+}
+
+#[test]
+fn built_in_tool_renderer_delegates_execution_and_displays_native_failures() {
+    super::wasi_support::run(async {
+        let runner = loaded().await;
+        let error = delegated_execution(&runner).await;
+        assert_eq!(error, "controlled\n\nCommand exited with code 7");
+        let mut value = text(&error);
+        value["isError"] = json!(true);
+        assert_eq!(
+            paint(&binding(&runner, "bash"), &value, [false; 2]),
+            [format!(
+                "{}{}",
+                fg(&ThemeColor::Error, "exit 7"),
+                fg(&ThemeColor::Dim, " (2 lines)")
+            )]
+        );
+        for name in ["read", "edit", "write", "bash"] {
+            let mut value = text("ENOENT: controlled\nextra");
+            value["isError"] = json!(true);
+            assert_eq!(
+                paint(&binding(&runner, name), &value, [false; 2]),
+                [fg(&ThemeColor::Error, "ENOENT: controlled")]
+            );
+        }
     });
 }
