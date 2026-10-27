@@ -173,3 +173,143 @@ fn reinstalled_pin_discards_dependency_generated_drift() {
             .is_clean()
     );
 }
+
+#[test]
+fn pin_paths_preserve_leading_whitespace() {
+    for name in [" leading", "\nleading"] {
+        let fixture = RetryFixture::new("ordinary");
+        let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
+        std::fs::write(fixture.repo.target.join(name), "untracked").unwrap();
+        let status = fixture
+            .run(fixture.manager.verify_pin(&source, None))
+            .unwrap();
+        assert_eq!(status.changed_paths, [name]);
+    }
+}
+
+#[test]
+fn pin_paths_include_both_sides_of_staged_rename() {
+    let fixture = RetryFixture::new("ordinary");
+    let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
+    git(&fixture.repo.target, &["mv", "content", "renamed"]);
+    let status = fixture
+        .run(fixture.manager.verify_pin(&source, None))
+        .unwrap();
+    assert_eq!(status.changed_paths, ["content", "renamed"]);
+}
+
+#[test]
+fn pin_checks_do_not_trust_index_suppression_flags() {
+    for flag in ["--assume-unchanged", "--skip-worktree"] {
+        let fixture = RetryFixture::new("ordinary");
+        fixture.use_local_clone();
+        let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
+        git(&fixture.repo.target, &["update-index", flag, "content"]);
+        std::fs::write(fixture.repo.target.join("content"), "hidden edit").unwrap();
+        let status = fixture
+            .run(fixture.manager.verify_pin(&source, None))
+            .unwrap();
+        assert_eq!(status.changed_paths, ["content"]);
+        assert!(!status.is_clean());
+        fixture
+            .run(fixture.manager.restore_pin(&source, None))
+            .unwrap();
+        assert_eq!(
+            std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
+            "manifest"
+        );
+        assert!(
+            fixture
+                .run(fixture.manager.verify_pin(&source, None))
+                .unwrap()
+                .is_clean()
+        );
+    }
+}
+
+#[test]
+fn unavailable_pin_reports_tracked_drift_against_head() {
+    let fixture = RetryFixture::new("ordinary");
+    std::fs::write(fixture.repo.target.join("content"), "edited").unwrap();
+    git(
+        &fixture.repo.target,
+        &["mv", "extensions/retained.ts", "renamed.ts"],
+    );
+    let status = fixture
+        .run(
+            fixture
+                .manager
+                .verify_pin("git:github.com/acme/tool@absent", None),
+        )
+        .unwrap();
+    assert!(status.expected_commit.is_none());
+    assert_eq!(
+        status.changed_paths,
+        ["content", "extensions/retained.ts", "renamed.ts"]
+    );
+}
+
+#[test]
+fn missing_project_pin_prepares_ignored_managed_root() {
+    use maestro_packages::InstalledSourceScope;
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
+    let cwd = fixture.repo.scratch.path().join("cwd");
+    std::fs::create_dir(&cwd).unwrap();
+    git(&cwd, &["init"]);
+    fixture
+        .run(
+            fixture
+                .manager
+                .restore_pin(&source, Some(InstalledSourceScope::Project)),
+        )
+        .unwrap();
+    assert!(cwd.join(".maestro/git/.gitignore").is_file());
+    assert_eq!(
+        git(&cwd, &["status", "--porcelain", "--untracked-files=all"]),
+        "?? .maestro/git/.gitignore"
+    );
+}
+
+#[test]
+fn pin_restore_does_not_accept_remaining_submodule_edits() {
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    git(
+        &fixture.repo.target,
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            fixture.repo.remote.to_str().unwrap(),
+            "sub",
+        ],
+    );
+    git(&fixture.repo.target, &["commit", "-am", "submodule"]);
+    let commit = git(&fixture.repo.target, &["rev-parse", "HEAD"]);
+    git(
+        &fixture.repo.target,
+        &["push", "origin", "HEAD:refs/heads/with-sub"],
+    );
+    let source = format!("git:github.com/acme/tool@{commit}");
+    std::fs::write(fixture.repo.target.join("sub/content"), "nested edit").unwrap();
+    assert!(
+        !fixture
+            .run(fixture.manager.verify_pin(&source, None))
+            .unwrap()
+            .is_clean()
+    );
+    fixture
+        .run(fixture.manager.restore_pin(&source, None))
+        .unwrap();
+    assert!(
+        fixture
+            .run(fixture.manager.verify_pin(&source, None))
+            .unwrap()
+            .is_clean()
+    );
+    let nested = fixture.repo.target.join("sub/content");
+    assert!(!nested.exists() || std::fs::read_to_string(nested).unwrap() != "nested edit");
+}
