@@ -220,9 +220,12 @@ fn restore_extension_order<E: ExtensionExecution>(
         .enumerate()
         .map(|(index, path)| (path.as_str(), index))
         .collect();
-    result
-        .extensions
-        .sort_by_key(|extension| order.get(read(extension).path.as_str()).copied());
+    result.extensions.sort_by_key(|extension| {
+        order
+            .get(read(extension).path.as_str())
+            .copied()
+            .unwrap_or(paths.len())
+    });
 }
 
 /// Defaults are seeded during factory execution, so reselect them from registration order.

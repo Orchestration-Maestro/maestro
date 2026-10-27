@@ -1,5 +1,5 @@
 //! Early base factories and their ordinary package resource positions.
-use super::{DefaultEventBus, DefaultResourceLoader, ResourceKind};
+use super::{DefaultEventBus, DefaultResourceLoader};
 use maestro_extensions::{
     LoadExtensionsResult, create_extension_runtime, load_extensions_with_runtime,
 };
@@ -42,7 +42,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let paths: Vec<_> = resolved
             .extensions
             .iter()
-            .filter(|entry| entry.enabled && !self.is_disabled(ResourceKind::Extensions))
+            .filter(|entry| entry.enabled)
             .map(|entry| entry.path.clone())
             .collect();
         let paths = self.merge_paths(&paths, [])?;
