@@ -746,11 +746,12 @@ input; they require no credentials, paid service or installation.
 ### What the structured answer tool does
 
 `structured_output` accepts a `headline`, a `summary` and an `actionItems` array
-of strings. It returns `Saved structured output: <headline>` as text, keeps the
+of strings. It returns `Structured answer ready: <headline>` as text, keeps the
 three fields in result details and sets the terminate flag. The agent ends the
 run on that result without requesting another completion. Both collapsed and
 expanded rows show the full themed headline, summary and numbered action items.
-A result without details shows its first content block if that block is text.
+Missing, null, false, zero or empty-string details show the first content block
+if that block is text.
 
 Build with `--example structured_output` using the command above. Loading is
 opt-in and needs a component-enabled host; themed rows also need its tool
