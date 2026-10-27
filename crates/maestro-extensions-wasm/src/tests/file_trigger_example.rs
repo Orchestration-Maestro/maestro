@@ -54,6 +54,11 @@ fn messages(host: &Controlled) -> Vec<Value> {
 
 #[test]
 fn file_trigger_delivers_nonempty_contents_and_releases_watches() -> Result<(), String> {
+    delivery(|| Ok(()))
+}
+
+/// Exercises delivery while another instance may be running.
+fn delivery(overlap: impl FnOnce() -> Result<(), String>) -> Result<(), String> {
     let mut trigger = Trigger::new();
     let (host, exports) = super::block_on(start::<FileTrigger>())?;
     host.observe().catalog.data.has_ui = true;
@@ -68,6 +73,7 @@ fn file_trigger_delivers_nonempty_contents_and_releases_watches() -> Result<(), 
         notifications[0].operands,
         json!(["Watching /tmp/agent-trigger.txt", "Info"])
     );
+    overlap()?;
     trigger.write(" \u{feff}\nRun the tests Ω\n\u{feff} ");
     host.notify_watch(0)?;
     assert_eq!(
@@ -144,4 +150,13 @@ fn file_trigger_ignores_transient_errors_without_clearing_rejected_text() -> Res
         ]
     );
     Ok(())
+}
+
+#[test]
+fn file_trigger_instances_overlap_without_sharing_contents() -> Result<(), String> {
+    delivery(|| {
+        std::thread::spawn(file_trigger_delivers_nonempty_contents_and_releases_watches)
+            .join()
+            .expect("the overlapping instance must not collide")
+    })
 }
