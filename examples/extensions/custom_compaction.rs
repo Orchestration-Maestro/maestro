@@ -7,11 +7,12 @@
 )]
 
 use maestro_extensions_wasm::{
-    AssistantContent, CompactionResult, Context, ExtensionAPI, ExtensionContext, ExtensionEvent,
-    ExtensionEventResult, ExtensionFuture, ExtensionResult, Message, NotificationType, Presence,
-    ProviderStreamOptions, ResolvedRequestAuth, SessionBeforeCompactEvent,
-    SessionBeforeCompactResult, SessionEvent, StreamOptions, TextContent, UserBlock, UserContent,
-    UserMessage, complete, convert_to_llm, serialize_conversation,
+    AbortSignal, AssistantContent, CompactionResult, Context, ExtensionAPI, ExtensionContext,
+    ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult, Message, Model,
+    NotificationType, Presence, ProviderStreamOptions, ResolvedRequestAuth,
+    SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionEvent, StopReason, StreamOptions,
+    TextContent, UserBlock, UserContent, UserMessage, complete, convert_to_llm,
+    serialize_conversation, utils,
 };
 use std::{
     rc::Rc,
@@ -74,23 +75,72 @@ fn summary_text(content: &[AssistantContent]) -> String {
         .join("\n")
 }
 
+/// Resolves the independently selected model without turning missing credentials into a request.
+async fn model_options(
+    ctx: &ExtensionContext,
+    signal: AbortSignal,
+) -> ExtensionResult<Option<(Model, ProviderStreamOptions)>> {
+    let registry = ctx.model_registry()?;
+    let Some(model) = registry.find("google", "gemini-2.5-flash")? else {
+        ctx.ui()?.notify(
+            "Could not find Gemini Flash model, using default compaction",
+            Some(NotificationType::Warning),
+        )?;
+        return Ok(None);
+    };
+    let (api_key, headers) = match registry.get_api_key_and_headers(model.clone()).await? {
+        ResolvedRequestAuth::Ok { api_key, headers } => (api_key, headers),
+        ResolvedRequestAuth::Error { error } => {
+            ctx.ui()?.notify(
+                &format!("Compaction auth failed: {error}"),
+                Some(NotificationType::Warning),
+            )?;
+            return Ok(None);
+        }
+    };
+    let Some(api_key) = api_key.filter(|key| !key.is_empty()) else {
+        ctx.ui()?.notify(
+            &format!(
+                "No API key for {}, using default compaction",
+                model.provider
+            ),
+            Some(NotificationType::Warning),
+        )?;
+        return Ok(None);
+    };
+    Ok(Some((
+        model,
+        ProviderStreamOptions {
+            common: StreamOptions {
+                api_key: Some(api_key),
+                headers,
+                max_tokens: Some(8192.0),
+                signal: Some(signal),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )))
+}
+
+/// Tests emptiness with the same whitespace owner used by the host's other text operations.
+fn summary_is_blank(api: &ExtensionAPI, text: &str) -> ExtensionResult<bool> {
+    for ch in text.chars() {
+        if !utils::is_whitespace_char(api, &ch.to_string())? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 /// Requests a summary using the host's model, authentication and conversation helpers.
 async fn summarize(
     api: &ExtensionAPI,
     event: &SessionBeforeCompactEvent,
     ctx: &ExtensionContext,
-) -> ExtensionResult<CompactionResult> {
-    let registry = ctx.model_registry()?;
-    let model = registry
-        .find("google", "gemini-2.5-flash")?
-        .ok_or("Could not find Gemini Flash model, using default compaction")?;
-    let ResolvedRequestAuth::Ok {
-        api_key: Some(api_key),
-        headers,
-    } = registry.get_api_key_and_headers(model.clone()).await?
-    else {
-        return Err("No API key for google, using default compaction".into());
-    };
+    model: Model,
+    options: ProviderStreamOptions,
+) -> ExtensionResult<Option<CompactionResult>> {
     let preparation = &event.preparation;
     let messages: Vec<_> = preparation
         .messages_to_summarize
@@ -111,26 +161,34 @@ async fn summarize(
     let response = complete(
         model,
         summary_context(prompt(&conversation, &preparation.previous_summary))?,
-        Some(ProviderStreamOptions {
-            common: StreamOptions {
-                api_key: Some(api_key),
-                headers,
-                max_tokens: Some(8192.0),
-                signal: Some(event.signal.clone()),
-                ..Default::default()
-            },
-            ..Default::default()
-        }),
+        Some(options),
     )
     .await?;
     let response = response.read().map_err(|error| error.to_string())?;
+    if event.signal.aborted() || response.stop_reason == StopReason::Aborted {
+        return Ok(None);
+    }
+    if response.stop_reason == StopReason::Error {
+        return Err(response
+            .error_message
+            .as_deref()
+            .unwrap_or("Summary provider failed")
+            .into());
+    }
     let summary = summary_text(&response.content);
-    Ok(CompactionResult {
+    if summary_is_blank(api, &summary)? {
+        ctx.ui()?.notify(
+            "Compaction summary was empty, using default compaction",
+            Some(NotificationType::Warning),
+        )?;
+        return Ok(None);
+    }
+    Ok(Some(CompactionResult {
         summary,
         first_kept_entry_id: preparation.first_kept_entry_id.clone(),
         tokens_before: preparation.tokens_before,
         details: Presence::Missing,
-    })
+    }))
 }
 
 /// Handles the supplied compaction without changing session history directly.
@@ -146,13 +204,28 @@ async fn on_compact(
         "Custom compaction extension triggered",
         Some(NotificationType::Info),
     )?;
-    let compaction = summarize(&api, event, &ctx).await?;
-    Ok(Some(ExtensionEventResult::SessionBeforeCompact(
-        SessionBeforeCompactResult {
+    if event.signal.aborted() {
+        return Ok(None);
+    }
+    let Some((model, options)) = model_options(&ctx, event.signal.clone()).await? else {
+        return Ok(None);
+    };
+    let compaction = match summarize(&api, event, &ctx, model, options).await {
+        Ok(compaction) => compaction,
+        Err(error) => {
+            ctx.ui()?.notify(
+                &format!("Compaction failed: {error}"),
+                Some(NotificationType::Error),
+            )?;
+            None
+        }
+    };
+    Ok(compaction.map(|compaction| {
+        ExtensionEventResult::SessionBeforeCompact(SessionBeforeCompactResult {
             cancel: Presence::Missing,
             compaction: Presence::Present(compaction),
-        },
-    )))
+        })
+    }))
 }
 
 /// Registers custom compaction for this explicitly loaded extension.
