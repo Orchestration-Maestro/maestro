@@ -48,3 +48,114 @@ fn tic_tac_toe_initial_board_and_out_of_turn_play() -> Result<(), String> {
     super::example_support::released_component(&mut host)?;
     Ok(())
 }
+
+/// Supplies branch entries to the registered reconstruction callback.
+fn restore(host: &mut Harness, name: &str, branch: &Value) -> Result<(), String> {
+    host.observed().readers.control(
+        &json!({"bind":{"replies":[{"method":"getBranch","args":[null],"value":branch}]}})
+            .to_string(),
+    );
+    let key = host.observed().callback(&format!("event {name}"))?;
+    let ctx = host.ordinary("/work").map_err(|e| e.to_string())?;
+    let exports = host.exports.clone();
+    let event = if name == "session_start" {
+        json!({"type":name,"reason":"resume"})
+    } else {
+        json!({"type":name,"newLeafId":"new","oldLeafId":"old"})
+    };
+    super::block_on(host.store.run_concurrent(async |accessor| {
+        exports
+            .call_invoke_event(
+                accessor,
+                super::host::borrow(key),
+                event.to_string(),
+                super::host_family::guest::Capabilities { ctx, signal: None },
+            )
+            .await
+    }))
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())??;
+    Ok(())
+}
+
+/// An ordinary custom save on the current branch, not an observation of private game state.
+fn save(details: &Value) -> Value {
+    json!({"type":"custom","id":"save","parentId":null,"timestamp":"2026-01-01T00:00:00Z","customType":"tic-tac-toe-save","data":details})
+}
+
+/// Moves await the authored delay, clamp, retain failed cursors and persist detached snapshots.
+#[test]
+fn tic_tac_toe_atomic_moves_restore_and_persist_on_the_branch() -> Result<(), String> {
+    let mut host = Harness::example("tic_tac_toe")?;
+    let board = json!({"board":[["X"," "," "],[" "," "," "],[" "," "," "]],"agentCursorRow":0,"agentCursorCol":0,"status":"playing","currentTurn":"O"});
+    restore(&mut host, "session_start", &json!([save(&board)]))?;
+    assert_eq!(
+        tool(&mut host, "tic_tac_toe_see_board", &json!({}))?["details"],
+        board
+    );
+    assert!(
+        tool(&mut host, "tic_tac_toe", &json!({"action":"play"}))
+            .unwrap_err()
+            .contains("already X")
+    );
+    for (action, row, col) in [
+        ("move_up", 0, 0),
+        ("move_left", 0, 0),
+        ("move_down", 1, 0),
+        ("move_down", 2, 0),
+        ("move_down", 2, 0),
+        ("move_right", 2, 1),
+        ("move_right", 2, 2),
+        ("move_right", 2, 2),
+        ("move_up", 1, 2),
+    ] {
+        let result = tool(&mut host, "tic_tac_toe", &json!({"action":action}))?;
+        assert_eq!(result["details"]["agentCursorRow"], row);
+        assert_eq!(result["details"]["agentCursorCol"], col);
+    }
+    let played = tool(&mut host, "tic_tac_toe", &json!({"action":"play"}))?;
+    assert_eq!(
+        played["details"]["board"],
+        json!([["X", " ", " "], [" ", " ", "O"], [" ", " ", " "]])
+    );
+    assert_eq!(played["details"]["agentCursorRow"], 0);
+    assert_eq!(played["details"]["agentCursorCol"], 0);
+    assert_eq!(played["details"]["currentTurn"], "X");
+    assert_eq!(
+        host.observed()
+            .transcript
+            .iter()
+            .filter(|s| s.as_str() == "native-wait 0 300000000")
+            .count(),
+        9
+    );
+    persisted_and_replayed(&mut host, &board, &played)?;
+    super::example_support::released_component(&mut host)?;
+    Ok(())
+}
+
+/// Verifies the host received detached saves and replays only supplied branch snapshots.
+fn persisted_and_replayed(host: &mut Harness, board: &Value, played: &Value) -> Result<(), String> {
+    let saves: Vec<Value> = host
+        .observed()
+        .transcript
+        .iter()
+        .filter_map(|s| s.strip_prefix("entry tic-tac-toe-save "))
+        .map(|s| serde_json::from_str(s).unwrap())
+        .collect();
+    assert_eq!(saves.len(), 11);
+    assert_eq!(&saves[0], board);
+    assert_eq!(saves[10], played["details"]);
+    let message = json!({"type":"message","id":"result","parentId":null,"timestamp":"2026-01-01T00:00:00Z","message":{"role":"toolResult","toolCallId":"call","toolName":"tic_tac_toe","content":[],"details":played["details"],"isError":false,"timestamp":0}});
+    restore(host, "session_tree", &json!([save(board), message]))?;
+    assert_eq!(
+        tool(host, "tic_tac_toe_see_board", &json!({}))?["details"],
+        played["details"]
+    );
+    restore(host, "session_tree", &json!([]))?;
+    assert_eq!(
+        tool(host, "tic_tac_toe_see_board", &json!({}))?["details"]["board"],
+        json!([[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]])
+    );
+    Ok(())
+}
