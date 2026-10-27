@@ -169,8 +169,9 @@ an I/O failure after admission keeps the owner's ordinary failure behaviour.
 
 `SettingsDecider::resolve` receives only the mutable effective view and returns
 diagnostic messages. The manager calls it after base values, scope merging and
-locks, and when applying an admitted runtime override. The callback may change
-that view, but never receives the raw scopes or persistence queue. Its messages
+locks, and when applying an admitted runtime override. It restores locked values
+again after the callback, so resolution cannot weaken a lock. The callback may
+change the view but never receives the raw scopes or persistence queue. Its messages
 use the existing settings error channel. Reads and resolution never rewrite
 stored conflicting values.
 

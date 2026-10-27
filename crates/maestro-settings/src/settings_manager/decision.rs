@@ -54,6 +54,7 @@ pub trait SettingsDecider: super::preferences::thread_bound::StorageThreadBound 
 
     /// Resolves stored preferences in memory and returns diagnostics for changed values.
     /// Raw scopes and queued edits are never passed to this method.
+    /// Locked base values are restored after it returns.
     fn resolve(&self, _settings: &mut Settings) -> Vec<String> {
         Vec::new()
     }
@@ -75,14 +76,14 @@ impl SettingsManager {
 
     /// Resolves only the merged view, reporting diagnostics outside storage locks.
     pub(super) fn resolve_effective(&mut self) {
-        let Some(decider) = &self.decider else {
-            return;
-        };
-        let mut view = Settings(std::mem::take(&mut self.effective));
-        for message in decider.resolve(&mut view) {
-            self.report_refusal(SettingsScope::Global, message);
+        if let Some(decider) = &self.decider {
+            let mut view = Settings(std::mem::take(&mut self.effective));
+            for message in decider.resolve(&mut view) {
+                self.report_refusal(SettingsScope::Global, message);
+            }
+            self.effective = view.0;
         }
-        self.effective = view.0;
+        self.apply_base_locks();
     }
 
     /// Asks the publisher without changing any settings or acquiring storage locks.
