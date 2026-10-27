@@ -581,7 +581,10 @@ async fn qualify_refusals(host: &Harness, generation: &str, denied: &Path) {
             "{generation} {path}: {observed}"
         );
         if generation == "p3" {
-            assert_eq!(observed["code"], "NotPermitted", "{path}: {observed}");
+            assert_eq!(
+                observed["code"], "ErrorCode::NotPermitted",
+                "{path}: {observed}"
+            );
         }
     }
     let observed = host
@@ -592,6 +595,9 @@ async fn qualify_refusals(host: &Harness, generation: &str, denied: &Path) {
         "{generation}: {observed}"
     );
     if generation == "p3" {
-        assert_eq!(observed["code"], "Access", "OS denial: {observed}");
+        assert_eq!(
+            observed["code"], "ErrorCode::Access",
+            "OS denial: {observed}"
+        );
     }
 }
