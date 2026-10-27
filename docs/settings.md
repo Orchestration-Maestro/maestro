@@ -558,3 +558,20 @@ Whole-field and object-key setters still replace the value they address.
 
 Use `set_global_key_paths` when several leaves form one change. The batch publishes
 once and reaches storage in one write, so readers cannot observe half a change.
+
+`flush` returns a future that does not borrow the manager. When the manager is
+shared through a `RefCell`, release the borrow before awaiting it:
+
+```rust
+# use maestro_settings::{Settings, SettingsManager, SettingsScope};
+# use serde_json::json;
+# async fn example() {
+let settings = std::cell::RefCell::new(SettingsManager::in_memory(Settings::default()));
+settings.borrow_mut().set_key_path(
+    SettingsScope::Project, "custom", &["enabled"], Some(json!(true)),
+);
+let pending = settings.borrow().flush();
+pending.await;
+let errors = settings.borrow_mut().drain_errors();
+# }
+```

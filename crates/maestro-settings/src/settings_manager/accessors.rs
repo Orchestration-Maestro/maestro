@@ -85,6 +85,17 @@ impl SettingsManager {
         );
     }
 
+    /// Sets or removes a literal preference path in the selected scope.
+    pub fn set_key_path(
+        &mut self,
+        _scope: SettingsScope,
+        field: &str,
+        keys: &[&str],
+        value: Option<Value>,
+    ) {
+        self.set_global_key_path(field, keys, value);
+    }
+
     /// Returns the last changelog version shown, if any.
     #[must_use]
     pub fn get_last_changelog_version(&self) -> Option<String> {
