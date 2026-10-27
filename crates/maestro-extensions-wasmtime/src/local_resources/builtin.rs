@@ -247,9 +247,10 @@ impl State {
                 .map(crate::writer_reads::decode)
                 .transpose()?
                 .map(Arc::new);
+            let initial_error = Rc::new(std::cell::RefCell::new(None));
             let update = execution
                 .update
-                .map(|handler| self.builtin_update(handler, &execution.api))
+                .map(|handler| self.builtin_update(handler, &execution.api, initial_error.clone()))
                 .transpose()?;
             let invocation = crate::builtin_tools::Invocation {
                 id: execution.id,
@@ -261,7 +262,9 @@ impl State {
                     .transpose()?,
                 update,
             };
-            Ok(definition.clone().execute(invocation, model))
+            let work = definition.clone().execute(invocation, model);
+            // Native initial progress runs synchronously, before the backend future is polled.
+            initial_error.borrow_mut().take().map_or(Ok(work), Err)
         })();
         match result {
             Ok(work) => self.admit(
@@ -289,6 +292,7 @@ impl State {
         &self,
         handler: crate::guest_calls::Handle,
         api: &crate::api_reads::Endpoint,
+        initial_error: Rc<std::cell::RefCell<Option<String>>>,
     ) -> Result<
         maestro_extensions::AgentToolUpdateCallback<serde_json::Value, maestro_extensions::Local>,
         String,
@@ -308,7 +312,8 @@ impl State {
                     )
                 });
             if let Err(error) = result {
-                events.report_error("tool-update", &std::io::Error::other(error));
+                events.report_error("tool-update", &std::io::Error::other(error.clone()));
+                *initial_error.borrow_mut() = Some(error);
             }
         }))
     }

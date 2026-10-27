@@ -2507,9 +2507,9 @@ async fn native_shell_error(
         .to_string()
 }
 
-/// Initial observer failures use the existing reporter and do not block either backend.
+/// Initial observer rejection prevents both supplied and local backend effects.
 #[test]
-fn builtin_bash_initial_progress_failure_is_reported_without_failing_exec() {
+fn builtin_bash_initial_progress_failure_prevents_exec() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -2533,20 +2533,21 @@ fn builtin_bash_initial_progress_failure_is_reported_without_failing_exec() {
                 "executable":executable,"command":command,"chunks":[],"fail":"initial"}),
             )
             .await;
-            assert_progress(&observed, "");
-            assert_eq!(observed["entered"], usize::from(command.is_none()));
             assert_eq!(
-                observed["signals"],
-                json!(vec![false; usize::from(command.is_none())])
+                observed["result"],
+                json!({"Err":"progress observer rejected é"})
             );
+            assert_eq!(observed["updates"], json!([{"content":[]}]));
+            assert_eq!(observed["entered"], 0);
+            assert_eq!(observed["signals"], json!([]));
             assert_eq!(
                 *errors.borrow(),
                 vec!["Event handler error (tool-update): progress observer rejected é\n"]
             );
-            if command.is_some() {
-                assert_eq!(std::fs::read_to_string(&marker).unwrap(), "started");
-                std::fs::remove_file(&marker).unwrap();
-            }
+            assert!(
+                !marker.exists(),
+                "initial rejection must prevent shell effects"
+            );
         }
     });
 }
