@@ -36,7 +36,10 @@ impl Harness {
         Self::factory(artifact_factory(
             path.to_str().unwrap().into(),
             super::support::widgets(),
-            "installed-component-host".into(),
+            maestro_extensions_wasmtime::Installation {
+                version: "installed-component-host".into(),
+                agent_dir: "/controlled-agent".into(),
+            },
         ))
         .await
     }
