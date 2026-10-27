@@ -546,8 +546,11 @@ paths may re-export the same moved types, not retain a second implementation.
 
 `maestro-lock` acquires a caller-opened file-write lock with the existing bounded
 synchronous contention retry. It also owns byte-oriented atomic replacement: an
-exclusive temporary sibling is written, synced, closed and renamed before the
-parent directory is synced. Workspace snapshot storage and detection catalog publication use this operation;
+short exclusive temporary sibling is written, synced, closed and renamed before the
+parent directory is synced. Replacement preserves existing native permissions;
+a supplied creation mode applies only to missing files. Unix creation applies
+permission bits before first visibility; Windows maps only owner-write to the
+read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
 feature owners retain serialization and symbolic-link policy. File creation for
 lock acquisition, permissions, in-place settings/credentials persistence, unlocking
 policy and asynchronous credential acquisition remain with settings and

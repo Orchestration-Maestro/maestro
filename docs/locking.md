@@ -21,6 +21,14 @@ error and remove only a temporary file created by this call.
 Replacement preserves the effective existing file's native permissions. On Unix,
 the temporary file is created with those permission bits filtered by the umask;
 the exact bits are restored after writing and before sync and publication.
+`Replace::creation_mode` selects permission bits for a missing file. Existing
+native permissions take precedence. On Unix the requested bits are passed to
+exclusive creation, so the sibling is never more permissive than requested;
+any bits removed by the umask are restored before publication. Without a
+selection, new files use the platform's normal creation permissions.
+
+On Windows, creation mode uses only the owner-write bit: an absent bit makes
+the published file read-only. Other bits are ignored; no ACL is configured.
 Replacing a symbolic-link entry does not copy permissions from its referent.
 Permissions here are those represented by `std::fs::Permissions`, not ownership
 or additional access-control metadata.

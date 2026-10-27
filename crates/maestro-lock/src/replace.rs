@@ -1,6 +1,8 @@
 //! Durable byte publication through a temporary sibling.
 use std::fs::{self, File, OpenOptions, Permissions};
 use std::io::{self, Write};
+#[cfg(unix)]
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -51,8 +53,8 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
     #[cfg(test)]
     tests::before_create(&temp)?;
     let permissions = replacement_permissions(&target)?;
-    let file = create_temporary(&temp, permissions.as_ref())?;
-    let result = write_and_sync(file, bytes, permissions).and_then(|()| {
+    let file = create_temporary(&temp, permissions.as_ref(), options.creation_mode)?;
+    let result = write_and_sync(file, bytes, permissions, options.creation_mode).and_then(|()| {
         #[cfg(test)]
         tests::closed();
         commit(&temp, &target)
@@ -76,16 +78,19 @@ fn replacement_permissions(target: &Path) -> io::Result<Option<Permissions>> {
 }
 
 /// Creates a sibling no more permissive than the selected Unix permission bits.
-fn create_temporary(path: &Path, permissions: Option<&Permissions>) -> io::Result<File> {
+fn create_temporary(
+    path: &Path,
+    permissions: Option<&Permissions>,
+    creation_mode: Option<u32>,
+) -> io::Result<File> {
     let mut open = OpenOptions::new();
     open.write(true).create_new(true);
     #[cfg(unix)]
-    if let Some(permissions) = permissions {
-        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-        open.mode(permissions.mode());
+    if let Some(mode) = permissions.map(Permissions::mode).or(creation_mode) {
+        open.mode(mode);
     }
     #[cfg(not(unix))]
-    let _ = permissions;
+    let _ = (permissions, creation_mode);
     open.open(path)
 }
 
@@ -105,10 +110,24 @@ fn write_and_sync(
     mut file: File,
     bytes: &[u8],
     permissions: Option<Permissions>,
+    creation_mode: Option<u32>,
 ) -> io::Result<()> {
     #[cfg(test)]
     tests::effect("write_all")?;
     file.write_all(bytes)?;
+    #[cfg(unix)]
+    let permissions = permissions.or_else(|| creation_mode.map(Permissions::from_mode));
+    #[cfg(windows)]
+    let permissions = match (permissions, creation_mode) {
+        (None, Some(mode)) => {
+            let mut selected = file.metadata()?.permissions();
+            selected.set_readonly(mode & 0o200 == 0);
+            Some(selected)
+        }
+        (permissions, _) => permissions,
+    };
+    #[cfg(not(any(unix, windows)))]
+    let _ = creation_mode;
     if let Some(permissions) = permissions {
         file.set_permissions(permissions)?;
     }
