@@ -17,6 +17,10 @@ checkout and in a standalone layout.
 
 ## RPC extension UI
 
+The client loads [rpc_demo.rs](extensions/rpc_demo.rs) and uses the
+[client.rs](sdk/rpc_extension_ui/client.rs) and
+[output_log.rs](sdk/rpc_extension_ui/output_log.rs) support modules.
+
 This client is opt-in and needs a Unix terminal, the pinned Rust toolchain and
 the `wasm32-wasip2` target. From the package root, build the executable and the
 shipped companion before running the client:
