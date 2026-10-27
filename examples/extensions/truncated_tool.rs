@@ -71,6 +71,9 @@ struct SearchOutput {
 }
 
 /// Reads one output pipe to its end, decoding it lossily.
+///
+/// # Errors
+/// Returns native pipe-read errors.
 async fn read_to_end(pipe: Option<Rc<dyn Readable>>) -> ExtensionResult<String> {
     let mut bytes = Vec::new();
     if let Some(pipe) = pipe {
