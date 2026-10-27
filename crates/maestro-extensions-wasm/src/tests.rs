@@ -76,6 +76,7 @@ pub(crate) mod native_watch_host;
 mod observed;
 pub(crate) mod overlay_host;
 mod parameter_schemas;
+mod permission_gate_example;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
