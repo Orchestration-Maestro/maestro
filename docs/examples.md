@@ -34,8 +34,12 @@ that send ordinary, steering, follow-up and two-block user messages, and
 session start. `extensions/qna.rs` extracts questions from the latest complete
 assistant reply into the editor through the configured model, with a cancellable
 loader; real extraction is opt-in and requires interactive UI and credentials.
-`extensions/snake.rs` opens a custom Snake game with keyboard controls, timed
-movement and saved games in session entries; its index gives the build/run
+`extensions/git_checkpoint.rs` creates opt-in Git stash checkpoints for session
+entries and asks before applying one when forking; its controlled run uses
+disposable repositories and scripted UI choices. Loading it requires Git and a
+committed repository, and approving a restore can change tracked files or leave
+conflicts. `extensions/snake.rs` opens a custom Snake game with keyboard controls,
+timed movement and saved games in session entries; its index gives the build/run
 commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
