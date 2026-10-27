@@ -1204,6 +1204,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/bookmark.rs"),
     ),
     (
+        "examples/extensions/file_trigger.rs",
+        include_str!("../../../examples/extensions/file_trigger.rs"),
+    ),
+    (
         "examples/extensions/hello.rs",
         include_str!("../../../examples/extensions/hello.rs"),
     ),
