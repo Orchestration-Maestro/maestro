@@ -1,9 +1,15 @@
 //! Minimal displays through the shipped component and original native tool owners.
 #![cfg(test)]
+#![cfg(unix)]
 use maestro_extensions::{ExtensionRunner, Local};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
-use std::{path::Path, rc::Rc, sync::RwLock};
+use std::{
+    os::unix::fs::PermissionsExt as _,
+    path::Path,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 /// Loads the one shipped example with native factories and a disposable session cwd.
 async fn loaded(cwd: &Path) -> Rc<ExtensionRunner<Local>> {
@@ -18,6 +24,13 @@ async fn loaded(cwd: &Path) -> Rc<ExtensionRunner<Local>> {
     .unwrap();
     let path = path.to_str().unwrap().to_owned();
     let runtime = maestro_extensions::create_extension_runtime::<Local>();
+    let bin_dir = cwd.join("bin").to_str().unwrap().to_owned();
+    runtime.set_tool_construction(maestro_extensions::ToolConstruction {
+        tools_manager: Arc::new(
+            maestro_extensions::ToolsManager::new(bin_dir.clone(), None).with_offline(Some(true)),
+        ),
+        bin_dir,
+    });
     let bus = maestro_extensions::create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no background work")),
         Rc::new(|error| panic!("{error}")),
@@ -63,11 +76,31 @@ async fn execute(runner: &Rc<ExtensionRunner<Local>>, name: &str, args: Value) -
     serde_json::to_value(result).unwrap()
 }
 
+/// Supplies offline search protocol output beside the disposable input file.
+fn search_programs(root: &Path) {
+    let bin = root.join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    let input = root.join("input.txt");
+    let event = json!({"type":"match","data":{"path":{"text":input},"line_number":2,"lines":{"text":"two\n"}}});
+    for (name, script) in [
+        (
+            "fd",
+            format!("#!/bin/sh\nprintf '%s\\0' '{}'\n", input.display()),
+        ),
+        ("rg", format!("#!/bin/sh\nprintf '%s\\n' '{event}'\n")),
+    ] {
+        let path = bin.join(name);
+        std::fs::write(&path, script).unwrap();
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+}
+
 #[test]
 fn minimal_mode_retains_builtin_execution_in_the_session_directory() {
     run(async {
         let root = Scratch::new().unwrap();
         std::fs::write(root.path().join("input.txt"), "one\ntwo\nthree").unwrap();
+        search_programs(root.path());
         let runner = loaded(root.path()).await;
         let names: Vec<_> = runner
             .get_all_registered_tools()
@@ -108,6 +141,10 @@ fn minimal_mode_retains_builtin_execution_in_the_session_directory() {
         );
         let result = execute(&runner, "bash", json!({"command":"printf controlled"})).await;
         assert_eq!(result["content"][0]["text"], "controlled");
+        let result = execute(&runner, "find", json!({"pattern":"*.txt"})).await;
+        assert_eq!(result["content"][0]["text"], "input.txt");
+        let result = execute(&runner, "grep", json!({"pattern":"two"})).await;
+        assert_eq!(result["content"][0]["text"], "input.txt:2: two");
         let result = execute(&runner, "ls", json!({"path":"nested"})).await;
         assert!(
             result["content"][0]["text"]
@@ -115,5 +152,40 @@ fn minimal_mode_retains_builtin_execution_in_the_session_directory() {
                 .unwrap()
                 .contains("out.txt")
         );
+    });
+}
+
+#[test]
+fn minimal_mode_preserves_cancellation_and_native_read_limits() {
+    run(async {
+        let root = Scratch::new().unwrap();
+        std::fs::write(root.path().join("long.txt"), "row\n".repeat(2100)).unwrap();
+        let runner = loaded(root.path()).await;
+        let result = execute(&runner, "read", json!({"path":"long.txt"})).await;
+        assert_eq!(result["details"]["truncation"]["outputLines"], 2000);
+        assert_eq!(result["details"]["truncation"]["totalLines"], 2101);
+        assert!(
+            result["content"][0]["text"]
+                .as_str()
+                .unwrap()
+                .ends_with("[Showing lines 1-2000 of 2101. Use offset=2001 to continue.]")
+        );
+        let registered = runner
+            .get_all_registered_tools()
+            .into_iter()
+            .find(|tool| tool.definition.name() == "read")
+            .unwrap();
+        let tool = maestro_extensions::wrap_registered_tool(&registered, runner.clone());
+        let signal = maestro_extensions::Cancellation::new();
+        signal.abort();
+        let error = (tool.execute)(
+            "cancelled".into(),
+            json!({"path":"long.txt"}),
+            Some(signal),
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error.message, "Operation aborted");
     });
 }
