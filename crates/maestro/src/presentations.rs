@@ -155,3 +155,6 @@ pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSession
         presenter,
     }
 }
+
+#[cfg(test)]
+mod tests;
