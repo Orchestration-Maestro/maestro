@@ -13,14 +13,41 @@ use std::{cell::RefCell, rc::Rc};
 /// A factory that records execution before registering colliding capabilities.
 fn recording_factory(name: String, calls: Rc<RefCell<Vec<String>>>) -> ExtensionFactory<Local> {
     let spec: ExtensionSpec = serde_json::from_value(json!({
-        "commands":[["same",name]], "flags":[["same","boolean"]], "tools":[["same","tool"]]
+        "commands":[["same",name]], "tools":[["same",name]]
     }))
     .unwrap();
     let register = factory(spec);
     Rc::new(move |api| {
         calls.borrow_mut().push(name.clone());
-        register(api)
+        let registered = register(api.clone());
+        let name = name.clone();
+        Box::pin(async move {
+            registered.await?;
+            register_collisions(&api, &name)
+        })
     })
+}
+
+/// Flags seed different defaults; shortcuts conflict on the same unreserved key.
+fn register_collisions(
+    api: &maestro_app::ExtensionAPI<Local>,
+    name: &str,
+) -> Result<(), maestro_extensions::EventError> {
+    api.register_flag(
+        "same".into(),
+        maestro_extensions::types::ExtensionFlagOptions {
+            description: Some(name.into()),
+            r#type: maestro_extensions::types::FlagType::String,
+            default: Some(maestro_app::FlagValue::String(name.into())),
+        },
+    )?;
+    api.register_shortcut(
+        "ctrl+alt+9".into(),
+        maestro_extensions::types::ExtensionShortcutOptions {
+            description: Some(name.into()),
+            handler: Rc::new(|_| Box::pin(async { Ok(()) })),
+        },
+    )
 }
 
 /// The controlled module loader labels each extension by its file stem.
@@ -184,4 +211,106 @@ fn base_contributions_load_sources_and_prompt_inputs_in_the_same_startup() {
         assert_eq!(&*calls.borrow(), &["base", "extra", "base", "extra"]);
         assert_eq!(loader.get_prompts().prompts.len(), 2);
     });
+}
+
+/// A runner over the loader's actual ordered extension inventory.
+fn runner(loader: &impl ResourceLoader<Local>) -> maestro_app::ExtensionRunner<Local> {
+    let result = loader.get_extensions();
+    let auth = std::sync::Arc::new(maestro_credentials::AuthStorage::in_memory(
+        maestro_credentials::AuthStorageData::default(),
+    ));
+    maestro_app::ExtensionRunner::<Local>::new(
+        Rc::new(std::sync::RwLock::new(result.extensions.clone())),
+        result.runtime.clone(),
+        maestro_extensions::runner::ExtensionRunnerSession {
+            cwd: "/work".into(),
+            session_manager: Rc::new(RefCell::new(
+                maestro_session::SessionManager::in_memory(None).unwrap(),
+            )),
+            model_registry: std::sync::Arc::new(
+                maestro_catalog::ModelRegistry::in_memory(
+                    auth,
+                    crate::resource_fixtures::no_commands(),
+                )
+                .unwrap(),
+            ),
+        },
+        Rc::new(|_| {}),
+        maestro_theme::LiveTheme::default(),
+    )
+}
+
+/// Conflict winners and runtime defaults come from list order, not factory execution order.
+#[test]
+fn base_registration_conflicts_follow_ordinary_extension_order() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    package(&base, "base");
+    std::fs::create_dir_all(&agent).unwrap();
+    std::fs::create_dir_all(format!("{cwd}/.maestro/extensions")).unwrap();
+    std::fs::write(format!("{cwd}/.maestro/extensions/project.wasm"), "").unwrap();
+    on_task_set(|local| async move {
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, recording_modules(Rc::default()));
+        resources.base_package_sources = vec![base];
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: None,
+            resources,
+        });
+        loader.reload().await.unwrap();
+        let runner = runner(&loader);
+        assert_conflict_winners(&runner);
+    });
+}
+
+/// Checks conflict resolution through the runner, independently of factory order.
+fn assert_conflict_winners(runner: &maestro_app::ExtensionRunner<Local>) {
+    assert_eq!(
+        runner.get_flags()["same"]
+            .read()
+            .unwrap()
+            .description
+            .as_deref(),
+        Some("project")
+    );
+    assert_eq!(
+        runner.get_flag_values()["same"],
+        maestro_app::FlagValue::String("project".into())
+    );
+    assert_eq!(
+        runner
+            .get_tool_definition::<serde_json::Value, serde_json::Value, ()>("same")
+            .unwrap()
+            .read()
+            .unwrap()
+            .definition
+            .description,
+        "project"
+    );
+    let shortcuts = runner.get_shortcuts(&Vec::new());
+    assert_eq!(
+        shortcuts["ctrl+alt+9"]
+            .read()
+            .unwrap()
+            .description
+            .as_deref(),
+        Some("base")
+    );
+    let commands: Vec<_> = runner
+        .get_registered_commands()
+        .into_iter()
+        .map(|command| (command.invocation_name, command.command.description))
+        .collect();
+    assert_eq!(
+        commands,
+        [
+            ("same:1".into(), Some("project".into())),
+            ("same:2".into(), Some("base".into()))
+        ]
+    );
 }
