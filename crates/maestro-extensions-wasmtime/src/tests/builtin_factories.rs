@@ -333,3 +333,112 @@ fn builtin_factory_construction_is_lazy_and_fresh() {
         );
     });
 }
+
+/// Complete native metadata and callbacks survive the final registration consumer.
+#[test]
+fn builtin_definitions_preserve_metadata_and_render_handles() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let cwd = scratch.path().to_str().unwrap();
+        let manager = Arc::new(
+            maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true)),
+        );
+        let (runner, _) = super::builtin_author::loaded_with_tool_services(
+            maestro_extensions::ToolConstruction {
+                tools_manager: manager.clone(),
+                bin_dir: cwd.into(),
+            },
+        )
+        .await;
+        let runner = Rc::new(runner);
+        let args = arguments();
+        reset_files(scratch.path());
+        let expected = native_observations(cwd, manager, &args).await;
+        reset_files(scratch.path());
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let request = json!({"cwd":cwd,"args":args});
+        let result = (command.handler)(
+            format!("builtin-wrapped {request}"),
+            runner.create_command_context(),
+        )
+        .await;
+        let observed: Value = serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        assert_eq!(observed, json!(expected));
+        reset_files(scratch.path());
+        let tools: Vec<_> = runner
+            .get_all_registered_tools()
+            .into_iter()
+            .filter(|tool| tool.definition.name().starts_with("factory-"))
+            .collect();
+        assert_eq!(tools.len(), 7);
+        for ((registered, expected), args) in tools.iter().zip(&expected).zip(args) {
+            registered_observation(&runner, registered, expected, args).await;
+        }
+        assert_eq!(
+            std::fs::read(scratch.path().join("written.txt")).unwrap(),
+            "é😀\0".as_bytes()
+        );
+        assert_eq!(
+            std::fs::read_to_string(scratch.path().join("edit.txt")).unwrap(),
+            "after 雪\n"
+        );
+    });
+}
+
+/// Compares every optional field before preparing and executing the retained registration.
+async fn registered_observation(
+    runner: &Rc<ExtensionRunner<Local>>,
+    registered: &maestro_extensions::types::RegisteredTool<Local>,
+    expected: &Value,
+    mut args: Value,
+) {
+    let mut metadata = registered_metadata(registered.definition.metadata());
+    metadata["name"] = expected["definition"]["name"].clone();
+    assert_eq!(metadata, expected["definition"]);
+    let binding = registered.definition.renderer_binding().unwrap();
+    assert_eq!(
+        json!([
+            binding.render_call.is_some(),
+            binding.render_result.is_some()
+        ]),
+        expected["renderers"]
+    );
+    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    assert_eq!(
+        json!(tool.prepare_arguments.is_some()),
+        expected["definitionPrepares"]
+    );
+    if let Some(prepare) = &tool.prepare_arguments {
+        args = prepare(&mut args).unwrap();
+    }
+    let result = (tool.execute)("registered-factory".into(), args, None, None)
+        .await
+        .unwrap();
+    assert_eq!(serde_json::to_value(result).unwrap(), expected["result"]);
+}
+
+/// Projects the real registration's metadata without filling absent fields with null.
+fn registered_metadata(metadata: maestro_extensions::types::ToolDefinitionMetadata) -> Value {
+    let mut value = serde_json::to_value(metadata.definition).unwrap();
+    value["label"] = json!(metadata.label);
+    if let Some(snippet) = metadata.prompt_snippet {
+        value["promptSnippet"] = json!(snippet);
+    }
+    if let Some(guidelines) = metadata.prompt_guidelines {
+        value["promptGuidelines"] = json!(guidelines);
+    }
+    if let Some(shell) = metadata.render_shell {
+        value["renderShell"] = json!(match shell {
+            maestro_extensions::ToolRenderShell::Default => "default",
+            maestro_extensions::ToolRenderShell::SelfRendered => "self",
+        });
+    }
+    if let Some(mode) = metadata.execution_mode {
+        value["executionMode"] = json!(mode);
+    }
+    value
+}
