@@ -119,7 +119,10 @@ fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestr
             maestro_extensions_wasmtime::artifact_factory_with_io(
                 path.into(),
                 crate::support::widgets(),
-                maestro_app::configuration::config::VERSION.into(),
+                maestro_extensions_wasmtime::Installation {
+                    version: maestro_app::configuration::config::VERSION.into(),
+                    agent_dir: "/controlled-agent".into(),
+                },
                 Rc::clone(&io),
             ),
         ))))
