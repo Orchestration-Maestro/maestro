@@ -115,7 +115,7 @@ fn apply_extension_flag_values<E: ExtensionExecution>(
         let extension = read(extension);
         for (name, flag) in &extension.flags {
             let flag = read(flag);
-            registered.insert(name.clone(), flag.r#type);
+            registered.entry(name.clone()).or_insert(flag.r#type);
         }
     }
     let mut diagnostics = Vec::new();
