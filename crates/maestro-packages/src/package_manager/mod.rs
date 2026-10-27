@@ -224,6 +224,16 @@ pub trait PackageManager {
     /// # Errors
     /// Returns invalid source, offline or Git capture failures.
     fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>>;
+    /// Reads relative files from a pinned Git candidate in isolated temporary staging.
+    /// Results follow input order; a missing file is `None`, and bytes are not decoded.
+    /// No dependencies, builds or extensions run, and no installed checkout is changed.
+    /// # Errors
+    /// Returns invalid source/path, offline, Git, read or cleanup failures.
+    fn read_candidate_files<'a>(
+        &'a self,
+        source: &'a str,
+        paths: &'a [String],
+    ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>>;
     /// Installs, then adds the source to settings; an existing entry is not an error.
     /// Nothing is flushed; a failed settings edit does not undo acquired contents.
     /// # Errors
@@ -322,6 +332,13 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
     }
     fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>> {
         Box::pin(self.git_releases(source))
+    }
+    fn read_candidate_files<'a>(
+        &'a self,
+        _source: &'a str,
+        _paths: &'a [String],
+    ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>> {
+        Box::pin(async { Err(io::Error::other("Candidate inspection unavailable")) })
     }
     fn install_and_persist<'a>(
         &'a self,
