@@ -95,7 +95,7 @@ fn bash_result(
     let mut text = match code {
         Some(code) if code != 0 => theme.fg("error", &format!("exit {code}"))?,
         _ if result.is_error.present() == Some(&true) => {
-            return theme.fg("error", output.split('\n').next().unwrap_or(""));
+            theme.fg("error", output.split('\n').next().unwrap_or(""))?
         }
         _ => theme.fg("success", "done")?,
     };
