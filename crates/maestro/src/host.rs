@@ -162,13 +162,17 @@ fn module_loader(
     let widgets = Rc::new(std::cell::OnceCell::new());
     let io = maestro_app::extension_native_io::extension_native_io(local);
     Rc::new(move |path: &str| {
-        let factory = extension_widgets(&widgets, &theme).map(|widgets| {
-            Some(maestro_extensions_wasmtime::artifact_factory_with_io(
+        let factory = extension_widgets(&widgets, &theme).and_then(|widgets| {
+            Ok(Some(maestro_extensions_wasmtime::artifact_factory_with_io(
                 path.to_owned(),
                 widgets,
-                config::VERSION.into(),
+                maestro_extensions_wasmtime::Installation {
+                    version: config::VERSION.into(),
+                    agent_dir: config::get_agent_dir()
+                        .map_err(|error| maestro_app::EventError::from(error.to_string()))?,
+                },
                 Rc::clone(&io),
-            ))
+            )))
         });
         Box::pin(std::future::ready(factory))
     })

@@ -24,7 +24,10 @@ pub(crate) fn add_to_linker(
         |store: StoreContextMut<'_, crate::lifecycle::State>,
          (operation, data): (String, String)| {
             let value = if operation == "version" {
-                serde_json::to_string(&store.data().installation_version)
+                serde_json::to_string(&store.data().installation.version)
+                    .map_err(|error| error.to_string())
+            } else if operation == "config.get_agent_dir" {
+                serde_json::to_string(&store.data().installation.agent_dir)
                     .map_err(|error| error.to_string())
             } else {
                 maestro_extensions::helpers::call(&operation, &data)
