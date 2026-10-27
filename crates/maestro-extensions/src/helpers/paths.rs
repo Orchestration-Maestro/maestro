@@ -19,6 +19,10 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
             &maestro_tools::path_utils::expand_path(&path).map_err(|error| error.to_string())?,
         );
     }
+    if operation == "paths.guest_path" {
+        let (path,): (String,) = decode(data)?;
+        return encode(&guest_path(&path));
+    }
     if operation == "paths.resolve" {
         let (paths,): (Vec<String>,) = decode(data)?;
         let paths: Vec<_> = paths.iter().map(String::as_str).collect();
@@ -55,8 +59,23 @@ pub fn guest_path(path: &str) -> String {
 }
 
 /// The Windows spelling, kept apart so every host checks it.
+///
+/// A drive path gains a leading `/` and an uppercase letter, so `c:\x`
+/// reaches the `/C:` root; a share keeps its `//server/share` form. The
+/// verbatim `\\?\` prefix names the same file and is dropped.
 fn win32_guest_path(path: &str) -> String {
-    path.to_owned()
+    let path = match path.strip_prefix(r"\\?\") {
+        Some(share) if share.starts_with(r"UNC\") => format!(r"\{}", &share[3..]),
+        Some(local) => local.to_owned(),
+        None => path.to_owned(),
+    }
+    .replace('\\', "/");
+    match path.as_bytes() {
+        [letter, b':', ..] if letter.is_ascii_alphabetic() => {
+            format!("/{}{}", letter.to_ascii_uppercase() as char, &path[1..])
+        }
+        _ => path,
+    }
 }
 
 #[cfg(test)]
