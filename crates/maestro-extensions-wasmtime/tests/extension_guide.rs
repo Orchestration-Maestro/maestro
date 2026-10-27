@@ -20,7 +20,7 @@ fn project() -> (Scratch, PathBuf) {
         .nth(2)
         .unwrap();
     let guide = std::fs::read_to_string(checkout.join("docs/extensions.md")).unwrap();
-    let manifest = include_str!("fixtures/hello-extension/Cargo.toml");
+    let manifest = include_str!("fixtures/hello-extension/Cargo.toml.in");
     assert_eq!(
         guide
             .split("```toml\n")
