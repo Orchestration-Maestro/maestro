@@ -227,29 +227,31 @@ fn loader_factory(
 
 /// Validates the request, then puts the completion's exact text into the editable input.
 async fn command(pending: Pending, ctx: ExtensionCommandContext) -> ExtensionResult<()> {
-    let ui = ctx.ui()?;
     if !ctx.has_ui()? {
-        return ui.notify(
+        return ctx.ui()?.notify(
             "qna requires interactive mode",
             Some(NotificationType::Error),
         );
     }
     if ctx.model()?.is_none() {
-        return ui.notify("No model selected", Some(NotificationType::Error));
+        return ctx
+            .ui()?
+            .notify("No model selected", Some(NotificationType::Error));
     }
     let text = match last_assistant(&ctx) {
         Ok(text) => text,
-        Err(error) => return ui.notify(&error, Some(NotificationType::Error)),
+        Err(error) => return ctx.ui()?.notify(&error, Some(NotificationType::Error)),
     };
-    let result = ui
-        .custom(loader_factory(pending, ctx, text), None)
+    let result = ctx
+        .ui()?
+        .custom(loader_factory(pending, ctx.clone(), text), None)
         .await?
         .flatten();
     let Some(result) = result else {
-        return ui.notify("Cancelled", Some(NotificationType::Info));
+        return ctx.ui()?.notify("Cancelled", Some(NotificationType::Info));
     };
-    ui.set_editor_text(&result)?;
-    ui.notify(
+    ctx.ui()?.set_editor_text(&result)?;
+    ctx.ui()?.notify(
         "Questions loaded. Edit and submit when ready.",
         Some(NotificationType::Info),
     )
