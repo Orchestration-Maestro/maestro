@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "event_bus"
+path = "../../examples/extensions/event_bus.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "file_trigger"
 path = "../../examples/extensions/file_trigger.rs"
 crate-type = ["cdylib"]
@@ -121,6 +126,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "titlebar_spinner"
+path = "../../examples/extensions/titlebar_spinner.rs"
 crate-type = ["cdylib"]
 
 [[example]]
