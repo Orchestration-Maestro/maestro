@@ -11,7 +11,7 @@ use std::{
 };
 
 #[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
-pub(super) mod cargo;
+mod cargo;
 
 /// Creates the independent project using the guide's manifest and the shipped source.
 fn project() -> (Scratch, PathBuf) {

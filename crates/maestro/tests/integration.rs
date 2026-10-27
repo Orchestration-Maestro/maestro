@@ -8,3 +8,4 @@ mod native_io;
 mod startup_modes;
 mod support;
 pub mod tools_example;
+mod truncated_tool_example;
