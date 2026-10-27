@@ -285,6 +285,10 @@ Every package except plan review is a base package. Plan review is the only opti
 sources. The application lists those sources as the lowest default `packages` source. The reference's
 missing-source install installs them on first run, and a user's object-form filter entry turns one off
 (delivery 61). The skill pack has no component. Its package directory is published as content.
+Base packages load before every other extension but keep their ordinary place in the extension list, and a base
+package may publish the base layer and decision hook of
+[manifest mode](manifest-mode.md#core-hooks) (H1, H2, H4). The manifest base package is
+specified there.
 
 ### Libraries
 
