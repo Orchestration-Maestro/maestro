@@ -18,6 +18,7 @@ fn main() -> Result<(), String> {
     build::compile(path).map_err(|error| error.to_string())?;
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
+    let tools = build::component("tools", "MAESTRO_TOOLS_COMPONENT")?;
     let shell = build::component("local_shell_component", "MAESTRO_LOCAL_SHELL_COMPONENT")?;
     let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
     let file_trigger = build::component("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT")?;
@@ -35,7 +36,7 @@ fn main() -> Result<(), String> {
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\n",
+                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\n",
                 path.display(),
                 context.display(),
                 shell.display(),
@@ -46,7 +47,8 @@ fn main() -> Result<(), String> {
                 helpers.display(),
                 hooks.display(),
                 resources.display(),
-                reloaded.display()
+                reloaded.display(),
+                tools.display()
             ),
         )
         .map_err(|error| error.to_string())?;

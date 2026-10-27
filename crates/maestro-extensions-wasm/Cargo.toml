@@ -109,6 +109,11 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "tools"
+path = "../../examples/extensions/tools.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "trigger_compact"
 path = "../../examples/extensions/trigger_compact.rs"
 crate-type = ["cdylib"]

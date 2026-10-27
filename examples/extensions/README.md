@@ -7,8 +7,9 @@ lists each one with its owner.
 ## Usage
 
 An extension crate is a `cdylib` whose root names its factory. The
-[extension guide](../../docs/extensions/guest.md) describes the interface the
-factory registers.
+[extension guide](../../docs/extensions.md) covers project setup, building,
+packaging and loading. The [guest API](../../docs/extensions/guest.md) describes
+the interface the factory registers.
 
 Maestro discovers extensions in two directories, in this order:
 
@@ -38,6 +39,7 @@ inserts at its own place instead of appending at the end of each list.
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
@@ -87,6 +89,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- tools_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- tools_component_changes_native_session_and_restores_branch
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -289,3 +295,24 @@ the session selector shows in place of the first message. The command reads and
 writes the name through the session operations the host supplies, so it stores
 nothing itself; the controlled run names no session in a running application.
 Loading the component is opt-in and needs that application's component runtime.
+
+### What the tool selector does
+
+`/tools` opens **Tool Configuration**, with one enabled/disabled setting for each
+currently available tool, including extension tools. Each change immediately
+updates the active tools and appends a `tools-config` session entry containing
+`enabledTools`. Escape closes the view without undoing those changes.
+
+On session start and tree navigation, the example reads only the current branch.
+It restores the newest saved selection, discarding tools no longer available;
+an empty saved selection disables every tool. Without saved configuration it
+keeps the host's active selection. Opening the view refreshes the inventory, so
+new tools appear disabled until selected.
+
+The controlled run uses supplied tool inventories, branch entries and terminal
+input. The native session run also checks active tools, persisted entries, tree
+navigation and reload. Neither run calls a provider or changes project files.
+Loading the built component
+is opt-in and needs a component-enabled interactive host with custom UI and
+settings widgets; loading it permits changes to that session's active tools and
+configuration entries.
