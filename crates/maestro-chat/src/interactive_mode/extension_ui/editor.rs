@@ -2,6 +2,7 @@
 //! text, history, appearance and completion operations reach.
 use super::super::InteractiveMode;
 use crate::CustomEditor;
+use crate::components::extension_widgets::keybindings;
 use maestro_app::{CustomEditorComponent, EditorFactory, EventError};
 use maestro_theme::get_editor_theme;
 use maestro_tui::tui::ComponentHandle;
@@ -81,8 +82,11 @@ impl InteractiveMode {
         self.editor_container.clear();
         let editor = if let Some(factory) = factory {
             let theme = get_editor_theme(self.themes.theme());
-            let built =
-                factory.call((self.ui.as_ref().clone(), theme, (*self.keybindings).clone()))?;
+            let built = factory.call((
+                self.ui.as_ref().clone(),
+                theme,
+                keybindings(self.keybindings.clone()),
+            ))?;
             let editor = built.editor();
             editor.set_on_submit(self.editor.on_submit());
             editor.set_on_change(self.editor.on_change());

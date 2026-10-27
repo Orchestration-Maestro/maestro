@@ -39,7 +39,10 @@ impl ExtensionUIContextPort for Ui {
             }
             Ok(true)
         });
-        let keys = maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new());
+        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+            manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
+            reload: None,
+        };
         let building = factory.call((self.tui.clone(), self.theme(), keys, close));
         Box::pin(async move {
             let built = match building? {
@@ -122,7 +125,10 @@ impl ExtensionUIContextPort for OverlayUi {
             }
             Ok(true)
         });
-        let keys = maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new());
+        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+            manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
+            reload: None,
+        };
         let tui = self.tui.clone();
         let building = factory.call((tui.clone(), self.theme(), keys, close));
         Box::pin(async move {

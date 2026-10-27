@@ -7,10 +7,10 @@ use crate::widget_lists::{Binding, ListRequest, Slot};
 use crate::widget_reads::{Paint, Reply};
 use maestro_extensions::types::{CustomEditorComponent, EditorFactoryOutcome};
 use maestro_extensions::widgets::{
-    Editor, EditorComponent, EditorOptions, EditorTheme, ExtensionEditor, ExtensionWidgets,
-    Focusable, SelectListTheme,
+    Editor, EditorComponent, EditorOptions, EditorTheme, ExtensionEditor, ExtensionKeybindings,
+    ExtensionWidgets, Focusable, SelectListTheme,
 };
-use maestro_extensions::{Cancellation, ComponentHandle, KeybindingsManager, TUI};
+use maestro_extensions::{Cancellation, ComponentHandle, TUI};
 use std::rc::Rc;
 use wasmtime::component::{ComponentType, Lower};
 
@@ -183,7 +183,9 @@ impl EditorKind {
         let (tui, theme, options, keybindings) = Self::parts(build, binding)?;
         Ok(match keybindings {
             None => Self::Editor(Rc::new(Editor::new(&tui, theme, options))),
-            Some(manager) => Self::Custom(widgets.custom_editor(&tui, theme, manager, options)),
+            Some(manager) => {
+                Self::Custom(widgets.custom_editor(&tui, theme, manager.manager, options))
+            }
         })
     }
 
@@ -191,7 +193,15 @@ impl EditorKind {
     pub(crate) fn parts(
         build: EditorBuild,
         binding: &Binding<'_>,
-    ) -> Result<(TUI, EditorTheme, EditorOptions, Option<KeybindingsManager>), String> {
+    ) -> Result<
+        (
+            TUI,
+            EditorTheme,
+            EditorOptions,
+            Option<ExtensionKeybindings>,
+        ),
+        String,
+    > {
         let registry = binding.registry;
         let tui = registry.terminal(&build.tui)?;
         let mut list = build

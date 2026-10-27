@@ -17,10 +17,10 @@ use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooter
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
     CustomFactory, CustomFactoryOutcome, CustomUIOptions, EditorFactoryOutcome,
-    ExtensionCollection, ExtensionComponent, ExtensionShortcutOptions, ExtensionUIContextPort,
-    ExtensionUIFuture, FooterFactory, NotificationType, OverlayHandleCallback,
-    OverlayOptionsResolver, OverlayOptionsSource, RegisteredCommandOptions, ThemeSelection,
-    ThemeSetResult, WidgetContent,
+    ExtensionCollection, ExtensionComponent, ExtensionKeybindings, ExtensionShortcutOptions,
+    ExtensionUIContextPort, ExtensionUIFuture, FooterFactory, NotificationType,
+    OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource, RegisteredCommandOptions,
+    ThemeSelection, ThemeSetResult, WidgetContent,
 };
 use maestro_extensions::{
     AutocompleteProviderFactory, CallbackEmitter, EditorFactory, EventError, ExtensionAPI,
@@ -1314,7 +1314,7 @@ impl Editors {
         };
         let theme = get_editor_theme(LiveTheme::default());
         factory
-            .call((self.tui.clone(), theme, self.keys.clone()))
+            .call((self.tui.clone(), theme, factory_keys(self.keys.clone())))
             .map(|built| Some(built.editor()))
     }
 }
@@ -1345,14 +1345,28 @@ fn application_keys() -> KeybindingsManager {
     KeybindingsManager::new(definitions, Vec::new())
 }
 
+/// Shared application bindings with an independently supplied reload.
+fn factory_keys(manager: KeybindingsManager) -> ExtensionKeybindings {
+    let shared = manager.clone();
+    ExtensionKeybindings {
+        manager,
+        reload: Some(Rc::new(move || {
+            shared.set_user_bindings(vec![(
+                "app.custom".into(),
+                Some(KeybindingKeys::Single("ctrl+j".into())),
+            )]);
+        })),
+    }
+}
+
 /// An editor factory that requires the application action and keeps its manager.
 fn vim_factory(
     api: &ExtensionAPI<Local>,
-    captured: &Rc<RefCell<Option<KeybindingsManager>>>,
+    captured: &Rc<RefCell<Option<ExtensionKeybindings>>>,
 ) -> EditorFactory {
     let captured = captured.clone();
     api.ui_callback(
-        move |(tui, theme, keys): (TUI, EditorTheme, KeybindingsManager), _| {
+        move |(tui, theme, keys): (TUI, EditorTheme, ExtensionKeybindings), _| {
             if keys.get_keys("app.custom").is_empty() {
                 return Err("toolkit defaults".into());
             }
@@ -1385,9 +1399,14 @@ fn custom_editor_factory_keeps_theme_keys_and_live_bindings() {
     )];
     host.keys.set_user_bindings(rebound);
     assert_eq!(keys.get_keys("app.custom"), ["ctrl+h"]);
+    let mut snapshot = keys.get_effective_config();
+    snapshot.clear();
+    keys.reload();
+    assert_eq!(keys.get_keys("app.custom"), ["ctrl+j"]);
+    assert!(!keys.get_effective_config().is_empty());
     let toolkit = KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new());
     let theme = get_editor_theme(LiveTheme::default());
-    let defaults = factory.call((tui, theme, toolkit));
+    let defaults = factory.call((tui, theme, factory_keys(toolkit)));
     assert_eq!(
         defaults.map(|_| ()).unwrap_err().to_string(),
         "toolkit defaults"
@@ -1724,7 +1743,7 @@ impl ExtensionUIContextPort for Customs {
             let session = session.clone();
             move || session.close()
         });
-        let keys = KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new());
+        let keys = factory_keys(application_keys());
         let built = factory.call((self.tui.clone(), LiveTheme::default(), keys, close));
         let installed = match built {
             Ok(CustomFactoryOutcome::Ready(component)) => {
@@ -1782,7 +1801,7 @@ fn ready_factory<T: 'static>(
         slot.clone(),
     );
     bind.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<T>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<T>), _| {
             *slot.borrow_mut() = Some(done);
             Ok(CustomFactoryOutcome::Ready(traced_component(
                 &inner,
@@ -1855,7 +1874,7 @@ async fn both_factory_outcomes(ui: &Ui, host: &Customs) {
 async fn completed<T: 'static>(api: &ExtensionAPI<Local>, ui: &Ui, value: T) -> Option<T> {
     let value = RefCell::new(Some(value));
     let factory: CustomFactory<T> = api.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<T>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<T>), _| {
             done(value.borrow_mut().take().unwrap())?;
             Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                 component: Rc::new(Input::new()),
@@ -1887,7 +1906,7 @@ async fn result_values(api: &ExtensionAPI<Local>, ui: &Ui) {
 /// A factory failing with `error` after optionally completing with `value`.
 fn failing_factory(api: &ExtensionAPI<Local>, value: Option<u8>, error: u8) -> CustomFactory<u8> {
     api.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<u8>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<u8>), _| {
             if let Some(value) = value {
                 done(value)?;
             }
@@ -1910,7 +1929,7 @@ async fn failures_and_restoration(ui: &Ui, host: &Customs) {
         Some(5)
     );
     let late: CustomFactory<u8> = host.api.ui_callback(
-        |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<u8>), _| {
+        |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<u8>), _| {
             done(6)?;
             Ok(CustomFactoryOutcome::Async(Box::pin(async {
                 Err(Box::new(Marked(3)) as EventError)
@@ -2068,7 +2087,7 @@ async fn admitted_work_outlives_its_observer(ui: &Ui, host: &Customs) {
     let trace = host.trace.clone();
     let api = host.api.clone();
     let early: CustomFactory<u8> = host.api.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<u8>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<u8>), _| {
             done(8)?;
             let (opened, trace) = (opened.borrow_mut().take().unwrap(), trace.clone());
             let api = api.clone();
@@ -2087,6 +2106,33 @@ async fn admitted_work_outlives_its_observer(ui: &Ui, host: &Customs) {
     );
 }
 
+/// Typed completion keeps the same application manager the custom factory received.
+async fn custom_factory_keys(api: &ExtensionAPI<Local>, ui: &Ui, trace: &Trace) {
+    let (api, trace) = (api.clone(), trace.clone());
+    let factory: CustomFactory<ExtensionKeybindings> = api.clone().ui_callback(
+        move |(_, _, keys, done): (
+            TUI,
+            LiveTheme,
+            ExtensionKeybindings,
+            CustomDone<ExtensionKeybindings>,
+        ),
+              _| {
+            done(keys)?;
+            Ok(CustomFactoryOutcome::Ready(traced_component(
+                &api,
+                &trace,
+                Rc::new(Input::new()),
+            )))
+        },
+    );
+    let keys = ui.custom(factory, None).await.unwrap().unwrap();
+    assert_eq!(keys.get_keys("app.custom"), ["ctrl+g"]);
+    let snapshot = keys.get_effective_config();
+    keys.reload();
+    assert_eq!(keys.get_keys("app.custom"), ["ctrl+j"]);
+    assert_ne!(keys.get_effective_config(), snapshot);
+}
+
 #[test]
 fn custom_ui_keeps_both_factory_outcomes_and_overlay_callbacks() {
     local(async {
@@ -2099,6 +2145,7 @@ fn custom_ui_keeps_both_factory_outcomes_and_overlay_callbacks() {
         failures_and_restoration(&ui, &host).await;
         overlays(&ui, &host).await;
         admitted_work_outlives_its_observer(&ui, &host).await;
+        custom_factory_keys(&host.api, &ui, &host.trace).await;
         bus.settle().await;
         assert!(bus.errors.borrow().is_empty());
         assert_eq!(bus.spawned.get(), 0);
@@ -2494,7 +2541,7 @@ fn facade_renderer(
 fn facade_editor(bind: &ExtensionAPI<Local>, released: Released) -> EditorFactory {
     let api = bind.clone();
     bind.ui_callback(
-        move |(_, _, _): (TUI, EditorTheme, KeybindingsManager), _| {
+        move |(_, _, _): (TUI, EditorTheme, ExtensionKeybindings), _| {
             let _ = &released;
             api.get_flag("verbose")?;
             Err("unreachable".into())

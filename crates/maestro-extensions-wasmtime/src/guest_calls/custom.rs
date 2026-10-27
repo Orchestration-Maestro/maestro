@@ -100,12 +100,7 @@ impl Handle {
             let input = Input {
                 tui: registry.tui(tui, reporter.clone())?,
                 theme: registry.theme(theme)?,
-                keybindings: registry.keybindings(
-                    maestro_extensions::widgets::ExtensionKeybindings {
-                        manager: keys,
-                        reload: None,
-                    },
-                )?,
+                keybindings: registry.keybindings(keys)?,
                 close: registry.custom_close(close)?,
             };
             let emitter = registry.emitter(emitter.frame())?;

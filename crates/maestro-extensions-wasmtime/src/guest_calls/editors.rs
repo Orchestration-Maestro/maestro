@@ -9,7 +9,7 @@ use crate::local_resources::{
 };
 use crate::widget_reads::{StyleEndpoint, WidgetEndpoint};
 use maestro_extensions::{
-    EventError, ExtensionAPI, KeybindingsManager, Local,
+    EventError, ExtensionAPI, Local,
     types::{EditorFactory, EditorFactoryOutcome, UIErrorReporter},
     widgets::{EditorTheme, ExtensionKeybindings},
 };
@@ -296,7 +296,7 @@ impl Handle {
     fn build_editor(
         &self,
         registry: &Registry,
-        (tui, theme, keybindings): (TuiEndpoint, EditorTheme, KeybindingsManager),
+        (tui, theme, keybindings): (TuiEndpoint, EditorTheme, ExtensionKeybindings),
         emitter: EmitterEndpoint,
     ) -> Result<RetainedEditor, EventError> {
         self.0
@@ -306,10 +306,7 @@ impl Handle {
                     handler: self.clone(),
                     tui,
                     theme: registry.lend_editor_theme(theme)?,
-                    keybindings: registry.keybindings(ExtensionKeybindings {
-                        manager: keybindings,
-                        reload: None,
-                    })?,
+                    keybindings: registry.keybindings(keybindings)?,
                     emitter,
                     reply,
                 }))
