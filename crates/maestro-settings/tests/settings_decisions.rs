@@ -45,3 +45,49 @@ fn refusing_decider_preserves_settings_and_pending_edits() {
         Some(r#"{"defaultModel":"stored"}"#)
     );
 }
+
+/// Resolves a synthetic stored default while accepting explicit edits.
+struct Resolve;
+impl SettingsDecider for Resolve {
+    fn decide(&self, _: &DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn resolve(&self, view: &mut maestro_settings::Settings) -> Vec<String> {
+        if view.0.get("defaultModel") == Some(&json!("accepted")) {
+            return Vec::new();
+        }
+        view.0.insert("defaultModel".into(), json!("accepted"));
+        vec!["stored default resolved by configuration release".into()]
+    }
+}
+
+/// Registration, edits, overrides and reload resolve only the effective view.
+#[test]
+fn sole_decider_resolves_rebuilds_without_rewriting_stored_values() {
+    let storage = ControlledStorage::new();
+    storage.inject(SettingsScope::Global, r#"{"defaultModel":"stored"}"#);
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    manager.register_decider(Arc::new(Resolve)).unwrap();
+    assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
+    assert!(manager.register_decider(Arc::new(Refuse)).is_err());
+    assert_eq!(manager.drain_errors().len(), 1);
+    manager.apply_overrides(settings(json!({"defaultModel":"runtime"})));
+    assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
+    assert_eq!(manager.drain_errors().len(), 1);
+    manager.set_quiet_startup(true);
+    block_on(manager.flush());
+    assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
+    assert_eq!(manager.get_global_settings().0["defaultModel"], "stored");
+    assert_eq!(storage.writes().len(), 1);
+    assert_eq!(
+        storage.text(SettingsScope::Global).unwrap(),
+        "{\n  \"defaultModel\": \"stored\",\n  \"quietStartup\": true\n}"
+    );
+    manager.drain_errors();
+    storage.inject(SettingsScope::Global, r#"{"defaultModel":"external"}"#);
+    block_on(manager.reload());
+    assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
+    assert_eq!(manager.drain_errors().len(), 1);
+    assert_eq!(storage.writes().len(), 1);
+}
