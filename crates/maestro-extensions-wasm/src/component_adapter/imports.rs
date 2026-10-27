@@ -17,6 +17,13 @@ mod credentials;
 #[macro_use]
 mod catalog;
 
+/// Built-in constructors declared on the same canonical import trait.
+#[macro_use]
+mod builtin_tools;
+
+/// Native helper declarations on the same canonical import trait.
+#[macro_use]
+mod native_helpers;
 /// Custom component and overlay declarations on the same canonical import trait.
 #[macro_use]
 mod overlays;
@@ -56,15 +63,8 @@ pub type ProviderRegistration<'a, C> = (Option<&'a C>, ProviderOAuth<'a, C>);
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
-    /// Formats all floating-point byte counts directly.
-    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String>;
-    /// Reads metadata numbers without passing them through JSON.
-    fn native_frontmatter(
-        &self,
-        content: &str,
-    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument>;
-    /// Forwards ordinary helper operands synchronously.
-    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String>;
+    builtin_tool_imports!();
+    native_helper_imports!();
     credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(

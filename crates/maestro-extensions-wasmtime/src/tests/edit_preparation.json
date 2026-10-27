@@ -1,0 +1,343 @@
+[
+  {
+    "id": "string_edits",
+    "input": {
+      "path": "f",
+      "edits": "[{\"oldText\":\"a\",\"newText\":\"b\"}]"
+    },
+    "expected": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ]
+    },
+    "retained": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ]
+    }
+  },
+  {
+    "id": "legacy",
+    "input": {
+      "path": "f",
+      "oldText": "a",
+      "newText": "b"
+    },
+    "expected": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ]
+    },
+    "retained": {
+      "path": "f",
+      "oldText": "a",
+      "newText": "b"
+    }
+  },
+  {
+    "id": "mixed",
+    "input": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ],
+      "oldText": "c",
+      "newText": "d"
+    },
+    "expected": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        },
+        {
+          "oldText": "c",
+          "newText": "d"
+        }
+      ]
+    },
+    "retained": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ],
+      "oldText": "c",
+      "newText": "d"
+    }
+  },
+  {
+    "id": "malformed",
+    "input": {
+      "path": "f",
+      "edits": "{bad"
+    },
+    "expected": {
+      "path": "f",
+      "edits": "{bad"
+    },
+    "retained": {
+      "path": "f",
+      "edits": "{bad"
+    }
+  },
+  {
+    "id": "object_string",
+    "input": {
+      "path": "f",
+      "edits": "{}"
+    },
+    "expected": {
+      "path": "f",
+      "edits": "{}"
+    },
+    "retained": {
+      "path": "f",
+      "edits": "{}"
+    }
+  },
+  {
+    "id": "empty",
+    "input": {
+      "path": "f",
+      "edits": []
+    },
+    "expected": {
+      "path": "f",
+      "edits": []
+    },
+    "retained": {
+      "path": "f",
+      "edits": []
+    }
+  },
+  {
+    "id": "prepare-null_args",
+    "input": null,
+    "expected": null,
+    "retained": null
+  },
+  {
+    "id": "prepare-false_args",
+    "input": false,
+    "expected": false,
+    "retained": false
+  },
+  {
+    "id": "prepare-true_args",
+    "input": true,
+    "expected": true,
+    "retained": true
+  },
+  {
+    "id": "prepare-number_args",
+    "input": 0,
+    "expected": 0,
+    "retained": 0
+  },
+  {
+    "id": "prepare-text_args",
+    "input": "raw",
+    "expected": "raw",
+    "retained": "raw"
+  },
+  {
+    "id": "prepare-array_args",
+    "input": [],
+    "expected": [],
+    "retained": []
+  },
+  {
+    "id": "prepare-missing_edits",
+    "input": {
+      "path": "f"
+    },
+    "expected": {
+      "path": "f"
+    },
+    "retained": {
+      "path": "f"
+    }
+  },
+  {
+    "id": "prepare-null_edits",
+    "input": {
+      "path": "f",
+      "edits": null
+    },
+    "expected": {
+      "path": "f",
+      "edits": null
+    },
+    "retained": {
+      "path": "f",
+      "edits": null
+    }
+  },
+  {
+    "id": "prepare-boolean_edits",
+    "input": {
+      "path": "f",
+      "edits": false
+    },
+    "expected": {
+      "path": "f",
+      "edits": false
+    },
+    "retained": {
+      "path": "f",
+      "edits": false
+    }
+  },
+  {
+    "id": "prepare-number_edits",
+    "input": {
+      "path": "f",
+      "edits": 0
+    },
+    "expected": {
+      "path": "f",
+      "edits": 0
+    },
+    "retained": {
+      "path": "f",
+      "edits": 0
+    }
+  },
+  {
+    "id": "prepare-object_edits",
+    "input": {
+      "path": "f",
+      "edits": {}
+    },
+    "expected": {
+      "path": "f",
+      "edits": {}
+    },
+    "retained": {
+      "path": "f",
+      "edits": {}
+    }
+  },
+  {
+    "id": "prepare-empty_string_edits",
+    "input": {
+      "path": "f",
+      "edits": ""
+    },
+    "expected": {
+      "path": "f",
+      "edits": ""
+    },
+    "retained": {
+      "path": "f",
+      "edits": ""
+    }
+  },
+  {
+    "id": "prepare-array_string_edits",
+    "input": {
+      "path": "f",
+      "edits": "[]"
+    },
+    "expected": {
+      "path": "f",
+      "edits": []
+    },
+    "retained": {
+      "path": "f",
+      "edits": []
+    }
+  },
+  {
+    "id": "prepare-legacy_empty",
+    "input": {
+      "path": "f",
+      "oldText": "",
+      "newText": ""
+    },
+    "expected": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "",
+          "newText": ""
+        }
+      ]
+    },
+    "retained": {
+      "path": "f",
+      "oldText": "",
+      "newText": ""
+    }
+  },
+  {
+    "id": "prepare-legacy_partial",
+    "input": {
+      "path": "f",
+      "oldText": "a",
+      "newText": null
+    },
+    "expected": {
+      "path": "f",
+      "oldText": "a",
+      "newText": null
+    },
+    "retained": {
+      "path": "f",
+      "oldText": "a",
+      "newText": null
+    }
+  },
+  {
+    "id": "prepare-mixed_string_legacy",
+    "input": {
+      "path": "f",
+      "edits": "[{\"oldText\":\"a\",\"newText\":\"b\"}]",
+      "oldText": "c",
+      "newText": "d"
+    },
+    "expected": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        },
+        {
+          "oldText": "c",
+          "newText": "d"
+        }
+      ]
+    },
+    "retained": {
+      "path": "f",
+      "edits": [
+        {
+          "oldText": "a",
+          "newText": "b"
+        }
+      ],
+      "oldText": "c",
+      "newText": "d"
+    }
+  }
+]

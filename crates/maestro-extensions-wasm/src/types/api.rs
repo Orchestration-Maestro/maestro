@@ -78,6 +78,52 @@ port! {
         fn register_flag(name: &str, options: FlagOptions) -> ();
         /// Reads the host-resolved value of a flag.
         fn get_flag(name: &str) -> Option<FlagValue>;
+        /// Retains the native local shell backend without starting a process.
+        fn create_local_bash_operations(shell_path: Option<String>) -> crate::BashOperations;
+        /// Constructs a context-free executable from the original native shell factory.
+        fn create_bash_tool(cwd: String, options: crate::BashToolOptions) -> crate::Tool;
+        /// Constructs a native shell definition with owned operations and interception.
+        fn create_bash_tool_definition(cwd: String, options: crate::BashToolOptions) -> ToolDefinition;
+        /// Constructs a retained native read executable that needs no extension context.
+        fn create_read_tool(cwd: String, options: crate::ReadToolOptions) -> crate::Tool;
+        /// Constructs a retained native read definition without performing file work.
+        fn create_read_tool_definition(cwd: String, options: crate::ReadToolOptions) -> ToolDefinition;
+        /// Constructs a retained native write executable without requiring a context.
+        fn create_write_tool(cwd: String, options: crate::WriteToolOptions) -> crate::Tool;
+        /// Constructs a native write definition without performing file work.
+        fn create_write_tool_definition(cwd: String, options: crate::WriteToolOptions) -> ToolDefinition;
+        /// Constructs a retained native edit executable with argument preparation.
+        fn create_edit_tool(cwd: String, options: crate::EditToolOptions) -> crate::Tool;
+        /// Constructs a native edit definition with retained effects and renderers.
+        fn create_edit_tool_definition(cwd: String, options: crate::EditToolOptions) -> ToolDefinition;
+        /// Constructs a context-free native directory lister.
+        fn create_ls_tool(cwd: String, options: crate::LsToolOptions) -> crate::Tool;
+        /// Constructs a native listing definition without observing the filesystem.
+        fn create_ls_tool_definition(cwd: String, options: crate::LsToolOptions) -> ToolDefinition;
+        /// Constructs a context-free native finder over retained observations.
+        fn create_find_tool(cwd: String, options: crate::FindToolOptions) -> crate::Tool;
+        /// Constructs a native find definition without acquiring programs or observing files.
+        fn create_find_tool_definition(cwd: String, options: crate::FindToolOptions) -> ToolDefinition;
+        /// Constructs a native grep executable without a caller context requirement.
+        fn create_grep_tool(cwd: String, options: crate::GrepToolOptions) -> crate::Tool;
+        /// Constructs a native grep definition over the application's search manager.
+        fn create_grep_tool_definition(cwd: String, options: crate::GrepToolOptions) -> ToolDefinition;
+        /// Selects an exact built-in executable name through the native factory.
+        fn create_tool(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> crate::Tool;
+        /// Selects an exact built-in definition name through the native factory.
+        fn create_tool_definition(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> crate::ToolDef;
+        /// Returns the native coding preset in its original insertion order.
+        fn create_coding_tools(cwd: String, options: crate::ToolsOptions) -> Vec<crate::Tool>;
+        /// Returns the native coding preset in its original insertion order.
+        fn create_coding_tool_definitions(cwd: String, options: crate::ToolsOptions) -> Vec<crate::ToolDef>;
+        /// Returns the native read-only preset in its original insertion order.
+        fn create_read_only_tools(cwd: String, options: crate::ToolsOptions) -> Vec<crate::Tool>;
+        /// Returns the native read-only preset in its original insertion order.
+        fn create_read_only_tool_definitions(cwd: String, options: crate::ToolsOptions) -> Vec<crate::ToolDef>;
+        /// Returns the native all preset in its original insertion order.
+        fn create_all_tools(cwd: String, options: crate::ToolsOptions) -> indexmap::IndexMap<crate::ToolName, crate::Tool>;
+        /// Returns the native all preset in its original insertion order.
+        fn create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> indexmap::IndexMap<crate::ToolName, crate::ToolDef>;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.
@@ -117,6 +163,10 @@ port! {
         fn set_model<'a>(model: Model) -> bool;
         /// Executes a literal program and argument vector through the host.
         fn exec<'a>(command: &'a str, args: &'a [String], options: Option<crate::ExecOptions>) -> crate::ExecResult;
+    }
+    host_owned {
+        /// Takes a native file queue turn immediately and retains it through the callback.
+        fn with_file_mutation_queue(file_path: String, operation: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>) -> ();
     }
     infallible {
         /// Returns independently retained native operations.
@@ -161,6 +211,22 @@ impl ExtensionAPI {
 }
 
 impl ExtensionAPI {
+    /// Runs an operation in the native file queue, preserving its guest-owned result.
+    ///
+    /// Admission occurs before the returned future is polled. Dropping that future
+    /// releases its native queue turn without starting a waiting operation.
+    ///
+    /// # Errors
+    /// Returns native admission or callback errors unchanged.
+    #[must_use]
+    pub fn with_file_mutation_queue<T: 'static>(
+        &self,
+        file_path: String,
+        operation: impl FnOnce() -> ExtensionFuture<'static, T> + 'static,
+    ) -> ExtensionFuture<'static, T> {
+        crate::tools::file_mutation_queue::run(&*self.0, file_path, operation)
+    }
+
     /// Encodes ordinary operands without introducing another native algorithm.
     pub(crate) fn helper<A: serde::Serialize, R: serde::de::DeserializeOwned>(
         &self,

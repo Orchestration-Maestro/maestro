@@ -13,6 +13,184 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_coding_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        self.0.create_coding_tools(cwd, options)
+    }
+    fn create_coding_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        self.0.create_coding_tool_definitions(cwd, options)
+    }
+    fn create_read_only_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        self.0.create_read_only_tools(cwd, options)
+    }
+    fn create_read_only_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        self.0.create_read_only_tool_definitions(cwd, options)
+    }
+    fn create_all_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> {
+        self.0.create_all_tools(cwd, options)
+    }
+    fn create_all_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> {
+        self.0.create_all_tool_definitions(cwd, options)
+    }
+
+    fn create_tool(
+        &self,
+        tool_name: &str,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_tool(tool_name, cwd, options)
+    }
+    fn create_tool_definition(
+        &self,
+        tool_name: &str,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::ToolDef> {
+        self.0.create_tool_definition(tool_name, cwd, options)
+    }
+    fn create_local_bash_operations(
+        &self,
+        shell_path: Option<String>,
+    ) -> ExtensionResult<crate::BashOperations> {
+        self.0.create_local_bash_operations(shell_path)
+    }
+    fn create_bash_tool(
+        &self,
+        cwd: String,
+        options: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_bash_tool(cwd, options)
+    }
+    fn create_bash_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_bash_tool_definition(cwd, options)
+    }
+    fn with_file_mutation_queue(
+        &self,
+        file_path: String,
+        operation: Box<dyn FnOnce() -> crate::ExtensionFuture<'static, ()>>,
+    ) -> crate::ExtensionFuture<'static, ()> {
+        self.0.with_file_mutation_queue(file_path, operation)
+    }
+
+    fn create_grep_tool(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_grep_tool(cwd, options)
+    }
+
+    fn create_grep_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_grep_tool_definition(cwd, options)
+    }
+
+    fn create_ls_tool(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_ls_tool(cwd, options)
+    }
+
+    fn create_ls_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_ls_tool_definition(cwd, options)
+    }
+
+    fn create_find_tool(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_find_tool(cwd, options)
+    }
+
+    fn create_find_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_find_tool_definition(cwd, options)
+    }
+
+    fn create_edit_tool(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_edit_tool(cwd, options)
+    }
+    fn create_edit_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_edit_tool_definition(cwd, options)
+    }
+    fn create_write_tool(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_write_tool(cwd, options)
+    }
+    fn create_write_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_write_tool_definition(cwd, options)
+    }
+    fn create_read_tool(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_read_tool(cwd, options)
+    }
+    fn create_read_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_read_tool_definition(cwd, options)
+    }
+
     fn native_io(&self) -> std::rc::Rc<dyn crate::io::NativeIo> {
         std::rc::Rc::new(super::io::Io(self.0.clone()))
     }

@@ -5,6 +5,10 @@ use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
 pub(crate) enum Value {
     /// A completed mutation.
     Unit,
+    /// Original native component.
+    Component(crate::native_renders::ComponentEndpoint),
+    /// Native key-release preference.
+    Key(bool),
     /// A configured-auth observation.
     Boolean(bool),
     /// An encoded shared record.
@@ -62,6 +66,12 @@ pub(super) enum Transferred {
     /// Independently retained catalog.
     #[component(name = "catalog")]
     Catalog(Resource<crate::catalog_reads::Endpoint>),
+    /// Original native component.
+    #[component(name = "component")]
+    Component(Resource<crate::native_renders::ComponentEndpoint>),
+    /// Native key-release preference.
+    #[component(name = "key")]
+    Key(bool),
     /// A terminal dimension.
     #[component(name = "count")]
     Count(u32),
@@ -74,6 +84,8 @@ impl Value {
     pub(super) fn transfer(self, table: &mut ResourceTable) -> wasmtime::Result<Transferred> {
         Ok(match self {
             Self::Unit => Transferred::Unit,
+            Self::Component(value) => Transferred::Component(table.push(value)?),
+            Self::Key(value) => Transferred::Key(value),
             Self::Boolean(value) => Transferred::Boolean(value),
             Self::Text(value) => Transferred::Text(value),
             Self::Lines(value) => Transferred::Lines(value),

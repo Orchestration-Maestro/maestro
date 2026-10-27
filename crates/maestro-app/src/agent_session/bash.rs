@@ -9,8 +9,11 @@ use maestro_session::Presence;
 use maestro_session::messages::{BashExecutionMessage, CustomAgentMessages};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tools::{
-    BashError, BashExecutorOptions, BashResult, create_local_bash_operations,
-    execute_bash_with_operations,
+    BashError, BashResult,
+    process::{
+        bash::local::create_local_bash_operations,
+        bash_executor::local::{BashExecutorOptions, execute_bash_with_operations},
+    },
 };
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -67,7 +70,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             // Shortens the callback's lifetime to the signal's borrow.
             on_chunk: on_chunk
                 .as_deref_mut()
-                .map(|chunk| -> &mut (dyn FnMut(&str) + Send) { chunk }),
+                .map(|chunk| -> &mut dyn FnMut(&str) { chunk }),
             signal: Some(&signal),
         };
         let result = execute_bash_with_operations(&resolved, &cwd, &*operations, executor).await;

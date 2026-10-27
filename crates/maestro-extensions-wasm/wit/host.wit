@@ -2,6 +2,114 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Retains the original native queue future until the operation completes or is dropped.
+    resource file-mutation {
+        wait: async func() -> result<_, string>;
+    }
+    with-file-mutation-queue: func(file-path: string) -> result<file-mutation, string>;
+
+    /// Retained argument mutations and the independently returned preparation.
+    record prepared-arguments { retained: string, prepared: result<string, string> }
+    /// An original native definition, retained independently of the factory and its callback.
+    resource builtin-tool {
+        metadata: func() -> result<string, string>;
+        prepare: func(args: string) -> result<prepared-arguments, string>;
+        render-call: func(args: option<string>, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
+        render-result: func(value: string, options: tool-render-result-options, info: tool-render-info, theme: borrow<theme>, row: option<borrow<native-row>>, last-native: option<borrow<native-component>>, last-authored: option<borrow<callback>>) -> import-route;
+        execute: async func(id: string, args: string, model: option<string>, signal: option<borrow<abort-signal>>, update: option<borrow<callback>>) -> result<string, string>;
+    }
+    /// Independent controls and borrowed effects for native named selection.
+    record tool-factory-options {
+        read-auto-resize-images: option<bool>,
+        bash-controls: bash-tool-controls,
+        read-operations: option<borrow<callback>>,
+        bash-operations: option<borrow<callback>>,
+        edit-operations: option<borrow<callback>>,
+        write-operations: option<borrow<callback>>,
+        grep-operations: option<borrow<callback>>,
+        find-operations: option<borrow<callback>>,
+        ls-operations: option<borrow<callback>>,
+        spawn-hook: option<borrow<callback>>,
+    }
+    /// Closed built-in identities; custom registered names remain ordinary strings.
+    enum tool-name {
+        /// Native read identity.
+        read,
+        /// Native shell identity.
+        bash,
+        /// Native edit identity.
+        edit,
+        /// Native write identity.
+        write,
+        /// Native content-search identity.
+        grep,
+        /// Native file-search identity.
+        find,
+        /// Native listing identity.
+        ls,
+    }
+    /// Native ordered factory families.
+    enum tool-preset { coding, read-only, all }
+    create-tool-preset: func(preset: tool-preset, cwd: string, options: tool-factory-options) -> result<list<tuple<tool-name, builtin-tool>>, string>;
+    /// Exact names are selected by the native tools owner.
+    create-tool: func(name: string, cwd: string, options: tool-factory-options) -> result<builtin-tool, string>;
+    /// Original native local backend, independent of the factory facade and its callers.
+    resource local-bash-operations {
+        exec: async func(request: bash-request, signal: option<borrow<abort-signal>>, on-data: borrow<callback>) -> result<option<f64>, string>;
+    }
+    /// Retains local shell configuration without starting a process.
+    create-local-bash-operations: func(shell-path: option<string>) -> result<local-bash-operations, string>;
+    /// Independent controls of the original local shell factory.
+    record bash-tool-controls { command-prefix: option<string>, shell-path: option<string> }
+    /// Retains the native shell definition and independently optional replacement callbacks.
+    create-bash-tool: func(cwd: string, controls: bash-tool-controls, operations: option<borrow<callback>>, spawn-hook: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the native read definition without performing file work.
+    create-read-tool: func(cwd: string, auto-resize-images: option<bool>, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the native write definition over independently retained effects.
+    create-write-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the native edit definition without performing file work.
+    create-edit-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the native finder using the application's search services.
+    create-find-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Constructs the original directory lister over retained observations.
+    create-ls-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Directory observations; sorting, suffixes and skipped entries remain native.
+    enum ls-operation { exists, stat, readdir }
+    variant ls-output { boolean(bool), names(list<string>) }
+    record local-ls { target: u32, operation: ls-operation, path: string }
+    /// Exact operands and observations of supplied file searches.
+    record find-glob-options { ignore: list<string>, limit: f64 }
+    record find-glob { pattern: string, options: find-glob-options }
+    variant find-operation { exists, glob(find-glob) }
+    variant find-output { exists(bool), paths(list<string>) }
+    record local-find { target: u32, operation: find-operation, path: string }
+    /// Constructs the original content search using the application's services.
+    create-grep-tool: func(cwd: string, operations: option<borrow<callback>>) -> result<builtin-tool, string>;
+    /// Original content search observations.
+    enum grep-operation { is-directory, read-file }
+    variant grep-output { directory(bool), text(string) }
+    record local-grep { target: u32, operation: grep-operation, path: string }
+    /// Original native row context, including its rendering environment and typed state.
+    resource native-row;
+    /// Independently retained native component returned by a delegated renderer.
+    resource native-component {
+        render: func(width: u32) -> import-route;
+        handle-input: func(data: string) -> import-route;
+        invalidate: func() -> import-route;
+        wants-key-release: func() -> import-route;
+    }
+    /// Native results use the same route as nested callbacks.
+    /// Supplied read operations retain one authored owner.
+    enum read-operation { read-file, access, detect-image-mime-type }
+    /// Byte-oriented read callback result; failures preserve their diagnostic fields.
+    variant read-output { bytes(list<u8>), unit, mime(option<string>) }
+    record local-read { target: u32, operation: read-operation, path: string }
+    /// Original content travels only with the write operation, not with mkdir.
+    variant write-operation { write-file(string), mkdir }
+    record local-write { target: u32, operation: write-operation, path: string }
+    /// Original edit effects retain structured access failures until native formatting.
+    variant edit-operation { read-file, write-file(string), access }
+    record local-edit { target: u32, operation: edit-operation, path: string }
     /// Owned native file watch; drop and close stop notification delivery.
     resource fs-watcher { close: func() -> result<_, string>; }
     watch: func(path: string, listener: borrow<callback>) -> result<fs-watcher, string>;
@@ -237,7 +345,7 @@ interface host {
     /// What a terminal input listener decided; absent members leave the input as it is.
     record terminal-input-result { consume: option<bool>, data: option<string> }
     /// One nested same-instance tool rendering.
-    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
+    record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, native-row: option<native-row>, emitter: callback-emitter }
     /// One nested same-instance component factory.
     record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
     /// One nested custom factory prefix with owned capabilities.
@@ -334,6 +442,12 @@ interface host {
         custom-factory(local-custom-factory),
         custom-future(u32),
         tool-render(local-tool-render),
+        read(local-read),
+        write(local-write),
+        grep(local-grep),
+        find(local-find),
+        ls(local-ls),
+        edit(local-edit),
         style(local-style),
         highlight(local-highlight),
         widget(local-widget),
@@ -350,7 +464,7 @@ interface host {
         render(result<list<string>, string>),
         unit(result<_, string>),
         key(result<bool, string>), focused(result<option<bool>, string>),
-        prepared(result<string, string>),
+        prepared(result<prepared-arguments, string>),
         terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
@@ -364,6 +478,12 @@ interface host {
         factory(result<factory-component, string>),
         custom-factory(result<custom-built, string>),
         tool-render(result<tool-rendered, string>),
+        read(result<read-output, diagnostic-error-info>),
+        write(result<_, diagnostic-error-info>),
+        grep(result<grep-output, diagnostic-error-info>),
+        find(result<find-output, diagnostic-error-info>),
+        ls(result<ls-output, diagnostic-error-info>),
+        edit(result<read-output, diagnostic-error-info>),
         style(result<string, string>),
         highlight(result<list<string>, string>),
         widget(result<widget-answer, string>),
@@ -376,7 +496,7 @@ interface host {
     variant route-value {
         unit, boolean(bool), text(string), lines(list<string>), completion(completion-result),
         trigger(option<bool>), editor(built-editor), editor-answer(foreign-editor-answer),
-        credentials(auth-storage), catalog(model-registry),
+        credentials(auth-storage), catalog(model-registry), component(native-component), key(bool),
         /// A terminal dimension.
         count(u32),
         /// The handle of an overlay the request showed.

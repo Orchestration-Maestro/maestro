@@ -72,8 +72,16 @@ pub use maestro_tools::{
     create_read_tool_definition, create_write_tool_definition,
 };
 
-/// Caller-local tool definitions for local rendering consumers.
-pub use maestro_tools::types::local;
+/// Caller-local tool definitions and native shell execution.
+pub mod local {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::bash::local::create_local_bash_operations;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::bash_executor::local::{
+        BashExecutorOptions, execute_bash_with_operations,
+    };
+    pub use maestro_tools::types::local::*;
+}
 
 pub use maestro_tools::define_tool;
 

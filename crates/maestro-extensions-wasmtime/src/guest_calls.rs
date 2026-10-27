@@ -16,12 +16,18 @@ use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
 pub(crate) mod custom;
+pub(crate) mod edit;
 pub(crate) mod editors;
 pub(crate) mod events;
 pub(crate) mod factories;
+pub(crate) mod find;
+pub(crate) mod grep;
+pub(crate) mod ls;
 pub(crate) mod paints;
 pub(crate) mod providers;
+pub(crate) mod read;
 pub(crate) mod widget_calls;
+pub(crate) mod write;
 pub(crate) use events::EventCall;
 pub(crate) mod credentials;
 pub(crate) mod registrations;
@@ -56,6 +62,18 @@ pub(crate) enum Call<H = Handle> {
     Event(EventCall<H>),
     /// Executes one independently retained guest shell operation.
     Bash(BashCall<H>),
+    /// Invokes one retained guest file observation.
+    Read(read::Invocation<H>),
+    /// Invokes one retained guest file effect.
+    Write(write::Invocation<H>),
+    /// Invokes one retained guest content search observation.
+    Grep(grep::Invocation<H>),
+    /// Invokes one retained guest file search observation.
+    Find(find::Invocation<H>),
+    /// Invokes retained directory observations.
+    Ls(ls::Invocation<H>),
+    /// Invokes one retained guest edit effect.
+    Edit(edit::Invocation<H>),
     /// Invokes setup with the original writable session.
     Setup(H, writer_reads::Endpoint, Reply<()>),
     /// Invokes a continuation with the actual replacement context.

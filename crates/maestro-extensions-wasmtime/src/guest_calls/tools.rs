@@ -25,7 +25,7 @@ pub(crate) enum ToolCall<H = Handle> {
         /// Original native bus and deferred deliveries.
         emitter: EmitterEndpoint,
         /// Returns the actual prepared document, independently of completion.
-        reply: Reply<String>,
+        reply: Reply<crate::guest_exports::tools::PreparedArguments>,
     },
     /// Asynchronous execution with independently retained caller capabilities.
     Execute {
@@ -67,19 +67,20 @@ impl Handle {
     fn prepared(
         &self,
         registry: &Registry,
-        args: &Value,
+        args: &mut Value,
         emitter: EmitterEndpoint,
     ) -> Result<Value, String> {
-        let args = serde_json::to_string(args).map_err(|error| error.to_string())?;
+        let document = serde_json::to_string(args).map_err(|error| error.to_string())?;
         let result = self.0.endpoint.synchronous(registry, |reply| {
             Ok(Call::Tool(ToolCall::Prepare {
                 handler: self.clone(),
-                args,
+                args: document,
                 emitter,
                 reply,
             }))
         })?;
-        crate::writer_reads::decode(&result)
+        *args = crate::writer_reads::decode(&result.retained)?;
+        crate::writer_reads::decode(&result.prepared?)
     }
 
     /// Keeps invocation local and requires the actual context supplied by the native wrapper.

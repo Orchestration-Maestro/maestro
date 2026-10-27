@@ -1067,3 +1067,48 @@ fn uses_the_supplied_resource_loader_as_it_is() {
         );
     });
 }
+
+/// Default construction and reload share the application's original tool services.
+#[test]
+fn session_tool_services_survive_resource_reload() {
+    on_task_set(|local| async move {
+        let h = fixture(Auth::Key).await;
+        std::fs::create_dir_all(&h.cwd).unwrap();
+        let bin_dir = format!("{}/selected-bin", h.scratch.path().display());
+        let manager = Arc::new(
+            maestro_tools::ToolsManager::new(bin_dir.clone(), None).with_offline(Some(true)),
+        );
+        let seen = Rc::new(RefCell::new(0));
+        let (selected, bin, calls) = (manager.clone(), bin_dir.clone(), seen.clone());
+        let factory: ExtensionFactory<Local> = Rc::new(move |api| {
+            let services = api.tool_construction().unwrap();
+            assert!(Arc::ptr_eq(&services.tools_manager, &selected));
+            assert_eq!(services.bin_dir, bin);
+            *calls.borrow_mut() += 1;
+            Box::pin(std::future::ready(Ok(())))
+        });
+        let module_loader: maestro_extensions::ModuleLoader<Local> =
+            Rc::new(|_| Box::pin(std::future::ready(Ok(None))));
+        let mut resources = ResourceLoaderOptions::new(local, module_loader);
+        resources.tool_construction = Some(maestro_extensions::ToolConstruction {
+            tools_manager: manager.clone(),
+            bin_dir: bin_dir.clone(),
+        });
+        resources.extension_factories.push(factory);
+        let mut options = options(&h, json!({}));
+        options.cwd = Some(h.cwd.clone());
+        options.resources = SessionResources::Default(Box::new(resources));
+        options.model = Some(h.model("faux-1"));
+        let created = create(options).await;
+        let services = created
+            .extensions_result
+            .runtime
+            .tool_construction()
+            .unwrap();
+        assert!(Arc::ptr_eq(&services.tools_manager, &manager));
+        assert_eq!(services.bin_dir, bin_dir);
+        assert_eq!(*seen.borrow(), 1);
+        created.session.reload().await.unwrap();
+        assert_eq!(*seen.borrow(), 2);
+    });
+}

@@ -403,7 +403,12 @@ impl maestro_tools::BashOperations<maestro_models::Local> for ShellOps {
                 .env
                 .unwrap()
                 .iter()
-                .map(|(k, v)| (k.to_str().unwrap().to_owned(), json!(v.to_str().unwrap())))
+                .map(|(k, v)| {
+                    (
+                        k.to_str().unwrap().to_owned(),
+                        json!(v.as_ref().unwrap().to_str().unwrap()),
+                    )
+                })
                 .collect::<serde_json::Map<_, _>>();
             self.calls.lock().unwrap().push(json!([
                 "operation",
@@ -979,7 +984,7 @@ fn selected_spawn_hook(
         context.command = "selected".into();
         context.cwd = "/selected".into();
         context.env.clear();
-        context.env.insert("SELECTED".into(), "yes".into());
+        context.env.insert("SELECTED".into(), Some("yes".into()));
         Ok(context)
     })
 }

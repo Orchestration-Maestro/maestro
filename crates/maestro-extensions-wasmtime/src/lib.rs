@@ -1,6 +1,11 @@
 //! Native component execution through the local extension registration facade.
 mod api_imports;
 mod api_reads;
+mod builtin_imports;
+mod builtin_reads;
+/// Native named factory selection on the canonical callback transport.
+mod builtin_selection_imports;
+mod builtin_tools;
 mod callback_imports;
 mod catalog_imports;
 mod catalog_reads;
@@ -41,6 +46,7 @@ mod imported_assistant;
 mod keys_imports;
 mod keys_reads;
 mod lifecycle;
+mod local_bash_imports;
 mod local_resources;
 mod native_imports;
 mod watch_imports;
@@ -48,6 +54,9 @@ mod watch_imports;
 pub use maestro_extensions::native_io;
 mod model_calls;
 mod model_imports;
+mod mutation_imports;
+mod native_render_imports;
+mod native_renders;
 mod overlay_imports;
 mod overlay_layout;
 mod overlay_reads;

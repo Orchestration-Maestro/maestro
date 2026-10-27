@@ -6,6 +6,10 @@ pub(crate) use registration::STALE_MESSAGE;
 mod actions;
 mod construction;
 pub use construction::CatalogConstruction;
+#[cfg(not(target_arch = "wasm32"))]
+mod tool_construction;
+#[cfg(not(target_arch = "wasm32"))]
+pub use tool_construction::ToolConstruction;
 pub(crate) mod runtime;
 
 #[cfg(not(target_arch = "wasm32"))]

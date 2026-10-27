@@ -134,7 +134,7 @@ pub struct QueueTexts {
 }
 
 /// Hears each cleaned output chunk of a direct shell command as it arrives.
-pub type BashChunkCallback = Box<dyn FnMut(&str) + Send>;
+pub type BashChunkCallback = Box<dyn FnMut(&str)>;
 
 /// How a direct shell command runs and is recorded.
 #[derive(Clone, Default)]
@@ -142,7 +142,7 @@ pub struct BashRunOptions {
     /// Whether the recorded output is kept out of the model context; absent is not recorded.
     pub exclude_from_context: Option<bool>,
     /// The operations that run the command; absent means the local shell.
-    pub operations: Option<Arc<dyn maestro_tools::BashOperations + Send + Sync>>,
+    pub operations: Option<Rc<dyn maestro_tools::BashOperations<Local>>>,
 }
 
 /// A session listener.

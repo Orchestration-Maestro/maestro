@@ -8,17 +8,23 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+pub(crate) mod builtin;
+pub(crate) mod builtin_bash;
+/// Exact-name native selection with independently retained effects.
+pub(crate) mod builtin_selection;
 pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod http;
+pub(crate) mod local_bash;
 pub(crate) mod model_streams;
 pub(crate) mod native_io;
 pub(crate) mod native_resources;
 mod overlays;
 pub(crate) mod provider_controls;
 mod providers;
+mod rendering;
 pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
@@ -65,6 +71,10 @@ pub(crate) enum Message {
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
     Api(u64, crate::api_reads::Request),
+    /// Reads or prepares an original native built-in definition.
+    Builtin(u64, crate::builtin_reads::Request),
+    /// Constructs, executes or renders through an original native built-in owner.
+    BuiltinOperation(builtin::Operation),
     /// Registers retained callbacks through the original facade.
     Registration(u64, crate::registration_reads::Request),
     /// Uses the original facade bus for listener registration and emission.
@@ -298,6 +308,14 @@ enum Capability {
     AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.
     Stream(crate::local_resources::stream_reads::Owner),
+    /// Original typed native definition behind the component's tool resource.
+    Builtin(Rc<dyn crate::builtin_tools::Definition>),
+    /// Original native local backend, retained independently of a returned guest operation.
+    LocalBash(Rc<dyn maestro_extensions::BashOperations<maestro_extensions::Local>>),
+    /// Original row context, including its environment and shared state.
+    NativeRow(crate::native_renders::Row),
+    /// Original native component, not a guest proxy.
+    NativeComponent(maestro_extensions::ComponentHandle),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.

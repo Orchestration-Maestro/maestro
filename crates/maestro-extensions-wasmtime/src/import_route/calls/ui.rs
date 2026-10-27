@@ -16,6 +16,9 @@ pub(in super::super) struct LocalToolRender {
     theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
     /// The row's redraw capability, transferred.
     invalidator: Resource<crate::local_resources::effects::InvalidatorEndpoint>,
+    /// Original native row, transferred.
+    #[component(name = "native-row")]
+    native_row: Option<Resource<crate::native_renders::RowEndpoint>>,
     /// Independent native invocation frame.
     emitter: Resource<EmitterEndpoint>,
 }
@@ -105,6 +108,11 @@ pub(super) fn lower(
             render: call.render.clone(),
             theme: table.push(call.theme.clone())?,
             invalidator: table.push(call.invalidator.clone())?,
+            native_row: call
+                .native_row
+                .clone()
+                .map(|row| table.push(row))
+                .transpose()?,
             emitter: table.push(call.emitter.clone())?,
         }),
         Call::Factory(call) => LocalCall::Factory(LocalFactory {

@@ -121,6 +121,10 @@ impl<E: ExtensionExecution> EventBus<E> {
         lock(&self.shared.registrations).push(registration);
         subscription
     }
+    /// Reports a synchronous callback failure through this bus's diagnostic destination.
+    pub fn report_error(&self, channel: &str, error: &(dyn Error + Send + Sync)) {
+        self.shared.report_error(channel, error);
+    }
     /// Retains this emission's ordered listener collection.
     pub(crate) fn snapshot(&self, channel: &str) -> Vec<E::Shared<Registration<E>>> {
         lock(&self.shared.registrations)

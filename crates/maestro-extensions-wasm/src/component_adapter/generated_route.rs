@@ -247,7 +247,13 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
 
 /// Runs one nested tool rendering and transfers what it returned.
 fn tool_render(call: host::LocalToolRender) -> ExtensionResult<host::ToolRendered> {
-    let lent = (call.theme, call.invalidator);
+    let lent = (
+        call.theme,
+        call.invalidator,
+        call.native_row.map(|row| crate::NativeRow {
+            handle: std::rc::Rc::new(row),
+        }),
+    );
     Exports::new(Generated)
         .invoke_tool_render(call.target, &call.render, lent, &call.emitter)
         .map(super::rendered_row)
@@ -282,15 +288,9 @@ fn asynchronous(call: host::LocalCall) -> Running {
                 )
                 .await,
             ),
-            host::LocalCall::Oauth(call) => host::LocalResult::Oauth(
-                super::super::oauth::invoke(
-                    call.target,
-                    call.phase,
-                    &call.data,
-                    call.interaction.map(super::oauth::interaction),
-                )
-                .await,
-            ),
+            host::LocalCall::Oauth(call) => {
+                host::LocalResult::Oauth(super::oauth::invoke(call).await)
+            }
             host::LocalCall::Event(call) => {
                 host::LocalResult::Event(event(call.target, call.event, call.resources).await)
             }
@@ -318,6 +318,12 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
+            call @ (host::LocalCall::Read(_)
+            | host::LocalCall::Write(_)
+            | host::LocalCall::Edit(_)
+            | host::LocalCall::Grep(_)
+            | host::LocalCall::Find(_)
+            | host::LocalCall::Ls(_)) => file_operation(call).await,
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }
@@ -455,5 +461,30 @@ pub(super) fn text(route: &host::ImportRoute) -> ExtensionResult<String> {
     match value(route)? {
         host::RouteValue::Text(value) => Ok(value),
         _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Forwards nested file observations to their existing typed author adapters.
+async fn file_operation(call: host::LocalCall) -> host::LocalResult {
+    match call {
+        host::LocalCall::Grep(call) => host::LocalResult::Grep(
+            super::super::tools::grep::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Ls(call) => host::LocalResult::Ls(
+            super::super::tools::ls::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Find(call) => host::LocalResult::Find(
+            super::super::tools::find::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Edit(call) => host::LocalResult::Edit(
+            super::super::tools::edit::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Write(call) => host::LocalResult::Write(
+            super::super::tools::write::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Read(call) => host::LocalResult::Read(
+            super::super::tools::read::invoke(call.target, call.operation, call.path).await,
+        ),
+        _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),
     }
 }

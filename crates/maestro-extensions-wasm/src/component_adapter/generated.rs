@@ -20,6 +20,10 @@ mod route;
 mod streams;
 pub(crate) use streams::new_event_stream;
 
+#[path = "tools/builtin.rs"]
+#[macro_use]
+mod builtin;
+
 #[path = "generated_glue.rs"]
 mod glue;
 #[path = "generated_model_streams.rs"]
@@ -54,6 +58,8 @@ struct Generated;
 mod native;
 
 impl Imports for Generated {
+    builtin_tool_forwarding!();
+
     type OAuthProvider = host::OauthProvider;
     fn credentials_oauth_providers(
         &self,

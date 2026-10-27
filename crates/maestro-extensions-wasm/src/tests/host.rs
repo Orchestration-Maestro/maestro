@@ -33,6 +33,140 @@ pub struct Flag(pub std::sync::Arc<std::sync::atomic::AtomicBool>);
 /// Progress resource owned by one execution.
 pub struct Update;
 
+/// Native tool resources are created only by the production runtime, not this fixture.
+pub enum BuiltinTool {}
+/// Local shell operations exist only on the production host.
+pub enum LocalBashOperations {}
+impl host::HostLocalBashOperations for State {
+    fn drop(&mut self, _: Resource<LocalBashOperations>) -> wasmtime::Result<()> {
+        wasmtime::bail!("local shell operations require the production host")
+    }
+}
+impl host::HostLocalBashOperationsWithStore<State> for Imports {
+    fn exec(
+        _: &Accessor<State, Self>,
+        _: Resource<LocalBashOperations>,
+        _: host::BashRequest,
+        _: Option<Resource<Flag>>,
+        _: Resource<Identity>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<Option<f64>, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "local shell operations require the production host"
+        )))
+    }
+}
+/// Queue futures exist only on the production host.
+pub enum FileMutation {}
+impl host::HostFileMutation for State {
+    fn drop(&mut self, _: Resource<FileMutation>) -> wasmtime::Result<()> {
+        wasmtime::bail!("file mutation queues require the production host")
+    }
+}
+impl host::HostFileMutationWithStore<State> for Imports {
+    fn wait(
+        _: &Accessor<State, Self>,
+        _: Resource<FileMutation>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<(), String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "file mutation queues require the production host"
+        )))
+    }
+}
+
+/// Native row resources are lent only by the production host.
+pub enum NativeRow {}
+/// Native component resources are returned only by the production host.
+pub enum NativeComponent {}
+impl host::HostNativeRow for State {
+    fn drop(&mut self, _: Resource<NativeRow>) -> wasmtime::Result<()> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+}
+impl host::HostNativeComponent for State {
+    fn render(
+        &mut self,
+        _: Resource<NativeComponent>,
+        _: u32,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn handle_input(
+        &mut self,
+        _: Resource<NativeComponent>,
+        _: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn invalidate(&mut self, _: Resource<NativeComponent>) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn wants_key_release(
+        &mut self,
+        _: Resource<NativeComponent>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn drop(&mut self, _: Resource<NativeComponent>) -> wasmtime::Result<()> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+}
+impl host::HostBuiltinTool for State {
+    fn render_call(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: Option<String>,
+        _: host::ToolRenderInfo,
+        _: Resource<super::renderer_host::Theme>,
+        _: Option<Resource<NativeRow>>,
+        _: Option<Resource<NativeComponent>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn render_result(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: String,
+        _: host::ToolRenderResultOptions,
+        _: host::ToolRenderInfo,
+        _: Resource<super::renderer_host::Theme>,
+        _: Option<Resource<NativeRow>>,
+        _: Option<Resource<NativeComponent>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+
+    fn metadata(&mut self, _: Resource<BuiltinTool>) -> wasmtime::Result<Result<String, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn prepare(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: String,
+    ) -> wasmtime::Result<Result<host::PreparedArguments, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn drop(&mut self, _: Resource<BuiltinTool>) -> wasmtime::Result<()> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+}
+impl host::HostBuiltinToolWithStore<State> for Imports {
+    fn execute(
+        _: &Accessor<State, Self>,
+        _: Resource<BuiltinTool>,
+        _: String,
+        _: String,
+        _: Option<String>,
+        _: Option<Resource<Flag>>,
+        _: Option<Resource<Identity>>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "built-in tools require the production host"
+        )))
+    }
+}
+
 /// Host type of the ordinary context resource.
 pub struct Ordinary(Session, super::reader_host::Reader);
 /// Host type of the command context resource.
@@ -642,6 +776,19 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn create_local_bash_operations(
+        &mut self,
+        _: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<LocalBashOperations>, String>> {
+        wasmtime::bail!("local shell operations require the production host")
+    }
+    fn with_file_mutation_queue(
+        &mut self,
+        _: String,
+    ) -> wasmtime::Result<Result<Resource<FileMutation>, String>> {
+        wasmtime::bail!("file mutation queues require the production host")
+    }
+
     fn new_overlay_options(
         &mut self,
         encoded: String,
@@ -905,6 +1052,74 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn create_grep_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_ls_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_find_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_write_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_edit_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_bash_tool(
+        &mut self,
+        _: String,
+        _: host::BashToolControls,
+        _: Option<Resource<Identity>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_tool_preset(
+        &mut self,
+        _: host::ToolPreset,
+        _: String,
+        _: host::ToolFactoryOptions,
+    ) -> wasmtime::Result<Result<Vec<(host::ToolName, Resource<BuiltinTool>)>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_tool(
+        &mut self,
+        _: String,
+        _: String,
+        _: host::ToolFactoryOptions,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_read_tool(
+        &mut self,
+        _: String,
+        _: Option<bool>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
     fn native_format_size(&mut self, _bytes: f64) -> wasmtime::Result<Result<String, String>> {
         Ok(self
             .observed

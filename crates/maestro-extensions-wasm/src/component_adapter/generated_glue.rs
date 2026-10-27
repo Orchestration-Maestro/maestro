@@ -270,13 +270,33 @@ impl<E: Extension> Guest for Glue<E> {
         render: host::ToolRender,
         theme: host::Theme,
         invalidator: host::ToolInvalidator,
+        native_row: Option<host::NativeRow>,
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<host::ToolRendered>> {
         let exports = Exports::new(Generated);
-        let rendered =
-            exports.invoke_tool_render(handler.id(), &render, (theme, invalidator), emitter);
+        let rendered = exports.invoke_tool_render(
+            handler.id(),
+            &render,
+            (
+                theme,
+                invalidator,
+                native_row.map(|row| crate::NativeRow {
+                    handle: std::rc::Rc::new(row),
+                }),
+            ),
+            emitter,
+        );
         std::future::ready(rendered.map(super::rendered_row))
     }
+
+    forward_resources! { static functions {
+        invoke_grep(handler: &host::Callback, operation: host::GrepOperation, path: String) -> impl Future<Output = Result<host::GrepOutput, host::DiagnosticErrorInfo>> => super::super::tools::grep::invoke[handler.id(), operation, path];
+        invoke_ls(handler: &host::Callback, operation: host::LsOperation, path: String) -> impl Future<Output = Result<host::LsOutput, host::DiagnosticErrorInfo>> => super::super::tools::ls::invoke[handler.id(), operation, path];
+        invoke_find(handler: &host::Callback, operation: host::FindOperation, path: String) -> impl Future<Output = Result<host::FindOutput, host::DiagnosticErrorInfo>> => super::super::tools::find::invoke[handler.id(), operation, path];
+        invoke_edit(handler: &host::Callback, operation: host::EditOperation, path: String) -> impl Future<Output = Result<host::ReadOutput, host::DiagnosticErrorInfo>> => super::super::tools::edit::invoke[handler.id(), operation, path];
+        invoke_write(handler: &host::Callback, operation: host::WriteOperation, path: String) -> impl Future<Output = Result<(), host::DiagnosticErrorInfo>> => super::super::tools::write::invoke[handler.id(), operation, path];
+        invoke_read(handler: &host::Callback, operation: host::ReadOperation, path: String) -> impl Future<Output = Result<host::ReadOutput, host::DiagnosticErrorInfo>> => super::super::tools::read::invoke[handler.id(), operation, path];
+    } }
 
     fn invoke_branch_change(
         handler: &host::Callback,
@@ -408,7 +428,7 @@ impl<E: Extension> Guest for Glue<E> {
         handler: &host::Callback,
         args: String,
         emitter: &host::CallbackEmitter,
-    ) -> impl Future<Output = ExtensionResult<String>> {
+    ) -> impl Future<Output = ExtensionResult<host::PreparedArguments>> {
         std::future::ready(Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter))
     }
     fn invoke_listener(

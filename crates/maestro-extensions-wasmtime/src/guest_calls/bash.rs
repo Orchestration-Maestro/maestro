@@ -3,13 +3,13 @@ use super::{Call, Handle};
 use crate::lifecycle::replies::Reply;
 use crate::local_resources::{Registry, SignalEndpoint, bash_output};
 use maestro_extensions::{BashError, BashExecOptions, BashExecResult, BashOperations, Local};
-use wasmtime::component::{ComponentType, Lower};
+use wasmtime::component::{ComponentType, Lift, Lower};
 
 /// Actual Local-family borrowed output operand.
 type LocalOptions<'a> = BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>;
 
 /// Literal canonical execution operands, with no process policy added at the boundary.
-#[derive(ComponentType, Lower, Clone)]
+#[derive(ComponentType, Lift, Lower, Clone)]
 #[component(record)]
 pub(crate) struct BashRequest {
     /// Exact authored shell command.
@@ -89,19 +89,7 @@ impl ReturnedBash {
                 .env
                 .map(|env| {
                     env.iter()
-                        .map(|(key, value)| {
-                            Ok((
-                                key.to_str()
-                                    .ok_or("extension environment key is not UTF-8")?
-                                    .to_owned(),
-                                Some(
-                                    value
-                                        .to_str()
-                                        .ok_or("extension environment value is not UTF-8")?
-                                        .to_owned(),
-                                ),
-                            ))
-                        })
+                        .map(environment_entry)
                         .collect::<Result<Vec<_>, String>>()
                 })
                 .transpose()?,
@@ -117,4 +105,23 @@ impl ReturnedBash {
         });
         consumer.finish(operation, options.on_data).await
     }
+}
+
+/// Projects a native environment entry without losing unset values or accepting lossy text.
+pub(crate) fn environment_entry(
+    (key, value): (&std::ffi::OsString, &Option<std::ffi::OsString>),
+) -> Result<(String, Option<String>), String> {
+    let key = key
+        .to_str()
+        .ok_or("extension environment key is not UTF-8")?;
+    let value = value
+        .as_ref()
+        .map(|value| {
+            value
+                .to_str()
+                .ok_or("extension environment value is not UTF-8")
+                .map(str::to_owned)
+        })
+        .transpose()?;
+    Ok((key.to_owned(), value))
 }

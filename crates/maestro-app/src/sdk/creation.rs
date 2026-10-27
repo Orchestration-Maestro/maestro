@@ -83,17 +83,7 @@ pub async fn create_agent_session(
             SessionManager::create(&services.cwd, None, &services.agent_dir).map_err(thrown)?,
         )),
     };
-    let resource_loader = match options.resources {
-        SessionResources::Loader(loader) => loader,
-        SessionResources::Default(resources) => default_resource_loader(
-            &services.cwd,
-            &services.agent_dir,
-            &services.settings_manager,
-            *resources,
-        )
-        .await
-        .map_err(thrown)?,
-    };
+    let resource_loader = resources(&services, options.resources, options.offline).await?;
     let (agent, runner_ref, model_fallback_message) = prepare_agent(
         &services,
         &session_manager,
@@ -102,13 +92,21 @@ pub async fn create_agent_session(
     )?;
     let (allowed_tool_names, initial_active_tool_names) =
         tool_names(options.tools, options.no_tools);
-    let bin_dir = get_bin_dir(&services.agent_dir);
+    let construction = resource_loader
+        .get_extensions()
+        .runtime
+        .tool_construction()
+        .unwrap_or_else(|| tool_construction(&services.agent_dir, options.offline));
+    resource_loader
+        .get_extensions()
+        .runtime
+        .set_tool_construction(construction.clone());
     let session = AgentSession::new(AgentSessionConfig {
         agent,
         session_manager,
         settings_manager: services.settings_manager,
         cwd: services.cwd,
-        bin_dir: bin_dir.clone(),
+        bin_dir: construction.bin_dir,
         scoped_models: options.scoped_models,
         resource_loader: Rc::clone(&resource_loader),
         custom_tools: options.custom_tools,
@@ -118,7 +116,7 @@ pub async fn create_agent_session(
         base_tools_override: None,
         extension_runner_ref: Some(runner_ref),
         session_start_event: options.session_start_event,
-        tools_manager: Arc::new(ToolsManager::new(bin_dir, None).with_offline(options.offline)),
+        tools_manager: construction.tools_manager,
         theme: options.theme,
     })?;
     Ok(CreateAgentSessionResult {
@@ -126,6 +124,45 @@ pub async fn create_agent_session(
         extensions_result: resource_loader.get_extensions(),
         model_fallback_message,
     })
+}
+
+/// Selects one application tool owner before loading factories.
+fn tool_construction(
+    agent_dir: &str,
+    offline: Option<bool>,
+) -> maestro_extensions::ToolConstruction {
+    let bin_dir = get_bin_dir(agent_dir);
+    maestro_extensions::ToolConstruction {
+        tools_manager: Arc::new(ToolsManager::new(bin_dir.clone(), None).with_offline(offline)),
+        bin_dir,
+    }
+}
+
+/// Loads resources only after their application-owned construction services are installed.
+async fn resources(
+    services: &Services,
+    resources: SessionResources,
+    offline: Option<bool>,
+) -> Result<
+    Rc<dyn crate::resources::resource_loader::ResourceLoader<maestro_models::Local>>,
+    DiagnosticErrorInfo,
+> {
+    match resources {
+        SessionResources::Loader(loader) => Ok(loader),
+        SessionResources::Default(mut resources) => {
+            resources
+                .tool_construction
+                .get_or_insert_with(|| tool_construction(&services.agent_dir, offline));
+            default_resource_loader(
+                &services.cwd,
+                &services.agent_dir,
+                &services.settings_manager,
+                *resources,
+            )
+            .await
+            .map_err(thrown)
+        }
+    }
 }
 
 /// The agent over the resolved model and thinking level, with the resumed messages or the

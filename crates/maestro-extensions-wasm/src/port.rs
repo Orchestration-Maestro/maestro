@@ -9,7 +9,8 @@
 ///
 /// Ordinary methods return `ExtensionResult<T>`; the optional infallible block returns directly.
 /// An asynchronous block adds trait declarations with explicit facade implementations; an
-/// owned block adds forwarded operations whose futures own their operands.
+/// owned block adds forwarded operations whose futures own their operands. A `host_owned`
+/// block declares the owned host seam when the facade retains a generic result locally.
 /// The facade reaches its port through the
 /// field `$access`. An optional `errors` string describes fallible delegated operations.
 macro_rules! port {
@@ -23,6 +24,7 @@ macro_rules! port {
             )*
         }
         $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident<$lifetime:lifetime>($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
+        $(host_owned { $( $(#[$host_meta:meta])* fn $host:ident($($host_arg:ident: $host_ty:ty),*) -> $host_ret:ty; )* })?
         $(owned { $( $(#[$owned_meta:meta])* fn $owned:ident($($owned_arg:ident: $owned_ty:ty),*) -> $owned_ret:ty; )* })?
         $(infallible {
             $( $(#[$infallible_meta:meta])* fn $infallible:ident() -> $value:ty; )*
@@ -31,6 +33,7 @@ macro_rules! port {
         $(#[$port_meta])*
         pub trait $port {
             $($( $(#[$async_meta])* fn $async_method<$lifetime>(&$lifetime self $(, $async_arg: $async_ty)*) -> ExtensionFuture<$lifetime, $async_ret>; )*)?
+            $($( $(#[$host_meta])* fn $host(&self $(, $host_arg: $host_ty)*) -> ExtensionFuture<'static, $host_ret>; )*)?
             $($(
                 $(#[$owned_meta])*
                 ///
@@ -93,6 +96,11 @@ macro_rules! port {
 /// Implements resource and function forwarding without duplicating a body per import.
 #[cfg(target_arch = "wasm32")]
 macro_rules! forward_resources {
+    (static functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path[$($value:expr),* $(,)?];)* }) => {
+        $(fn $name($($arg: $ty),*) -> $ret {
+            $function($($value),*)
+        })*
+    };
     (routed functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) => $function:path;)* }) => {
         $(fn $name(&self $(, $arg: $ty)*) -> ExtensionResult<()> {
             route::drive(&$function($($arg),*))
@@ -111,6 +119,11 @@ macro_rules! forward_resources {
     (asynchronous { $($name:ident<$lt:lifetime>($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) -> $ret:ty => $method:ident($($value:expr),* $(,)?);)* }) => {
         $(fn $name<$lt>(&$lt self, $resource: &$lt $resource_ty $(, $arg: $ty)*) -> ExtensionFuture<$lt, $ret> {
             Box::pin($resource.$method($($value),*))
+        })*
+    };
+    (functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path[$($value:expr),* $(,)?];)* }) => {
+        $(fn $name(&self $(, $arg: $ty)*) -> $ret {
+            $function($($value),*)
         })*
     };
     (functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path;)* }) => {

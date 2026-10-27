@@ -16,6 +16,7 @@ pub(crate) mod custom;
 mod editors;
 pub(crate) mod events;
 mod factories;
+mod file_operations;
 mod model_hooks;
 mod oauth;
 mod paints;
@@ -74,6 +75,30 @@ pub(crate) struct Exports {
     renderers: renderers::Exports,
     /// Actual returned shell operation method.
     bash: bash::Exports,
+    /// Actual reverse read operation export.
+    read: file_operations::Export<
+        crate::guest_calls::read::Operation,
+        crate::guest_calls::read::Output,
+    >,
+    /// Actual reverse write effect export.
+    write: file_operations::Export<crate::guest_calls::write::Operation, ()>,
+    /// Original reverse edit effects and their diagnostic fields.
+    edit: file_operations::Export<
+        crate::guest_calls::edit::Operation,
+        crate::guest_calls::read::Output,
+    >,
+    /// Original content search observations and failures.
+    grep: file_operations::Export<
+        crate::guest_calls::grep::Operation,
+        crate::guest_calls::grep::Output,
+    >,
+    /// Original directory observations and structured failures.
+    ls: file_operations::Export<crate::guest_calls::ls::Operation, crate::guest_calls::ls::Output>,
+    /// Original glob observations and structured failures.
+    find: file_operations::Export<
+        crate::guest_calls::find::Operation,
+        crate::guest_calls::find::Output,
+    >,
     /// Actual concrete event export.
     events: events::Exports,
     /// Actual preparation and execution exports.
@@ -161,6 +186,12 @@ impl Exports {
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
             model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
+            read: typed(store, instance, &guest, "invoke-read")?,
+            write: typed(store, instance, &guest, "invoke-write")?,
+            edit: typed(store, instance, &guest, "invoke-edit")?,
+            ls: typed(store, instance, &guest, "invoke-ls")?,
+            find: typed(store, instance, &guest, "invoke-find")?,
+            grep: typed(store, instance, &guest, "invoke-grep")?,
             providers: providers::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
@@ -203,7 +234,15 @@ impl Exports {
             Call::Renderer(call) => self.renderers.create(accessor, call).await?,
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
-            Call::Bash(call) => self.bash.invoke(accessor, call).await?,
+            call @ (Call::Read(_)
+            | Call::Write(_)
+            | Call::Edit(_)
+            | Call::Find(_)
+            | Call::Ls(_)
+            | Call::Grep(_)
+            | Call::Bash(_)) => {
+                self.io(accessor, call).await?;
+            }
             call @ (Call::Stream(_)
             | Call::ModelHook(_)
             | Call::Schema(_)
@@ -448,4 +487,47 @@ fn arguments<T: WasiView + 'static, V: Send + 'static>(
             table.push(value)?,
         ))
     })
+}
+
+impl Exports {
+    /// Enters original content and path observations through their typed exports.
+    async fn search<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
+            Call::Grep(call) => {
+                file_operations::invoke(
+                    &self.grep,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Ls(call) => {
+                file_operations::invoke(
+                    &self.ls,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            Call::Find(call) => {
+                file_operations::invoke(
+                    &self.find,
+                    accessor,
+                    call.handler,
+                    (call.operation, call.path),
+                    call.reply,
+                )
+                .await
+            }
+            _ => wasmtime::bail!("extension search call has no export"),
+        }
+    }
 }

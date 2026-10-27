@@ -1,8 +1,10 @@
 //! Every canonical UI import forwards to the independently retained native UI.
 #![cfg(test)]
 use maestro_extensions::{
-    Cancellation, EventError, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
-    InputListenerResult, TerminalInputHandler, WorkingIndicatorOptions,
+    Cancellation, EventError, ExtensionRunner, ExtensionUIContext, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, InputListenerResult, LiveTheme, Local, TerminalInputHandler,
+    ToolRenderCall, ToolRenderContext, ToolRendererBinding, ToolRendererState,
+    WorkingIndicatorOptions,
     types::{
         ComponentFactory, ExtensionUIContextPort, ExtensionUIFuture, NotificationType,
         WidgetContent,
@@ -1171,13 +1173,18 @@ fn canonical_tool_renderer_result_preserves_optional_fields() {
         let context = row_context(&args, &rows, &redraws);
         let null = Value::Null;
         let populated = json!({ "value": 1 });
+        let flags = [None, Some(false), Some(true)];
+        let pairs: Vec<_> = flags
+            .into_iter()
+            .flat_map(|terminate| flags.map(|is_error| (terminate, is_error)))
+            .collect();
         for details in [None, Some(&null), Some(&populated)] {
-            for terminate in [None, Some(false), Some(true)] {
+            for &(terminate, is_error) in &pairs {
                 let result = maestro_extensions::ToolRenderResultLike {
                     content: &[],
                     details,
                     terminate,
-                    is_error: None,
+                    is_error,
                 };
                 let prepared = renderer.prepare(result).unwrap();
                 let options = maestro_extensions::ToolRenderResultOptions {
@@ -1190,7 +1197,7 @@ fn canonical_tool_renderer_result_preserves_optional_fields() {
                     report[1].get("terminate"),
                     terminate.map(Value::Bool).as_ref()
                 );
-                assert!(report[1].get("isError").is_none());
+                assert_eq!(report[1].get("isError"), is_error.map(Value::Bool).as_ref());
             }
         }
         bus.clear();
@@ -1232,4 +1239,410 @@ fn canonical_tool_renderer_options_are_independent_of_context() {
         assert_eq!(report[2], json!([false, true]), "supplied result options");
         bus.clear();
     });
+}
+
+/// A native read delegated twice must receive exactly the object the wrapper returned.
+#[test]
+fn builtin_renderers_keep_native_paint_and_retained_state() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        for own in [false, true] {
+            for flags in [
+                [false, true, false, true, false, true],
+                [true, false, true, false, true, false],
+            ] {
+                builtin_render_identity(own, flags).await;
+            }
+        }
+    });
+}
+
+/// Compares actual retained painting, not a serialized component identity.
+async fn builtin_render_identity(own: bool, flags: [bool; 6]) {
+    let bus = maestro_extensions::create_event_bus_for::<Local>(
+        Rc::new(|_| panic!("no tails")),
+        Rc::new(|_| panic!("no diagnostics")),
+    );
+    let counts = render_observations(&bus, "builtin-render-count");
+    let contexts = render_observations(&bus, "builtin-render-context");
+    let trace = render_observations(&bus, "trace");
+    let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+    let binding = builtin_binding(&runner, if own { "own" } else { "base" }).await;
+    let theme = builtin_theme();
+    let rows = ToolRendererState::default();
+    let redraws = Rc::new(std::cell::Cell::new(0));
+    let args = json!({"path":"second.rs"});
+    let mut context = row_context(&args, &rows, &redraws);
+    context.cwd = "/work/雪".into();
+    context.tool_call_id = "paint-😀".into();
+    context.phase = maestro_extensions::ToolRenderPhase {
+        execution_started: flags[0],
+        args_complete: flags[1],
+        is_partial: flags[2],
+    };
+    context.expanded = flags[3];
+    context.show_images = flags[4];
+    context.is_error = flags[5];
+    builtin_call_identity(
+        binding.render_call.as_ref().unwrap(),
+        &theme,
+        &mut context,
+        own,
+    );
+    builtin_result_identity(&binding, &theme, &mut context, bus.for_extension());
+    assert_render_contexts(&contexts.borrow(), flags);
+    assert_eq!(
+        *trace.borrow(),
+        ["g1:native-highlight", "g2:native-highlight"]
+            .repeat(4)
+            .into_iter()
+            .map(Value::from)
+            .collect::<Vec<_>>(),
+        "the native highlighter reenters the same guest"
+    );
+    assert_eq!(
+        *counts.borrow(),
+        [json!(1), json!(2), json!(3), json!(4)],
+        "both slots share guest state"
+    );
+    assert_eq!(redraws.get(), 4, "invalidation reaches the native row");
+    bus.clear();
+}
+
+/// Reuses the actual result component while the native highlighter reenters its guest.
+fn builtin_result_identity(
+    binding: &ToolRendererBinding,
+    theme: &LiveTheme,
+    context: &mut ToolRenderContext<'_, ToolRendererState>,
+    events: maestro_extensions::EventBus<Local>,
+) {
+    context.environment = Rc::new(maestro_extensions::ToolRenderEnvironment {
+        runtime: context.environment.runtime.clone(),
+        readme_path: "/work/README.md".into(),
+        live_theme: theme.clone(),
+        highlighter: Rc::new(ReenterHighlight(events)),
+        terminal_image: context.environment.terminal_image.clone(),
+    });
+    context.last_component = None;
+    let first = builtin_error_result(binding, theme, context, "native 雪");
+    let before = first.try_render(60).unwrap();
+    context.last_component = Some(first.clone());
+    let second = builtin_error_result(binding, theme, context, "changed native 雪");
+    let after = second.try_render(60).unwrap();
+    assert_ne!(before, after);
+    assert_eq!(first.try_render(60).unwrap(), after);
+}
+
+/// Every supplied phase, path and presentation flag reaches the actual author callback.
+fn assert_render_contexts(observed: &[Value], flags: [bool; 6]) {
+    let expected: Vec<_> = [
+        ("call", "first.txt", false, Value::Null),
+        ("call", "second.rs", true, Value::Null),
+        ("result", "second.rs", false, json!([false, true])),
+        ("result", "second.rs", true, json!([false, true])),
+    ]
+    .into_iter()
+    .map(|(slot, path, previous, options)| {
+        json!({
+            "slot":slot,"args":{"path":path},"id":"paint-😀","cwd":"/work/雪",
+            "started":flags[0],"complete":flags[1],"partial":flags[2],
+            "expanded":flags[3],"images":flags[4],"error":flags[5],
+            "previous":previous,"options":options
+        })
+    })
+    .collect();
+    assert_eq!(observed, expected);
+}
+
+/// The individual native factory supplies the complete expected call paint independently.
+fn assert_native_call(
+    observed: &[String],
+    theme: &LiveTheme,
+    context: &ToolRenderContext<'_, ToolRendererState>,
+) {
+    let definition = maestro_extensions::local::create_read_tool_definition::<()>(
+        "/".into(),
+        maestro_extensions::ReadToolOptions::default(),
+    );
+    let native = ToolRendererBinding::from_raw(&definition)
+        .unwrap()
+        .render_call
+        .unwrap();
+    let mut independent = context.with_state(context.state.clone());
+    independent.last_component = None;
+    let expected = native(context.args, theme, &independent)
+        .unwrap()
+        .try_render(60)
+        .unwrap();
+    assert_eq!(observed, expected);
+}
+
+/// Registers a real author wrapper, then reads its retained native registration.
+async fn builtin_binding(runner: &ExtensionRunner<Local>, mode: &str) -> ToolRendererBinding {
+    let register = runner
+        .get_command("bridge-observe")
+        .unwrap()
+        .command
+        .handler;
+    register(
+        format!("builtin-register-renderer {mode}"),
+        runner.create_command_context(),
+    )
+    .await
+    .unwrap();
+    runner
+        .get_all_registered_tools()
+        .into_iter()
+        .find(|tool| tool.definition.name() == "builtin-render")
+        .unwrap()
+        .definition
+        .renderer_binding()
+        .unwrap()
+}
+
+/// Returning the native component reuses it; returning an authored replacement does not.
+fn builtin_call_identity(
+    render: &ToolRenderCall<ToolRendererState>,
+    theme: &LiveTheme,
+    context: &mut ToolRenderContext<'_, ToolRendererState>,
+    own: bool,
+) {
+    let first_args = json!({"path":"first.txt"});
+    let mut first_context = context.with_state(context.state.clone());
+    first_context.args = Some(&first_args);
+    let first = render(first_context.args, theme, &first_context).unwrap();
+    let before = first.try_render(60).unwrap();
+    assert_native_call(&before, theme, &first_context);
+    drop(first_context);
+    context.last_component = Some(first.clone());
+    let second = render(context.args, theme, context).unwrap();
+    let after = second.try_render(60).unwrap();
+    assert_native_call(&after, theme, context);
+    assert_ne!(before, after);
+    assert_eq!(
+        first.try_render(60).unwrap(),
+        if own { before } else { after }
+    );
+}
+
+/// Error-result painting uses the original native highlighter and matches the native factory.
+fn builtin_error_result(
+    binding: &ToolRendererBinding,
+    theme: &LiveTheme,
+    context: &ToolRenderContext<'_, ToolRendererState>,
+    text: &str,
+) -> maestro_tui::tui::ComponentHandle {
+    let output: Vec<_> = serde_json::from_value(json!([{"type":"text","text":text}])).unwrap();
+    let result = maestro_extensions::ToolRenderResultLike {
+        content: &output,
+        details: None,
+        terminate: None,
+        is_error: Some(true),
+    };
+    let prepared = binding
+        .render_result
+        .as_ref()
+        .unwrap()
+        .prepare(result.with_details(result.details))
+        .unwrap();
+    let options = maestro_extensions::ToolRenderResultOptions {
+        expanded: false,
+        is_partial: true,
+    };
+    let component = prepared.render(options, theme, context).unwrap();
+    let observed = component.try_render(60).unwrap();
+    let native = maestro_extensions::local::create_read_tool_definition::<()>(
+        "/".into(),
+        maestro_extensions::ReadToolOptions::default(),
+    );
+    let native = ToolRendererBinding::from_raw(&native)
+        .unwrap()
+        .render_result
+        .unwrap();
+    let mut independent = context.with_state(context.state.clone());
+    independent.last_component = None;
+    let expected = native
+        .prepare(result.with_details(result.details))
+        .unwrap()
+        .render(options, theme, &independent)
+        .unwrap()
+        .try_render(60)
+        .unwrap();
+    assert_eq!(
+        observed, expected,
+        "native environment and error-result painting survive delegation"
+    );
+    component
+}
+
+/// A caller cannot invent native rendering effects by omitting the lent row.
+#[test]
+fn builtin_renderer_without_native_row_fails_clearly() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(drop),
+            Rc::new(|_| {}),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let register = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        register(
+            "builtin-register-renderer missing".into(),
+            runner.create_command_context(),
+        )
+        .await
+        .unwrap();
+        let tool = runner
+            .get_all_registered_tools()
+            .into_iter()
+            .find(|tool| tool.definition.name() == "builtin-render")
+            .unwrap();
+        let call = tool
+            .definition
+            .renderer_binding()
+            .unwrap()
+            .render_call
+            .unwrap();
+        let rows = maestro_extensions::ToolRendererState::default();
+        let redraws = Rc::new(std::cell::Cell::new(0));
+        let args = json!({"path":"first.txt"});
+        let context = row_context(&args, &rows, &redraws);
+        let result = call(context.args, &builtin_theme(), &context);
+        assert_eq!(
+            result.err().unwrap().message,
+            "native tool renderer requires a native row"
+        );
+    });
+}
+
+/// A complete theme for the native read paint paths under test.
+fn builtin_theme() -> maestro_theme::LiveTheme {
+    let keys = [
+        maestro_theme::ThemeColor::Error,
+        maestro_theme::ThemeColor::ToolTitle,
+        maestro_theme::ThemeColor::Accent,
+        maestro_theme::ThemeColor::Warning,
+        maestro_theme::ThemeColor::Dim,
+        maestro_theme::ThemeColor::ToolOutput,
+    ];
+    let colors = keys
+        .into_iter()
+        .map(|key| (key, maestro_theme::ColorValue::Index(7)));
+    maestro_theme::LiveTheme::from_theme(Rc::new(
+        maestro_theme::Theme::new(
+            colors,
+            [],
+            maestro_theme::ColorMode::Color256,
+            maestro_theme::ThemeOptions::default(),
+        )
+        .unwrap(),
+    ))
+}
+
+/// A wrapper may change public observations without replacing native row effects.
+#[test]
+fn builtin_renderer_observes_guest_context_edits() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = maestro_extensions::create_event_bus_for::<maestro_extensions::Local>(
+            Rc::new(drop),
+            Rc::new(|_| {}),
+        );
+        let (_, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+        let register = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        register(
+            "builtin-register-renderer expanded".into(),
+            runner.create_command_context(),
+        )
+        .await
+        .unwrap();
+        let tool = runner
+            .get_all_registered_tools()
+            .into_iter()
+            .find(|tool| tool.definition.name() == "builtin-render")
+            .unwrap();
+        let call = tool
+            .definition
+            .renderer_binding()
+            .unwrap()
+            .render_call
+            .unwrap();
+        let rows = maestro_extensions::ToolRendererState::default();
+        let redraws = Rc::new(std::cell::Cell::new(0));
+        let args = json!({"path":"/work/docs/guide.md"});
+        let mut context = row_context(&args, &rows, &redraws);
+        context.expanded = false;
+        Rc::get_mut(&mut context.environment).unwrap().readme_path = "/work/README.md".into();
+        let theme = builtin_theme();
+        let observed = call(context.args, &theme, &context)
+            .unwrap()
+            .try_render(60)
+            .unwrap();
+        let native = maestro_extensions::local::create_read_tool_definition::<()>(
+            "/".into(),
+            maestro_extensions::ReadToolOptions::default(),
+        );
+        let mut expanded = context.with_state(rows.state::<Value>());
+        expanded.expanded = true;
+        let expected = native.render_call.unwrap()(context.args, &theme, &expanded)
+            .unwrap()
+            .try_render(60)
+            .unwrap();
+        assert_eq!(observed, expected);
+        assert_eq!(redraws.get(), 1);
+        bus.clear();
+    });
+}
+
+/// The original native rendering effect calls back into the same component instance.
+struct ReenterHighlight(maestro_extensions::EventBus<maestro_extensions::Local>);
+impl maestro_theme::SyntaxHighlighter for ReenterHighlight {
+    fn supports_language(&self, language: &str) -> bool {
+        language == "rust"
+    }
+    fn highlight(
+        &self,
+        code: &str,
+        _: &str,
+    ) -> Result<Vec<maestro_theme::SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>> {
+        drop(
+            self.0
+                .emit("renderer-created", json!(["native-highlight", false])),
+        );
+        Ok(vec![maestro_theme::SyntaxSpan {
+            range: 0..code.len(),
+            color: None,
+        }])
+    }
+}
+
+/// Collects values emitted by rendering and by guest listeners reentered from native effects.
+fn render_observations(
+    bus: &maestro_extensions::EventBusController<Local>,
+    channel: &str,
+) -> Rc<RefCell<Vec<Value>>> {
+    let observations = Rc::new(RefCell::new(Vec::new()));
+    let received = observations.clone();
+    bus.on(
+        channel,
+        Rc::new(move |value, _| {
+            received.borrow_mut().push((*value).clone());
+            Ok(None)
+        }),
+    );
+    observations
 }

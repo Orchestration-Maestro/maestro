@@ -36,6 +36,12 @@ impl Call {
             }
             Self::Renderer(call) => Call::Renderer(renderer(call, completion)),
             Self::Event(call) => Call::Event(event(call, completion)),
+            call @ (Self::Read(_)
+            | Self::Write(_)
+            | Self::Grep(_)
+            | Self::Find(_)
+            | Self::Ls(_)
+            | Self::Edit(_)) => file_operation(call, completion),
             Self::Bash(call) => Call::Bash(crate::guest_calls::BashCall {
                 owner: completion.callback(call.owner),
                 request: call.request,
@@ -179,6 +185,7 @@ fn tool_render(
         render: call.render,
         theme: call.theme,
         invalidator: call.invalidator,
+        native_row: call.native_row,
         emitter: call.emitter,
         reply: call.reply,
     }
@@ -364,5 +371,79 @@ fn oauth(
         data: call.data,
         interaction: call.interaction,
         reply: call.reply,
+    }
+}
+
+/// Transfers a reverse read's original callback admission beside its operands.
+fn read(
+    call: crate::guest_calls::read::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::read::Invocation<Callback> {
+    crate::guest_calls::read::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original grep observation beside its releasable admission.
+fn grep(
+    call: crate::guest_calls::grep::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::grep::Invocation<Callback> {
+    crate::guest_calls::grep::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+/// Transfers the original find observation beside its releasable admission.
+fn find(
+    call: crate::guest_calls::find::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::find::Invocation<Callback> {
+    crate::guest_calls::find::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original ls observation beside its releasable admission.
+fn ls(
+    call: crate::guest_calls::ls::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::ls::Invocation<Callback> {
+    crate::guest_calls::ls::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the built-in file operation admissions beside their original operands.
+fn file_operation(call: Call, completion: &Completion) -> Call<Callback> {
+    match call {
+        Call::Read(call) => Call::Read(read(call, completion)),
+        Call::Write(call) => Call::Write(crate::guest_calls::write::Invocation {
+            handler: completion.callback(call.handler),
+            operation: call.operation,
+            path: call.path,
+            reply: call.reply,
+        }),
+        Call::Grep(call) => Call::Grep(grep(call, completion)),
+        Call::Find(call) => Call::Find(find(call, completion)),
+        Call::Ls(call) => Call::Ls(ls(call, completion)),
+        Call::Edit(call) => Call::Edit(crate::guest_calls::edit::Invocation {
+            handler: completion.callback(call.handler),
+            operation: call.operation,
+            path: call.path,
+            reply: call.reply,
+        }),
+        call => call.admitted(completion),
     }
 }

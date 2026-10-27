@@ -354,3 +354,64 @@ fn editor(context: &ExtensionContext, operation: &str) -> ExtensionResult<String
     }
     Ok("editor forwarded".into())
 }
+
+/// Retained authored view exposes exact method failures and final destruction.
+pub(super) struct View {
+    /// Original API, including during the guest resource destructor.
+    pub(super) api: ExtensionAPI,
+    /// Literal custom-message identity supplied by the caller.
+    pub(super) name: String,
+}
+impl maestro_extensions_wasm::ComponentView for View {
+    fn render(
+        &self,
+        width: u32,
+        emitter: maestro_extensions_wasm::CallbackEmitter<'_>,
+    ) -> Result<Vec<String>, String> {
+        emitter.emit("component-rendered", serde_json::json!([self.name, width]))?;
+        if self.name == "render-error" {
+            return Err("guest render failure".into());
+        }
+        Ok(vec![format!("{}:{width}", self.name)])
+    }
+    fn handle_input(
+        &self,
+        data: &str,
+        _: maestro_extensions_wasm::CallbackEmitter<'_>,
+    ) -> Result<(), String> {
+        if data == "error" {
+            Err("guest input failure".into())
+        } else {
+            Ok(())
+        }
+    }
+    fn wants_key_release(
+        &self,
+        _: maestro_extensions_wasm::CallbackEmitter<'_>,
+    ) -> Result<bool, String> {
+        if self.name == "key-error" {
+            Err("guest key failure".into())
+        } else {
+            Ok(true)
+        }
+    }
+    fn invalidate(&self, _: maestro_extensions_wasm::CallbackEmitter<'_>) -> Result<(), String> {
+        if self.name == "invalidate-error" {
+            Err("guest invalidate failure".into())
+        } else {
+            Ok(())
+        }
+    }
+}
+impl Drop for View {
+    fn drop(&mut self) {
+        let _ = self.api.register_flag(
+            &format!("dropped-{}", self.name),
+            maestro_extensions_wasm::FlagOptions {
+                description: None,
+                type_: maestro_extensions_wasm::FlagType::Boolean,
+                default: Some(maestro_extensions_wasm::FlagValue::Boolean(true)),
+            },
+        );
+    }
+}

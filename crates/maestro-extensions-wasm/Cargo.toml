@@ -39,6 +39,10 @@ name = "hook_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "local_shell_component"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "module_location_component"
 crate-type = ["cdylib"]
 

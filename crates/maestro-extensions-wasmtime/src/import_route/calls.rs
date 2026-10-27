@@ -13,11 +13,15 @@ use crate::{
     },
     local_resources::effects::{EmitterEndpoint, ThemeEndpoint},
 };
-use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
+use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
 
 mod component;
 use component::{LocalFocus, LocalKey, LocalRender, LocalUnit};
 mod credentials;
+mod file_operations;
+mod results;
+use file_operations::{LocalEdit, LocalFind, LocalGrep, LocalLs, LocalRead, LocalWrite};
+pub(super) use results::LocalResult;
 mod custom;
 mod editors;
 mod provider;
@@ -266,6 +270,24 @@ pub(super) enum LocalCall {
     /// A tool rendering.
     #[component(name = "tool-render")]
     ToolRender(LocalToolRender),
+    /// A reverse read operation.
+    #[component(name = "read")]
+    Read(LocalRead),
+    /// A reverse write effect.
+    #[component(name = "write")]
+    Write(LocalWrite),
+    /// A reverse content search observation.
+    #[component(name = "grep")]
+    Grep(LocalGrep),
+    /// A reverse find observation.
+    #[component(name = "find")]
+    Find(LocalFind),
+    /// A reverse directory observation.
+    #[component(name = "ls")]
+    Ls(LocalLs),
+    /// A reverse edit effect.
+    #[component(name = "edit")]
+    Edit(LocalEdit),
     /// An authored styling.
     #[component(name = "style")]
     Style(LocalStyle),
@@ -287,96 +309,6 @@ pub(super) enum LocalCall {
     /// A completion provider factory.
     #[component(name = "autocomplete-factory")]
     AutocompleteFactory(editors::LocalAutocompleteFactory),
-}
-
-/// The nested call's own result, returned to the native caller that asked for it.
-#[derive(ComponentType, Lift)]
-#[component(variant)]
-pub(super) enum LocalResult {
-    /// Original OAuth interaction result.
-    #[component(name = "oauth")]
-    OAuth(Result<Option<String>, String>),
-    /// Exact optional fallback value or authored error.
-    #[component(name = "auth-fallback")]
-    AuthFallback(Result<Option<String>, String>),
-    /// Optional retained component identity, or the authored error.
-    #[component(name = "renderer")]
-    Renderer(Result<Option<Resource<Callback>>, String>),
-    /// Exact rendering lines or the authored error.
-    #[component(name = "render")]
-    Render(Result<Vec<String>, String>),
-    /// Unit result or the authored error.
-    #[component(name = "unit")]
-    Unit(Result<(), String>),
-    /// Key-release preference or the authored error.
-    #[component(name = "key")]
-    Key(Result<bool, String>),
-    /// Optional focus state or an ordinary error.
-    #[component(name = "focused")]
-    Focused(Result<Option<bool>, String>),
-    /// Prepared argument document or the authored error.
-    #[component(name = "prepared")]
-    Prepared(Result<String, String>),
-    /// The terminal input listener's decision or its error.
-    #[component(name = "terminal-input")]
-    TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),
-    /// Unit result of a synchronous prefix, or the authored error.
-    #[component(name = "synchronous")]
-    Synchronous(Result<(), String>),
-    /// The schema result with every authored diagnostic field.
-    #[component(name = "schema")]
-    Schema(Result<String, crate::schema_wire::Error>),
-    /// Selected terminal classification or retained result.
-    #[component(name = "stream")]
-    Stream(Result<crate::stream_calls::WireSelection, String>),
-    /// Original returned authored stream.
-    #[component(name = "provider")]
-    Provider(Result<Resource<Callback>, String>),
-    /// Ordinary returned-stream operation result.
-    #[component(name = "assistant")]
-    Assistant(Result<Option<String>, String>),
-    /// Event outcome, or the message rejecting the event before its handler ran.
-    #[component(name = "event")]
-    Event(Result<Returned, String>),
-    /// Optional ordered completion candidates, or the authored error.
-    #[component(name = "completion")]
-    Completion(Result<Option<Vec<Item>>, String>),
-    /// Tool result document, or the authored error.
-    #[component(name = "tool")]
-    Tool(Result<String, String>),
-    /// Optional exit status, or the authored error.
-    #[component(name = "bash")]
-    Bash(Result<Option<f64>, String>),
-    /// The built component identities, or the authored error.
-    #[component(name = "factory")]
-    Factory(Result<crate::guest_calls::factories::Built, String>),
-    /// A completed custom prefix or its owned continuation.
-    #[component(name = "custom-factory")]
-    CustomFactory(Result<crate::guest_calls::custom::Built, String>),
-    /// The rendered component and new row state identities, or the authored error.
-    #[component(name = "tool-render")]
-    ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
-    /// The styled text, or the authored error.
-    #[component(name = "style")]
-    Style(Result<String, String>),
-    /// The highlighted rows, or the authored error.
-    #[component(name = "highlight")]
-    Highlight(Result<Vec<String>, String>),
-    /// The widget callback's answer, or the authored error.
-    #[component(name = "widget")]
-    Widget(Result<crate::guest_calls::widget_calls::Answer, String>),
-    /// The built editor's identities, or the authored error.
-    #[component(name = "editor-factory")]
-    EditorFactory(Result<crate::guest_calls::editors::Built, String>),
-    /// The authored editor's answer, or its error.
-    #[component(name = "editor")]
-    Editor(Result<crate::guest_calls::editors::Answer, String>),
-    /// The authored completion provider's answer, or its error.
-    #[component(name = "autocomplete")]
-    Autocomplete(Result<crate::guest_calls::providers::Answer, String>),
-    /// The returned completion provider's identity, or the authored error.
-    #[component(name = "autocomplete-factory")]
-    AutocompleteFactory(Result<Resource<Callback>, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -459,6 +391,12 @@ fn registered(
 /// Marshals the remaining asynchronous callbacks with their original capabilities.
 fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        call @ (Call::Read(_)
+        | Call::Write(_)
+        | Call::Edit(_)
+        | Call::Find(_)
+        | Call::Grep(_)
+        | Call::Ls(_)) => file_operations::lower(call)?,
         Call::Event(call) => LocalCall::Event(LocalEvent {
             target: call.handler.id,
             event: call.event.clone(),
@@ -609,6 +547,15 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
         (Call::Tool(ToolCall::Execute { reply, .. }), LocalResult::Tool(value)) => {
             let _ = reply.send(value);
         }
+        (
+            call @ (Call::Read(_)
+            | Call::Write(_)
+            | Call::Edit(_)
+            | Call::Grep(_)
+            | Call::Find(_)
+            | Call::Ls(_)),
+            value,
+        ) => file_operations::settle(call, value)?,
         (Call::Bash(call), LocalResult::Bash(value)) => {
             let _ = call.reply.send(value);
         }

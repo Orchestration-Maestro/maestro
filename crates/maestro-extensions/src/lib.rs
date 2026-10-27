@@ -106,6 +106,8 @@ pub mod runner;
 pub use runner::ExtensionRunner;
 
 pub use loader::CatalogConstruction;
+#[cfg(not(target_arch = "wasm32"))]
+pub use loader::ToolConstruction;
 pub use loader::runtime::create_extension_runtime;
 pub use maestro_models::{
     Cancellation, Local, Model, ModelThinkingLevel, SharedHandle, ToolInfo,
@@ -149,11 +151,52 @@ pub use maestro_resources::{SlashCommandInfo, SlashCommandSource};
 pub use maestro_tools::ToolRenderResultOptions;
 /// Native tool framing retained by extension registrations.
 pub use maestro_tools::ToolRenderShell;
+/// Native per-file mutation ordering shared with built-in edit and write.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::with_file_mutation_queue;
 /// Caller-local tool definitions with their original tools-owned types.
-pub use maestro_tools::types::local;
+pub mod local {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::edit::local::create_edit_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::bash::local::{
+        BashSpawnHook, BashToolOptions, create_bash_tool_definition, create_local_bash_operations,
+    };
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::read::local::create_read_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::find::local::create_find_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::grep::local::create_grep_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::ls::local::create_ls_tool_definition;
+    pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::tools::local::{
+        ToolDef, ToolsOptions, create_all_tool_definitions, create_coding_tool_definitions,
+        create_read_only_tool_definitions, create_tool_definition,
+    };
+    pub use maestro_tools::types::local::*;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::write::local::create_write_tool_definition;
+}
+/// Native glob constraints forwarded to replacement find operations.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::search::find::FindGlobOptions;
+/// Retained native definitions accepted by the tools-owned execution wrapper.
+pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+pub use maestro_tools::{
+    BashError, BashExecOptions, BashExecResult, BashOperations, BashResult, BashSpawnContext,
+};
+/// Native file configuration and the model observation a read definition consumes.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{
+    EditOperations, EditToolOptions, FindOperations, FindToolOptions, GrepOperations,
+    GrepToolOptions, LsOperations, LsToolOptions, ReadContext, ReadOperations, ReadToolOptions,
+    SearchTool, ToolRendererBinding, ToolsManager, WriteOperations, WriteToolOptions,
+};
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,

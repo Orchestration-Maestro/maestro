@@ -5,6 +5,18 @@ use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExecute};
 use std::rc::Rc;
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod edit;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod find;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod grep;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod ls;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod read;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod write;
 /// Per-tool executable annotations returned beside the metadata document.
 pub type ToolListing<C> = (
     String,
@@ -43,14 +55,21 @@ impl<I: Imports> Exports<I> {
         handler: u32,
         args: &str,
         emitter: &I::Emitter,
-    ) -> ExtensionResult<String> {
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::PreparedArguments> {
         let prepare = callbacks::find::<PrepareArguments>(handler)?;
-        let args = serde_json::from_str(args).map_err(|error| error.to_string())?;
+        let mut args = serde_json::from_str(args).map_err(|error| error.to_string())?;
         let port = super::event_bus::Emitter {
             imports: &self.imports,
             handle: emitter,
         };
-        encode_value(&prepare(args, crate::CallbackEmitter::new(&port))?)
+        let prepared = prepare(&mut args, crate::CallbackEmitter::new(&port))
+            .and_then(|value| encode_value(&value));
+        Ok(
+            crate::bindings::maestro::extension::host::PreparedArguments {
+                retained: encode_value(&args)?,
+                prepared,
+            },
+        )
     }
     /// Awaits the registered execution with owned resource facades.
     pub(crate) async fn invoke_tool(

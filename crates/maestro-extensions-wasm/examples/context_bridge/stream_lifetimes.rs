@@ -10,7 +10,7 @@ use maestro_extensions_wasm::{
 use std::{cell::RefCell, rc::Rc};
 
 /// Reports actual destruction through the native application action boundary.
-struct Released {
+pub(super) struct Released {
     /// Original facade, retained independently of the initiating command context.
     api: ExtensionAPI,
     /// Distinguishable event, result or callback capture.
@@ -18,7 +18,7 @@ struct Released {
 }
 impl Released {
     /// Retain a nonserializable local value with an observable destructor.
-    fn new(api: &ExtensionAPI, label: &'static str) -> Self {
+    pub(super) fn new(api: &ExtensionAPI, label: &'static str) -> Self {
         Self {
             api: api.clone(),
             label,

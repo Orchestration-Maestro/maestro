@@ -82,3 +82,27 @@ pub fn resource(root: &Root, args: &[&str], marker: &str) -> String {
     master.flush().unwrap();
     finish(master, process, bytes)
 }
+
+/// Waits for real startup, submits one shell command and quits after its completed row.
+pub fn shell(root: &Root, args: &[&str], command: &str) -> String {
+    let (mut master, process) = terminal(root, args, None);
+    let mut bytes = Vec::new();
+    for (marker, input) in [
+        ("LOCAL-SHELL-READY", format!("{command}\r")),
+        ("(exit 7)", "/quit\r".into()),
+    ] {
+        while !bytes.ends_with(marker.as_bytes()) {
+            let mut byte = [0];
+            master.read_exact(&mut byte).unwrap();
+            bytes.push(byte[0]);
+            assert!(
+                !bytes.ends_with(b"Bash command failed:"),
+                "the returned operations were not consumed: {}",
+                String::from_utf8_lossy(&bytes)
+            );
+        }
+        master.write_all(input.as_bytes()).unwrap();
+        master.flush().unwrap();
+    }
+    finish(master, process, bytes)
+}

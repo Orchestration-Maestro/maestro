@@ -1,5 +1,296 @@
 # Native operations and helpers in components
 
+`ExtensionAPI::create_read_tool_definition(cwd, options)` returns a retained native
+read definition. Construction does not read a file. Its metadata, schema,
+execution and renderers come from the native tool owner. See [read](../tools-read.md)
+for its file, image and output rules.
+
+## Execute without an extension context
+
+`ExtensionAPI::create_read_tool(cwd, options)` returns a `Tool`. Its `execute`
+callback takes the call ID, JSON arguments, optional signal and optional progress
+callback. It does not read a command or event context, even when called from one.
+
+The executable keeps the native name, label, description, parameter schema,
+preparation and execution mode. The parameter schema remains the shared
+`ParameterSchema<SchemaCode>`, not a JSON string. Prompt fields and renderers
+belong to definitions only.
+
+## Select a built-in by name
+
+`create_tool(name, cwd, ToolsOptions)` returns a context-free executable;
+`create_tool_definition(name, cwd, ToolsOptions)` returns a registerable `ToolDef`.
+`ToolDef` is the same `ToolDefinition` record used by individual factories.
+Each member of `ToolsOptions` keeps its individual default and affects only the
+selected tool. Selection is native-owned and accepts exactly `read`, `bash`,
+`edit`, `write`, `grep`, `find` and `ls`. Other spellings return
+`Unknown tool name: <original name>` without invoking supplied operations.
+This restriction does not apply to custom names assigned before registration.
+
+`create_coding_tools` and `create_coding_tool_definitions` return read, bash,
+edit and write in that order. `create_read_only_tools` and
+`create_read_only_tool_definitions` return read, grep, find and ls.
+`create_all_tools` and `create_all_tool_definitions` return an `IndexMap` keyed
+by `ToolName`, in `ALL_TOOL_NAMES` order. These forms delegate membership and
+ordering to the native presets; they keep the same per-tool options and owned
+callbacks as the individual factories.
+
+## Wrap and register a read definition
+
+```rust
+use std::rc::Rc;
+use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, ReadToolOptions};
+
+fn register_read(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
+    let mut read = api.create_read_tool_definition(cwd, ReadToolOptions::default())?;
+    let native = read.render_call.take().ok_or("read call renderer absent")?;
+    read.render_call = Some(Rc::new(move |args, theme, context, emitter| {
+        let mut expanded = context.clone();
+        expanded.expanded = true;
+        native(args, theme, &expanded, emitter)
+    }));
+    api.register_tool(read)
+}
+```
+
+The [compiled registration example](../../crates/maestro-extensions-wasm/examples/context_bridge/builtin_registered.rs)
+replaces edit operations, wraps `execute` to report progress, and registers the
+retained definition. It also selects the same definition from
+`create_all_tool_definitions`. The production-host tests invoke preparation,
+execution, cancellation and results through that registration, after the
+constructing command returns.
+
+Build its component with:
+
+```sh
+~/.local/bin/capped mise exec -- cargo build --locked -p maestro-extensions-wasm \
+  --example context_bridge --target wasm32-wasip2 --release
+```
+
+This example is part of the `context_bridge` test component, not a standalone
+program. Its custom file effects are observed by the native test driver. Native
+matching, result formatting and per-file ordering are unchanged.
+
+Pass the received render context when delegating. Its opaque `native_row` keeps
+the original native environment, state and invalidation capability. Public row
+observations may be changed on a clone. Call arguments, result options and the
+supplied theme remain independent of those observations.
+
+The previous component is exactly the one passed by the wrapper: a native
+component, an authored replacement or none. Returning a native component lets
+its next rendering reuse that native object. Wrapping it in another `Component`
+does not pretend the wrapper is the native object. Calling a native renderer
+without `native_row` returns `native tool renderer requires a native row` and
+produces no component.
+
+Result renderers receive `ToolRenderResultLike`. Its flattened `result` keeps the
+existing `AgentToolResult` content, details and termination fields; `is_error`
+keeps the independent rendering observation, including absence. Execution still
+returns `AgentToolResult`.
+
+## Replace file observations
+
+`ReadToolOptions` has independent `auto_resize_images` and `operations` fields.
+The image fitting default is enabled. Omitting `operations` uses native file
+access. Supplying `ReadOperations` replaces only these observations:
+
+| Callback | Result |
+| --- | --- |
+| `access(absolute_path)` | Success or a diagnostic that stops the read. |
+| `read_file(absolute_path)` | Original bytes, as `Vec<u8>`. |
+| `detect_image_mime_type(absolute_path)` | Optional MIME text; omitting the callback, returning `None` or returning an empty string selects text. |
+
+Callbacks return `OperationFuture` with `DiagnosticErrorInfo` failures. The native
+owner resolves paths against the construction directory, checks cancellation,
+orders the observations, decodes text and applies image policy. The active model
+is read from the supplied execution context, not captured during construction or
+replaced by a later runner binding. Image fitting is independent of model image
+support: a text-only model adds the native warning without disabling fitting.
+
+A pre-aborted signal starts no file observation. An abort while an observation
+is pending settles as `Operation aborted`; a later callback failure cannot replace
+that outcome. Caller-defined signal ports retain their subscription for the call.
+
+The definition and its callbacks may outlive the factory call and the callback
+that constructed it. Keep the returned definition or its callback clones for as
+long as they are needed; dropping the last consumer releases their native
+resources. These operations require the native component host and a
+`wasm32-wasip2` component. The in-process controlled adapter does not simulate
+native factories.
+
+## Replace write effects
+
+`ExtensionAPI::create_write_tool(cwd, options)` returns a context-free executable;
+`create_write_tool_definition(cwd, options)` returns a registerable definition with
+its native metadata and renderers. Neither constructor performs file work or reads
+a model. See [write](../tools-edit.md#write-tool) for native behavior.
+
+`WriteToolOptions::operations` optionally supplies `WriteOperations`:
+`mkdir(parent)` creates parents recursively, and `write_file(absolute_path, content)`
+receives the original string. Both return `OperationFuture<'static, ()>` with
+`DiagnosticErrorInfo` on failure. Omitting operations uses the local filesystem.
+
+The native owner resolves paths, waits for mkdir to succeed before starting write,
+and reports UTF-8 bytes, not characters. A failed mkdir starts no write. These
+calls use the same native per-file mutation queue as other file-changing tools.
+Pre-abort starts no effect; cancellation while an effect is pending stops the
+remaining stages but cannot undo an effect that already completed.
+
+## Replace edit effects
+
+`create_edit_tool` and `create_edit_tool_definition` retain the native edit's
+argument preparation. Its callback accepts `&mut Value`: parsing string-valued
+`edits` updates retained assistant arguments, while folding a legacy `oldText` /
+`newText` pair changes only the returned preparation. Validation uses that returned
+value; saved history and later model requests keep the retained form. Preparation
+performs no file observations or writes.
+
+`EditToolOptions::operations` optionally supplies
+`EditOperations`: `access(absolute_path)`, `read_file(absolute_path)` returning
+original bytes, and `write_file(absolute_path, content)` receiving the native
+replacement text. Omitting operations uses the local filesystem.
+
+Callbacks return `OperationFuture` with the original `DiagnosticErrorInfo`, not a
+display string. In particular, edit access formats a supplied text or numeric
+`code`; without a code it keeps the original message. Read and write failures stop
+at their reached stage. Matching, validation, diff construction, BOM and line-ending
+policy remain with the [native edit owner](../tools-edit.md).
+
+## Share native file ordering
+
+`ExtensionAPI::with_file_mutation_queue(path, operation)` takes its place in the
+same native queue used by edit and write, before its returned future is polled.
+The callback starts after earlier operations on that file finish; other files
+can proceed independently. Native canonical paths identify existing files,
+including symlink aliases. Unresolved paths use native lexical absolute paths.
+
+The callback returns `ExtensionFuture<'static, T>`. Its value stays in the guest:
+`T` needs no serialization bound and can retain `Rc` identity. Callback errors
+release the turn and reach the caller unchanged. Dropping a waiting future
+releases its turn without calling the operation. This does not undo effects
+that have already started. Do not call a queued edit or write from inside a
+queue operation for the same file: that nested call would wait for its own
+predecessor to finish.
+
+## Intercept native shell execution
+
+`create_bash_tool` and `create_bash_tool_definition` return the native shell's
+executable and registerable forms. See [shell tools](../tools-process.md) for
+output selection, cancellation, timeouts and process cleanup.
+
+`BashToolOptions` keeps four independent controls. `operations` supplies the
+existing `BashOperations`; otherwise the native local backend uses `shell_path`.
+A supplied operation bypasses local shell selection. A nonempty `command_prefix`
+is inserted before the command, separated by one newline. `spawn_hook` then
+receives that command, cwd and a fresh environment, before progress or execution.
+It may replace all three fields, emit synchronous events through its borrowed
+emitter, or return an error that prevents execution.
+
+Environment entries retain insertion order and `None` values through hooks and
+supplied operations. Native process creation omits unset values; an unset key is
+not the same as an empty string. The emitter cannot escape the hook. Callback
+captures stay owned by the returned tool rather than the factory call.
+
+Both factory forms forward the optional progress observer while native execution
+is running. Shell output decoding, snapshot coalescing and artifact ownership
+stay native. When final output is truncated, progress and final details retain
+the same full-output artifact. The observer stays retained until execution ends
+or its future is dropped.
+
+Observer failures use the native event bus's error reporter and do not replace
+the tool's result, including failures on the initial and final notifications.
+Use a spawn hook or tool event to prevent command execution.
+
+Supplied operation failures use the native shell's status formatter. An exact
+`aborted` error appends `Command aborted` to the selected output. A `timeout:`
+prefix appends `Command timed out after <seconds> seconds`, using the first
+colon-delimited value after the prefix without parsing it as a number. These
+failures keep any full-output artifact. Other error messages pass through
+unchanged without adding the accumulated output.
+
+```rust
+use std::rc::Rc;
+use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionResult};
+
+fn register_shell(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
+    let options = BashToolOptions {
+        spawn_hook: Some(Rc::new(|mut spawn, _| {
+            spawn.env.insert("UNSET_IN_CHILD".into(), None);
+            Ok(spawn)
+        })),
+        ..BashToolOptions::default()
+    };
+    api.register_tool(api.create_bash_tool_definition(cwd, options)?)
+}
+```
+
+## Run raw local shell operations
+
+`ExtensionAPI::create_local_bash_operations(shell_path)` retains the native local
+backend. Construction starts no process. The application's binary directory and
+the optional executable reach that backend without a second shell implementation.
+
+Its `exec(command, cwd, options)` callback receives owned operands. `on_data`
+receives raw stdout and stderr bytes: no UTF-8 decoding, ANSI stripping, binary
+filtering or newline conversion runs in the guest. A failing raw observer is
+reported through the native event bus; execution still settles normally.
+
+The optional signal stays live until execution ends, including when operations
+outlive the event that returned them. An absent signal remains absent. Positive
+`timeout` values are seconds; absent and nonpositive values add no deadline.
+Exit status, cancellation, timeouts and process cleanup remain native-owned.
+
+Return these operations from a `user_bash` handler to replace interactive shell
+execution. The session accepts Local operations and applies its usual output
+sanitization before recording and painting them. Direct `exec` calls still receive
+raw bytes. Supplying the same operations to `BashToolOptions` retains the native
+tool's truncation, artifact and status formatting.
+
+The executable [local shell author example](../../crates/maestro-extensions-wasm/examples/local_shell_component.rs)
+shows direct execution and interactive interception through the same facade.
+
+## Replace search observations
+
+`create_find_tool` / `create_find_tool_definition` and `create_grep_tool` /
+`create_grep_tool_definition` return the native factories' executable and
+registerable forms. Construction does not inspect files or acquire programs.
+See [search tools](../tools-search.md) for native search and output behavior.
+
+`FindToolOptions::operations` supplies `exists(absolute_root)` and
+`glob(pattern, absolute_root, FindGlobOptions)`. Glob options retain the ordered
+ignore patterns and effective floating-point limit. Return ordered relative or
+absolute paths; the native finder resolves them and selects output and notices.
+
+`GrepToolOptions::operations` supplies `is_directory(absolute_root)` and
+`read_file(absolute_file)` returning context text. Matching still uses native
+ripgrep, including when these observations are replaced. Root errors and unreadable
+context retain the native search owner's handling.
+
+All four callbacks return `OperationFuture` with `DiagnosticErrorInfo` on failure.
+The host retains them independently of the constructor and invokes them without a
+callback-table borrow. Omitted operations select native filesystem access.
+
+Native applications install `ToolConstruction` with `set_tool_construction`
+before loading extension factories. It carries the same `Arc<ToolsManager>` and
+binary directory used by the application's own tools. The SDK supplies these
+services during resource loading and retains them on reload; the component runtime
+never discovers a default directory or creates another manager. An unconfigured
+host returns a construction error.
+
+## Replace directory observations
+
+`create_ls_tool` and `create_ls_tool_definition` return the native listing owner's
+executable and registerable forms. `LsToolOptions::operations` supplies
+`exists(absolute_root)`, `stat(absolute_path)` and `readdir(absolute_root)`.
+`stat` returns whether the root or entry is a directory; `readdir` returns entry
+names in producer order. All three callbacks return `OperationFuture` with
+`DiagnosticErrorInfo` on failure.
+
+Construction performs no directory access. The host retains supplied callbacks;
+omitted operations use the native filesystem. Sorting, directory suffixes,
+per-entry stat failure skipping, limits and output notices stay with the
+[native listing owner](../tools-search.md).
+
 Get an owned native-operation handle from `ExtensionAPI::native_io()`. The handle can
 outlive the callback that obtained it.
 

@@ -757,6 +757,176 @@ impl crate::component_adapter::NativeImports for Controlled {
 }
 
 impl Imports for Controlled {
+    fn create_coding_tools(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_coding_tool_definitions(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_read_only_tools(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_read_only_tool_definitions(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_all_tools(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_all_tool_definitions(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> {
+        Err("built-in tools require the production host".into())
+    }
+
+    fn create_tool(
+        &self,
+        _: &str,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_tool_definition(
+        &self,
+        _: &str,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::ToolDef> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_grep_tool(
+        &self,
+        _: String,
+        _: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_grep_tool_definition(
+        &self,
+        _: String,
+        _: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn with_file_mutation_queue(
+        &self,
+        _: String,
+        _: Box<dyn FnOnce() -> ExtensionFuture<'static, ()>>,
+    ) -> ExtensionFuture<'static, ()> {
+        Box::pin(std::future::ready(Err(
+            "file mutation queues require the production host".into(),
+        )))
+    }
+
+    fn create_ls_tool(&self, _: String, _: crate::LsToolOptions) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_ls_tool_definition(
+        &self,
+        _: String,
+        _: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_find_tool(
+        &self,
+        _: String,
+        _: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_find_tool_definition(
+        &self,
+        _: String,
+        _: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_edit_tool(
+        &self,
+        _: String,
+        _: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_edit_tool_definition(
+        &self,
+        _: String,
+        _: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_write_tool(
+        &self,
+        _: String,
+        _: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_write_tool_definition(
+        &self,
+        _: String,
+        _: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_local_bash_operations(
+        &self,
+        _: Option<String>,
+    ) -> ExtensionResult<crate::BashOperations> {
+        Err("local shell operations require the production host".into())
+    }
+    fn create_bash_tool(
+        &self,
+        _: String,
+        _: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_bash_tool_definition(
+        &self,
+        _: String,
+        _: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_read_tool(
+        &self,
+        _: String,
+        _: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_read_tool_definition(
+        &self,
+        _: String,
+        _: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        Err("built-in tools require the production host".into())
+    }
+
     type OAuthProvider = Reader;
     fn credentials_oauth_providers(&self, owner: &Reader) -> ExtensionResult<Vec<Reader>> {
         owner.data.oauth_providers().map(|providers| {

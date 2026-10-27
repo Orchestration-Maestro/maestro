@@ -119,6 +119,9 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
     /// extension's provenance.
     pub(super) async fn load_extension_resources(&self, paths: Vec<String>) -> io::Result<()> {
         let runtime = create_extension_runtime::<E>();
+        if let Some(services) = &self.options.tool_construction {
+            runtime.set_tool_construction(services.clone());
+        }
         let auth_root = self.agent_dir.clone();
         let models_root = self.agent_dir.clone();
         runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {

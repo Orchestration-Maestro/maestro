@@ -29,6 +29,7 @@ type Render = TypedFunc<
         crate::guest_calls::tool_renders::Render,
         Resource<ThemeEndpoint>,
         Resource<crate::local_resources::effects::InvalidatorEndpoint>,
+        Option<Resource<crate::native_renders::RowEndpoint>>,
         Resource<EmitterEndpoint>,
     ),
     (Result<crate::guest_calls::tool_renders::Rendered, String>,),
@@ -94,15 +95,20 @@ impl Exports {
         call: crate::guest_calls::tool_renders::ToolRenderCall<Callback>,
     ) -> wasmtime::Result<()> {
         let (callback, theme) = arguments(accessor, &call.handler, call.theme)?;
-        let (invalidator, emitter) = accessor.with(|mut access| {
+        let (invalidator, native_row, emitter) = accessor.with(|mut access| {
             let table = access.get().ctx().table;
-            Ok::<_, wasmtime::Error>((table.push(call.invalidator)?, table.push(call.emitter)?))
+            Ok::<_, wasmtime::Error>((
+                table.push(call.invalidator)?,
+                call.native_row.map(|row| table.push(row)).transpose()?,
+                table.push(call.emitter)?,
+            ))
         })?;
         let operands = (
             Resource::new_borrow(callback.rep()),
             call.render,
             theme,
             invalidator,
+            native_row,
             Resource::new_borrow(emitter.rep()),
         );
         let result = self.1.call_concurrent(accessor, operands).await;

@@ -218,3 +218,27 @@ fn send_messages(endpoint: &crate::api_reads::Endpoint) {
 }
 
 mod actions;
+
+/// Construction retains the application's owners and rejects an absent or stale facade.
+#[test]
+fn tool_construction_retains_application_services() {
+    let runtime = create_extension_runtime::<Local>();
+    let (_owner, api) = api(runtime.clone());
+    assert_eq!(
+        api.tool_construction().err().unwrap(),
+        "Extension tool construction is not configured"
+    );
+    let manager = Arc::new(maestro_extensions::ToolsManager::new(
+        "/app/bin".into(),
+        None,
+    ));
+    runtime.set_tool_construction(maestro_extensions::ToolConstruction {
+        tools_manager: manager.clone(),
+        bin_dir: "/app/bin".into(),
+    });
+    let services = api.tool_construction().unwrap();
+    assert!(Arc::ptr_eq(&services.tools_manager, &manager));
+    assert_eq!(services.bin_dir, "/app/bin");
+    runtime.invalidate(Some("ended tools".into()));
+    assert_eq!(api.tool_construction().err().unwrap(), "ended tools");
+}

@@ -1,6 +1,25 @@
 //! Supplied edit tool data.
+use super::OperationFuture;
 use crate::Presence;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
+
+/// Replaceable effects consumed by the native edit owner.
+#[derive(Clone)]
+pub struct EditOperations {
+    /// Reads original file bytes before matching.
+    pub read_file: Rc<dyn Fn(String) -> OperationFuture<'static, Vec<u8>>>,
+    /// Writes the native edit's UTF-8 result.
+    pub write_file: Rc<dyn Fn(String, String) -> OperationFuture<'static, ()>>,
+    /// Checks read and write access, preserving structured failure codes.
+    pub access: Rc<dyn Fn(String) -> OperationFuture<'static, ()>>,
+}
+/// Edit construction choices; omitted operations use the local filesystem.
+#[derive(Default)]
+pub struct EditToolOptions {
+    /// Independently retained replacement file effects.
+    pub operations: Option<EditOperations>,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Arguments supplied to the edit tool.

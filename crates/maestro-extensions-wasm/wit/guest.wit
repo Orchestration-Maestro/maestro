@@ -46,14 +46,15 @@ interface guest {
     invoke-setup: async func(handler: borrow<callback>, writer: session-manager) -> result<_, string>;
     use host.{autocomplete-item, callback-emitter, session-manager, callback, context, command-context, replaced-session-context};
     use host.{widget-event, widget-answer};
-    use host.{capabilities, tool-invocation, tool-capabilities, bash-request, bash-capabilities, encoded, decision, event-outcome, terminal-input-result, tui, factory-component, footer-data, tool-render, tool-rendered, tool-invalidator};
+    use host.{capabilities, tool-invocation, tool-capabilities, bash-request, bash-capabilities, encoded, decision, event-outcome, terminal-input-result, tui, factory-component, footer-data, tool-render, tool-rendered, native-row, read-operation, read-output, write-operation, edit-operation, find-operation, find-output, ls-operation, ls-output, grep-operation, grep-output, tool-invalidator};
     use host.{editor-theme, keybindings-manager, authored-editor-request, authored-editor-answer, editor-built};
     use host.{completion-provider, provider-request, provider-answer};
     /// Executes returned shell operations kept under one callback identity.
     bash-exec: async func(handler: borrow<callback>, request: bash-request, resources: bash-capabilities) -> result<option<f64>, string>;
 
+    use host.{prepared-arguments};
     /// Synchronously prepares arguments.
-    invoke-prepare: async func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<string, string>;
+    invoke-prepare: async func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<prepared-arguments, string>;
     /// Runs a synchronous listener prefix.
     invoke-listener: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Awaits an independently retained listener tail.
@@ -91,7 +92,14 @@ interface guest {
     /// Runs a component factory and transfers the identities of its component and disposal.
     invoke-component-factory: async func(handler: borrow<callback>, tui: tui, theme: theme, footer: option<footer-data>, emitter: borrow<callback-emitter>) -> result<factory-component, string>;
     /// Runs a tool's call or result renderer for one row.
-    invoke-tool-render: async func(handler: borrow<callback>, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: borrow<callback-emitter>) -> result<tool-rendered, string>;
+    invoke-tool-render: async func(handler: borrow<callback>, render: tool-render, theme: theme, invalidator: tool-invalidator, native-row: option<native-row>, emitter: borrow<callback-emitter>) -> result<tool-rendered, string>;
+    /// Invokes one retained read operation without narrowing its diagnostic.
+    invoke-read: async func(handler: borrow<callback>, operation: read-operation, path: string) -> result<read-output, diagnostic-error-info>;
+    invoke-write: async func(handler: borrow<callback>, operation: write-operation, path: string) -> result<_, diagnostic-error-info>;
+    invoke-grep: async func(handler: borrow<callback>, operation: grep-operation, path: string) -> result<grep-output, diagnostic-error-info>;
+    invoke-ls: async func(handler: borrow<callback>, operation: ls-operation, path: string) -> result<ls-output, diagnostic-error-info>;
+    invoke-find: async func(handler: borrow<callback>, operation: find-operation, path: string) -> result<find-output, diagnostic-error-info>;
+    invoke-edit: async func(handler: borrow<callback>, operation: edit-operation, path: string) -> result<read-output, diagnostic-error-info>;
     /// Runs a branch change listener with its synchronous emitter.
     invoke-branch-change: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Changes a retained factory component's expansion.

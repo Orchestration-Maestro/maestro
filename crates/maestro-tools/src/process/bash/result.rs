@@ -93,8 +93,21 @@ pub(super) fn settle(
             &text,
             &format!("Command timed out after {} seconds", num(seconds)),
         )),
-        Err(BashError::Other(error)) => Err(error
-            .downcast_ref::<std::io::Error>()
-            .map_or_else(|| failure(&error.to_string()), diagnostic)),
+        Err(BashError::Other(error)) => {
+            let message = error.to_string();
+            if message == "aborted" {
+                return Err(status(&text, "Command aborted"));
+            }
+            if let Some(timeout) = message.strip_prefix("timeout:") {
+                let seconds = timeout.split(':').next().unwrap_or_default();
+                return Err(status(
+                    &text,
+                    &format!("Command timed out after {seconds} seconds"),
+                ));
+            }
+            Err(error
+                .downcast_ref::<std::io::Error>()
+                .map_or_else(|| failure(&message), diagnostic))
+        }
     }
 }
