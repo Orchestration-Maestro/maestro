@@ -459,7 +459,8 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
 fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_snapshot() {
     for value in [json!("invalid"), json!(true)] {
         let (mut app, mut manager, storage) = fixture();
-        app.config.experimental.pane_history.0 = true;
+        put(&*storage, r#"{"daemon":{"paneHistory":true}}"#);
+        block_on(app.reload_config(&mut manager, Path::new(".")));
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
         let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();

@@ -192,16 +192,20 @@ fn assert_malformed_reload(
     manager.drain_errors();
     let accepted = json!({
         "daemon":{"paneShell":expected.terminal.default_shell,
-            "detectionCatalogCheck":!expected.update.manifest_check,
-            "paneHistory":!expected.experimental.pane_history.0},
-        "update":{"channel":match expected.update.channel {
-            UpdateChannelConfig::Stable => "preview", UpdateChannelConfig::Preview => "stable"
-        },"versionCheck":expected.update.version_check},
+            "detectionCatalogCheck":if path == "daemon.detectionCatalogCheck" { !expected.update.manifest_check } else { expected.update.manifest_check },
+            "paneHistory":if path == "daemon.paneHistory" { !expected.experimental.pane_history.0 } else { expected.experimental.pane_history.0 }},
+        "update":{"channel":if path == "update.channel" {
+            match expected.update.channel {
+                UpdateChannelConfig::Stable => "preview", UpdateChannelConfig::Preview => "stable"
+            }
+        } else { match expected.update.channel {
+            UpdateChannelConfig::Stable => "stable", UpdateChannelConfig::Preview => "preview"
+        } },"versionCheck":expected.update.version_check},
         "multiplexer":{"mouseCapture":expected.ui.mouse_capture.0,
-            "tabBarRight":if expected.ui.tab_bar_right.is_empty() {
+            "tabBarRight":if path != "multiplexer.tabBarRight" { json!(expected.ui.tab_bar_right) } else if expected.ui.tab_bar_right.is_empty() {
                 json!([{"type":"hostname"}])
             } else { json!([]) },
-            "remote":{"manageSshConfig":!expected.remote.manage_ssh_config}}
+            "remote":{"manageSshConfig":if path == "multiplexer.remote.manageSshConfig" { !expected.remote.manage_ssh_config } else { expected.remote.manage_ssh_config }}}
     });
     let mut current =
         project_global_settings(&serde_json::from_value(accepted).unwrap(), Path::new("."));
