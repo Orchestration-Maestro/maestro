@@ -49,7 +49,7 @@ fn message_renderer_registers_status_command_and_renderer() -> Result<(), String
             driver.registrations().0,
             [(
                 "status".to_owned(),
-                Some("Send a status message (usage: /status [warn|error] message)".to_owned()),
+                Some("Post a status note: /status [warn|error] <text>".to_owned()),
                 false
             )]
         );
@@ -73,8 +73,8 @@ fn message_renderer_status_sends_level_defaults_and_timestamp() -> Result<(), St
         let cases = [
             ("  all   good \t", "info", "all   good"),
             ("warn  disk \n  low ", "warn", "disk low"),
-            ("error", "error", "Status update"),
-            ("\u{feff} error\u{a0}", "error", "Status update"),
+            ("error", "error", "Status report"),
+            ("\u{feff} error\u{a0}", "error", "Status report"),
             ("", "info", ""),
             ("warning x", "info", "warning x"),
             ("WARN x", "info", "WARN x"),
@@ -129,7 +129,7 @@ fn publish(driver: &mut ComponentDriver, drawing: &Drawing<'_>) -> String {
     ];
     let mut text = format!("{} {}", painted(role, label), drawing.content);
     if let Some((_, time)) = drawing.time {
-        let line = format!("  at {time}");
+        let line = format!("  sent {time}");
         text = format!("{text}\n{}", painted("dim", &line));
         replies.push(("fg", json!(["dim", line]), painted("dim", &line)));
     }
@@ -202,7 +202,7 @@ fn message_renderer_draws_delivered_messages_collapsed_and_expanded() -> Result<
         let mut driver = start().await?;
         for (args, level, content) in [
             ("warn disk  low", ("warning", "[WARN]"), "disk low"),
-            ("error", ("error", "[ERROR]"), "Status update"),
+            ("error", ("error", "[ERROR]"), "Status report"),
             (" all good ", ("success", "[INFO]"), "all good"),
         ] {
             driver.run_plain_command("status", args).await?;
