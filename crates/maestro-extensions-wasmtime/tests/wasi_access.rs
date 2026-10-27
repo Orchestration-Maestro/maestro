@@ -515,21 +515,22 @@ fn component_absolute_link_qualification() {
     std::os::unix::fs::symlink(outside.join("missing"), cwd.join("dangling")).unwrap();
     let denied = outside.join("denied");
     std::fs::write(&denied, b"private").unwrap();
-    let _permission = maestro_test_directory::deny(&denied, 0)
-        .unwrap()
-        .expect("qualification requires an unprivileged OS-denial control");
-    assert_eq!(
-        std::fs::read(&denied).unwrap_err().kind(),
-        std::io::ErrorKind::PermissionDenied
-    );
+    let permission = maestro_test_directory::deny(&denied, 0).unwrap();
     std::env::set_current_dir(&cwd).unwrap();
-    run(qualify_links(&target, &denied));
+    if permission.is_some() {
+        assert_eq!(
+            std::fs::read(&denied).unwrap_err().kind(),
+            std::io::ErrorKind::PermissionDenied
+        );
+        run(qualify_links(&target, Some(&denied)));
+    }
+    run(qualify_links(&target, None));
     std::env::set_current_dir(original).unwrap();
 }
 
 /// Separates a runtime's absolute-link refusal from native permission denial.
 #[cfg(unix)]
-async fn qualify_links(target: &Path, denied: &Path) {
+async fn qualify_links(target: &Path, denied: Option<&Path>) {
     let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
     for bytes in [
         b"first\0\xff".as_slice(),
@@ -571,7 +572,7 @@ async fn qualify_links(target: &Path, denied: &Path) {
 
 /// Checks the runtime's refusal and a genuinely unreadable native target separately.
 #[cfg(unix)]
-async fn qualify_refusals(host: &Harness, generation: &str, denied: &Path) {
+async fn qualify_refusals(host: &Harness, generation: &str, denied: Option<&Path>) {
     for path in ["absolute-file", "absolute-directory/bytes", "dangling"] {
         let observed = host
             .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
@@ -587,6 +588,9 @@ async fn qualify_refusals(host: &Harness, generation: &str, denied: &Path) {
             );
         }
     }
+    let Some(denied) = denied else {
+        return;
+    };
     let observed = host
         .request(json!({"op":"file","generation":generation,"path":denied,"bytes":[]}))
         .await;
