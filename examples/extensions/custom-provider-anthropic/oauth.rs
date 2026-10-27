@@ -68,6 +68,9 @@ impl OAuthProviderInterface for CustomAnthropic {
             let (code, state) = pasted
                 .split_once('#')
                 .ok_or("Authorization code must include state")?;
+            if state != verifier {
+                return Err("Authorization state mismatch".into());
+            }
             provider
                 .exchange(
                     json!({
