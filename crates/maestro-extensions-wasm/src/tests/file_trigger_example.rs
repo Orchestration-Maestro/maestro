@@ -68,7 +68,7 @@ fn file_trigger_delivers_nonempty_contents_and_releases_watches() -> Result<(), 
         notifications[0].operands,
         json!(["Watching /tmp/agent-trigger.txt", "Info"])
     );
-    trigger.write(" \nRun the tests Ω\n ");
+    trigger.write(" \u{feff}\nRun the tests Ω\n\u{feff} ");
     host.notify_watch(0)?;
     assert_eq!(
         messages(&host),
@@ -81,7 +81,7 @@ fn file_trigger_delivers_nonempty_contents_and_releases_watches() -> Result<(), 
         std::fs::read_to_string("/tmp/agent-trigger.txt").unwrap(),
         ""
     );
-    for text in ["", " \r\n\t", "\u{2003}\u{a0}"] {
+    for text in ["", " \r\n\t", "\u{2003}\u{a0}", "\u{feff}", " \u{feff}\t"] {
         trigger.write(text);
         host.notify_watch(0)?;
         assert_eq!(messages(&host).len(), 1, "empty content stays silent");
@@ -89,11 +89,18 @@ fn file_trigger_delivers_nonempty_contents_and_releases_watches() -> Result<(), 
     host.observe().catalog.data.has_ui = false;
     deliver(&host, &exports, "session_start")?;
     assert!(host.observed().native_watch.watches[0].upgrade().is_none());
-    trigger.write("second");
+    trigger.write("\u{85}second\u{85}");
     host.notify_watch(0)?;
     assert_eq!(messages(&host).len(), 1, "retired watch stays silent");
     host.notify_watch(1)?;
     assert_eq!(messages(&host).len(), 2);
+    assert_eq!(
+        messages(&host)[1],
+        json!([
+            {"customType":"file-trigger", "content":"External trigger: \u{85}second\u{85}", "display":true},
+            {"triggerTurn":true}
+        ])
+    );
     deliver(&host, &exports, "session_shutdown")?;
     deliver(&host, &exports, "session_shutdown")?;
     assert!(host.observed().native_watch.watches[1].upgrade().is_none());

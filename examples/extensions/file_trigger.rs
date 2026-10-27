@@ -17,7 +17,8 @@ const TRIGGER_FILE: &str = "/tmp/agent-trigger.txt";
 fn inject(api: &ExtensionAPI) -> ExtensionResult<()> {
     let bytes = std::fs::read(TRIGGER_FILE).map_err(|error| error.to_string())?;
     let content = String::from_utf8_lossy(&bytes);
-    let content = content.trim();
+    let content =
+        content.trim_matches(|c: char| (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}');
     if !content.is_empty() {
         api.send_message(
             CustomMessageInput {
