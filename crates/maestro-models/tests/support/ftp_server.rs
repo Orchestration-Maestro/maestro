@@ -659,11 +659,9 @@ fn accept_until_stopped(
         let script = &scenarios[served.min(last)];
         served += 1;
         if let Err(error) = session(control, script, observed) {
-            // A client that went away mid-reply is a completed session, not a peer failure.
-            if !matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) {
+            // A client that went away mid-reply is a completed session, not a peer failure;
+            // Windows reports the closed connection as aborted rather than reset.
+            if !vanished(&error) {
                 return Err(error);
             }
             // A client that closed its connection took its control connection with it.
