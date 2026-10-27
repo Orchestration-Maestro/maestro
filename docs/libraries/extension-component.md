@@ -1,5 +1,11 @@
 # Extension component bindings
 
+The custom message-stream provider example uses `base64 =0.23.1` (MIT OR
+Apache-2.0, defaults off, `std`) and `sha2 =0.11.0` (MIT OR Apache-2.0,
+defaults off) as development dependencies for PKCE. These are the same versions
+and features the native authorization owner uses. The guest takes secure random
+bytes from WASI; it adds no cryptographic implementation or production API.
+
 The shipped `custom_footer` example uses the workspace's `ryu-js =1.0.3`
 (Apache-2.0) as a development dependency to format token counts and dollar costs.
 For example, 1,250 tokens display as `1.3k`, and a cost of `$0.0625` displays as
