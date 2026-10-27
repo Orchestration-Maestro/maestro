@@ -38,6 +38,9 @@ requires Git and a committed repository, and approving a restore can change
 tracked files or leave conflicts. `extensions/snake.rs` opens a custom Snake game
 with keyboard controls, timed movement and saved games in session entries; its
 index gives the build/run commands and interactive-host prerequisites.
+`extensions/modal_editor.rs` replaces the editor with one that has insert and
+normal modes and vi-style navigation keys, built on the application's custom
+editor.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
