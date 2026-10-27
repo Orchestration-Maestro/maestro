@@ -25,6 +25,7 @@ mod factory_shutdown;
 mod git_checkpoint_example;
 mod lifetimes;
 mod listener_prefixes;
+mod minimal_mode_example;
 mod module_location;
 mod native_helpers;
 mod native_io;
