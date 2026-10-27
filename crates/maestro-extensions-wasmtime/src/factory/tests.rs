@@ -49,7 +49,7 @@ async fn observe_faulted_store(release_trap: bool) {
     let weak = calls.downgrade();
     let retained = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
-    let version = "installed-component-host".into();
+    let version = installation();
     let mut state = lifecycle::State::new(endpoint, callbacks, &path, version, None).unwrap();
     let count = Arc::new(AtomicUsize::new(0));
     let (dropped, observed) = tokio::sync::oneshot::channel();
@@ -148,4 +148,12 @@ async fn trap_during_release(
         .shift_remove("bridge-observe");
     drop(command);
     assert!(fault.await.unwrap().unwrap_err().contains("wasm trap"));
+}
+
+/// Fixed installation facts for the observed Store lifecycle.
+fn installation() -> Installation {
+    Installation {
+        version: "installed-component-host".into(),
+        agent_dir: "/controlled-agent".into(),
+    }
 }

@@ -27,7 +27,10 @@ async fn loaded() -> ExtensionRunner<Local> {
         maestro_extensions_wasmtime::artifact_factory(
             path.clone(),
             super::support::widgets(),
-            "native-io-host".into(),
+            maestro_extensions_wasmtime::Installation {
+                version: "native-io-host".into(),
+                agent_dir: "/controlled-agent".into(),
+            },
         ),
         "/".into(),
         bus.for_extension(),
