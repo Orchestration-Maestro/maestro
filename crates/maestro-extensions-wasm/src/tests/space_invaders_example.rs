@@ -6,6 +6,7 @@
 )]
 use super::{custom_host::Script, host::Harness, observed::Observed};
 use serde_json::{Value, json};
+use std::collections::BTreeMap;
 use wasmtime_wasi::WasiView;
 
 /// Frames and saved records captured from the authored game with supplied input and ticks.
@@ -105,6 +106,7 @@ fn run(host: &mut Harness, case: &Value) -> Result<(), String> {
     }
     host.observed().ui.custom_script = Some(Script {
         width: None,
+        input_errors: BTreeMap::new(),
         inputs: serde_json::from_value(case["inputs"].clone()).unwrap(),
         frames,
         ticks: serde_json::from_value(case["ticks"].clone()).unwrap(),
@@ -231,6 +233,7 @@ fn space_invaders_component_runs_registered_command_and_restores_latest_save() -
         frame_helpers(host.observed(), &frame);
         host.observed().ui.custom_script = Some(Script {
             width: None,
+            input_errors: BTreeMap::new(),
             inputs: vec![key.into()],
             frames: vec![frame; 2],
             ticks: vec![0, 0],
@@ -266,6 +269,7 @@ fn space_invaders_rows_fit_narrow_terminal_widths() -> Result<(), String> {
         history(&mut host, &json!([entry(&script("resume")["start"])]));
         host.observed().ui.custom_script = Some(Script {
             width: None,
+            input_errors: BTreeMap::new(),
             inputs: vec!["q".into()],
             frames: vec![frame; 2],
             ticks: vec![0, 0],
@@ -275,6 +279,40 @@ fn space_invaders_rows_fit_narrow_terminal_widths() -> Result<(), String> {
         assert!(saves(&mut host).is_empty());
         assert!(host.observed().bus.listeners.is_empty());
         assert!(host.observed().bus.unreleased.is_empty());
+    }
+    Ok(())
+}
+
+/// Failed saves leave both retrying and discarding available on the retained view.
+#[test]
+fn space_invaders_rejected_save_keeps_input_usable() -> Result<(), String> {
+    let corpus = corpus();
+    let frame: Vec<String> = serde_json::from_value(corpus["frames"]["initial"].clone()).unwrap();
+    for rejected in ["\x1b", "q"] {
+        for retry in ["\x1b", "q"] {
+            let mut host = host(0)?;
+            history(&mut host, &json!([]));
+            frame_helpers(host.observed(), &frame);
+            host.observed().actions.entry_error = Some("session append refused".into());
+            host.observed().ui.custom_script = Some(Script {
+                width: None,
+                inputs: vec![rejected.into(), retry.into()],
+                input_errors: [(0, "session append refused".into())].into(),
+                frames: vec![frame.clone(); 3],
+                ticks: vec![0; 3],
+                columns: 80,
+            });
+            command(&mut host)?;
+            let saved = if retry == "\x1b" {
+                corpus["cases"][0]["start"].clone()
+            } else {
+                Value::Null
+            };
+            assert_eq!(saves(&mut host), [saved]);
+            assert!(host.observed().actions.entry_error.is_none());
+            assert!(host.observed().bus.listeners.is_empty());
+            assert!(host.observed().bus.unreleased.is_empty());
+        }
     }
     Ok(())
 }

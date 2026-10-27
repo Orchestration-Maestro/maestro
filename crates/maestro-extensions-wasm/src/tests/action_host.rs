@@ -11,6 +11,8 @@ pub struct Bank {
     pub raw: Option<String>,
     /// Rejection before action effects.
     pub error: Option<String>,
+    /// Rejects the next session entry before recording it.
+    pub entry_error: Option<String>,
 }
 impl Bank {
     /// Replace host state through an acknowledged entry.

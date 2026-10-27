@@ -1525,6 +1525,9 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let Some(error) = self.observed.actions.entry_error.take() {
+            return self.routed(Err(error));
+        }
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {

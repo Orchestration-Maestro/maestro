@@ -182,10 +182,10 @@ impl ComponentView for SpaceInvadersComponent {
             return self.tui.request_render(false);
         }
         if !released && (escape || quit) {
-            self.dispose();
             let game = self.game.borrow();
             (self.on_save)(if escape { Some(&game.state) } else { None })?;
             drop(game);
+            self.dispose();
             return (self.on_close)(());
         }
         self.keys(data, released)?;
