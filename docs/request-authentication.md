@@ -1,5 +1,7 @@
 # Request authentication
 
+For the provider/key table and terminal setup, see [provider setup](providers.md).
+
 Model invocation forwards supplied authentication options unchanged; it does not
 implicitly discover environment credentials. Call the helpers explicitly before
 supplying an adapter's API key. Configured credentials are not a successful login
