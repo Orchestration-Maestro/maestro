@@ -190,10 +190,13 @@ fn tic_tac_toe_finishes_wins_and_draws_once() -> Result<(), String> {
             .collect();
         assert_eq!(messages.len(), before + 1);
         assert_eq!(
-            messages.last().unwrap()[0]["customType"],
+            messages.last().unwrap()[0]["value"]["customType"],
             "tic-tac-toe-game-over"
         );
-        assert_eq!(messages.last().unwrap()[0]["details"], result["details"]);
+        assert_eq!(
+            messages.last().unwrap()[0]["value"]["details"],
+            result["details"]
+        );
     }
     super::example_support::released_component(&mut host)?;
     Ok(())
