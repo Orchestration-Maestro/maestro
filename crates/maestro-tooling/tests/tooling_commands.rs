@@ -3449,5 +3449,56 @@ fn example_test_modules_discover_independent_additions() {
     assert!(
         declarations.find("alpha_example").unwrap() < declarations.find("zebra_example").unwrap()
     );
-    assert!(declarations.contains(&format!("{:?}", root.path().join("alpha_example.rs"))));
+    assert!(!declarations.contains("#[path"));
+}
+
+/// Discovered modules retain ordinary nested-module lookup when compiled and run.
+#[test]
+fn example_test_modules_resolve_nested_modules() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tests = root.path().join("tests");
+    fs::create_dir_all(tests.join("nested_example")).unwrap();
+    fs::create_dir(root.path().join("generated")).unwrap();
+    fs::write(
+        tests.join("nested_example.rs"),
+        "mod child; pub(super) fn value() -> u8 { child::value() }",
+    )
+    .unwrap();
+    fs::write(
+        tests.join("nested_example/child.rs"),
+        "pub(super) fn value() -> u8 { 42 }",
+    )
+    .unwrap();
+    let generated = root.path().join("generated/modules.rs");
+    fs::write(
+        &generated,
+        crate::example_test_modules::generate(&tests).unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        root.path().join("tests.rs"),
+        format!("include!({generated:?}); pub fn value() -> u8 {{ nested_example::value() }}"),
+    )
+    .unwrap();
+    let main = root.path().join("main.rs");
+    fs::write(
+        &main,
+        "mod tests; fn main() { assert_eq!(tests::value(), 42); }",
+    )
+    .unwrap();
+    let executable = root
+        .path()
+        .join(format!("nested{}", std::env::consts::EXE_SUFFIX));
+    let output = toolchain_support::command("rustc")
+        .arg(&main)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(Command::new(executable).status().unwrap().success());
 }
