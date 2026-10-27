@@ -26,8 +26,10 @@ tree view can show it, `extensions/working_message_test.rs` asks for custom
 working text and an indicator whenever a session starts,
 `extensions/session_name.rs` builds a command that sets or shows the session's
 friendly name, `extensions/system_prompt_header.rs` reports the current system
-prompt's length as status, and `extensions/send_user_message.rs` builds commands
-that send ordinary, steering, follow-up and two-block user messages. The
+prompt's length as status, `extensions/send_user_message.rs` builds commands
+that send ordinary, steering, follow-up and two-block user messages, and
+`extensions/widget_placement.rs` requests widgets above and below the editor on
+session start. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

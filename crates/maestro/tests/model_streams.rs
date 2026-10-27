@@ -1,7 +1,6 @@
 //! The native agent consumes a compiled provider's retained stream through the SDK route.
 use maestro_app::{
-    AgentEvent, AgentMessage, AgentSession, AssistantMessageEventStream, CreateAgentSessionOptions,
-    ExtensionBindings, Local, NoTools, PromptOptions, ResourceLoaderOptions, SessionResources,
+    AgentEvent, AgentMessage, AgentSession, AssistantMessageEventStream, PromptOptions,
     SharedAssistantMessage,
 };
 use serde_json::{Value, json};
@@ -23,7 +22,13 @@ fn registered_guest_streams_reach_the_native_agent() {
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
         let root = super::support::Root::new();
-        let session = session(&root, local.clone()).await;
+        let session = super::support::session::component_session(
+            &root,
+            local.clone(),
+            std::env::var("MAESTRO_CONTEXT_COMPONENT").expect("nextest author-component setup"),
+            Some(maestro_app::NoTools::All),
+        )
+        .await;
         command(&session, "agent", "registered").await;
         let (entered, mut incoming) = mpsc::unbounded_channel();
         let mut streams = observe_stream(&session, entered);
@@ -53,48 +58,6 @@ fn registered_guest_streams_reach_the_native_agent() {
         assert!(stream.next().await.is_none());
         session.dispose();
     });
-}
-
-/// Build an isolated SDK session with the production component factory and no ambient auth.
-async fn session(
-    root: &super::support::Root,
-    local: Rc<tokio::task::LocalSet>,
-) -> Rc<AgentSession> {
-    let mut resources =
-        ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
-    resources
-        .extension_factories
-        .push(maestro_extensions_wasmtime::artifact_factory(
-            std::env::var("MAESTRO_CONTEXT_COMPONENT").expect("nextest author-component setup"),
-            crate::support::widgets(),
-            env!("CARGO_PKG_VERSION").into(),
-        ));
-    resources.system_prompt = Some(String::new());
-    resources.append_system_prompt = Some(Vec::new());
-    resources.offline = Some(true);
-    let cwd = root.path("project").display().to_string();
-    let created = maestro_app::create_agent_session(CreateAgentSessionOptions {
-        cwd: Some(cwd.clone()), agent_dir: Some(root.path("agent").display().to_string()),
-        auth_storage: Some(Arc::new(maestro_app::AuthStorage::in_memory(maestro_app::AuthStorageData::default()))),
-        model_registry: None,
-        model: Some(Arc::new(std::sync::RwLock::new(serde_json::from_value(json!({
-            "id":"registered-case","name":"registered","api":"guest-owned-stream",
-            "provider":"compiled-stream","baseUrl":"https://example.invalid","reasoning":false,"input":["text"],
-            "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":10000,"maxTokens":10
-        })).unwrap()))),
-        thinking_level: None, scoped_models: Vec::new(), no_tools: Some(NoTools::All),
-        tools: None, custom_tools: Vec::new(), resources: SessionResources::Default(Box::new(resources)),
-        session_manager: Some(Rc::new(RefCell::new(maestro_app::SessionManager::in_memory(Some(&cwd)).unwrap()))),
-        settings_manager: Some(Rc::new(RefCell::new(maestro_app::SettingsManager::in_memory(maestro_app::Settings::default())))),
-        session_start_event: None, theme: maestro_theme::LiveTheme::default(), offline: Some(true),
-    }).await.unwrap();
-    assert!(created.extensions_result.errors.is_empty());
-    created
-        .session
-        .bind_extensions(ExtensionBindings::default())
-        .await
-        .unwrap();
-    created.session
 }
 
 /// Invoke the compiled command through the same runner owned by the application session.

@@ -3,6 +3,7 @@
 use crate::support::{Root, rpc::Rpc};
 use serde_json::{Value, json};
 mod faults;
+mod file_trigger;
 mod http;
 mod watch;
 
