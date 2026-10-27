@@ -6,8 +6,8 @@ use maestro_app::rpc_types::{
     RpcCommand, RpcCommandBody, RpcExtensionUIMethod as Method, RpcExtensionUIRequest,
     RpcExtensionUIResponse, RpcResponse, RpcSessionCommand,
 };
-use maestro_app::{is_whitespace_scalar, serialize_json_line};
-use maestro_theme::LiveTheme;
+use maestro_app::{NotificationType, is_whitespace_scalar, serialize_json_line};
+use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{
     Container, Editor, EditorOptions, Input, SelectItem, SelectList, SelectListLayoutOptions, TUI,
@@ -220,7 +220,10 @@ impl Client {
     /// Displays notices immediately and queues only methods that require an answer.
     fn ui(&mut self, request: RpcExtensionUIRequest, remote: bool) -> io::Result<()> {
         match &request.method {
-            Method::Notify { message, .. } => self.log.append(format!("Notification: {message}")),
+            Method::Notify {
+                message,
+                notify_type,
+            } => self.notify(message, notify_type.as_ref()),
             Method::SetStatus {
                 status_key,
                 status_text,
@@ -249,6 +252,20 @@ impl Client {
         }
         Ok(())
     }
+    /// Keeps existing severity cues readable alongside the selected theme's colors.
+    fn notify(&self, message: &str, kind: Option<&NotificationType>) {
+        let (label, color) = match kind {
+            Some(NotificationType::Warning) => ("warning", ThemeColor::Warning),
+            Some(NotificationType::Error) => ("error", ThemeColor::Error),
+            _ => ("info", ThemeColor::Accent),
+        };
+        self.log.append(paint(
+            self.theme.get().ok().as_deref(),
+            &color,
+            &format!("Notification: [{label}] {message}"),
+        ));
+    }
+
     /// Produces a callback repeating the exact active request identifier.
     fn answer(&self, confirmed: bool) -> Rc<dyn Fn(&str)> {
         let sender = self.actions.clone();
