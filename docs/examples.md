@@ -8,7 +8,7 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. Fifteen extensions ship:
+`sdk/`, and each folder has its own index page. The shipped extensions include:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
