@@ -27,7 +27,7 @@ fn tic_tac_toe_command_and_sequential_siblings_use_the_native_runner() {
             &root,
             local.clone(),
             std::env::var("MAESTRO_TIC_TAC_TOE_COMPONENT").expect("nextest author-component setup"),
-            Some(NoTools::All),
+            Some(NoTools::Builtin),
             super::support::widgets(),
         )
         .await;
@@ -37,6 +37,10 @@ fn tic_tac_toe_command_and_sequential_siblings_use_the_native_runner() {
 
 /// Plays one human mark followed by five tool calls in the same assistant response.
 async fn exercise(session: Rc<AgentSession>) {
+    assert_eq!(
+        session.get_active_tool_names(),
+        ["tic_tac_toe", "tic_tac_toe_see_board"]
+    );
     let runner = session.extension_runner();
     let command = runner
         .get_command("tic-tac-toe")
@@ -54,16 +58,7 @@ async fn exercise(session: Rc<AgentSession>) {
         })
         .await
         .unwrap();
-    let (finished, end) = oneshot::channel();
-    let finished = Rc::new(RefCell::new(Some(finished)));
-    let unsubscribe = session.subscribe(Rc::new(move |event| {
-        if let AgentSessionEvent::Agent(event) = event
-            && matches!(&*event.read().unwrap(), AgentEvent::AgentEnd { .. })
-            && let Some(finished) = finished.borrow_mut().take()
-        {
-            let _ = finished.send(());
-        }
-    }));
+    let (unsubscribe, end) = finished(&session);
     let context = runner.create_command_context();
     let opened = tokio::task::spawn_local(async move {
         (command.command.handler)(String::new(), context)
@@ -90,7 +85,9 @@ async fn exercise(session: Rc<AgentSession>) {
     assert!(
         requests[2]["messages"][0]["content"]
             .to_string()
-            .contains("Tic-Tac-Toe (you are Player O)")
+            .contains("Tic-Tac-Toe (you are Player O)"),
+        "{}",
+        requests[2]
     );
     session.dispose();
 }
@@ -106,7 +103,10 @@ fn snapshots(session: &AgentSession) -> Value {
         .collect();
     assert_eq!(results.len(), 5);
     for (result, (row, col)) in results.iter().zip([(1, 0), (2, 0), (2, 1), (2, 2), (0, 0)]) {
-        assert_eq!(result["message"]["details"]["agentCursorRow"], row);
+        assert_eq!(
+            result["message"]["details"]["agentCursorRow"], row,
+            "{result}"
+        );
         assert_eq!(result["message"]["details"]["agentCursorCol"], col);
         assert_eq!(result["message"]["isError"], false);
     }
@@ -130,7 +130,7 @@ fn snapshots(session: &AgentSession) -> Value {
 
 /// Registers a single loopback model through the delivered catalog interface.
 async fn configure(session: &AgentSession, base: &str) {
-    let config = serde_json::from_value(json!({"baseUrl":base,"apiKey":"controlled-game-key","api":"openai-completions","models":[{"id":"game","name":"controlled","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":10000,"maxTokens":1000}]})).unwrap();
+    let config = serde_json::from_value(json!({"baseUrl":base,"apiKey":"controlled-game-key","api":"openai-completions","models":[{"id":"game","name":"controlled","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":128_000,"maxTokens":1000}]})).unwrap();
     session
         .model_registry()
         .register_provider("game-controlled", Arc::new(RwLock::new(config)))
@@ -169,4 +169,19 @@ fn provider() -> (String, std::thread::JoinHandle<Vec<Value>>) {
         requests
     });
     (base, worker)
+}
+
+/// Observes run completion through the session, never through a timer.
+fn finished(session: &AgentSession) -> (impl Fn(), oneshot::Receiver<()>) {
+    let (finished, end) = oneshot::channel();
+    let finished = RefCell::new(Some(finished));
+    let unsubscribe = session.subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::Agent(event) = event
+            && matches!(&*event.read().unwrap(), AgentEvent::AgentEnd { .. })
+            && let Some(finished) = finished.borrow_mut().take()
+        {
+            let _ = finished.send(());
+        }
+    }));
+    (unsubscribe, end)
 }

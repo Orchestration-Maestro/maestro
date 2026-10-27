@@ -37,14 +37,8 @@ impl Ui {
     }
     /// Delivers a literal key through the retained component's input handler.
     pub fn input(&self, key: &str) {
-        self.view
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .input_handler()
-            .unwrap()
-            .try_handle_input(key)
-            .unwrap();
+        let view = self.view.borrow().as_ref().unwrap().clone();
+        view.input_handler().unwrap().try_handle_input(key).unwrap();
     }
     /// Reads the authored component at the requested terminal width.
     pub fn render(&self, width: usize) -> Vec<String> {
