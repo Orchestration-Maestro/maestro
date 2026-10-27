@@ -77,6 +77,10 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
   locally and in a manifest.
 - **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
   file.
+- **Guard:** A manifest rule that blocks, confirms, redacts or warns on a command, a
+  path or text, from a `maestro.guards/v1` file in the manifest's core area.
+- **Guard family:** The set of guard rules in one guard file, named by the file,
+  such as personal data or destructive commands.
 - **Base layer:** A read-only settings document with locked keys, published by a
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties

@@ -48,8 +48,10 @@ must not be changed locally (an approved model list, a privacy setting, mandator
 standards), while developers still personalise everything else and try new
 artifacts locally before proposing them. Urgent fixes must reach running laptops
 quickly, and a bad release must be reversible. Today each developer configures
-Maestro by hand, nothing is enforced, nothing tells a developer which configuration
-is active, and Maestro cannot explain the organization's configuration when asked.
+Maestro by hand, nothing is enforced, nothing stops an agent from running a
+destructive command or passing personal data to a provider, nothing tells a
+developer which configuration is active, and Maestro cannot explain the
+organization's configuration when asked.
 
 ## Solution
 
@@ -61,10 +63,13 @@ is built from five layers: engine defaults, the manifest, the user, the project 
 the run. The policy decides which local changes are allowed, and every governed
 change is checked before it has any effect. Teams ship capabilities: one package
 per team area, bundling roles, skills, instructions, prompt templates and
-workflows. A broken manifest makes the manifest package fail its load, which stops
-agent sessions with the exact fix. `/manifest update` moves the pin forward or back,
-a release can declare a minimum that every laptop takes at its next session start,
-and running sessions check for new releases at an interval the organization sets.
+workflows. Guard rules in the manifest's core area confirm destructive commands,
+refuse writes to protected paths, replace personal data with markers and withhold
+prompt injection from the model. A broken manifest makes the manifest package fail
+its load, which stops agent sessions with the exact fix. `/manifest update` moves
+the pin forward or back, a release can declare a minimum that every laptop takes at
+its next session start, and running sessions check for new releases at an interval
+the organization sets.
 The interactive startup and `/manifest status` show which manifest is active, and
 Maestro's own documentation describes every manifest artifact, so the agent can
 answer questions about it.
@@ -172,6 +177,16 @@ answer questions about it.
 73. As a developer, I want to raise a role's thinking or choose its model within the manifest's bounds through my settings, so that I tune roles without editing the manifest (delivered with the authored-agent consumer).
 74. As an administrator, I want the manifest to supply MCP servers that local gateway options cannot drop, with credentials kept local (delivered with the MCP base package).
 
+### Guards
+
+75. As a security reviewer, I want every guard rule to be a regular expression in a manifest file, so that I review and approve each rule by pull request.
+76. As a security reviewer, I want each rule to carry text it must match and text it must not match, checked at every load and in required CI, so that I see proof that the expression does what it says.
+77. As an administrator, I want commands that match a destructive-command rule to ask before they run and to be refused when no one can answer, so that an agent cannot delete or overwrite by accident.
+78. As an administrator, I want writes and edits to protected paths refused, so that agents never change secret files or repository internals.
+79. As a privacy officer, I want personal data replaced by a marker in tool output and prompts before the model sees them, and in agent output before it is saved or sent again, so that it never reaches a provider or a session file through Maestro.
+80. As a security reviewer, I want tool output that matches a prompt-injection rule withheld from the model with the reason, so that fetched content cannot instruct the agent.
+81. As a developer, I want guards only when a manifest is selected, so that Maestro without a manifest behaves as before.
+
 ## Behaviour contract
 
 ### M1 — Selection
@@ -255,7 +270,8 @@ Every area may contain:
 
 Only the core area may contain `SYSTEM.md` (base system prompt), the role named
 `maestro` (the main agent's persona and tools), `llm/models.json` (model file in the
-ordinary models format) and `backends/mcp/mcp.json` (MCP servers, M13).
+ordinary models format), `backends/mcp/mcp.json` (MCP servers, M13) and
+`guards/*.yaml` (guard files, [M20](#m20--guards)).
 
 A capability is one package: its folder holds a `package.json` and its own
 resources ([M16](#m16--capabilities-and-ownership)). `<group>` and `<name>` are
@@ -502,7 +518,7 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 | No manifest named | Internal mode |
 | Invalid selection (not pinned, local, wrong type) | The manifest package fails its load; agent sessions refuse |
 | Release missing and not installable (offline, network, authentication) | The manifest package fails its load; agent sessions refuse |
-| Invalid manifest: malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
+| Invalid manifest: malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, invalid guard file, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
 | Missing required package, or a required resource that fails to load | Agent sessions refuse |
 | Optional resource that fails to load | Skipped with the ordinary warning |
 | A kind absent from the manifest | No manifest layer for that kind; engine defaults apply |
@@ -641,6 +657,7 @@ selected manifest area.
 |---|---|---|---|---|
 | Settings | ordinary settings JSON | `U/settings.json`, `Pj/settings.json` | `A/settings/settings.json` | settings owner |
 | Policy | `policy.json` (M4) | none | `A/settings/policy.json` | manifest package |
+| Guards | `maestro.guards/v1` YAML (M20) | none | `core/guards/*.yaml` | manifest package |
 | System prompt | Markdown | `U/SYSTEM.md`, `Pj/SYSTEM.md` | `core/SYSTEM.md` | resource loader |
 | Appended prompt | Markdown | `U/APPEND_SYSTEM.md`, `Pj/APPEND_SYSTEM.md` | body of `core/agents/maestro.md` | resource loader |
 | Instructions | Markdown with `applyTo` frontmatter | `U/instructions/`, `Pj/instructions/` (installed copies) | `A/instructions/*.instructions.md` | rules system; installed by the manifest package |
@@ -778,12 +795,12 @@ chain:
 ### M19 — Schemas and checks
 
 1. **One schema per artifact kind.** The manifest package publishes a JSON Schema
-   for `settings/policy.json`, the workflow file, role and instruction frontmatter
-   and a capability's `package.json`. The schemas are generated from the same Rust
-   types the package uses to read those files, so the published rules and the
-   loading rules cannot drift. Generation uses `schemars` and validation uses
-   `jsonschema`, both already pinned in the workspace. YAML and frontmatter are
-   converted to their JSON value before validation.
+   for `settings/policy.json`, the workflow file, the guard file, role and
+   instruction frontmatter and a capability's `package.json`. The schemas are
+   generated from the same Rust types the package uses to read those files, so the
+   published rules and the loading rules cannot drift. Generation uses `schemars`
+   and validation uses `jsonschema`, both already pinned in the workspace. YAML and
+   frontmatter are converted to their JSON value before validation.
 2. **In the manifest repository.** The generated schemas live under `schemas/`. A
    pre-commit hook validates every artifact against them, so a malformed file
    cannot be committed. A required pull-request check runs the same validation,
@@ -792,6 +809,98 @@ chain:
    commit), so a malformed or broken release cannot merge.
 3. **Tests.** Every schema has fixtures that must pass and fixtures that must fail,
    covering each member, each wrong JSON kind and each unknown member.
+
+### M20 — Guards
+
+Guards check commands, paths and text against rules kept in the manifest's core
+area, and block, confirm, redact or warn. Security reviewers approve every rule by
+pull request, and each rule carries the examples that prove what it matches. Guards
+run only in manifest mode, in every session that loads the manifest package. There
+is no local guard file and no setting that adds, removes or disables a rule; rules
+change only with the manifest.
+
+1. **Files.** Each `core/guards/<family>.yaml` file has two members: `apiVersion`
+   (`maestro.guards/v1`) and `rules`, a non-empty list. `<family>` is lowercase and
+   hyphenated, at most 64 characters, and names the rule family, for example
+   `destructive-commands`, `protected-paths`, `pii` or `prompt-injection`. The
+   manifest package reads files in file-name order and rules in list order.
+
+   ```yaml
+   apiVersion: maestro.guards/v1
+   rules:
+     - id: canada-sin
+       description: Canadian social insurance number
+       regex: '\b\d{3}[- ]?\d{3}[- ]?\d{3}\b'
+       action: redact
+       appliesTo: [tool-output, agent-output, prompt]
+       examples:
+         match: ['SIN 046-454-286']
+         noMatch: ['order 12345']
+   ```
+
+2. **Rules.** Every member is required.
+
+   | Member | Meaning |
+   |---|---|
+   | `id` | Lowercase and hyphenated, at most 64 characters, unique across all guard files |
+   | `description` | One line, shown in every refusal, confirmation and warning the rule causes |
+   | `regex` | A regular expression in the syntax of the workspace's `regex` crate. Matching takes linear time in the text's length. Inline flags such as `(?i)` and `(?m)` set case and line behaviour; look-around and back-references do not exist in this syntax |
+   | `action` | `block`, `confirm`, `redact` or `warn` (item 4) |
+   | `appliesTo` | A non-empty list of targets (item 3) |
+   | `examples` | `match`, a non-empty list of strings the expression must match, and `noMatch`, a list of strings it must not match |
+
+   An unknown or missing member, a duplicate `id`, an expression that does not
+   compile, an action that does not allow one of the rule's targets, or an example
+   that does not behave as listed makes the manifest invalid (M9). The manifest
+   package checks the examples every time it loads the manifest, so the
+   pull-request check that loads the release (M19.2) checks them too.
+
+3. **Targets.** Guards never check images.
+
+   | Target | Text checked | Checked |
+   |---|---|---|
+   | `command` | The `command` argument of the `bash` tool, and the user's `!` and `!!` shell commands | Before the command runs |
+   | `path` | The `path` argument of the `write` and `edit` tools, as given | Before the tool runs |
+   | `tool-output` | Each text block of a tool result | Before the result reaches the model or the session file |
+   | `agent-output` | Each text block of an assistant message | When the message ends, before it is saved or sent again |
+   | `prompt` | The text of the user's prompt | Before the prompt is sent |
+
+4. **Actions.** Each rule names its own action. The manifest's files set the usual
+   choices: `confirm` for destructive commands, `block` for protected paths,
+   `redact` for personal data and `block` for prompt injection.
+   - **`block`.** A `command` or `path` match refuses the tool call with
+     `Blocked by guard <id>: <description>`, and the interactive mode shows the same
+     text as a warning. A user shell command that matches does not run; its output
+     is that text. A `tool-output` match replaces the result's text with
+     `Tool output withheld by guard <id>: <description>` and marks the result as an
+     error, so the model learns why. An `agent-output` match replaces the message's
+     text with `Response withheld by guard <id>: <description>`. A `prompt` match
+     stops the prompt before it is sent and reports the refusal the way the mode
+     reports errors.
+   - **`confirm`** (`command` and `path` only). The interactive mode shows the
+     description with the command or path, and offers `Yes` and `No`. `No` refuses
+     as `block` does, with the reason `Blocked by user`. Print mode, JSON mode and
+     RPC without a user interface refuse as `block` does.
+   - **`redact`** (`tool-output`, `agent-output` and `prompt` only). Each match
+     becomes `[<FAMILY>:<id>]`, where `<FAMILY>` is the file's family in capitals,
+     for example `[PII:canada-sin]`.
+   - **`warn`.** The operation goes ahead unchanged, and a warning names the rule.
+5. **Several matching rules.** Every rule for a target matches against the
+   original text. A matching `block` rule wins, then a matching `confirm` rule; the
+   first such rule in file and list order names the refusal or the question. When
+   neither matches, the matching `redact` rules apply in file and list order, each
+   to the text the previous one left. The warnings of matching `warn` rules are
+   shown unless the operation is refused.
+6. **Other extensions.** The manifest package loads before other extensions (H4),
+   so its guards run first: a refused tool call reaches no other extension's
+   tool-call hook, and other extensions see redacted text. Guards check what the
+   agent and the user send. They do not check what another extension changes
+   afterwards, because extensions keep full user permissions (M8.5).
+7. **Saved sessions and streams.** Session files keep what the guards return:
+   redacted text, withheld results and withheld responses. Streamed assistant text
+   reaches the interactive view and JSON and RPC event streams as it arrives; when
+   the message ends, the redacted message replaces it, and only that message is
+   saved and sent again. Guards do not rewrite existing session files.
 
 ## Core hooks
 
@@ -839,10 +948,10 @@ package resolves conflicts exactly as any other package does.
   base package, a package crate released with Maestro like the other base packages
   ([packages](packages.md#base-packages)): `maestro-manifest` (selection,
   acquisition, area reading, prompt composition, instruction installation, policy
-  decoding and combination, decisions, `/manifest`, release checks, catalog
-  kinds). No core crate depends on it. Workflow files run on the runner of Maestro's subagent
-  capability; roles stay with `maestro-subagents`; MCP servers stay with
-  `maestro-mcp`. Authored content, including instructions and the default
+  decoding and combination, decisions, guards, `/manifest`, release checks,
+  catalog kinds). No core crate depends on it. Workflow files run on the runner of
+  Maestro's subagent capability; roles stay with `maestro-subagents`; MCP servers
+  stay with `maestro-mcp`. Authored content, including instructions and the default
   workflows, lives in manifests, not in packages.
 - **Packages talk through existing routes.** The manifest package shares its
   selected area roots and required paths with the subagent capability (roles and
@@ -850,6 +959,12 @@ package resolves conflicts exactly as any other package does.
   parsing, matching or paths.
 - **Validation is loading.** The manifest package validates while it loads; a broken
   manifest fails the load. There is no separate checker command or binary.
+- **Guards.** Matching is one pure module in the manifest package: rules and text
+  in, a decision out, with no I/O and no hook types. A thin layer registers the
+  existing tool-call, user-shell, tool-result, message-end and input hooks and
+  applies the decision. Expressions compile with the workspace's existing `regex`
+  crate. No other package matches guard rules; a package that reacts to guarded
+  work builds on the manifest package's behaviour instead of matching again.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
   applies the base layer, then the ordinary one-level user and project merge, then
   locked paths, then stored-value decisions. There is no new settings scope and no
@@ -903,6 +1018,14 @@ package resolves conflicts exactly as any other package does.
   names), and accept environment or command references in credential positions.
 - Workflow runs use the reference's faux provider for agent steps; command steps run
   real programs in a temporary folder.
+- Guards: the matching module is tested with rules and text only, for every action,
+  target and precedence case. Each target is then tested through the real host
+  with a fixture manifest: a confirmed and a refused destructive command, a
+  headless refusal, a refused user shell command, a refused protected-path write,
+  a redacted tool result and assistant message as saved in the session file, a
+  withheld injected tool result and a refused prompt. A failing example, an
+  expression that does not compile, a duplicate id and `confirm` on a text target
+  each fail the load.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -946,6 +1069,11 @@ Each item is a deliberate difference from the reference.
 15. Git-only manifest sources and the release integrity repair at every start.
 16. Generated JSON Schemas for artifact kinds and their pre-commit and pull-request
     checks.
+17. Guards (M20): rule files in the manifest, the `maestro.guards/v1` format,
+    redaction, and the personal-data and prompt-injection families. Confirming
+    destructive commands and refusing protected paths follow the reference's
+    example extensions, with their patterns taken from the manifest instead of the
+    code.
 
 ## Corrected reference defect
 
@@ -984,6 +1112,10 @@ owners keep their ordering and accepted-write semantics.
   instructions stay present. It is specified separately; this specification only
   supplies and installs the files.
 - New RPC or JSON fields.
+- Guards without a manifest, local guard files and settings that change guards;
+  checking thinking blocks, which providers sign and replay unchanged; withholding
+  streamed text before its message ends; rewriting existing session files; and
+  detection other than regular expressions.
 - Manifest mode in the browser application.
 
 ## Glossary
@@ -1011,6 +1143,10 @@ Add to `CONTEXT.md`:
   locally and in a manifest.
 - **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
   file.
+- **Guard:** A manifest rule that blocks, confirms, redacts or warns on a command, a
+  path or text, from a `maestro.guards/v1` file in the manifest's core area.
+- **Guard family:** The set of guard rules in one guard file, named by the file,
+  such as personal data or destructive commands.
 - **Base layer:** A read-only settings document with locked keys, published by a
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties
