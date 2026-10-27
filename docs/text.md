@@ -69,4 +69,35 @@ assert_eq!(utf16_order("\u{1f600}", "\u{e000}"), Ordering::Less);
 assert_eq!(escape("'", EscapeMode::HtmlDecimal).len(), 5);
 ```
 
+## Local dates and times
+
+The optional `date-time-format` feature exports
+`date_time_format::LocaleDateTimeFormat`. It captures the same locale observations
+as number formatting and accepts Gregorian local `[year, month, day]` and
+`[hour, minute, second]` fields. The caller supplies the clock and time zone.
+Native callers can use the re-export `maestro_theme::LocaleDateTimeFormat`.
+The extension helper keeps its existing input and output; browser surfaces
+continue to use browser formatting.
+
+The formatter uses one numeric date-plus-time profile with Gregorian, Buddhist,
+or Persian default calendars. It preserves local digits, two-digit widths,
+day-period text, punctuation and directional marks. It rejects invalid fields.
+It does not accept arbitrary patterns, calendar overrides or time-zone options.
+
+An exact locale row wins. Otherwise the locked locale fallback engine walks
+language and script parents while retaining the original territory's hour cycle
+and calendar through representative rows. Unsupported languages use a root
+recipe, not en-US. A missing environment, `C`, or `POSIX` still selects en-US;
+an empty selected value selects `und`. For example, `fr-CA` uses
+`2026-10-27 09 h 25 min 07 s`, while an unknown language in Iran uses a Persian
+root date with a twenty-four-hour clock.
+
+Committed data derives from CLDR JSON 48.2.0, under Unicode-3.0. The
+[asset notes](../crates/maestro-text/data/date-time/README.md) document the schema,
+pinned archive hashes, runtime used for offline pattern selection, licence,
+and regeneration/check commands. Ordinary builds need neither Node nor network
+access. Output follows that pinned data version; other platform releases can
+choose different defaults. Arbitrary locale extensions and combinations outside
+the measured regional closure are not a claim of full platform equivalence.
+
 Dependencies are listed in [text libraries](libraries/text.md).

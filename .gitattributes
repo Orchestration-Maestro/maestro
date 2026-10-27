@@ -24,3 +24,6 @@
 
 # Image protocol byte fixtures
 crates/maestro-terminal/tests/fixtures/images/* binary
+
+# Empty trailing TSV fields are significant in locale recipes.
+crates/maestro-text/data/date-time/recipes.tsv whitespace=-blank-at-eol

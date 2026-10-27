@@ -1,5 +1,6 @@
 //! Host-local wall-clock presentation for authored input feedback.
-use chrono::{Local, NaiveDateTime};
+use chrono::{Datelike, Local, NaiveDateTime, Timelike};
+use maestro_theme::LocaleDateTimeFormat;
 
 use super::{decode, encode};
 
@@ -12,16 +13,25 @@ pub(super) fn local_date_time_string(data: &str) -> Result<String, String> {
     )?)
 }
 
-/// Formats local calendar fields with the en-US date and twelve-hour clock pattern.
+/// Formats supplied local fields using the captured environment's locale.
 fn format_local_date_time(
     now: NaiveDateTime,
-    _environment: &dyn Fn(&str) -> Option<String>,
+    environment: &dyn Fn(&str) -> Option<String>,
 ) -> Result<String, String> {
-    let mut output = String::new();
-    now.format("%-m/%-d/%Y, %-I:%M:%S %p")
-        .write_to(&mut output)
-        .map_err(|error| error.to_string())?;
-    Ok(output)
+    let formatter = LocaleDateTimeFormat::new(environment).map_err(|error| error.to_string())?;
+    let date = [
+        now.year(),
+        i32::try_from(now.month()).map_err(|error| error.to_string())?,
+        i32::try_from(now.day()).map_err(|error| error.to_string())?,
+    ];
+    let time = [
+        u8::try_from(now.hour()).map_err(|error| error.to_string())?,
+        u8::try_from(now.minute()).map_err(|error| error.to_string())?,
+        u8::try_from(now.second()).map_err(|error| error.to_string())?,
+    ];
+    formatter
+        .format(date, time)
+        .map_err(|error| error.to_string())
 }
 
 #[cfg(test)]
