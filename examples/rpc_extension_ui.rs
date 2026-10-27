@@ -265,10 +265,22 @@ mod tests {
         );
     }
 
-    /// The real toolkit receives keys while a controlled peer checks correlated wire replies.
+    /// Observations of a controlled peer and actual retained toolkit widgets.
     #[cfg(unix)]
-    #[tokio::test(flavor = "current_thread")]
-    async fn streamed_rpc_dialogs_keep_replies_and_terminal_lifecycle() {
+    struct Case {
+        /// The child process's propagated status.
+        status: std::process::ExitStatus,
+        /// Every terminal effect delivered through the existing recording tap.
+        raw: String,
+        /// Number of completion-driven input transitions.
+        steps: usize,
+        /// Native terminal lifecycle effects.
+        lifecycle: Vec<&'static str>,
+    }
+
+    /// Runs one pipe peer while rendered prompts drive deterministic input.
+    #[cfg(unix)]
+    async fn run_case(script: &str, steps: Vec<(&'static str, &'static str)>) -> Case {
         use maestro_tui::{TUI, TerminalImage};
         use maestro_tui_crossterm::ProcessTuiRuntime;
         use std::{
@@ -286,15 +298,7 @@ mod tests {
         let captured = effects.clone();
         terminal.set_tap(move |frame| {
             captured.borrow_mut().push(frame.to_owned());
-            let actions = [
-                ("RPC Chat", "hello\r"),
-                ("Dangerous command?", "\r"),
-                ("Clear session?", "\r"),
-                ("Enter a value", "answer\r"),
-                ("Edit some text", "\r"),
-                ("Abort now", "\x1b"),
-            ];
-            let Some((needle, keys)) = actions.get(observed.get()) else {
+            let Some((needle, keys)) = steps.get(observed.get()) else {
                 return;
             };
             if frame.contains(needle) {
@@ -311,13 +315,36 @@ mod tests {
             None,
         );
         let mut peer = Command::new("sh");
-        peer.args(["-c", RPC_PEER]);
+        peer.args(["-c", script]);
         let status = local.run_until(super::run_client(tui, peer)).await.unwrap();
-        assert_eq!(status.code(), Some(7));
-        assert_eq!(stage.get(), 6);
-        let raw = effects.borrow().join("");
-        assert!(raw.contains("\x1b]0;RPC Demo\x07"));
-        let output = maestro_app::strip_ansi(&raw).unwrap();
+        Case {
+            status,
+            raw: effects.borrow().join(""),
+            steps: stage.get(),
+            lifecycle: terminal.events(),
+        }
+    }
+
+    /// The real toolkit receives keys while a controlled peer checks correlated wire replies.
+    #[cfg(unix)]
+    #[tokio::test(flavor = "current_thread")]
+    async fn streamed_rpc_dialogs_keep_replies_and_terminal_lifecycle() {
+        let case = run_case(
+            RPC_PEER,
+            vec![
+                ("RPC Chat", "hello\r"),
+                ("Dangerous command?", "\r"),
+                ("Clear session?", "\r"),
+                ("Enter a value", "answer\r"),
+                ("Edit some text", "\r"),
+                ("Abort now", "\x1b"),
+            ],
+        )
+        .await;
+        assert_eq!(case.status.code(), Some(7));
+        assert_eq!(case.steps, 6);
+        assert!(case.raw.contains("\x1b]0;RPC Demo\x07"));
+        let output = maestro_app::strip_ansi(&case.raw).unwrap();
         for expected in [
             "first\u{2028}second",
             "controlled refusal",
@@ -328,8 +355,74 @@ mod tests {
         ] {
             assert!(output.contains(expected), "missing {expected}: {output}");
         }
-        assert_eq!(terminal.events(), ["start", "stop"]);
+        assert_eq!(case.lifecycle, ["start", "stop"]);
     }
+
+    /// Local dialogs preserve their authored results without emitting RPC commands.
+    #[cfg(unix)]
+    #[tokio::test(flavor = "current_thread")]
+    async fn local_dialog_demonstrations_keep_success_and_cancel_results_off_the_wire() {
+        for (select, confirm, input, editor, results) in [
+            (
+                "\r",
+                "\r",
+                "Maestro\r",
+                "\r",
+                [
+                    "You picked: Red",
+                    "Confirmed: true",
+                    "You entered: Maestro",
+                    "Submitted: Hello, world!",
+                ],
+            ),
+            (
+                "\x1b",
+                "\x1b",
+                "\x1b",
+                "\x1b",
+                [
+                    "Selection cancelled",
+                    "Confirmed: false",
+                    "Input cancelled",
+                    "Editor cancelled",
+                ],
+            ),
+        ] {
+            let case = run_case(
+                LOCAL_PEER,
+                vec![
+                    ("RPC Chat", "/select\r"),
+                    ("Pick a color", select),
+                    (results[0], "/confirm\r"),
+                    ("Are you sure?", confirm),
+                    (results[1], "/input\r"),
+                    ("Enter your name", input),
+                    (results[2], "/editor\r"),
+                    ("Edit text", editor),
+                    (results[3], "after local\r"),
+                ],
+            )
+            .await;
+            assert_eq!(case.status.code(), Some(0));
+            assert_eq!(case.steps, 9);
+            assert_eq!(case.lifecycle, ["start", "stop"]);
+            let output = maestro_app::strip_ansi(&case.raw).unwrap();
+            assert!(!output.contains("Are you sure?:"), "{output}");
+            for result in results {
+                assert!(output.contains(result), "{output}");
+            }
+        }
+    }
+
+    /// The peer must receive only the final ordinary prompt with the first identifier.
+    #[cfg(unix)]
+    const LOCAL_PEER: &str = r#"
+read -r line || exit 8
+case "$line" in *'"message":"after local"'*) ;; *) exit 9;; esac
+case "$line" in *'"id":"req_1"'*) ;; *) exit 10;; esac
+printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":true}'
+exit 0
+"#;
 
     /// A shell peer uses only pipes and completion signals, without a model or a clock.
     #[cfg(unix)]
