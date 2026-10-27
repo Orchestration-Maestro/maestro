@@ -10,6 +10,11 @@ use std::rc::Rc;
 use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionFuture};
 
 /// Registers a profile-sourcing bash override with the extension's initial directory.
+///
+/// # Errors
+///
+/// Returns an error if the current directory cannot be read, the host cannot create
+/// the bash tool definition, or tool registration fails.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
