@@ -543,3 +543,10 @@ supply an `Installation { version, agent_dir }` to
 `config::get_agent_dir(&api)` reads the agent directory the application supplies
 when composing the component host. Like `config::version(&api)`, it reads the
 host's installation facts, not the component's inherited environment.
+
+## Read the host's local clock
+
+`utils::local_date_time_string(&api)` reads the host's current wall clock and local
+time zone. It returns the en-US pattern `M/D/YYYY, h:mm:ss AM`, including seconds,
+with unpadded month, day and hour fields on a twelve-hour clock. It does not select
+other locale patterns. The guest carries no time-zone data; host failures remain errors.

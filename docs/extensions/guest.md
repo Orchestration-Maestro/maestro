@@ -914,6 +914,19 @@ component in a controlled host, and `examples/extensions/README.md` holds the
 build and controlled-run commands. Reloading a running application is not part
 of that controlled run.
 
+### An input transform hook
+
+[`examples/extensions/input_transform.rs`](../../examples/extensions/input_transform.rs)
+registers `input` and bypasses extension-injected messages. It rewrites a nonempty
+`?quick <question>` as a brief-answer request, warns and handles an empty question,
+and handles `ping` and `time` with local notifications. Every other input returns
+an explicit continuation. Rewrites omit replacement images and leave the event
+unchanged.
+
+The example is opt-in and needs a component-enabled host with notification UI.
+The [example index](../../examples/extensions/README.md) gives its build and
+controlled-run commands and the time-format limit.
+
 ### A protected-paths tool-call hook
 
 [`examples/extensions/protected_paths.rs`](../../examples/extensions/protected_paths.rs)
@@ -972,6 +985,28 @@ notifying writes nothing when the label write itself fails.
 
 It is opt-in like the other shipped extensions: its crate's tests run the built
 component in a controlled host with a supplied wall clock, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
+### Dynamic tools
+
+[`examples/extensions/dynamic_tools.rs`](../../examples/extensions/dynamic_tools.rs)
+sets up an `echo_session` tool from its `session_start` handler, and adds
+`/add-echo-tool <tool_name>` as a command that registers more echo tools after
+initialization. The argument is trimmed and lowercased with the standard
+library's whitespace and case rules, then admitted only when what remains is
+nonempty ASCII lowercase letters, digits and underscores. Anything else answers
+`Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)`.
+
+Each admitted name becomes an `Echo <name>` tool whose description names its
+prefix, and whose execution answers `<prefix><message>` with the registered name
+and prefix as details. The factory keeps one set of admitted names, inserts a
+name before asking the host to register it, and keeps that name when the request
+fails, so a retry reports `Tool already registered: <name>` rather than replacing
+the tool the first call registered. It never asks whether the host reports UI
+availability before requesting a notification.
+
+It is opt-in like the other shipped extensions: its crate's tests replay the
+recorded sequences through the built component in a controlled host, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
 
 ### A custom working message on session start
@@ -1113,6 +1148,10 @@ edits made through any of its clones.
 See [native helpers](guest_operations.md) for synchronous terminal operations.
 
 ## Standard operating-system interfaces
+
+`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+under the host's temporary root, with mode `0700` on Unix and the default
+Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
 
 Rust standard-library environment, file and byte I/O use the host's WASI 0.2
 baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
