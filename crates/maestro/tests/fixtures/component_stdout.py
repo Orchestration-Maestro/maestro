@@ -70,6 +70,8 @@ try:
         if attempt == 0:
             os.write(master, b"/stdout-probe reload\r")
             through(b"ROOT-STDOUT-READY\x07")
+            through(b"Reloaded keybindings, extensions, skills, prompts, themes")
+            through(b"\x1b[?2026l")
             assert output.count(init) == 2, "reload did not retain current stdout routing"
     os.write(master, b"/quit\r")
     output.extend(stdout.read())
