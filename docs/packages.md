@@ -86,6 +86,17 @@ discards edits inside managed remote checkouts; use a local source for developme
 Ordinary `install` keeps its existing behavior and does not imply an integrity
 check.
 
+## Release inspection
+
+`list_releases(source)` lists a Git source's tags in name order, pairing each name
+with its peeled commit ID. Annotated and lightweight tags each produce one row.
+An untagged repository returns an empty list. The caller chooses the release;
+this operation does not apply version policy or change a checkout.
+
+Release inspection rejects non-Git sources and reports remote failures. Offline
+mode returns `NotConnected` without running a command rather than treating an
+unavailable release list as an empty repository. Settings stay unchanged.
+
 ## Progress
 
 `set_progress_callback` replaces or clears the callback; each emission reads the

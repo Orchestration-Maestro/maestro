@@ -320,8 +320,8 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
     ) -> PackageFuture<'a, ()> {
         Box::pin(self.repair_pin(source, scope))
     }
-    fn list_releases<'a>(&'a self, _source: &'a str) -> PackageFuture<'a, Vec<GitRelease>> {
-        Box::pin(async { Err(io::Error::other("Release inspection unavailable")) })
+    fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>> {
+        Box::pin(self.git_releases(source))
     }
     fn install_and_persist<'a>(
         &'a self,
