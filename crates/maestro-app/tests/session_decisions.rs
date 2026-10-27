@@ -173,3 +173,71 @@ fn extension_selection_refusals_return_unsuccessful_without_effects() {
         );
     });
 }
+
+/// An allowing publisher recording the requested thinking level of a model switch.
+#[derive(Default)]
+struct Allow(Mutex<Vec<String>>);
+impl SettingsDecider for Allow {
+    fn decide(&self, request: &DecisionRequest<'_>) -> Result<(), String> {
+        self.0.lock().unwrap().push(format!("{request:?}"));
+        Ok(())
+    }
+}
+
+/// The active level clamps while a locked requested default stays untouched and silent.
+#[test]
+fn locked_thinking_default_survives_model_capability_clamp() {
+    use maestro_settings::{BaseSettingsLayer, SettingsScope};
+    use serde_json::json;
+    on_task_set(|_| async {
+        for locked in [true, false] {
+            let h = harness(HarnessOptions {
+                settings: json!({"defaultThinkingLevel":"xhigh"}),
+                ..HarnessOptions::default()
+            })
+            .await;
+            let settings = h.session.settings_manager();
+            if locked {
+                settings.borrow_mut().publish_base_layer(
+                    SettingsScope::Global,
+                    Some(BaseSettingsLayer {
+                        settings: serde_json::from_value(json!({"defaultThinkingLevel":"xhigh"}))
+                            .unwrap(),
+                        locked: ["defaultThinkingLevel".into()].into(),
+                        source: "configuration-release".into(),
+                        recorded_at: "2026-10-27".into(),
+                    }),
+                );
+            }
+            let decider = Arc::new(Allow::default());
+            settings
+                .borrow_mut()
+                .register_decider(decider.clone())
+                .unwrap();
+            h.session.set_model(h.model("think")).await.unwrap();
+            assert_eq!(h.session.thinking_level(), ModelThinkingLevel::High);
+            assert_eq!(
+                settings
+                    .borrow()
+                    .get_default_thinking_level()
+                    .unwrap()
+                    .as_str(),
+                if locked { "xhigh" } else { "high" }
+            );
+            let raw = settings.borrow().get_global_settings();
+            assert_eq!(
+                raw.0["defaultThinkingLevel"],
+                if locked { "xhigh" } else { "high" }
+            );
+            assert!(settings.borrow_mut().drain_errors().is_empty());
+            assert_eq!(
+                crate::session_model_selection::selection_entries(&h),
+                vec![
+                    json!({"type":"model_change","provider":"faux","modelId":"think"}),
+                    json!({"type":"thinking_level_change","thinkingLevel":"high"}),
+                ]
+            );
+            assert!(decider.0.lock().unwrap()[0].contains("thinking_level: \"xhigh\""));
+        }
+    });
+}
