@@ -1089,3 +1089,26 @@ fn standard_output_to_regular_file() {
         );
     });
 }
+
+#[test]
+fn standard_output_preserves_partial_progress_and_reports_flush_failure() {
+    isolated!(&[], || {
+        use std::io::Write;
+        let output = pipe_output();
+        fcntl_setfl(stdout(), fcntl_getfl(stdout()).unwrap() | OFlags::NONBLOCK).unwrap();
+        let mut standard = maestro_tui_crossterm::terminal::output::StandardOutput::default();
+        let bytes = vec![b'x'; 2 * 1024 * 1024];
+        let written = standard
+            .write(&bytes)
+            .expect("partial progress is successful");
+        assert!(written > 0 && written < bytes.len());
+        assert_eq!(standard.write(b"tail").unwrap(), 4);
+        assert_eq!(
+            standard.flush().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+        assert_eq!(output.take().as_bytes(), &bytes[..written]);
+        standard.flush().unwrap();
+        assert_eq!(output.take(), "tail");
+    });
+}
