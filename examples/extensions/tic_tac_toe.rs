@@ -6,9 +6,9 @@
 )]
 
 use maestro_extensions_wasm::{
-    AgentMessage, AgentToolResult, ExtensionAPI, ExtensionContext, ExtensionFuture,
-    ExtensionResult, Message, Presence, SessionEntry, ToolDefinition, ToolExecutionMode,
-    ToolMetadata,
+    AgentMessage, AgentToolResult, CustomMessageInput, ExtensionAPI, ExtensionContext,
+    ExtensionFuture, ExtensionResult, Message, Presence, SessionEntry, ToolDefinition,
+    ToolExecutionMode, ToolMetadata, UserContent,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, time::Duration};
@@ -70,6 +70,9 @@ async fn execute(
         && state.current_turn == 'O'
         && state.board[state.agent_cursor_row][state.agent_cursor_col] != ' ';
     let result = state.action(action);
+    if result.is_ok() && action == "play" && state.status != "playing" {
+        game_over(&api, &state)?;
+    }
     if result.is_ok() || occupied {
         api.append_entry(
             SAVE_TYPE,
@@ -77,6 +80,29 @@ async fn execute(
         )?;
     }
     state.result(result?)
+}
+
+/// Sends one final snapshot after the play that ends a game.
+fn game_over(api: &ExtensionAPI, state: &BoardDetails) -> ExtensionResult<()> {
+    let label = match state.status.as_str() {
+        "win_X" => "Player X (human) wins",
+        "win_O" => "Player O (agent) wins",
+        "draw" => "Draw",
+        _ => "Game over",
+    };
+    api.send_message(
+        CustomMessageInput {
+            custom_type: "tic-tac-toe-game-over".into(),
+            content: UserContent::Text(format!("Game over: {label}.")),
+            display: true,
+            details: Presence::Present(
+                serde_json::to_string(state)
+                    .map_err(|e| e.to_string())?
+                    .into(),
+            ),
+        },
+        None,
+    )
 }
 
 /// Builds metadata with exactly one action per call and explicit sequential execution.

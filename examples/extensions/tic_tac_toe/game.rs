@@ -33,7 +33,36 @@ impl Default for BoardDetails {
         }
     }
 }
+/// Rows, columns and diagonals in their displayed order.
+const WIN_LINES: [[(usize, usize); 3]; 8] = [
+    [(0, 0), (0, 1), (0, 2)],
+    [(1, 0), (1, 1), (1, 2)],
+    [(2, 0), (2, 1), (2, 2)],
+    [(0, 0), (1, 0), (2, 0)],
+    [(0, 1), (1, 1), (2, 1)],
+    [(0, 2), (1, 2), (2, 2)],
+    [(0, 0), (1, 1), (2, 2)],
+    [(0, 2), (1, 1), (2, 0)],
+];
 impl BoardDetails {
+    /// Returns the first winning line for both status and border highlighting.
+    pub fn win_line(&self) -> Option<[(usize, usize); 3]> {
+        WIN_LINES.iter().copied().find(|line| {
+            let mark = self.board[line[0].0][line[0].1];
+            mark != ' ' && line.iter().all(|&(r, c)| self.board[r][c] == mark)
+        })
+    }
+    /// Recomputes the outcome without moving either cursor.
+    pub fn settle(&mut self) {
+        self.status = if let Some(line) = self.win_line() {
+            format!("win_{}", self.board[line[0].0][line[0].1])
+        } else if self.board.iter().flatten().all(|cell| *cell != ' ') {
+            "draw".into()
+        } else {
+            "playing".into()
+        };
+    }
+
     /// Renders empty coordinates and only the agent's cursor.
     pub fn ascii(&self) -> String {
         self.board
@@ -117,6 +146,13 @@ impl BoardDetails {
         self.board[r][c] = 'O';
         self.agent_cursor_row = 0;
         self.agent_cursor_col = 0;
+        self.settle();
+        if self.status == "win_O" {
+            return Ok(format!("Placed O at ({r},{c}). Player O wins!"));
+        }
+        if self.status == "draw" {
+            return Ok(format!("Placed O at ({r},{c}). It's a draw!"));
+        }
         self.current_turn = 'X';
         Ok(format!(
             "Placed O at ({r},{c}). Cursor reset to (0,0). Your turn, X!"
