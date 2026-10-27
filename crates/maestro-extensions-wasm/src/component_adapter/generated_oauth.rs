@@ -84,7 +84,7 @@ fn required(input: ExtensionFuture<'static, Option<String>>) -> ExtensionFuture<
 }
 
 /// Invokes the original authored interaction with its retained native capability.
-pub(super) async fn invoke(call: host::LocalOauth) -> ExtensionResult<Option<String>> {
+pub(super) async fn invoke(call: host::LocalOauthCallback) -> ExtensionResult<Option<String>> {
     super::super::oauth::invoke(
         call.target,
         call.phase,
