@@ -128,6 +128,8 @@ pub struct ResourceLoaderOptions<E: ExtensionExecution = Threaded> {
     pub event_bus: Option<EventBusController<E>>,
     /// Existing application tool services available during extension construction.
     pub tool_construction: Option<maestro_extensions::ToolConstruction>,
+    /// Ordered base package sources whose factories run before other extensions.
+    pub base_package_sources: Vec<String>,
     /// Extension sources loaded before configured ones.
     pub additional_extension_paths: Vec<String>,
     /// Skill paths loaded after discovered ones.
@@ -171,6 +173,7 @@ impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
             module_loader,
             event_bus: None,
             tool_construction: None,
+            base_package_sources: Vec::new(),
             additional_extension_paths: Vec::new(),
             additional_skill_paths: Vec::new(),
             additional_prompt_template_paths: Vec::new(),
