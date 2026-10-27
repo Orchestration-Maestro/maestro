@@ -40,6 +40,7 @@ inserts at its own place instead of appending at the end of each list.
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. Directory names containing a literal backslash on Unix are not copied exactly. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
@@ -93,6 +94,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- titlebar_spinner_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -356,3 +359,21 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the titlebar spinner does
+
+`agent_start` restores the base title, then shows the ten braille frames in order
+at 80 ms intervals. The first frame waits for that interval. Each frame reads the
+current session name and working directory again, producing
+`<frame> Maestro - <session> - <directory>`, or omitting the session part when the
+name is absent or empty. Restarting cancels the old wait and starts at the first
+frame; `agent_end` and `session_shutdown` cancel the wait and restore the base
+title. Shutdown also removes the example's event-bus listener.
+
+Build with `--example titlebar_spinner` using the command above. Loading it is
+opt-in and needs a component-enabled host with native waits, event-tail execution
+and terminal-title UI. The controlled runs supply wait-completion gates and
+session names, so they need no provider, paid service or terminal installation.
+The example starts no process and reads no files. A title-write or name-read
+failure ends the callback or animation with the host's error; tail errors go to
+the host's event-bus reporter.

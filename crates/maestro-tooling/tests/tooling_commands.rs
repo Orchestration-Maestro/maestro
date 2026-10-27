@@ -1252,6 +1252,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/system_prompt_header.rs"),
     ),
     (
+        "examples/extensions/titlebar_spinner.rs",
+        include_str!("../../../examples/extensions/titlebar_spinner.rs"),
+    ),
+    (
         "examples/extensions/trigger_compact.rs",
         include_str!("../../../examples/extensions/trigger_compact.rs"),
     ),
@@ -1615,6 +1619,10 @@ fn maestro_package_assets_come_from_the_package_directory() {
         ("assets/mark.png", "image"),
         ("docs/.hidden", "hidden"),
         ("docs/guide.md", "guide"),
+        (
+            "examples/extensions/titlebar_spinner.rs",
+            include_str!("../../../examples/extensions/titlebar_spinner.rs"),
+        ),
         ("examples/nested/demo.rs", "example"),
         ("export-html/index.html", "viewer"),
     ] {
