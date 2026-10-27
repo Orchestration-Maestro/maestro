@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_compaction"
+path = "../../examples/extensions/custom_compaction.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "custom_footer"
 path = "../../examples/extensions/custom_footer.rs"
 crate-type = ["cdylib"]

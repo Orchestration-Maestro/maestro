@@ -54,6 +54,10 @@ is opt-in. Temporary output can contain private contents and remains until
 removed. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
+`extensions/custom_compaction.rs` summarizes both prepared conversation spans
+with a separately selected Gemini Flash model, preserving the supplied retention
+boundary. Loading it is opt-in and requires provider credentials; the controlled
+run uses a deterministic provider without network calls.
 
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a

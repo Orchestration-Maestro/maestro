@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `custom_compaction.rs` | An opt-in `session_before_compact` hook that summarizes both prepared message spans with Gemini Flash and returns the supplied retention boundary. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
@@ -85,6 +86,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- custom_compaction_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -334,6 +337,22 @@ string stores them; nothing is trimmed, rebuilt or cached. `session_shutdown`
 removes the status under the same key, including when no start came before it.
 A host rejection is returned to the host unchanged. Loading the component into
 an application is opt-in.
+
+### Custom compaction
+
+Build `custom_compaction` with the build command above. Load its component only
+when you want custom summaries: it selects `google/gemini-2.5-flash` independently
+of the conversation model and needs credentials for that provider. Real model
+calls can incur charges and send conversation contents to the provider; the
+controlled run above uses no network or live credentials.
+
+The hook combines the prepared summary messages and split-turn prefix, includes
+any previous summary, and requests at most 8,192 output tokens. It preserves the
+host's supplied `firstKeptEntryId` and token count; recent entries are not deleted
+by the extension. Missing models or authentication, empty output, cancellation
+and provider failures leave the host's default compaction path available. The
+host remains responsible for cancellation and accepting or storing the result.
+Notifications use the current UI host and are harmless in headless mode.
 
 ### What the custom footer does
 

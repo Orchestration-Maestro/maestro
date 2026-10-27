@@ -73,6 +73,7 @@ mod model_signal_selection;
 mod tool_override_example;
 mod tui_capabilities;
 
+mod custom_compaction_example;
 mod custom_ui;
 mod model_lifetimes;
 
