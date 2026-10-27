@@ -2,6 +2,7 @@
 import json
 import os
 import pty
+import re
 import socket
 import subprocess
 import sys
@@ -51,6 +52,12 @@ def through(marker):
             return
 
 
+def without_host_frames(wire):
+    """Keep guest SGR bytes while removing complete frames and cursor controls."""
+    unframed = re.sub(rb"\x1b\[\?2026h.*?\x1b\[\?2026l", b"", wire, flags=re.S)
+    return re.sub(rb"\x1b\[(?!36m|0m)[0-?]*[ -/]*[@-~]", b"", unframed)
+
+
 try:
     through(b"ROOT-STDOUT-READY\x07")
     through(b"\x1b[?2026l")
@@ -66,7 +73,7 @@ try:
         through(b"ROOT-STDOUT-DONE\x07")
         observed = json.loads(reply)
         assert observed == {"terminal": False}, observed
-        assert output.count(payload) == attempt + 1, "guest byte write was split or lost"
+        assert without_host_frames(output).count(payload) == attempt + 1, "guest escape or binary bytes were lost or changed"
         if attempt == 0:
             os.write(master, b"/stdout-probe reload\r")
             through(b"ROOT-STDOUT-READY\x07")
