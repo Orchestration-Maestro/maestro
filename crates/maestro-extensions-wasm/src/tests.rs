@@ -50,6 +50,8 @@ mod event_transport;
 mod event_values;
 mod example_support;
 mod exec_records;
+mod file_trigger_example;
+pub(crate) mod file_trigger_path;
 mod finite_records;
 pub(crate) mod stream_host;
 mod tui_ui;
