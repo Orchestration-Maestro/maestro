@@ -1,4 +1,5 @@
 //! Factory-time settings and package operations supplied by the application.
+use crate::types::{read, write};
 use crate::{ExtensionAPI, ExtensionExecution};
 use serde_json::Value;
 
@@ -33,12 +34,27 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     /// Returns missing-service, owner or native-operation failures.
     pub fn host_operation(
         &self,
-        _operation: HostOperation,
+        operation: HostOperation,
     ) -> E::Future<'static, Result<Value, String>> {
-        let error = self.owner().err().map_or_else(
-            || "Extension host operations are not configured".to_owned(),
-            |error| error.to_string(),
-        );
-        E::failed_host_operation(error)
+        let selected = self
+            .owner()
+            .map_err(|error| error.to_string())
+            .and_then(|_| {
+                read(&self.runtime.host_operations)
+                    .clone()
+                    .ok_or_else(|| "Extension host operations are not configured".to_owned())
+            });
+        match selected {
+            Ok(call) => call(operation),
+            Err(error) => E::failed_host_operation(error),
+        }
+    }
+}
+
+impl<E: ExtensionExecution> crate::ExtensionRuntime<E> {
+    /// Installs factory-time operations without binding session actions.
+    pub fn set_host_operations(&self, operations: E::Shared<E::HostOperation>) {
+        let previous = write(&self.host_operations).replace(operations);
+        drop(previous);
     }
 }

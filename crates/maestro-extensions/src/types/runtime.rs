@@ -80,6 +80,8 @@ pub struct ExtensionActions<E: ExtensionExecution = Threaded> {
 
 /// The shared runtime behind every extension API and its runner.
 pub struct ExtensionRuntime<E: ExtensionExecution = Threaded> {
+    /// Original settings and package operations, available without runner binding.
+    pub(crate) host_operations: RwLock<Option<E::Shared<E::HostOperation>>>,
     /// Application-supplied constructor defaults, installed before factory loading.
     pub(crate) construction: RwLock<Option<crate::CatalogConstruction>>,
     /// Application-supplied native search and shell construction owners.

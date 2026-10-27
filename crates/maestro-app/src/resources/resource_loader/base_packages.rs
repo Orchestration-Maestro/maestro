@@ -1,11 +1,9 @@
 //! Early base factories and their ordinary package resource positions.
 use super::{DefaultEventBus, DefaultResourceLoader};
-use maestro_extensions::{
-    LoadExtensionsResult, create_extension_runtime, load_extensions_with_runtime,
-};
+use maestro_extensions::{LoadExtensionsResult, load_extensions_with_runtime};
 use maestro_packages::{PackageManager, ResolvedPaths};
 use maestro_resources::SourceScope;
-use std::{io, sync::Arc};
+use std::io;
 
 /// Appends lower-precedence package resources without changing existing positions.
 pub(super) fn append_paths(paths: &mut ResolvedPaths, extra: ResolvedPaths) {
@@ -46,25 +44,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             .map(|entry| entry.path.clone())
             .collect();
         let paths = self.merge_paths(&paths, [])?;
-        let runtime = create_extension_runtime::<E>();
-        if let Some(services) = &self.options.tool_construction {
-            runtime.set_tool_construction(services.clone());
-        }
-        let auth_root = self.agent_dir.clone();
-        let models_root = self.agent_dir.clone();
-        runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
-            auth_path: Arc::new(move || {
-                Ok(crate::configuration::config::paths::get_auth_path(
-                    &auth_root,
-                ))
-            }),
-            models_path: Arc::new(move || {
-                Ok(crate::configuration::config::paths::get_models_path(
-                    &models_root,
-                ))
-            }),
-            config_values: crate::runtime::agent_session_services::native_config_values(),
-        });
+        let runtime = self.extension_runtime();
         runtime.defer_provider_operations(&paths);
         runtime.begin_load_time(paths.clone());
         let result = load_extensions_with_runtime(

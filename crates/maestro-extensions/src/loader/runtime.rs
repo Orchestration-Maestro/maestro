@@ -77,6 +77,7 @@ impl<E: ExtensionExecution> BoundProviders<E> {
 #[must_use]
 pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionRuntime<E>> {
     E::share(ExtensionRuntime {
+        host_operations: RwLock::new(None),
         construction: RwLock::new(None),
         #[cfg(not(target_arch = "wasm32"))]
         tool_construction: RwLock::new(None),
