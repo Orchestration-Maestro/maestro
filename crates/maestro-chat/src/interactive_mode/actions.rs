@@ -57,6 +57,38 @@ impl InteractiveMode {
         );
     }
 
+    /// Opens the thinking picker or selects a case-insensitive supported level.
+    pub(super) fn handle_thinking_command(
+        self: &Rc<Self>,
+        search_term: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        if search_term.is_empty() {
+            return self.show_thinking_selector();
+        }
+        let levels = self.runtime_host.session().get_available_thinking_levels();
+        if let Some(level) = levels
+            .iter()
+            .find(|level| thinking_text(level).0.eq_ignore_ascii_case(search_term))
+        {
+            return self.select_thinking_level(level.clone());
+        }
+        let available = levels
+            .iter()
+            .map(|level| thinking_text(level).0)
+            .collect::<Vec<_>>()
+            .join(", ");
+        Ok(self.show_error(&format!(
+            "Unknown thinking level \"{search_term}\". Available levels: {available}."
+        ))?)
+    }
+
+    /// Saves the chosen level and refreshes its footer, border and status.
+    pub(super) fn select_thinking_level(&self, level: ThinkingLevel) -> Result<(), Box<dyn Error>> {
+        let label = thinking_text(&level).0;
+        self.settings_thinking(level)?;
+        Ok(self.show_status(&format!("Thinking level: {label}"))?)
+    }
+
     /// Selects the session's next thinking level and shows it, refreshing the footer and
     /// border, or says the model cannot reason.
     ///

@@ -21,6 +21,28 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+#[test]
+fn thinking_command_completion_includes_level_hint() {
+    isolated(
+        "thinking_command_completion_includes_level_hint",
+        async |directory| {
+            let world = Setup::default().build(directory);
+            let suggestions = suggested(&provider(&world, &[]), "/thinking")
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(suggestions.items.len(), 1);
+            let item = &suggestions.items[0];
+            assert_eq!(item.value, "thinking");
+            assert_eq!(item.label, "thinking");
+            assert_eq!(
+                item.description.as_deref(),
+                Some("<level> — Set thinking level")
+            );
+        },
+    );
+}
+
 /// Every recorded completion case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_extensions.json");
 

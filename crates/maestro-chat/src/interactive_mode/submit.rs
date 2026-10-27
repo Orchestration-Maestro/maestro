@@ -216,9 +216,22 @@ impl InteractiveMode {
         true
     }
 
-    /// Runs `/scoped-models`, or `/model` with its search, when `text` is one of them,
-    /// and says whether `text` was handled as a command.
+    /// Runs model or thinking selection when `text` names their command, and says
+    /// whether it was handled as a command.
     fn runs_model_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/thinking" || text.starts_with("/thinking ") {
+            let result = self
+                .current_editor()
+                .try_set_text("")
+                .map_err(|error| -> Box<dyn Error> { error })
+                .and_then(|()| {
+                    self.handle_thinking_command(
+                        text["/thinking".len()..].trim_matches(is_whitespace_scalar),
+                    )
+                });
+            self.report(result);
+            return true;
+        }
         if text == "/scoped-models" {
             self.report(self.show_models_selector());
             return true;

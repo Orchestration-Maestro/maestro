@@ -267,7 +267,7 @@ impl InteractiveMode {
     }
 
     /// Selects thinking before refreshing the footer and the editor decoration.
-    fn settings_thinking(&self, level: ThinkingLevel) -> Result<(), Box<dyn Error>> {
+    pub(super) fn settings_thinking(&self, level: ThinkingLevel) -> Result<(), Box<dyn Error>> {
         self.runtime_host.session().set_thinking_level(level)?;
         self.footer.invalidate();
         self.update_editor_border_color()?;

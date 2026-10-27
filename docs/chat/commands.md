@@ -9,7 +9,7 @@ waiting input and never enters the editor history. Any other text, including
 `/logout extra`, is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
-`/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
+`/model`, `/thinking`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
 `/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume`, `/new`,
 `/compact`, `/reload` and `/quit`. The offline viewer and packaged asset injection are not
 delivered yet (see
@@ -473,6 +473,22 @@ made is kept.
 The footer shows the provider before the model name when the candidates span
 more than one provider. The mode counts them at startup and after every scope
 change.
+
+## Thinking level
+
+`/thinking` opens the existing thinking-level picker for the current model.
+Choosing a level applies it, refreshes the footer and editor border, and shows
+`Thinking level: <level>`. Escape closes the picker without changing the level.
+
+`/thinking <level>` applies a supported level directly. Level names ignore case:
+`/thinking HIGH` selects `high`. An unknown or unsupported level changes nothing
+and shows `Unknown thinking level "<level>". Available levels: <levels>.`, listing
+only the current model's levels. A changed level is saved to the session and
+becomes the default, just as with the thinking-cycle shortcut or `/settings`.
+
+The command appears in autocomplete as `Set thinking level` with the `<level>`
+hint. The command name itself is case-sensitive; `/THINKING`, `/thinkingx` and
+`/thinking` followed by a tab and a level remain ordinary input.
 
 ## Editing the model scope
 

@@ -1,5 +1,6 @@
 //! Selector panels shown in place of the editor.
 use super::InteractiveMode;
+use crate::ThinkingSelectorComponent;
 use maestro_tui::Component;
 use std::{error::Error, rc::Rc};
 
@@ -7,6 +8,36 @@ use std::{error::Error, rc::Rc};
 pub(super) type Selector = (Rc<dyn Component>, Rc<dyn Component>);
 
 impl InteractiveMode {
+    /// Shows the current model's thinking levels; selection saves, cancellation only closes.
+    pub(super) fn show_thinking_selector(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+        self.show_selector(|done| {
+            let session = self.runtime_host.session();
+            let selected = Rc::clone(&done);
+            let mode = Rc::downgrade(self);
+            let cancelled = mode.clone();
+            let selector = Rc::new(ThinkingSelectorComponent::new(
+                session.thinking_level(),
+                session.get_available_thinking_levels(),
+                Rc::new(move |level| {
+                    let Some(mode) = mode.upgrade() else { return };
+                    let result = mode.select_thinking_level(level);
+                    selected();
+                    mode.report(result);
+                }),
+                Rc::new(move || {
+                    done();
+                    let Some(mode) = cancelled.upgrade() else {
+                        return;
+                    };
+                    mode.ui.request_render(false);
+                }),
+                self.themes.theme(),
+            ));
+            let focus = selector.get_select_list().clone();
+            Ok((selector, focus))
+        })
+    }
+
     /// Shows the panel `create` builds in place of the editor, focuses its target and
     /// requests a frame. `create` receives the completion that puts the editor back and
     /// focuses it, without requesting a frame or keeping the mode alive.
