@@ -26,6 +26,7 @@ inserts at its own place instead of appending at the end of each list.
 | File | Registers |
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
@@ -63,6 +64,8 @@ component. Both invoke its registered `before_agent_start` event handler:
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- commands_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- file_trigger_
@@ -97,6 +100,25 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 No provider, paid service or extension installation is required. Loading a
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the command listing example does
+
+`/commands` lists the slash commands the host supplies, grouped as Extensions,
+Prompts and Skills in that order. `/commands extension`, `/commands prompt` and
+`/commands skill` filter by that exact source; argument completion offers those
+three singular labels. An empty inventory or unmatched filter reports that no
+commands were found. Dismissing the selector or choosing a group heading does
+nothing else.
+
+Choosing a command with a nonempty source path opens a confirmation showing that
+path. Confirming also sends it as an informational notification; declining sends
+no notification. The extension reads only the host's command metadata and never
+opens a source file. It registers no built-in command and discovers no resources.
+
+Build it with the command above using `--example commands`. The controlled
+`commands_` runs need no provider, credentials or installation. Loading the built
+component is opt-in and needs a component-enabled host; browsing commands also
+needs that host's selector and confirmation UI.
 
 ### What the file trigger example does
 
