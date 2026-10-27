@@ -282,7 +282,10 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
     pub(super) fn extension_runtime(&self) -> E::Shared<maestro_extensions::ExtensionRuntime<E>> {
         let runtime = create_extension_runtime::<E>();
         runtime.set_host_operations(E::operation_handler(
-            crate::extension_operations::ExtensionOperations::new(self.settings_manager.clone()),
+            crate::extension_operations::ExtensionOperations::new(
+                self.settings_manager.clone(),
+                self.package_manager.clone(),
+            ),
             &self.options.local,
         ));
         if let Some(services) = &self.options.tool_construction {
