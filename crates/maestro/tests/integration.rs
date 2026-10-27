@@ -7,5 +7,6 @@ mod model_streams;
 mod native_io;
 mod qna_example;
 mod startup_modes;
+mod structured_output_example;
 mod support;
 pub mod tools_example;
