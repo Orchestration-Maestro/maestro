@@ -7,7 +7,7 @@ mod file_trigger_path;
 
 #[test]
 fn file_trigger_component_starts_a_turn_from_a_real_file_change() {
-    let mut trigger = file_trigger_path::Trigger::new();
+    let mut trigger = file_trigger_path::Trigger::new_in(std::path::Path::new("/tmp"));
     let root = Root::new();
     let provider = Provider::new();
     root.models(&provider.base);
@@ -42,12 +42,12 @@ fn file_trigger_component_starts_a_turn_from_a_real_file_change() {
             break;
         }
     }
-    assert_trigger(&mut rpc, &provider);
+    assert_trigger(&mut rpc, &provider, &trigger);
     rpc.finish();
 }
 
 /// Checks the persisted custom message, one real provider request and the cleared file.
-fn assert_trigger(rpc: &mut Rpc, provider: &Provider) {
+fn assert_trigger(rpc: &mut Rpc, provider: &Provider, trigger: &file_trigger_path::Trigger) {
     let messages = rpc.request(json!({"type":"get_messages"}));
     let messages = messages["messages"].as_array().unwrap();
     let custom: Vec<_> = messages
@@ -70,8 +70,5 @@ fn assert_trigger(rpc: &mut Rpc, provider: &Provider) {
             .contains("External trigger: Run the tests Ω")
     );
     drop(requests);
-    assert_eq!(
-        std::fs::read_to_string("/tmp/agent-trigger.txt").unwrap(),
-        ""
-    );
+    assert_eq!(std::fs::read_to_string(trigger.path()).unwrap(), "");
 }

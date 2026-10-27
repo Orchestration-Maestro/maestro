@@ -4103,6 +4103,7 @@ dependencies = [
  "maestro-json",
  "maestro-models",
  "maestro-request",
+ "maestro-test-directory",
  "maestro-tool",
  "regex",
  "ryu-js",

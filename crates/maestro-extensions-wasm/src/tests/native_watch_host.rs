@@ -72,3 +72,17 @@ impl host::HostFsWatcher for State {
         Ok(())
     }
 }
+
+impl super::host::Harness {
+    /// Delivers a controlled notification to a live component watch.
+    pub fn notify_watch(&mut self, _index: usize) -> ExtensionResult<()> {
+        let _ = self.observed();
+        Err("component watch delivery is unavailable".into())
+    }
+
+    /// Releases the component callbacks retired by closed watch resources.
+    pub fn release_watches(&mut self) -> impl std::future::Future<Output = ExtensionResult<()>> {
+        let _ = self.observed();
+        std::future::ready(Ok(()))
+    }
+}
