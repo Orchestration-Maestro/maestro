@@ -165,7 +165,10 @@ pub mod local {
     pub use maestro_tools::search::ls::local::create_ls_tool_definition;
     pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::tools::local::{ToolDef, ToolsOptions, create_tool_definition};
+    pub use maestro_tools::tools::local::{
+        ToolDef, ToolsOptions, create_all_tool_definitions, create_coding_tool_definitions,
+        create_read_only_tool_definitions, create_tool_definition,
+    };
     pub use maestro_tools::types::local::*;
     #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::write::local::create_write_tool_definition;

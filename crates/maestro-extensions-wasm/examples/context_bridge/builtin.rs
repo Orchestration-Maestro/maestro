@@ -31,17 +31,8 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
-    if let Some(request) = args.strip_prefix("builtin-unknown ") {
-        let result = super::builtin_factories::unknown(api, request);
-        return Some(Err(result.unwrap_or_else(std::convert::identity)));
-    }
-    if let Some(request) = args.strip_prefix("builtin-defaults ") {
-        let result = super::builtin_factories::defaults(api, request).await;
-        return Some(Err(result.unwrap_or_else(std::convert::identity)));
-    }
-    if let Some(request) = args.strip_prefix("builtin-wrapped ") {
-        let result = super::builtin_factories::wrapped(api, request).await;
-        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    if let Some(result) = factories_command(api, args).await {
+        return Some(result);
     }
     if let Some(request) = args.strip_prefix("builtin-progress ") {
         let result = super::builtin_progress::execute(api, context.clone(), request).await;
@@ -150,4 +141,25 @@ fn execute_read(
         }
         Err(serde_json::json!({"metadata":metadata(&tool)?, "prepares":tool.prepare_arguments.is_some(),"result":result}).to_string())
     })
+}
+
+/// Dispatches factory observations without executing unrelated filesystem commands.
+async fn factories_command(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<()>> {
+    if let Some(cwd) = args.strip_prefix("builtin-membership ") {
+        let result = super::builtin_factories::membership(api, cwd);
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    if let Some(request) = args.strip_prefix("builtin-unknown ") {
+        let result = super::builtin_factories::unknown(api, request);
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    if let Some(request) = args.strip_prefix("builtin-defaults ") {
+        let result = super::builtin_factories::defaults(api, request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    if let Some(request) = args.strip_prefix("builtin-wrapped ") {
+        let result = super::builtin_factories::wrapped(api, request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    None
 }

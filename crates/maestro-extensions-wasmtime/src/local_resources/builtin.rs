@@ -316,6 +316,14 @@ impl State {
 
 /// Native built-in operations share the original pump's admission and result owners.
 pub(crate) enum Operation {
+    /// Retains the original ordered native preset.
+    Preset(
+        u64,
+        super::builtin_selection::Preset,
+        String,
+        Box<super::builtin_selection::Options>,
+        std::sync::mpsc::Sender<Result<Vec<(super::builtin_selection::Name, Endpoint)>, String>>,
+    ),
     /// Constructs an independently retained original local backend.
     LocalShell(
         u64,
@@ -358,6 +366,9 @@ impl State {
     /// Dispatches one native built-in operation without adding another request receiver.
     pub(super) fn builtin_operation(&self, operation: Operation) {
         match operation {
+            Operation::Preset(api, preset, cwd, options, reply) => {
+                let _ = reply.send(self.registry.preset(api, preset, cwd, *options));
+            }
             Operation::LocalShell(api, shell_path, reply) => {
                 let _ = reply.send(self.registry.local_shell(api, shell_path));
             }

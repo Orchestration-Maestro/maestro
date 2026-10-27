@@ -32,6 +32,13 @@ struct Generated;
 
 impl Imports for Generated {
     forward_resources! { functions {
+        create_coding_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::Tool>> => builtin::selection::tool_list[host::ToolPreset::Coding, &cwd, options];
+        create_coding_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::ToolDef>> => builtin::selection::definition_list[host::ToolPreset::Coding, &cwd, options];
+        create_read_only_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::Tool>> => builtin::selection::tool_list[host::ToolPreset::ReadOnly, &cwd, options];
+        create_read_only_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<Vec<crate::ToolDef>> => builtin::selection::definition_list[host::ToolPreset::ReadOnly, &cwd, options];
+        create_all_tools(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> => builtin::selection::tools[host::ToolPreset::All, &cwd, options];
+        create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> => builtin::selection::definitions[host::ToolPreset::All, &cwd, options];
+
         create_tool(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::Tool> => builtin::selection::executable[tool_name, &cwd, options];
         create_tool_definition(tool_name: &str, cwd: String, options: crate::ToolsOptions) -> ExtensionResult<crate::ToolDef> => builtin::selection::definition[tool_name, &cwd, options];
         create_local_bash_operations(shell_path: Option<String>) -> ExtensionResult<crate::BashOperations> => builtin::local_operations[shell_path.as_deref()];

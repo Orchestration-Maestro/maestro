@@ -8,6 +8,7 @@ use std::{
     rc::Rc,
     sync::{Arc, RwLock},
 };
+use wasmtime::component::{ComponentType, Lift, Lower};
 
 /// Independently retained effects; unused options are dropped by the native selector.
 pub(crate) struct Options {
@@ -98,23 +99,23 @@ impl Registry {
                 services.tools_manager,
             )
             .map_err(|error| error.to_string())?;
-        Ok(retain(definition))
+        Ok(retain(definition).1)
     }
 }
 
 /// Erases only concrete argument/detail/state types, keeping the original native definition.
 fn retain(
     definition: maestro_extensions::local::ToolDef<crate::builtin_tools::Context>,
-) -> Rc<dyn crate::builtin_tools::Definition> {
+) -> (Name, Rc<dyn crate::builtin_tools::Definition>) {
     use maestro_extensions::local::ToolDef;
     match definition {
-        ToolDef::Read(tool) => Rc::new(RwLock::new(tool)),
-        ToolDef::Bash(tool) => Rc::new(RwLock::new(tool)),
-        ToolDef::Edit(tool) => Rc::new(RwLock::new(tool)),
-        ToolDef::Write(tool) => Rc::new(RwLock::new(tool)),
-        ToolDef::Grep(tool) => Rc::new(RwLock::new(tool)),
-        ToolDef::Find(tool) => Rc::new(RwLock::new(tool)),
-        ToolDef::Ls(tool) => Rc::new(RwLock::new(tool)),
+        ToolDef::Read(tool) => (Name::Read, Rc::new(RwLock::new(tool))),
+        ToolDef::Bash(tool) => (Name::Bash, Rc::new(RwLock::new(tool))),
+        ToolDef::Edit(tool) => (Name::Edit, Rc::new(RwLock::new(tool))),
+        ToolDef::Write(tool) => (Name::Write, Rc::new(RwLock::new(tool))),
+        ToolDef::Grep(tool) => (Name::Grep, Rc::new(RwLock::new(tool))),
+        ToolDef::Find(tool) => (Name::Find, Rc::new(RwLock::new(tool))),
+        ToolDef::Ls(tool) => (Name::Ls, Rc::new(RwLock::new(tool))),
     }
 }
 
@@ -131,6 +132,113 @@ impl crate::api_reads::Endpoint {
                 Factory::Selected(id, name, cwd, Box::new(options)),
                 reply,
             ))
+        })
+    }
+}
+
+/// Closed native preset selection; order remains with the native factories.
+#[derive(Clone, Copy, ComponentType, Lift)]
+#[component(enum)]
+#[repr(u8)]
+#[expect(
+    dead_code,
+    reason = "constructed by the Wasmtime Lift macro from wire values; host code only matches them"
+)]
+pub(crate) enum Preset {
+    /// Native coding preset.
+    #[component(name = "coding")]
+    Coding,
+    /// Native read-only preset.
+    #[component(name = "read-only")]
+    ReadOnly,
+    /// Every native built-in.
+    #[component(name = "all")]
+    All,
+}
+
+/// Binary transport of native built-in identity, independent of custom names.
+#[derive(Clone, Copy, ComponentType, Lower)]
+#[component(enum)]
+#[repr(u8)]
+pub(crate) enum Name {
+    /// Native read identity.
+    #[component(name = "read")]
+    Read,
+    /// Native shell identity.
+    #[component(name = "bash")]
+    Bash,
+    /// Native edit identity.
+    #[component(name = "edit")]
+    Edit,
+    /// Native write identity.
+    #[component(name = "write")]
+    Write,
+    /// Native content-search identity.
+    #[component(name = "grep")]
+    Grep,
+    /// Native file-search identity.
+    #[component(name = "find")]
+    Find,
+    /// Native listing identity.
+    #[component(name = "ls")]
+    Ls,
+}
+
+impl Registry {
+    /// Admits only the ordered collection the native preset returned.
+    pub(super) fn preset(
+        &self,
+        api: u64,
+        preset: Preset,
+        cwd: String,
+        options: Options,
+    ) -> Result<Vec<(Name, Endpoint)>, String> {
+        use maestro_extensions::local::{
+            create_all_tool_definitions, create_coding_tool_definitions,
+            create_read_only_tool_definitions,
+        };
+        let services = self.tool_construction(api)?;
+        let options = options.native(self, api)?;
+        let definitions = match preset {
+            Preset::Coding => create_coding_tool_definitions(
+                cwd,
+                options,
+                services.bin_dir,
+                services.tools_manager,
+            ),
+            Preset::ReadOnly => create_read_only_tool_definitions(
+                cwd,
+                options,
+                services.bin_dir,
+                services.tools_manager,
+            ),
+            Preset::All => {
+                create_all_tool_definitions(cwd, options, services.bin_dir, services.tools_manager)
+                    .into_values()
+                    .collect()
+            }
+        };
+        definitions
+            .into_iter()
+            .map(|definition| {
+                let (name, definition) = retain(definition);
+                self.insert(super::Capability::Builtin(definition))
+                    .map(|lease| (name, Endpoint(lease)))
+            })
+            .collect()
+    }
+}
+
+impl crate::api_reads::Endpoint {
+    /// Returns the original native preset through the same local pump.
+    pub(crate) fn create_preset(
+        &self,
+        preset: Preset,
+        cwd: String,
+        options: Options,
+    ) -> Result<Vec<(Name, Endpoint)>, String> {
+        self.0.request(|id, reply| {
+            Message::BuiltinOperation(Operation::Preset(id, preset, cwd, Box::new(options), reply))
         })
     }
 }

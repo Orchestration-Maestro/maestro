@@ -13,6 +13,49 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_coding_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        self.0.create_coding_tools(cwd, options)
+    }
+    fn create_coding_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        self.0.create_coding_tool_definitions(cwd, options)
+    }
+    fn create_read_only_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        self.0.create_read_only_tools(cwd, options)
+    }
+    fn create_read_only_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        self.0.create_read_only_tool_definitions(cwd, options)
+    }
+    fn create_all_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> {
+        self.0.create_all_tools(cwd, options)
+    }
+    fn create_all_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> {
+        self.0.create_all_tool_definitions(cwd, options)
+    }
+
     fn create_tool(
         &self,
         tool_name: &str,

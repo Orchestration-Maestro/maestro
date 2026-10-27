@@ -263,3 +263,26 @@ fn builtin_unknown_names_preserve_the_original_spelling() {
         );
     });
 }
+
+/// Ordered observations reject swapped or sorted presets and preserve all seven selectors.
+#[test]
+fn builtin_factories_preserve_membership_and_order() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let names = ["read", "bash", "edit", "write", "grep", "find", "ls"];
+        let keys = ["Read", "Bash", "Edit", "Write", "Grep", "Find", "Ls"];
+        let pairs: Vec<_> = names.iter().map(|name| json!([name,name])).collect();
+        let keyed: Vec<_> = keys.iter().zip(names).map(|(key,name)| json!([key,name])).collect();
+        let expected = json!({"individual":pairs,"selected":pairs,"coding":["read","bash","edit","write"],"codingDefinitions":["read","bash","edit","write"],"readOnly":["read","grep","find","ls"],"readOnlyDefinitions":["read","grep","find","ls"],"all":keyed,"allDefinitions":keyed,"names":keys});
+        for cwd in ["", "relative/../雪", "./a/..", "/absent-factory-root", "C:\\Tools\\雪"] {
+            let result = (command.handler)(format!("builtin-membership {cwd}"), runner.create_command_context()).await;
+            let observed: Value = serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+            assert_eq!(observed, expected, "cwd={cwd:?}");
+        }
+    });
+}

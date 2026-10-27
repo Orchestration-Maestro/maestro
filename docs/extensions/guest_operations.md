@@ -27,6 +27,14 @@ selected tool. Selection is native-owned and accepts exactly `read`, `bash`,
 `Unknown tool name: <original name>` without invoking supplied operations.
 This restriction does not apply to custom names assigned before registration.
 
+`create_coding_tools` and `create_coding_tool_definitions` return read, bash,
+edit and write in that order. `create_read_only_tools` and
+`create_read_only_tool_definitions` return read, grep, find and ls.
+`create_all_tools` and `create_all_tool_definitions` return an `IndexMap` keyed
+by `ToolName`, in `ALL_TOOL_NAMES` order. These forms delegate membership and
+ordering to the native presets; they keep the same per-tool options and owned
+callbacks as the individual factories.
+
 ## Wrap and register a read definition
 
 ```rust

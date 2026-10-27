@@ -818,6 +818,14 @@ impl host::Host for State {
     ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
         wasmtime::bail!("built-in tools require the production host")
     }
+    fn create_tool_preset(
+        &mut self,
+        _: host::ToolPreset,
+        _: String,
+        _: host::ToolFactoryOptions,
+    ) -> wasmtime::Result<Result<Vec<(host::ToolName, Resource<BuiltinTool>)>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
     fn create_tool(
         &mut self,
         _: String,

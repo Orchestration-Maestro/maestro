@@ -31,6 +31,26 @@ interface host {
         ls-operations: option<borrow<callback>>,
         spawn-hook: option<borrow<callback>>,
     }
+    /// Closed built-in identities; custom registered names remain ordinary strings.
+    enum tool-name {
+        /// Native read identity.
+        read,
+        /// Native shell identity.
+        bash,
+        /// Native edit identity.
+        edit,
+        /// Native write identity.
+        write,
+        /// Native content-search identity.
+        grep,
+        /// Native file-search identity.
+        find,
+        /// Native listing identity.
+        ls,
+    }
+    /// Native ordered factory families.
+    enum tool-preset { coding, read-only, all }
+    create-tool-preset: func(preset: tool-preset, cwd: string, options: tool-factory-options) -> result<list<tuple<tool-name, builtin-tool>>, string>;
     /// Exact names are selected by the native tools owner.
     create-tool: func(name: string, cwd: string, options: tool-factory-options) -> result<builtin-tool, string>;
     /// Original native local backend, independent of the factory facade and its callers.

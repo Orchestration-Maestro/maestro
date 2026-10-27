@@ -6,7 +6,8 @@
 )]
 use maestro_extensions_wasm::{
     BashToolOptions, EditToolOptions, ExtensionAPI, ExtensionResult, FindToolOptions,
-    GrepToolOptions, LsToolOptions, ReadToolOptions, Tool, ToolDefinition, WriteToolOptions,
+    GrepToolOptions, LsToolOptions, ReadToolOptions, Tool, ToolDefinition, ToolsOptions,
+    WriteToolOptions,
 };
 use serde_json::{Value, json};
 
@@ -121,4 +122,50 @@ pub(super) fn unknown(api: &ExtensionAPI, request: &str) -> ExtensionResult<Stri
     custom.metadata.name = "custom 雪".into();
     api.register_tool(custom)?;
     Ok(json!({"errors": errors, "effects": *effects.borrow()}).to_string())
+}
+
+/// Observes ordered identities from every individual, selector and preset form.
+pub(super) fn membership(api: &ExtensionAPI, cwd: &str) -> ExtensionResult<String> {
+    let individual: Vec<_> = individual(api, cwd)?
+        .into_iter()
+        .map(|(tool, definition)| json!([tool.name, definition.metadata.name]))
+        .collect();
+    let mut selected = Vec::new();
+    for name in ["read", "bash", "edit", "write", "grep", "find", "ls"] {
+        selected.push(json!([
+            api.create_tool(name, cwd.into(), ToolsOptions::default())?
+                .name,
+            api.create_tool_definition(name, cwd.into(), ToolsOptions::default())?
+                .metadata
+                .name
+        ]));
+    }
+    let mut observation = presets(api, cwd)?;
+    observation["individual"] = json!(individual);
+    observation["selected"] = json!(selected);
+    observation["names"] =
+        json!(maestro_extensions_wasm::ALL_TOOL_NAMES.map(|name| format!("{name:?}")));
+    Ok(observation.to_string())
+}
+
+/// Keeps ordered observations from both list and keyed native preset returns.
+fn presets(api: &ExtensionAPI, cwd: &str) -> ExtensionResult<Value> {
+    Ok(json!({
+        "coding": tool_names(api.create_coding_tools(cwd.into(), ToolsOptions::default())?),
+        "codingDefinitions": definition_names(api.create_coding_tool_definitions(cwd.into(), ToolsOptions::default())?),
+        "readOnly": tool_names(api.create_read_only_tools(cwd.into(), ToolsOptions::default())?),
+        "readOnlyDefinitions": definition_names(api.create_read_only_tool_definitions(cwd.into(), ToolsOptions::default())?),
+        "all": api.create_all_tools(cwd.into(), ToolsOptions::default())?.into_iter().map(|(key, tool)| json!([format!("{key:?}"),tool.name])).collect::<Vec<_>>(),
+        "allDefinitions": api.create_all_tool_definitions(cwd.into(), ToolsOptions::default())?.into_iter().map(|(key, tool)| json!([format!("{key:?}"),tool.metadata.name])).collect::<Vec<_>>(),
+    }))
+}
+
+/// Projects executable names without sorting or set comparison.
+fn tool_names(tools: Vec<Tool>) -> Vec<String> {
+    tools.into_iter().map(|tool| tool.name).collect()
+}
+
+/// Projects definition names without sorting or set comparison.
+fn definition_names(tools: Vec<ToolDefinition>) -> Vec<String> {
+    tools.into_iter().map(|tool| tool.metadata.name).collect()
 }

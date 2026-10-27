@@ -3,6 +3,55 @@
 /// Declares native factories without creating a second adapter trait.
 macro_rules! builtin_tool_imports {
     () => {
+        /// Returns the native coding preset without reordering.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_coding_tools(
+            &self,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<Vec<crate::Tool>>;
+        /// Returns the native coding preset without reordering.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_coding_tool_definitions(
+            &self,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<Vec<crate::ToolDef>>;
+        /// Returns the native read-only preset without reordering.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_read_only_tools(
+            &self,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<Vec<crate::Tool>>;
+        /// Returns the native read-only preset without reordering.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_read_only_tool_definitions(
+            &self,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<Vec<crate::ToolDef>>;
+        /// Returns the native all preset without reordering.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_all_tools(
+            &self,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>>;
+        /// Returns the native all preset without reordering.
+        /// # Errors
+        /// Returns native construction or resource admission failures.
+        fn create_all_tool_definitions(
+            &self,
+            cwd: String,
+            options: crate::ToolsOptions,
+        ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>>;
+
         /// Selects an original native executable without normalizing its name.
         /// # Errors
         /// Returns native selection or admission failures.

@@ -34,6 +34,16 @@ pub(crate) fn definition(
 
 /// Borrows independently staged capabilities for one native factory admission.
 fn native(name: &str, cwd: &str, options: ToolsOptions) -> ExtensionResult<Rc<host::BuiltinTool>> {
+    Ok(Rc::new(with_options(options, |controls| {
+        host::create_tool(name, cwd, controls)
+    })?))
+}
+
+/// Stages one set of options for either native factory-return shape.
+fn with_options<T>(
+    options: ToolsOptions,
+    call: impl FnOnce(&host::ToolFactoryOptions<'_>) -> ExtensionResult<T>,
+) -> ExtensionResult<T> {
     let callbacks = [
         stage(options.read.operations),
         stage(options.bash.operations),
@@ -62,11 +72,11 @@ fn native(name: &str, cwd: &str, options: ToolsOptions) -> ExtensionResult<Rc<ho
         ls_operations: handles[6],
         spawn_hook: handles[7],
     };
-    let tool = host::create_tool(name, cwd, &controls);
+    let tool = call(&controls);
     for identity in callbacks.into_iter().flatten() {
         identity.settle(tool.is_ok());
     }
-    Ok(Rc::new(tool?))
+    tool
 }
 
 /// Uses the callback table's existing rollback and release policy for each supplied effect.
@@ -76,4 +86,64 @@ fn stage(value: Option<impl Stored>) -> Option<Identity<Generated>> {
         identity.stage(value);
         identity
     })
+}
+
+/// Keeps native insertion order while projecting context-free execution.
+pub(crate) fn tools(
+    preset: host::ToolPreset,
+    cwd: &str,
+    options: ToolsOptions,
+) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> {
+    with_options(options, |controls| {
+        host::create_tool_preset(preset, cwd, controls)
+    })?
+    .into_iter()
+    .map(|(name, tool)| {
+        let name = crate::ToolName::from(name);
+        let tool = Rc::new(tool);
+        let prepare = (name == crate::ToolName::Edit).then(|| super::prepare(tool.clone()));
+        let mut executable = super::executable(tool)?;
+        executable.prepare_arguments = prepare;
+        Ok((name, executable))
+    })
+    .collect()
+}
+
+/// Keeps native insertion order, model observation and preparation on each definition.
+pub(crate) fn definitions(
+    preset: host::ToolPreset,
+    cwd: &str,
+    options: ToolsOptions,
+) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> {
+    with_options(options, |controls| {
+        host::create_tool_preset(preset, cwd, controls)
+    })?
+    .into_iter()
+    .map(|(name, tool)| {
+        let name = crate::ToolName::from(name);
+        let tool = Rc::new(tool);
+        let prepare = (name == crate::ToolName::Edit).then(|| super::prepare(tool.clone()));
+        let mut definition = super::definition(tool, name == crate::ToolName::Read)?;
+        definition.prepare_arguments = prepare;
+        Ok((name, definition))
+    })
+    .collect()
+}
+
+/// Projects ordered vectors from the same native keyed return, without a membership list.
+pub(crate) fn tool_list(
+    preset: host::ToolPreset,
+    cwd: &str,
+    options: ToolsOptions,
+) -> ExtensionResult<Vec<crate::Tool>> {
+    Ok(tools(preset, cwd, options)?.into_values().collect())
+}
+
+/// Projects ordered definition vectors without reconstructing preset membership.
+pub(crate) fn definition_list(
+    preset: host::ToolPreset,
+    cwd: &str,
+    options: ToolsOptions,
+) -> ExtensionResult<Vec<crate::ToolDef>> {
+    Ok(definitions(preset, cwd, options)?.into_values().collect())
 }

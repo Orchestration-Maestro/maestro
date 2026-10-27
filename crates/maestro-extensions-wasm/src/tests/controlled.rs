@@ -518,6 +518,49 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    fn create_coding_tools(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_coding_tool_definitions(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_read_only_tools(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_read_only_tool_definitions(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_all_tools(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> {
+        Err("built-in tools require the production host".into())
+    }
+    fn create_all_tool_definitions(
+        &self,
+        _: String,
+        _: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> {
+        Err("built-in tools require the production host".into())
+    }
+
     fn create_tool(
         &self,
         _: &str,

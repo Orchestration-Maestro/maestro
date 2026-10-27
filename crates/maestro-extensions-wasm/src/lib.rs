@@ -21,15 +21,15 @@ mod bash_executor;
 pub mod tools;
 pub use bash_executor::*;
 pub use tools::{
-    BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations, BashSpawnContext,
-    BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, DEFAULT_MAX_BYTES,
-    DEFAULT_MAX_LINES, DetectImageMimeType, EditOperations, EditToolDetails, EditToolInput,
-    EditToolOptions, FindGlobOptions, FindOperations, FindToolDetails, FindToolInput,
-    FindToolOptions, GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, LsOperations,
-    LsToolDetails, LsToolInput, LsToolOptions, OperationFuture, ReadOperations, ReadToolDetails,
-    ReadToolInput, ReadToolOptions, ReplaceEdit, ToolDef, ToolsOptions, TruncationLimit,
-    TruncationOptions, TruncationResult, WriteOperations, WriteToolInput, WriteToolOptions,
-    format_size, truncate_head, truncate_line, truncate_tail,
+    ALL_TOOL_NAMES, BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations,
+    BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
+    DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, DetectImageMimeType, EditOperations, EditToolDetails,
+    EditToolInput, EditToolOptions, FindGlobOptions, FindOperations, FindToolDetails,
+    FindToolInput, FindToolOptions, GrepOperations, GrepToolDetails, GrepToolInput,
+    GrepToolOptions, LsOperations, LsToolDetails, LsToolInput, LsToolOptions, OperationFuture,
+    ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, ReplaceEdit, ToolDef,
+    ToolName, ToolsOptions, TruncationLimit, TruncationOptions, TruncationResult, WriteOperations,
+    WriteToolInput, WriteToolOptions, format_size, truncate_head, truncate_line, truncate_tail,
 };
 #[doc(hidden)]
 pub mod bindings;

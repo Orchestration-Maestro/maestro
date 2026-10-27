@@ -45,34 +45,65 @@ struct Options {
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
+    add_preset(host)?;
     host.func_wrap(
         "create-tool",
         |mut store: StoreContextMut<'_, T>, (name, cwd, options): (String, String, Options)| {
-            let mut retain = |callback: Option<Resource<Callback>>| {
-                callback
-                    .as_ref()
-                    .map(|callback| {
-                        crate::callback_imports::borrowed_object(store.data_mut(), callback)
-                    })
-                    .transpose()
-            };
-            let options = crate::local_resources::builtin_selection::Options {
-                read_resize: options.read_auto_resize_images,
-                read: retain(options.read)?,
-                bash: crate::local_resources::builtin_bash::Options {
-                    controls: options.bash_controls,
-                    operations: retain(options.bash)?,
-                    hook: retain(options.hook)?,
-                },
-                edit: retain(options.edit)?,
-                write: retain(options.write)?,
-                grep: retain(options.grep)?,
-                find: retain(options.find)?,
-                ls: retain(options.ls)?,
-            };
+            let options = retain_options(store.data_mut(), options)?;
             let result = store.data().api().create_selected(name, cwd, options);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
+                Err(error) => Err(error),
+            };
+            Ok((result,))
+        },
+    )
+}
+
+/// Retains borrowed observations identically for named and preset admissions.
+fn retain_options<T: CallbackView>(
+    store: &mut T,
+    options: Options,
+) -> wasmtime::Result<crate::local_resources::builtin_selection::Options> {
+    let mut retain = |callback: Option<Resource<Callback>>| {
+        callback
+            .as_ref()
+            .map(|callback| crate::callback_imports::borrowed_object(store, callback))
+            .transpose()
+    };
+    Ok(crate::local_resources::builtin_selection::Options {
+        read_resize: options.read_auto_resize_images,
+        read: retain(options.read)?,
+        bash: crate::local_resources::builtin_bash::Options {
+            controls: options.bash_controls,
+            operations: retain(options.bash)?,
+            hook: retain(options.hook)?,
+        },
+        edit: retain(options.edit)?,
+        write: retain(options.write)?,
+        grep: retain(options.grep)?,
+        find: retain(options.find)?,
+        ls: retain(options.ls)?,
+    })
+}
+
+/// Installs the native ordered preset return without projecting keys through JSON.
+fn add_preset<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "create-tool-preset",
+        |mut store: StoreContextMut<'_, T>,
+         (preset, cwd, options): (
+            crate::local_resources::builtin_selection::Preset,
+            String,
+            Options,
+        )| {
+            let options = retain_options(store.data_mut(), options)?;
+            let result = store.data().api().create_preset(preset, cwd, options);
+            let result = match result {
+                Ok(tools) => Ok(tools
+                    .into_iter()
+                    .map(|(name, tool)| Ok((name, store.data_mut().ctx().table.push(tool)?)))
+                    .collect::<wasmtime::Result<Vec<_>>>()?),
                 Err(error) => Err(error),
             };
             Ok((result,))
