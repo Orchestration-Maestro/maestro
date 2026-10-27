@@ -1691,7 +1691,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
 }
 
 #[test]
-fn maestro_codeql_scans_main_weekly_and_on_demand() {
+fn maestro_codeql_scans_only_main_and_weekly() {
     let workflow = fs::read_to_string(
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),
     )
@@ -1704,8 +1704,9 @@ fn maestro_codeql_scans_main_weekly_and_on_demand() {
         .filter(|line| !line.starts_with("   "))
         .map(str::trim)
         .collect();
-    assert_eq!(triggers, ["push:", "schedule:", "workflow_dispatch:"]);
+    assert_eq!(triggers, ["push:", "schedule:"]);
     assert!(workflow.contains("\n  push:\n    branches: [main]\n"));
+    assert!(workflow.contains("\n  schedule:\n    - cron: \"17 4 * * 1\""));
     let languages: Vec<&str> = workflow
         .lines()
         .filter_map(|line| line.trim().strip_prefix("- language: "))
