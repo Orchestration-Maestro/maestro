@@ -40,9 +40,62 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
     }
 }
 
+/// Spells a native path the way a component's standard library opens it.
+///
+/// The component's libc treats only `/` as a separator and only a leading `/`
+/// as absolute. The host names each filesystem root it exposes with this same
+/// spelling. Unix paths already have it and stay unchanged.
+#[must_use]
+pub fn guest_path(path: &str) -> String {
+    if cfg!(windows) {
+        win32_guest_path(path)
+    } else {
+        path.to_owned()
+    }
+}
+
+/// The Windows spelling, kept apart so every host checks it.
+fn win32_guest_path(path: &str) -> String {
+    path.to_owned()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::call;
+    use super::{call, win32_guest_path};
+
+    /// Windows drive, share and verbatim paths reach the component's roots.
+    #[test]
+    fn windows_paths_take_the_component_spelling() {
+        for (native, guest) in [
+            (r"C:\Users\me\file Ω name", "/C:/Users/me/file Ω name"),
+            ("C:/Users/me", "/C:/Users/me"),
+            (r"d:\data", "/D:/data"),
+            (r"C:\", "/C:/"),
+            (r"\\?\C:\Users\me", "/C:/Users/me"),
+            (r"\\server\share\dir", "/server/share/dir"),
+            (r"\\?\UNC\server\share\dir", "/server/share/dir"),
+            ("//server/share", "/server/share"),
+            (r"..\sibling\file", "../sibling/file"),
+            ("relative/file", "relative/file"),
+        ] {
+            assert_eq!(win32_guest_path(native), guest, "{native:?}");
+        }
+    }
+
+    /// The helper route returns the running host's spelling.
+    #[test]
+    fn guest_path_helper_uses_the_host_spelling() {
+        let (native, guest) = if cfg!(windows) {
+            (r"C:\work\a b", "/C:/work/a b")
+        } else {
+            (r"/work/a\b", r"/work/a\b")
+        };
+        let data = serde_json::to_string(&(native,)).unwrap();
+        assert_eq!(
+            call("paths.guest_path", &data),
+            Ok(serde_json::to_string(guest).unwrap())
+        );
+    }
 
     /// Basename uses the native path flavor for roots and trailing separators.
     #[test]
