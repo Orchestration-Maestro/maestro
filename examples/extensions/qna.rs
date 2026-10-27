@@ -45,7 +45,7 @@ const CHANNEL: &str = "maestro.example.qna";
 struct Extraction {
     /// Work owned by this view, never by its synchronous factory callback.
     running: Option<ExtensionFuture<'static, ()>>,
-    /// The event tail to wake when disposal removes its work.
+    /// Wakes the event tail; disposal clears it even while work is being polled.
     waker: Option<Waker>,
 }
 /// The command and its event listener share one cancellable slot.
@@ -69,17 +69,28 @@ fn listener(pending: Pending) -> EventListener {
             return Ok(None);
         };
         Ok(Some(Box::pin(poll_fn(move |cx| {
+            let running = {
+                let mut extraction = current.borrow_mut();
+                extraction.waker = Some(cx.waker().clone());
+                extraction.running.take()
+            };
+            let Some(mut running) = running else {
+                current.borrow_mut().waker = None;
+                return Poll::Ready(Ok(()));
+            };
+            // Closing can cancel this slot while the future is being polled.
+            let result = running.as_mut().poll(cx);
             let mut extraction = current.borrow_mut();
-            extraction.waker = Some(cx.waker().clone());
-            let result = extraction
-                .running
-                .as_mut()
-                .map_or(Poll::Ready(Ok(())), |running| running.as_mut().poll(cx));
-            if result.is_ready() {
-                extraction.running = None;
+            if result.is_pending() && extraction.waker.is_some() {
+                extraction.running = Some(running);
+                Poll::Pending
+            } else {
                 extraction.waker = None;
+                match result {
+                    Poll::Ready(result) => Poll::Ready(result),
+                    Poll::Pending => Poll::Ready(Ok(())),
+                }
             }
-            result
         }))))
     })
 }
@@ -176,7 +187,11 @@ async fn extract(
     )
     .await?;
     let response = response.read().map_err(|error| error.to_string())?;
-    Ok((response.stop_reason != StopReason::Aborted).then(|| text_output(&response.content)))
+    Ok((!matches!(
+        response.stop_reason,
+        StopReason::Aborted | StopReason::Error
+    ))
+    .then(|| text_output(&response.content)))
 }
 
 /// Builds the cancellable loader and starts its independently owned extraction.
