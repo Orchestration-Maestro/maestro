@@ -38,6 +38,9 @@ requires Git and a committed repository, and approving a restore can change
 tracked files or leave conflicts. `extensions/snake.rs` opens a custom Snake game
 with keyboard controls, timed movement and saved games in session entries; its
 index gives the build/run commands and interactive-host prerequisites.
+`extensions/rainbow_editor.rs` replaces the editor with one that animates a
+rainbow shine over `ultrathink`; its controlled run is listed in the extension
+index.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
