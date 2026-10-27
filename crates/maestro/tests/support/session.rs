@@ -12,6 +12,7 @@ pub async fn component_session(
     local: Rc<tokio::task::LocalSet>,
     component: String,
     no_tools: Option<NoTools>,
+    widgets: Rc<dyn maestro_app::ExtensionWidgets>,
 ) -> Rc<AgentSession> {
     let mut resources =
         ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
@@ -19,7 +20,7 @@ pub async fn component_session(
         .extension_factories
         .push(maestro_extensions_wasmtime::artifact_factory(
             component,
-            super::widgets(),
+            widgets,
             maestro_extensions_wasmtime::Installation {
                 version: env!("CARGO_PKG_VERSION").into(),
                 agent_dir: root.path("agent").display().to_string(),
