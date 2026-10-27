@@ -32,7 +32,7 @@ pub(super) async fn operate(request: &Value) -> Result<Value, String> {
     } else {
         let result = asynchronous(path, bytes, write).await;
         Ok(result.map_or_else(
-            |error| json!({"error":asynchronous_error(error)}),
+            |error| json!({"error":asynchronous_error(&error),"code":format!("{error:?}")}),
             |bytes| json!({"bytes":bytes}),
         ))
     }
@@ -101,7 +101,7 @@ fn ordinary_error(error: &std::io::Error) -> String {
 }
 
 /// The corresponding native asynchronous error distinctions.
-fn asynchronous_error(error: ErrorCode) -> String {
+fn asynchronous_error(error: &ErrorCode) -> String {
     match error {
         ErrorCode::NoEntry => "not-found".into(),
         ErrorCode::Access | ErrorCode::NotPermitted => "permission-denied".into(),
