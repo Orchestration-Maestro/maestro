@@ -32,8 +32,7 @@ fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
 }
 
 #[cfg(unix)]
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
@@ -564,7 +563,7 @@ fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("setup_entry")
+    maestro_test_process::TestProcess::named("daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -738,7 +737,7 @@ fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
     config.terminal.default_shell = "/bin/sh".into();
     config.terminal.new_cwd =
         maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into());
-    let args = maestro_test_process::TestProcess::named("setup_entry")
+    let args = maestro_test_process::TestProcess::named("daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

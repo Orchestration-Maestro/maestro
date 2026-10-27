@@ -1,5 +1,7 @@
 //! Termination signal delivery of the running process.
 use maestro_app::TerminationSignal;
+#[cfg(unix)]
+use maestro_app::register_signals;
 use maestro_app::rpc_mode::RpcProcessPort;
 use std::{io, rc::Rc};
 
@@ -14,31 +16,7 @@ impl RpcProcessPort for NativeRpcProcess {
         &self,
         callback: Rc<dyn Fn(TerminationSignal)>,
     ) -> io::Result<Box<dyn Fn()>> {
-        use tokio::signal::unix::{SignalKind, signal};
-        let signals = [TerminationSignal::Terminate, TerminationSignal::Hangup];
-        let defaults = maestro_app::DefaultSignalActions::new(&signals)?;
-        let mut deliveries = Vec::new();
-        for kind in signals {
-            let received = signal(SignalKind::from_raw(kind.as_raw()))?;
-            let delivery = deliver(received, kind, Rc::clone(&callback));
-            deliveries.push(tokio::task::spawn_local(delivery));
-        }
-        Ok(Box::new(move || {
-            defaults.restore();
-            deliveries.iter().for_each(tokio::task::JoinHandle::abort);
-        }))
-    }
-}
-
-/// Calls `callback` with `kind` each time the signal arrives.
-#[cfg(unix)]
-async fn deliver(
-    mut received: tokio::signal::unix::Signal,
-    kind: TerminationSignal,
-    callback: Rc<dyn Fn(TerminationSignal)>,
-) {
-    while received.recv().await.is_some() {
-        callback(kind);
+        register_signals(callback)
     }
 }
 

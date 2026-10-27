@@ -42,7 +42,7 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 #     fn start(&mut self, _: Box<dyn FnMut(&str)>, _: Box<dyn FnMut()>) -> io::Result<()> { Ok(()) }
 #     fn stop(&mut self) -> io::Result<()> { Ok(()) }
 #     fn drain_input(&mut self, _: Option<Duration>, _: Option<Duration>)
-#         -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> { Box::pin(async { Ok(()) }) }
+#         -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> { Box::pin(async { Ok(()) }) }
 #     fn write(&mut self, data: &str) -> io::Result<()> { self.0.borrow_mut().push(data.to_owned()); Ok(()) }
 #     fn columns(&self) -> usize { 12 }
 #     fn rows(&self) -> usize { 4 }
@@ -195,6 +195,10 @@ whoever drives the host. A component may request another frame while it renders;
 request is kept and queued after the current frame. `stop` cancels the pending frame,
 including the immediate one a forced request queued, and forgets any request, so
 `start` after a `stop` draws again, and requests made while stopped are dropped.
+`render_pending_frame` draws the frame a pending request asked for and consumes that
+request without queueing another, and it draws nothing while the writer is stopped.
+Backed-up output does not defer that frame: a caller that stops the writer next still
+shows its last change, and the stop drains the bytes it wrote.
 
 The terminal's resize callback makes this same ordinary request and holds the writer only
 weakly, so it never keeps a dropped writer alive.

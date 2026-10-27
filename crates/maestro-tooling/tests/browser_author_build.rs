@@ -182,22 +182,26 @@ fn browser_compile_watch_starts_no_server() {
 
 #[test]
 fn browser_check_repairs_formatting() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser.workspace_sources();
-    for path in [
+    let sources = [
         browser.fixture("src/main.rs"),
         browser.path("crates/maestro-web/src/lib.rs"),
-    ] {
+    ]
+    .map(|path| {
         let original = fs::read_to_string(&path).unwrap();
         fs::write(&path, format!("\n\n{original}")).unwrap();
-        success(&browser.run("browser-check"));
+        (path, original)
+    });
+    success(&browser.run("browser-check"));
+    for (path, original) in sources {
         assert_eq!(fs::read_to_string(path).unwrap(), original);
     }
 }
 
 #[test]
 fn browser_checks_reject_invalid_sources() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser.workspace_sources();
     success(&browser.run("browser-check"));
     for (path, invalid) in [
@@ -656,7 +660,7 @@ fn browser_debug_build_keeps_source_locations() {
 
 #[test]
 fn browser_assets_follow_relative_selected_identity() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     for (pack, body) in [
         ("assets/brand/brand.json", "Barlow"),
         ("assets/brand/packs/signal.json", "Space Grotesk"),
@@ -1276,7 +1280,7 @@ fn assert_ignored_event(receive: &std::sync::mpsc::Receiver<String>, path: &str)
 #[test]
 #[cfg(target_os = "linux")]
 fn browser_author_native_hook_preserves_overrides_environment_and_failure() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser_support::bootstrap_source(&browser);
     fs::create_dir(browser.fixture("scripts")).unwrap();
     let script = browser.path("hook-source");
@@ -1394,7 +1398,7 @@ fn browser_author_hook_status_propagates() {
 
 #[test]
 fn browser_author_check_preserves_adjacent_locks() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     let before = browser_support::authored(&browser);
     success(&browser.run("browser-example-check"));
     assert_eq!(browser_support::authored(&browser), before);
@@ -1474,7 +1478,7 @@ fn browser_author_trunk_rejects_stale_lock_without_writes() {
 
 #[test]
 fn browser_author_included_files_rebuild_without_source_changes() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser_support::bootstrap_source(&browser);
     let source = fs::read(browser.fixture("src/main.rs")).unwrap();
     success(&browser.run("browser-library-build"));
@@ -1616,14 +1620,33 @@ fn assert_fixture_independent(browser: &Browser) {
 #[test]
 fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
+    drop(Browser::cold());
     browser_support::bootstrap_source(&browser);
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let target = root.join("target/browser-author-tests");
+    let command = browser.command("browser-debug-build");
+    let target = std::path::PathBuf::from(
+        command
+            .get_envs()
+            .find(|(key, _)| *key == "CARGO_TARGET_DIR")
+            .unwrap()
+            .1
+            .unwrap(),
+    );
+    assert_eq!(
+        target.canonicalize().unwrap(),
+        std::path::Path::new(env!("CARGO_BIN_EXE_development"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .canonicalize()
+            .unwrap(),
+        "warm browser recipes must reuse the test build's actual Cargo target"
+    );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
     success(
         &toolchain_support::command(env!("CARGO"))
-            .current_dir(&root)
+            .current_dir(browser.workspace.path())
             .args(["build", "--locked", "-p", "maestro-tooling", "--bins"])
             .env("CARGO_TARGET_DIR", &target)
             .output()
@@ -1659,7 +1682,7 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
 
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
-    let browser = Browser::new();
+    let browser = Browser::cold();
     browser_support::bootstrap_source(&browser);
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);

@@ -339,7 +339,7 @@ fn normalized_sources_keep_duplicate_locations() {
     let path = workspace
         .root
         .path()
-        .join("crates/maestro-settings/src/lib.rs");
+        .join(support::native_path("crates/maestro-settings/src/lib.rs"));
     let body = "let _ = 1;".repeat(6);
     std::fs::write(
         &path,

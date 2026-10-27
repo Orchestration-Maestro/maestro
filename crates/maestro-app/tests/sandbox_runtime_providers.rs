@@ -304,29 +304,35 @@ use maestro_app::browser::utils::attachment_utils::{Attachment, AttachmentType};
 use std::sync::RwLock;
 
 /// Source attachments with duplicate identifiers and distinct selected fields.
-fn attachments() -> Arc<RwLock<Vec<Attachment>>> {
-    Arc::new(RwLock::new(vec![
-        Attachment {
-            id: "same".into(),
-            r#type: AttachmentType::Image,
-            file_name: "image.png".into(),
-            mime_type: "image/png".into(),
-            size: 4,
-            content: "AAH/gA==".into(),
-            extracted_text: None,
-            preview: Some("preview".into()),
-        },
-        Attachment {
-            id: "same".into(),
-            r#type: AttachmentType::Document,
-            file_name: "text.txt".into(),
-            mime_type: "text/plain".into(),
-            size: 0,
-            content: String::new(),
-            extracted_text: Some(String::new()),
-            preview: None,
-        },
-    ]))
+fn attachments() -> Arc<RwLock<Vec<maestro_app::browser::utils::attachment_utils::SharedAttachment>>>
+{
+    Arc::new(RwLock::new(
+        vec![
+            Attachment {
+                id: "same".into(),
+                r#type: AttachmentType::Image,
+                file_name: "image.png".into(),
+                mime_type: "image/png".into(),
+                size: 4,
+                content: "AAH/gA==".into(),
+                extracted_text: None,
+                preview: Some("preview".into()),
+            },
+            Attachment {
+                id: "same".into(),
+                r#type: AttachmentType::Document,
+                file_name: "text.txt".into(),
+                mime_type: "text/plain".into(),
+                size: 0,
+                content: String::new(),
+                extracted_text: Some(String::new()),
+                preview: None,
+            },
+        ]
+        .into_iter()
+        .map(|value| Arc::new(RwLock::new(value)))
+        .collect(),
+    ))
 }
 
 #[test]
@@ -381,8 +387,8 @@ fn attachment_owner_reads_live_input_and_returns_snapshots() {
     let before = provider.get_data().unwrap();
     {
         let mut list = input.write().unwrap();
-        list[0].file_name = "changed.png".into();
-        list[0].extracted_text = Some("decoded text".into());
+        list[0].write().unwrap().file_name = "changed.png".into();
+        list[0].write().unwrap().extracted_text = Some("decoded text".into());
         let next = list[1].clone();
         list.push(next);
     }
@@ -523,6 +529,11 @@ impl Retained {
         }
     }
 }
+thread_local! {
+    /// One-shot adapter action, local to the test invoking the projection.
+    static ATTACHMENT_CALLBACK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+        std::cell::RefCell::new(None);
+}
 impl RuntimeProviderValue for Retained {
     fn message_type(&self) -> Result<Option<String>, DiagnosticErrorInfo> {
         self.fields.message_type()
@@ -557,6 +568,10 @@ impl RuntimeProviderValue for Retained {
         })
     }
     fn attachment_array(attachments: &[Attachment]) -> Result<Self, DiagnosticErrorInfo> {
+        let callback = ATTACHMENT_CALLBACK.with(|slot| slot.borrow_mut().take());
+        if let Some(callback) = callback {
+            callback();
+        }
         Ok(Self {
             fields: Value::attachment_array(attachments)?,
             payload: Arc::default(),
@@ -714,7 +729,7 @@ fn providers_reach_controlled_sandbox_and_live_descriptions() {
     assert_eq!(description().unwrap(), expected);
     for index in 0..2 {
         if index == 1 {
-            input.write().unwrap()[0].file_name = "live.png".into();
+            input.read().unwrap()[0].write().unwrap().file_name = "live.png".into();
         }
         let output = run(execute_javascript(
             "code".into(),
@@ -799,4 +814,47 @@ fn assert_immediate_failure(provider: &dyn SandboxRuntimeProvider, message: Valu
     );
     let error = run(pending).unwrap_err();
     assert_eq!(error, expected);
+}
+
+#[test]
+fn attachment_owner_releases_all_guards_before_value_callbacks() {
+    let input = attachments();
+    let original = Arc::clone(&input.read().unwrap()[0]);
+    original.write().unwrap().extracted_text = Some("before callback".into());
+    let provider = AttachmentsRuntimeProvider::<Retained>::new(Arc::clone(&input));
+    let (list, member) = (Arc::clone(&input), Arc::clone(&original));
+    ATTACHMENT_CALLBACK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            let mut members = list.try_write().expect("collection guard released");
+            let mut value = member.try_write().expect("member guard released");
+            value.file_name = "edited.png".into();
+            members.clear();
+        }));
+    });
+    let before = provider
+        .get_data()
+        .unwrap()
+        .shift_remove("attachments")
+        .unwrap();
+    assert_eq!(
+        before.fields[0],
+        json!({
+            "id":"same", "fileName":"image.png", "mimeType":"image/png",
+            "size":4, "content":"AAH/gA==", "extractedText":"before callback"
+        })
+    );
+    assert_eq!(
+        provider.get_data().unwrap()["attachments"].fields,
+        json!([])
+    );
+    input.write().unwrap().push(original);
+    let after = provider
+        .get_data()
+        .unwrap()
+        .shift_remove("attachments")
+        .unwrap();
+    assert_eq!(after.fields[0]["fileName"], "edited.png");
+    assert_eq!(before.fields[0]["fileName"], "image.png");
+    assert!(after.fields[0].get("type").is_none());
+    assert!(after.fields[0].get("preview").is_none());
 }

@@ -11,7 +11,7 @@ use maestro_theme::Theme;
 use std::{cell::RefCell, io, io::Write, rc::Rc};
 
 /// Write `text` and one line feed to `writer`.
-fn line(writer: &Rc<RefCell<dyn Write>>, text: &str) -> io::Result<()> {
+pub(crate) fn line(writer: &Rc<RefCell<dyn Write>>, text: &str) -> io::Result<()> {
     writeln!(writer.borrow_mut(), "{text}")
 }
 

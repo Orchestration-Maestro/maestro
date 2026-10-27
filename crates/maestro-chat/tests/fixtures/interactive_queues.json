@@ -124,7 +124,7 @@
       "painted": [
         "",
         " @dim@Steerin\u001b[0m...\u001b[0m ",
-        " @dim@\u21b3 Alt+U\u001b[0m...\u001b[0m "
+        " @dim@↳ Alt+U\u001b[0m...\u001b[0m "
       ]
     }
   },
@@ -141,7 +141,7 @@
       "painted": [
         "",
         " @dim@Steering: s\u001b[39m                                                                    ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
       ]
     }
   },
@@ -175,7 +175,7 @@
       "painted": [
         "",
         " @dim@Follow-\u001b[0m...\u001b[0m ",
-        " @dim@\u21b3 Alt+U\u001b[0m...\u001b[0m "
+        " @dim@↳ Alt+U\u001b[0m...\u001b[0m "
       ]
     }
   },
@@ -192,7 +192,7 @@
       "painted": [
         "",
         " @dim@Follow-up: f\u001b[39m                                                                   ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
       ]
     }
   },
@@ -262,7 +262,7 @@
         " @dim@Steerin\u001b[0m...\u001b[0m ",
         " @dim@Follow-\u001b[0m...\u001b[0m ",
         " @dim@Follow-\u001b[0m...\u001b[0m ",
-        " @dim@\u21b3 Alt+U\u001b[0m...\u001b[0m "
+        " @dim@↳ Alt+U\u001b[0m...\u001b[0m "
       ]
     }
   },
@@ -297,7 +297,7 @@
         " @dim@Steering: ls\u001b[39m                                                                   ",
         " @dim@Follow-up: f\u001b[39m                                                                   ",
         " @dim@Follow-up: lf\u001b[39m                                                                  ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
       ]
     }
   },
@@ -313,7 +313,7 @@
       "painted": [
         "",
         " @dim@Steering: a\t\u001b[7m \u001b[27m                                                                ",
-        " @dim@\u21b3  to edit all queued messages\u001b[39m                                                 "
+        " @dim@↳  to edit all queued messages\u001b[39m                                                 "
       ]
     }
   },
@@ -332,7 +332,7 @@
       "painted": [
         "",
         " @dim@Steering: a\t\u001b[7m \u001b[27m                                                                ",
-        " @dim@\u21b3 Ctrl+Alt+Q/Shift+Up to edit all queued messages\u001b[39m                              "
+        " @dim@↳ Ctrl+Alt+Q/Shift+Up to edit all queued messages\u001b[39m                              "
       ]
     }
   },
@@ -533,7 +533,7 @@
           "mode": "steer"
         }
       ],
-      "text": "\ufeff",
+      "text": "﻿",
       "abort": false
     },
     "expected": {
@@ -577,7 +577,7 @@
           "mode": "steer"
         }
       ],
-      "text": "\ufeff",
+      "text": "﻿",
       "abort": true
     },
     "expected": {
@@ -621,7 +621,7 @@
           "mode": "steer"
         }
       ],
-      "text": "\u0085",
+      "text": "",
       "abort": false
     },
     "expected": {
@@ -636,7 +636,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n\u0085",
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n",
       "history": [],
       "errors": [],
       "aborts": 0,
@@ -665,7 +665,7 @@
           "mode": "steer"
         }
       ],
-      "text": "\u0085",
+      "text": "",
       "abort": true
     },
     "expected": {
@@ -680,7 +680,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n\u0085",
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n",
       "history": [],
       "errors": [],
       "aborts": 1,
@@ -709,7 +709,7 @@
           "mode": "steer"
         }
       ],
-      "text": "\u200b",
+      "text": "​",
       "abort": false
     },
     "expected": {
@@ -724,7 +724,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n\u200b",
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n​",
       "history": [],
       "errors": [],
       "aborts": 0,
@@ -753,7 +753,7 @@
           "mode": "steer"
         }
       ],
-      "text": "\u200b",
+      "text": "​",
       "abort": true
     },
     "expected": {
@@ -768,7 +768,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n\u200b",
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n​",
       "history": [],
       "errors": [],
       "aborts": 1,
@@ -907,7 +907,7 @@
     "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
     "input": {
       "op": "restore-override",
-      "currentText": "\ufeff"
+      "currentText": "﻿"
     },
     "expected": {
       "calls": [
@@ -932,7 +932,7 @@
     "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
     "input": {
       "op": "restore-override",
-      "currentText": "\u0085"
+      "currentText": ""
     },
     "expected": {
       "calls": [
@@ -945,7 +945,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "q\n\n\u0085",
+      "text": "q\n\n",
       "history": [],
       "errors": [],
       "aborts": 0,
@@ -1176,7 +1176,7 @@
       "pending": [
         "",
         " @dim@Steering:  queued \u001b[39m                                                             ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "chat": [
         "",
@@ -1213,7 +1213,7 @@
       "pending": [
         "",
         " @dim@Follow-up:  queued \u001b[39m                                                            ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "chat": [
         "",
@@ -1226,8 +1226,8 @@
     "input": {
       "op": "follow",
       "state": "idle",
-      "text": "\ufeff",
-      "expanded": "\ufeff"
+      "text": "﻿",
+      "expanded": "﻿"
     },
     "expected": {
       "calls": [],
@@ -1236,7 +1236,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "\ufeff",
+      "text": "﻿",
       "history": [],
       "errors": [],
       "aborts": 0,
@@ -1249,14 +1249,14 @@
     "input": {
       "op": "follow",
       "state": "idle",
-      "text": "\u0085",
-      "expanded": "\u0085"
+      "text": "",
+      "expanded": ""
     },
     "expected": {
       "calls": [
         [
           "submit",
-          "\u0085"
+          ""
         ]
       ],
       "local": [],
@@ -1361,8 +1361,8 @@
     "input": {
       "op": "follow",
       "state": "stream",
-      "text": "\ufeff",
-      "expanded": "\ufeff"
+      "text": "﻿",
+      "expanded": "﻿"
     },
     "expected": {
       "calls": [],
@@ -1371,7 +1371,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "\ufeff",
+      "text": "﻿",
       "history": [],
       "errors": [],
       "aborts": 0,
@@ -1384,14 +1384,14 @@
     "input": {
       "op": "follow",
       "state": "stream",
-      "text": "\u0085",
-      "expanded": "\u0085"
+      "text": "",
+      "expanded": ""
     },
     "expected": {
       "calls": [
         [
           "prompt",
-          "\u0085",
+          "",
           {
             "streamingBehavior": "followUp"
           }
@@ -1404,7 +1404,7 @@
       },
       "text": "",
       "history": [
-        "\u0085"
+        ""
       ],
       "errors": [],
       "aborts": 0,
@@ -1516,8 +1516,8 @@
     "input": {
       "op": "follow",
       "state": "compact",
-      "text": "\ufeff",
-      "expanded": "\ufeff"
+      "text": "﻿",
+      "expanded": "﻿"
     },
     "expected": {
       "calls": [],
@@ -1526,7 +1526,7 @@
         "steering": [],
         "followUp": []
       },
-      "text": "\ufeff",
+      "text": "﻿",
       "history": [],
       "errors": [],
       "aborts": 0,
@@ -1539,38 +1539,45 @@
     "input": {
       "op": "follow",
       "state": "compact",
-      "text": "\u0085",
-      "expanded": "\u0085"
+      "text": "",
+      "expanded": ""
     },
     "expected": {
-      "calls": [],
-      "local": [
-        {
-          "text": "\u0085",
-          "mode": "followUp"
-        }
+      "calls": [
+        [
+          "input",
+          ""
+        ]
       ],
+      "local": [],
       "session": {
         "steering": [],
-        "followUp": [
-          "\u0085"
-        ]
+        "followUp": []
       },
       "text": "",
       "history": [
-        "\u0085"
+        ""
       ],
       "errors": [],
       "aborts": 0,
-      "pending": [
-        "",
-        " @dim@Follow-up: \u0085\u001b[39m                                                                    ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
-      ],
+      "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
-      ]
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@\u001b[39m                                                                               ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "",
+        "rows": [
+          "",
+          " @dim@Follow-up: \u001b[39m                                                                    ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
     }
   },
   {
@@ -1582,18 +1589,16 @@
       "expanded": " selected "
     },
     "expected": {
-      "calls": [],
-      "local": [
-        {
-          "text": "selected",
-          "mode": "followUp"
-        }
-      ],
-      "session": {
-        "steering": [],
-        "followUp": [
+      "calls": [
+        [
+          "input",
           "selected"
         ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
       },
       "text": "",
       "history": [
@@ -1601,15 +1606,24 @@
       ],
       "errors": [],
       "aborts": 0,
-      "pending": [
-        "",
-        " @dim@Follow-up: selected\u001b[39m                                                            ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
-      ],
+      "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
-      ]
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@selected\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "selected",
+        "rows": [
+          "",
+          " @dim@Follow-up: selected\u001b[39m                                                            ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
     }
   },
   {
@@ -1652,18 +1666,16 @@
       "expanded": "/unknown"
     },
     "expected": {
-      "calls": [],
-      "local": [
-        {
-          "text": "/unknown",
-          "mode": "followUp"
-        }
-      ],
-      "session": {
-        "steering": [],
-        "followUp": [
+      "calls": [
+        [
+          "input",
           "/unknown"
         ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
       },
       "text": "",
       "history": [
@@ -1671,15 +1683,24 @@
       ],
       "errors": [],
       "aborts": 0,
-      "pending": [
-        "",
-        " @dim@Follow-up: /unknown\u001b[39m                                                            ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
-      ],
+      "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
-      ]
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@/unknown\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "/unknown",
+        "rows": [
+          "",
+          " @dim@Follow-up: /unknown\u001b[39m                                                            ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
     }
   },
   {
@@ -1757,17 +1778,15 @@
       "text": "plain"
     },
     "expected": {
-      "calls": [],
-      "local": [
-        {
-          "text": "plain",
-          "mode": "steer"
-        }
-      ],
-      "session": {
-        "steering": [
+      "calls": [
+        [
+          "input",
           "plain"
-        ],
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
         "followUp": []
       },
       "text": "",
@@ -1776,15 +1795,24 @@
       ],
       "errors": [],
       "aborts": 0,
-      "pending": [
-        "",
-        " @dim@Steering: plain\u001b[39m                                                                ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
-      ],
+      "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
-      ]
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@plain\u001b[39m                                                                          ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "steer",
+        "text": "plain",
+        "rows": [
+          "",
+          " @dim@Steering: plain\u001b[39m                                                                ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
     }
   },
   {
@@ -1889,7 +1917,7 @@
       "before": [
         "",
         " @dim@Steering: before\u001b[39m                                                               ",
-        " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "after": []
     }
@@ -2190,7 +2218,7 @@
     "test": "key_display_capitalizes_each_live_binding_without_reordering",
     "input": {
       "op": "capitalize-key",
-      "key": "alt+\u00df"
+      "key": "alt+ß"
     },
     "expected": {
       "result": "Alt+SS"

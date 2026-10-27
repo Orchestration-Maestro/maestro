@@ -2,59 +2,65 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{theme};
+    use host.{auth-lock-update, oauth-callback, oauth-interaction};
+    invoke-oauth-callback: async func(handler: borrow<callback>, phase: oauth-callback, data: string, interaction: option<oauth-interaction>) -> result<option<string>, string>;
+    invoke-auth-backend: async func(handler: borrow<callback>, update: borrow<auth-lock-update>, asynchronous: bool) -> result<_, string>;
+    invoke-auth-fallback: async func(handler: borrow<callback>, provider: string) -> result<option<string>, string>;
+    use host.{theme, json-node, schema-shape, schema-operation, diagnostic-error-info};
+    use host.{stream-operation, stream-selection, model-hook, payload-selection, abort-signal, provider-input, assistant-operation};
+    /// Await the original payload selector or response observer.
+    invoke-model-hook: async func(handler: borrow<callback>, phase: model-hook, data: string, model: string, signal: option<abort-signal>) -> result<payload-selection, string>;
+    /// Invoke the retained original provider without consuming its returned stream.
+    invoke-provider: async func(handler: borrow<callback>, data: string, input: provider-input) -> result<callback, string>;
+    /// Operate directly on an independently retained returned assistant stream.
+    invoke-assistant: async func(handler: borrow<callback>, operation: assistant-operation, data: option<string>, signal: option<abort-signal>) -> result<option<string>, string>;
+    /// Run a synchronous stream callback on its original retained local event.
+    invoke-stream: async func(handler: borrow<callback>, value: borrow<callback>, operation: stream-operation) -> result<stream-selection, string>;
+    invoke-schema: async func(handler: borrow<callback>, operation: schema-operation, node: borrow<json-node>, emitter: borrow<callback-emitter>) -> result<string, diagnostic-error-info>;
+    /// Read callbacks retained at this originating node.
+    describe-schema: func(handler: borrow<callback>) -> result<schema-shape, diagnostic-error-info>;
+    /// Retain the originating callbacks under a fresh host-supplied identity.
+    retain-schema: func(handler: borrow<callback>, retained: callback) -> result<_, diagnostic-error-info>;
     /// Renderer input with owned theme and complete message document.
     record render-request { message: string, expanded: bool, theme: theme }
-    /// Retained authored component, owned by the receiving host.
-    resource component-view {
-        render: func(width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
-        handle-input: func(data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
-        wants-key-release: func(emitter: borrow<callback-emitter>) -> result<bool, string>;
-        invalidate: func(emitter: borrow<callback-emitter>) -> result<_, string>;
-    }
-    /// Runs a synchronous renderer and transfers its returned component.
-    invoke-renderer: func(handler: borrow<callback>, request: render-request, emitter: borrow<callback-emitter>) -> result<option<component-view>, string>;
+    use host.{custom-input, custom-built};
+    /// Runs a custom factory's synchronous prefix and returns its owned outcome.
+    invoke-custom-factory: async func(handler: borrow<callback>, input: custom-input, emitter: borrow<callback-emitter>) -> result<custom-built, string>;
+    /// Awaits the owned continuation returned by a custom prefix.
+    invoke-custom-future: async func(handler: borrow<callback>) -> result<factory-component, string>;
+    /// Renders one retained authored component.
+    component-render: async func(handler: borrow<callback>, width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
+    /// Delivers input to one retained authored component.
+    component-handle-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Reads the key-release preference of one retained authored component.
+    component-wants-key-release: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<bool, string>;
+    /// Reads focus state, absent when the authored component cannot focus.
+    component-focused: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<option<bool>, string>;
+    /// Assigns focus synchronously to an authored component.
+    component-set-focused: async func(handler: borrow<callback>, focused: bool, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Invalidates one retained authored component.
+    component-invalidate: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a synchronous renderer and transfers the identity of its returned component.
+    invoke-renderer: async func(handler: borrow<callback>, request: render-request, emitter: borrow<callback-emitter>) -> result<option<callback>, string>;
 
     invoke-setup: async func(handler: borrow<callback>, writer: session-manager) -> result<_, string>;
-    use host.{autocomplete-item, callback-emitter, tool-update, session-manager, callback, abort-signal, context, command-context, replaced-session-context};
+    use host.{autocomplete-item, callback-emitter, session-manager, callback, context, command-context, replaced-session-context};
+    use host.{widget-event, widget-answer};
+    use host.{capabilities, tool-invocation, tool-capabilities, bash-request, bash-capabilities, encoded, decision, event-outcome, terminal-input-result, tui, factory-component, footer-data, tool-render, tool-rendered, native-row, read-operation, read-output, write-operation, edit-operation, find-operation, find-output, ls-operation, ls-output, grep-operation, grep-output, tool-invalidator};
+    use host.{editor-theme, keybindings-manager, authored-editor-request, authored-editor-answer, editor-built};
+    use host.{completion-provider, provider-request, provider-answer};
+    /// Executes returned shell operations kept under one callback identity.
+    bash-exec: async func(handler: borrow<callback>, request: bash-request, resources: bash-capabilities) -> result<option<f64>, string>;
 
-    /// Host resources lent to one event callback; the signal accompanies a compaction.
-    record capabilities { ctx: context, signal: option<abort-signal> }
-
-    /// Invocation identifier and opaque parameter document.
-    record tool-invocation { tool-call-id: string, params: string }
-    /// Owned resources received by tool execution.
-    record tool-capabilities { ctx: context, signal: option<abort-signal>, update: option<tool-update> }
+    use host.{prepared-arguments};
     /// Synchronously prepares arguments.
-    invoke-prepare: func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<string, string>;
+    invoke-prepare: async func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<prepared-arguments, string>;
     /// Runs a synchronous listener prefix.
-    invoke-listener: func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    invoke-listener: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Awaits an independently retained listener tail.
     invoke-tail: async func(handler: borrow<callback>) -> result<_, string>;
     /// Awaits execution of a tool.
     invoke-tool: async func(handler: borrow<callback>, invocation: tool-invocation, resources: tool-capabilities) -> result<string, string>;
-
-    /// A JSON document, no document, or the message that explains why encoding failed.
-    type encoded = result<option<string>, string>;
-
-    /// How an event callback ended: with an encoded result, or with the message it failed with.
-    variant decision { returned(encoded), failed(string) }
-
-    /// Owned operands of one asynchronous execution.
-    record bash-request {
-        command: string, cwd: string, timeout: option<f64>,
-        env: option<list<tuple<string, option<string>>>>,
-    }
-    use host.{bash-output};
-    /// Owned callback and cancellation resources for execution.
-    record bash-capabilities { output: bash-output, signal: option<abort-signal> }
-    /// Authored operation retained after the event returns.
-    resource bash-operations {
-        exec: async func(request: bash-request, resources: bash-capabilities) -> result<option<f64>, string>;
-    }
-    /// Independent edited-event encoding, decision encoding and returned operations.
-    /// Replacing the event kind leaves the edited document absent.
-    record event-outcome { event: encoded, decision: decision, operations: option<bash-operations> }
 
     /// Runs the extension factory; returns when it has completed.
     start: async func() -> result<_, string>;
@@ -77,6 +83,43 @@ interface guest {
     invoke-event: async func(
         handler: borrow<callback>, event: string, resources: capabilities,
     ) -> result<event-outcome, string>;
-    invoke-compaction-complete: func(handler: borrow<callback>, %result: string, emitter: borrow<callback-emitter>) -> result<_, string>;
-    invoke-compaction-error: func(handler: borrow<callback>, error: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    invoke-compaction-complete: async func(handler: borrow<callback>, %result: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    invoke-compaction-error: async func(handler: borrow<callback>, error: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a cancellation listener once with its synchronous emitter.
+    invoke-abort: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a retained native file notification with its synchronous emitter.
+    invoke-watch: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a component factory and transfers the identities of its component and disposal.
+    invoke-component-factory: async func(handler: borrow<callback>, tui: tui, theme: theme, footer: option<footer-data>, emitter: borrow<callback-emitter>) -> result<factory-component, string>;
+    /// Runs a tool's call or result renderer for one row.
+    invoke-tool-render: async func(handler: borrow<callback>, render: tool-render, theme: theme, invalidator: tool-invalidator, native-row: option<native-row>, emitter: borrow<callback-emitter>) -> result<tool-rendered, string>;
+    /// Invokes one retained read operation without narrowing its diagnostic.
+    invoke-read: async func(handler: borrow<callback>, operation: read-operation, path: string) -> result<read-output, diagnostic-error-info>;
+    invoke-write: async func(handler: borrow<callback>, operation: write-operation, path: string) -> result<_, diagnostic-error-info>;
+    invoke-grep: async func(handler: borrow<callback>, operation: grep-operation, path: string) -> result<grep-output, diagnostic-error-info>;
+    invoke-ls: async func(handler: borrow<callback>, operation: ls-operation, path: string) -> result<ls-output, diagnostic-error-info>;
+    invoke-find: async func(handler: borrow<callback>, operation: find-operation, path: string) -> result<find-output, diagnostic-error-info>;
+    invoke-edit: async func(handler: borrow<callback>, operation: edit-operation, path: string) -> result<read-output, diagnostic-error-info>;
+    /// Runs a branch change listener with its synchronous emitter.
+    invoke-branch-change: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Changes a retained factory component's expansion.
+    invoke-set-expanded: async func(handler: borrow<callback>, expanded: bool, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs an editor factory and transfers the identities of what it built.
+    invoke-editor-factory: async func(handler: borrow<callback>, tui: tui, theme: editor-theme, keybindings: keybindings-manager, emitter: borrow<callback-emitter>) -> result<editor-built, string>;
+    /// Runs one request on an authored editor with its synchronous emitter.
+    invoke-editor: async func(handler: borrow<callback>, request: authored-editor-request, emitter: borrow<callback-emitter>) -> result<authored-editor-answer, string>;
+    /// Runs one request on an authored completion provider; suggestions may suspend.
+    invoke-autocomplete: async func(handler: borrow<callback>, request: provider-request, signal: option<abort-signal>) -> result<provider-answer, string>;
+    /// Runs a provider factory on the current provider and transfers the provider it returned.
+    invoke-autocomplete-factory: async func(handler: borrow<callback>, current: completion-provider, emitter: borrow<callback-emitter>) -> result<callback, string>;
+    /// Runs a component's disposal once with its synchronous emitter.
+    invoke-dispose: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Styles text with an authored styling function.
+    invoke-style: async func(handler: borrow<callback>, text: string) -> result<string, string>;
+    /// Highlights code with an authored highlighting function.
+    invoke-highlight: async func(handler: borrow<callback>, code: string, lang: option<string>) -> result<list<string>, string>;
+    /// Runs an authored widget callback with its synchronous emitter.
+    invoke-widget: async func(handler: borrow<callback>, event: widget-event, emitter: borrow<callback-emitter>) -> result<widget-answer, string>;
+    /// Runs a terminal input listener on one chunk with its synchronous emitter.
+    invoke-terminal-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<option<terminal-input-result>, string>;
 }

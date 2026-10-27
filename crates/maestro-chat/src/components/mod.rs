@@ -12,6 +12,8 @@ macro_rules! component_children {
 
 pub mod dynamic_border;
 
+pub mod extension_widgets;
+
 pub mod countdown_timer;
 
 pub mod bordered_loader;

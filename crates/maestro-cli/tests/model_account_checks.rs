@@ -464,7 +464,10 @@ impl OAuthProviderInterface for TestProvider {
         Box::pin(async { Err(unused_operation()) })
     }
 
-    fn get_api_key<'a>(&self, _credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        _credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         Err(unused_operation())
     }
 }
@@ -520,7 +523,10 @@ impl OAuthProviderInterface for CountingProvider {
         Box::pin(async { Err(unused_operation()) })
     }
 
-    fn get_api_key<'a>(&self, _credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        _credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         Err(unused_operation())
     }
 }

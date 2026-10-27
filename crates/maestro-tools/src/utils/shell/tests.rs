@@ -184,7 +184,7 @@ struct EnvExpected {
 fn native_env(entries: indexmap::IndexMap<String, String>) -> super::ShellEnv {
     entries
         .into_iter()
-        .map(|(key, value)| (OsString::from(key), OsString::from(value)))
+        .map(|(key, value)| (OsString::from(key), Some(OsString::from(value))))
         .collect()
 }
 
@@ -237,13 +237,15 @@ fn shell_environment_is_observed_each_time() {
         use std::os::unix::ffi::OsStringExt;
         let raw = OsString::from_vec(vec![0xff]);
         let mut env = super::ShellEnv::new();
-        env.insert(raw.clone(), raw.clone());
-        env.insert(OsString::from("PATH"), OsString::from_vec(vec![0xfe]));
+        env.insert(raw.clone(), Some(raw.clone()));
+        env.insert(OsString::from("PATH"), Some(OsString::from_vec(vec![0xfe])));
         let actual = shell_env(env, "/app/bin", false);
-        assert_eq!(actual.get(&raw), Some(&raw));
+        assert_eq!(actual.get(&raw), Some(&Some(raw)));
         assert_eq!(
             actual
                 .get(&OsString::from("PATH"))
+                .unwrap()
+                .as_ref()
                 .unwrap()
                 .as_encoded_bytes(),
             b"/app/bin:\xfe"

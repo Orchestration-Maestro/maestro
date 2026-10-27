@@ -386,10 +386,12 @@ fn wrong_properties() -> Vec<Refusal> {
                 json!({})
             };
             add(format!("{kind} without {path}"), at(&valid, path, None));
-            add(
-                format!("{kind} with {path} of the wrong type"),
-                at(&valid, path, Some(wrong)),
-            );
+            if !matches!(*path, "args" | "partialResult" | "result" | "payload") {
+                add(
+                    format!("{kind} with {path} of the wrong type"),
+                    at(&valid, path, Some(wrong)),
+                );
+            }
         }
     }
     for (kind, path) in OPTIONAL {

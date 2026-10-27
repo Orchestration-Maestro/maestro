@@ -1,11 +1,8 @@
 //! Call-scoped content placement with retained platform ownership.
-use crate::{
-    Attachment,
-    icons::{self, IconSize},
-};
+use crate::icons::{self, IconSize};
 use maestro_theme::BrandPresentation;
 use num_traits::ToPrimitive as _;
-use std::{cell::RefCell, io, rc::Rc};
+use std::{io, rc::Rc};
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod browser;
 #[cfg(target_arch = "wasm32")]
@@ -57,19 +54,6 @@ pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement}
 pub enum AttachmentContent<'a> {
     /// Owned native reading content.
     Reading(ReadingPlacement<'a>),
-    /// Browser-native editable input.
-    Input {
-        /// Live native field configuration.
-        props: &'a crate::components::input::InputProps,
-        /// Localized native accessible name, including the required marker.
-        accessible_label: &'a str,
-        /// Assign the caller's changed value, preserving native edits otherwise.
-        value_changed: bool,
-        /// Containing modal, when placed in a foreground layer.
-        modal: Option<egui::Id>,
-        /// Drawing context notified by native keyboard activity.
-        context: &'a egui::Context,
-    },
     /// Browser-native image.
     Image {
         /// Complete image URL.
@@ -91,7 +75,7 @@ pub enum AttachmentContent<'a> {
         /// Selected renderer.
         file_type: FileType,
         /// Original mutable record.
-        attachment: Rc<RefCell<Attachment>>,
+        attachment: crate::SharedAttachment,
         /// Whether the renderer must restart.
         reload: bool,
     },
@@ -136,8 +120,6 @@ impl std::error::Error for AttachmentHostError {
         None
     }
 }
-/// Captured native focus restoration, retaining the original target.
-pub type FocusTarget = dyn Fn() -> Result<(), AttachmentHostError>;
 /// Native clipboard failure policy selected by the caller.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ClipboardMode {
@@ -164,28 +146,6 @@ pub trait AttachmentHost {
         text: &str,
         mode: ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>>;
-
-    /// Capture the currently focused native target before modal admission.
-    /// # Errors
-    /// Returns native focus lookup failures.
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError>;
-    /// Defer restoration until the next frame after removal.
-    /// # Errors
-    /// Returns native frame registration failures.
-    fn restore_focus(
-        &self,
-        target: Rc<FocusTarget>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentHostError>;
-    /// Evaluate literal CSS dimensions against the staged reading body.
-    /// # Errors
-    /// Returns native measurement failures.
-    fn dialog_bounds(
-        &self,
-        id: egui::Id,
-        dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentHostError>;
-    /// Admit native Escape through the same bridge used by editable fields.
-    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context);
 
     /// Measure the admitted reading root in the current canvas frame.
     /// # Errors
@@ -218,8 +178,6 @@ pub trait AttachmentHost {
     fn hover_capable(&self) -> Result<bool, AttachmentHostError>;
     /// Release the named surface.
     fn remove(&self, id: egui::Id);
-    /// Consume Escape delivered by a native input outside canvas focus.
-    fn take_escape(&self) -> bool;
     /// Register a native callback whose handle revokes delivery on drop.
     /// # Errors
     /// Returns native timer registration failures.
@@ -243,7 +201,7 @@ pub trait AttachmentHost {
     /// Download the original record.
     /// # Errors
     /// Returns decoding or platform failures.
-    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError>;
+    fn download(&self, attachment: crate::SharedAttachment) -> Result<(), AttachmentHostError>;
 }
 /// Convert brand measurements for the drawing library.
 pub(crate) fn points(n: f64) -> f32 {
@@ -489,9 +447,6 @@ fn style_targets(
     ids.take(if previous == current { 0 } else { usize::MAX })
         .chain(placed.filter(move |_| previous == current))
 }
-
-#[cfg(target_arch = "wasm32")]
-mod input;
 
 #[cfg(any(target_arch = "wasm32", test))]
 /// One modal visibility projection shared by all native content.

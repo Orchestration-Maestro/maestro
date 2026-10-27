@@ -93,8 +93,9 @@ pub struct TestProcess {
     flags: BTreeSet<Flag>,
     /// Literal `--skip` operands in call order.
     skips: Vec<String>,
-    /// Shell text run before the test executable replaces the shell.
-    shell: Option<String>,
+    /// Caller-supplied setup interpreter and the shell text it runs before the test
+    /// executable replaces it.
+    shell: Option<(PathBuf, String)>,
 }
 
 impl TestProcess {
@@ -251,14 +252,16 @@ impl TestProcess {
         self
     }
 
-    /// Run `setup` in `bash` before the test executable replaces the shell.
+    /// Run `setup` in `program` before the test executable replaces the shell.
     ///
-    /// The executable and arguments are passed as shell positional parameters, never
-    /// interpolated into the shell text.
+    /// `program` names the setup interpreter, so the caller decides which shell runs; an
+    /// absolute path is required and the process `PATH` is never searched. The executable
+    /// and arguments are passed as shell positional parameters, never interpolated into
+    /// the shell text.
     #[cfg(unix)]
     #[must_use]
-    pub fn shell_setup(mut self, setup: impl Into<String>) -> Self {
-        self.shell = Some(setup.into());
+    pub fn shell_setup(mut self, program: impl AsRef<Path>, setup: impl Into<String>) -> Self {
+        self.shell = Some((program.as_ref().to_path_buf(), setup.into()));
         self
     }
 
@@ -442,15 +445,7 @@ impl TestProcess {
     /// Build the configured command once the test is known to be eligible.
     fn prepare(&mut self) -> Result<Command, TestProcessError> {
         let executable = self.eligible()?;
-        let mut command = match self.shell.take() {
-            Some(setup) => {
-                let mut shell = Command::new("bash");
-                shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
-                shell.arg(executable);
-                shell
-            }
-            None => Command::new(executable),
-        };
+        let mut command = self.command(executable)?;
         command.args(self.arguments());
         self.envs.iter().for_each(|edit| edit.apply(&mut command));
         if let Some(dir) = &self.dir {
@@ -474,5 +469,24 @@ impl TestProcess {
             self.failure("cannot run the selected test")
                 .caused_by(error)
         })
+    }
+
+    /// The command that runs the selected test, through the supplied setup interpreter
+    /// when one is set.
+    ///
+    /// The interpreter path the caller supplied is used as it stands, so neither this
+    /// process's `PATH` nor the child's decides which shell runs. A path that cannot run
+    /// fails at launch with the operating system's error.
+    fn command(&mut self, executable: PathBuf) -> Result<Command, TestProcessError> {
+        if let Some((program, setup)) = self.shell.take() {
+            if !program.is_absolute() {
+                return Err(self.failure("the setup interpreter path is not absolute"));
+            }
+            let mut shell = Command::new(program);
+            shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
+            shell.arg(executable);
+            return Ok(shell);
+        }
+        Ok(Command::new(executable))
     }
 }

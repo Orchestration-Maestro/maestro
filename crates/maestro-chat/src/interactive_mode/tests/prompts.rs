@@ -7,12 +7,14 @@ use crate::{
 };
 use maestro_app::{
     AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
-    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions, StopReason,
-    UserBlock, UserContent,
+    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions,
+    ProviderConfigInput, StopReason, UserBlock, UserContent,
 };
 use maestro_models::{
-    FauxAssistantMessageOptions, FauxProviderRegistration, FauxProviderState, FauxResponseStep,
-    RegisterFauxProviderOptions, faux_assistant_message, register_faux_provider,
+    ApiProvider, AssistantMessageEventStream, DiagnosticErrorInfo, FauxAssistantMessageOptions,
+    FauxProviderRegistration, FauxProviderState, FauxResponseStep, Invoke, ProviderCall,
+    ProviderExecution, RegisterFauxProviderOptions, StreamOptionsInput, faux_assistant_message,
+    get_api_provider, register_faux_provider,
 };
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::{Component, Container, Spacer, Text};
@@ -39,17 +41,8 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_prompts
 /// The width transcript notices are rendered at.
 const WIDTH: usize = 120;
 
-/// Runs `body` to completion on a current-thread runtime inside a local task set.
-fn on_local<F: Future<Output = ()>>(body: F) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(tokio::task::LocalSet::new().run_until(body));
-}
-
 /// Polls `run` until the mode waits for typed input; the loop never ends on its own.
-async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
+pub(super) async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
     mode: &InteractiveMode,
     mut run: Pin<&mut F>,
 ) {
@@ -67,11 +60,11 @@ async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
 }
 
 /// A mode whose sessions answer through the scripted provider without retrying.
-struct Scripted {
+pub(super) struct Scripted {
     /// The mode and its runtime.
-    world: World,
+    pub(super) world: World,
     /// The scripted provider.
-    provider: FauxProviderRegistration,
+    pub(super) provider: FauxProviderRegistration,
     /// Makes the next credential lookup find no key, so the session refuses that prompt.
     refuse: Arc<AtomicBool>,
     /// What the application input hook saw of each prompt.
@@ -98,9 +91,36 @@ fn input_hook(seen: &HookLog) -> ExtensionFactory<Local> {
     })
 }
 
+/// Keeps the scripted callback available when the model catalog refreshes its registrations.
+struct RetainedProvider(ApiProvider);
+
+impl<E: ProviderExecution> Invoke<E, ProviderCall<E, StreamOptionsInput<E>>> for RetainedProvider {
+    type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+
+    fn invoke(&self, input: ProviderCall<E, StreamOptionsInput<E>>) -> Self::Return {
+        match input.options {
+            Some(StreamOptionsInput::Raw(options)) => self.0.stream.call(
+                input.model,
+                input.context,
+                E::submission(Some(options), input.submit),
+            ),
+            Some(StreamOptionsInput::Simple(options)) => self.0.stream_simple.call(
+                input.model,
+                input.context,
+                E::submission(Some(options), input.submit),
+            ),
+            None => self.0.stream_simple.call(
+                input.model,
+                input.context,
+                E::submission(None, input.submit),
+            ),
+        }
+    }
+}
+
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
-    fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
+    pub(super) fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
         let hook: HookLog = Rc::default();
         let world = Setup {
             options,
@@ -109,14 +129,35 @@ impl Scripted {
         }
         .build(directory);
         let provider = register_faux_provider(RegisterFauxProviderOptions::default());
+        let callback = get_api_provider(&provider.api).unwrap();
+        world
+            .host
+            .session()
+            .model_registry()
+            .register_provider(
+                &provider.models[0].provider,
+                Arc::new(RwLock::new(ProviderConfigInput {
+                    api: Some(provider.api.clone()),
+                    callbacks: maestro_app::ProviderCallbacks {
+                        stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                        ..Default::default()
+                    },
+                    ..ProviderConfigInput::default()
+                })),
+            )
+            .unwrap();
         let refuse = Arc::new(AtomicBool::new(false));
         let refused = Arc::clone(&refuse);
+        let provider_id = provider.models[0].provider.clone();
         world
             .host
             .services()
             .auth_storage
-            .set_fallback_resolver(move |_| {
-                Ok((!refused.swap(false, Ordering::SeqCst)).then(|| "controlled-key".to_owned()))
+            .set_fallback_resolver(move |id| {
+                Ok(
+                    (id == provider_id && !refused.swap(false, Ordering::SeqCst))
+                        .then(|| "controlled-key".to_owned()),
+                )
             });
         let scripted = Self {
             world,
@@ -129,7 +170,7 @@ impl Scripted {
     }
 
     /// Makes `session` answer through the provider without retrying.
-    fn adopt(&self, session: &AgentSession) {
+    pub(super) fn adopt(&self, session: &AgentSession) {
         session.set_auto_retry_enabled(false);
         session.state().write().unwrap().model =
             Arc::new(RwLock::new(self.provider.models[0].clone()));
@@ -145,7 +186,7 @@ impl Scripted {
     }
 
     /// Unregisters the provider and disposes of the current session.
-    fn finish(&self) {
+    pub(super) fn finish(&self) {
         self.world.host.session().dispose();
         self.provider.unregister();
     }
@@ -604,7 +645,7 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
         std::fs::write(&catalog, &startup.catalog_error).unwrap();
     }
     let options = &mut startup.options;
-    let scripted = Scripted::new(
+    Scripted::new(
         directory,
         InteractiveModeOptions {
             migrated_providers: std::mem::take(&mut options.migrated_providers),
@@ -614,11 +655,7 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
             initial_messages: std::mem::take(&mut options.initial_messages),
             ..InteractiveModeOptions::default()
         },
-    );
-    if written {
-        std::fs::remove_file(&catalog).unwrap();
-    }
-    scripted
+    )
 }
 
 /// Runs the loop through `startup`, then compares every notice, admission and failed answer
@@ -660,9 +697,10 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 
 /// Replays every recorded case of `test` in a fresh child.
 fn replay(test: &str) {
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
-            on_local(replay_case(directory, startup, expected));
+            let case = maestro_test_directory::Scratch::new_in(directory).unwrap();
+            (replay_case(case.path(), startup, expected)).await;
         }
     });
 }
@@ -690,8 +728,8 @@ fn typed_submission_follows_the_current_runtime_session() {
 #[test]
 fn prompt_operation_refusal_is_distinct_from_assistant_error_event() {
     const TEST: &str = "prompt_operation_refusal_is_distinct_from_assistant_error_event";
-    isolated(TEST, |directory| {
-        on_local(refusal_then_assistant_error(directory));
+    isolated(TEST, async |directory| {
+        (refusal_then_assistant_error(directory)).await;
     });
 }
 
@@ -804,9 +842,9 @@ fn from_prompts<'a>(
 #[test]
 fn startup_message_traversal_has_linear_work() {
     const TEST: &str = "startup_message_traversal_has_linear_work";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (size, work) in cases::<Size, Work>(FIXTURES, TEST) {
-            on_local(measure(directory, size, work));
+            (measure(directory, size, work)).await;
         }
     });
 }
@@ -826,4 +864,71 @@ async fn measure(directory: &Path, size: Size, work: Work) {
         "the linear bound rejects a rescanning traversal"
     );
     assert_eq!(admitted, texts);
+}
+
+#[test]
+fn startup_subscription_check_is_started_between_fallback_and_prompts() {
+    isolated(
+        "startup_subscription_check_is_started_between_fallback_and_prompts",
+        startup_subscription_check,
+    );
+}
+
+/// Observes warning admission before the first prompt, without awaiting its completion.
+async fn startup_subscription_check(directory: &Path) {
+    let scripted = Scripted::new(
+        directory,
+        InteractiveModeOptions {
+            model_fallback_message: Some("controlled fallback".into()),
+            initial_message: Some("first prompt".into()),
+            ..Default::default()
+        },
+    );
+    let world = &scripted.world;
+    super::start(world).await;
+    assert!(world.runtime.drain_futures().is_empty());
+    let model = world.host.session().model();
+    let mut selected = model.read().unwrap().clone();
+    selected.provider = "anthropic".into();
+    world.host.session().state().write().unwrap().model = Arc::new(RwLock::new(selected));
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("anthropic", "sk-ant-oat-controlled");
+    scripted.provider.set_responses(vec![answer(None)]);
+    let observed = Rc::new(Cell::new(None));
+    let seen = observed.clone();
+    let mode = Rc::downgrade(&world.mode);
+    let runtime = world.runtime.clone();
+    let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::Agent(event) = event
+            && matches!(*event.read().unwrap(), maestro_app::AgentEvent::AgentStart)
+        {
+            let mode = mode.upgrade().unwrap();
+            seen.set(Some((
+                super::actions::shows(&mode.chat_container, "controlled fallback"),
+                mode.anthropic_subscription_warning_shown.get(),
+                runtime.futures(),
+            )));
+        }
+    }));
+    let mut run = pin!(world.mode.run());
+    until_waiting(&world.mode, run.as_mut()).await;
+    assert_eq!(
+        observed.get(),
+        Some((true, false, 4)),
+        "fallback is shown and the independent check is admitted before the first prompt"
+    );
+    assert_eq!(scripted.provider.state.call_count(), 1);
+    assert!(world.runtime.drain_futures().is_empty());
+    assert!(world.mode.anthropic_subscription_warning_shown.get());
+    let rows = maestro_app::strip_ansi(&world.mode.chat_container.render(1000).join("\n")).unwrap();
+    assert_eq!(
+        rows.matches("Anthropic subscription auth is active.")
+            .count(),
+        1
+    );
+    unsubscribe();
+    scripted.finish();
 }

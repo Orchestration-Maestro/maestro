@@ -7,10 +7,10 @@
 
 /// Shared schema specialized for the guest operands.
 pub type BeforeProviderRequestEvent =
-    maestro_request::extension_events::events::BeforeProviderRequestEvent<String>;
+    maestro_request::extension_events::events::BeforeProviderRequestEvent<crate::JsonText>;
 /// Shared schema specialized for the guest operands.
 pub type BeforeProviderRequestEventResult =
-    maestro_request::extension_events::events::BeforeProviderRequestEventResult<String>;
+    maestro_request::extension_events::events::BeforeProviderRequestEventResult<crate::JsonText>;
 /// Shared schema specialized for the guest operands.
 pub type AfterProviderResponseEvent =
     maestro_request::extension_events::events::AfterProviderResponseEvent<Vec<(String, String)>>;

@@ -2,11 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
-#[path = "support/runtime.rs"]
-mod runtime;
-use runtime::block_on;
+use crate::support::{launch, runtime::block_on};
 
 use maestro_daemon::{
     api::event_hub::EventHub, app::App, paths::DaemonPaths, settings::model::Config,

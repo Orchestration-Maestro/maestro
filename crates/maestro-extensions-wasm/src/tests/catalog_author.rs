@@ -233,18 +233,19 @@ fn retained(
             }
             _ => return Err("unknown signal operation".into()),
         }
-    } else {
-        retained_ui(kept, request, ctx)?;
+    } else if let Some(answer) = retained_ui(kept, request, ctx)? {
+        return Ok(answer);
     }
     Ok(json!("done"))
 }
-/// Retain, clone, drop or call through an opaque UI owner, by its retained index.
-/// A drop names its index in the arguments and takes the last owner without one.
+/// Retain, clone, drop or call through an opaque UI owner, by its retained index, returning
+/// what a read request answered. A drop names its index in the arguments and takes the last
+/// owner without one.
 fn retained_ui(
     kept: &RefCell<Kept>,
     request: &Request,
     ctx: &ExtensionContext,
-) -> ExtensionResult<()> {
+) -> ExtensionResult<Option<Value>> {
     match request.method.as_str() {
         "retain" => kept.borrow_mut().uis.push(ctx.ui()?),
         "alias" => {
@@ -269,11 +270,11 @@ fn retained_ui(
             let ui = kept.borrow().uis.get(index).cloned().ok_or("missing UI")?;
             let call = serde_json::from_value(request.args.first().cloned().ok_or("missing call")?)
                 .map_err(|error| error.to_string())?;
-            super::ui_author::perform(&ui, &call)?;
+            return super::ui_author::perform(&ui, &call);
         }
         _ => return Err("unknown UI operation".into()),
     }
-    Ok(())
+    Ok(None)
 }
 /// Query or manage an independently retained catalog.
 async fn catalog(
@@ -362,7 +363,9 @@ fn register_compaction(api: &ExtensionAPI) -> ExtensionResult<()> {
                     && let Presence::Present(compaction) = &mut result.compaction
                 {
                     compaction.details = Presence::Present(
-                        json!({"leaf":leaf,"models":names,"branchEntries":branch}).to_string(),
+                        json!({"leaf":leaf,"models":names,"branchEntries":branch})
+                            .to_string()
+                            .into(),
                     );
                 }
                 Ok(Some(result))

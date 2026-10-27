@@ -10,7 +10,12 @@ use maestro_app::utils::clipboard_image::{
 };
 use maestro_app::{DiagnosticErrorInfo, ThinkingLevel, is_whitespace_scalar};
 use maestro_tui::Component;
-use std::{error::Error, io, rc::Rc, sync::PoisonError};
+use std::{
+    error::Error,
+    io,
+    rc::Rc,
+    sync::{Arc, PoisonError},
+};
 
 impl InteractiveMode {
     /// Installs the editor's change callback and image paste without keeping the mode
@@ -52,6 +57,38 @@ impl InteractiveMode {
         );
     }
 
+    /// Opens the thinking picker or selects a case-insensitive supported level.
+    pub(super) fn handle_thinking_command(
+        self: &Rc<Self>,
+        search_term: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        if search_term.is_empty() {
+            return self.show_thinking_selector();
+        }
+        let levels = self.runtime_host.session().get_available_thinking_levels();
+        if let Some(level) = levels
+            .iter()
+            .find(|level| thinking_text(level).0.eq_ignore_ascii_case(search_term))
+        {
+            return self.select_thinking_level(level.clone());
+        }
+        let available = levels
+            .iter()
+            .map(|level| thinking_text(level).0)
+            .collect::<Vec<_>>()
+            .join(", ");
+        Ok(self.show_error(&format!(
+            "Unknown thinking level \"{search_term}\". Available levels: {available}."
+        ))?)
+    }
+
+    /// Saves the chosen level and refreshes its footer, border and status.
+    pub(super) fn select_thinking_level(&self, level: ThinkingLevel) -> Result<(), Box<dyn Error>> {
+        let label = thinking_text(&level).0;
+        self.settings_thinking(level)?;
+        Ok(self.show_status(&format!("Thinking level: {label}"))?)
+    }
+
     /// Selects the session's next thinking level and shows it, refreshing the footer and
     /// border, or says the model cannot reason.
     ///
@@ -59,20 +96,36 @@ impl InteractiveMode {
     /// Returns the session's recording failure or the published theme's failure.
     pub(super) fn cycle_thinking_level(&self) -> Result<(), Box<dyn Error>> {
         let Some(level) = self.runtime_host.session().cycle_thinking_level()? else {
-            return self.show_status("Current model does not support thinking");
+            return self
+                .show_status("Current model does not support thinking")
+                .map_err(Into::into);
         };
         self.footer.invalidate();
         self.update_editor_border_color()?;
         self.show_status(&format!("Thinking level: {}", thinking_text(&level).0))
+            .map_err(Into::into)
     }
 
-    /// Selects the session's next or previous model and shows the outcome.
+    /// Selects the session's next or previous model, shows the outcome and checks the
+    /// subscription notice for a selected model.
     ///
     /// # Errors
     /// Returns the published theme's failure.
     async fn cycle_model(self: Rc<Self>, direction: CycleDirection) -> Result<(), Box<dyn Error>> {
         let result = self.runtime_host.session().cycle_model(direction).await;
-        self.show_model_cycle_result(result)
+        let selected = result
+            .as_ref()
+            .ok()
+            .and_then(Option::as_ref)
+            .map(|result| Arc::clone(&result.model));
+        self.show_model_cycle_result(result)?;
+        match selected {
+            Some(model) => {
+                self.maybe_warn_about_anthropic_subscription_auth(Some(model))
+                    .await
+            }
+            None => Ok(()),
+        }
     }
 
     /// Shows a finished model cycle: the selected model and its thinking level after
@@ -87,9 +140,15 @@ impl InteractiveMode {
         let result = match result {
             Ok(Some(result)) => result,
             Ok(None) if self.runtime_host.session().scoped_models().is_empty() => {
-                return self.show_status("Only one model available");
+                return self
+                    .show_status("Only one model available")
+                    .map_err(Into::into);
             }
-            Ok(None) => return self.show_status("Only one model in scope"),
+            Ok(None) => {
+                return self
+                    .show_status("Only one model in scope")
+                    .map_err(Into::into);
+            }
             Err(error) => return Ok(self.show_error(&error.message)?),
         };
         self.footer.invalidate();
@@ -106,13 +165,16 @@ impl InteractiveMode {
             String::new()
         };
         self.show_status(&format!("Switched to {name}{thinking}"))
+            .map_err(Into::into)
     }
 
-    /// Edits the expanded editor text in the configured external editor, or warns when
-    /// neither `VISUAL` nor `EDITOR` names one.
+    /// Edits the current editor's expanded text in the configured external editor, or warns
+    /// when neither `VISUAL` nor `EDITOR` names one; the edited text goes to the editor that
+    /// is current when the edit finishes.
     ///
     /// # Errors
-    /// Returns the warning's theme failure or the edit's file, terminal or process failure.
+    /// Returns the warning's theme failure, the editor's failure or the edit's file,
+    /// terminal or process failure.
     pub(super) fn open_external_editor(&self) -> Result<(), Box<dyn Error>> {
         let Some(command) = external_command(self.tool_environment.runtime.as_ref()) else {
             return Ok(self.show_warning(
@@ -123,19 +185,22 @@ impl InteractiveMode {
             "maestro-editor-{}.maestro.md",
             self.tool_environment.runtime.log_context().unix_ms
         ));
+        let text = self
+            .expanded_editor_text()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let file = ExternalEditorFile {
             command: &command,
             path: &path,
-            text: &self.editor.get_expanded_text(),
+            text: &text,
         };
         edit_external_file(
             &self.ui,
             #[cfg(windows)]
             self.tool_environment.runtime.as_ref(),
-            &self.editor,
+            |text| self.current_editor().try_set_text(text),
             &file,
-        )?;
-        Ok(())
+        )
+        .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Suspends the terminal to the background until the shell continues the process.
@@ -182,6 +247,7 @@ impl InteractiveMode {
     #[cfg(any(windows, all(test, target_os = "linux")))]
     pub(super) fn show_suspend_unsupported(&self) -> Result<(), Box<dyn Error>> {
         self.show_status("Suspend to background is not supported on Windows")
+            .map_err(Into::into)
     }
 
     /// Reads the clipboard image on the host, keeping the mode until the read completes,
@@ -195,7 +261,8 @@ impl InteractiveMode {
     }
 
     /// Writes a read clipboard image to a new private temporary file and inserts its path
-    /// at the cursor; no image and every failure leave the editor untouched.
+    /// at the current editor's cursor; no image and every file failure leave the editor
+    /// untouched, and the editor's own failure goes to the terminal runtime.
     pub(super) fn paste_clipboard_result(&self, result: io::Result<Option<ClipboardImage>>) {
         let Ok(Some(image)) = result else {
             return;
@@ -206,8 +273,13 @@ impl InteractiveMode {
             uuid::Uuid::new_v4()
         ));
         if write_temporary_file(&path, &image.bytes).is_ok() {
-            self.editor.insert_text_at_cursor(&path.to_string_lossy());
-            self.ui.request_render(false);
+            let inserted = self
+                .current_editor()
+                .try_insert_text_at_cursor(&path.to_string_lossy());
+            match inserted {
+                Ok(_) => self.ui.request_render(false),
+                Err(error) => self.report(Err(error)),
+            }
         }
     }
 }

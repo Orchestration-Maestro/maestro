@@ -8,22 +8,16 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use maestro_tui::set_kitty_protocol_active;
-use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
-use rustix::stdio::stdin;
-use rustix::termios::{OptionalActions, OutputModes, Termios, tcgetattr, tcsetattr};
 use tokio::runtime::Handle;
-use tokio::signal::unix::{SignalKind, signal};
-use tokio::task::JoinHandle;
 use tokio::time::{Instant, sleep};
 
-use super::descriptor::Source;
 use super::input::Input;
 use super::output::{
     FALLBACK_OFF, FALLBACK_ON, KEYBOARD_ON, KEYBOARD_POP, KEYBOARD_QUERY, PASTE_OFF, PASTE_ON,
     PROGRESS_CLEAR, first_failure,
 };
-use super::{InputCallback, ProcessTerminal, ResizeCallback, Shared};
-use tokio::io::Interest;
+use super::platform::{self, Acquired, Task};
+use super::{InputCallback, OutputPort, ProcessTerminal, ResizeCallback, Shared};
 
 /// How long after `start` a missing keyboard reply selects the fallback reporting mode.
 const NEGOTIATION: Duration = Duration::from_millis(150);
@@ -37,68 +31,9 @@ const DRAIN_IDLE: Duration = Duration::from_millis(50);
 /// The live input task and the standard-input state it changed.
 pub(super) struct Running {
     /// The task reading input and delivering it.
-    pub(super) task: JoinHandle<()>,
+    pub(super) task: Task,
     /// What to give back to standard input when the terminal stops.
     pub(super) acquired: Acquired,
-}
-
-/// The standard-input state a started terminal changed and must give back.
-#[derive(Default)]
-pub(super) struct Acquired {
-    /// The attributes before raw mode, when standard input is a terminal.
-    attributes: Option<Termios>,
-    /// The status flags before reads became nonblocking.
-    flags: Option<OFlags>,
-}
-
-impl Acquired {
-    /// Puts standard input in raw mode, when it is a terminal, and makes its reads
-    /// nonblocking. What is already remembered is kept, so repeating the call never records
-    /// the changed state as the original.
-    fn take(&mut self) -> io::Result<()> {
-        if self.attributes.is_none()
-            && let Ok(original) = tcgetattr(stdin())
-        {
-            tcsetattr(stdin(), OptionalActions::Drain, &raw(&original))?;
-            self.attributes = Some(original);
-        }
-        if self.flags.is_none() {
-            let flags = fcntl_getfl(stdin())?;
-            fcntl_setfl(stdin(), flags | OFlags::NONBLOCK)?;
-            self.flags = Some(flags);
-        }
-        Ok(())
-    }
-
-    /// Gives back what was taken, attempting the flags even when the attributes fail, and
-    /// returns the first failure.
-    pub(super) fn restore(&mut self) -> io::Result<()> {
-        let attributes = self.attributes.take().map_or(Ok(()), |original| {
-            tcsetattr(stdin(), OptionalActions::Drain, &original).map_err(io::Error::from)
-        });
-        let flags = self.flags.take().map_or(Ok(()), |original| {
-            fcntl_setfl(stdin(), original).map_err(io::Error::from)
-        });
-        attributes.and(flags)
-    }
-}
-
-impl Drop for Acquired {
-    fn drop(&mut self) {
-        let _ = self.restore();
-    }
-}
-
-/// `original` in raw mode: no echo, line editing, signal keys, break, parity, strip, newline,
-/// carriage-return or start/stop-key handling on input, reads that return as soon as one byte
-/// is available, and output post-processing with newline-to-CR-LF mapping on so a bare
-/// newline written to the device returns the carriage.
-fn raw(original: &Termios) -> Termios {
-    let mut raw = original.clone();
-    raw.make_raw();
-    raw.output_modes
-        .insert(OutputModes::OPOST | OutputModes::ONLCR);
-    raw
 }
 
 impl ProcessTerminal {
@@ -148,15 +83,11 @@ impl ProcessTerminal {
         acquired: &mut Acquired,
         on_input: InputCallback,
         on_resize: ResizeCallback,
-    ) -> io::Result<JoinHandle<()>> {
-        acquired.take()?;
-        let source = Source::open(stdin(), Interest::READABLE)?;
-        let resize = signal(SignalKind::window_change())?;
-        if self.shared.output.borrow().is_none() {
-            let writer =
-                super::tty_writer::TtyWriter::new(&self.local, Rc::downgrade(&self.shared))?;
-            self.shared.output.replace(writer.map(Rc::new));
-        }
+    ) -> io::Result<Task> {
+        let stream = platform::acquire(acquired)?;
+        self.shared
+            .output
+            .open(&self.local, Rc::downgrade(&self.shared))?;
         self.shared.emit(&[PASTE_ON, KEYBOARD_QUERY].concat())?;
         let generation = self.shared.install(on_input, on_resize);
         let input = Input::new(
@@ -164,7 +95,7 @@ impl ProcessTerminal {
             generation,
             Instant::now() + NEGOTIATION,
         );
-        Ok(self.local.spawn_local(input.run(source, resize)))
+        Ok(stream.spawn(&self.local, input))
     }
 
     /// Writes the paste and keyboard disables and gives standard input back; every step is
@@ -280,7 +211,7 @@ impl ProcessTerminal {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         let begin = Instant::now();
         self.shared.activity.set(begin);
         self.shared.negotiating.set(false);
@@ -313,28 +244,4 @@ async fn wait_until_quiet(shared: &Shared, begin: Instant, max: Duration, idle: 
         }
         sleep(left.map_or(idle, |left| left.min(idle))).await;
     }
-}
-
-/// Await one nonempty raw stdin read without starting a terminal or enabling output modes.
-/// Acquires on first poll and restores saved attributes and descriptor flags on completion
-/// or drop. EOF remains pending until dropped. Requires a caller-driven Tokio I/O runtime.
-///
-/// # Errors
-/// Returns runtime, acquisition, open, read or restoration errors, preserving an earlier
-/// operation error when restoration also fails.
-pub async fn wait_for_input() -> io::Result<()> {
-    Handle::try_current().map_err(io::Error::other)?;
-    let mut source = Source::open(stdin(), Interest::READABLE)?;
-    let mut acquired = Acquired::default();
-    let result = async {
-        acquired.take()?;
-        let mut chunk = [0; super::input::READ_SIZE];
-        if source.read(&mut chunk).await? == 0 {
-            std::future::pending::<()>().await;
-        }
-        Ok(())
-    }
-    .await;
-    let restored = acquired.restore();
-    result.and(restored)
 }
