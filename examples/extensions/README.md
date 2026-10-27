@@ -37,9 +37,13 @@ inserts at its own place instead of appending at the end of each list.
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `message_renderer.rs` | A `/status [warn\|error] message` command that sends a status message, and the renderer that draws its colored level and, when expanded, the local time it was sent. |
+| `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
+| `preset.rs` | A `--preset` flag, `/preset` selector and Ctrl+Shift+U shortcut for named model, thinking, tool and prompt configurations. |
+| [`preset/config.rs`](preset/config.rs) | Layered configuration loading for `preset.rs`. |
+| [`preset/selector.rs`](preset/selector.rs) | Retained, themed preset selector for `preset.rs`. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
@@ -109,11 +113,17 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- message_renderer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- preset_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -488,6 +498,21 @@ that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.
 
+### What the model status example does
+
+`model_select` reads the selection the host reports. On an explicit selection or
+a cycle it notifies `Model: {provider}/{id}` with info severity; restoring a
+saved selection skips the notification. Every selection then sets the `model`
+status to `🤖 {id}` and writes the previous and selected identifiers and
+the selection source to standard output. An absent previous model reads `none`.
+Repeated and unchanged selections are reported too.
+
+The example makes no model or provider call and paints no footer; a host that
+shows the status decides where it goes. `model_status_component_runs_selection_hook`
+instantiates the built component and checks its host requests and its standard
+output against the recorded selections. Loading the component into an application
+is opt-in and needs that application's component runtime.
+
 ### What the widget placement example does
 
 On every `session_start`, `widget_placement` reads the host's current UI
@@ -534,6 +559,52 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the preset example does
+
+Build with `--example preset` in the build command above. The component reads
+`presets.json` in `MAESTRO_CODING_AGENT_DIR` (default `~/.maestro/agent`) and
+`<cwd>/.maestro/presets.json` at session start. A project entry replaces the whole
+global entry with the same name. Missing files are ignored; unreadable files,
+invalid JSON or invalid field types report a diagnostic and leave the other
+layer available.
+
+Each file maps names to optional `provider`, `model`, `thinkingLevel`, `tools`
+and `instructions` fields. For example:
+
+```json
+{
+  "plan": {
+    "thinkingLevel": "high",
+    "tools": ["read", "grep", "find", "ls"],
+    "instructions": "Understand the problem before proposing changes."
+  }
+}
+```
+
+`--preset plan` applies the preset before session startup completes, including
+model selection. `/preset plan` selects it directly; `/preset` opens **Select
+Preset**. Ctrl+Shift+U cycles names in sorted order, including `(none)` to clear.
+Clearing restores the model, thinking level and tools captured before the first
+application. Without a snapshot it restores `read`, `bash`, `edit` and `write`.
+Unknown models, missing authentication and unknown tools produce warnings;
+nonempty valid tool selections still apply. Empty or wholly invalid tool lists
+leave the host's tools unchanged.
+
+Active instructions append to the supplied system prompt. The footer shows
+`preset:<name>`. Turn-start entries retain the active name, including a cleared
+choice, on the current branch. Session start and tree navigation restore only
+the newest name on that branch, without reapplying model or tool settings.
+The flag takes precedence over the saved name.
+
+Loading is opt-in and needs a component-enabled native host with filesystem and
+environment access; browsing the selector also needs custom UI and retained
+widgets. Adding `provider` and `model` selects that exact configured registry
+entry and needs its authentication for real requests. This example changes
+session settings and appends session entries, but writes no configuration file.
+Real prompts can incur provider charges. The `preset_` controlled runs use
+read-only fixture files, supplied registry replies and terminal input; they
+need no credentials, installation or paid services.
 
 ### What the input transform example does
 

@@ -214,12 +214,26 @@ fn configure_layout(repo: &Repository, layout: &str) {
 }
 
 /// Forwards captured commands through the native transport.
-fn configure_capture(effects: &Effects, native: Rc<NativePackageOperations>) {
+fn configure_capture(effects: &Rc<Effects>, native: Rc<NativePackageOperations>) {
     let capture = native;
+    let observed = Rc::downgrade(effects);
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
         let (command, args, cwd) = (command.to_owned(), args.to_vec(), cwd.map(str::to_owned));
         let native = capture.clone();
+        let env = observed
+            .upgrade()
+            .unwrap()
+            .operands
+            .borrow()
+            .last()
+            .unwrap()
+            .2
+            .clone();
         Box::pin(async move {
+            let env: Vec<_> = env
+                .iter()
+                .map(|(key, value)| (key.as_str(), value.as_str()))
+                .collect();
             native
                 .run_command_capture(
                     &command,
@@ -227,7 +241,7 @@ fn configure_capture(effects: &Effects, native: Rc<NativePackageOperations>) {
                     maestro_packages::CommandCaptureOptions {
                         cwd: cwd.as_deref(),
                         timeout: None,
-                        env: &[],
+                        env: &env,
                     },
                 )
                 .await
