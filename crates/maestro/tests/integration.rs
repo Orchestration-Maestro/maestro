@@ -9,3 +9,5 @@ mod qna_example;
 mod startup_modes;
 mod support;
 pub mod tools_example;
+
+mod ssh_example;

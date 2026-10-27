@@ -14,17 +14,20 @@ pub async fn component_session(
     no_tools: Option<NoTools>,
     widgets: Rc<dyn maestro_app::ExtensionWidgets>,
 ) -> Rc<AgentSession> {
-    let mut resources =
-        ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
+    let mut resources = ResourceLoaderOptions::<Local>::new(
+        local.clone(),
+        Rc::new(|_| Box::pin(async { Ok(None) })),
+    );
     resources
         .extension_factories
-        .push(maestro_extensions_wasmtime::artifact_factory(
+        .push(maestro_extensions_wasmtime::artifact_factory_with_io(
             component,
             widgets,
             maestro_extensions_wasmtime::Installation {
                 version: env!("CARGO_PKG_VERSION").into(),
                 agent_dir: root.path("agent").display().to_string(),
             },
+            maestro_app::extension_native_io::extension_native_io(&local),
         ));
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());

@@ -1,40 +1,32 @@
 //! Shipped SSH operations through the component runner and original coding tools.
 #![cfg(test)]
-use maestro_extensions::{
-    ExtensionRunner, Local, create_extension_runtime, load_extension_from_factory,
-};
+use maestro_app::{ExtensionRunner, Local};
 use serde_json::{Value, json};
-use std::{path::Path, rc::Rc, sync::RwLock};
+use std::{path::Path, rc::Rc};
 
-/// Loads the shipped example without enabling remote execution.
-async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
-    let path = std::env::var("MAESTRO_SSH_COMPONENT").unwrap();
-    let runtime = create_extension_runtime::<Local>();
-    runtime.set_tool_construction(maestro_extensions::ToolConstruction {
-        tools_manager: std::sync::Arc::new(
-            maestro_extensions::ToolsManager::new(root.to_str().unwrap().into(), None)
-                .with_offline(Some(true)),
-        ),
-        bin_dir: root.to_str().unwrap().into(),
-    });
-    let bus = super::components::TracedBus::new();
-    let cwd = root.to_str().unwrap();
-    let owner = load_extension_from_factory(
-        crate::artifact(path.clone()),
-        cwd.into(),
-        bus.controller.for_extension(),
-        runtime.clone(),
-        Some(path),
+/// Runs on the same local executor the application's native resources retain.
+fn run<F: Future<Output = ()>>(action: impl FnOnce(Rc<tokio::task::LocalSet>) -> F) {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, action(local.clone()));
+}
+
+/// Loads the shipped example through the existing embedding composition.
+async fn loaded(
+    root: &super::support::Root,
+    local: Rc<tokio::task::LocalSet>,
+) -> Rc<maestro_app::AgentSession> {
+    super::support::session::component_session(
+        root,
+        local,
+        std::env::var("MAESTRO_SSH_COMPONENT").unwrap(),
+        None,
+        super::support::widgets(),
     )
     .await
-    .unwrap();
-    Rc::new(ExtensionRunner::<Local>::new(
-        Rc::new(RwLock::new(vec![owner])),
-        runtime,
-        super::session::runner_session(cwd).0,
-        Rc::new(|_| {}),
-        maestro_theme::LiveTheme::default(),
-    ))
 }
 
 /// Invokes the registered override through the application's ordinary wrapper.
@@ -44,7 +36,7 @@ async fn call(runner: &Rc<ExtensionRunner<Local>>, name: &str, params: Value) ->
         .iter()
         .find(|tool| tool.metadata().definition.name == name)
         .unwrap();
-    let tool = maestro_extensions::wrap_registered_tool(registered, runner.clone());
+    let tool = maestro_app::wrap_registered_tool(registered, runner.clone());
     let result = (tool.execute)("ssh-call".into(), params, None, None)
         .await
         .unwrap();
@@ -53,9 +45,10 @@ async fn call(runner: &Rc<ExtensionRunner<Local>>, name: &str, params: Value) ->
 
 #[test]
 fn ssh_unset_keeps_original_local_coding_tools() {
-    super::wasi_support::run(async {
-        let root = maestro_test_directory::Scratch::new().unwrap();
-        let runner = loaded(root.path()).await;
+    run(|executor| async move {
+        let root = super::support::Root::new();
+        let session = loaded(&root, executor).await;
+        let runner = session.extension_runner();
         assert_eq!(runner.get_all_registered_tools().len(), 4);
         assert!(runner.get_flags().contains_key("ssh"));
         call(
@@ -75,7 +68,7 @@ fn ssh_unset_keeps_original_local_coding_tools() {
         )
         .await;
         assert_eq!(
-            std::fs::read_to_string(root.path().join("note.txt")).unwrap(),
+            std::fs::read_to_string(root.path("project/note.txt")).unwrap(),
             "after\n"
         );
         assert_eq!(
@@ -142,23 +135,19 @@ fn fixture(name: &str) -> std::path::PathBuf {
 /// Records lifecycle UI requests without requiring a terminal.
 #[derive(Default)]
 struct Ui(std::cell::RefCell<Vec<Value>>);
-impl maestro_extensions::types::ExtensionUIContextPort for Ui {
+impl maestro_app::ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {
         maestro_theme::LiveTheme::default()
     }
-    fn set_status(
-        &self,
-        key: String,
-        text: Option<String>,
-    ) -> Result<(), maestro_extensions::EventError> {
+    fn set_status(&self, key: String, text: Option<String>) -> Result<(), maestro_app::EventError> {
         self.0.borrow_mut().push(json!(["status", key, text]));
         Ok(())
     }
     fn notify(
         &self,
         text: String,
-        kind: Option<maestro_extensions::types::NotificationType>,
-    ) -> Result<(), maestro_extensions::EventError> {
+        kind: Option<maestro_app::NotificationType>,
+    ) -> Result<(), maestro_app::EventError> {
         self.0.borrow_mut().push(json!(["notify", text, kind]));
         Ok(())
     }
@@ -166,16 +155,11 @@ impl maestro_extensions::types::ExtensionUIContextPort for Ui {
 
 /// Resolves the flag only when the real session-start callback runs.
 async fn start(runner: &ExtensionRunner<Local>, value: &str) {
-    runner.set_flag_value(
-        "ssh".into(),
-        maestro_extensions::types::FlagValue::String(value.into()),
-    );
+    runner.set_flag_value("ssh".into(), maestro_app::FlagValue::String(value.into()));
     runner
         .emit(
-            &mut serde_json::from_value::<maestro_extensions::SessionStartEvent>(
-                json!({"reason":"new"}),
-            )
-            .unwrap(),
+            &mut serde_json::from_value::<maestro_app::SessionStartEvent>(json!({"reason":"new"}))
+                .unwrap(),
         )
         .await
         .unwrap();
@@ -228,7 +212,7 @@ async fn remote_files(runner: &Rc<ExtensionRunner<Local>>, local: &Path) {
         .iter()
         .find(|tool| tool.metadata().definition.name == "read")
         .unwrap();
-    let tool = maestro_extensions::wrap_registered_tool(read, runner.clone());
+    let tool = maestro_app::wrap_registered_tool(read, runner.clone());
     let error = (tool.execute)("missing".into(), json!({"path":"absent.txt"}), None, None)
         .await
         .unwrap_err();
@@ -237,7 +221,7 @@ async fn remote_files(runner: &Rc<ExtensionRunner<Local>>, local: &Path) {
 
 /// User shell operations retain streaming, numeric exit, cancellation and source deadlines.
 async fn remote_shell(runner: &Rc<ExtensionRunner<Local>>, cwd: &Path) {
-    use maestro_extensions::{BashExecOptions, BashOperations, BashResult, UserBashEvent};
+    use maestro_app::{BashExecOptions, BashOperations, BashResult, UserBashEvent};
     assert_eq!(
         call(runner, "bash", json!({"command":"printf shell"})).await[0]["text"],
         "shell"
@@ -276,11 +260,8 @@ async fn remote_shell(runner: &Rc<ExtensionRunner<Local>>, cwd: &Path) {
 }
 
 /// Cancels a live child on its output and supplies an immediately ready native deadline.
-async fn shell_interruptions(
-    operations: &dyn maestro_extensions::BashOperations<Local>,
-    cwd: &str,
-) {
-    use maestro_extensions::{BashExecOptions, Cancellation};
+async fn shell_interruptions(operations: &dyn maestro_app::BashOperations<Local>, cwd: &str) {
+    use maestro_app::{BashExecOptions, Cancellation};
     let signal = Cancellation::new();
     let mut abort = |_: &[u8]| signal.abort();
     let error = operations
@@ -345,7 +326,7 @@ async fn remote_prompt(runner: &ExtensionRunner<Local>, local: &Path, remote: &P
     let result = runner
         .emit_before_agent_start(
             "test".into(),
-            &mut maestro_extensions::Presence::Missing,
+            &mut maestro_app::Presence::Missing,
             prompt,
             options,
         )
@@ -367,28 +348,28 @@ fn ssh_enabled_routes_coding_tools_shell_and_session_context() {
     if isolated() {
         return;
     }
-    super::wasi_support::run(async {
-        let local = maestro_test_directory::Scratch::new().unwrap();
-        let runner = loaded(local.path()).await;
+    run(|executor| async move {
+        let root = super::support::Root::new();
+        let session = loaded(&root, executor).await;
+        let runner = session.extension_runner();
+        let local = root.path("project");
         let ui = Rc::new(Ui::default());
-        runner.set_ui_context(Some(maestro_extensions::ExtensionUIContext::new(
-            ui.clone(),
-        )));
+        runner.set_ui_context(Some(maestro_app::ExtensionUIContext::new(ui.clone())));
         let remote = fixture("remote");
         start(&runner, &format!("user@controlled:{}", remote.display())).await;
-        remote_files(&runner, local.path()).await;
-        remote_shell(&runner, local.path()).await;
-        remote_prompt(&runner, local.path(), &remote).await;
+        remote_files(&runner, &local).await;
+        remote_shell(&runner, &local).await;
+        remote_prompt(&runner, &local, &remote).await;
         assert_status(&ui, &remote);
         start(&runner, "user@controlled").await;
-        remote_prompt(&runner, local.path(), &remote).await;
+        remote_prompt(&runner, &local, &remote).await;
         start(&runner, "user@broken:/unreachable").await;
         let tools = runner.get_all_registered_tools();
         let read = tools
             .iter()
             .find(|tool| tool.metadata().definition.name == "read")
             .unwrap();
-        let tool = maestro_extensions::wrap_registered_tool(read, runner.clone());
+        let tool = maestro_app::wrap_registered_tool(read, runner.clone());
         let error = (tool.execute)("error".into(), json!({"path":"note.txt"}), None, None)
             .await
             .unwrap_err();
@@ -406,7 +387,7 @@ fn ssh_enabled_routes_coding_tools_shell_and_session_context() {
         )
         .await;
         assert_eq!(
-            std::fs::read_to_string(local.path().join("local.txt")).unwrap(),
+            std::fs::read_to_string(local.join("local.txt")).unwrap(),
             "local again"
         );
     });
