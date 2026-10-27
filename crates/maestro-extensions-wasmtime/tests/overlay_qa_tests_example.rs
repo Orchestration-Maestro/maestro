@@ -697,6 +697,10 @@ fn overlay_qa_tests_overflow_streams_process_output_within_the_width() {
         );
         drop((out, err));
         until(|| host.shows(0, 80, "│ ✓ Exited | ↑↓ scroll | Esc close")).await;
+        assert!(
+            host.screen()[3].contains("│ ↑8 | ↓1"),
+            "closing the pipes keeps the scroll position"
+        );
         host.press("\x1b");
         host.finished(command).await;
         assert_eq!(
