@@ -3391,6 +3391,7 @@ fn example_index_discovers_independent_additions() {
     )
     .unwrap();
     fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
+    fs::write(folder.join("nested.md"), "# Nested usage\n").unwrap();
     fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
     let cargo = Path::new("unused-cargo");
     assert_eq!(
@@ -3400,7 +3401,7 @@ fn example_index_discovers_independent_additions() {
     let rendered = fs::read_to_string(&readme).unwrap();
     assert_eq!(
         rendered,
-        "Before\n<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `alpha.md` | Alpha usage |\n| `alpha.rs` | Alpha command with a continuation. |\n| `nested/helper.rs` | A helper. |\n| `zebra.rs` | Zebra \\| tool. |\n<!-- example-index:end -->\nAfter\n"
+        "Before\n<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `alpha.md` | Alpha usage |\n| `alpha.rs` | Alpha command with a continuation. |\n| `nested.md` | Nested usage |\n| `nested/helper.rs` | A helper. |\n| `zebra.rs` | Zebra \\| tool. |\n<!-- example-index:end -->\nAfter\n"
     );
     assert!(
         tooling::run(
