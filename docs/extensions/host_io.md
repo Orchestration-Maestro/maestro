@@ -28,9 +28,10 @@ On Windows there is no single root, so the host opens each accessible drive and
 the native cwd's own root, which may be a network share. Each root takes its
 component name: `C:\` is `/C:` and `\\server\share` is `/SERVER/SHARE`. A root
 the host cannot open is left out without affecting the others. The cwd is
-supplied in the same spelling, for example `/C:/Users/me/project`. A drive or
-share that appears after the extension starts is not reachable until it is
-loaded again.
+supplied in the same spelling, for example `/C:/Users/me/project`. Other
+shares are not reachable yet, and a drive that appears after the extension
+loads needs a reload
+([#2942](https://github.com/Orchestration-Maestro/maestro/issues/2942)).
 
 The component's standard library treats only `/` as a separator and only a
 leading `/` as absolute. A native Windows path such as `C:\Users\me\notes.txt`
