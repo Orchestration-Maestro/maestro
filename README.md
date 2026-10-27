@@ -39,16 +39,10 @@ Commit messages require a conventional header and lines of at most 80 columns.
 
 ## Documentation rules
 
-Every crate root has `//!` documentation and every public item has `///`
-documentation. The documentation build denies warnings and missing docs.
-Comments describe code behavior, never planning material: no numbered
-slices, specs, tasks or tickets; issue or pull-request references; planning
-vocabulary or identifiers. The conventions checker scans Rust comments in
-each workspace member and reports the file and line. Strings and attributes
-are not comments. There are no exemptions; reword false positives.
-
-Technical wording such as "the JSON-RPC specification", "an async task",
-"step 1 of the parse", "UTF-16" and "S3-compatible" remains valid.
+[How to document in Maestro](docs/how-to-document-in-maestro.md) explains how to
+write guide pages, examples, specifications, glossary entries, decision records
+and rustdoc. [AGENTS.md](AGENTS.md#documentation) holds the rules the build
+enforces.
 
 ## Workspace crate rules
 
@@ -77,6 +71,7 @@ vocabulary.
 ## Documentation
 
 - [Identity guide and brand pack](docs/identity.md)
+- [How to document in Maestro](docs/how-to-document-in-maestro.md)
 - [Foundation specification](docs/specs/maestro-port.md)
 - [Architecture checks](docs/architecture.md)
 - [Contributor workflow](docs/agents/issue-tracker.md)
