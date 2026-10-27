@@ -2,7 +2,7 @@
 use super::super::extension_ui::port;
 use super::super::extension_widgets::with_factories;
 use super::super::{World, isolated};
-use maestro_app::{AutocompleteProviderFactory, ExtensionAPI, Local};
+use maestro_app::{AutocompleteProviderFactory, ExtensionAPI, Local, NewSessionCommandOptions};
 use maestro_tui::autocomplete::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
 };
@@ -189,6 +189,109 @@ fn complete_both_editors(
     ui.set_editor_component(None).unwrap();
     complete(world);
     trace_is(trace, "B:suggest A:suggest B:apply A:apply");
+}
+
+#[test]
+fn wrapper_factories_stack_over_a_fresh_base_on_both_installed_editors() {
+    isolated(
+        "wrapper_factories_stack_over_a_fresh_base_on_both_installed_editors",
+        async |directory| {
+            let trace = Trace::default();
+            let handles = Rc::new(RefCell::new(Vec::new()));
+            let knobs = Rc::new(super::super::extension_editors::Knobs::default());
+            let (seen, captured, supplied) = (trace.clone(), handles.clone(), knobs.clone());
+            let (world, mut built) = with_factories(directory, move |api| {
+                vec![(
+                    super::super::extension_editors::probe_factory(api, &supplied, true, None),
+                    [
+                        wrapper(api, "A", seen.clone(), captured.clone()),
+                        wrapper(api, "B", seen.clone(), captured.clone()),
+                    ],
+                )]
+            })
+            .await;
+            let (editor, [first, second]) = built.pop().unwrap();
+            let ui = port(&world.mode);
+            ui.set_editor_component(Some(editor)).unwrap();
+            knobs.calls.take();
+            ui.add_autocomplete_provider(first).unwrap();
+            ui.add_autocomplete_provider(second).unwrap();
+            trace_is(&trace, "A:factory A:factory B:factory");
+            assert_eq!(knobs.calls.take(), ["provider", "provider"]);
+            let handles = handles.borrow();
+            assert!(
+                !Rc::ptr_eq(&handles[0].0, &handles[1].0),
+                "a rebuild starts fresh"
+            );
+            assert!(
+                Rc::ptr_eq(&handles[1].1, &handles[2].0),
+                "B wraps A's exact result"
+            );
+            let installed = world
+                .mode
+                .editor_state
+                .autocomplete
+                .borrow()
+                .clone()
+                .unwrap();
+            assert!(Rc::ptr_eq(&installed, &handles[2].1));
+            assert!(Rc::ptr_eq(
+                knobs.provider.borrow().as_ref().unwrap(),
+                &installed
+            ));
+            trigger(&installed);
+            trace_is(&trace, "B:trigger A:trigger");
+            complete(&world);
+            assert_eq!(knobs.editor().inner.get_text(), "/settings ");
+            trace_is(&trace, "B:suggest A:suggest B:apply A:apply");
+            ui.set_editor_component(None).unwrap();
+            assert!(knobs.calls.borrow().iter().all(|call| call != "provider"));
+            complete(&world);
+            trace_is(&trace, "B:suggest A:suggest B:apply A:apply");
+        },
+    );
+}
+
+#[test]
+fn session_replacement_drops_wrappers_and_installs_a_fresh_base() {
+    isolated(
+        "session_replacement_drops_wrappers_and_installs_a_fresh_base",
+        async |directory| {
+            let trace = Trace::default();
+            let handles = Rc::new(RefCell::new(Vec::new()));
+            let (seen, captured) = (trace.clone(), handles.clone());
+            let (world, factories) = with_factories(directory, move |api| {
+                vec![wrapper(api, "A", seen.clone(), captured.clone())]
+            })
+            .await;
+            port(&world.mode)
+                .add_autocomplete_provider(factories[0].clone())
+                .unwrap();
+            complete(&world);
+            trace_is(&trace, "A:factory A:suggest A:apply");
+            world
+                .host
+                .new_session(NewSessionCommandOptions::default())
+                .await
+                .unwrap();
+            trace_is(&trace, "");
+            let installed = world
+                .mode
+                .editor_state
+                .autocomplete
+                .borrow()
+                .clone()
+                .unwrap();
+            let handles = handles.borrow();
+            assert!(
+                !Rc::ptr_eq(&installed, &handles[0].0),
+                "the base is rebuilt"
+            );
+            assert!(!Rc::ptr_eq(&installed, &handles[0].1));
+            complete(&world);
+            trace_is(&trace, "");
+        },
+    );
 }
 
 /// Appends one factory during its first invocation and observes the nested installation.

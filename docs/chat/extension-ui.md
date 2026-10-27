@@ -181,11 +181,11 @@ while rebuilding, and that rebuild sees the append. Factory calls retain their
 originating extension's event capability even when another host receives the handle.
 
 Only a successful rebuild replaces the retained provider and the default editor's
-provider, with the same handle. A failing factory returns its original error, skips
+provider, with the same handle. When a custom editor is current, it receives that
+handle too, once per rebuild. A failing factory returns its original error, skips
 later factories and leaves the installed provider unchanged. Its registration remains
 for later rebuilds. Settings changes that rebuild completion report failures through
-the terminal runtime after saving the setting. Custom-editor completion forwarding
-is separate from this default-editor behavior.
+the terminal runtime after saving the setting.
 
 Typing `@` completes attachments through the search program selected during startup.
 File completion keeps the candidate and applied text of the toolkit's provider. The
@@ -397,10 +397,12 @@ what extensions changed, in this order:
 3. The extension terminal input listeners are removed.
 4. The built-in footer and header return, the widgets are disposed and removed,
    and the status texts are cleared.
-5. The default editor returns with the current editor's raw text, a fresh
-   completion provider and no extension shortcuts.
+5. The default editor returns with the current editor's raw text and no
+   extension shortcuts. The completion wrappers are dropped and completion is
+   rebuilt over a fresh base provider.
 6. The title is rewritten, and the working message, visibility, indicator and
-   hidden-thinking label return to their defaults.
+   hidden-thinking label return to their defaults. A working row that is already
+   running shows the default message with the interrupt key.
 
 The mode installs this reset on the runtime when it is constructed, reaching the
 mode weakly. A failing step returns its original error, keeps the steps before it,
