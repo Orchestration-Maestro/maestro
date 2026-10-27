@@ -194,6 +194,7 @@ impl SettingsManager {
         self.effective_nan = self.effective_nan.unless_defined_by(&overrides.0);
         let effective = std::mem::take(&mut self.effective);
         self.effective = merge_one_level(effective, overrides.0);
+        self.resolve_effective();
     }
 
     /// Returns a future that completes once every write queued so far has run.
@@ -253,6 +254,7 @@ impl SettingsManager {
         self.effective = merge_one_level(global, self.project.settings.clone());
         self.effective_nan = self.accepted_nan.unless_defined_by(&self.project.settings);
         self.apply_base_locks();
+        self.resolve_effective();
     }
 
     /// Publishes edits to a scope immediately and queues one save of them unless

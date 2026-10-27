@@ -54,8 +54,24 @@ impl SettingsManager {
     /// # Errors
     /// Returns an error if a publisher is already registered, retaining the first one.
     pub fn register_decider(&mut self, decider: SettingsDeciderHandle) -> Result<(), String> {
+        if self.decider.is_some() {
+            return Err("A settings decider is already registered".into());
+        }
         self.decider = Some(decider);
+        self.rebuild();
         Ok(())
+    }
+
+    /// Resolves only the merged view, reporting diagnostics outside storage locks.
+    pub(super) fn resolve_effective(&mut self) {
+        let Some(decider) = &self.decider else {
+            return;
+        };
+        let mut view = Settings(std::mem::take(&mut self.effective));
+        for message in decider.resolve(&mut view) {
+            self.report_refusal(SettingsScope::Global, message);
+        }
+        self.effective = view.0;
     }
 
     /// Asks the publisher without changing any settings or acquiring storage locks.
