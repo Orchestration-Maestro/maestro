@@ -382,6 +382,35 @@ fn overlay_test_menu_clamps_and_reports_each_choice() {
 }
 
 #[test]
+fn overlay_test_joined_emoji_fields_stay_inside_the_border() {
+    run(async |demo| {
+        let running = demo.open().await;
+        let a = |count| "a".repeat(count);
+        demo.keys(&["a"; 58]);
+        demo.keys(&["©", "\u{fe0f}", LEFT]);
+        let find = format!(" ▶ Find: {}©\u{fe0f}", a(57));
+        let rows = overlay([&find, "   Launch: ", "   Preferences", "   Dismiss"]);
+        assert_eq!(demo.frame(), (composed(&rows), cursor(9, 68)));
+        demo.keys(&[DOWN]);
+        demo.keys(&["a"; 60]);
+        demo.keys(&["©", "\u{fe0f}"]);
+        demo.keys(&["a"; 60]);
+        demo.keys(&[LEFT; 62]);
+        let find = format!("   Find: {}©\u{fe0f}", a(57));
+        let launch = format!(" ▶ Launch: {}©\u{fe0f}{}", a(28), a(27));
+        let rows = overlay([&find, &launch, "   Preferences", "   Dismiss"]);
+        assert_eq!(demo.frame(), (composed(&rows), cursor(10, 40)));
+        demo.keys(&["\r"]);
+        running.await.unwrap().unwrap();
+        let report = format!("Launch: \"{}©\u{fe0f}{}\"", a(60), a(60));
+        assert_eq!(
+            demo.ui.notes.take(),
+            [(report, Some(NotificationType::Info))]
+        );
+    });
+}
+
+#[test]
 fn overlay_test_long_fields_scroll_inside_the_border() {
     run(async |demo| {
         let running = demo.open().await;
