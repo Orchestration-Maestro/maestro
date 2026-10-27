@@ -26,7 +26,7 @@ operating-system failures.
 
 On Windows there is no single root, so the host opens each accessible drive and
 the native cwd's own root, which may be a network share. Each root takes its
-component name: `C:\` is `/C:` and `\\server\share` is `/server/share`. A root
+component name: `C:\` is `/C:` and `\\server\share` is `/SERVER/SHARE`. A root
 the host cannot open is left out without affecting the others. The cwd is
 supplied in the same spelling, for example `/C:/Users/me/project`. A drive or
 share that appears after the extension starts is not reachable until it is
@@ -47,7 +47,9 @@ let bytes = std::fs::read(guest_path(&api, &path)?)?;
 ```
 
 The conversion uses `/` separators, adds a leading `/` and an uppercase letter
-to a drive path, and drops the verbatim `\\?\` prefix. Relative paths keep
+to a drive path, uppercases a share's server and share names, and drops the
+verbatim `\\?\` prefix. Windows ignores letter case in these names, so every
+spelling of a drive or share reaches the same root. Relative paths keep
 their form. Resolve a drive-relative path such as `C:notes.txt` or `\notes.txt`
 first; its meaning depends on per-drive state the component does not have. Unix
 paths are returned unchanged. The 0.3 interfaces list the same roots by these

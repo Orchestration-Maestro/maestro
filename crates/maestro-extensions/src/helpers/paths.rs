@@ -62,8 +62,11 @@ pub fn guest_path(path: &str) -> String {
 ///
 /// A drive path gains a leading `/` and an uppercase letter, so `c:\x`
 /// reaches the `/C:` root, and a share `\\server\share` becomes
-/// `/server/share`: the form the component's libc reports for its cwd. The
-/// verbatim `\\?\` prefix names the same file and is dropped.
+/// `/SERVER/SHARE`: the form the component's libc reports for its cwd.
+/// Windows ignores letter case in drive, server and share names, while the
+/// component matches roots byte for byte, so each spelling of one root gets
+/// the same name. The verbatim `\\?\` prefix names the same file and is
+/// dropped.
 fn win32_guest_path(path: &str) -> String {
     let path = match path.strip_prefix(r"\\?\") {
         Some(share) if share.starts_with(r"UNC\") => format!(r"\{}", &share[3..]),
@@ -75,7 +78,13 @@ fn win32_guest_path(path: &str) -> String {
         [letter, b':', ..] if letter.is_ascii_alphabetic() => {
             format!("/{}{}", letter.to_ascii_uppercase() as char, &path[1..])
         }
-        [b'/', b'/', ..] => path[1..].to_owned(),
+        [b'/', b'/', ..] => {
+            let root = path[2..]
+                .match_indices('/')
+                .nth(1)
+                .map_or(path.len(), |(at, _)| at + 2);
+            format!("{}{}", path[1..root].to_uppercase(), &path[root..])
+        }
         _ => path,
     }
 }
