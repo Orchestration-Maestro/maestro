@@ -71,7 +71,7 @@ impl FileSettingsStorage {
         if write {
             create_parent(path)?;
         }
-        let mut lock = (write || path.exists())
+        let mut lock = (write || path.try_exists()?)
             .then(|| Lock::acquire(path))
             .transpose()?;
         let current = if lock.is_some() {
