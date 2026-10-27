@@ -3,6 +3,7 @@ use super::{DefaultEventBus, DefaultResourceLoader};
 use maestro_extensions::{ExtensionLoadError, LoadExtensionsResult};
 use maestro_packages::{PackageManager, ResolvedPaths};
 use maestro_resources::SourceScope;
+use maestro_settings::{BaseSettingsLayer, SettingsScope};
 use serde::Deserialize;
 use std::io;
 
@@ -16,6 +17,16 @@ struct PackageInput {
     scope: SourceScope,
 }
 
+/// One scoped publication through the settings owner's existing layer operation.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LayerInput {
+    /// User means global settings; temporary publication is invalid.
+    scope: SourceScope,
+    /// The settings owner's record, or an explicit removal.
+    layer: Option<BaseSettingsLayer>,
+}
+
 /// The generic load-time input format; no manifest policy is interpreted here.
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
@@ -26,6 +37,8 @@ struct Inputs {
     base_system_prompt: Option<String>,
     /// Text preceding the ordinary appended prompt.
     base_append_text: Vec<String>,
+    /// Scoped settings publications by one package owner.
+    base_layers: Vec<LayerInput>,
 }
 
 impl<E: DefaultEventBus> DefaultResourceLoader<E> {
@@ -45,14 +58,20 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         Ok(paths)
     }
 
-    /// Decodes inputs without holding the loader state across asynchronous acquisition.
+    /// Starts a fresh publication window and attributes decoding or publisher failures.
     fn load_time_inputs(&self, extensions: &mut LoadExtensionsResult<E>) -> Vec<PackageInput> {
+        {
+            let mut state = self.state.borrow_mut();
+            state.base_system_prompt = None;
+            state.base_append_text.clear();
+        }
+        let mut publisher = None;
         let mut packages = Vec::new();
-        let mut state = self.state.borrow_mut();
-        state.base_system_prompt = None;
-        state.base_append_text.clear();
         for (path, payload) in extensions.runtime.finish_load_time() {
-            let inputs = match serde_json::from_value::<Inputs>(payload) {
+            let accepted = serde_json::from_value::<Inputs>(payload)
+                .map_err(|error| error.to_string())
+                .and_then(|inputs| self.accept_load_time(inputs, &path, &mut publisher));
+            let inputs = match accepted {
                 Ok(inputs) => inputs,
                 Err(error) => {
                     extensions.errors.push(ExtensionLoadError {
@@ -62,15 +81,56 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
                     continue;
                 }
             };
-            if state.base_system_prompt.is_none() {
-                state.base_system_prompt = inputs.base_system_prompt;
-            }
-            state.base_append_text.extend(inputs.base_append_text);
-            for package in inputs.package_sources {
+            for package in inputs {
                 add_package_input(&mut packages, package);
             }
         }
         packages
+    }
+
+    /// Validates the complete publication before changing settings or prompt inputs.
+    fn accept_load_time(
+        &self,
+        inputs: Inputs,
+        path: &str,
+        publisher: &mut Option<String>,
+    ) -> Result<Vec<PackageInput>, String> {
+        if !inputs.base_layers.is_empty() && publisher.as_deref().is_some_and(|owner| owner != path)
+        {
+            return Err(format!(
+                "Base layer publisher already registered by {}",
+                publisher.as_deref().unwrap_or_default()
+            ));
+        }
+        let layers: Result<Vec<_>, _> = inputs
+            .base_layers
+            .into_iter()
+            .map(|input| {
+                let scope = match input.scope {
+                    SourceScope::User => SettingsScope::Global,
+                    SourceScope::Project => SettingsScope::Project,
+                    SourceScope::Temporary => {
+                        return Err("A base layer requires user or project scope".to_owned());
+                    }
+                };
+                Ok((scope, input.layer))
+            })
+            .collect();
+        let layers = layers?;
+        if !layers.is_empty() {
+            publisher.get_or_insert_with(|| path.to_owned());
+        }
+        for (scope, layer) in layers {
+            self.settings_manager
+                .borrow_mut()
+                .publish_base_layer(scope, layer);
+        }
+        let mut state = self.state.borrow_mut();
+        if state.base_system_prompt.is_none() {
+            state.base_system_prompt = inputs.base_system_prompt;
+        }
+        state.base_append_text.extend(inputs.base_append_text);
+        Ok(inputs.package_sources)
     }
 }
 
