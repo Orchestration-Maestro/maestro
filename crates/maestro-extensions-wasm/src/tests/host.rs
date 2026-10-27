@@ -1841,6 +1841,17 @@ impl Harness {
         Self::start_on(engine, component, State::new()).await
     }
 
+    /// Instantiates a supplied component with controlled standard environment and streams.
+    pub async fn from_compiled_with_wasi(
+        engine: &Engine,
+        component: &Component,
+        wasi: WasiCtx,
+    ) -> wasmtime::Result<Self> {
+        let mut state = State::new();
+        state.wasi = wasi;
+        Self::start_on(engine, component, state).await
+    }
+
     /// Instantiates a supplied compiled component whose standard library reads `clock`.
     pub async fn from_compiled_with_clock(
         engine: &Engine,
@@ -2076,7 +2087,12 @@ impl host::HostWithStore<State> for Imports {
                 .log(format!("native-wait {} {}", duration.0, duration.1));
             a.get().observed.take_hold()
         });
-        pause(hold).await;
+        let clock = accessor.with(|mut access| access.get().observed.tick_clock.clone());
+        if let Some(clock) = clock {
+            clock.wait().await;
+        } else {
+            pause(hold).await;
+        }
         Ok(if aborted(accessor) {
             Err("Aborted".into())
         } else {
