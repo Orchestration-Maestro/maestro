@@ -38,13 +38,13 @@ fn view(text: &str) -> ExtensionResult<Component> {
 }
 
 /// Abbreviates the home directory, not another directory with the same prefix.
-fn display_path(args: &Value, home: &str, fallback: &str) -> String {
+fn display_path(args: &Value, home: &str, fallback: &str, separator: char) -> String {
     let path = args["path"]
         .as_str()
         .filter(|path| !path.is_empty())
         .unwrap_or(fallback);
     match path.strip_prefix(home) {
-        Some(suffix) if suffix.is_empty() || suffix.starts_with(['/', '\\']) => {
+        Some(suffix) if suffix.is_empty() || suffix.starts_with(['/', separator]) => {
             format!("~{suffix}")
         }
         _ => path.into(),
@@ -57,8 +57,14 @@ fn title(theme: &Theme, text: &str) -> ExtensionResult<String> {
 }
 
 /// Formats file operands, optional read bounds and the written line count.
-fn file_call(name: &str, args: &Value, theme: &Theme, home: &str) -> ExtensionResult<String> {
-    let path = display_path(args, home, "");
+fn file_call(
+    name: &str,
+    args: &Value,
+    theme: &Theme,
+    home: &str,
+    separator: char,
+) -> ExtensionResult<String> {
+    let path = display_path(args, home, "", separator);
     let path = if path.is_empty() {
         theme.fg("toolOutput", "...")?
     } else {
@@ -86,8 +92,14 @@ fn file_call(name: &str, args: &Value, theme: &Theme, home: &str) -> ExtensionRe
 }
 
 /// Formats search patterns, authored paths, glob filters and numeric limits.
-fn search_call(name: &str, args: &Value, theme: &Theme, home: &str) -> ExtensionResult<String> {
-    let path = display_path(args, home, ".");
+fn search_call(
+    name: &str,
+    args: &Value,
+    theme: &Theme,
+    home: &str,
+    separator: char,
+) -> ExtensionResult<String> {
+    let path = display_path(args, home, ".", separator);
     let mut text = title(theme, name)?;
     if name == "ls" {
         text.push(' ');
@@ -125,6 +137,7 @@ fn render_call(
     args: Option<Value>,
     theme: &Theme,
     home: &str,
+    separator: char,
 ) -> ExtensionResult<Component> {
     let args = args.unwrap_or(Value::Null);
     let text = match name {
@@ -139,8 +152,8 @@ fn render_call(
             }
             text
         }
-        "read" | "write" | "edit" => file_call(name, &args, theme, home)?,
-        _ => search_call(name, &args, theme, home)?,
+        "read" | "write" | "edit" => file_call(name, &args, theme, home, separator)?,
+        _ => search_call(name, &args, theme, home, separator)?,
     };
     view(&text)
 }
@@ -244,6 +257,7 @@ fn minimal_tool(
     cache: Rc<ToolCache>,
     name: ToolName,
     original: &Tool,
+    separator: char,
 ) -> ToolDefinition {
     let label = original.name.clone();
     let result_name = label.clone();
@@ -271,7 +285,7 @@ fn minimal_tool(
         }),
         render_call: Some(Rc::new(move |args, theme, _, _| {
             let home = path_utils::expand_path(&call_api, "~")?;
-            render_call(&label, args, &theme, &home)
+            render_call(&label, args, &theme, &home, separator)
         })),
         render_result: Some(Rc::new(move |result, options, theme, _, _| {
             render_result(&result_name, &result, options, &theme, &result_api)
@@ -284,6 +298,10 @@ fn minimal_tool(
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         let cache = Rc::new(RefCell::new(HashMap::new()));
+        let separator = path_utils::resolve(&api, &["/"])?
+            .chars()
+            .next_back()
+            .ok_or("native root is empty")?;
         let initial = builtin_tools(&api, &cache, path_utils::resolve(&api, &["."])?)?;
         for name in [
             ToolName::Read,
@@ -295,7 +313,13 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             ToolName::Ls,
         ] {
             let original = initial.get(&name).ok_or("missing native tool")?;
-            api.register_tool(minimal_tool(api.clone(), cache.clone(), name, original))?;
+            api.register_tool(minimal_tool(
+                api.clone(),
+                cache.clone(),
+                name,
+                original,
+                separator,
+            ))?;
         }
         Ok(())
     })
