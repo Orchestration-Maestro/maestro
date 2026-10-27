@@ -178,7 +178,11 @@ impl SettingsManager {
 
     /// Layers runtime preferences over the effective settings without saving them.
     pub fn apply_overrides(&mut self, overrides: Settings) {
-        if self.refuse_changes(SettingsScope::Global, &Change::overrides(&overrides.0)) {
+        if self.refuse_layer_changes(
+            SettingsScope::Global,
+            self.get_base_layer(),
+            &Change::overrides(&overrides.0),
+        ) {
             return;
         }
         self.effective_nan = self.effective_nan.unless_defined_by(&overrides.0);

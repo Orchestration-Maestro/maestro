@@ -24,6 +24,15 @@ pub struct BaseSettingsLayer {
 }
 
 impl BaseSettingsLayer {
+    /// Finds a lock on a path, one of its parents or one of its children.
+    fn locked_path(&self, path: &[&str]) -> Option<&str> {
+        self.locked.iter().find_map(|locked| {
+            let components: Vec<&str> = locked.split('.').collect();
+            (components.starts_with(path) || path.starts_with(&components))
+                .then_some(locked.as_str())
+        })
+    }
+
     /// Restores locked leaves and reports each overwritten stored value.
     fn apply_locks(&self, settings: &mut Map<String, Value>, mut ignored: impl FnMut(&str)) {
         for path in &self.locked {
@@ -99,26 +108,37 @@ impl SettingsManager {
         }
     }
 
-    /// Finds a lock on a path, one of its parents or one of its children.
+    /// Finds a lock in the currently active layer.
     fn locked_path(&self, path: &[&str]) -> Option<&str> {
-        self.get_base_layer()?.locked.iter().find_map(|locked| {
-            let components: Vec<&str> = locked.split('.').collect();
-            (components.starts_with(path) || path.starts_with(&components))
-                .then_some(locked.as_str())
-        })
+        self.get_base_layer()?.locked_path(path)
+    }
+
+    /// Refuses a scoped edit against only the layer governing that scope.
+    pub(super) fn refuse_changes(&self, scope: SettingsScope, changes: &[Change]) -> bool {
+        let layer = match scope {
+            SettingsScope::Global => self.base_layers[scope as usize].as_ref(),
+            SettingsScope::Project => self.get_base_layer(),
+        };
+        self.refuse_layer_changes(scope, layer, changes)
     }
 
     /// Refuses a whole explicit request before it changes any manager state.
-    pub(super) fn refuse_changes(&self, scope: SettingsScope, changes: &[Change]) -> bool {
+    pub(super) fn refuse_layer_changes(
+        &self,
+        scope: SettingsScope,
+        layer: Option<&BaseSettingsLayer>,
+        changes: &[Change],
+    ) -> bool {
+        let Some(layer) = layer else {
+            return false;
+        };
         let Some(locked) = changes
             .iter()
-            .find_map(|change| self.locked_path(&change.components()))
+            .find_map(|change| layer.locked_path(&change.components()))
         else {
             return false;
         };
-        if let Some(layer) = self.get_base_layer() {
-            self.record_lock(scope, layer, locked, SettingsErrorKind::Failure);
-        }
+        self.record_lock(scope, layer, locked, SettingsErrorKind::Failure);
         true
     }
 

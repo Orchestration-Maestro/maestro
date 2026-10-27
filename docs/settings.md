@@ -97,7 +97,9 @@ through `drain_errors`, without rewriting either preference file.
 the accepted layer and keeps the ordinary failed-scope rules.
 
 Setters and runtime overrides refuse a locked path before changing memory,
-pending edits or the write queue. A batch with one locked member is refused as a
+pending edits or the write queue. Global edits check the global layer; project
+edits check the project layer when present, otherwise the global layer. Runtime
+overrides check the active layer. A project-only lock never blocks a global edit. A batch with one locked member is refused as a
 whole, including an edit that replaces or removes a locked leaf's parent. Refusal
 records one diagnostic naming the path, source release, recorded time and how to
 refresh it. Setter signatures are unchanged. `is_key_path_locked(field, keys)`
