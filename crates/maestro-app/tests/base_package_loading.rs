@@ -723,3 +723,110 @@ fn disabled_extension_discovery_keeps_base_sources_at_package_precedence() {
         assert_eq!(names, [Some("cli".into()), Some("base".into())]);
     });
 }
+
+/// Counts executions while using the same flag-reading factory at every path.
+fn counted_flag_modules(
+    observations: Rc<RefCell<Vec<serde_json::Value>>>,
+    calls: Rc<RefCell<Vec<String>>>,
+) -> ModuleLoader<Local> {
+    let modules = reading_flag_modules(observations);
+    Rc::new(move |path: &str| {
+        let loaded = modules(path);
+        let name = std::path::Path::new(path)
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_owned();
+        let calls = Rc::clone(&calls);
+        Box::pin(async move {
+            let Some(factory) = loaded.await? else {
+                return Ok(None);
+            };
+            let initialize: ExtensionFactory<Local> = Rc::new(move |api| {
+                calls.borrow_mut().push(name.clone());
+                factory(api)
+            });
+            Ok(Some(initialize))
+        })
+    })
+}
+
+/// Reads the visible defaults after path extensions and before the final snapshot.
+fn inline_flag_reader(
+    observations: Rc<RefCell<Vec<serde_json::Value>>>,
+) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let registered = ["shared", "optional"].into_iter().try_for_each(|name| {
+            api.register_flag(
+                name.into(),
+                maestro_extensions::types::ExtensionFlagOptions {
+                    description: None,
+                    r#type: maestro_extensions::types::FlagType::String,
+                    default: None,
+                },
+            )
+        });
+        let result = registered.and_then(|()| {
+            observations
+                .borrow_mut()
+                .push(json!([api.get_flag("shared")?, api.get_flag("optional")?]));
+            Ok(())
+        });
+        Box::pin(async move { result })
+    })
+}
+
+/// One physical base extension reuses its explicit ordinary slot and visible defaults.
+#[test]
+fn aliased_base_entrypoints_load_once_at_their_ordinary_position() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    let alias = format!("{root}/alias");
+    package(&base, "base");
+    std::fs::create_dir_all(&agent).unwrap();
+    std::fs::create_dir_all(format!("{cwd}/.maestro/extensions")).unwrap();
+    std::fs::write(format!("{cwd}/.maestro/extensions/project.wasm"), "").unwrap();
+    std::os::unix::fs::symlink(&base, &alias).unwrap();
+    on_task_set(|local| async move {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let observed = Rc::new(RefCell::new(Vec::new()));
+        let mut resources: ResourceLoaderOptions<Local> = ResourceLoaderOptions::new(
+            local,
+            counted_flag_modules(Rc::clone(&observed), Rc::clone(&calls)),
+        );
+        resources.base_package_sources = vec![base];
+        resources.additional_extension_paths = vec![format!("{alias}/base.wasm")];
+        resources.extension_factories = vec![inline_flag_reader(Rc::clone(&observed))];
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: None,
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert_eq!(&*calls.borrow(), &["base", "project"]);
+        assert_eq!(
+            &*observed.borrow(),
+            &[
+                json!(["base first", "base fallback"]),
+                json!(["base first", "base fallback"])
+            ]
+        );
+        assert_eq!(loader.get_extensions().extensions.len(), 3);
+        assert_eq!(
+            runner(&loader).get_flags()["shared"]
+                .read()
+                .unwrap()
+                .default,
+            Some(maestro_app::FlagValue::String("replacement".into()))
+        );
+        assert_eq!(
+            loader.get_extensions().runtime.flag_values.read().unwrap()["shared"],
+            maestro_app::FlagValue::String("base first".into())
+        );
+    });
+}
