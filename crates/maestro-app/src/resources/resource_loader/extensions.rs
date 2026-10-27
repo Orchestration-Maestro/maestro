@@ -121,7 +121,10 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         paths: Vec<String>,
         mut result: LoadExtensionsResult<E>,
     ) -> io::Result<()> {
-        let base_loaded = !result.extensions.is_empty();
+        let base_attempted = !result.extensions.is_empty() || !result.errors.is_empty();
+        if base_attempted {
+            write(&result.runtime.flag_values).clear();
+        }
         let mut seen: std::collections::HashSet<_> = result
             .extensions
             .iter()
@@ -154,10 +157,10 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
                 });
             }
         }
-        let result = apply(self.options.extensions_override.as_ref(), result);
-        if base_loaded {
+        if base_attempted {
             restore_flag_defaults(&result);
         }
+        let result = apply(self.options.extensions_override.as_ref(), result);
         self.apply_extension_provenance(&result)?;
         self.state.borrow_mut().extensions = Rc::new(result);
         Ok(())
@@ -226,18 +229,11 @@ fn restore_extension_order<E: ExtensionExecution>(
 fn restore_flag_defaults<E: ExtensionExecution>(result: &LoadExtensionsResult<E>) {
     let mut defaults = indexmap::IndexMap::new();
     for extension in &result.extensions {
-        for (name, flag) in &read(extension).flags {
+        for (name, value) in &read(extension).initial_flag_values {
             defaults
                 .entry(name.clone())
-                .or_insert_with(|| read(flag).default.clone());
+                .or_insert_with(|| value.clone());
         }
     }
-    let mut values = write(&result.runtime.flag_values);
-    for (name, value) in defaults {
-        if let Some(value) = value {
-            values.insert(name, value);
-        } else {
-            values.shift_remove(&name);
-        }
-    }
+    *write(&result.runtime.flag_values) = defaults;
 }
