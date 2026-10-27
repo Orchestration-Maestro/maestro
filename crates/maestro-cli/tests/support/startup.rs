@@ -21,6 +21,7 @@ pub fn args(tokens: &[&str]) -> maestro_cli::input::args::Args {
 /// A current-thread runtime for one asynchronous startup case.
 pub fn runtime() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
+        .enable_all()
         .build()
         .expect("current-thread runtime")
 }
@@ -100,11 +101,10 @@ pub fn configuration(
         base_url: Some("https://example.test".to_owned()),
         api_key: Some(api_key.to_owned()),
         api: Some("openai-completions".to_owned()),
-        stream_simple: None,
         headers: None,
         auth_header: None,
-        oauth: None,
         models: Some(definitions),
+        callbacks: maestro_app::ProviderCallbacks::default(),
     }
 }
 
@@ -121,4 +121,14 @@ pub fn stored_history(directory: &Path, name: &str, id: &str, cwd: &str) -> Stri
     });
     std::fs::write(&path, format!("{header}\n")).unwrap();
     path.to_str().unwrap().to_owned()
+}
+
+/// Set a stored history's modification time to a whole epoch second.
+pub fn set_modified(path: &str, seconds: u64) {
+    std::fs::File::options()
+        .write(true)
+        .open(path)
+        .expect("an open history")
+        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds))
+        .expect("a set modification time");
 }

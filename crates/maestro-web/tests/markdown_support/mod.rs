@@ -10,11 +10,11 @@ mod tests {
     use crate::support::{self, brand::pack};
     use maestro_theme::{BrandMode, BrandPack, SyntaxHighlighter, SyntectHighlighter};
     use maestro_web::{
-        Attachment, I18n, TranslationFunction,
+        I18n, TranslationFunction,
         browser::{
             attachment_content::{
                 AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
-                BrowserAttachmentHost, FocusTarget, ReadingLayout, ReadingPhase,
+                BrowserAttachmentHost, ReadingLayout, ReadingPhase,
             },
             timer::Timer,
         },
@@ -326,22 +326,6 @@ mod tests {
             self.copies.borrow_mut().push(text.to_owned());
             Box::pin(std::future::ready(true))
         }
-        fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
-            self.native.capture_focus()
-        }
-        fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentHostError> {
-            self.native.restore_focus(target)
-        }
-        fn dialog_bounds(
-            &self,
-            id: egui::Id,
-            dimensions: [&str; 2],
-        ) -> Result<egui::Rect, AttachmentHostError> {
-            self.native.dialog_bounds(id, dimensions)
-        }
-        fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
-            self.native.native_key(event, context);
-        }
         fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
             if self.fail_measure.replace(false) {
                 return Err(AttachmentHostError::Host(
@@ -396,9 +380,6 @@ mod tests {
             self.removed.borrow_mut().push(id);
             self.native.remove(id);
         }
-        fn take_escape(&self) -> bool {
-            self.native.take_escape()
-        }
         fn timer(
             &self,
             delay_ms: i32,
@@ -424,7 +405,10 @@ mod tests {
         ) -> Result<(), AttachmentHostError> {
             self.native.download_bytes(bytes, name, mime)
         }
-        fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+        fn download(
+            &self,
+            attachment: maestro_web::SharedAttachment,
+        ) -> Result<(), AttachmentHostError> {
             self.native.download(attachment)
         }
     }
@@ -465,7 +449,7 @@ mod tests {
         }
     }
     impl Surface {
-        /// Bind to the runner's canvas and install the browser-side projections.
+        /// Bind the shared test canvas and install the browser-side projections.
         ///
         /// # Panics
         /// Panics if the test fixture or browser precondition is not satisfied.
@@ -474,6 +458,9 @@ mod tests {
             std::panic::set_hook(Box::new(|info| {
                 web_sys::console::error_1(&info.to_string().into());
             }));
+            let _ = js(
+                "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
+            );
             let _ = js(include_str!("dom.js"));
             walk::set_formulas();
             let canvas = web_sys::window()

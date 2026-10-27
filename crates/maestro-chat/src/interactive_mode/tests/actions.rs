@@ -1,6 +1,9 @@
 //! Editor actions through the mode's installed callbacks, its rendered editor and the
 //! native editor, clipboard helper and temporary files of an isolated child.
-use super::{World, dark, isolated, light, native, painted, roles, started};
+use super::{
+    World, border_row, dark, isolated, light, native, painted, rendered_border, select_level,
+    started,
+};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::utils::clipboard_image::ClipboardImage;
 use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
@@ -23,29 +26,6 @@ const WIDTH: usize = 80;
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
     decode_cases(FIXTURES, test)
-}
-
-/// The editor's top border row as the recorder's painted probe glyph describes it.
-fn border_row(world: &World, recorded: &str) -> String {
-    let theme = world.themes.theme().get().unwrap();
-    roles(&theme, &recorded.replace('━', "─")).repeat(WIDTH)
-}
-
-/// The editor's rendered top border row.
-fn rendered_border(world: &World) -> String {
-    world.mode.editor.render(WIDTH).swap_remove(0)
-}
-
-/// Selects `level` on the session as its agent state, whatever the model supports.
-fn select_level(world: &World, level: ThinkingLevel) {
-    world
-        .host
-        .session()
-        .agent()
-        .state()
-        .write()
-        .unwrap()
-        .thinking_level = level;
 }
 
 /// Editor text delivered to the change callback in one shell mode.
@@ -74,8 +54,8 @@ struct ChangedBorder {
 fn border_text_change_uses_the_shared_whitespace_domain() {
     isolated(
         "border_text_change_uses_the_shared_whitespace_domain",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let on_change = world.mode.editor.on_change().unwrap();
             for (input, expected) in cases::<TextChange, ChangedBorder>(
                 "border_text_change_uses_the_shared_whitespace_domain",
@@ -106,8 +86,8 @@ fn border_text_change_uses_the_shared_whitespace_domain() {
 fn border_theme_change_refreshes_the_first_returned_frame() {
     isolated(
         "border_theme_change_refreshes_the_first_returned_frame",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             select_level(&world, ThinkingLevel::High);
             for (shell, theme, role) in [
                 (false, light(), "@thinkingHigh@━\x1b[39m"),
@@ -130,7 +110,7 @@ fn border_theme_change_refreshes_the_first_returned_frame() {
 const EDIT_FILE: &str = "maestro-editor-1767323045006.maestro.md";
 
 /// Installs `script` as the executable `name` in the command directory of `directory`.
-fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
+pub(super) fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
     let bin = directory.join("bin");
     let source = bin.join(format!("{name}.source"));
     std::fs::write(&source, script).unwrap();
@@ -141,7 +121,7 @@ fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
 }
 
 /// Runs the editor action the mode registered.
-fn run_action(world: &World, action: &str) {
+pub(super) fn run_action(world: &World, action: &str) {
     let handler = world.mode.editor.action_handlers().borrow()[action].clone();
     handler();
 }
@@ -176,14 +156,14 @@ struct Lines {
 fn external_edit_without_configuration_warns_without_native_work() {
     isolated(
         "external_edit_without_configuration_warns_without_native_work",
-        |directory| {
+        async |directory| {
             let (input, expected) = cases::<MissingEditor, Lines>(
                 "external_edit_without_configuration_warns_without_native_work",
             )
             .swap_remove(0);
             assert_eq!(input.op, "external-missing");
             for configured in [None, Some("")] {
-                let world = started(directory);
+                let world = started(directory).await;
                 if let Some(value) = configured {
                     world.runtime.set_environment("VISUAL", value);
                     world.runtime.set_environment("EDITOR", value);
@@ -247,7 +227,7 @@ const EDITOR: &str = "#!/bin/sh\nfor file; do :; done\nprintf '%s\\n' \"$@\" > \
 fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
     isolated(
         "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
-        |directory| {
+        async |directory| {
             use std::os::unix::fs::PermissionsExt;
             let editor = install(directory, "editor", EDITOR);
             let bin = editor.parent().unwrap();
@@ -255,7 +235,7 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
                 "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
             ) {
                 assert_eq!(input.op, "external");
-                let world = started(directory);
+                let world = started(directory).await;
                 world
                     .runtime
                     .set_environment("VISUAL", &format!("{} --wait", editor.display()));
@@ -351,7 +331,7 @@ struct Pasted {
 fn clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor() {
     isolated(
         "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
-        |directory| {
+        async |directory| {
             use std::os::unix::fs::PermissionsExt;
             let helper = install(directory, "wl-paste", WL_PASTE);
             let bin = helper.parent().unwrap();
@@ -359,7 +339,7 @@ fn clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor() {
                 "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
             ) {
                 assert_eq!(input.op, "paste");
-                let world = started(directory);
+                let world = started(directory).await;
                 std::fs::write(bin.join("types"), format!("{}\n", input.mime_type)).unwrap();
                 std::fs::write(bin.join("image"), &expected.bytes).unwrap();
                 world.mode.editor.set_text("leftright");
@@ -414,14 +394,14 @@ struct Text {
 fn clipboard_absence_is_silent_and_does_not_edit() {
     isolated(
         "clipboard_absence_is_silent_and_does_not_edit",
-        |directory| {
+        async |directory| {
             let (input, expected) =
                 cases::<NoImage, Text>("clipboard_absence_is_silent_and_does_not_edit")
                     .swap_remove(0);
             assert_eq!(input.op, "paste-none");
             let helper = install(directory, "wl-paste", WL_PASTE);
             std::fs::write(helper.with_file_name("types"), "text/plain\n").unwrap();
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.editor.set_text(&expected.text);
             world.runtime.settle().unwrap();
             paste(&world);
@@ -434,8 +414,8 @@ fn clipboard_absence_is_silent_and_does_not_edit() {
 
 #[test]
 fn clipboard_read_error_is_silent() {
-    isolated("clipboard_read_error_is_silent", |directory| {
-        let world = started(directory);
+    isolated("clipboard_read_error_is_silent", async |directory| {
+        let world = started(directory).await;
         world.mode.editor.set_text("before");
         world.runtime.settle().unwrap();
         world
@@ -457,8 +437,8 @@ fn image() -> ClipboardImage {
 
 #[test]
 fn clipboard_write_failure_is_silent() {
-    isolated("clipboard_write_failure_is_silent", |directory| {
-        let world = started(directory);
+    isolated("clipboard_write_failure_is_silent", async |directory| {
+        let world = started(directory).await;
         world.mode.editor.set_text("before");
         world.runtime.settle().unwrap();
         std::fs::remove_dir(std::env::temp_dir()).unwrap();
@@ -504,13 +484,13 @@ fn file_size_limit(soft: Option<&str>) -> String {
 fn temporary_files_preserve_existing_entries_and_private_bytes() {
     isolated(
         "temporary_files_preserve_existing_entries_and_private_bytes",
-        |directory| {
+        async |directory| {
             use std::os::unix::fs::{PermissionsExt, symlink};
             let editor = install(directory, "editor", EDITOR);
             let bin = editor.parent().unwrap();
             std::fs::write(bin.join("content"), "edited").unwrap();
             std::fs::write(bin.join("status"), "0").unwrap();
-            let world = started(directory);
+            let world = started(directory).await;
             world
                 .runtime
                 .set_environment("VISUAL", editor.to_str().unwrap());
@@ -585,12 +565,12 @@ struct ThinkingCycle {
 fn thinking_cycle_refreshes_only_after_a_supported_selection() {
     isolated(
         "thinking_cycle_refreshes_only_after_a_supported_selection",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<ThinkingCycle, Lines>(
                 "thinking_cycle_refreshes_only_after_a_supported_selection",
             ) {
                 assert_eq!(input.op, "thinking");
-                let world = started(directory);
+                let world = started(directory).await;
                 if let Some(level) = &input.level {
                     reasoning_everywhere(&world);
                     let levels = world.host.session().get_available_thinking_levels();
@@ -700,7 +680,7 @@ fn isolated_children_carry_no_ambient_credential_inputs() {
     // The home directory stands for every inherited input: credential files live below it.
     isolated(
         "isolated_children_carry_no_ambient_credential_inputs",
-        |_| {
+        async |_| {
             assert_eq!(std::env::var_os("HOME"), None);
         },
     );
@@ -734,12 +714,12 @@ fn model_cycle_ignores_an_inherited_credential() {
 fn model_cycle_distinguishes_scope_and_available_exhaustion() {
     isolated(
         "model_cycle_distinguishes_scope_and_available_exhaustion",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<NoCandidate, Lines>(
                 "model_cycle_distinguishes_scope_and_available_exhaustion",
             ) {
                 assert_eq!(input.op, "model-none");
-                let world = started(directory);
+                let world = started(directory).await;
                 if input.scoped {
                     let only = model(&world, "only", "Only", false);
                     scope(
@@ -780,12 +760,12 @@ struct Selection {
 fn model_cycle_uses_the_selected_name_thinking_and_direction() {
     isolated(
         "model_cycle_uses_the_selected_name_thinking_and_direction",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<Selection, Lines>(
                 "model_cycle_uses_the_selected_name_thinking_and_direction",
             ) {
                 assert_eq!(input.op, "model-selected");
-                let world = started(directory);
+                let world = started(directory).await;
                 let current = model(&world, "current-id", "Current", false);
                 let [next, previous] =
                     [(); 2].map(|()| model(&world, "model-id", &input.name, input.reasoning));
@@ -835,12 +815,12 @@ struct Refusal {
 fn model_cycle_renders_failures_without_success_effects() {
     isolated(
         "model_cycle_renders_failures_without_success_effects",
-        |directory| {
+        async |directory| {
             let (input, expected) =
                 cases::<Refusal, Lines>("model_cycle_renders_failures_without_success_effects")
                     .swap_remove(0);
             assert_eq!(input.op, "model-error");
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.editor.set_border_color(Rc::new(str::to_owned));
             let selected = world.host.session().model();
             let footer = world.mode.footer.render(WIDTH);
@@ -874,13 +854,13 @@ const NO_EDITOR: &str = "No editor configured";
 const DEFAULT_ASYNCHRONOUS: [&str; 3] = ["\x10", "\x1b[112;6u", "\x16"];
 
 /// Whether the transcript shows `text`.
-fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
+pub(super) fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
     chat.render(WIDTH).concat().contains(text)
 }
 
 /// Presses each action's default key on a fresh mode and observes the action run.
-fn default_keys_run_every_action(directory: &Path) {
-    let world = started(directory);
+async fn default_keys_run_every_action(directory: &Path) {
+    let world = started(directory).await;
     world.mode.editor.handle_input("\x1b[Z");
     assert!(shows(&world.mode.chat_container, NO_THINKING));
     world.mode.editor.handle_input("\x07");
@@ -906,8 +886,8 @@ fn default_keys_do_nothing_once_remapped(world: &World) {
 fn editor_actions_respect_remapped_keys_and_release_mode() {
     isolated(
         "editor_actions_respect_remapped_keys_and_release_mode",
-        |directory| {
-            default_keys_run_every_action(directory);
+        async |directory| {
+            default_keys_run_every_action(directory).await;
             std::fs::write(
                 directory.join("keybindings.json"),
                 r#"{"app.thinking.cycle": "ctrl+y", "app.editor.external": "ctrl+w",
@@ -915,7 +895,7 @@ fn editor_actions_respect_remapped_keys_and_release_mode() {
                     "app.clipboard.pasteImage": "ctrl+]"}"#,
             )
             .unwrap();
-            let world = started(directory);
+            let world = started(directory).await;
             default_keys_do_nothing_once_remapped(&world);
             let World { mode, runtime, .. } = world;
             let editor = Rc::clone(&mode.editor);

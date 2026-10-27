@@ -209,13 +209,19 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
             .map_err(io::Error::other)?,
         ),
     };
-    let resource_loader = default_resource_loader(
-        &cwd,
-        &agent_dir,
-        &settings_manager,
-        options.resource_loader_options,
-    )
-    .await?;
+    let mut resources = options.resource_loader_options;
+    resources.tool_construction.get_or_insert_with(|| {
+        let bin_dir = crate::configuration::config::paths::get_bin_dir(&agent_dir);
+        maestro_extensions::ToolConstruction {
+            tools_manager: Arc::new(
+                maestro_tools::ToolsManager::new(bin_dir.clone(), None)
+                    .with_offline(options.offline),
+            ),
+            bin_dir,
+        }
+    });
+    let resource_loader =
+        default_resource_loader(&cwd, &agent_dir, &settings_manager, resources).await?;
     let extensions = resource_loader.get_extensions();
     let mut diagnostics = register_providers(&extensions, &model_registry);
     if let Some(values) = options.extension_flag_values {

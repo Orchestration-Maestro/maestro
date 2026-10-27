@@ -1,9 +1,6 @@
 //! Native download control writing the caller's original bytes.
 use crate::{
-    browser::{
-        attachment_content::{AttachmentHostError, browser::host_error},
-        event_subscription::EventSubscription,
-    },
+    browser::{attachment_content::AttachmentHostError, event_subscription::EventSubscription},
     components::button::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
     dom::{DomRoot, DomView},
     icons::{self, IconSize},
@@ -101,7 +98,7 @@ pub fn download_button(view: &DomView, props: DownloadButtonProps) -> Result<Dom
         let caption = view
             .document
             .create_element("span")
-            .map_err(|error| ToolUiError::Host(host_error(&error)))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         caption.set_text_content(Some(&label));
         children.push(caption.into());
     }
@@ -121,7 +118,7 @@ pub fn download_button(view: &DomView, props: DownloadButtonProps) -> Result<Dom
         },
         &children,
     )
-    .map_err(|error| ToolUiError::Host(host_error(&error)))?;
+    .map_err(|error| ToolUiError::native(&error))?;
     let activation = Activation {
         document: view.document.clone(),
         content: props.content,
@@ -131,7 +128,7 @@ pub fn download_button(view: &DomView, props: DownloadButtonProps) -> Result<Dom
     };
     let click = Closure::<dyn Fn()>::new(move || activation.write());
     let subscription = EventSubscription::new(control.clone().into(), "click", click)
-        .map_err(|error| ToolUiError::Host(host_error(&error)))?;
+        .map_err(|error| ToolUiError::native(&error))?;
     Ok(DomRoot {
         node: control.into(),
         owner: Some(Box::new(subscription) as Box<dyn Any>),
@@ -148,7 +145,7 @@ fn glyph(size: IconSize) -> Result<Node, ToolUiError> {
         })?;
     icons::icon_dom(&node, size, None)
         .map(Into::into)
-        .map_err(|error| ToolUiError::Host(host_error(&error)))
+        .map_err(|error| ToolUiError::native(&error))
 }
 /// Bytes saved for text content, decoded only when it is forced or qualifies.
 fn text_bytes(text: &str, forced: bool) -> Vec<u8> {

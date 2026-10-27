@@ -1,7 +1,7 @@
 //! Each command, run against the current session or runtime and answered in its declared
 //! shape.
 use super::RpcRecord;
-use super::connection::{Connection, write_to};
+use super::connection::{Connection, SessionConnection, write_to};
 use crate::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptOptions};
 use crate::rpc_types::{
     RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
@@ -38,7 +38,7 @@ pub(super) enum Answer {
 /// A command operation's failure, answered with its message.
 type Failure = Box<dyn std::error::Error>;
 
-impl Connection {
+impl SessionConnection {
     /// Runs a session command; a command's own refusal checks for a requested shutdown, a
     /// failing operation does not.
     pub(super) async fn run_session_command(
@@ -63,30 +63,6 @@ impl Connection {
                 error: error.to_string(),
             }),
         }
-    }
-
-    /// Runs a workspace command through the caller's operations, its events written on this
-    /// connection's output.
-    pub(super) async fn run_workspace_command(
-        self: &Rc<Self>,
-        id: Option<String>,
-        command: String,
-        workspace_command: workspace::RpcCommand,
-    ) -> RpcResponse {
-        let connection = Rc::downgrade(self);
-        let events = Rc::new(move |event: workspace_schema::EventData| {
-            write_to(&connection, RpcRecord::WorkspaceEvent(&event))
-        });
-        let result = self
-            .options
-            .workspace
-            .execute(workspace_command, events)
-            .await;
-        RpcResponse::Workspace(Box::new(workspace::RpcResponse {
-            id,
-            command,
-            result,
-        }))
     }
 
     /// The answer to `command`.
@@ -207,6 +183,7 @@ impl Connection {
     async fn switch_session(&self, session_path: &str) -> Result<RpcData, Failure> {
         let options = SwitchSessionOptions::default();
         let result = self
+            .options
             .runtime
             .switch_session(session_path, None, options)
             .await?;
@@ -217,7 +194,11 @@ impl Connection {
 
     /// Forks the session before or at `entry_id`.
     async fn fork(&self, entry_id: &str) -> Result<RpcData, Failure> {
-        let result = self.runtime.fork(entry_id, ForkOptions::default()).await?;
+        let result = self
+            .options
+            .runtime
+            .fork(entry_id, ForkOptions::default())
+            .await?;
         Ok(RpcData::Fork(RpcForkResult {
             text: result.selected_text,
             cancelled: result.cancelled,
@@ -230,7 +211,7 @@ impl Connection {
             parent_session: parent_session.filter(|parent| !parent.is_empty()),
             ..NewSessionCommandOptions::default()
         };
-        let result = self.runtime.new_session(options).await?;
+        let result = self.options.runtime.new_session(options).await?;
         Ok(RpcData::Cancelled(RpcCancelled {
             cancelled: result.cancelled,
         }))
@@ -287,10 +268,39 @@ impl Connection {
             position: Some(ForkPosition::At),
             ..ForkOptions::default()
         };
-        let result = self.runtime.fork(&leaf, options).await?;
+        let result = self.options.runtime.fork(&leaf, options).await?;
         Ok(Answer::Data(RpcData::Cancelled(RpcCancelled {
             cancelled: result.cancelled,
         })))
+    }
+}
+
+impl Connection {
+    /// Runs a workspace command through the caller's operations, its events written on this
+    /// connection's output.
+    pub(super) async fn run_workspace_command(
+        self: &Rc<Self>,
+        id: Option<String>,
+        command: String,
+        workspace_command: workspace::RpcCommand,
+    ) -> RpcResponse {
+        let Some(workspace) = &self.workspace else {
+            return RpcResponse::Error {
+                id: None,
+                error: format!("Unknown command: {command}"),
+                command: Some(command),
+            };
+        };
+        let connection = Rc::downgrade(self);
+        let events = Rc::new(move |event: workspace_schema::EventData| {
+            write_to(&connection, RpcRecord::WorkspaceEvent(&event))
+        });
+        let result = workspace.execute(workspace_command, events).await;
+        RpcResponse::Workspace(Box::new(workspace::RpcResponse {
+            id,
+            command,
+            result,
+        }))
     }
 }
 

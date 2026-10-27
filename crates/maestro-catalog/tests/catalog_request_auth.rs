@@ -1138,7 +1138,7 @@ fn oauth_reload_failure_keeps_new_request_configuration() {
     )
     .unwrap();
     let config = dynamic::config(&["dynamic"]);
-    config.write().unwrap().oauth = Some(provider);
+    config.write().unwrap().callbacks.oauth = Some(provider);
     registry.register_provider(id, config).unwrap();
     let list = registry.get_all();
     let model = registry.find("p", "m").unwrap();

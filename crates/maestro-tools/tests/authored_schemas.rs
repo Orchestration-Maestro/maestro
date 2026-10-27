@@ -59,7 +59,10 @@ fn recorded(name: &str) -> Case {
 
 /// Assert one declaration keeps the recorded JSON, node kinds and prepared outcome.
 #[track_caller]
-fn assert_declaration(name: &str, parameters: &ParameterSchema) {
+fn assert_declaration<C: maestro_models::SchemaCodeSource + Clone + Default>(
+    name: &str,
+    parameters: &ParameterSchema<C>,
+) {
     let case = recorded(name);
     assert_eq!(parameters.as_json(), &case.schema, "{name} schema");
     assert_eq!(
@@ -82,11 +85,11 @@ fn assert_declaration(name: &str, parameters: &ParameterSchema) {
     let call = maestro_models::ToolCall {
         id: "call".to_owned(),
         name: name.to_owned(),
-        arguments: case.arguments.clone(),
+        arguments: Value::Object(case.arguments.clone()),
         thought_signature: None,
     };
     let outcome = match maestro_models::validate_tool_arguments(&tool, &call) {
-        Ok(arguments) => serde_json::json!({"Ok": Value::Object(arguments)}),
+        Ok(arguments) => serde_json::json!({"Ok": arguments}),
         Err(error) => serde_json::json!({"Err": error.message}),
     };
     assert_eq!(outcome, case.expected, "{name} prepared outcome");

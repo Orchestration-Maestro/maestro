@@ -42,7 +42,9 @@ type Refresh = dyn Fn(OAuthCredentials, Option<Fetch>) -> BoxFuture<Result<OAuth
     + Sync;
 #[cfg(not(target_arch = "wasm32"))]
 /// Controlled credential extractor.
-type Key = dyn for<'a> Fn(&'a OAuthCredentials) -> Result<&'a str, OAuthError> + Send + Sync;
+type Key = dyn for<'a> Fn(&'a OAuthCredentials) -> Result<std::borrow::Cow<'a, str>, OAuthError>
+    + Send
+    + Sync;
 #[cfg(not(target_arch = "wasm32"))]
 /// Provider with independently owned callbacks.
 struct Provider {
@@ -82,7 +84,10 @@ impl OAuthProviderInterface for Provider {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         (self.refresh)(credentials, fetch)
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         (self.key)(credentials)
     }
 }
@@ -104,7 +109,7 @@ fn provider(id: &str, access: &str) -> Provider {
             credentials.access.clone_from(&access);
             Box::pin(async move { Ok(credentials) })
         }),
-        key: Box::new(|credentials| Ok(&credentials.access)),
+        key: Box::new(|credentials| Ok(std::borrow::Cow::Borrowed(&credentials.access))),
         on_id: None,
         on_drop: None,
     }
@@ -250,7 +255,7 @@ fn maestro_oauth_key_refreshes_at_expiry() {
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let refresh_calls = Arc::clone(&calls);
     let mut custom = provider("controlled", "unused");
-    custom.key = Box::new(|record| Ok(&record.refresh));
+    custom.key = Box::new(|record| Ok(std::borrow::Cow::Borrowed(&record.refresh)));
     custom.refresh = Box::new(move |mut record, _| {
         assert_eq!(record.access, "old-access");
         assert_eq!(record.refresh, "old-refresh");
@@ -713,7 +718,7 @@ async fn admitted_resolution(transition: &str) {
             Ok(record)
         })
     });
-    custom.key = Box::new(|record| Ok(&record.refresh));
+    custom.key = Box::new(|record| Ok(std::borrow::Cow::Borrowed(&record.refresh)));
     register_oauth_provider(Arc::new(custom));
     let input = indexmap::IndexMap::from([("controlled".into(), credentials(0.0))]);
     let operation = tokio::spawn(get_oauth_api_key("controlled", &input, None));
@@ -754,7 +759,7 @@ async fn reentrant_resolution() {
     });
     custom.key = Box::new(|record| {
         register_oauth_provider(Arc::new(provider("from-key", "side")));
-        Ok(&record.access)
+        Ok(std::borrow::Cow::Borrowed(&record.access))
     });
     register_oauth_provider(Arc::new(custom));
     let input = indexmap::IndexMap::from([("controlled".into(), credentials(0.0))]);
@@ -891,5 +896,35 @@ fn check_builtin_request(id: &str, request: &maestro_models::HttpRequest) {
             assert!(form.contains("grant_type=refresh_token"));
         }
         _ => unreachable!(),
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn oauth_key_keeps_borrowed_and_computed_forms() {
+    use std::borrow::Cow;
+    let _admission = Admission::enter();
+    let input = credentials(f64::INFINITY);
+    for id in ["anthropic", "github-copilot", "openai-codex"] {
+        let provider = get_oauth_provider(id).unwrap();
+        let key = provider.get_api_key(&input).unwrap();
+        assert!(matches!(key, Cow::Borrowed(_)));
+        assert!(std::ptr::eq(key.as_ref(), input.access.as_str()));
+    }
+    let mut computed = provider("computed", "refreshed-access");
+    computed.key =
+        Box::new(|record| Ok(Cow::Owned(format!("{}+{}", record.refresh, record.access))));
+    register_oauth_provider(Arc::new(computed));
+    for (expiry, expected) in [
+        (f64::INFINITY, "old-refresh+old-access"),
+        (0.0, "old-refresh+refreshed-access"),
+    ] {
+        let input = indexmap::IndexMap::from([("computed".into(), credentials(expiry))]);
+        let result = crate::runtime::run(get_oauth_api_key("computed", &input, None))
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.api_key, expected);
+        assert_ne!(result.api_key, result.new_credentials.access);
+        assert_ne!(result.api_key, result.new_credentials.refresh);
     }
 }

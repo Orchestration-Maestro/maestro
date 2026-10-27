@@ -111,7 +111,10 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
     /// Reads the active tool names.
     type GetActiveTools: Fn() -> Result<Vec<String>, EventError> + ?Sized;
     /// Reads every configured tool.
-    type GetAllTools: Fn() -> Result<Vec<ToolInfo>, EventError> + ?Sized;
+    type GetAllTools: Fn() -> Result<
+            Vec<ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>>>,
+            EventError,
+        > + ?Sized;
     /// Selects the active tools.
     type SetActiveTools: Fn(Vec<String>) -> Result<(), EventError> + ?Sized;
     /// Refreshes the tool inventory.
@@ -208,7 +211,7 @@ macro_rules! family {
             type GetSessionName = dyn Fn() -> Result<Option<String>, EventError> $($bound)*;
             type SetLabel = dyn Fn(String, Option<String>) -> Result<(), EventError> $($bound)*;
             type GetActiveTools = dyn Fn() -> Result<Vec<String>, EventError> $($bound)*;
-            type GetAllTools = dyn Fn() -> Result<Vec<ToolInfo>, EventError> $($bound)*;
+            type GetAllTools = dyn Fn() -> Result<Vec<ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>>>, EventError> $($bound)*;
             type SetActiveTools = dyn Fn(Vec<String>) -> Result<(), EventError> $($bound)*;
             type RefreshTools = dyn Fn() -> Result<(), EventError> $($bound)*;
             type GetCommands = dyn Fn() -> Result<Vec<SlashCommandInfo>, EventError> $($bound)*;

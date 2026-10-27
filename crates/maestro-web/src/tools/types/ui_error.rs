@@ -60,7 +60,16 @@ impl From<AttachmentHostError> for ToolUiError {
     }
 }
 impl ToolUiError {
+    /// Preserve a native browser failure at the tool presentation boundary.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn native(error: &wasm_bindgen::JsValue) -> Self {
+        Self::Host(crate::browser::attachment_content::browser::host_error(
+            error,
+        ))
+    }
+
     /// Retain native and leaf phases while composing reading preparation causes.
+    #[cfg(target_arch = "wasm32")]
     pub(crate) fn reading(error: ReadingUiError) -> Self {
         match error {
             ReadingUiError::I18n(error) => Self::I18n(error),

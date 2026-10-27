@@ -1,5 +1,7 @@
 //! Owned primitive conversion and explicitly declared collection traversal.
 
+use super::check::{self, Code};
+use crate::DiagnosticErrorInfo;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use serde_json::Value;
@@ -60,15 +62,19 @@ impl<'a> Kind<'a> {
 }
 
 /// Apply ordered alternatives and declared conversions to an owned candidate.
-pub(super) fn coerce(value: &mut Value, schema: &Value) {
+pub(super) fn coerce(
+    value: &mut Value,
+    schema: &Value,
+    code: &Code<'_>,
+) -> Result<(), DiagnosticErrorInfo> {
     if let Some(schemas) = schema.get("allOf").and_then(Value::as_array) {
         for child in schemas {
-            coerce(value, child);
+            coerce(value, child, code)?;
         }
     }
     for keyword in ["anyOf", "oneOf"] {
         if let Some(schemas) = schema.get(keyword).and_then(Value::as_array) {
-            union(value, schemas);
+            union(value, schemas, code)?;
         }
     }
     let kinds = types(schema);
@@ -80,12 +86,27 @@ pub(super) fn coerce(value: &mut Value, schema: &Value) {
             }
         }
     }
-    if kinds.contains(&Kind::Object) {
-        object(value, schema);
+    let mut result = Ok(());
+    let mut visit = |member: &mut Value, child: &Value| {
+        if result.is_ok() {
+            result = coerce(member, child, code);
+        }
+    };
+    if kinds.contains(&Kind::Object)
+        && let Some(object) = value.as_object_mut()
+    {
+        members(schema, object, &mut visit);
     }
-    if kinds.contains(&Kind::Array) {
-        array(value, schema);
+    if kinds.contains(&Kind::Array)
+        && let Some(values) = value.as_array_mut()
+    {
+        if schema.get("items").is_some_and(Value::is_array) {
+            positions(schema, values, &mut visit);
+        } else {
+            sequence(schema, values, &mut visit);
+        }
     }
+    result
 }
 
 /// Read the declared type alternatives without inventing a default.
@@ -150,30 +171,6 @@ fn numeric(value: &Value, kind: Kind<'_>) -> Option<Value> {
         return None;
     }
     serde_json::Number::from_f64(number).map(Value::Number)
-}
-
-/// Convert present declared members and schema-valued additional members.
-fn object(value: &mut Value, schema: &Value) {
-    let Some(object) = value.as_object_mut() else {
-        return;
-    };
-    members(schema, object, coerce);
-}
-
-/// Convert homogeneous or positional items without extending the array.
-fn array(value: &mut Value, schema: &Value) {
-    let Some(values) = value.as_array_mut() else {
-        return;
-    };
-    match schema.get("items") {
-        Some(Value::Array(_)) => {
-            positions(schema, values, coerce);
-        }
-        Some(Value::Object(_)) => {
-            sequence(schema, values, coerce);
-        }
-        _ => {}
-    }
 }
 
 /// Visit every present declared member, then every schema-valued additional member.
@@ -265,15 +262,14 @@ pub(super) fn parse_number(text: &str) -> Option<f64> {
 
 /// Keep the first independently converted alternative that validates; an alternative whose
 /// own expressions do not compile never validates.
-fn union(value: &mut Value, schemas: &[Value]) {
+fn union(value: &mut Value, schemas: &[Value], code: &Code<'_>) -> Result<(), DiagnosticErrorInfo> {
     for child in schemas {
         let mut candidate = value.clone();
-        coerce(&mut candidate, child);
-        if child.is_object()
-            && super::check::check(child, &[], &candidate).is_ok_and(|errors| errors.is_empty())
-        {
+        coerce(&mut candidate, child, code)?;
+        if child.is_object() && check::candidate(child, &mut candidate, code)? {
             *value = candidate;
             break;
         }
     }
+    Ok(())
 }

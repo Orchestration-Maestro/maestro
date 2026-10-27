@@ -36,7 +36,7 @@ pub use fs_watch::{
 pub use highlighting::{SyntaxHighlighter, SyntaxSpan, SyntectHighlighter};
 pub use languages::get_language_from_path;
 pub use lifecycle::{LiveTheme, ThemeChangeResult};
-pub use loading::load_theme_from_path;
+pub use loading::{load_theme_from_path, supports_color};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_text::collation::Collator;
 pub use registry::{ThemeDirectories, ThemeInfo, ThemeState};

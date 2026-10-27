@@ -1,10 +1,7 @@
 //! Controlled native-clock policy at the shared content-host seam.
 #![cfg(test)]
 use maestro_theme::BrandPresentation;
-use maestro_web::{
-    Attachment,
-    browser::{attachment_content::*, timer::Timer},
-};
+use maestro_web::browser::{attachment_content::*, timer::Timer};
 use std::{
     cell::{Cell, RefCell},
     future::Future,
@@ -115,26 +112,6 @@ impl AttachmentHost for Host {
             result.get().map_or(Poll::Pending, Poll::Ready)
         }))
     }
-    fn capture_focus(
-        &self,
-    ) -> Result<
-        Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentHostError,
-    > {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn restore_focus(
-        &self,
-        _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
-        unreachable!("no dialog measurement in this adapter")
-    }
-    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
-        unreachable!("no native dialog key in this adapter")
-    }
 
     fn reading_layout(
         &self,
@@ -194,9 +171,6 @@ impl AttachmentHost for Host {
         }
         Ok(())
     }
-    fn take_escape(&self) -> bool {
-        false
-    }
     fn remove(&self, id: egui::Id) {
         self.removed.borrow_mut().push(id);
         self.layouts.borrow_mut().remove(&id);
@@ -226,7 +200,7 @@ impl AttachmentHost for Host {
             .push((name.into(), mime.into(), bytes.to_vec()));
         Ok(())
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

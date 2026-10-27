@@ -8,7 +8,7 @@ pub(crate) struct Rule {
 /// Scoped crate names paired with their permitted direct dependencies.
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-path", &[]),
-    ("maestro-cancellation", &[]),
+    ("maestro-cancellation", &["maestro-listeners"]),
     ("maestro-request", &["maestro-json"]),
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
@@ -118,12 +118,14 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-tool",
             "maestro-listeners",
+            "maestro-json",
         ],
     ),
     (
         "maestro-credentials",
         &[
             "maestro-models",
+            "maestro-request",
             "maestro-lock",
             "maestro-text",
             "maestro-process",
@@ -155,7 +157,12 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     (
         "maestro-tui-crossterm",
-        &["maestro-tui", "maestro-text", "maestro-process"],
+        &[
+            "maestro-tui",
+            "maestro-text",
+            "maestro-process",
+            "maestro-listeners",
+        ],
     ),
     (
         "maestro-catalog",
@@ -285,6 +292,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro",
         &[
+            "maestro-theme",
+            "maestro-tui",
+            "maestro-tui-crossterm",
+            "maestro-process",
             "maestro-app",
             "maestro-cli",
             "maestro-rpc",
@@ -297,18 +308,24 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 ];
 
 /// Internal development edges permitted beyond the production table on any target.
-pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-tui-crossterm", "maestro-brand"),
-    ("maestro-extensions", "maestro-credentials"),
-    ("maestro-rpc", "maestro-theme"),
-    ("maestro-rpc", "maestro-tui-crossterm"),
-];
+pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[("maestro-tui-crossterm", "maestro-brand")];
 
 /// Permitted development edges that only a native, non-optional declaration may use.
 pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-extensions-wasmtime", "maestro-catalog"),
+    ("maestro-extensions-wasmtime", "maestro-credentials"),
+    ("maestro-extensions-wasmtime", "maestro-models"),
+    ("maestro-extensions-wasmtime", "maestro-session"),
+    ("maestro-extensions-wasmtime", "maestro-theme"),
+    ("maestro-extensions-wasmtime", "maestro-tui"),
+    ("maestro-extensions", "maestro-credentials"),
+    ("maestro-rpc", "maestro-theme"),
+    ("maestro-rpc", "maestro-tui-crossterm"),
+    ("maestro-extensions-wasm", "maestro-models"),
     ("maestro-detection", "maestro-text"),
     ("maestro-cli", "maestro-listeners"),
     ("maestro-chat", "maestro-models"),
+    ("maestro-chat", "maestro-tui-crossterm"),
 ];
 
 /// Whether the policy permits this internal development edge between the two crates.
@@ -326,6 +343,7 @@ pub(crate) const TEST_PROCESS: &str = "maestro-test-process";
 
 /// The only crates that may declare the test-process owner as a development dependency.
 pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-agent",
     "maestro-app",
     "maestro-catalog",
@@ -335,6 +353,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-models",
     "maestro-packages",
@@ -356,6 +375,7 @@ pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
 
 /// Declared consumers of disposable native directory ownership.
 pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
@@ -365,6 +385,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
@@ -506,20 +527,14 @@ pub(crate) fn exact(name: &str) -> bool {
 
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
-    if name == "maestro" {
-        &["maestro-app", "maestro-multiplexer"]
-    } else if matches!(
-        name,
-        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer"
-    ) {
-        &["maestro-app"]
-    } else if name == "maestro-daemon" {
-        &["maestro-terminal"]
-    } else if name == "maestro-tui-crossterm" {
-        &["maestro-tui", "maestro-text"]
-    } else if exact(name) {
-        rule(name).map_or(&[], |rule| rule.dependencies)
-    } else {
-        &[]
+    match name {
+        "maestro" => &["maestro-app"],
+        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer" => {
+            &["maestro-app"]
+        }
+        "maestro-daemon" => &["maestro-terminal"],
+        "maestro-tui-crossterm" => &["maestro-tui", "maestro-text"],
+        name if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
+        _ => &[],
     }
 }

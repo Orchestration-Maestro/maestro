@@ -53,8 +53,11 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 
 ### Running an example
 
-The controlled runs instantiate the built component in the test host and call
-the command and tools it registered:
+The controlled runs call the registered commands, tools and event handlers.
+For prompt guidance, `prompt_guidance_uses_supplied_tools_and_skills` loads the
+example's source in the in-process controlled host;
+`prompt_guidance_component_matches_supplied_options` builds and instantiates the
+component. Both invoke its registered `before_agent_start` event handler:
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -63,6 +66,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -85,10 +92,6 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- working_message_
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -234,7 +237,7 @@ component runtime.
 `model_select` reads the selection the host reports. On an explicit selection or
 a cycle it notifies `Model: {provider}/{id}` with info severity; restoring a
 saved selection skips the notification. Every selection then sets the `model`
-status to the selected id and writes the previous and selected identifiers and
+status to `🤖 {id}` and writes the previous and selected identifiers and
 the selection source to standard output. An absent previous model reads `none`.
 Repeated and unchanged selections are reported too.
 

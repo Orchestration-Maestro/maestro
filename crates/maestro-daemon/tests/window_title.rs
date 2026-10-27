@@ -2,10 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "config_support/mod.rs"]
-mod config_support;
-#[path = "support/launch.rs"]
-mod launch;
+use crate::config_support;
 
 use config_support::{TestApp, fixture};
 

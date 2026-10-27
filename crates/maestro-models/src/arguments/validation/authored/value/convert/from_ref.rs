@@ -1,5 +1,6 @@
 //! Conversion through the definition a reference names.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_type::from_type;
@@ -11,8 +12,12 @@ pub(crate) fn from_ref<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let name = view.raw.get("$ref").and_then(Value::as_str)?;
-    let target = converter.definition(name)?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(name) = view.raw.get("$ref").and_then(Value::as_str) else {
+        return Ok(None);
+    };
+    let Some(target) = converter.definition(name) else {
+        return Ok(None);
+    };
     from_type(converter, &Node::Leaf(target), value)
 }

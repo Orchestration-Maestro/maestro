@@ -1,10 +1,16 @@
 use std::path::Path;
 
 use maestro_markdown::{Kind, MarkedOptions, Node, parse_with_options};
-use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use ra_ap_rustc_lexer::TokenKind;
 use syn::visit::Visit;
 
 use crate::source::{Member, Source, cfg_test, test_layout};
+
+#[cfg(test)]
+thread_local! {
+    /// Markdown parses performed by the documentation check on this thread.
+    pub(crate) static MARKDOWN_PARSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
 
 /// Reject repeated documentation and invalid test source layouts.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -20,13 +26,13 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 
 /// Check documentation tokens without interpreting comment-like text in literals.
 fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String> {
-    let mut offset = ra_ap_rustc_lexer::strip_shebang(&source.contents).unwrap_or(0);
-    let mut line = crate::source::line(&source.contents, offset);
+    let mut line = 1;
     let mut block = Documentation::default();
     let mut style = None;
-    for token in ra_ap_rustc_lexer::tokenize(&source.contents[offset..], FrontmatterAllowed::No) {
-        let end = offset + token.len as usize;
-        let body = match token.kind {
+    for (kind, range) in crate::source::tokens(&source.contents) {
+        let offset = range.start;
+        let end = range.end;
+        let body = match kind {
             TokenKind::LineComment {
                 doc_style: Some(owner),
             } => Some((&source.contents[offset + 3..end], owner)),
@@ -55,7 +61,6 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
             block.comment(body, line);
         }
         line += crate::source::count_newlines(&source.contents[offset..end]);
-        offset = end;
     }
     block.check(source)
 }
@@ -80,6 +85,18 @@ impl Documentation {
 
     /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
+        let mut previous = None;
+        if !self
+            .markdown
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .any(|line| previous.replace(line) == Some(line))
+        {
+            return Ok(());
+        }
+        #[cfg(test)]
+        MARKDOWN_PARSES.set(MARKDOWN_PARSES.get() + 1);
         let document = parse_with_options(self.markdown.clone(), MarkedOptions::Documentation);
         let mut code = Vec::new();
         code_ranges(&document.nodes, &mut code);

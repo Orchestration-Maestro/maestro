@@ -1,12 +1,10 @@
 //! Typed operation failures through their public owners.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::tool_output::TextOnlyOutput as _;
 use maestro_web::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
-    components::input::InputUiError,
-    dialogs::{attachment_overlay::AttachmentUiError, dialog::DialogUiError},
+    dialogs::attachment_overlay::AttachmentUiError,
     icons::{IconError, IconSize, icon},
     tools::artifacts::{ArtifactUiError, PresentationCause},
 };
@@ -35,8 +33,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
             Box::new(ArtifactUiError::Presentation(PresentationCause::from(
                 message.to_owned(),
             ))),
-            Box::new(InputUiError::Presentation(message.into())),
-            Box::new(DialogUiError::Presentation(message.into())),
         ];
         for error in errors {
             assert_eq!(error.to_string(), message);
@@ -47,7 +43,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
         Box::new(AttachmentHostError::BorrowConflict) as Box<dyn Error>,
         Box::new(AttachmentUiError::BorrowConflict),
         Box::new(ArtifactUiError::BorrowConflict),
-        Box::new(DialogUiError::BorrowConflict),
     ] {
         assert_eq!(error.to_string(), "Attachment is already borrowed");
         assert!(error.source().is_none());
@@ -56,7 +51,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
         for make in [ControlError::Host, ControlError::Presentation] {
             let errors: Vec<Box<dyn Error>> = vec![
                 Box::new(AttachmentUiError::Control(make(message.into()))),
-                Box::new(DialogUiError::Control(make(message.into()))),
                 Box::new(ArtifactUiError::Control(make(message.into()))),
             ];
             for error in errors {
@@ -73,8 +67,6 @@ fn leaf_sources() {
     let localization: Vec<Box<dyn Error>> = vec![
         Box::new(AttachmentUiError::from(I18nError::NotText("*".into()))),
         Box::new(ArtifactUiError::from(I18nError::NotText("*".into()))),
-        Box::new(InputUiError::from(I18nError::NotText("*".into()))),
-        Box::new(DialogUiError::from(I18nError::NotText("*".into()))),
     ];
     for error in localization {
         assert_eq!(error.to_string(), "Translation is not text: *");
@@ -84,7 +76,6 @@ fn leaf_sources() {
         Box::new(ControlError::from(icon_error())),
         Box::new(AttachmentUiError::from(ControlError::from(icon_error()))),
         Box::new(ArtifactUiError::from(ControlError::from(icon_error()))),
-        Box::new(DialogUiError::from(ControlError::from(icon_error()))),
     ];
     for error in controls {
         let original = error.source().unwrap().downcast_ref::<IconError>().unwrap();
@@ -94,8 +85,6 @@ fn leaf_sources() {
     let hosts: Vec<Box<dyn Error>> = vec![
         Box::new(AttachmentUiError::from(AttachmentHostError::BorrowConflict)),
         Box::new(ArtifactUiError::from(AttachmentHostError::BorrowConflict)),
-        Box::new(InputUiError::from(AttachmentHostError::BorrowConflict)),
-        Box::new(DialogUiError::from(AttachmentHostError::BorrowConflict)),
     ];
     for error in hosts {
         assert_eq!(error.to_string(), "Attachment is already borrowed");
@@ -337,56 +326,4 @@ fn console_presentation_failures_keep_the_original_cause() {
         assert_eq!(cause.kind(), std::io::ErrorKind::InvalidData);
         assert_eq!(error.to_string(), cause.to_string());
     });
-}
-
-#[test]
-fn tool_rendering_failures_keep_the_original_reading_cause() {
-    use maestro_web::tools::types::{ToolParams, ToolRenderState, ToolRenderView, ToolUiError};
-    let host: std::rc::Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> =
-        input_support::Host::new(|_, _| {});
-    let params = serde_json::json!({"value": 1});
-    let prepared = maestro_web::render_tool::<serde_json::Value, serde_json::Value>(
-        "unregistered-operation-error",
-        Some(ToolParams::json(&params)),
-        None,
-        false,
-    )
-    .unwrap();
-    let highlighter = text_image_support::Highlighter::default();
-    highlighter.fail.set(true);
-    let mut state = ToolRenderState::default();
-    let mut frame = attachment_support::Frame::default();
-    frame.run(vec![], |ctx, i18n, presentation| {
-        let mut ui = egui::Ui::new(
-            ctx.clone(),
-            egui::Id::new("tool-error"),
-            egui::UiBuilder::new().max_rect(ctx.content_rect()),
-        );
-        let error = prepared
-            .render(
-                &mut ui,
-                ToolRenderView::new(&host, i18n, presentation, &highlighter, None),
-                &mut state,
-            )
-            .assert_no_overlays()
-            .unwrap_err();
-        assert!(matches!(error, ToolUiError::Reading(_)));
-        let reading = error
-            .source()
-            .unwrap()
-            .downcast_ref::<maestro_web::components::code_block::ReadingUiError>()
-            .unwrap();
-        assert!(matches!(
-            reading,
-            maestro_web::components::code_block::ReadingUiError::Highlight(_)
-        ));
-        let cause = reading
-            .source()
-            .unwrap()
-            .downcast_ref::<std::io::Error>()
-            .unwrap();
-        assert_eq!(cause.to_string(), "engine failure");
-        assert_eq!(error.to_string(), cause.to_string());
-    });
-    assert_eq!(highlighter.requests.borrow().len(), 1);
 }

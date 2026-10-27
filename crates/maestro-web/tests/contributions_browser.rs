@@ -871,15 +871,9 @@ pub async fn copy_control_reports_success_then_restores(import_module: js_sys::F
     let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
-    let copies = Rc::new(RefCell::new(Vec::<String>::new()));
-    let recorded = Rc::clone(&copies);
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
-        recorded.borrow_mut().push(text);
-        js_sys::Promise::resolve(&JsValue::UNDEFINED)
-    });
-    let navigator = web_sys::window().unwrap().navigator();
-    let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
-    js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
+    let clipboard = crate::contributions_support::Recorded::install(
+        crate::contributions_support::Clipboard::Accept,
+    );
     let control = document().create_element("copy-button").unwrap();
     control.set_attribute("text", "copied text").unwrap();
     control.set_attribute("show-text", "").unwrap();
@@ -894,7 +888,7 @@ pub async fn copy_control_reports_success_then_restores(import_module: js_sys::F
     let clicked = js_sys::Date::now();
     button.click();
     until(&page, &control, || text(&control) == "Copied!").await;
-    assert_eq!(*copies.borrow(), ["copied text"]);
+    assert_eq!(clipboard.texts(), ["copied text"]);
     assert_ne!(control.inner_html(), idle);
     until(&page, &control, || text(&control).is_empty()).await;
     assert!(js_sys::Date::now() - clicked >= 2000.0);

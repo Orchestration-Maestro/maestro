@@ -147,6 +147,11 @@ fn tool_row_callbacks_release_without_retaining_the_writer() {
     tool_row_support::ownership::teardown();
 }
 
+#[test]
+fn generic_tool_rows_render_each_argument_root() {
+    tool_row_support::argument_roots();
+}
+
 /// Every fixture group has a public test owner.
 const FIXTURE_GROUPS: &[&str] = &[
     "renderer_slots_choose_each_override_independently",

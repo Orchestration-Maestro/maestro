@@ -70,8 +70,9 @@ impl Terminal for Recording {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
-        Box::pin(async move { self.done(format!("drain {max:?} {idle:?}")) })
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
+        let drained = self.done(format!("drain {max:?} {idle:?}"));
+        Box::pin(async move { drained })
     }
 
     fn write(&mut self, data: &str) -> io::Result<()> {
@@ -150,7 +151,7 @@ impl Terminal for Screen {
         &mut self,
         _max: Option<Duration>,
         _idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         Box::pin(future::ready(Ok(())))
     }
 

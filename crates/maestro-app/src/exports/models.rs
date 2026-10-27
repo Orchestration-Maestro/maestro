@@ -2,8 +2,13 @@
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
+/// The conversation owner and its construction, state, input and subscription records.
 pub use maestro_agent::{
-    AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn,
+    Agent, AgentInitialState, AgentListener, AgentOptions, AgentSpawner, AgentState, PromptInput,
+    Subscription,
+};
+pub use maestro_agent::{
+    AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, SharedAgentTool, StreamFn,
 };
 
 pub use maestro_models::{
@@ -15,8 +20,8 @@ pub use maestro_models::{
     ToolResultMessage, UserBlock, UserContent, UserMessage, default_fetch,
 };
 
-/// Agent reasoning levels, including disabled reasoning.
-pub use maestro_agent::ThinkingLevel;
+/// Agent reasoning levels, including disabled reasoning, and how queued messages are delivered.
+pub use maestro_agent::{QueueMode, ThinkingLevel};
 
 pub use maestro_models::{Local, Threaded};
 
@@ -24,8 +29,9 @@ pub use maestro_models::Transport;
 
 pub use maestro_catalog::{
     CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ModelResolverOutput,
-    ProviderConfigInput, ProviderModelInput, ResolveCliModelOptions, ResolveCliModelResult,
-    ScopedModel, model_id_comparator, resolve_cli_model, resolve_model_scope,
+    ProviderCallbacks, ProviderConfigInput, ProviderModelInput, ResolveCliModelOptions,
+    ResolveCliModelResult, ScopedModel, find_exact_model_reference_match, model_id_comparator,
+    resolve_cli_model, resolve_model_scope,
 };
 
 pub use maestro_models::models_are_equal;
@@ -38,6 +44,12 @@ pub use maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES;
 
 /// Provider identifiers in embedded catalog order.
 pub use maestro_models::get_providers;
+
+/// Embedded catalog descriptors by provider, and one descriptor by provider and identifier.
+pub use maestro_models::{get_model, get_models};
+
+/// One raw invocation observed to its final message, and the common options it carries.
+pub use maestro_models::{StreamOptions, complete};
 
 /// Authorization choice prompt retaining supplied option order.
 pub use maestro_models::OAuthSelectPrompt;

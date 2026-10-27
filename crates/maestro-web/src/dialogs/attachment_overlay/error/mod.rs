@@ -58,7 +58,9 @@ impl Error {
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]
-pub(super) use browser::mount;
+pub(crate) use browser::nodes;
+#[cfg(target_arch = "wasm32")]
+pub(super) use browser::root;
 
 /// Preserve literal diagnostics, using the fallback only for absence.
 pub(super) fn failure_detail(message: Option<&str>, fallback: String) -> String {

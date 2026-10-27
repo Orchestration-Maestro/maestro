@@ -3,9 +3,7 @@
 use crate::panel_browser_support;
 use crate::reading_browser_support;
 use crate::support;
-use maestro_web::AttachmentOverlay;
 use reading_browser_support::{View, check, click, js, run};
-use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 /// Qualified original modern workbook bytes.
 fn bytes(name: &str) -> &'static [u8] {
@@ -56,22 +54,9 @@ fn bytes(name: &str) -> &'static [u8] {
     }
 }
 /// Preserve the complete original byte input.
-fn encoded(name: &str) -> String {
+pub(crate) fn encoded(name: &str) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(name))
-}
-/// Original alias shared with the live overlay.
-fn record() -> Rc<RefCell<maestro_web::Attachment>> {
-    Rc::new(RefCell::new(maestro_web::Attachment {
-        id: "same".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
-        file_name: "original.xlsx".into(),
-        mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".into(),
-        size: bytes("two").len(),
-        content: encoded("two"),
-        extracted_text: Some("literal text".into()),
-        preview: None,
-    }))
 }
 /// Activate the center of an actual measured slot in canvas coordinates.
 fn tab_position(index: usize) -> egui::Pos2 {
@@ -117,10 +102,6 @@ pub fn excel_native_tables_paint_formatted_text_merges_and_links() {
         "document.querySelectorAll('.maestro-excel a').length===2&&document.querySelector('.maestro-excel a').getAttribute('href')==='data:text/plain,hello'&&[...document.querySelectorAll('.maestro-excel a')].every(a=>!['javascript:','vbscript:'].includes(a.protocol))",
     );
     literal_number_format();
-    let record = record();
-    let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    check("document.querySelector('.maestro-excel:not(.maestro-excel-artifact)')!==null");
 }
 /// Tab changes retain native sheet bodies and their independent scroll positions.
 #[wasm_bindgen]
@@ -225,17 +206,6 @@ pub fn excel_native_lifetimes_keep_selection_and_cancel_old_roots() {
     check(
         "table===document.querySelector('.maestro-excel table')&&getSelection().toString()===selected",
     );
-    let record = record();
-    let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    run("globalThis.old=document.querySelector('.maestro-excel:not(.maestro-excel-artifact)');");
-    view.toggle(&mut overlay, "Text");
-    check("!old.isConnected");
-    view.toggle(&mut overlay, "Spreadsheet");
-    check("document.querySelector('.maestro-excel:not(.maestro-excel-artifact)')!==old");
-    drop(overlay);
-    check("!document.querySelector('.maestro-excel:not(.maestro-excel-artifact)')");
     drop(view);
     check("!document.querySelector('.maestro-excel')");
     let panel = panel_browser_support::Panel::new();
@@ -254,48 +224,6 @@ pub fn excel_native_lifetimes_keep_selection_and_cancel_old_roots() {
     );
     drop(panel);
     check("!panelRoot.isConnected");
-}
-/// Native failures preserve controls, suppression policy and original downloads.
-#[wasm_bindgen]
-pub fn excel_native_host_failures_preserve_error_controls_and_download() {
-    let view = View::new("a.xlsx", &encoded("two"));
-    let record = record();
-    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
-    *view.host.failure.borrow_mut() = Some("<literal> failure".into());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    check(
-        "document.querySelector('.maestro-file-error h3').textContent==='Error loading file'&&document.querySelector('.maestro-file-error p').textContent==='<literal> failure'&&!document.querySelector('.maestro-file-error literal')",
-    );
-    record.borrow_mut().content = encoded("one");
-    view.overlay(&mut overlay, vec![]);
-    check("document.querySelector('.maestro-file-error p').textContent==='<literal> failure'");
-    view.overlay(&mut overlay, click(egui::pos2(728., 24.)));
-    assert!(Rc::ptr_eq(
-        view.host.downloads.borrow().last().unwrap(),
-        &record
-    ));
-    view.toggle(&mut overlay, "Text");
-    view.toggle(&mut overlay, "Spreadsheet");
-    check(
-        "!document.querySelector('.maestro-file-error')&&document.querySelector('.maestro-excel table')!==null",
-    );
-    *view.host.failure.borrow_mut() = Some(String::new());
-    view.overlay(&mut overlay, vec![]);
-    view.overlay(&mut overlay, vec![]);
-    check(
-        "!document.querySelector('.maestro-file-error')&&document.querySelector('.maestro-excel table')!==null",
-    );
-    view.host.fail_download.set(true);
-    assert!(matches!(
-        view.try_overlay(&mut overlay, click(egui::pos2(728., 24.))),
-        Err(maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(_))
-    ));
-    view.host.fail_download.set(false);
-    view.overlay(&mut overlay, vec![]);
-    check(
-        "!document.querySelector('.maestro-file-error')&&document.querySelector('.maestro-excel table')!==null",
-    );
 }
 
 /// Workbook links use the live accent foreground in either pack and mode.
@@ -409,69 +337,53 @@ pub fn excel_legacy_metadata_reaches_retained_tables() {
     );
 }
 
-/// Drive the actual consumer without substituting a prepared sheet renderer.
-fn mixed_frame(view: &mut View, overlay: &mut Option<AttachmentOverlay>, events: Vec<egui::Event>) {
-    if let Some(overlay) = overlay {
-        view.overlay(overlay, events);
-    } else {
-        view.draw(false, events);
-    }
-}
-/// Both actual consumers preserve failed and valid tabs from their first frame.
+/// The artifact consumer preserves failed and valid tabs from their first frame.
 /// # Panics
 /// Panics if a mounted body, ordered tab or input transition differs from the contract.
 #[wasm_bindgen]
 pub fn excel_mixed_workbooks_show_valid_and_failed_tabs() {
-    for attachment in [false, true] {
-        for name in ["mixed-first", "mixed-last"] {
-            let (mut view, mut overlay) = mixed_view(attachment, name);
-            mixed_frame(&mut view, &mut overlay, vec![]);
-            check(
-                "document.querySelectorAll('.maestro-excel-tab').length===2&&document.querySelectorAll('.maestro-excel-sheet').length===2",
-            );
-            let (bad, good) = if name == "mixed-first" {
-                (0, 1)
-            } else {
-                (1, 0)
-            };
-            let _ = js(&format!(
-                "globalThis.bad=document.querySelectorAll('.maestro-excel-sheet')[{bad}];globalThis.good=document.querySelectorAll('.maestro-excel-sheet')[{good}];"
-            ));
-            check(
-                "bad.querySelector('h3').textContent==='Error loading spreadsheet'&&bad.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string 3'&&!bad.querySelector('table')&&good.querySelector('td').textContent==='42'",
-            );
-            check(if bad == 0 {
-                "getComputedStyle(bad).display!=='none'&&getComputedStyle(good).display==='none'"
-            } else {
-                "getComputedStyle(good).display!=='none'&&getComputedStyle(bad).display==='none'"
-            });
-            mixed_frame(&mut view, &mut overlay, vec![]);
-            mixed_frame(&mut view, &mut overlay, click(tab_position(good)));
-            check(
-                "getComputedStyle(good).display!=='none'&&getComputedStyle(bad).display==='none'",
-            );
-            mixed_frame(&mut view, &mut overlay, click(tab_position(bad)));
-            check(
-                "getComputedStyle(bad).display!=='none'&&getComputedStyle(good).display==='none'",
-            );
-            mixed_keyboard(&mut view, &mut overlay, good);
-            check("bad.isConnected&&good.isConnected&&getComputedStyle(good).display!=='none'");
-            drop(overlay);
-            drop(view);
-            check("!bad.isConnected&&!good.isConnected");
-        }
+    for name in ["mixed-first", "mixed-last"] {
+        let mut view = mixed_view(name);
+        view.draw(false, vec![]);
+        check(
+            "document.querySelectorAll('.maestro-excel-tab').length===2&&document.querySelectorAll('.maestro-excel-sheet').length===2",
+        );
+        let (bad, good) = if name == "mixed-first" {
+            (0, 1)
+        } else {
+            (1, 0)
+        };
+        let _ = js(&format!(
+            "globalThis.bad=document.querySelectorAll('.maestro-excel-sheet')[{bad}];globalThis.good=document.querySelectorAll('.maestro-excel-sheet')[{good}];"
+        ));
+        check(
+            "bad.querySelector('h3').textContent==='Error loading spreadsheet'&&bad.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string 3'&&!bad.querySelector('table')&&good.querySelector('td').textContent==='42'",
+        );
+        check(if bad == 0 {
+            "getComputedStyle(bad).display!=='none'&&getComputedStyle(good).display==='none'"
+        } else {
+            "getComputedStyle(good).display!=='none'&&getComputedStyle(bad).display==='none'"
+        });
+        view.draw(false, vec![]);
+        view.draw(false, click(tab_position(good)));
+        check("getComputedStyle(good).display!=='none'&&getComputedStyle(bad).display==='none'");
+        view.draw(false, click(tab_position(bad)));
+        check("getComputedStyle(bad).display!=='none'&&getComputedStyle(good).display==='none'");
+        mixed_keyboard(&mut view, good);
+        check("bad.isConnected&&good.isConnected&&getComputedStyle(good).display!=='none'");
+        drop(view);
+        check("!bad.isConnected&&!good.isConnected");
     }
 }
 
 /// Traverse registered controls until the actual sheet endpoint owns keyboard focus.
-fn mixed_keyboard(view: &mut View, overlay: &mut Option<AttachmentOverlay>, index: usize) {
+fn mixed_keyboard(view: &mut View, index: usize) {
     let target = tab_position(index);
     let mut reached = false;
     for _ in view.context.interactive_rects_last_pass() {
         for pressed in [true, false] {
-            mixed_frame(
-                view,
-                overlay,
+            view.draw(
+                false,
                 vec![
                     egui::Event::PointerMoved(egui::pos2(900., 700.)),
                     egui::Event::Key {
@@ -494,9 +406,8 @@ fn mixed_keyboard(view: &mut View, overlay: &mut Option<AttachmentOverlay>, inde
         }
     }
     assert!(reached, "sheet tab must be keyboard reachable");
-    mixed_frame(
-        view,
-        overlay,
+    view.draw(
+        false,
         vec![egui::Event::Key {
             key: egui::Key::Enter,
             physical_key: None,
@@ -507,18 +418,11 @@ fn mixed_keyboard(view: &mut View, overlay: &mut Option<AttachmentOverlay>, inde
     );
 }
 
-/// Open either public consumer with the same original workbook bytes.
-fn mixed_view(attachment: bool, name: &str) -> (View, Option<AttachmentOverlay>) {
+/// Open the artifact consumer with original workbook bytes.
+fn mixed_view(name: &str) -> View {
     let mut view = View::new("a.xlsx", "");
-    let overlay = if attachment {
-        let record = record();
-        record.borrow_mut().content = encoded(name);
-        Some(AttachmentOverlay::open(record, None, view.host.clone()))
-    } else {
-        view.element.set_content(encoded(name));
-        None
-    };
-    (view, overlay)
+    view.element.set_content(encoded(name));
+    view
 }
 /// Failed-sheet diagnostics stay literal, localized and correctly painted in place.
 /// # Errors
@@ -533,40 +437,36 @@ pub fn excel_sheet_errors_are_literal_localized_and_live() -> Result<(), JsValue
         "document.querySelector('.maestro-file-error p').textContent==='Failed to load spreadsheet'",
     );
     drop(fallback);
-    for attachment in [false, true] {
-        let (mut view, mut overlay) = mixed_view(attachment, "mixed-literal");
-        mixed_frame(&mut view, &mut overlay, vec![]);
-        let _ = js(
-            "globalThis.literalRoot=document.querySelector('.maestro-excel');globalThis.literalHeading=literalRoot.querySelector('h3');",
-        );
-        check(
-            "literalRoot.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string <img src=x onerror=alert(1)>'&&!literalRoot.querySelector('img,[onerror]')&&literalRoot.querySelector('td').textContent==='42'",
-        );
-        let translations = view.i18n.get_translations();
-        let _ = translations.borrow()["en"].borrow_mut().insert(
-            "Error loading spreadsheet".into(),
-            maestro_web::TranslationValue::Text("Spreadsheet error localized".into()),
-        );
-        view.i18n.set_translations(translations);
-        for pack in ["brand.json", "signal.json"] {
-            view.pack =
-                support::brand::pack(pack).map_err(|e| JsValue::from_str(&e.to_string()))?;
-            for mode in [
-                maestro_theme::BrandMode::Dark,
-                maestro_theme::BrandMode::Light,
-            ] {
-                view.mode = mode;
-                mixed_frame(&mut view, &mut overlay, vec![]);
-                check(
-                    "literalRoot===document.querySelector('.maestro-excel')&&literalHeading===literalRoot.querySelector('h3')&&literalHeading.textContent==='Spreadsheet error localized'",
-                );
-                mixed_error_style(&view)?;
-            }
+    let mut view = mixed_view("mixed-literal");
+    view.draw(false, vec![]);
+    let _ = js(
+        "globalThis.literalRoot=document.querySelector('.maestro-excel');globalThis.literalHeading=literalRoot.querySelector('h3');",
+    );
+    check(
+        "literalRoot.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string <img src=x onerror=alert(1)>'&&!literalRoot.querySelector('img,[onerror]')&&literalRoot.querySelector('td').textContent==='42'",
+    );
+    let translations = view.i18n.get_translations();
+    let _ = translations.borrow()["en"].borrow_mut().insert(
+        "Error loading spreadsheet".into(),
+        maestro_web::TranslationValue::Text("Spreadsheet error localized".into()),
+    );
+    view.i18n.set_translations(translations);
+    for pack in ["brand.json", "signal.json"] {
+        view.pack = support::brand::pack(pack).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            view.mode = mode;
+            view.draw(false, vec![]);
+            check(
+                "literalRoot===document.querySelector('.maestro-excel')&&literalHeading===literalRoot.querySelector('h3')&&literalHeading.textContent==='Spreadsheet error localized'",
+            );
+            mixed_error_style(&view)?;
         }
-        drop(overlay);
-        drop(view);
-        check("!literalRoot.isConnected");
     }
+    drop(view);
+    check("!literalRoot.isConnected");
     Ok(())
 }
 /// Compare the actual panel's computed colors and composited text contrast.
@@ -655,47 +555,45 @@ pub fn excel_mixed_sheet_roots_keep_selection_and_release_on_rewrite() {
 
 /// Keep quoted number-format attributes on the native table.
 fn literal_number_format() {
-    {
-        use maestro_app::browser::ssf::{
-            CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet,
-            sheet_to_html,
-        };
-        let mut sheet = WorkSheet {
-            cells: [(
-                "A1".into(),
-                CellObject {
-                    t: Some(ExcelDataType::Number),
-                    v: CellValue::Number(12.),
-                    w: Some("12".into()),
-                    h: None,
-                    z: Some(NumberFormat::Code("0 \"quoted\" 雪".into())),
-                    l: None,
-                    xf: None,
-                    f: None,
-                    array_formula: None,
-                },
-            )]
-            .into_iter()
-            .collect(),
-            range: Some(Range {
-                s: CellAddress { r: 0, c: 0 },
-                e: CellAddress { r: 0, c: 0 },
-            }),
-            merges: vec![],
-        };
-        let document = web_sys::window().unwrap().document().unwrap();
-        let container = document.create_element("div").unwrap();
-        container.set_inner_html(&sheet_to_html(&mut sheet, "literal", &Ssf::default()));
-        assert_eq!(
-            container
-                .query_selector("td")
-                .unwrap()
-                .unwrap()
-                .get_attribute("data-z")
-                .as_deref(),
-            Some("0 \"quoted\" 雪")
-        );
-    }
+    use maestro_app::browser::ssf::{
+        CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet,
+        sheet_to_html,
+    };
+    let mut sheet = WorkSheet {
+        cells: [(
+            "A1".into(),
+            CellObject {
+                t: Some(ExcelDataType::Number),
+                v: CellValue::Number(12.),
+                w: Some("12".into()),
+                h: None,
+                z: Some(NumberFormat::Code("0 \"quoted\" 雪".into())),
+                l: None,
+                xf: None,
+                f: None,
+                array_formula: None,
+            },
+        )]
+        .into_iter()
+        .collect(),
+        range: Some(Range {
+            s: CellAddress { r: 0, c: 0 },
+            e: CellAddress { r: 0, c: 0 },
+        }),
+        merges: vec![],
+    };
+    let document = web_sys::window().unwrap().document().unwrap();
+    let container = document.create_element("div").unwrap();
+    container.set_inner_html(&sheet_to_html(&mut sheet, "literal", &Ssf::default()));
+    assert_eq!(
+        container
+            .query_selector("td")
+            .unwrap()
+            .unwrap()
+            .get_attribute("data-z")
+            .as_deref(),
+        Some("0 \"quoted\" 雪")
+    );
 }
 
 /// Activate the second tab through the unchanged keyboard gesture.

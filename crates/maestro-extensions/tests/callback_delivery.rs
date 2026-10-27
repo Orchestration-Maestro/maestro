@@ -443,3 +443,175 @@ fn install_origin(
         }),
     );
 }
+
+#[test]
+fn retained_frames_share_the_original_queue_and_reject_use_after_return() {
+    use maestro_extensions::{Local, create_event_bus_for, types::ExtensionRuntimeState};
+    use std::{cell::RefCell, rc::Rc};
+    let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|error| panic!("{error}")));
+    let owner = bus.for_extension();
+    let trace = Rc::new(RefCell::new(Vec::new()));
+    let observed = trace.clone();
+    bus.for_extension().on(
+        "x",
+        Rc::new(move |data, _| {
+            observed.borrow_mut().push(data.as_i64().unwrap());
+            Ok(None)
+        }),
+    );
+    let frame = owner.invoke_callback(|emitter| {
+        let frame = emitter.frame();
+        emitter.emit("x", 1.into());
+        frame.emit("x", 2.into()).unwrap();
+        assert!(trace.borrow().is_empty());
+        frame
+    });
+    assert_eq!(*trace.borrow(), [1, 2]);
+    let retired = ExtensionRuntimeState::new();
+    retired.invalidate(None);
+    assert_eq!(
+        frame.emit("x", 3.into()).unwrap_err().to_string(),
+        retired.assert_active().unwrap_err().to_string()
+    );
+    assert_eq!(*trace.borrow(), [1, 2]);
+}
+
+#[test]
+fn nested_retained_frames_retire_at_their_own_return_boundaries() {
+    use maestro_extensions::{Local, create_event_bus_for};
+    use std::{cell::RefCell, rc::Rc};
+    let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|error| panic!("{error}")));
+    let owner = bus.for_extension();
+    let trace = Rc::new(RefCell::new(Vec::new()));
+    let observed = trace.clone();
+    bus.for_extension().on(
+        "x",
+        Rc::new(move |data, _| {
+            observed.borrow_mut().push(data.as_i64().unwrap());
+            Ok(None)
+        }),
+    );
+    owner.invoke_callback(|outer| {
+        let outer = outer.frame();
+        outer.emit("x", 1.into()).unwrap();
+        let inner = owner.invoke_callback(|inner| {
+            let inner = inner.frame();
+            inner.emit("x", 2.into()).unwrap();
+            inner
+        });
+        assert_eq!(*trace.borrow(), [2]);
+        assert!(inner.emit("x", 3.into()).is_err());
+        outer.emit("x", 4.into()).unwrap();
+        assert_eq!(*trace.borrow(), [2]);
+    });
+    assert_eq!(*trace.borrow(), [2, 1, 4]);
+}
+
+#[test]
+fn retained_listener_snapshot_preserves_removals_and_excludes_later_additions() {
+    use maestro_extensions::{Local, create_event_bus_for};
+    use std::{cell::RefCell, rc::Rc};
+    let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|error| panic!("{error}")));
+    let owner = bus.for_extension();
+    let trace = Rc::new(RefCell::new(Vec::new()));
+    let observed = trace.clone();
+    let first = owner.on(
+        "x",
+        Rc::new(move |_, _| {
+            observed.borrow_mut().push("first");
+            Ok(None)
+        }),
+    );
+    let observed = trace.clone();
+    let second = owner.on(
+        "x",
+        Rc::new(move |_, _| {
+            observed.borrow_mut().push("second");
+            Ok(None)
+        }),
+    );
+    owner.invoke_callback(|emitter| {
+        let snapshot = emitter.frame().snapshot("x", Value::Null).unwrap();
+        second.unsubscribe();
+        let observed = trace.clone();
+        owner.on(
+            "x",
+            Rc::new(move |_, _| {
+                observed.borrow_mut().push("later");
+                Ok(None)
+            }),
+        );
+        first.unsubscribe();
+        for delivery in snapshot {
+            delivery.deliver().unwrap();
+        }
+        assert_eq!(*trace.borrow(), ["first", "second"]);
+        emitter.emit("x", Value::Null);
+        assert_eq!(*trace.borrow(), ["first", "second", "later"]);
+    });
+}
+
+#[test]
+fn guest_local_prefix_boundary_retires_aliases_before_foreign_delivery() {
+    use maestro_extensions::{Local, create_event_bus_for};
+    use std::{cell::RefCell, rc::Rc};
+    let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|error| panic!("{error}")));
+    let owner = bus.for_extension();
+    let trace = Rc::new(RefCell::new(Vec::new()));
+    let observed = trace.clone();
+    bus.for_extension().on(
+        "foreign",
+        Rc::new(move |_, _| {
+            observed.borrow_mut().push("foreign");
+            Ok(None)
+        }),
+    );
+    owner.on(
+        "local",
+        Rc::new(|_, _| panic!("local prefix must not reenter its native wrapper")),
+    );
+    owner.invoke_callback(|outer| {
+        let delivery = outer
+            .frame()
+            .snapshot("local", Value::Null)
+            .unwrap()
+            .pop()
+            .unwrap();
+        let invocation = delivery.begin().unwrap();
+        let frame = invocation.frame();
+        frame.emit("foreign", Value::Null).unwrap();
+        assert!(trace.borrow().is_empty());
+        invocation.finish(Ok(None));
+        assert_eq!(*trace.borrow(), ["foreign"]);
+        assert!(frame.emit("foreign", Value::Null).is_err());
+        trace.borrow_mut().push("outer-return");
+    });
+    assert_eq!(*trace.borrow(), ["foreign", "outer-return"]);
+}
+
+#[test]
+fn retained_snapshots_cannot_start_or_deliver_after_the_emitting_callback_returns() {
+    use maestro_extensions::{Local, create_event_bus_for};
+    use std::{cell::Cell, rc::Rc};
+    let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|error| panic!("{error}")));
+    let owner = bus.for_extension();
+    let calls = Rc::new(Cell::new(0));
+    let observed = calls.clone();
+    owner.on(
+        "x",
+        Rc::new(move |_, _| {
+            observed.set(observed.get() + 1);
+            Ok(None)
+        }),
+    );
+    let (mut first, mut second) = owner.invoke_callback(|emitter| {
+        let frame = emitter.frame();
+        (
+            frame.snapshot("x", Value::Null).unwrap(),
+            frame.snapshot("x", Value::Null).unwrap(),
+        )
+    });
+    assert!(first.pop().unwrap().begin().is_err());
+    assert!(second.pop().unwrap().deliver().is_err());
+    assert_eq!(calls.get(), 0);
+}

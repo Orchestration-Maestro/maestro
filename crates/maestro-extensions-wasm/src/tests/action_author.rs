@@ -84,12 +84,7 @@ pub async fn dispatch(api: &ExtensionAPI, request: &str) -> ExtensionResult<()> 
 
 /// Execute the sendMessage authored branch.
 fn send_custom(api: &ExtensionAPI, input: &Value) -> ExtensionResult<()> {
-    let mut message = input["message"].clone();
-    if let Some(details) = message.get_mut("details")
-        && !details.is_null()
-    {
-        *details = json!(details.to_string());
-    }
+    let message = input["message"].clone();
     api.send_message(
         serde_json::from_value(message).map_err(|e| e.to_string())?,
         custom_options(&input["options"])?,
@@ -121,6 +116,17 @@ fn send_user(api: &ExtensionAPI, input: &Value) -> ExtensionResult<()> {
 /// Execute the getAllTools authored branch.
 fn tools(api: &ExtensionAPI, input: &Value) -> ExtensionResult<Value> {
     let tools = api.get_all_tools()?;
+    if input["code"] == true {
+        return Ok(json!(
+            tools
+                .iter()
+                .map(|tool| json!({
+                    "name":tool.name, "parameters":tool.parameters.as_json(),
+                    "codeNodes":tool.parameters.code().len(),
+                }))
+                .collect::<Vec<_>>()
+        ));
+    }
     if input["kinds"] == true {
         return Ok(json!(
             tools

@@ -1,5 +1,4 @@
 //! Application action interception around the toolkit editor.
-use indexmap::IndexMap;
 use maestro_tui::autocomplete::AutocompleteProvider;
 use maestro_tui::editor_component::{BorderColor, TextCallback};
 use maestro_tui::tui::InputHandler;
@@ -10,9 +9,8 @@ use maestro_tui::{
 use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 /// Shared insertion-ordered handlers, independent of the editor's replaceable map slot.
-pub type ActionHandlers = Rc<RefCell<IndexMap<String, Rc<dyn Fn()>>>>;
-/// A shortcut interceptor returning whether input was consumed.
-type ExtensionShortcut = Rc<dyn Fn(&str) -> bool>;
+pub use maestro_app::ActionHandlers;
+use maestro_app::{CustomEditorComponent, ExtensionShortcutCallback as ExtensionShortcut};
 /// Toolkit editing with ordered application action interception.
 pub struct CustomEditor {
     /// Inherited editor owner.
@@ -229,5 +227,39 @@ impl EditorComponent for CustomEditor {
 
     fn set_autocomplete_max_visible(&self, max_visible: f64) -> Option<()> {
         EditorComponent::set_autocomplete_max_visible(&self.editor, max_visible)
+    }
+}
+impl maestro_app::ExtensionEditor for CustomEditor {
+    fn editor(&self) -> &Editor {
+        &self.editor
+    }
+}
+impl CustomEditorComponent for CustomEditor {
+    fn action_handlers(&self) -> ActionHandlers {
+        CustomEditor::action_handlers(self)
+    }
+    fn on_escape(&self) -> Option<Rc<dyn Fn()>> {
+        CustomEditor::on_escape(self)
+    }
+    fn set_on_escape(&self, callback: Option<Rc<dyn Fn()>>) {
+        CustomEditor::set_on_escape(self, callback);
+    }
+    fn on_ctrl_d(&self) -> Option<Rc<dyn Fn()>> {
+        CustomEditor::on_ctrl_d(self)
+    }
+    fn set_on_ctrl_d(&self, callback: Option<Rc<dyn Fn()>>) {
+        CustomEditor::set_on_ctrl_d(self, callback);
+    }
+    fn on_paste_image(&self) -> Option<Rc<dyn Fn()>> {
+        CustomEditor::on_paste_image(self)
+    }
+    fn set_on_paste_image(&self, callback: Option<Rc<dyn Fn()>>) {
+        CustomEditor::set_on_paste_image(self, callback);
+    }
+    fn on_extension_shortcut(&self) -> Option<ExtensionShortcut> {
+        CustomEditor::on_extension_shortcut(self)
+    }
+    fn set_on_extension_shortcut(&self, callback: Option<ExtensionShortcut>) {
+        CustomEditor::set_on_extension_shortcut(self, callback);
     }
 }

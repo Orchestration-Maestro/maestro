@@ -1,5 +1,5 @@
 //! Invocation of returned shell operations using owned output and cancellation resources.
-use super::{Exports, Imports, contexts};
+use super::{Exports, Imports, signals};
 use crate::bindings::exports::maestro::extension::guest::BashRequest;
 use crate::{BashExecOptions, BashExecResult, BashOperations, ExtensionResult};
 use std::rc::Rc;
@@ -23,7 +23,7 @@ impl<I: Imports> Exports<I> {
             on_data: Rc::new(move |bytes| imports.bash_output(&resources.output, bytes)),
             signal: resources
                 .signal
-                .map(|signal| contexts::signal(&self.imports, signal)),
+                .map(|signal| signals::signal(&self.imports, signal)),
             timeout: request.timeout,
             env: request.env.map(|env| env.into_iter().collect()),
         };

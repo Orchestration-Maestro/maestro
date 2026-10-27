@@ -29,10 +29,10 @@ fn registered_schema_origin_survives_native_retention() {
     let bus = support::LocalBus::new();
     let loaded = support::loaded("owner", bus.controller.for_extension());
     let mut wrapped_source = tool_support::definition("echo", "Echo");
-    wrapped_source.definition.parameters = mixed();
+    wrapped_source.definition.parameters = mixed().with_code(maestro_models::SchemaCode::default());
     let wrapped = maestro_tools::local::wrap_tool_definition(wrapped_source, None);
     let mut definition = tool_support::definition("echo", "Echo");
-    definition.definition.parameters = mixed();
+    definition.definition.parameters = mixed().with_code(maestro_models::SchemaCode::default());
     loaded.api.register_tool(definition).expect("registration");
 
     let retained = {
@@ -65,15 +65,15 @@ fn registered_schema_origin_survives_native_retention() {
     let call = maestro_models::ToolCall {
         id: "call".to_owned(),
         name: "echo".to_owned(),
-        arguments: serde_json::Map::from_iter([
+        arguments: serde_json::Value::Object(serde_json::Map::from_iter([
             ("authored".to_owned(), serde_json::Value::Null),
             ("plain".to_owned(), serde_json::Value::Null),
-        ]),
+        ])),
         thought_signature: None,
     };
     let prepared = maestro_models::validate_tool_arguments(&wrapped.definition, &call);
     assert_eq!(
-        prepared.map(serde_json::Value::Object),
+        prepared,
         Ok(serde_json::json!({"authored": "null", "plain": ""})),
         "prepared arguments keep the retained node kinds"
     );

@@ -2,14 +2,25 @@
 
 use maestro_theme::ThemeState;
 use maestro_tui::TUI;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use maestro_tui::TerminalImage;
-#[cfg(unix)]
-use maestro_tui::tui::TerminalHandle;
+#[cfg(any(unix, windows))]
+use maestro_tui::tui::{TerminalHandle, TuiRuntime};
 use std::cell::{Cell, RefCell};
 use std::io;
 use std::rc::{Rc, Weak};
 use tokio::sync::oneshot;
+
+/// Construct the native terminal and its runtime over `local` without starting either.
+#[cfg(any(unix, windows))]
+#[must_use]
+pub fn native_terminal(local: Rc<tokio::task::LocalSet>) -> (TerminalHandle, Rc<dyn TuiRuntime>) {
+    let terminal: TerminalHandle = Rc::new(RefCell::new(
+        maestro_tui_crossterm::ProcessTerminal::new(Rc::clone(&local)),
+    ));
+    let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(local));
+    (terminal, runtime)
+}
 
 /// The frame writer and the exit effect one presentation supplies.
 #[derive(Clone)]
@@ -25,17 +36,12 @@ impl SelectorHost {
     ///
     /// `local` drives the deferred terminal work; the terminal itself is created
     /// when the presentation asks for its frame writer.
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[must_use]
     pub fn native(local: Rc<tokio::task::LocalSet>) -> Self {
         Self {
             create_ui: Rc::new(move || {
-                let terminal: TerminalHandle = Rc::new(RefCell::new(
-                    maestro_tui_crossterm::ProcessTerminal::new(Rc::clone(&local)),
-                ));
-                let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(Rc::clone(
-                    &local,
-                )));
+                let (terminal, runtime) = native_terminal(Rc::clone(&local));
                 Ok(TUI::new(terminal, runtime, TerminalImage::default(), None))
             }),
             exit: Rc::new(|code: i32| std::process::exit(code)),

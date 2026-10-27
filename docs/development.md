@@ -288,9 +288,9 @@ The caller's working directory and literal arguments reach the application.
 The launcher uses the checkout manifest and pinned Cargo, not a global installed
 application. `--no-env` removes provider credentials for that child only; it does
 not move authentication files. The Windows form compares the switch without ASCII
-case sensitivity. The executable is not delivered yet; its implementation is
-tracked in [#249](https://github.com/Orchestration-Maestro/maestro/issues/249).
-Until then the source commands report Cargo's missing-package failure.
+case sensitivity. The source executable now delegates startup to the command-line
+library and wires the concrete chat, RPC, selector and native component adapters.
+The separate `maestro-model-account` binary runs the standalone account command.
 
 ## Compile watches
 
@@ -382,7 +382,7 @@ Those configuration and central asset-path functions are owned by
 [#216](https://github.com/Orchestration-Maestro/maestro/issues/216); no substitute
 configuration schema or asset lookup is provided by the development commands.
 Use the owner's central asset paths, not the location of the current source file.
-Installed and standalone application execution is not delivered yet.
+The source executable is delivered. Installed distributions still require their prepared assets.
 
 The copy recipes default to `maestro-app-assets` and `maestro-binary-assets`
 under Cargo's configured target directory. `app-clean` removes both asset trees;
@@ -409,10 +409,12 @@ viewer bundle rather than building it.
 
 ## Debugging
 
-The hidden `/debug` command is unavailable until the interactive front end is
-delivered. Its output belongs under
-`~/.maestro/agent/maestro-debug.log`. It contains rendered terminal lines with ANSI
-sequences and the last model messages. The interactive owner supplies this
+In the interactive mode, Shift+Ctrl+D writes a debug capture to
+`~/.maestro/agent/maestro-debug.log`, or to `maestro-debug.log` in the directory
+`MAESTRO_CODING_AGENT_DIR` names. The capture holds the terminal size, every
+rendered line with its visible width and escaped ANSI sequences, and the session's
+messages as JSON lines. Submitting `/debug` writes the same capture. See
+[debug capture](chat/commands.md#debug-capture). The interactive owner supplies this
 behavior; development commands do not create a replacement logger.
 
 ## Tests
@@ -452,7 +454,10 @@ elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
 on Windows, where the shell converts the search list to colon-separated paths.
 The example builds the author component, warms the Wasmtime compilation cache
-beside it and exports its path to the tests' processes.
+in the default user cache and exports its path to the tests' processes.
+The Git-pinned engine partitions cached code by host executable modification
+time, so setup does not warm another binary's entries; nextest processes of
+the same test binary reuse its compiled bytes after their first load.
 The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its
@@ -510,7 +515,9 @@ file. Nonempty files or nonzero cursors are rejected before launch, including
 append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
 descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
-executable replaces the shell.
+executable replaces the shell, in the interpreter the caller names by absolute
+path: neither this process's `PATH` nor the child's selects it, and a relative
+path is refused before anything runs.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the

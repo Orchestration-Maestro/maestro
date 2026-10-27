@@ -294,7 +294,7 @@ fn tagged_stream(
                 maestro_models::ToolCall {
                     id: format!("call-{call}"),
                     name: "echo".into(),
-                    arguments: maestro_models::JsonObject::new(),
+                    arguments: maestro_models::JsonObject::new().into(),
                     thought_signature: None,
                 },
             )];

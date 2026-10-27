@@ -268,11 +268,11 @@ scratch workspaces, not certified as delivered capabilities.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in
-`crates/maestro-chat/tests/footer_support/session.rs`. A second construction of the
-session configuration in these test sources is rejected with its file and line, so
-they share one setup, which returns a session with its services. The rule covers the
-footer support tree, except the setup itself, and the test modules below
-`crates/maestro-chat/src/interactive_mode/`. Paths compare by component, so a native
+`crates/maestro-chat/tests/footer_support/session.rs`. The conventions check rejects
+a second construction of the session configuration anywhere in the chat crate's
+test code, naming its file and line, so every chat test shares one setup, which
+returns a session with its services. The rule covers every chat test source in any
+directory, except the setup itself. Paths compare by component, so a native
 separator changes nothing, and the shared token walk includes macro arguments,
 closures and impl bodies.
 
@@ -448,21 +448,21 @@ selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
 
-Crates whose `Cargo.toml` sets `autotests = false` build their integration
-tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
-unconditional out-of-line modules in that root; support modules stay in their
-existing directories. The conventions check covers every crate whose
-`Cargo.toml` sets `autotests = false` or declares an `integration` test target.
-When such a crate has top-level integration-test sources, the check requires
-`autotests = false` and exactly one test target: the runnable `integration`
-target at `tests/integration.rs`.
+Every crate builds its integration tests as one program from
+`tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line
+modules in that root; support modules stay in their existing directories. The
+conventions check covers every workspace member, new crates included: a member
+with top-level integration-test sources needs `autotests = false` and exactly
+one test target, the runnable `integration` target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no

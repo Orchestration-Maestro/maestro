@@ -83,6 +83,24 @@ impl From<maestro_models::DiagnosticErrorInfo> for BashError {
 
 /// Borrowed data and retained spawn-hook signatures for shell execution.
 pub trait BashExecution: ToolExecution {
+    /// Retained operations follow the family: local state or thread-safe shared state.
+    ///
+    /// A threaded holder rejects a non-thread-safe operation even when its future is `Send`.
+    ///
+    /// ```compile_fail
+    /// use maestro_models::Threaded;
+    /// use maestro_tools::{BashExecution, BashOperations, BashExecOptions, BashExecResult, BashError};
+    /// use std::{rc::Rc, sync::Arc, future::{Future, ready}, pin::Pin};
+    /// struct LocalOwner(Rc<()>);
+    /// impl BashOperations for LocalOwner {
+    ///     fn exec<'a>(&'a self, _: &'a str, _: &'a str, _: BashExecOptions<'a>)
+    ///         -> Pin<Box<dyn Future<Output = Result<BashExecResult, BashError>> + Send + 'a>> {
+    ///         Box::pin(ready(Ok(BashExecResult { exit_code: Some(0.0) })))
+    ///     }
+    /// }
+    /// let _: Arc<<Threaded as BashExecution>::Operations> = Arc::new(LocalOwner(Rc::new(())));
+    /// ```
+    type Operations: BashOperations<Self> + ?Sized;
     /// Synchronous raw output observer borrowed only during execution.
     type Data<'a>: FnMut(&[u8]) + ?Sized + 'a;
     /// Command preparation before the first progress notification.
@@ -92,6 +110,7 @@ pub trait BashExecution: ToolExecution {
 macro_rules! family {
     ($mode:ty, [$($data:tt)*], [$($hook:tt)*]) => {
         impl BashExecution for $mode {
+            type Operations = dyn BashOperations<$mode> $($hook)*;
             type Data<'a> = dyn FnMut(&[u8]) $($data)* + 'a;
             type SpawnHook = dyn Fn(BashSpawnContext) -> Result<BashSpawnContext, DiagnosticErrorInfo> $($hook)*;
         }
@@ -101,7 +120,7 @@ family!(Local, [], []);
 family!(Threaded, [+ Send], [+ Send + Sync]);
 
 /// A replaceable operation that streams raw bytes from a shell command.
-pub trait BashOperations<E: BashExecution = Threaded>: Send + Sync {
+pub trait BashOperations<E: BashExecution = Threaded> {
     /// Executes the literal command in the supplied directory.
     fn exec<'a>(
         &'a self,
@@ -113,27 +132,28 @@ pub trait BashOperations<E: BashExecution = Threaded>: Send + Sync {
 
 /// Construct the same native configuration in each concrete namespace.
 macro_rules! native_factory {
-    ($mode:ty) => {
+    ($mode:ty, $pointer:ident) => {
         /// Creates local operations; shell and environment observations happen per execution.
         #[must_use]
         pub fn create_local_bash_operations(
             bin_dir: String,
             shell_path: Option<String>,
-        ) -> Arc<dyn BashOperations<$mode>> {
-            Arc::new(LocalBash {
+        ) -> <$mode as Execution>::Shared<<$mode as BashExecution>::Operations> {
+            $pointer::new(LocalBash {
                 bin_dir,
                 shell_path,
             })
         }
     };
 }
-native_factory!(Threaded);
+native_factory!(Threaded, Arc);
 
 /// Caller-local shell factories and borrowed native data sinks.
 pub mod local {
     pub use super::tool::local::*;
-    use super::{Arc, BashOperations, Local, LocalBash};
-    native_factory!(Local);
+    use super::{BashExecution, Execution, Local, LocalBash};
+    use std::rc::Rc;
+    native_factory!(Local, Rc);
 }
 
 /// Factory-supplied operands, not cached shell discovery or inheritance.
@@ -177,7 +197,7 @@ impl LocalBash {
             ))
             .into());
         }
-        let mut builder = tokio::process::Command::new(shell.shell);
+        let mut builder = maestro_process::command(shell.shell);
         builder
             .args(shell.args)
             .arg(command)
@@ -257,7 +277,7 @@ async fn observe(
     std::future::pending().await
 }
 
-/// Selects entries for native environment insertion.
+/// Selects native key identity before omitting explicitly unset values at process creation.
 fn command_env(env: &ShellEnv, windows: bool) -> Vec<(&std::ffi::OsString, &std::ffi::OsString)> {
     let mut entries: Vec<_> = env.iter().collect();
     if windows {
@@ -278,6 +298,9 @@ fn command_env(env: &ShellEnv, windows: bool) -> Vec<(&std::ffi::OsString, &std:
         });
     }
     entries
+        .into_iter()
+        .filter_map(|(key, value)| value.as_ref().map(|value| (key, value)))
+        .collect()
 }
 
 #[cfg(test)]
