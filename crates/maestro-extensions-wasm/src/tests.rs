@@ -75,6 +75,7 @@ mod host_widgets;
 mod input_transform_example;
 mod join;
 mod json_payloads;
+mod mac_system_theme_example;
 mod model_streams;
 pub(crate) mod native_http_host;
 mod native_io;
