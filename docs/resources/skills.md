@@ -1,5 +1,8 @@
 # Skills
 
+For creating, installing and invoking a skill in Maestro, start with the
+[user guide](../skills.md). This page describes the native loader API.
+
 `maestro-resources` discovers described instruction files on the native file
 system. The caller supplies home, working and configuration roots;
 the loader does not select application configuration.
