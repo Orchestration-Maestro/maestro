@@ -33,15 +33,24 @@ that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/model_status.rs` sets the `model` status for each selected model
 and notifies only on an explicit selection or a cycle, never on a restore.
 `extensions/widget_placement.rs` requests widgets above and below the editor on
-session start. `extensions/snake.rs` opens a custom Snake game with keyboard
-controls, timed movement and saved games in session entries; its index gives the
-build/run commands and interactive-host prerequisites.
+session start. `extensions/git_checkpoint.rs` creates opt-in Git stash
+checkpoints for session entries and asks before applying one when forking; its
+controlled run uses disposable repositories and scripted UI choices. Loading it
+requires Git and a committed repository, and approving a restore can change
+tracked files or leave conflicts. `extensions/snake.rs` opens a custom Snake game
+with keyboard controls, timed movement and saved games in session entries; its
+index gives the build/run commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
 through OSC 777, Kitty OSC 99 or Windows PowerShell; its
 [index entry](../examples/extensions/README.md#what-the-notification-example-does)
-lists the terminal and platform prerequisites and controlled run command. The
+lists the terminal and platform prerequisites and controlled run command.
+`extensions/truncated_tool.rs` wraps ripgrep with the host's output limits,
+retains complete truncated output in a temporary file, and renders search calls
+and results. It needs a Unix component host with `rg` on its `PATH`; loading it
+is opt-in. Temporary output can contain private contents and remains until
+removed. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

@@ -6,6 +6,16 @@
 )]
 use crate::{ExtensionAPI, ExtensionResult};
 
+/// Creates a distinct directory under the host's temporary root, private on Unix.
+///
+/// The prefix must be a nonempty leaf name. The caller owns cleanup.
+///
+/// # Errors
+/// Returns an invalid prefix, native creation failure or invalid response.
+pub fn make_temp_dir(api: &ExtensionAPI, prefix: &str) -> ExtensionResult<String> {
+    api.helper("paths.make_temp_dir", &(prefix,))
+}
+
 /// Returns the final path component using the host's path flavor.
 ///
 /// # Errors

@@ -1373,6 +1373,7 @@ impl host::HostTui for State {
         &mut self,
         _: Resource<Tui>,
     ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        // shortcut: redraw requests only; use a real frame writer for other requests.
         Ok(Ok(self.push(super::widget_component::WidgetResource(0))?))
     }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {

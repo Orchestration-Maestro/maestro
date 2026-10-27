@@ -28,11 +28,14 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
+| `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
@@ -52,6 +55,7 @@ inserts at its own place instead of appending at the end of each list.
 | `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `truncated_tool.rs` | An opt-in ripgrep search tool that applies the host's line/byte limits, saves complete truncated output to a temporary file, and renders calls and results. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
@@ -80,6 +84,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_footer_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
@@ -88,9 +94,15 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- git_checkpoint_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- git_checkpoint_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- input_transform_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -129,6 +141,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- tools_component_changes_native_session_and_restores_branch
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- truncated_tool_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- truncated_tool_component_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -187,6 +203,26 @@ no credentials or paid service: the component run uses a loopback provider. Test
 create the fixed path exclusively and refuse to touch a file already there. The
 nextest file-trigger group runs those tests one at a time; do not run separate
 file-trigger test commands concurrently.
+
+### What the truncated search tool does
+
+Build with `--example truncated_tool`, then load the component into a Unix
+component-enabled host with `rg` on its `PATH`. The opt-in `rg` tool searches the
+supplied directory (or the session's current directory), with an optional file
+glob. Patterns, paths and globs are literal process arguments, not shell text.
+
+Results retain the first 2,000 lines or 50 KB, whichever limit is reached first.
+When truncated, the tool awaits a queued write of the complete output to
+`maestro-rg-*/output.txt` in the host's temporary directory before returning its
+path and omitted line/byte counts. Expanded results show the first 20 lines and
+the full-output path. No matches and search errors have separate outcomes.
+
+Search output can contain private file contents. Temporary artifacts remain on
+disk so the read tool can open them; remove their directories when no longer
+needed. Loading and searching are opt-in; no provider or paid service is needed
+for the controlled runs above. Those runs use disposable files and a controlled
+search process through the production component runtime. They need
+`/usr/bin/python3`, not ripgrep.
 
 ### What the shutdown example does
 
@@ -296,6 +332,25 @@ string stores them; nothing is trimmed, rebuilt or cached. `session_shutdown`
 removes the status under the same key, including when no start came before it.
 A host rejection is returned to the host unchanged. Loading the component into
 an application is opt-in.
+
+### What the custom footer does
+
+`/footer` switches between the host's default footer and one dimmed line showing
+input tokens, output tokens, total cost, the current model and the Git branch.
+Each render totals the assistant messages on the active session branch; it ignores
+other messages and entries. Counts below 1,000 are shown as numbers, larger counts
+as one decimal followed by `k`, and cost as dollars with three decimal places.
+Without a model the footer shows `no-model`; without a Git branch it omits the
+parenthesized branch. The host's terminal helpers measure and clip the line to
+its supplied width, preserving styling and whole graphemes.
+
+Branch changes request a render. Restoring the default footer disposes the custom
+one and unsubscribes its branch listener. The controlled run invokes the built
+component with supplied history, model, branch, theme and terminal-helper replies;
+it needs no provider, repository, credentials or installation. Loading the
+component is opt-in and needs an application with the component runtime and an
+interactive UI host. Build it with the command above using `custom_footer` as
+the example name.
 
 ### Building with-deps
 
@@ -469,6 +524,25 @@ is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
 
+### What the input transform example does
+
+`?quick <question>` returns `Respond briefly in 1-2 sentences: <question>`,
+trimming the question's edges with the host's shared whitespace definition.
+An empty question warns `Usage: ?quick <question>` and stops. `ping` and `time`
+ignore ASCII case and stop after informational feedback: `pong` or the host's
+current local date and time. Other text, including extension-injected input,
+continues unchanged. The rewrite omits replacement images, leaving the host to
+keep the supplied attachments.
+
+Time uses the host's local time zone with the en-US pattern
+`M/D/YYYY, h:mm:ss AM`; other locale patterns are not selected. Build with
+`--example input_transform` in the command above. The controlled `input_transform_`
+runs supply whitespace and clock replies, invoke both adapters and need no
+provider, credentials or installation. Loading is opt-in and needs a
+component-enabled host with notification UI. Quick questions still use that
+host's configured model and can incur provider charges; ping, time and empty
+quick input do not call a model.
+
 ### What the Snake game does
 
 Build with `--example snake`, then load the component into a component-enabled
@@ -532,3 +606,33 @@ session names, so they need no provider, paid service or terminal installation.
 The example starts no process and reads no files. A title-write or name-read
 failure ends the callback or animation with the host's error; tail errors go to
 the host's event-bus reporter.
+
+### What the Git checkpoint example does
+
+Build with `--example git_checkpoint` using the command above. Loading it is
+opt-in and needs a component-enabled native host, Git on `PATH`, and a Git
+repository with an initial commit and a configured author identity. Use a
+disposable checkout first: approving a restore runs `git stash apply` against
+the host's working directory and can change tracked files or leave conflicts.
+Interactive restoration also needs the host's selector UI.
+
+`tool_result` remembers the current session leaf when one exists. `turn_start`
+awaits `git stash create` and associates a nonempty object ID with that entry,
+replacing its previous checkpoint. Creating the object leaves the working tree
+and stash list alone; it does not include untracked files. A clean tree creates
+no checkpoint and keeps any previous one.
+
+Before a fork, a matching checkpoint and an available UI open **Restore code
+state?** with **Yes, restore code to that point** and **No, keep current code**.
+A selection starting with `Yes` awaits `git stash apply` and reports
+`Code restored to checkpoint` only if Git exits with code zero without being
+terminated. A nonzero exit or terminated command fails the callback with the
+exit code, termination flag and Git's standard error instead; inspect any partial
+changes or conflicts before continuing. Dismissal, another choice, a missing
+checkpoint or a headless host leave the working tree alone.
+
+`agent_end` clears the in-memory checkpoint map, not the remembered entry or
+Git's unreachable objects. There is no persistent recovery catalog, automatic
+reset, stash push, or built-in checkpoint policy. The controlled runs load the
+built component through the production runner in disposable repositories with
+scripted UI choices. They need Git but no provider, credentials or paid service.
