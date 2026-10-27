@@ -867,15 +867,21 @@ change only with the manifest.
    | `agent-output` | Each text block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
    | `prompt` | Each text block of a user message from every route: typed prompts, steering and follow-up messages, SDK and RPC prompts, after prompt-template and skill expansion | When the message ends, before it is saved or sent |
 
-   Every agent and summary request is checked again with the same `tool-output`,
-   `agent-output` and `prompt` rules through the context hook, including sessions
-   saved before the manifest was selected. Summary requests include manual and
-   automatic compaction, split-turn summaries and branch summaries. Their source
-   messages are checked by their original targets before serialization; previous
-   summaries use `agent-output`. The assembled request is checked before provider
-   invocation. Returned summary text uses `agent-output` rules through message-end
-   processing before storage, notification or context reuse, including summaries
-   supplied by earlier extensions. These checks do not rewrite old entries.
+   Every agent request to the provider is checked again with the same
+   `tool-output`, `agent-output` and `prompt` rules through the existing context
+   hook. The check covers every message the request carries, including summaries,
+   the output of the user's shell commands and sessions saved before the manifest
+   was selected.
+
+   Compaction and branch summaries go through the existing session-before-compact
+   and session-before-tree hooks, through which an extension supplies the summary.
+   When any rule targets `tool-output`, `agent-output` or `prompt`, the guard
+   supplies it: it checks the messages to summarize with their targets' rules and
+   any previous summary with `agent-output` rules, generates the summary from the
+   checked text with the compaction-generation host operation, checks the result
+   with `agent-output` rules and returns it. This covers manual and automatic
+   compaction, split-turn summaries and branch summaries. Because guards run last
+   (item 6), the guard's summary replaces a summary an earlier extension supplied.
 
 4. **Actions.** Each rule names its own action. The manifest's files set the usual
    choices: `confirm` for destructive commands, `block` for protected paths,
@@ -929,7 +935,9 @@ change only with the manifest.
    their accompanying snapshots. Emitted snapshots do not share unchecked mutable
    text with listeners. `/settings` shows the setting as locked, like any locked
    value.
-   With the setting `false`, the default, streaming is unchanged. Guards do not
+   With the setting `false`, the default, streaming is unchanged.
+8. **Limits.** The output of the user's `!` and `!!` commands is saved as produced
+   and checked only when a later agent request carries it (item 3). Guards do not
    rewrite existing session files.
 
 ## Core hooks
@@ -994,17 +1002,16 @@ package resolves conflicts exactly as any other package does.
 - **Guards.** Matching is one pure module in the manifest package: rules and text
   in, a decision out, with no I/O and no hook types. A thin layer registers the
   existing tool-call, user-shell, tool-result, message-end and context hooks and
-  applies the decision. The application also dispatches context checking at
-  summary request seams, before source serialization and provider invocation,
-  and message-end checking at summary result seams, before storage or publication.
-  Summary paths reuse these hooks and the same matcher, not a second guard engine.
-  Expressions compile with the workspace's existing `regex` crate.
-  `holdAssistantText` is read in exactly one place, the agent session's listener
-  emission boundary for all assistant-text-bearing events, not only message
-  updates. The interactive view, JSON and RPC modes and SDK listeners all read
-  that emission, so none withholds text itself.
-  No other package matches guard rules; a package that reacts to guarded work
-  builds on the manifest package's behaviour instead of matching again.
+  applies the decision. Summaries go through the existing session-before-compact
+  and session-before-tree hooks: the guard supplies each summary, generated from
+  checked text with the compaction-generation host operation, so the context and
+  message-end hooks keep their existing coverage. Expressions compile with the
+  workspace's existing `regex` crate. `holdAssistantText` is read in exactly one
+  place, the agent session's listener emission boundary for every event that
+  carries assistant text, not only message updates. The interactive view, JSON
+  and RPC modes and SDK listeners all read that emission, so none withholds text
+  itself. No other package matches guard rules; a package that reacts to guarded
+  work builds on the manifest package's behaviour instead of matching again.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
   applies the base layer, then the ordinary one-level user and project merge, then
   locked paths, then stored-value decisions. There is no new settings scope and no
@@ -1082,9 +1089,9 @@ package resolves conflicts exactly as any other package does.
 - Summary guards: resume a session saved before manifest selection with personal
   data in user, assistant and tool messages and in a previous summary. Manual and
   automatic compaction, including split-turn summaries, and branch summaries send
-  only checked text to the faux provider. Matching summary responses are checked
-  before storage, notification and context reuse; a summary supplied by an
-  earlier extension is checked too. Existing session-file bytes stay unchanged.
+  only checked text to the faux provider. A summary response that matches a rule
+  is checked before the guard returns it, and the guard's summary replaces one an
+  earlier extension supplied. Existing session-file bytes stay unchanged.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -1173,8 +1180,9 @@ owners keep their ordering and accepted-write semantics.
   supplies and installs the files.
 - New RPC or JSON fields.
 - Guards without a manifest, local guard files and settings that change guards;
-  checking thinking blocks, which providers sign and replay unchanged; rewriting
-  existing session files; and detection other than regular expressions.
+  checking thinking blocks, which providers sign and replay unchanged; checking
+  the user's shell command output before it is saved (M20.8, tracked separately);
+  rewriting existing session files; and detection other than regular expressions.
 - Manifest mode in the browser application.
 
 ## Glossary
