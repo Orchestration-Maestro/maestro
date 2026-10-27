@@ -34,3 +34,6 @@ pub use whitespace::{WHITESPACE, is_whitespace_scalar};
 mod locale;
 #[cfg(feature = "number-format")]
 pub mod number_format;
+
+#[cfg(feature = "date-time-format")]
+pub mod date_time_format;
