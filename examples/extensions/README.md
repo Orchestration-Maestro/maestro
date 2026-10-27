@@ -41,6 +41,7 @@ inserts at its own place instead of appending at the end of each list.
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
 
@@ -95,6 +96,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- widget_placement
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -275,6 +278,22 @@ an interactive host keeps the text across agent turns or loader recreation;
 that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.
+
+### What the widget placement example does
+
+On every `session_start`, `widget_placement` reads the host's current UI
+availability and does nothing when there is none. With a UI it requests the
+`widget-above` widget holding the line `Above editor widget`, then the
+`widget-below` widget holding the line `Below editor widget` with the explicit
+below-editor placement. The first request passes no options, so the host applies
+its own above-editor default.
+
+Each request acquires the UI context again, so a host that changes its binding
+after the first request serves the second on the new one. A rejected request
+ends the callback with that message; the example retries nothing and removes no
+widget the host already accepted. Loading the component into an interactive
+application is opt-in and needs that application's component runtime and UI
+host; the controlled run only records the ordered requests.
 
 ### What the session naming command does
 

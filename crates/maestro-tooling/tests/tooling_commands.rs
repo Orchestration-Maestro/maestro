@@ -1252,6 +1252,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/trigger_compact.rs"),
     ),
     (
+        "examples/extensions/widget_placement.rs",
+        include_str!("../../../examples/extensions/widget_placement.rs"),
+    ),
+    (
         "examples/extensions/with-deps/main.rs",
         include_str!("../../../examples/extensions/with-deps/main.rs"),
     ),

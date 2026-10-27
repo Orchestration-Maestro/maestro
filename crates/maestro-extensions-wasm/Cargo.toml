@@ -123,6 +123,11 @@ name = "wasi_capabilities"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "widget_placement"
+path = "../../examples/extensions/widget_placement.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "with_deps"
 path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
