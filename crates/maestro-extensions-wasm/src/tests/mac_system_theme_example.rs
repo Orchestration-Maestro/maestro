@@ -129,7 +129,7 @@ fn observations_and_release(host: &Controlled, listener: u32) -> Result<(), Stri
         .iter()
         .filter(|line| line.starts_with("native-wait"))
         .collect();
-    assert_eq!(waits, vec![&"native-wait 0 2000000000".to_owned(); 9]);
+    assert_eq!(waits, vec![&"native-wait 2 0".to_owned(); 9]);
     let mut keys = vec![
         listener,
         observed.callback("event session_start")?,
@@ -289,7 +289,7 @@ async fn component_control(
             a.get()
                 .observed
                 .transcript
-                .contains(&"native-wait 0 2000000000".to_owned())
+                .contains(&"native-wait 2 0".to_owned())
         );
     });
     component_event(accessor, exports, shutdown, "session_shutdown", closing)
