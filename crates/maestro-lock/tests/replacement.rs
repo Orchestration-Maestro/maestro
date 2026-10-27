@@ -31,6 +31,7 @@ fn replacement_handles_relative_and_extensionless_paths() {
         b"new bytes",
         Replace {
             through_symlinks: true,
+            ..Replace::default()
         },
     )
     .unwrap();
@@ -42,7 +43,8 @@ fn replacement_handles_relative_and_extensionless_paths() {
             std::path::Path::new("/"),
             b"no",
             Replace {
-                through_symlinks: true
+                through_symlinks: true,
+                ..Replace::default()
             }
         )
         .is_err()
@@ -71,6 +73,7 @@ fn replacement_handles_relative_and_extensionless_paths() {
             b"native",
             Replace {
                 through_symlinks: false,
+                ..Replace::default()
             },
         )
         .unwrap();
@@ -108,6 +111,7 @@ fn replacement_preserves_long_and_dangling_chains() {
             b"published",
             Replace {
                 through_symlinks: true,
+                ..Replace::default()
             },
         );
         if count == 41 {
@@ -149,6 +153,7 @@ fn replacement_can_replace_link_entry_when_following_is_disabled() {
         b"followed",
         Replace {
             through_symlinks: true,
+            ..Replace::default()
         },
     )
     .unwrap();
@@ -159,6 +164,7 @@ fn replacement_can_replace_link_entry_when_following_is_disabled() {
         b"entry",
         Replace {
             through_symlinks: false,
+            ..Replace::default()
         },
     )
     .unwrap();
@@ -190,6 +196,7 @@ fn replacement_rejects_cycles_without_touching_disk() {
             b"no",
             Replace {
                 through_symlinks: true,
+                ..Replace::default()
             },
         );
         assert_eq!(

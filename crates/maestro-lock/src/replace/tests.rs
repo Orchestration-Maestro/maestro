@@ -82,6 +82,7 @@ fn run_with_collision(
         b"new",
         Replace {
             through_symlinks: false,
+            ..Replace::default()
         },
     );
     let effects = EFFECTS.take();
@@ -236,4 +237,151 @@ fn replacement_preserves_existing_permissions_before_publication() {
     observed.result.unwrap();
     assert_eq!(observed.temporary_mode.unwrap() & !0o640, 0);
     assert_eq!(observed.mode, 0o640);
+}
+
+#[cfg(unix)]
+#[test]
+fn creation_mode_is_private_before_publication() {
+    use std::os::unix::fs::PermissionsExt;
+    if launch_umask_cases() {
+        return;
+    }
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let target = dir.path().join("private");
+    let control = dir.path().join("control");
+    fs::write(&control, b"control").unwrap();
+    let restrictive = std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077";
+    assert_eq!(
+        fs::metadata(control).unwrap().permissions().mode() & 0o777,
+        if restrictive { 0o600 } else { 0o666 }
+    );
+    let mode = if restrictive { 0o640 } else { 0o600 };
+    EFFECTS.set(Effects::default());
+    replace(
+        &target,
+        b"secret",
+        Replace {
+            creation_mode: Some(mode),
+            ..Replace::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(EFFECTS.take().temporary_mode, Some(0o600));
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        mode
+    );
+    assert_eq!(fs::read(&target).unwrap(), b"secret");
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+    replace(
+        &target,
+        b"rewritten",
+        Replace {
+            creation_mode: Some(0o777),
+            ..Replace::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o640
+    );
+    fs::remove_file(&target).unwrap();
+    assert_failed_creation_cleans_up(dir.path(), &target);
+}
+
+/// Checks cleanup before publication without an existing target.
+#[cfg(unix)]
+fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
+    for phase in ["write_all", "file_sync", "rename"] {
+        EFFECTS.set(Effects {
+            fault: Some((phase, io::ErrorKind::Other)),
+            ..Effects::default()
+        });
+        let result = replace(
+            target,
+            b"secret",
+            Replace {
+                creation_mode: Some(0o600),
+                ..Replace::default()
+            },
+        );
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Other);
+        let effects = EFFECTS.take();
+        assert_eq!(effects.temporary_mode, Some(0o600));
+        assert!(!target.exists());
+        assert_eq!(fs::read_dir(parent).unwrap().count(), 1);
+    }
+}
+
+/// Runs permission observations in checked children with caller-selected umasks.
+#[cfg(unix)]
+fn launch_umask_cases() -> bool {
+    use maestro_test_process::TestProcess;
+    if std::env::var_os("MAESTRO_REPLACE_UMASK").is_some() {
+        return false;
+    }
+    for mask in ["000", "077"] {
+        let output = TestProcess::current("creation_mode_is_private_before_publication")
+            .unwrap()
+            .shell_setup("/bin/sh", format!("umask {mask}"))
+            .env("MAESTRO_REPLACE_UMASK", mask)
+            .single_threaded()
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    true
+}
+
+#[cfg(windows)]
+#[test]
+fn creation_mode_maps_only_owner_write_to_windows_readonly() {
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let target = dir.path().join("created");
+    for mode in [0o600, 0o400] {
+        EFFECTS.set(Effects::default());
+        replace(
+            &target,
+            b"secret",
+            Replace {
+                creation_mode: Some(mode),
+                ..Replace::default()
+            },
+        )
+        .unwrap();
+        let mut permissions = fs::metadata(&target).unwrap().permissions();
+        assert_eq!(permissions.readonly(), mode & 0o200 == 0);
+        assert_eq!(fs::read(&target).unwrap(), b"secret");
+        if permissions.readonly() {
+            assert!(replace(&target, b"new", Replace::default()).is_err());
+            assert_eq!(fs::read(&target).unwrap(), b"secret");
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+        }
+        permissions.set_readonly(false);
+        fs::set_permissions(&target, permissions).unwrap();
+        fs::remove_file(&target).unwrap();
+    }
+    EFFECTS.set(Effects {
+        fault: Some(("rename", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert!(
+        replace(
+            &target,
+            b"secret",
+            Replace {
+                creation_mode: Some(0o400),
+                ..Replace::default()
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    EFFECTS.take();
 }

@@ -13,7 +13,8 @@ file locking.
 ## Atomic replacement
 
 `maestro_lock::replace` publishes supplied bytes through an exclusively created
-sibling file. It writes and syncs that file, closes it, renames it over the target,
+sibling file with a short name independent of the target leaf. It writes and
+syncs that file, closes it, renames it over the target,
 then opens and syncs the parent directory. Precommit failures return the native
 error and remove only a temporary file created by this call.
 

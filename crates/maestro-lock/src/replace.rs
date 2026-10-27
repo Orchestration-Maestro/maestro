@@ -9,6 +9,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct Replace {
     /// Follow existing symbolic links, including dangling final targets.
     pub through_symlinks: bool,
+    /// Creation bits for a missing file; existing native permissions win.
+    ///
+    /// Unix applies all permission bits. Windows maps a missing owner-write bit
+    /// to read-only and ignores the other bits; this does not configure ACLs.
+    pub creation_mode: Option<u32>,
 }
 /// Successful publication with an optional postcommit durability warning.
 #[derive(Debug)]
@@ -32,21 +37,17 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent)?;
-    let mut name = std::ffi::OsString::from(".");
-    name.push(
-        target
-            .file_name()
-            .ok_or_else(|| io::Error::other("replacement target has no file name"))?,
-    );
-    name.push(format!(
-        ".{}.{}.tmp",
+    if target.file_name().is_none() {
+        return Err(io::Error::other("replacement target has no file name"));
+    }
+    let temp = parent.join(format!(
+        ".maestro-{}.{}.tmp",
         std::process::id(),
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos()
     ));
-    let temp = parent.join(name);
     #[cfg(test)]
     tests::before_create(&temp)?;
     let permissions = replacement_permissions(&target)?;
