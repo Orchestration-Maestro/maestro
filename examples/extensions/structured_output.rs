@@ -6,8 +6,8 @@
 )]
 
 use maestro_extensions_wasm::{
-    AgentToolResult, ExtensionAPI, ExtensionFuture, Presence, TextContent, ToolDefinition,
-    ToolMetadata, UserBlock,
+    AgentToolResult, Component, ExtensionAPI, ExtensionFuture, ExtensionResult, Presence, Text,
+    TextContent, Theme, ToolDefinition, ToolMetadata, UserBlock,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -23,6 +23,28 @@ struct StructuredOutputDetails {
     summary: String,
     /// Concrete next steps or key bullets.
     action_items: Vec<String>,
+}
+
+/// Renders the complete answer in either expansion state, or its first text block.
+fn render_result(result: &AgentToolResult, theme: &Theme) -> ExtensionResult<Component> {
+    let Some(details) = result.details.present() else {
+        let text = match result.content.first() {
+            Some(UserBlock::Text(text)) => &text.text,
+            _ => "",
+        };
+        return Ok((&Text::new(text, 0, 0, None)?).into());
+    };
+    let details: StructuredOutputDetails =
+        serde_json::from_str(details).map_err(|e| e.to_string())?;
+    let mut lines = vec![
+        theme.fg("toolTitle", &theme.bold(&details.headline)?)?,
+        theme.fg("text", &details.summary)?,
+        String::new(),
+    ];
+    for (index, item) in details.action_items.iter().enumerate() {
+        lines.push(theme.fg("muted", &format!("{}. {item}", index + 1))?);
+    }
+    Ok((&Text::new(&lines.join("\n"), 0, 0, None)?).into())
 }
 
 /// Registers the structured answer tool on the supplied host.
@@ -57,7 +79,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 })
             })),
             render_call: None,
-            render_result: None,
+            render_result: Some(Rc::new(|result, _, theme, _, _| {
+                render_result(&result.result, &theme)
+            })),
         })
     })
 }

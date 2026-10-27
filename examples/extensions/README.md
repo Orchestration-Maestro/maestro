@@ -54,6 +54,7 @@ inserts at its own place instead of appending at the end of each list.
 | `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
 | `snake/render.rs` | The bordered Snake board and input hints. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
+| `structured_output.rs` | A terminating tool that returns a typed headline, summary and action items without another model completion. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
@@ -137,6 +138,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- snake_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- structured_output_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- structured_output_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -737,3 +742,19 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the structured answer tool does
+
+`structured_output` accepts a `headline`, a `summary` and an `actionItems` array
+of strings. It returns `Saved structured output: <headline>` as text, keeps the
+three fields in result details and sets the terminate flag. The agent ends the
+run on that result without requesting another completion. Both collapsed and
+expanded rows show the full themed headline, summary and numbered action items.
+A result without details shows its first content block if that block is text.
+
+Build with `--example structured_output` using the command above. Loading is
+opt-in and needs a component-enabled host; themed rows also need its tool
+renderer and text widget support. Asking a real model to call the tool needs
+that model's configured credentials and can incur provider charges. The
+controlled runs supply one tool-call response and theme replies, require no
+provider credentials or live services, and assert one completion request.
