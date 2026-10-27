@@ -206,6 +206,28 @@ fn event() -> SessionBeforeCompactEvent {
     }
 }
 
+/// Checks that the handoff retains every instruction needed to resume the session.
+fn assert_handoff_instructions(prompt: &str) {
+    for instruction in [
+        "Write a session handoff from the conversation below.",
+        "Earlier session context:\nprevious decisions",
+        "- Goals the session is working toward.",
+        "- Decisions and the reasons behind them.",
+        "- Relevant code edits, affected files and technical details.",
+        "- Work in progress and its current status.",
+        "- Blockers, unresolved issues and unanswered questions.",
+        "- Planned or proposed actions to take next.",
+        "This summary replaces the full conversation history.",
+        "Keep everything needed to resume the work, without unnecessary detail.",
+        "Use Markdown headings to organize the handoff.",
+    ] {
+        assert!(
+            prompt.contains(instruction),
+            "missing instruction: {instruction}"
+        );
+    }
+}
+
 #[test]
 fn custom_compaction_summarizes_both_spans_and_preserves_retention() {
     super::components::local(async {
@@ -244,20 +266,25 @@ fn custom_compaction_summarizes_both_spans_and_preserves_retention() {
             .unwrap();
         assert!(prompt.contains("previous decisions"));
         assert!(prompt.find("older goal").unwrap() < prompt.find("split turn detail").unwrap());
-        assert!(prompt.contains("ENTIRE conversation history"));
+        assert_handoff_instructions(prompt);
         assert_eq!(requests[0]["options"]["maxTokens"], 8192.0);
         assert_eq!(requests[0]["options"]["apiKey"], "controlled-key");
         assert_eq!(
             requests[0]["options"]["headers"]["x-controlled"],
             "retained"
         );
-        assert!(
-            harness
-                .ui
-                .0
-                .borrow()
-                .iter()
-                .any(|(text, _)| text.contains("2 messages"))
+        assert_eq!(
+            *harness.ui.0.borrow(),
+            vec![
+                (
+                    "Custom summary requested for compaction".into(),
+                    Some(NotificationType::Info)
+                ),
+                (
+                    "Summarizing 2 messages (12345 tokens) with gemini-2.5-flash".into(),
+                    Some(NotificationType::Info)
+                ),
+            ]
         );
         unregister_api_providers("custom-compaction-success");
     });
@@ -340,18 +367,24 @@ fn custom_compaction_unusable_summaries_fall_back_without_editing_history() {
         let mut expected = Vec::new();
         let missing_model = json!([[
             "warning",
-            "Could not find Gemini Flash model, using default compaction"
+            "Summary model gemini-2.5-flash is unavailable; keeping default compaction"
         ]]);
-        let missing_auth = json!([["warning", "No API key for google, using default compaction"]]);
+        let missing_auth = json!([[
+            "warning",
+            "Summary provider google has no API key; keeping default compaction"
+        ]]);
         let auth_failed = json!([[
             "warning",
-            "Compaction auth failed: No API key found for \"google\""
+            "Cannot authenticate the summary request: No API key found for \"google\""
         ]]);
         let empty = json!([[
             "warning",
-            "Compaction summary was empty, using default compaction"
+            "Summary contains no text; keeping default compaction"
         ]]);
-        let failed = json!([["error", "Compaction failed: controlled failure"]]);
+        let failed = json!([[
+            "error",
+            "Cannot create the custom summary: controlled failure"
+        ]]);
         for (case, calls, notices, cancelled) in [
             ("missing_model", 0, missing_model, false),
             ("missing_auth", 0, missing_auth, false),
