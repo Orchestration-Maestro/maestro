@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "dynamic_tools"
+path = "../../examples/extensions/dynamic_tools.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "event_bus"
 path = "../../examples/extensions/event_bus.rs"
 crate-type = ["cdylib"]

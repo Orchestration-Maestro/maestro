@@ -45,6 +45,7 @@ mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;
 mod documents;
+mod dynamic_tools_example;
 mod event_bus_example;
 mod event_transport;
 mod event_values;

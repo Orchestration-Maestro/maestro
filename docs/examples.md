@@ -24,6 +24,8 @@ compaction above a token threshold and a command that requests compaction
 immediately, `extensions/bookmark.rs` labels the newest assistant message so the
 tree view can show it, `extensions/working_message_test.rs` asks for custom
 working text and an indicator whenever a session starts,
+`extensions/dynamic_tools.rs` registers one echo tool when a session starts and
+a command that adds more echo tools while the session runs,
 `extensions/session_name.rs` builds a command that sets or shows the session's
 friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands

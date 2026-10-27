@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
@@ -73,6 +74,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -322,6 +325,23 @@ milliseconds>` label. The controlled run replays every recorded case against
 the built component with a supplied wall clock, so it needs no provider and no
 installation; loading the component into an application is opt-in and needs
 that application's component runtime.
+
+### What the dynamic tools example does
+
+`session_start` registers one `echo_session` tool, and `/add-echo-tool
+<tool_name>` registers further echo tools while the session runs. The argument is
+trimmed and lowercased, then admitted only when it holds ASCII letters, digits
+and underscores, so `/add-echo-tool Shared_9` registers `shared_9`. Each tool
+echoes its message behind `[<name>] ` and returns the name and prefix as details,
+and a name that is already registered answers `Tool already registered: <name>`
+instead of replacing the first tool.
+
+The names belong to the factory instance, so two loaded copies register apart.
+A name stays registered when the host refuses its registration, and a host
+refusal ends the command with the host's message. The controlled run replays
+every recorded sequence against the built component and needs no provider and no
+installation; loading the component into an application is opt-in and needs that
+application's component runtime.
 
 ### What the runtime reload command does
 
