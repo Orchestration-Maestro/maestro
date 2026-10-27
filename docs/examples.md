@@ -32,7 +32,9 @@ prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start. `extensions/snake.rs` opens a custom Snake game with keyboard
-controls, timed movement and saved games in session entries; its index gives the
+controls, timed movement and saved games in session entries.
+`extensions/space_invaders.rs` opens a 60-by-24 alien game with held-key movement,
+firing, destructible shields and session-entry saves. Their index gives the
 build/run commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.

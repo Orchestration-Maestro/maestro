@@ -166,7 +166,7 @@ impl GameState {
         };
     }
     /// Shoots from the bottom alien in a supplied randomly selected column.
-    fn alien_shoot(&mut self, choose: impl FnOnce(usize) -> usize) {
+    fn alien_shoot(&mut self) {
         let mut shooters: Vec<&Alien> = Vec::new();
         for alien in self.aliens.iter().filter(|a| a.alive) {
             match shooters.iter_mut().find(|a| a.x == alien.x) {
@@ -176,7 +176,10 @@ impl GameState {
             }
         }
         if !shooters.is_empty() && self.bullets.iter().filter(|b| b.direction == 1).count() < 3 {
-            let shooter = shooters[choose(shooters.len()) % shooters.len()];
+            let random = maestro_extensions_wasm::wasi::random::random::get_random_u64();
+            let column =
+                usize::try_from(random % u64::try_from(shooters.len()).unwrap_or(1)).unwrap_or(0);
+            let shooter = shooters[column];
             self.bullets.push(Bullet {
                 x: shooter.x,
                 y: shooter.y + 1,
@@ -214,8 +217,8 @@ impl GameState {
         bullets.retain(|bullet| !self.collide(bullet));
         self.bullets = bullets;
     }
-    /// Advances the world once, using a controlled column selection for alien shots.
-    pub fn tick(&mut self, choose: impl FnOnce(usize) -> usize) {
+    /// Advances movement, shooting and collisions once.
+    pub fn tick(&mut self) {
         for bullet in &mut self.bullets {
             bullet.y += bullet.direction;
         }
@@ -228,7 +231,7 @@ impl GameState {
         self.alien_shoot_counter += 1;
         if self.alien_shoot_counter >= 30 {
             self.alien_shoot_counter = 0;
-            self.alien_shoot(choose);
+            self.alien_shoot();
         }
         self.check_collisions();
         self.victory = self.aliens.iter().all(|a| !a.alive);

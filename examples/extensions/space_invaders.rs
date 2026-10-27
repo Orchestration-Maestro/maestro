@@ -6,7 +6,7 @@
 )]
 
 #[path = "space_invaders/game.rs"]
-pub(crate) mod game;
+mod game;
 #[path = "space_invaders/render.rs"]
 mod render;
 
@@ -19,7 +19,6 @@ use maestro_extensions_wasm::{
 use std::{
     cell::RefCell,
     future::{Future, poll_fn},
-    hash::{BuildHasher, RandomState},
     rc::Rc,
     task::{Poll, Waker},
     time::Duration,
@@ -48,7 +47,7 @@ struct Game {
     closed: bool,
 }
 /// Custom view retained independently of the command invocation.
-pub(crate) struct SpaceInvadersComponent {
+struct SpaceInvadersComponent {
     /// Host operations and text/key helpers.
     api: ExtensionAPI,
     /// Frame writer supplied to the custom factory.
@@ -62,7 +61,7 @@ pub(crate) struct SpaceInvadersComponent {
 }
 impl SpaceInvadersComponent {
     /// Creates a paused saved game or starts a fresh game retaining its high score.
-    pub(crate) fn new(
+    fn new(
         api: ExtensionAPI,
         tui: TUI,
         on_close: CustomDone<()>,
@@ -87,8 +86,8 @@ impl SpaceInvadersComponent {
             }),
         }
     }
-    /// Advances one controlled clock tick with a supplied alien-column selection.
-    pub(crate) fn tick(&self, choose: impl FnOnce(usize) -> usize) -> ExtensionResult<()> {
+    /// Advances the retained world once after its native wait completes.
+    fn tick(&self) -> ExtensionResult<()> {
         let mut game = self.game.borrow_mut();
         if game.closed || game.paused || game.state.game_over || game.state.victory {
             return Ok(());
@@ -122,12 +121,12 @@ impl SpaceInvadersComponent {
             });
             game.fire_cooldown = 8;
         }
-        game.state.tick(choose);
+        game.state.tick();
         drop(game);
         self.tui.request_render(false)
     }
     /// Releases held keys before dropping the pending timer or closing the view.
-    pub(crate) fn dispose(&self) {
+    fn dispose(&self) {
         let mut game = self.game.borrow_mut();
         game.keys = KeyState::default();
         game.closed = true;
@@ -228,7 +227,7 @@ impl TickSlot {
     }
 }
 /// Starts the host timer only in an `EventBus` listener tail, with one cancellable slot.
-pub(crate) fn ticking(
+fn ticking(
     api: &ExtensionAPI,
     view: Rc<SpaceInvadersComponent>,
     emitter: CallbackEmitter<'_>,
@@ -239,12 +238,7 @@ pub(crate) fn ticking(
         future: Some(Box::pin(async move {
             loop {
                 io.sleep(Duration::from_millis(TICK_MS), None).await?;
-                ticking.tick(|count| {
-                    usize::try_from(
-                        RandomState::new().hash_one(0_u8) % u64::try_from(count).unwrap_or(1),
-                    )
-                    .unwrap_or(0)
-                })?;
+                ticking.tick()?;
             }
         })),
         waker: None,
@@ -330,7 +324,7 @@ async fn play(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionResul
     Ok(())
 }
 /// Shares the same view with its periodic future and host component handle.
-pub(crate) struct SharedView(pub(crate) Rc<SpaceInvadersComponent>);
+struct SharedView(Rc<SpaceInvadersComponent>);
 impl ComponentView for SharedView {
     fn render(&self, width: u32, emitter: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
         self.0.render(width, emitter)

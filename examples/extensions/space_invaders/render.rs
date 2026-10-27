@@ -5,7 +5,9 @@
     clippy::excessive_nesting
 )]
 use super::game::{GAME_HEIGHT, GAME_WIDTH, GameState, PLAYER_Y};
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, visible_width};
+use maestro_extensions_wasm::{
+    ExtensionAPI, ExtensionResult, truncate_to_width, utils::TruncateOptions, visible_width,
+};
 
 /// Applies the authored ANSI colour or emphasis.
 fn style(code: u8, text: &str) -> String {
@@ -85,7 +87,7 @@ fn box_line(api: &ExtensionAPI, content: &str) -> ExtensionResult<String> {
         style(2, "│")
     ))
 }
-/// Builds one complete frame and pads, but never truncates, to the requested width.
+/// Builds one complete frame within the requested terminal width.
 pub fn render(
     api: &ExtensionAPI,
     state: &GameState,
@@ -119,9 +121,14 @@ pub fn render(
         box_line(api, &footer(state, paused))?,
         style(2, &format!(" ╰{border}╯")),
     ]);
+    let options = TruncateOptions {
+        ellipsis: "",
+        pad: false,
+    };
     for line in &mut lines {
         let padding = (width as usize).saturating_sub(visible_width(api, line)?);
         line.push_str(&" ".repeat(padding));
+        *line = truncate_to_width(api, line, width as usize, options)?;
     }
     Ok(lines)
 }

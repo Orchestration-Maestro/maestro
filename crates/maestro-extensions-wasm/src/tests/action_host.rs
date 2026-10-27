@@ -5,9 +5,6 @@ use serde_json::{Value, json};
 #[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct Bank {
-    /// Literal helper replies keyed by operation and encoded operands.
-    #[serde(skip)]
-    pub helpers: std::collections::HashMap<(String, String), Value>,
     /// Selected host reply.
     pub value: Value,
     /// Optional raw wire record.
