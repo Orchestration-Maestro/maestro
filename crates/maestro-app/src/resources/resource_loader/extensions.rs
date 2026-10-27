@@ -205,17 +205,15 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
             result.extensions.extend(loaded.extensions);
             result.errors.extend(loaded.errors);
         }
-        for extension in base
-            .into_iter()
-            .filter(|extension| by_path.contains_key(&canonicalize_path(&read(extension).path)))
-        {
-            let path = read(&extension).path.clone();
-            result
-                .runtime
-                .replay_provider_operations(&path)
-                .map_err(io::Error::other)?;
-            result.extensions.push(extension);
-        }
+        result
+            .runtime
+            .replay_remaining_provider_operations()
+            .map_err(io::Error::other)?;
+        result.extensions.extend(
+            base.into_iter().filter(|extension| {
+                by_path.contains_key(&canonicalize_path(&read(extension).path))
+            }),
+        );
         Ok(result)
     }
 

@@ -8,16 +8,14 @@ use crate::{
         ProviderActions, ProviderConfig,
     },
 };
+use indexmap::IndexMap;
 use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
 #[cfg(target_arch = "wasm32")]
 use std::rc::Weak;
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::Weak;
-use std::{
-    collections::{BTreeMap, HashMap},
-    sync::RwLock,
-};
+use std::{collections::BTreeMap, sync::RwLock};
 
 /// Failure of an action called before a runner binds the runtime.
 pub(crate) const NOT_INITIALIZED: &str =
@@ -34,7 +32,7 @@ pub(crate) struct ProviderRoute<E: ExtensionExecution> {
     /// Bound operations after the queue completes.
     pub(crate) bound: Option<BoundProviders<E>>,
     /// Early factory operations waiting for their ordinary extension position.
-    pub(crate) deferred: HashMap<String, Vec<DeferredProviderOperation>>,
+    pub(crate) deferred: IndexMap<String, Vec<DeferredProviderOperation>>,
 }
 
 /// Bound provider operations with the runner's catalog for absent ones.
@@ -89,7 +87,7 @@ pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionR
         providers: RwLock::new(ProviderRoute {
             next: 0,
             bound: None,
-            deferred: HashMap::new(),
+            deferred: IndexMap::new(),
         }),
     })
 }

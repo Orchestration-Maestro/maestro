@@ -1,7 +1,7 @@
 //! Retains early provider operations until their ordinary extension position.
 use crate::{
     EventError, ExtensionExecution,
-    types::{ExtensionRuntime, PendingProviderRegistration, write},
+    types::{ExtensionRuntime, PendingProviderRegistration, read, write},
 };
 
 /// An early factory's provider operation, before queue admission or cancellation.
@@ -32,7 +32,7 @@ impl<E: ExtensionExecution> ExtensionRuntime<E> {
     pub fn replay_provider_operations(&self, path: &str) -> Result<(), EventError> {
         let operations = write(&self.providers)
             .deferred
-            .remove(path)
+            .shift_remove(path)
             .unwrap_or_default();
         for operation in operations {
             match operation {
@@ -43,6 +43,18 @@ impl<E: ExtensionExecution> ExtensionRuntime<E> {
                 )?,
                 DeferredProviderOperation::Unregister(name) => self.unregister_provider(&name)?,
             }
+        }
+        Ok(())
+    }
+
+    /// Admits unreached early factories, including failed ones, in original source order.
+    ///
+    /// # Errors
+    /// Returns a provider operation's error if the runtime is already bound.
+    pub fn replay_remaining_provider_operations(&self) -> Result<(), EventError> {
+        let paths: Vec<_> = read(&self.providers).deferred.keys().cloned().collect();
+        for path in paths {
+            self.replay_provider_operations(&path)?;
         }
         Ok(())
     }
