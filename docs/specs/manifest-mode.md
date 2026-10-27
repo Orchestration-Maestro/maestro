@@ -867,10 +867,15 @@ change only with the manifest.
    | `agent-output` | Each text block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
    | `prompt` | Each text block of a user message from every route: typed prompts, steering and follow-up messages, SDK and RPC prompts, after prompt-template and skill expansion | When the message ends, before it is saved or sent |
 
-   The request to the provider is checked again with the same `tool-output`,
-   `agent-output` and `prompt` rules through the existing context hook, so the
-   provider receives only checked text, including from sessions saved before the
-   manifest was selected.
+   Every agent and summary request is checked again with the same `tool-output`,
+   `agent-output` and `prompt` rules through the context hook, including sessions
+   saved before the manifest was selected. Summary requests include manual and
+   automatic compaction, split-turn summaries and branch summaries. Their source
+   messages are checked by their original targets before serialization; previous
+   summaries use `agent-output`. The assembled request is checked before provider
+   invocation. Returned summary text uses `agent-output` rules through message-end
+   processing before storage, notification or context reuse, including summaries
+   supplied by earlier extensions. These checks do not rewrite old entries.
 
 4. **Actions.** Each rule names its own action. The manifest's files set the usual
    choices: `confirm` for destructive commands, `block` for protected paths,
@@ -897,9 +902,12 @@ change only with the manifest.
 5. **Several matching rules.** Every rule for a target matches against the
    original text. A matching `block` rule wins, then a matching `confirm` rule; the
    first such rule in file and list order names the refusal or the question. When
-   neither matches, the matching `redact` rules apply in file and list order, each
-   to the text the previous one left. The warnings of matching `warn` rules are
-   shown unless the operation is refused.
+   neither matches, collect all `redact` match ranges from the original text and
+   merge overlapping ranges, including transitively overlapping ones. Replace
+   each merged range once with the marker of the first contributing rule in file
+   and list order; disjoint ranges keep their own markers. Replacement text is
+   never matched again. The warnings of matching `warn` rules are shown unless
+   the operation is refused.
 6. **Other extensions.** The manifest package is the lowest package source in the
    extension list (H4), so its guard hooks run after every other extension's hooks
    for the same event. Guards therefore check the final command, path, result and
@@ -912,10 +920,15 @@ change only with the manifest.
    redacted text, withheld results and withheld responses. When any rule targets
    `agent-output`, the manifest package sets the `holdAssistantText` setting to
    `true` in its base layer and locks it (H1). While the setting is `true`, the
-   session sends no assistant text as it streams: each reply reaches the
-   interactive view, JSON and RPC event streams and SDK listeners only when its
-   message ends, after the guards have checked it. Thinking and tool progress
-   still stream. `/settings` shows the setting as locked, like any locked value.
+   session sends no unchecked assistant text in any listener payload: text deltas,
+   message-start payloads (including a completed reply when no start event
+   arrived), message snapshots and nested model-event snapshots are all covered.
+   Each reply's text reaches the interactive view, JSON and RPC event streams and
+   SDK listeners only when its message ends, after the guards have checked it.
+   Thinking and tool progress still stream, with assistant text omitted from
+   their accompanying snapshots. Emitted snapshots do not share unchecked mutable
+   text with listeners. `/settings` shows the setting as locked, like any locked
+   value.
    With the setting `false`, the default, streaming is unchanged. Guards do not
    rewrite existing session files.
 
@@ -981,10 +994,15 @@ package resolves conflicts exactly as any other package does.
 - **Guards.** Matching is one pure module in the manifest package: rules and text
   in, a decision out, with no I/O and no hook types. A thin layer registers the
   existing tool-call, user-shell, tool-result, message-end and context hooks and
-  applies the decision. Expressions compile with the workspace's existing `regex`
-  crate. `holdAssistantText` is read in exactly one place, the agent session's
-  emission of message updates to its listeners; the interactive view, JSON and RPC
-  modes and SDK listeners all read that emission, so none withholds text itself.
+  applies the decision. The application also dispatches context checking at
+  summary request seams, before source serialization and provider invocation,
+  and message-end checking at summary result seams, before storage or publication.
+  Summary paths reuse these hooks and the same matcher, not a second guard engine.
+  Expressions compile with the workspace's existing `regex` crate.
+  `holdAssistantText` is read in exactly one place, the agent session's listener
+  emission boundary for all assistant-text-bearing events, not only message
+  updates. The interactive view, JSON and RPC modes and SDK listeners all read
+  that emission, so none withholds text itself.
   No other package matches guard rules; a package that reacts to guarded work
   builds on the manifest package's behaviour instead of matching again.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
