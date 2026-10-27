@@ -503,3 +503,27 @@ fn loader_customizations_survive_multiple_prompt_turns() {
         },
     );
 }
+
+#[test]
+fn reset_shows_the_default_message_on_a_running_loader() {
+    isolated(
+        "reset_shows_the_default_message_on_a_running_loader",
+        async |directory| {
+            let world = super::started(directory).await;
+            port(&world.mode)
+                .set_working_message(Some("Busy".into()))
+                .unwrap();
+            let (before, after) = with_held_response(&world, async |_| {
+                let before = working_row(&world);
+                world.mode.reset_extension_ui().unwrap();
+                (before, working_row(&world))
+            })
+            .await;
+            assert!(before.contains("Busy"), "{before}");
+            let interrupt = maestro_app::key_text("app.interrupt");
+            let message = format!("Working... ({interrupt} to interrupt)");
+            assert!(after.contains(&message), "{after}");
+            assert!(!after.contains("Busy"), "{after}");
+        },
+    );
+}

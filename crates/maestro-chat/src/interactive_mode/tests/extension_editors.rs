@@ -45,6 +45,8 @@ pub(super) struct Knobs {
     built: RefCell<Weak<Probe>>,
     /// A one-shot callback invoked by the padding operation.
     on_padding: RefCell<Option<Box<dyn Fn()>>>,
+    /// The completion provider the editor last accepted.
+    pub(super) provider: RefCell<Option<Rc<dyn AutocompleteProvider<Signal = Cancellation>>>>,
 }
 
 impl Knobs {
@@ -157,6 +159,7 @@ impl EditorComponent for Probe {
         provider: Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
     ) -> Result<Option<()>, EditorError> {
         self.enter("provider")?;
+        drop(self.knobs.provider.replace(Some(Rc::clone(&provider))));
         self.inner.try_set_autocomplete_provider(provider)
     }
     fn try_set_padding_x(&self, padding: f64) -> Result<Option<()>, EditorError> {
