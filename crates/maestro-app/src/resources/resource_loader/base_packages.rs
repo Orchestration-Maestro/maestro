@@ -65,6 +65,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             }),
             config_values: crate::runtime::agent_session_services::native_config_values(),
         });
+        runtime.defer_provider_operations(&paths);
         runtime.begin_load_time(paths.clone());
         let result = load_extensions_with_runtime(
             paths,

@@ -9,7 +9,7 @@ use maestro_extensions::{
 use maestro_models::{Execution, Local, Threaded};
 use maestro_resources::{canonicalize_path, is_local_path};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     io,
     path::Path,
     rc::Rc,
@@ -125,7 +125,18 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         if base_attempted {
             write(&result.runtime.flag_values).clear();
         }
-        result = self.load_ordered_paths(paths, result).await?;
+        result = if base_attempted {
+            self.load_ordered_paths(paths, result).await?
+        } else {
+            load_extensions_with_runtime(
+                paths,
+                &self.cwd,
+                &self.event_bus,
+                &self.options.module_loader,
+                result.runtime,
+            )
+            .await?
+        };
         if base_attempted {
             restore_flag_defaults(&result);
         }
@@ -154,34 +165,33 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         paths: Vec<String>,
         mut result: LoadExtensionsResult<E>,
     ) -> io::Result<LoadExtensionsResult<E>> {
-        if result.extensions.is_empty() && result.errors.is_empty() {
-            return load_extensions_with_runtime(
-                paths,
-                &self.cwd,
-                &self.event_bus,
-                &self.options.module_loader,
-                result.runtime,
-            )
-            .await;
-        }
         let base = std::mem::take(&mut result.extensions);
         let mut by_path: HashMap<_, _> = base
             .iter()
             .map(|extension| (canonicalize_path(&read(extension).path), extension.clone()))
             .collect();
-        let failed: HashSet<_> = result
+        let failed: HashMap<_, _> = result
             .errors
             .iter()
-            .map(|error| canonicalize_path(&error.path))
+            .map(|error| (canonicalize_path(&error.path), error.path.clone()))
             .collect();
         for path in paths {
             let canonical = canonicalize_path(&path);
             if let Some(extension) = by_path.remove(&canonical) {
+                let path = read(&extension).path.clone();
+                result
+                    .runtime
+                    .replay_provider_operations(&path)
+                    .map_err(io::Error::other)?;
                 result.extensions.push(extension);
                 restore_flag_defaults(&result);
                 continue;
             }
-            if failed.contains(&canonical) {
+            if let Some(path) = failed.get(&canonical) {
+                result
+                    .runtime
+                    .replay_provider_operations(path)
+                    .map_err(io::Error::other)?;
                 continue;
             }
             let loaded = load_extensions_with_runtime(
@@ -195,11 +205,17 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
             result.extensions.extend(loaded.extensions);
             result.errors.extend(loaded.errors);
         }
-        result.extensions.extend(
-            base.into_iter().filter(|extension| {
-                by_path.contains_key(&canonicalize_path(&read(extension).path))
-            }),
-        );
+        for extension in base
+            .into_iter()
+            .filter(|extension| by_path.contains_key(&canonicalize_path(&read(extension).path)))
+        {
+            let path = read(&extension).path.clone();
+            result
+                .runtime
+                .replay_provider_operations(&path)
+                .map_err(io::Error::other)?;
+            result.extensions.push(extension);
+        }
         Ok(result)
     }
 

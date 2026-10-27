@@ -27,6 +27,7 @@ struct LayerInput {
     /// User means global settings; temporary publication is invalid.
     scope: SourceScope,
     /// The settings owner's record, or an explicit removal.
+    #[serde(deserialize_with = "Option::deserialize")]
     layer: Option<BaseSettingsLayer>,
 }
 

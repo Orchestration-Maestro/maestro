@@ -12,6 +12,7 @@ pub(crate) use contributions::LoadTimeState;
 mod tool_construction;
 #[cfg(not(target_arch = "wasm32"))]
 pub use tool_construction::ToolConstruction;
+mod provider_order;
 pub(crate) mod runtime;
 
 #[cfg(not(target_arch = "wasm32"))]
