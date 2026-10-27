@@ -212,3 +212,20 @@ fn replacement_rejects_cycles_without_touching_disk() {
         );
     }
 }
+
+#[test]
+fn replacement_accepts_a_full_length_target_leaf() {
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let target = dir.path().join("x".repeat(255));
+    if let Err(error) = fs::write(&target, b"old") {
+        assert!(fs::write(dir.path().join("control"), b"control").is_ok());
+        eprintln!("host refuses a 255-byte leaf: {error}");
+        return;
+    }
+    replace(&target, b"published", Replace::default()).unwrap();
+    assert_eq!(fs::read(&target).unwrap(), b"published");
+    fs::remove_file(&target).unwrap();
+    replace(&target, b"created", Replace::default()).unwrap();
+    assert_eq!(fs::read(target).unwrap(), b"created");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+}

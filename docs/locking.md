@@ -17,6 +17,13 @@ sibling file. It writes and syncs that file, closes it, renames it over the targ
 then opens and syncs the parent directory. Precommit failures return the native
 error and remove only a temporary file created by this call.
 
+Replacement preserves the effective existing file's native permissions. On Unix,
+the temporary file is created with those permission bits filtered by the umask;
+the exact bits are restored after writing and before sync and publication.
+Replacing a symbolic-link entry does not copy permissions from its referent.
+Permissions here are those represented by `std::fs::Permissions`, not ownership
+or additional access-control metadata.
+
 `Replace::through_symlinks` chooses whether to follow final-component symbolic
 links. Relative links resolve against their parent; dangling targets are allowed.
 A chain still unresolved after 40 links fails before temporary-file creation.

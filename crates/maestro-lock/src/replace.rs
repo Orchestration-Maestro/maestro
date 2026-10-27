@@ -1,5 +1,5 @@
 //! Durable byte publication through a temporary sibling.
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions, Permissions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -49,26 +49,68 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
     let temp = parent.join(name);
     #[cfg(test)]
     tests::before_create(&temp)?;
-    let file = File::create_new(&temp)?;
-    if let Err(error) = write_and_sync(file, bytes) {
-        let _ = fs::remove_file(&temp);
-        return Err(error);
-    }
-    #[cfg(test)]
-    tests::closed();
-    if let Err(error) = commit(&temp, &target) {
-        let _ = fs::remove_file(&temp);
+    let permissions = replacement_permissions(&target)?;
+    let file = create_temporary(&temp, permissions.as_ref())?;
+    let result = write_and_sync(file, bytes, permissions).and_then(|()| {
+        #[cfg(test)]
+        tests::closed();
+        commit(&temp, &target)
+    });
+    if let Err(error) = result {
+        remove_temporary(&temp);
         return Err(error);
     }
     Ok(Committed {
         dir_sync: sync_parent_dir(parent).err(),
     })
 }
+/// Reads the replaced file's permissions without following a replaced link entry.
+fn replacement_permissions(target: &Path) -> io::Result<Option<Permissions>> {
+    match fs::symlink_metadata(target) {
+        Ok(metadata) if !metadata.file_type().is_symlink() => Ok(Some(metadata.permissions())),
+        Ok(_) => Ok(None),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+/// Creates a sibling no more permissive than the selected Unix permission bits.
+fn create_temporary(path: &Path, permissions: Option<&Permissions>) -> io::Result<File> {
+    let mut open = OpenOptions::new();
+    open.write(true).create_new(true);
+    #[cfg(unix)]
+    if let Some(permissions) = permissions {
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        open.mode(permissions.mode());
+    }
+    #[cfg(not(unix))]
+    let _ = permissions;
+    open.open(path)
+}
+
+/// Removes only an owned sibling, clearing Windows read-only deletion protection.
+fn remove_temporary(path: &Path) {
+    #[cfg(windows)]
+    if let Ok(metadata) = fs::metadata(path) {
+        let mut permissions = metadata.permissions();
+        permissions.set_readonly(false);
+        let _ = fs::set_permissions(path, permissions);
+    }
+    let _ = fs::remove_file(path);
+}
+
 /// Writes all bytes before syncing the temporary file.
-fn write_and_sync(mut file: File, bytes: &[u8]) -> io::Result<()> {
+fn write_and_sync(
+    mut file: File,
+    bytes: &[u8],
+    permissions: Option<Permissions>,
+) -> io::Result<()> {
     #[cfg(test)]
     tests::effect("write_all")?;
     file.write_all(bytes)?;
+    if let Some(permissions) = permissions {
+        file.set_permissions(permissions)?;
+    }
     #[cfg(test)]
     tests::effect("file_sync")?;
     file.sync_all()
