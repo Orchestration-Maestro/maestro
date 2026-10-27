@@ -889,7 +889,11 @@ second = { path = "local/beta" }
     assert!(!destination.path().join("remote").exists());
 }
 
-fn copy_tree(source: &Path, destination: &Path) {
+/// Copy every file beneath a source directory to the matching destination path.
+///
+/// # Errors
+/// Filesystem errors panic so fixture preparation cannot silently omit an input.
+pub fn copy_tree(source: &Path, destination: &Path) {
     fs::create_dir_all(destination).unwrap();
     for entry in fs::read_dir(source).unwrap() {
         let entry = entry.unwrap();
