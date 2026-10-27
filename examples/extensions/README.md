@@ -57,6 +57,11 @@ inserts at its own place instead of appending at the end of each list.
 | `snake/render.rs` | The bordered Snake board and input hints. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `tic_tac_toe.rs` | A `/tic-tac-toe` command and atomic tools whose delayed sibling moves execute sequentially. |
+| `tic_tac_toe/game.rs` | Board rules, agent-cursor snapshots and saved-state validation. |
+| `tic_tac_toe/prompt.rs` | Turn instructions for emitting every move and play in one response. |
+| `tic_tac_toe/render.rs` | Themed boards, tool rows, move messages and final-game banners. |
+| `tic_tac_toe/ui.rs` | The human's separate cursor, interactive controls and move delivery. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
 | `todo/view.rs` | The todo example's themed tool rows and interactive list view. |
@@ -145,6 +150,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- tic_tac_toe_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- tic_tac_toe_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- titlebar_spinner_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -785,3 +794,33 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the sequential game does
+
+Build with `--example tic_tac_toe`, then load the component into an interactive
+component-enabled host with custom UI, keyboard and terminal-width helpers,
+message renderers and native waits. Loading and playing are opt-in. A real agent
+opponent needs a selected model and its configured credentials and can incur
+provider charges. The controlled runs above use supplied waits and a loopback
+provider; they need no credentials, paid service or extension installation.
+
+Run `/tic-tac-toe`. You play X with arrow keys and Enter or Space; the agent plays
+O through `tic_tac_toe`. Escape or Q closes the view without deleting the board.
+After a finished game, R closes the view; opening the command again starts a new
+game. The command names the session `Tic-Tac-Toe`.
+
+Each tool call performs one action: `move_up`, `move_down`, `move_left`,
+`move_right` or `play`. Moves wait 300 ms and clamp at the edges. The agent emits
+all moves and the final play as sibling calls in one response; the tool's
+sequential execution mode keeps play behind those waits. A successful play
+resets the agent cursor to (0,0); an occupied-cell error leaves it in place for a
+retry. `tic_tac_toe_see_board` restates the board and that cursor. The human's
+cursor stays private to the view.
+
+Human moves, cursor moves and successful plays append `tic-tac-toe-save` session
+entries; occupied-cell errors also save the unchanged board. Reopening or
+navigating a branch restores its custom saves and tool-result snapshots in
+branch order. A branch with no game snapshots starts empty. Invalid saved marks
+or coordinates are rejected before rendering or indexing. Expanded move messages and
+tool results show static boards; the final banner highlights the
+winning line. The example writes no file directly and adds no built-in tool.

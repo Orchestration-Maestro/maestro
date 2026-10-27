@@ -6,14 +6,21 @@
 )]
 
 use maestro_extensions_wasm::{
-    AgentMessage, AgentToolResult, CustomMessageInput, ExtensionAPI, ExtensionContext,
-    ExtensionFuture, ExtensionResult, Message, Presence, SessionEntry, ToolDefinition,
-    ToolExecutionMode, ToolMetadata, UserContent,
+    AgentMessage, AgentToolResult, BeforeAgentStartEventResult, CommandOptions, CustomMessageInput,
+    ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
+    ExtensionResult, Message, Presence, SessionEntry, ToolDefinition, ToolExecutionMode,
+    ToolMetadata, UserContent,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, time::Duration};
 #[path = "tic_tac_toe/game.rs"]
 mod game;
+#[path = "tic_tac_toe/prompt.rs"]
+mod prompt;
+#[path = "tic_tac_toe/render.rs"]
+mod render;
+#[path = "tic_tac_toe/ui.rs"]
+mod ui;
 use game::BoardDetails;
 
 /// The custom entry holding each accepted state, including failed occupied-cell plays.
@@ -58,6 +65,7 @@ async fn execute(
     api: ExtensionAPI,
     state: Rc<RefCell<BoardDetails>>,
     params: Value,
+    controls: Rc<ui::Controls>,
 ) -> ExtensionResult<AgentToolResult> {
     let action = params["action"].as_str().ok_or("action required")?;
     if matches!(action, "move_up" | "move_down" | "move_left" | "move_right") {
@@ -72,6 +80,7 @@ async fn execute(
         && state.board[state.agent_cursor_row][state.agent_cursor_col] != ' ';
     let result = state.action(action);
     if result.is_ok() && action == "play" && state.status != "playing" {
+        controls.active.set(false);
         game_over(&api, &state)?;
     }
     if result.is_ok() || occupied {
@@ -80,6 +89,7 @@ async fn execute(
             Some(serde_json::to_value(&*state).map_err(|e| e.to_string())?),
         )?;
     }
+    controls.refresh()?;
     state.result(result?)
 }
 
@@ -115,7 +125,10 @@ fn metadata(inspect: bool) -> ToolMetadata {
         parameters: if inspect { json!({"type":"object","properties":{}}) } else { json!({"type":"object","required":["action"],"properties":{"action":{"type":"string","enum":["move_up","move_down","move_left","move_right","play"]}}}) }.into(),
         execution_mode: if inspect { Presence::Missing } else { Presence::Present(ToolExecutionMode::Sequential) },
         prompt_snippet: Presence::Present(if inspect { "Inspect the tic-tac-toe board and your cursor" } else { "Play a tic-tac-toe action (move_up/down/left/right or play) as Player O" }.into()),
-        prompt_guidelines: Presence::Missing,
+        prompt_guidelines: if inspect { Presence::Missing } else { Presence::Present(vec![
+            "When it is your tic-tac-toe turn, decide the target cell first, then emit every move_* plus the final play as separate tic_tac_toe tool calls in a SINGLE assistant response. Never split them across responses or wait for intermediate results.".into(),
+            "Never ask the user for the board. The board and your cursor position are included in the user's move message; use tic_tac_toe_see_board if you need them restated.".into(),
+        ]) },
         render_shell: Presence::Missing,
     }
 }
@@ -125,6 +138,7 @@ fn register_tool(
     api: &ExtensionAPI,
     state: Rc<RefCell<BoardDetails>>,
     inspect: bool,
+    controls: Rc<ui::Controls>,
 ) -> ExtensionResult<()> {
     let tool_api = api.clone();
     api.register_tool(ToolDefinition {
@@ -134,11 +148,39 @@ fn register_tool(
             if inspect {
                 return Box::pin(std::future::ready(state.borrow().inspect()));
             }
-            Box::pin(execute(tool_api.clone(), state.clone(), params))
+            Box::pin(execute(
+                tool_api.clone(),
+                state.clone(),
+                params,
+                controls.clone(),
+            ))
         }),
-        render_call: None,
-        render_result: None,
+        render_call: Some(render::call_renderer(inspect)),
+        render_result: Some(render::result_renderer(api.clone(), inspect)),
     })
+}
+
+/// Appends turn guidance only while this factory's interactive game remains active.
+fn register_prompt(api: &ExtensionAPI, controls: Rc<ui::Controls>) -> ExtensionResult<()> {
+    api.on(
+        "before_agent_start",
+        Rc::new(move |event, _| {
+            let result = match event {
+                ExtensionEvent::BeforeAgentStart(event) if controls.active.get() => Some(
+                    ExtensionEventResult::BeforeAgentStart(BeforeAgentStartEventResult {
+                        message: Presence::Missing,
+                        system_prompt: Presence::Present(format!(
+                            "{}{}",
+                            event.system_prompt,
+                            prompt::INSTRUCTIONS
+                        )),
+                    }),
+                ),
+                _ => None,
+            };
+            Box::pin(std::future::ready(Ok(result)))
+        }),
+    )
 }
 
 /// Registers the opt-in game tools and branch reconstruction hooks.
@@ -149,17 +191,38 @@ fn register_tool(
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         let state = Rc::new(RefCell::new(BoardDetails::default()));
+        let controls = Rc::new(ui::Controls::default());
         for event in ["session_start", "session_tree"] {
             let state = state.clone();
+            let controls = controls.clone();
             api.on(
                 event,
                 Rc::new(move |_, ctx| {
+                    controls.active.set(false);
                     Box::pin(std::future::ready(restore(&ctx, &state).map(|()| None)))
                 }),
             )?;
         }
-        register_tool(&api, state.clone(), false)?;
-        register_tool(&api, state, true)
+        register_tool(&api, state.clone(), false, controls.clone())?;
+        register_tool(&api, state.clone(), true, controls.clone())?;
+        render::register_messages(&api)?;
+        register_prompt(&api, controls.clone())?;
+        let command_api = api.clone();
+        api.register_command(
+            "tic-tac-toe",
+            CommandOptions {
+                description: Some("Play tic-tac-toe against the agent".into()),
+                get_argument_completions: None,
+                handler: Rc::new(move |_, ctx| {
+                    Box::pin(ui::show(
+                        command_api.clone(),
+                        state.clone(),
+                        controls.clone(),
+                        ctx,
+                    ))
+                }),
+            },
+        )
     })
 }
 
