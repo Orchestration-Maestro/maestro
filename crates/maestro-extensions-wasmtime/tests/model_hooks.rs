@@ -53,60 +53,17 @@ impl<E: Produce, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>> f
 
 #[test]
 fn payload_hooks_keep_every_json_replacement() {
-    let provider = Arc::new(Hooks);
-    register_api_provider(
-        ApiProvider {
-            api: "component-hooks".into(),
-            stream: provider.clone(),
-            stream_simple: provider,
-        },
-        Some("component-hooks".into()),
-    );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, async {
-        let bus = maestro_extensions::create_event_bus_for::<Local>(
-            std::rc::Rc::new(|_| panic!("no tails")),
-            std::rc::Rc::new(|_| panic!("no errors")),
-        );
-        let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
-        let command = runner
-            .get_command("bridge-observe")
-            .unwrap()
-            .command
-            .handler;
-        let output = command("model-hooks".into(), runner.create_command_context())
-            .await
-            .unwrap_err()
-            .to_string();
-        let output: Value = serde_json::from_str(&output).unwrap_or_else(|_| panic!("{output}"));
-        let cases = [
-            json!({"original":true}),
-            Value::Null,
-            json!(false),
-            json!(0),
-            json!(""),
-            json!(7.5),
-            json!("replacement 雪"),
-            json!({"selected":true}),
-            json!([null, false, 0]),
-        ];
-        assert_eq!(output.as_array().unwrap().len(), 18);
-        for (index, row) in output.as_array().unwrap().iter().enumerate() {
-            assert_eq!(row["simple"], index >= 9);
-            assert_eq!(row["calls"], json!(["payload", "response"]));
-            let selected: Value =
-                serde_json::from_str(row["message"]["content"][0]["text"].as_str().unwrap())
-                    .unwrap();
-            assert_eq!(selected, cases[index % 9]);
-            assert_eq!(row["event"]["type"], "done");
-            assert_eq!(row["event"]["message"], row["message"]);
-            assert_eq!(row["eof"], true);
-        }
-        bus.clear();
-    });
-    unregister_api_providers("component-hooks");
+    super::model_hook_gates::run_cases(&[
+        "keep",
+        "null",
+        "false",
+        "zero",
+        "empty-string",
+        "number",
+        "string",
+        "object",
+        "array",
+    ]);
 }
 
 #[test]

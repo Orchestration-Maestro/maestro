@@ -1,4 +1,4 @@
-//! Canonical JSON access and data-only schema export admission.
+//! Canonical JSON access and retained local or foreign schema admission.
 use crate::{
     callback_imports::CallbackView,
     guest_calls::Callback,
@@ -62,6 +62,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host.func_wrap_concurrent("get-all-tools", |a, (): ()| {
         Box::pin(async move { listing(a).await })
     })?;
+    crate::local_resources::schema::link(host)?;
     Ok(())
 }
 /// Retain this guest's callback bindings before returning live declarations.
@@ -80,32 +81,62 @@ async fn listing<T: CallbackView + 'static>(
         Err(e) => return Ok((Err(e),)),
     };
     let mut schemas = Vec::new();
-    for (tool, pointer, handle) in bindings {
-        let handler = a.with(|mut access| {
-            let store = access.get();
-            let callback = store.callbacks().allocate().map_err(wasmtime::Error::msg)?;
-            Ok::<_, wasmtime::Error>(store.ctx().table.push(callback)?)
+    for (tool, pointer, shape, origin) in bindings {
+        let mut callback = a.with(|mut access| {
+            access
+                .get()
+                .callbacks()
+                .allocate()
+                .map_err(wasmtime::Error::msg)
         })?;
-        // Both aliases must refer to the same retained identity.
-        let source =
-            a.with(|mut access| access.get().ctx().table.push(Callback { id: handle.id() }))?;
-        let owned = a.with(|mut access| {
-            let id = access.get().ctx().table.get(&handler)?.id;
-            access.get().ctx().table.push(Callback { id })
-        })?;
-        let result = exports
-            .schema
-            .retain(a, Resource::new_borrow(source.rep()), owned)
-            .await;
-        a.with(|mut access| access.get().ctx().table.delete(source))?;
-        if let Err(e) = result? {
-            return Ok((Err(e.message),));
-        }
+        let local = match origin {
+            crate::schema_registration::Origin::Local(handle) => {
+                if let Err(error) = retain(a, &exports, handle.id(), callback.id).await? {
+                    return Ok((Err(error.message),));
+                }
+                true
+            }
+            crate::schema_registration::Origin::Foreign(endpoint) => {
+                callback.schema = Some(endpoint);
+                false
+            }
+        };
+        let handler = a.with(|mut access| access.get().ctx().table.push(callback))?;
         schemas.push(Binding {
             tool,
             pointer,
             handler,
+            shape,
+            local,
         });
     }
     Ok((Ok(Listing { metadata, schemas }),))
+}
+
+/// Copy a local author identity before handing its independently owned alias to the guest.
+async fn retain<T: CallbackView + 'static>(
+    accessor: &Accessor<T>,
+    exports: &crate::guest_exports::Exports,
+    source_id: u32,
+    retained_id: u32,
+) -> wasmtime::Result<Result<(), crate::schema_wire::Error>> {
+    let (source, retained) = accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        Ok::<_, wasmtime::Error>((
+            table.push(Callback {
+                id: source_id,
+                schema: None,
+            })?,
+            table.push(Callback {
+                id: retained_id,
+                schema: None,
+            })?,
+        ))
+    })?;
+    let result = exports
+        .schema
+        .retain(accessor, Resource::new_borrow(source.rep()), retained)
+        .await;
+    accessor.with(|mut access| access.get().ctx().table.delete(source))?;
+    result
 }

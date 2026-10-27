@@ -16,6 +16,7 @@ use wasmtime_wasi::WasiView;
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
+    crate::oauth_imports::add_to_linker(host)?;
     crate::context_imports::add_resource::<T, Endpoint>(host, "auth-storage")?;
     host.func_wrap(
         "[method]model-registry.auth-storage",

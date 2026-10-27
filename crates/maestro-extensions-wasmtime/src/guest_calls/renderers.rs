@@ -43,6 +43,8 @@ pub(crate) enum ComponentMethod {
     Input(String),
     /// Changes a factory component's expansion.
     SetExpanded(bool),
+    /// Assigns the component's focus.
+    SetFocused(bool),
     /// Clears authored rendering caches.
     Invalidate,
 }
@@ -54,6 +56,8 @@ pub(crate) enum ComponentCall<R = Handle> {
     Unit(R, ComponentMethod, EmitterEndpoint, Reply<()>),
     /// Original authored key-release preference.
     WantsKeyRelease(R, EmitterEndpoint, Reply<bool>),
+    /// Focus state, absent for a component without that capability.
+    Focused(R, EmitterEndpoint, Reply<Option<bool>>),
 }
 impl Handle {
     /// Creates only the Local-family renderer; reporting stays with its future caller.

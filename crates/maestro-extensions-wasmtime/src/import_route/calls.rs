@@ -16,9 +16,11 @@ use crate::{
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
 mod component;
-use component::{LocalKey, LocalRender, LocalUnit};
+use component::{LocalFocus, LocalKey, LocalRender, LocalUnit};
 mod credentials;
+mod custom;
 mod editors;
+mod provider;
 mod ui;
 use ui::{
     LocalExpanded, LocalFactory, LocalHighlight, LocalStyle, LocalTerminalInput, LocalToolRender,
@@ -170,36 +172,19 @@ pub(super) struct LocalBash {
     resources: BashResources,
 }
 
-/// Owned operands of one nested credential backend method.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalBackend {
-    /// Authored backend identity.
-    target: u32,
-    /// Invocation-local native update.
-    update: Resource<crate::local_resources::credential_scope::Endpoint>,
-    /// Whether the author must await its update.
-    asynchronous: bool,
-}
-/// Owned operands of one nested fallback lookup.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalFallback {
-    /// Authored resolver identity.
-    target: u32,
-    /// Literal provider.
-    provider: String,
-}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Original OAuth interaction.
+    #[component(name = "oauth")]
+    OAuth(credentials::LocalOAuth),
     /// Authored backend and still-borrowed native update.
     #[component(name = "auth-backend")]
-    AuthBackend(LocalBackend),
+    AuthBackend(credentials::LocalBackend),
     /// Authored fallback with its original optional result.
     #[component(name = "auth-fallback")]
-    AuthFallback(LocalFallback),
+    AuthFallback(credentials::LocalFallback),
     /// A message renderer.
     #[component(name = "renderer")]
     Renderer(LocalRenderer),
@@ -215,6 +200,12 @@ pub(super) enum LocalCall {
     /// A retained component key-release query.
     #[component(name = "key")]
     Key(LocalKey),
+    /// A retained component's optional focus state.
+    #[component(name = "focused")]
+    Focused(LocalKey),
+    /// A retained component's synchronous focus assignment.
+    #[component(name = "set-focused")]
+    SetFocused(LocalFocus),
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
@@ -230,6 +221,12 @@ pub(super) enum LocalCall {
     /// A synchronous authored-stream classifier or extractor.
     #[component(name = "stream")]
     Stream(crate::stream_calls::Local),
+    /// Nested original provider setup.
+    #[component(name = "provider")]
+    Provider(crate::provider_calls::LocalProvider),
+    /// Nested returned-stream operation.
+    #[component(name = "assistant")]
+    Assistant(crate::provider_calls::LocalAssistant),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -260,6 +257,12 @@ pub(super) enum LocalCall {
     /// A component factory.
     #[component(name = "factory")]
     Factory(LocalFactory),
+    /// A custom factory's synchronous prefix.
+    #[component(name = "custom-factory")]
+    CustomFactory(custom::Prefix),
+    /// An independently owned custom factory continuation.
+    #[component(name = "custom-future")]
+    CustomFuture(u32),
     /// A tool rendering.
     #[component(name = "tool-render")]
     ToolRender(LocalToolRender),
@@ -279,17 +282,20 @@ pub(super) enum LocalCall {
     #[component(name = "editor")]
     Editor(editors::LocalEditor),
     /// A request on an authored completion provider.
-    #[component(name = "provider")]
-    Provider(editors::LocalProvider),
+    #[component(name = "autocomplete")]
+    Autocomplete(editors::LocalAutocomplete),
     /// A completion provider factory.
-    #[component(name = "provider-factory")]
-    ProviderFactory(editors::LocalProviderFactory),
+    #[component(name = "autocomplete-factory")]
+    AutocompleteFactory(editors::LocalAutocompleteFactory),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Original OAuth interaction result.
+    #[component(name = "oauth")]
+    OAuth(Result<Option<String>, String>),
     /// Exact optional fallback value or authored error.
     #[component(name = "auth-fallback")]
     AuthFallback(Result<Option<String>, String>),
@@ -305,6 +311,9 @@ pub(super) enum LocalResult {
     /// Key-release preference or the authored error.
     #[component(name = "key")]
     Key(Result<bool, String>),
+    /// Optional focus state or an ordinary error.
+    #[component(name = "focused")]
+    Focused(Result<Option<bool>, String>),
     /// Prepared argument document or the authored error.
     #[component(name = "prepared")]
     Prepared(Result<String, String>),
@@ -320,6 +329,12 @@ pub(super) enum LocalResult {
     /// Selected terminal classification or retained result.
     #[component(name = "stream")]
     Stream(Result<crate::stream_calls::WireSelection, String>),
+    /// Original returned authored stream.
+    #[component(name = "provider")]
+    Provider(Result<Resource<Callback>, String>),
+    /// Ordinary returned-stream operation result.
+    #[component(name = "assistant")]
+    Assistant(Result<Option<String>, String>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -335,6 +350,9 @@ pub(super) enum LocalResult {
     /// The built component identities, or the authored error.
     #[component(name = "factory")]
     Factory(Result<crate::guest_calls::factories::Built, String>),
+    /// A completed custom prefix or its owned continuation.
+    #[component(name = "custom-factory")]
+    CustomFactory(Result<crate::guest_calls::custom::Built, String>),
     /// The rendered component and new row state identities, or the authored error.
     #[component(name = "tool-render")]
     ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
@@ -353,12 +371,12 @@ pub(super) enum LocalResult {
     /// The authored editor's answer, or its error.
     #[component(name = "editor")]
     Editor(Result<crate::guest_calls::editors::Answer, String>),
-    /// The authored provider's answer, or its error.
-    #[component(name = "provider")]
-    Provider(Result<crate::guest_calls::providers::Answer, String>),
-    /// The returned provider's identity, or the authored error.
-    #[component(name = "provider-factory")]
-    ProviderFactory(Result<Resource<Callback>, String>),
+    /// The authored completion provider's answer, or its error.
+    #[component(name = "autocomplete")]
+    Autocomplete(Result<crate::guest_calls::providers::Answer, String>),
+    /// The returned completion provider's identity, or the authored error.
+    #[component(name = "autocomplete-factory")]
+    AutocompleteFactory(Result<Resource<Callback>, String>),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -367,6 +385,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::OAuth(call) => credentials::oauth(table, call)?,
         Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
@@ -386,7 +405,9 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
+        call @ (Call::Provider(_) | Call::Assistant(_)) => provider::lower(table, call)?,
         Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
+        Call::Custom(call) => custom::lower(table, call)?,
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
@@ -400,8 +421,8 @@ pub(super) fn lower(
         | Call::Widget(_)) => ui::lower(table, call)?,
         call @ (Call::EditorFactory(_)
         | Call::Editor(_)
-        | Call::Provider(_)
-        | Call::ProviderFactory(_)) => editors::lower(table, call)?,
+        | Call::Autocomplete(_)
+        | Call::AutocompleteFactory(_)) => editors::lower(table, call)?,
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -483,7 +504,8 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
-        (Call::Credential(call), value) => credentials::settle(call, value)?,
+        (Call::Custom(call), value) => custom::settle(store, call, value)?,
+        (call @ (Call::Credential(_) | Call::OAuth(_)), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component
@@ -497,6 +519,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
+            let _ = reply.send(value);
+        }
+        (Call::Component(ComponentCall::Focused(_, _, reply)), LocalResult::Focused(value)) => {
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {
@@ -529,8 +554,8 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (
             call @ (Call::EditorFactory(_)
             | Call::Editor(_)
-            | Call::Provider(_)
-            | Call::ProviderFactory(_)),
+            | Call::Autocomplete(_)
+            | Call::AutocompleteFactory(_)),
             value,
         ) => editors::settle(store, call, value)?,
         (call, value) => settle_asynchronous(store, call, value)?,
@@ -545,6 +570,16 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::Provider(call), LocalResult::Provider(value)) => {
+            let value = match value {
+                Ok(value) => Ok(crate::callback_imports::transferred(store, value)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Assistant(call), LocalResult::Assistant(value)) => {
+            let _ = call.reply.send(value);
+        }
         (Call::Event(call), LocalResult::Event(value)) => {
             let value = match value {
                 Ok(returned) => Ok(returned.retained(store)?),

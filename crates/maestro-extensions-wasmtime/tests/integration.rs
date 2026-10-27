@@ -11,6 +11,7 @@ mod canonical_schema;
 mod canonical_theme;
 mod canonical_ui;
 mod canonical_widgets;
+mod compilation_cache;
 mod completion_providers;
 mod component_events;
 mod component_loading;
@@ -23,11 +24,17 @@ mod factory_shutdown;
 mod lifetimes;
 mod listener_prefixes;
 mod module_location;
+mod native_helpers;
+mod native_io;
 mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
 mod startup;
 mod synchronous_reentry;
+mod wasi_access;
+mod wasi_network;
+mod wasi_output;
+mod wasi_support;
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;
@@ -59,3 +66,23 @@ mod model_finite;
 
 mod model_hook_gates;
 mod model_signal_selection;
+
+mod tui_capabilities;
+
+mod custom_ui;
+mod model_lifetimes;
+
+mod foreign_schema;
+mod model_protocol_routes;
+mod oauth;
+
+mod model_registered;
+
+/// The production artifact factory over toolkit widgets and a fixed installation version.
+fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extensions::Local> {
+    maestro_extensions_wasmtime::artifact_factory(
+        path,
+        support::widgets(),
+        "installed-component-host".into(),
+    )
+}

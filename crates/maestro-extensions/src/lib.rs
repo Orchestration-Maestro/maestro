@@ -45,7 +45,13 @@ pub use event_bus::{
 
 /// The read-only footer metadata extension footers receive.
 pub mod footer_data_provider;
+/// Native helper delegation used by component adapters.
+#[doc(hidden)]
+#[cfg(not(target_arch = "wasm32"))]
+pub mod helpers;
 mod loader;
+/// Native effects supplied to extension adapters.
+pub mod native_io;
 /// Owned registration records and callback types.
 pub mod types;
 pub use maestro_catalog::{
@@ -56,10 +62,15 @@ pub use maestro_catalog::{
     ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
 };
 pub use maestro_models::{
-    AssistantMessageEventStream, Base, Context, EventStream, OAuthError, ParameterSchema,
-    PayloadHookInput, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
-    SchemaCallback, SchemaCode, SchemaNode, SimpleStreamOptions, StreamOptions, schema_transport,
-    stream_for, stream_simple_for,
+    AssistantMessageEvent, AssistantMessageEventStream, AssistantMessageEventStreamPort, Base,
+    BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Fetch,
+    Invoke, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthLoginCallbacks,
+    OAuthPrompt, OAuthProviderHandle, OAuthProviderInterface, OAuthSelectPrompt, ParameterSchema,
+    PayloadHookInput, ProviderCall, ProviderExecution, ProviderInvocation, ProviderResponse,
+    ProviderSpawner, ProviderStreamOptions, Refinement, SchemaCallback, SchemaCode, SchemaNode,
+    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamFunction, StreamOptions,
+    StreamOptionsInput, Threaded, faux_assistant_message, schema_transport, stream_for,
+    stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
@@ -168,8 +179,10 @@ pub mod widgets {
         editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
     };
     pub use maestro_tui::{
-        Editor, EditorOptions, EditorTheme, Focusable, KeybindingConflict, KeybindingDefinition,
-        KeybindingDefinitions, KeybindingKeys, KeybindingsConfig, get_keybindings,
+        Editor, EditorOptions, EditorTheme, FocusFlag, Focusable, KeybindingConflict,
+        KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, KeybindingsConfig,
+        OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
+        get_keybindings,
     };
 }
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

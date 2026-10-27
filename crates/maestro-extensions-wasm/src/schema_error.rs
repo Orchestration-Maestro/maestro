@@ -24,7 +24,7 @@ pub(crate) fn to_wire(error: DiagnosticErrorInfo) -> wire::DiagnosticErrorInfo {
     }
 }
 /// Recover the shared diagnostic without rebuilding it from display text.
-#[cfg(all(test, not(target_arch = "wasm32")))]
+#[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) fn from_wire(error: wire::DiagnosticErrorInfo) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {
         name: error.name,

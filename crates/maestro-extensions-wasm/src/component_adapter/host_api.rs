@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::callbacks::Identity;
 use super::exports::encode_value;
 use super::imports::{Imports, ToolCallbacks};
-use super::signals::Mirror;
+use super::signals::Binding;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 
@@ -13,6 +13,21 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn native_io(&self) -> std::rc::Rc<dyn crate::io::NativeIo> {
+        std::rc::Rc::new(super::io::Io(self.0.clone()))
+    }
+    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String> {
+        self.0.native_format_size(bytes)
+    }
+    fn native_frontmatter(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
+        self.0.native_frontmatter(content)
+    }
+    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
+        self.0.native_helper(operation, data)
+    }
     fn auth_storage_from_backend(
         &self,
         backend: Rc<dyn crate::AuthStorageBackend>,
@@ -62,9 +77,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move {
             let data = encode_value(&(command, args, options.as_ref()))?;
             let caller = options.and_then(|options| options.signal);
-            let mirror = Mirror::new(&self.0, caller.as_ref())?;
-            let result = self.0.call("exec", data, mirror.signal()).await;
-            mirror
+            let binding = Binding::new(&self.0, caller.as_ref())?;
+            let result = self.0.call("exec", data, binding.signal()).await;
+            binding
                 .settle(result)
                 .and_then(|data| super::session::decode(&data))
         })
@@ -109,27 +124,31 @@ impl<I: Imports> ExtensionHost for Host<I> {
         let (text, bindings) = self.0.get_all_tools()?;
         let handlers = bindings
             .into_iter()
-            .map(|(index, pointer, handle)| {
+            .map(|(index, pointer, handle, shape, local)| {
                 (
                     index,
                     pointer,
                     super::callbacks::Scoped::from_handle(&self.0, handle),
+                    shape,
+                    local,
                 )
             })
             .collect::<Vec<_>>();
         let tools = super::tools::decode_tools(&text)?;
         let mut codes = std::collections::HashMap::<usize, crate::schema_code::SchemaCode>::new();
-        for (index, pointer, identity) in &handlers {
-            let index = *index as usize;
+        for (index, pointer, identity, shape, local) in handlers {
+            let index = index as usize;
             if index >= tools.len() {
                 return Err("schema binding has no matching tool".into());
             }
-            let id = self.0.callback_id(&identity.handle);
-            let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
-            codes
-                .entry(index)
-                .or_default()
-                .insert(pointer.clone(), super::schema::node(&handler));
+            let node = if local {
+                let id = self.0.callback_id(&identity.handle);
+                let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
+                super::schema::node(&handler)
+            } else {
+                super::schema::foreign(&self.0, identity, shape)
+            };
+            codes.entry(index).or_default().insert(pointer, node);
         }
         Ok(tools
             .into_iter()
@@ -272,7 +291,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
     }
     fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
-        self.0.register_provider(name, &encode_value(&config)?)
+        super::provider_registration::register(&self.0, config, |text, callbacks| {
+            self.0.register_provider(name, text, callbacks)
+        })
     }
     fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
         self.0.unregister_provider(name)

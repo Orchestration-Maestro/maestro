@@ -181,56 +181,51 @@ impl State {
     }
 
     /// Answers one request with the native owner it names.
-    fn dispatch(&self, message: Message) {
+    pub(super) fn dispatch(&self, message: Message) {
         match message {
             Message::ModelStart(request) => request.answer(&self.registry),
+            Message::Provider(request) => self.provider_request(request),
             Message::ModelStream(id, request) => self.model_stream_request(id, request),
             Message::NewStream(request) => request.answer(&self.registry),
             Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
-            Message::LockUpdate(_, _, reply) => {
-                let _ = reply.send(Err("extension lock update ended".into()));
-            }
+            Message::LockUpdate(_, _, reply) => Self::reject_lock_update(&reply),
             Message::AsyncLockUpdate(id, request) => self.async_update(id, request),
             Message::EndLockUpdate(id) => self.end_lock_update(id),
-            Message::SchemaListing(id, reply) => {
-                let _ = reply.send(self.schema_listing(id));
-            }
+            Message::SchemaListing(id, reply) => self.reply_schema_listing(id, &reply),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
-            Message::Api(id, request) => self.read_api(id, request),
+            Message::Api(id, request) => self.api_request(id, request),
             Message::Events(id, request) => self.event(id, request),
-            Message::Registration(id, request) => self.registration(id, request),
-            Message::ApiModel(id, model, reply, admission) => {
-                self.start_api_model(id, *model, reply, admission);
-            }
-            Message::Exec(id, request, reply, admission) => {
-                self.start_exec(id, request, reply, admission);
-            }
+            Message::Registration(id, request) => self.api_request(id, request),
+            Message::ApiModel(id, model, tx, scope) => self.start_api_model(id, *model, tx, scope),
+            Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
+            Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
-            Message::Auth(id, model, reply, admission) => {
-                self.start_auth(id, *model, reply, admission);
-            }
+            Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),
             Message::ProviderKey(id, provider, reply, admission) => {
                 self.start_provider_key(id, provider, reply, admission);
             }
-            Message::NewSignal(reply) => {
-                let _ = reply.send(self.registry.signal(Cancellation::new()));
-            }
+            Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
+            message @ (Message::OAuthLogin(..)
+            | Message::OAuthRefresh(..)
+            | Message::OAuthProvider(..)
+            | Message::OAuthInteraction(..)) => self.oauth(message),
             Message::Credentials(id, request) => self.credentials(id, request),
+            Message::CredentialLogin(id, provider, controls, reply, admission) => {
+                self.start_credential_login(id, (provider, controls), reply, admission);
+            }
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
             Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => self.node(id, request),
-            Message::Replaced(id, request, admission) => {
-                self.start_replaced(id, request, admission);
-            }
+            Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
@@ -239,8 +234,25 @@ impl State {
             Message::Theme(id, request) => self.theme(id, request),
             Message::Widgets(message) => self.widgets(message),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
+            Message::Native(id, request) => self.native(id, request),
+            Message::Http(id, request) => self.http(id, request),
+            Message::Watch(id, request) => self.watch(id, request),
             Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Rejects a synchronous credential update whose native frame has ended.
+    fn reject_lock_update(reply: &std::sync::mpsc::Sender<Result<Option<String>, String>>) {
+        let _ = reply.send(Err("extension lock update ended".into()));
+    }
+
+    /// Creates the supplied cancellation binding on its original local owner.
+    fn new_signal(
+        &self,
+        signal: Option<Cancellation>,
+        reply: &std::sync::mpsc::Sender<Result<super::SignalEndpoint, String>>,
+    ) {
+        let _ = reply.send(self.registry.signal(signal.unwrap_or_default()));
     }
 
     /// Releases an ended lock update outside its frame-table borrow.
@@ -274,6 +286,15 @@ impl State {
         self.routes.borrow_mut().push(route);
         self.dispatch(message);
         self.routes.borrow_mut().pop();
+    }
+
+    /// Sends the original live schema listing to its waiting reader.
+    fn reply_schema_listing(
+        &self,
+        id: u64,
+        reply: &std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
+    ) {
+        let _ = reply.send(self.schema_listing(id));
     }
 
     /// Observe live metadata through its original API capability.
@@ -312,18 +333,8 @@ impl State {
         let _ = reply.send(result);
     }
 
-    /// Selects a real API outside the capability-table borrow.
-    fn read_api(&self, id: u64, request: crate::api_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Api(api)) = capability.as_deref() {
-            request.answer(api);
-        } else {
-            request.reject("extension API resource ended");
-        }
-    }
-
-    /// Registers native records without holding the capability-table borrow.
-    fn registration(&self, id: u64, request: crate::registration_reads::Request) {
+    /// Selects the original API once for reads and callback-bearing registrations.
+    fn api_request(&self, id: u64, request: impl crate::api_reads::ApiRequest) {
         let capability = self.registry.capability(id);
         if let Some(Capability::Api(api)) = capability.as_deref() {
             request.answer(api, &self.registry);

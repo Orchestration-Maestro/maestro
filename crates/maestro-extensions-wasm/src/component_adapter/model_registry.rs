@@ -69,8 +69,10 @@ impl<I: Imports> ModelRegistryPort for Registry<I> {
             .registry_is_using_oauth(&self.resource, &encode_value(&model)?)
     }
     fn register_provider(&self, name: &str, config: ProviderConfig) -> ExtensionResult<()> {
-        self.imports
-            .registry_register_provider(&self.resource, name, &encode_value(&config)?)
+        super::provider_registration::register(&self.imports, config, |text, callbacks| {
+            self.imports
+                .registry_register_provider(&self.resource, name, text, callbacks)
+        })
     }
     fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
         self.imports

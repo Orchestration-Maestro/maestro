@@ -51,8 +51,16 @@ mod setup_author;
 mod stacked_provider_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "custom_author.rs"]
+pub(crate) mod custom_author;
+#[path = "custom_overlay_author.rs"]
+pub(crate) mod custom_overlay_author;
+#[path = "focus_author.rs"]
+pub(crate) mod focus_author;
 #[path = "nested_schema_fixture.rs"]
 pub(crate) mod nested_schema_fixture;
+#[path = "overlay_author.rs"]
+pub(crate) mod overlay_author;
 #[path = "schema_author.rs"]
 mod schema_author;
 #[path = "shell_author.rs"]
@@ -61,10 +69,14 @@ mod shell_author;
 mod theme_author;
 #[path = "tool_author.rs"]
 mod tool_author;
+#[path = "tui_author.rs"]
+pub(crate) mod tui_author;
 #[path = "ui_author.rs"]
 pub(crate) mod ui_author;
 #[path = "widget_author.rs"]
 mod widget_author;
+#[path = "writer_author.rs"]
+pub(crate) mod writer_author;
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {

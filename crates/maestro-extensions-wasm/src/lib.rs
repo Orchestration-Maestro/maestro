@@ -22,13 +22,29 @@ pub use editor_component::{
 mod event_bus;
 pub use event_bus::*;
 mod bash_executor;
-mod tools;
+pub mod tools;
 pub use bash_executor::*;
-pub use tools::*;
+pub use tools::{
+    BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations, BashToolDetails,
+    BashToolInput, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, EditToolDetails, EditToolInput,
+    FindToolDetails, FindToolInput, GrepToolDetails, GrepToolInput, LsToolDetails, LsToolInput,
+    ReadToolDetails, ReadToolInput, ReplaceEdit, TruncationLimit, TruncationOptions,
+    TruncationResult, WriteToolInput, format_size, truncate_head, truncate_line, truncate_tail,
+};
 #[doc(hidden)]
 pub mod bindings;
-mod compaction;
+/// Native child resources.
+pub mod child_process;
+pub mod compaction;
 mod exec;
+/// Native filesystem notifications.
+pub mod fs;
+/// Native HTTP resources.
+pub mod http;
+/// Native operation capability.
+pub mod io;
+/// Raw byte resources.
+pub mod streams;
 pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
@@ -36,6 +52,8 @@ mod loader;
 mod messages;
 mod slash_commands;
 pub use slash_commands::*;
+mod oauth;
+pub use oauth::*;
 mod auth_storage;
 pub use auth_storage::*;
 mod model_registry;
@@ -45,14 +63,30 @@ mod system_prompt;
 #[cfg(test)]
 mod tests;
 
+/// Native terminal key vocabulary and decoding.
+pub mod keys;
+pub use keys::{
+    Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
+    is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
+};
+/// Native fuzzy matching over original caller-owned items.
+pub mod fuzzy;
+pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};
+/// Native metadata parsing with complete typed values.
+pub mod frontmatter;
+pub use frontmatter::{parse_frontmatter, strip_frontmatter};
+/// Native application installation identity.
+pub mod config;
 mod tui;
 mod types;
 pub use tui::*;
+pub use utils::{truncate_to_width, visible_width, wrap_text_with_ansi};
 mod theme;
 pub use theme::*;
 
 pub use agent::*;
-pub use compaction::*;
+pub use compaction::utils::serialize_conversation;
+pub use compaction::{CompactionPreparation, CompactionResult, CompactionSettings, FileOperations};
 #[cfg(target_arch = "wasm32")]
 #[doc(hidden)]
 pub use component_adapter::Glue;
@@ -93,3 +127,5 @@ mod schema_error;
 pub mod stream;
 #[cfg(target_arch = "wasm32")]
 pub use stream::{complete, complete_simple, stream, stream_simple};
+
+pub mod wasi;

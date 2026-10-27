@@ -1,100 +1,94 @@
-//! The canonical completion provider and provider factory exports.
-use super::arguments;
-use crate::guest_calls::{
-    Callback,
-    providers::{Answer, FactoryCall, ProviderCall, ProviderEndpoint, Request},
+//! Actual registered-provider and returned-stream exports on the original component.
+use crate::{
+    callback_imports::{CallbackView, transferred},
+    guest_calls::Callback,
+    provider_calls::{Assistant, Invocation, Operation, WireInput},
 };
-use crate::local_resources::{SignalEndpoint, effects::EmitterEndpoint};
 use wasmtime::{
     Store,
     component::{Accessor, ComponentExportIndex, Instance, Resource, TypedFunc},
 };
 
-/// Exact canonical provider request signature.
-type Provider = TypedFunc<
+/// Original provider setup with typed native controls and returned resource.
+type Invoke =
+    TypedFunc<(Resource<Callback>, String, WireInput), (Result<Resource<Callback>, String>,)>;
+/// Original returned-stream method, without a forwarding buffer.
+type Stream = TypedFunc<
     (
         Resource<Callback>,
-        Request,
-        Option<Resource<SignalEndpoint>>,
+        Operation,
+        Option<String>,
+        Option<Resource<crate::local_resources::SignalEndpoint>>,
     ),
-    (Result<Answer, String>,),
+    (Result<Option<String>, String>,),
 >;
-
-/// Exact canonical provider factory signature.
-type Factory = TypedFunc<
-    (
-        Resource<Callback>,
-        Resource<ProviderEndpoint>,
-        Resource<EmitterEndpoint>,
-    ),
-    (Result<Resource<Callback>, String>,),
->;
-
-/// The provider and provider factory exports of the canonical guest instance.
-pub(super) struct Exports(Provider, Factory);
-
+/// Canonical exports from the same instance as the registration.
+pub(crate) struct Exports {
+    /// Original setup callback.
+    invoke: Invoke,
+    /// Original authored-stream operations.
+    stream: Stream,
+}
 impl Exports {
-    /// Resolves the real guest exports.
-    pub(super) fn new<T: 'static>(
+    /// Resolve both exports on the actual compiled guest.
+    pub(crate) fn new<T: 'static>(
         store: &mut Store<T>,
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        Ok(Self(
-            super::typed(store, instance, guest, "invoke-provider")?,
-            super::typed(store, instance, guest, "invoke-provider-factory")?,
-        ))
+        Ok(Self {
+            invoke: super::typed(store, instance, guest, "invoke-provider")?,
+            stream: super::typed(store, instance, guest, "invoke-assistant")?,
+        })
     }
-
-    /// Runs one request, transferring a suggestion request's signal.
-    pub(super) async fn request<T: crate::callback_imports::CallbackView + 'static>(
+    /// Transfer the actual returned resource before settling native synchronous setup.
+    pub(crate) async fn invoke<T: CallbackView + 'static>(
         &self,
-        accessor: &Accessor<T>,
-        call: ProviderCall<Callback>,
+        a: &Accessor<T>,
+        call: Invocation<Callback>,
     ) -> wasmtime::Result<()> {
-        let (callback, signal) = accessor.with(|mut access| {
+        let (handler, input) = a.with(|mut access| {
             let table = access.get().ctx().table;
-            let callback = table.push(Callback {
-                id: call.handler.id,
-            })?;
-            let signal = call.signal.map(|signal| table.push(signal)).transpose()?;
-            Ok::<_, wasmtime::Error>((callback, signal))
+            Ok::<_, wasmtime::Error>((table.push(call.handler)?, call.input.lower(table)?))
         })?;
-        let operands = (Resource::new_borrow(callback.rep()), call.request, signal);
-        let result = self.0.call_concurrent(accessor, operands).await;
-        accessor.with(|mut access| access.get().ctx().table.delete(callback))?;
-        let _ = call.reply.send(result?.0);
+        let result = self
+            .invoke
+            .call_concurrent(a, (Resource::new_borrow(handler.rep()), call.data, input))
+            .await;
+        a.with(|mut access| access.get().ctx().table.delete(handler))?;
+        let result = match result?.0 {
+            Ok(stream) => Ok(a.with(|mut access| transferred(access.get(), stream))?),
+            Err(error) => Err(error),
+        };
+        let _ = call.reply.send(result);
         Ok(())
     }
-
-    /// Lends the current provider, borrows the callback and frame, and keeps the returned
-    /// provider as a native owner.
-    pub(super) async fn factory<T: crate::callback_imports::CallbackView + 'static>(
+    /// Await one operation on the original retained resource, under ordinary lifecycle completion.
+    pub(crate) async fn assistant<T: CallbackView + 'static>(
         &self,
-        accessor: &Accessor<T>,
-        call: FactoryCall<Callback>,
+        a: &Accessor<T>,
+        call: Assistant<Callback>,
     ) -> wasmtime::Result<()> {
-        let (callback, current) = arguments(accessor, &call.handler, call.current)?;
-        let emitter = accessor.with(|mut access| access.get().ctx().table.push(call.emitter))?;
-        let operands = (
-            Resource::new_borrow(callback.rep()),
-            current,
-            Resource::new_borrow(emitter.rep()),
-        );
-        let result = self.1.call_concurrent(accessor, operands).await;
-        let provider = accessor.with(|mut access| {
-            let table = access.get().ctx().table;
-            table.delete(callback)?;
-            table.delete(emitter)?;
-            match result?.0 {
-                Ok(provider) => Ok(Ok(crate::callback_imports::transferred(
-                    access.get(),
-                    provider,
-                )?)),
-                Err(error) => Ok::<_, wasmtime::Error>(Err(error)),
-            }
+        let handler = a.with(|mut access| access.get().ctx().table.push(call.handler))?;
+        let signal = a.with(|mut access| {
+            call.signal
+                .map(|signal| access.get().ctx().table.push(signal))
+                .transpose()
         })?;
-        let _ = call.reply.send(provider);
+        let result = self
+            .stream
+            .call_concurrent(
+                a,
+                (
+                    Resource::new_borrow(handler.rep()),
+                    call.operation,
+                    call.data,
+                    signal,
+                ),
+            )
+            .await;
+        a.with(|mut access| access.get().ctx().table.delete(handler))?;
+        let _ = call.reply.send(result?.0);
         Ok(())
     }
 }

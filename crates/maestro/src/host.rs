@@ -132,7 +132,7 @@ async fn startup(
         sessions: crate::presentations::sessions(Rc::clone(&local), Rc::clone(themes)),
         missing_cwd: crate::presentations::missing_cwd(Rc::clone(&local), Rc::clone(themes)),
         local: Rc::clone(&local),
-        module_loader: module_loader(themes.theme()),
+        module_loader: module_loader(themes.theme(), &local),
         modes: crate::modes::launchers(Rc::clone(&local), themes, Rc::clone(&export)),
         stdin: &mut stdin,
         stdin_is_tty: &|| io::stdin().is_terminal(),
@@ -153,14 +153,21 @@ async fn startup(
     maestro_cli::main(args, MainOptions::default(), host).await
 }
 
-/// Loads each component path; the host widgets are built once, when the first loads.
-fn module_loader(theme: maestro_theme::LiveTheme) -> maestro_app::ModuleLoader<maestro_app::Local> {
+/// Loads each component path with the application's native effects; the host widgets are
+/// built once, when the first loads.
+fn module_loader(
+    theme: maestro_theme::LiveTheme,
+    local: &Rc<LocalSet>,
+) -> maestro_app::ModuleLoader<maestro_app::Local> {
     let widgets = Rc::new(std::cell::OnceCell::new());
+    let io = maestro_app::extension_native_io::extension_native_io(local);
     Rc::new(move |path: &str| {
         let factory = extension_widgets(&widgets, &theme).map(|widgets| {
-            Some(maestro_extensions_wasmtime::artifact_factory(
+            Some(maestro_extensions_wasmtime::artifact_factory_with_io(
                 path.to_owned(),
                 widgets,
+                config::VERSION.into(),
+                Rc::clone(&io),
             ))
         });
         Box::pin(std::future::ready(factory))

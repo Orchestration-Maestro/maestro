@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_interface_browser;
 pub mod artifact_card_support;
 mod artifact_elements;
 mod artifact_elements_browser;
@@ -16,13 +17,14 @@ mod browser_errors;
 mod browser_fixture_support;
 mod browser_fixtures;
 mod browser_formatting;
+mod chat_example_browser;
+mod chat_panel_browser;
 mod code_blocks;
 mod contributions;
 mod contributions_browser;
 mod copy_buttons;
 mod custom_provider_card_browser;
-mod dialog_shell;
-mod dialog_shell_browser;
+mod dialogs_browser;
 mod diff_factory;
 mod document_card_support;
 mod document_tool_cards;
@@ -34,13 +36,12 @@ mod excel_views_browser;
 mod expandable_output_browser;
 mod export_markdown;
 mod icon_rendering;
-mod input_native;
-mod input_widget;
 mod localization;
 mod markdown_blocks;
 mod markdown_blocks_browser;
 mod markdown_svg_artifacts;
 mod markdown_svg_artifacts_browser;
+mod message_editor_browser;
 mod message_errors;
 mod message_renderers;
 mod message_renderers_browser;
@@ -59,6 +60,8 @@ mod native_simple_artifacts_browser;
 mod native_thinking_browser;
 mod pdf_views;
 mod pdf_views_browser;
+mod prompt_exports;
+mod provider_dialogs_browser;
 mod provider_exports;
 mod runtime_bridge;
 mod sandbox_execution_browser;
@@ -73,9 +76,11 @@ mod session_link_composition;
 mod session_link_transitions;
 mod session_links;
 mod session_links_browser;
+mod settings_dialogs_browser;
 mod storage_exports;
 mod text_image_artifacts;
 mod text_image_artifacts_browser;
+mod theme_toggle_browser;
 mod tool_cards;
 mod tool_renderers;
 mod tool_renderers_browser;
@@ -91,6 +96,7 @@ pub mod artifact_support;
 pub mod attachment_support;
 pub mod contributions_support;
 pub mod copy_button_support;
+pub mod dialog_support;
 pub mod effects_support;
 #[cfg(target_arch = "wasm32")]
 #[path = "export_support/browser.rs"]
@@ -139,3 +145,5 @@ mod sample_sessions_browser;
 
 mod native_tool_browser;
 mod native_transcript_browser;
+
+mod native_remaining_artifacts_browser;

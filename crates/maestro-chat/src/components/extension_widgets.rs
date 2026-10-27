@@ -91,9 +91,16 @@ impl ExtensionWidgets for ExtensionWidgetHost {
         &self,
         agent_dir: Option<String>,
     ) -> Result<ExtensionKeybindings, String> {
-        KeybindingsManager::create(agent_dir.as_deref())
-            .map(keybindings)
-            .map_err(|error| error.to_string())
+        #[cfg(not(target_arch = "wasm32"))]
+        let manager =
+            KeybindingsManager::create(agent_dir.as_deref()).map_err(|error| error.to_string())?;
+        // The browser has no keybindings file, so it keeps the default bindings.
+        #[cfg(target_arch = "wasm32")]
+        let manager = {
+            drop(agent_dir);
+            KeybindingsManager::default()
+        };
+        Ok(keybindings(manager))
     }
     fn editor_theme(&self) -> EditorTheme {
         get_editor_theme(self.theme.clone())
@@ -116,12 +123,19 @@ impl ExtensionWidgets for ExtensionWidgetHost {
     }
 }
 
-/// The application manager's shared bindings and its reload.
+/// The application manager's shared bindings and, on native targets, its reload.
 pub(crate) fn keybindings(manager: KeybindingsManager) -> ExtensionKeybindings {
     let shared = (*manager).clone();
+    #[cfg(not(target_arch = "wasm32"))]
+    let reload: Option<Rc<dyn Fn()>> = Some(Rc::new(move || manager.reload()));
+    #[cfg(target_arch = "wasm32")]
+    let reload = {
+        drop(manager);
+        None
+    };
     ExtensionKeybindings {
         manager: shared,
-        reload: Some(Rc::new(move || manager.reload())),
+        reload,
     }
 }
 

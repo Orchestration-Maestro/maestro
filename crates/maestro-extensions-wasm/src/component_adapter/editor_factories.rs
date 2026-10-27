@@ -13,7 +13,7 @@ use super::widget_imports::WidgetImports;
 use super::{Exports, callbacks};
 use crate::{
     CallbackEmitter, ComponentView, EditorComponent, EditorFactory, EditorFactoryOutcome,
-    ExtensionResult, Style, TUI, TextHandler,
+    ExtensionResult, Focusable, Style, TextHandler,
 };
 
 /// The current editor factory: absent, one this extension set by identity, or another
@@ -95,6 +95,9 @@ impl ComponentView for EditorView {
     fn wants_key_release(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
         self.0.wants_key_release(emitter)
     }
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        self.0.focusable()
+    }
     fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
         self.0.invalidate(emitter)
     }
@@ -118,7 +121,7 @@ impl<I: super::providers::EditorImports> Exports<I> {
         lent: LentEditor<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<EditorFactoryOutcome> {
-        let tui = TUI::supplied(Rc::new(Terminal::<I> { tui: lent.tui }));
+        let tui = Terminal::lent(&self.imports, lent.tui);
         let theme = super::keys::editor_theme(&self.imports, lent.theme)?;
         let keybindings = super::keys::lend(&self.imports, lent.keybindings);
         let factory = callbacks::find::<EditorFactory>(handler)?;

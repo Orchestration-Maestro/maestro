@@ -40,8 +40,8 @@ impl Exports {
         call: PaintCall<Callback>,
     ) -> wasmtime::Result<()> {
         let id = call.handler().id;
-        let callback =
-            accessor.with(|mut access| access.get().ctx().table.push(Callback { id }))?;
+        let callback = accessor
+            .with(|mut access| access.get().ctx().table.push(Callback { id, schema: None }))?;
         let handler = Resource::new_borrow(callback.rep());
         match call {
             PaintCall::Style(_, text, reply) => {

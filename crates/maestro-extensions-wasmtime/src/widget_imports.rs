@@ -277,7 +277,17 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     crate::context_imports::add_resource::<T, WidgetEndpoint>(host, "widget")?;
     crate::context_imports::add_resource::<T, StyleEndpoint>(host, "style")?;
     crate::context_imports::add_resource::<T, HighlighterEndpoint>(host, "highlighter")?;
+    host.func_wrap(
+        "[method]tui.full-redraws",
+        |mut store: StoreContextMut<'_, T>,
+         (this,): (Resource<crate::local_resources::effects::TuiEndpoint>,)| {
+            let tui = store.data_mut().ctx().table.get(&this)?.clone();
+            Ok((tui.full_redraws(),))
+        },
+    )?;
     crate::theme_imports::add_global(host)?;
+    crate::overlay_imports::add_to_linker(host)?;
+    crate::frame_writer_imports::add_to_linker(host)?;
     constructors(host)?;
     markdown(host)?;
     methods(host)?;
@@ -285,7 +295,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     crate::widget_list_imports::add_to_linker(host)?;
     crate::keys_imports::add_to_linker(host)?;
     crate::widget_editor_imports::add_to_linker(host)?;
-    crate::provider_imports::add_to_linker(host)?;
+    crate::completion_imports::add_to_linker(host)?;
     crate::foreign_editor_imports::add_to_linker(host)?;
     lent(host)
 }

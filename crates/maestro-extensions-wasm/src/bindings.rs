@@ -30,6 +30,12 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.provider-controls": crate::tests::stream_host::Controls,
+            "maestro:extension/host.fs-watcher": crate::tests::native_watch_host::Watcher,
+            "maestro:extension/host.response": crate::tests::native_http_host::Response,
+            "maestro:extension/host.child-process": crate::tests::native_io_host::Child,
+            "maestro:extension/host.readable": crate::tests::native_io_host::Reader,
+            "maestro:extension/host.writable": crate::tests::native_io_host::Writer,
             "maestro:extension/host.assistant-stream": crate::tests::stream_host::Assistant,
             "maestro:extension/host.event-stream": crate::tests::stream_host::Stream,
             "maestro:extension/host.stream-value": crate::tests::stream_host::Value,
@@ -38,7 +44,12 @@ pub(crate) mod host_side {
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.extension-ui-context": crate::tests::ui_host::Ui,
             "maestro:extension/host.auth-lock-update": crate::tests::reader_host::Reader,
+            "maestro:extension/host.oauth-provider": crate::tests::reader_host::Reader,
+            "maestro:extension/host.oauth-interaction": crate::tests::reader_host::Reader,
             "maestro:extension/host.auth-storage": crate::tests::reader_host::Reader,
+            "maestro:extension/host.custom-close": crate::tests::custom_host::Close,
+            "maestro:extension/host.overlay-options": crate::tests::overlay_host::Options,
+            "maestro:extension/host.overlay-handle": crate::tests::overlay_host::Handle,
             "maestro:extension/host.tui": crate::tests::ui_host::Tui,
             "maestro:extension/host.footer-data": crate::tests::ui_host::FooterResource,
             "maestro:extension/host.tool-invalidator": crate::tests::ui_host::Invalidator,
@@ -66,5 +77,15 @@ pub(crate) mod host_side {
             "maestro:extension/host.command-context": crate::tests::host::Command,
             "maestro:extension/host.replaced-session-context": crate::tests::host::Replaced,
         },
+    });
+}
+
+/// Standard native asynchronous operating-system capabilities supplied by the component host.
+pub mod standard {
+    wit_bindgen::generate!({
+        inline: "package maestro:standard; world standards { include wasi:cli/imports@0.3.0; }",
+        path: "wit/standard",
+        world: "maestro:standard/standards",
+        generate_all,
     });
 }

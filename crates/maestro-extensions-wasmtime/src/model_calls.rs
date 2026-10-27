@@ -161,7 +161,7 @@ pub(crate) struct Selection {
     pub(crate) owner: Option<Handle>,
 }
 /// The canonical owned hook result.
-#[derive(ComponentType, Lift)]
+#[derive(ComponentType, Lift, Lower)]
 #[component(record)]
 pub(crate) struct WireSelection {
     /// Selected ordinary JSON.

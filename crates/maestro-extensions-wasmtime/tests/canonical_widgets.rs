@@ -210,6 +210,44 @@ fn children_expected() -> Vec<Value> {
     expected
 }
 
+#[test]
+fn canonical_nested_host_widgets_return_their_failures() {
+    with_bridge(async |runner| {
+        let steps = json!([
+            { "do": "text", "name": "t", "text": "x y", "padding": [0, 0], "bg": "fail:F" },
+            { "do": "container", "name": "c" },
+            { "do": "add", "name": "c", "child": "t" },
+            { "do": "render", "name": "c", "width": 6 },
+            { "do": "text", "name": "u", "text": "x y", "padding": [0, 0], "bg": "fail:F" },
+            { "do": "box", "name": "b", "padding": [0, 0] },
+            { "do": "add", "name": "b", "child": "u" },
+            { "do": "render", "name": "b", "width": 6 },
+        ]);
+        let outcomes = script(runner, &steps).await;
+        let seen = Rc::new(RefCell::new(None));
+        let first_row = seen.clone();
+        let text = Text::new("x y".into(), 0, 0, None);
+        text.set_custom_bg_fn(Some(Rc::new(move |row: &str| {
+            first_row.borrow_mut().get_or_insert_with(|| row.to_owned());
+            row.to_owned()
+        })));
+        text.render(6);
+        let failed = json!({ "error": format!("F failed on {}", seen.borrow().clone().unwrap()) });
+        let done = ok(json!(true));
+        let expected = [
+            done.clone(),
+            done.clone(),
+            done.clone(),
+            failed.clone(),
+            done.clone(),
+            done.clone(),
+            done,
+            failed,
+        ];
+        assert_eq!(outcomes, expected);
+    });
+}
+
 /// Markdown options with horizontal padding and no base style.
 fn options(padding_x: usize) -> MarkdownOptions {
     MarkdownOptions {

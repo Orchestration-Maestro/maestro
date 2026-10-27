@@ -2,13 +2,18 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{auth-lock-update};
+    use host.{auth-lock-update, oauth-callback, oauth-interaction};
+    invoke-oauth-callback: async func(handler: borrow<callback>, phase: oauth-callback, data: string, interaction: option<oauth-interaction>) -> result<option<string>, string>;
     invoke-auth-backend: async func(handler: borrow<callback>, update: borrow<auth-lock-update>, asynchronous: bool) -> result<_, string>;
     invoke-auth-fallback: async func(handler: borrow<callback>, provider: string) -> result<option<string>, string>;
     use host.{theme, json-node, schema-shape, schema-operation, diagnostic-error-info};
-    use host.{stream-operation, stream-selection, model-hook, payload-selection, abort-signal};
+    use host.{stream-operation, stream-selection, model-hook, payload-selection, abort-signal, provider-input, assistant-operation};
     /// Await the original payload selector or response observer.
     invoke-model-hook: async func(handler: borrow<callback>, phase: model-hook, data: string, model: string, signal: option<abort-signal>) -> result<payload-selection, string>;
+    /// Invoke the retained original provider without consuming its returned stream.
+    invoke-provider: async func(handler: borrow<callback>, data: string, input: provider-input) -> result<callback, string>;
+    /// Operate directly on an independently retained returned assistant stream.
+    invoke-assistant: async func(handler: borrow<callback>, operation: assistant-operation, data: option<string>, signal: option<abort-signal>) -> result<option<string>, string>;
     /// Run a synchronous stream callback on its original retained local event.
     invoke-stream: async func(handler: borrow<callback>, value: borrow<callback>, operation: stream-operation) -> result<stream-selection, string>;
     invoke-schema: async func(handler: borrow<callback>, operation: schema-operation, node: borrow<json-node>, emitter: borrow<callback-emitter>) -> result<string, diagnostic-error-info>;
@@ -18,12 +23,21 @@ interface guest {
     retain-schema: func(handler: borrow<callback>, retained: callback) -> result<_, diagnostic-error-info>;
     /// Renderer input with owned theme and complete message document.
     record render-request { message: string, expanded: bool, theme: theme }
+    use host.{custom-input, custom-built};
+    /// Runs a custom factory's synchronous prefix and returns its owned outcome.
+    invoke-custom-factory: async func(handler: borrow<callback>, input: custom-input, emitter: borrow<callback-emitter>) -> result<custom-built, string>;
+    /// Awaits the owned continuation returned by a custom prefix.
+    invoke-custom-future: async func(handler: borrow<callback>) -> result<factory-component, string>;
     /// Renders one retained authored component.
     component-render: async func(handler: borrow<callback>, width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
     /// Delivers input to one retained authored component.
     component-handle-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Reads the key-release preference of one retained authored component.
     component-wants-key-release: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<bool, string>;
+    /// Reads focus state, absent when the authored component cannot focus.
+    component-focused: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<option<bool>, string>;
+    /// Assigns focus synchronously to an authored component.
+    component-set-focused: async func(handler: borrow<callback>, focused: bool, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Invalidates one retained authored component.
     component-invalidate: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a synchronous renderer and transfers the identity of its returned component.
@@ -72,6 +86,8 @@ interface guest {
     invoke-compaction-error: async func(handler: borrow<callback>, error: string, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a cancellation listener once with its synchronous emitter.
     invoke-abort: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a retained native file notification with its synchronous emitter.
+    invoke-watch: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Runs a component factory and transfers the identities of its component and disposal.
     invoke-component-factory: async func(handler: borrow<callback>, tui: tui, theme: theme, footer: option<footer-data>, emitter: borrow<callback-emitter>) -> result<factory-component, string>;
     /// Runs a tool's call or result renderer for one row.
@@ -85,9 +101,9 @@ interface guest {
     /// Runs one request on an authored editor with its synchronous emitter.
     invoke-editor: async func(handler: borrow<callback>, request: authored-editor-request, emitter: borrow<callback-emitter>) -> result<authored-editor-answer, string>;
     /// Runs one request on an authored completion provider; suggestions may suspend.
-    invoke-provider: async func(handler: borrow<callback>, request: provider-request, signal: option<abort-signal>) -> result<provider-answer, string>;
+    invoke-autocomplete: async func(handler: borrow<callback>, request: provider-request, signal: option<abort-signal>) -> result<provider-answer, string>;
     /// Runs a provider factory on the current provider and transfers the provider it returned.
-    invoke-provider-factory: async func(handler: borrow<callback>, current: completion-provider, emitter: borrow<callback-emitter>) -> result<callback, string>;
+    invoke-autocomplete-factory: async func(handler: borrow<callback>, current: completion-provider, emitter: borrow<callback-emitter>) -> result<callback, string>;
     /// Runs a component's disposal once with its synchronous emitter.
     invoke-dispose: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
     /// Styles text with an authored styling function.

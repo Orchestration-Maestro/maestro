@@ -1620,14 +1620,33 @@ fn assert_fixture_independent(browser: &Browser) {
 #[test]
 fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
+    drop(Browser::cold());
     browser_support::bootstrap_source(&browser);
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let target = root.join("target/browser-author-tests");
+    let command = browser.command("browser-debug-build");
+    let target = std::path::PathBuf::from(
+        command
+            .get_envs()
+            .find(|(key, _)| *key == "CARGO_TARGET_DIR")
+            .unwrap()
+            .1
+            .unwrap(),
+    );
+    assert_eq!(
+        target.canonicalize().unwrap(),
+        std::path::Path::new(env!("CARGO_BIN_EXE_development"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .canonicalize()
+            .unwrap(),
+        "warm browser recipes must reuse the test build's actual Cargo target"
+    );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
     success(
         &toolchain_support::command(env!("CARGO"))
-            .current_dir(&root)
+            .current_dir(browser.workspace.path())
             .args(["build", "--locked", "-p", "maestro-tooling", "--bins"])
             .env("CARGO_TARGET_DIR", &target)
             .output()
@@ -1663,7 +1682,7 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
 
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
-    let browser = Browser::new();
+    let browser = Browser::cold();
     browser_support::bootstrap_source(&browser);
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);

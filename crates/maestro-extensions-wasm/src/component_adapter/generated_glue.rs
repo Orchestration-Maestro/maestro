@@ -12,6 +12,31 @@ use crate::types::ExtensionResult;
 use std::future::Future;
 
 impl<E: Extension> Guest for Glue<E> {
+    async fn invoke_oauth_callback(
+        handler: &host::Callback,
+        phase: host::OauthCallback,
+        data: String,
+        interaction: Option<host::OauthInteraction>,
+    ) -> ExtensionResult<Option<String>> {
+        let interaction = interaction.map(super::oauth::interaction);
+        super::super::oauth::invoke(handler.id(), phase, &data, interaction).await
+    }
+    fn invoke_provider(
+        handler: &host::Callback,
+        data: String,
+        input: host::ProviderInput,
+    ) -> impl Future<Output = ExtensionResult<host::Callback>> {
+        std::future::ready(super::provider_streams::invoke(handler.id(), &data, input))
+    }
+    async fn invoke_assistant(
+        handler: &host::Callback,
+        operation: host::AssistantOperation,
+        data: Option<String>,
+        signal: Option<host::AbortSignal>,
+    ) -> ExtensionResult<Option<String>> {
+        super::provider_streams::assistant(handler.id(), operation, data, signal).await
+    }
+
     fn invoke_auth_backend(
         handler: &host::Callback,
         update: &host::AuthLockUpdate,
@@ -127,6 +152,27 @@ impl<E: Extension> Guest for Glue<E> {
             crate::Component::wants_key_release,
         ))
     }
+    fn component_focused(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<Option<bool>>> {
+        std::future::ready(Exports::new(Generated).invoke_component(
+            handler.id(),
+            emitter,
+            crate::Component::focused,
+        ))
+    }
+    fn component_set_focused(
+        handler: &host::Callback,
+        focused: bool,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_component(
+            handler.id(),
+            emitter,
+            |view, emitter| view.set_focused(focused, emitter),
+        ))
+    }
     fn component_invalidate(
         handler: &host::Callback,
         emitter: &host::CallbackEmitter,
@@ -169,6 +215,13 @@ impl<E: Extension> Guest for Glue<E> {
         ))
     }
 
+    fn invoke_watch(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_watch(handler.id(), emitter))
+    }
+
     fn invoke_abort(
         handler: &host::Callback,
         emitter: &host::CallbackEmitter,
@@ -176,6 +229,30 @@ impl<E: Extension> Guest for Glue<E> {
         std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
     }
 
+    fn invoke_custom_factory(
+        handler: &host::Callback,
+        input: host::CustomInput,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<host::CustomBuilt>> {
+        let lent = super::super::custom::Lent {
+            tui: input.tui,
+            theme: input.theme,
+            keybindings: input.keybindings,
+            close: input.close,
+        };
+        std::future::ready(
+            Exports::new(Generated)
+                .invoke_custom_factory(handler.id(), lent, emitter)
+                .map(|outcome| super::super::custom::transfer(&Generated, outcome)),
+        )
+    }
+    async fn invoke_custom_future(
+        handler: &host::Callback,
+    ) -> ExtensionResult<host::FactoryComponent> {
+        super::super::custom::invoke_custom_future(handler.id())
+            .await
+            .map(|built| super::super::factories::transfer(&Generated, built))
+    }
     fn invoke_component_factory(
         handler: &host::Callback,
         tui: host::Tui,
@@ -236,7 +313,7 @@ impl<E: Extension> Guest for Glue<E> {
         ))
     }
 
-    async fn invoke_provider(
+    async fn invoke_autocomplete(
         handler: &host::Callback,
         request: host::ProviderRequest,
         signal: Option<host::AbortSignal>,
@@ -244,7 +321,7 @@ impl<E: Extension> Guest for Glue<E> {
         super::editors::provider(handler.id(), request, signal).await
     }
 
-    fn invoke_provider_factory(
+    fn invoke_autocomplete_factory(
         handler: &host::Callback,
         current: host::CompletionProvider,
         emitter: &host::CallbackEmitter,
@@ -295,7 +372,11 @@ impl<E: Extension> Guest for Glue<E> {
         event: host::WidgetEvent,
         emitter: &host::CallbackEmitter,
     ) -> impl Future<Output = ExtensionResult<host::WidgetAnswer>> {
-        std::future::ready(super::widgets::invoke_widget(handler.id(), event, emitter))
+        std::future::ready(super::widget_events::invoke_widget(
+            handler.id(),
+            event,
+            emitter,
+        ))
     }
 
     fn invoke_terminal_input(
@@ -312,6 +393,10 @@ impl<E: Extension> Guest for Glue<E> {
 
     async fn start() -> ExtensionResult<()> {
         super::super::install(super::widgets::widget_host());
+        // The standard-library libc otherwise starts its process cwd at `/`.
+        if let Some(cwd) = crate::wasi::cli::environment::get_initial_cwd() {
+            std::env::set_current_dir(cwd).map_err(|error| error.to_string())?;
+        }
         Exports::new(Generated).start::<E>().await
     }
 

@@ -193,7 +193,7 @@ impl Handle {
                 .0
                 .endpoint
                 .synchronous(&registry, |reply| {
-                    Ok(Call::ProviderFactory(FactoryCall {
+                    Ok(Call::AutocompleteFactory(FactoryCall {
                         handler: self.clone(),
                         current: registry.lend_provider(current)?,
                         emitter: frame,

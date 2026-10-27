@@ -68,14 +68,14 @@ fn start(route: &host::ImportRoute, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
-        host::LocalCall::AuthFallback(call) => host::LocalResult::AuthFallback(
-            super::super::auth_storage::invoke_fallback(call.target, &call.provider),
-        ),
+        host::LocalCall::AuthFallback(call) => auth_fallback(&call),
         host::LocalCall::AuthBackend(call) => return backend(call),
         call @ (host::LocalCall::Renderer(_)
         | host::LocalCall::Render(_)
         | host::LocalCall::Unit(_)
-        | host::LocalCall::Key(_)) => component(call),
+        | host::LocalCall::Key(_)
+        | host::LocalCall::Focused(_)
+        | host::LocalCall::SetFocused(_)) => component(call),
         host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
             call.target,
             &call.args,
@@ -94,6 +94,7 @@ fn dispatch(call: host::LocalCall) -> Running {
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call @ (host::LocalCall::Expanded(_)
         | host::LocalCall::Factory(_)
+        | host::LocalCall::CustomFactory(_)
         | host::LocalCall::ToolRender(_)
         | host::LocalCall::TerminalInput(_)
         | host::LocalCall::Style(_)
@@ -101,7 +102,7 @@ fn dispatch(call: host::LocalCall) -> Running {
         | host::LocalCall::Widget(_)
         | host::LocalCall::EditorFactory(_)
         | host::LocalCall::Editor(_)
-        | host::LocalCall::ProviderFactory(_)) => ui(call),
+        | host::LocalCall::AutocompleteFactory(_)) => ui(call),
         call => return asynchronous(call),
     };
     Box::pin(std::future::ready(result))
@@ -137,6 +138,16 @@ fn component(call: host::LocalCall) -> host::LocalResult {
                 None => view.invalidate(emitter),
             },
         )),
+        host::LocalCall::Focused(call) => host::LocalResult::Focused(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            crate::Component::focused,
+        )),
+        host::LocalCall::SetFocused(call) => host::LocalResult::Unit(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            |view, emitter| view.set_focused(call.focused, emitter),
+        )),
         host::LocalCall::Key(call) => host::LocalResult::Key(exports.invoke_component(
             call.target,
             &call.emitter,
@@ -157,6 +168,19 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
             &call.emitter,
         )),
         host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
+        host::LocalCall::CustomFactory(call) => {
+            let lent = super::super::custom::Lent {
+                tui: call.input.tui,
+                theme: call.input.theme,
+                keybindings: call.input.keybindings,
+                close: call.input.close,
+            };
+            host::LocalResult::CustomFactory(
+                exports
+                    .invoke_custom_factory(call.target, lent, &call.emitter)
+                    .map(|outcome| super::super::custom::transfer(&Generated, outcome)),
+            )
+        }
         host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
@@ -175,7 +199,7 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
             call.request,
             &call.emitter,
         )),
-        host::LocalCall::ProviderFactory(call) => host::LocalResult::ProviderFactory(
+        host::LocalCall::AutocompleteFactory(call) => host::LocalResult::AutocompleteFactory(
             super::editors::provider_factory(call.target, call.current, &call.emitter),
         ),
         host::LocalCall::Style(call) => {
@@ -184,13 +208,19 @@ fn ui(call: host::LocalCall) -> host::LocalResult {
         host::LocalCall::Highlight(call) => host::LocalResult::Highlight(
             super::super::invoke_highlight(call.target, &call.code, call.lang.as_deref()),
         ),
-        host::LocalCall::Widget(call) => host::LocalResult::Widget(super::widgets::invoke_widget(
-            call.target,
-            call.event,
-            &call.emitter,
-        )),
+        host::LocalCall::Widget(call) => host::LocalResult::Widget(
+            super::widget_events::invoke_widget(call.target, call.event, &call.emitter),
+        ),
         _ => host::LocalResult::Unit(Err("expected a UI callback".to_owned())),
     }
+}
+
+/// Invoke the retained credential fallback through its original author adapter.
+fn auth_fallback(call: &host::LocalAuthFallback) -> host::LocalResult {
+    host::LocalResult::AuthFallback(super::super::auth_storage::invoke_fallback(
+        call.target,
+        &call.provider,
+    ))
 }
 
 /// Runs one nested synchronous callback prefix.
@@ -206,6 +236,7 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
         host::LocalKind::CompactionError => {
             exports.invoke_compaction_error(call.target, call.data.clone(), &call.emitter)
         }
+        host::LocalKind::Watch => exports.invoke_watch(call.target, &call.emitter),
         host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
         host::LocalKind::Dispose => exports.invoke_dispose(call.target, &call.emitter),
         host::LocalKind::BranchChange => {
@@ -239,6 +270,27 @@ fn asynchronous(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     Box::pin(async move {
         match call {
+            host::LocalCall::Provider(call) => host::LocalResult::Provider(
+                super::provider_streams::invoke(call.target, &call.data, call.input),
+            ),
+            host::LocalCall::Assistant(call) => host::LocalResult::Assistant(
+                super::provider_streams::assistant(
+                    call.target,
+                    call.operation,
+                    call.data,
+                    call.signal,
+                )
+                .await,
+            ),
+            host::LocalCall::Oauth(call) => host::LocalResult::Oauth(
+                super::super::oauth::invoke(
+                    call.target,
+                    call.phase,
+                    &call.data,
+                    call.interaction.map(super::oauth::interaction),
+                )
+                .await,
+            ),
             host::LocalCall::Event(call) => {
                 host::LocalResult::Event(event(call.target, call.event, call.resources).await)
             }
@@ -260,18 +312,34 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::WithSession(call) => {
                 host::LocalResult::Unit(exports.invoke_with_session(call.target, call.ctx).await)
             }
+            call @ (host::LocalCall::CustomFuture(_) | host::LocalCall::Autocomplete(_)) => {
+                ui_asynchronous(call).await
+            }
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }
-            host::LocalCall::Provider(call) => host::LocalResult::Provider(
-                super::editors::provider(call.target, call.request, call.signal).await,
-            ),
             _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),
         }
     })
+}
+
+/// Runs one nested asynchronous UI callback: a custom factory's owned continuation or a
+/// completion provider request.
+async fn ui_asynchronous(call: host::LocalCall) -> host::LocalResult {
+    match call {
+        host::LocalCall::CustomFuture(target) => host::LocalResult::Factory(
+            super::super::custom::invoke_custom_future(target)
+                .await
+                .map(|built| super::super::factories::transfer(&Generated, built)),
+        ),
+        host::LocalCall::Autocomplete(call) => host::LocalResult::Autocomplete(
+            super::editors::provider(call.target, call.request, call.signal).await,
+        ),
+        _ => host::LocalResult::Unit(Err("expected an asynchronous UI callback".into())),
+    }
 }
 
 /// Executes the authored tool with its supplied capabilities.

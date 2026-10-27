@@ -2,6 +2,69 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Owned native file watch; drop and close stop notification delivery.
+    resource fs-watcher { close: func() -> result<_, string>; }
+    watch: func(path: string, listener: borrow<callback>) -> result<fs-watcher, string>;
+    /// Supplied HTTP operands, normalized only by the native HTTP owner.
+    record http-request {
+        url: string, method: option<string>, headers: list<tuple<string, string>>,
+        body: option<list<u8>>,
+    }
+    /// Independently retained native response.
+    resource response {
+        json: async func() -> result<string, string>;
+        text: async func() -> result<string, string>;
+        status: func() -> u16;
+        status-text: func() -> string;
+        headers: func() -> list<tuple<string, string>>;
+        body: func() -> option<readable>;
+    }
+    /// Sends one attempt with the caller's original signal.
+    fetch: async func(request: http-request, signal: option<borrow<abort-signal>>) -> result<response, string>;
+    /// One native standard descriptor selection.
+    enum stdio { pipe, ignore, inherit }
+    /// Literal native child launch selections.
+    record spawn-options {
+        cwd: option<string>, env: option<list<tuple<string, string>>>,
+        detached: bool, stdio: tuple<stdio, stdio, stdio>,
+    }
+    /// Numeric exit and terminating signal remain distinct.
+    record exit-status { code: option<s32>, signal: option<string> }
+    /// Independently retained consuming raw reader.
+    resource readable {
+        read: async func() -> result<option<list<u8>>, string>;
+        close: func() -> result<_, string>;
+    }
+    /// Independently retained ordered raw writer.
+    resource writable {
+        write: async func(bytes: list<u8>) -> result<_, string>;
+        end: async func() -> result<_, string>;
+    }
+    /// Retained child controls; ordinary resource drop does not kill it.
+    resource child-process {
+        pid: func() -> option<u32>;
+        stdin: func() -> option<writable>;
+        stdout: func() -> option<readable>;
+        stderr: func() -> option<readable>;
+        wait: async func() -> result<exit-status, string>;
+        kill: func(signal: option<string>) -> result<bool, string>;
+    }
+    /// Launches a literal program, without a shell or implicit cancellation.
+    spawn: async func(command: string, args: list<string>, options: spawn-options) -> result<child-process, string>;
+    /// Delivers a native signal to a PID or supported process group.
+    kill: func(pid: s32, signal: option<string>) -> result<_, string>;
+
+    /// Waits for seconds and fractional nanoseconds, without an implicit timeout.
+    sleep: async func(duration: tuple<u64, u32>, signal: option<borrow<abort-signal>>) -> result<_, string>;
+
+    /// Formats a native floating-point byte count without a JSON-number boundary.
+    native-format-size: func(bytes: f64) -> result<string, string>;
+    /// Preorder metadata values, with container lengths and numbers kept outside JSON.
+    variant frontmatter-token { null, boolean(bool), number(f64), text(string), sequence(u32), mapping(list<string>) }
+    record frontmatter-document { values: list<frontmatter-token>, body: string }
+    native-frontmatter: func(content: string) -> result<frontmatter-document, string>;
+    /// Synchronous ordinary helper operands; metadata numbers use a separate typed boundary.
+    native-helper: func(operation: string, data: string) -> result<string, string>;
     /// A native update borrowed only while the author's backend is running.
     resource auth-lock-update {
         update: func(current: option<string>) -> result<option<string>, string>;
@@ -84,9 +147,8 @@ interface host {
         delete: func(path: string, key: string) -> result<_, string>;
         splice: func(path: string, range: tuple<u32, u32>, values: list<string>) -> result<list<string>, string>;
     }
-    /// Bindings belong to their own tool and contain only this guest's callbacks.
-    /// Foreign tool records carry only schema data.
-    record schema-binding { tool: u32, pointer: string, handler: callback }
+    /// Independently retained callbacks, with author affinity and their original shape.
+    record schema-binding { tool: u32, pointer: string, handler: callback, shape: schema-shape, local: bool }
     /// Opaque metadata with independently retained executable annotations.
     record tool-listing { metadata: string, schemas: list<schema-binding> }
     /// Host-owned identity of one guest closure.
@@ -94,7 +156,8 @@ interface host {
         constructor();
         /// Stable key of this identity, equal for the owner handle and every borrow.
         id: func() -> u32;
-
+        /// Invoke a foreign node through the current synchronous native import route.
+        schema-invoke: func(operation: schema-operation, node: borrow<json-node>, path: string) -> import-route;
     }
 
     /// Independently retained author value, never encoded as JSON.
@@ -113,6 +176,18 @@ interface host {
     record model-controls { signal: option<borrow<abort-signal>>, payload: option<borrow<callback>>, response: option<borrow<callback>>, objects: option<borrow<callback>> }
     /// Invokes immediately; ordinary model, context and options use the shared JSON codec.
     model-stream: func(simple: bool, data: string, controls: model-controls) -> result<assistant-stream, string>;
+    /// Retained original native options, including hooks and opaque controls.
+    resource provider-controls {
+        invoke: async func(phase: model-hook, data: string, model: string, signal: option<borrow<abort-signal>>, owner: option<borrow<callback>>) -> result<payload-selection, string>;
+    }
+    /// Capabilities lent to the registered guest provider independently of its caller.
+    record provider-input { controls: provider-controls, signal: option<abort-signal>, payload: bool, response: bool }
+    /// Setup on the original authored provider.
+    record local-provider { target: u32, data: string, input: provider-input }
+    /// Operations on the original returned assistant stream.
+    enum assistant-operation { push, end, next, %result }
+    /// An operation with ordinary event or result data, never a stream identity.
+    record local-assistant { target: u32, operation: assistant-operation, data: option<string>, signal: option<abort-signal> }
     /// Native phase calling an awaited authored hook.
     enum model-hook { payload, response }
     /// Selected payload and optional original or replacement cancellation.
@@ -155,6 +230,8 @@ interface host {
     record local-unit { target: u32, data: option<string>, emitter: callback-emitter }
     /// One nested same-instance key-release query.
     record local-key { target: u32, emitter: callback-emitter }
+    /// Assigns focus to a retained authored component.
+    record local-focus { target: u32, focused: bool, emitter: callback-emitter }
     /// One nested same-instance argument preparation.
     record local-prepare { target: u32, args: string, emitter: callback-emitter }
     /// What a terminal input listener decided; absent members leave the input as it is.
@@ -163,6 +240,8 @@ interface host {
     record local-tool-render { target: u32, render: tool-render, theme: theme, invalidator: tool-invalidator, emitter: callback-emitter }
     /// One nested same-instance component factory.
     record local-factory { target: u32, tui: tui, theme: theme, footer: option<footer-data>, emitter: callback-emitter }
+    /// One nested custom factory prefix with owned capabilities.
+    record local-custom-factory { target: u32, input: custom-input, emitter: callback-emitter }
     /// One nested same-instance terminal input chunk.
     record local-terminal-input { target: u32, data: string, emitter: callback-emitter }
     /// One nested same-instance text styling.
@@ -176,11 +255,11 @@ interface host {
     /// One nested same-instance request on an authored editor.
     record local-editor { target: u32, request: authored-editor-request, emitter: callback-emitter }
     /// One nested same-instance request on an authored completion provider.
-    record local-provider { target: u32, request: provider-request, signal: option<abort-signal> }
+    record local-autocomplete { target: u32, request: provider-request, signal: option<abort-signal> }
     /// One nested same-instance completion provider factory.
-    record local-provider-factory { target: u32, current: completion-provider, emitter: callback-emitter }
+    record local-autocomplete-factory { target: u32, current: completion-provider, emitter: callback-emitter }
     /// Selects the authored callback export a nested synchronous call enters.
-    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change }
+    enum local-kind { listener, compaction-complete, compaction-error, abort, dispose, branch-change, watch }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
     /// Host resources lent to one event callback; the signal accompanies a compaction.
@@ -227,18 +306,21 @@ interface host {
     record local-auth-fallback { target: u32, provider: string }
     /// The nested same-instance target and its owned operands.
     variant local-call {
+        oauth(local-oauth-callback),
         auth-backend(local-auth-backend),
         auth-fallback(local-auth-fallback),
         renderer(local-renderer),
         render(local-render),
         unit(local-unit),
         expanded(local-expanded),
-        key(local-key),
+        key(local-key), focused(local-key), set-focused(local-focus),
         prepare(local-prepare),
         terminal-input(local-terminal-input),
         synchronous(local-synchronous),
         schema(local-schema),
         %stream(local-stream),
+        provider(local-provider),
+        assistant(local-assistant),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -249,46 +331,56 @@ interface host {
         tail(u32),
         bash(local-bash),
         factory(local-factory),
+        custom-factory(local-custom-factory),
+        custom-future(u32),
         tool-render(local-tool-render),
         style(local-style),
         highlight(local-highlight),
         widget(local-widget),
         editor-factory(local-editor-factory),
         editor(local-editor),
-        provider(local-provider),
-        provider-factory(local-provider-factory),
+        autocomplete(local-autocomplete),
+        autocomplete-factory(local-autocomplete-factory),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
+        oauth(result<option<string>, string>),
         auth-fallback(result<option<string>, string>),
         renderer(result<option<callback>, string>),
         render(result<list<string>, string>),
         unit(result<_, string>),
-        key(result<bool, string>),
+        key(result<bool, string>), focused(result<option<bool>, string>),
         prepared(result<string, string>),
         terminal-input(result<option<terminal-input-result>, string>),
         synchronous(result<_, string>),
         schema(result<string, diagnostic-error-info>),
         %stream(result<stream-selection, string>),
+        provider(result<callback, string>),
+        assistant(result<option<string>, string>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
         bash(result<option<f64>, string>),
         factory(result<factory-component, string>),
+        custom-factory(result<custom-built, string>),
         tool-render(result<tool-rendered, string>),
         style(result<string, string>),
         highlight(result<list<string>, string>),
         widget(result<widget-answer, string>),
         editor-factory(result<editor-built, string>),
         editor(result<authored-editor-answer, string>),
-        provider(result<provider-answer, string>),
-        provider-factory(result<callback, string>),
+        autocomplete(result<provider-answer, string>),
+        autocomplete-factory(result<callback, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-value {
         unit, boolean(bool), text(string), lines(list<string>), completion(completion-result),
         trigger(option<bool>), editor(built-editor), editor-answer(foreign-editor-answer),
         credentials(auth-storage), catalog(model-registry),
+        /// A terminal dimension.
+        count(u32),
+        /// The handle of an overlay the request showed.
+        overlay(overlay-handle),
     }
     variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
@@ -297,6 +389,8 @@ interface host {
         resume: func(value: local-result);
         /// Releases the native caller once the nested call's prefix ran; its result follows.
         defer: func() -> local-settlement;
+        /// Take a completed schema import's original structured result.
+        schema-result: func() -> result<string, diagnostic-error-info>;
     }
     /// A nested call whose prefix ran and whose result the guest delivers later.
     resource local-settlement { finish: func(value: local-result); }
@@ -373,8 +467,65 @@ interface host {
         /// Omitted keeps the host's default interval.
         interval-ms: option<f64>,
     }
+    /// Closes one custom component; only the first accepted close returns true.
+    resource custom-close { close: func() -> import-route; }
+    /// Original capabilities lent to a custom factory prefix.
+    record custom-input { tui: tui, theme: theme, keybindings: keybindings-manager, close: custom-close }
+    /// A completed prefix or an independently owned future.
+    variant custom-built { ready(factory-component), pending(callback) }
+    /// Overlay placement retained as supplied, or resolved by an authored callback at show.
+    variant overlay-options-source { placement(borrow<overlay-options>), resolver(borrow<callback>) }
+    /// Presentation operands preserve their optional absence.
+    record custom-ui-options {
+        overlay: option<bool>,
+        overlay-options: option<overlay-options-source>,
+        /// Receives the overlay's handle once it is shown.
+        on-handle: option<borrow<callback>>,
+    }
+    /// Shared placement on the native options owner; executable visibility stays separate.
+    resource overlay-options {
+        get: func() -> result<string, string>;
+        set: func(placement: string) -> result<_, string>;
+        /// Another owner of the same native record.
+        share: func() -> overlay-options;
+        /// Replaces or removes the authored visibility check the host runs at each render.
+        set-visible: func(visible: option<borrow<callback>>) -> result<_, string>;
+    }
+    /// One operation on a shown overlay.
+    variant overlay-request { hide, set-hidden(bool), is-hidden, focus, unfocus, is-focused }
+    /// A shown overlay; requests may call back into this instance while focus moves.
+    resource overlay-handle { request: func(request: overlay-request) -> import-route; }
+    /// Creates one retained placement owner from its plain record.
+    new-overlay-options: func(placement: string) -> result<overlay-options, string>;
     /// Terminal handle lent to a component factory.
-    resource tui;
+    resource tui {
+        /// The original frame writer's count of full redraws.
+        full-redraws: func() -> result<u64, string>;
+        /// The frame writer as a container widget that also takes frame-writer requests.
+        writer: func() -> result<widget, string>;
+    }
+    /// What focus or an overlay goes to: a host widget, an authored component lent now, or the
+    /// identity an authored component was lent under before.
+    variant writer-target { widget(borrow<widget>), component(borrow<callback>), lent(u32) }
+    /// One request on the terminal a frame writer draws on.
+    variant terminal-request {
+        stop, write(string), columns, rows, kitty-protocol-active, move-by(s64), hide-cursor,
+        show-cursor, clear-line, clear-from-cursor, clear-screen, set-title(string),
+        set-progress(bool),
+    }
+    /// One request on a frame writer; focus, overlay and visibility requests may call back into
+    /// this instance.
+    variant writer-request {
+        get-show-hardware-cursor, set-show-hardware-cursor(bool), get-clear-on-shrink,
+        set-clear-on-shrink(bool), set-focus(option<writer-target>),
+        show-overlay(tuple<writer-target, option<borrow<overlay-options>>>), hide-overlay,
+        has-overlay, start, stop, request-render(bool), set-on-debug(option<borrow<callback>>),
+        terminal(terminal-request),
+        /// Starts the terminal with authored input and resize callbacks.
+        terminal-start(tuple<borrow<callback>, borrow<callback>>),
+        /// Reads whether the host still keeps the component lent under an identity.
+        lent-live(u32),
+    }
     /// A host text styling function.
     resource style { apply: func(text: string) -> result<string, string>; }
     /// The host's code highlighting.
@@ -451,10 +602,19 @@ interface host {
         notice,
         /// Input an editor offers its shortcut interceptor first.
         shortcut(string),
+        /// An overlay's visibility check at these terminal columns and rows.
+        visible(tuple<u32, u32>),
+        /// A custom overlay's handle after it is shown.
+        overlay-handle(overlay-handle),
+        /// A custom overlay asks for its placement.
+        overlay-options,
     }
-    /// What an authored widget callback answers: nothing, text, a component's identity, or
-    /// whether a shortcut consumed its input.
-    variant widget-answer { done, text(string), component(callback), consumed(bool) }
+    /// What an authored widget callback answers: nothing, text, a component's identity,
+    /// whether a shortcut consumed its input, whether an overlay is visible, or placement.
+    variant widget-answer {
+        done, text(string), component(callback), consumed(bool), visible(bool),
+        overlay-options(overlay-options),
+    }
     /// The widget handler an authored callback replaces.
     enum handler-slot {
         select, cancel, selection-change, abort, submit, change, escape, ctrl-d, paste-image,
@@ -526,6 +686,13 @@ interface host {
         /// One editor operation on an editor another extension's factory built; the editor may
         /// call back into this instance first.
         foreign-editor: func(request: foreign-editor-request) -> import-route;
+        /// One request on a frame writer widget.
+        writer: func(request: writer-request) -> import-route;
+        /// Adds a frame writer's input listener; unsubscribing removes it.
+        add-input-listener: func(listener: borrow<callback>) -> result<subscription, string>;
+        /// Discards pending terminal input of a frame writer, as its terminal defaults or within
+        /// these milliseconds.
+        drain-input: async func(max-ms: option<f64>, idle-ms: option<f64>) -> result<_, string>;
     }
     /// The toolkit editor on a lent terminal.
     new-editor: func(tui: borrow<tui>, theme: editor-styles, options: editor-options) -> result<widget, string>;
@@ -692,6 +859,8 @@ interface host {
     record theme-set-result { success: bool, error: option<string> }
     /// Independently retained opaque UI capability.
     resource extension-ui-context {
+        /// Shows the component a custom factory builds, until the host closes it.
+        custom: async func(factory: borrow<callback>, options: option<custom-ui-options>) -> result<_, string>;
         notify: func(message: string, kind: option<notification-type>) -> import-route;
         set-status: func(key: string, text: option<string>) -> import-route;
         set-working-message: func(message: option<string>) -> import-route;
@@ -746,7 +915,25 @@ interface host {
     /// Resolution outcome, separate from an import failure.
     variant resolved-request-auth { ok(request-auth), error(string) }
     /// Independently retained accepted credentials and their original backend.
+    /// Independently retained native OAuth implementation.
+    enum oauth-callback { auth, prompt, progress, manual, select, key, models, refresh, login }
+    resource oauth-interaction {
+        options: func() -> tuple<bool, bool, bool>;
+        signal: func() -> option<abort-signal>;
+        notify: func(phase: oauth-callback, data: string) -> import-route;
+        input: async func(phase: oauth-callback, data: string) -> result<option<string>, string>;
+    }
+    record local-oauth-callback { target: u32, phase: oauth-callback, data: string, interaction: option<oauth-interaction> }
+    resource oauth-provider {
+        login: async func(callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<string, string>;
+        info: func() -> result<string, string>;
+        get-api-key: func(credentials: string) -> import-route;
+        refresh-token: async func(credentials: string) -> result<string, string>;
+        modify-models: func(data: string) -> import-route;
+    }
     resource auth-storage {
+        login: async func(provider: string, callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<_, string>;
+        get-oauth-providers: func() -> result<list<oauth-provider>, string>;
         set-fallback-resolver: func(resolver: borrow<callback>) -> import-route;
         set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;
         remove-runtime-api-key: func(provider: string) -> result<_, string>;
@@ -779,7 +966,7 @@ interface host {
         get-provider-display-name: func(provider: string) -> result<string, string>;
         is-using-oauth: func(model: string) -> result<bool, string>;
         /// Registers JSON provider data directly in this catalog.
-        register-provider: func(name: string, config: string) -> import-route;
+        register-provider: func(name: string, config: string, callbacks: tuple<option<borrow<callback>>, option<tuple<borrow<callback>, string, option<bool>>>>) -> import-route;
         unregister-provider: func(name: string) -> import-route;
         get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
@@ -883,7 +1070,7 @@ interface host {
     /// Registers authored tool data and callbacks.
     register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>, render-call: option<borrow<callback>>, render-result: option<borrow<callback>>) -> import-route;
     /// Registers JSON provider data, queued until the host binds.
-    register-provider: func(name: string, config: string) -> import-route;
+    register-provider: func(name: string, config: string, callbacks: tuple<option<borrow<callback>>, option<tuple<borrow<callback>, string, option<bool>>>>) -> import-route;
     /// Unregisters a provider, including its queued registrations.
     unregister-provider: func(name: string) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.

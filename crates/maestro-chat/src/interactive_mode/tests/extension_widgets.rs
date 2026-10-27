@@ -3,7 +3,7 @@ use super::extension_ui::port;
 use super::{Setup, World, isolated, started};
 use maestro_app::{
     ExtensionAPI, ExtensionComponent, ExtensionFactory, ExtensionWidgetOptions, Local,
-    ReadonlyFooterDataProvider, WidgetContent, WidgetPlacement,
+    ReadonlyFooterDataProvider, SettingsManager, WidgetContent, WidgetPlacement,
 };
 use maestro_tui::{Component, Text};
 use serde::Deserialize;
@@ -67,6 +67,16 @@ pub(super) async fn with_factories<T: 'static>(
     directory: &Path,
     build: impl Fn(&ExtensionAPI<Local>) -> Vec<T> + 'static,
 ) -> (World, Vec<T>) {
+    with_configured_factories(directory, Box::new(|_| {}), build).await
+}
+
+/// Loads real bound callbacks as [`with_factories`] does, after `configure` changes the
+/// settings.
+pub(super) async fn with_configured_factories<T: 'static>(
+    directory: &Path,
+    configure: Box<dyn FnOnce(&mut SettingsManager)>,
+    build: impl Fn(&ExtensionAPI<Local>) -> Vec<T> + 'static,
+) -> (World, Vec<T>) {
     let stored = Rc::new(RefCell::new(Vec::new()));
     let output = stored.clone();
     let factory: ExtensionFactory<Local> = Rc::new(move |api| {
@@ -75,6 +85,7 @@ pub(super) async fn with_factories<T: 'static>(
     });
     let world = Setup {
         extension: Some(factory),
+        configure,
         ..Setup::default()
     }
     .build(directory);

@@ -22,15 +22,12 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::OAuth(call) => Call::OAuth(oauth(call, completion)),
+            Self::Provider(call) => Call::Provider(provider(call, completion)),
+            Self::Assistant(call) => Call::Assistant(assistant(call, completion)),
             Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
             Self::Stream(call) => Call::Stream(stream(call, completion)),
-            Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
-                handler: completion.callback(call.handler),
-                operation: call.operation,
-                node: call.node,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
+            Self::Schema(call) => Call::Schema(schema(call, completion)),
             Self::Credential(call) => Call::Credential(credential(call, completion)),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
@@ -47,12 +44,13 @@ impl Call {
                 reply: call.reply,
             }),
             call @ (Self::Factory(_)
+            | Self::Custom(_)
             | Self::ToolRender(_)
             | Self::Paint(_)
             | Self::Widget(_)
             | Self::EditorFactory(_)
-            | Self::ProviderFactory(_)
-            | Self::Provider(_)
+            | Self::AutocompleteFactory(_)
+            | Self::Autocomplete(_)
             | Self::Editor(_)
             | Self::TerminalInput(_)) => ui(call, completion),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
@@ -70,24 +68,27 @@ impl Call {
 fn ui(call: Call, completion: &Completion) -> Call<Callback> {
     match call {
         Call::Factory(call) => Call::Factory(factory(call, completion)),
+        Call::Custom(call) => Call::Custom(call.map(|handler| completion.callback(handler))),
         Call::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
         Call::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
         Call::Widget(call) => Call::Widget(widget(call, completion)),
         Call::EditorFactory(call) => Call::EditorFactory(editor_factory(call, completion)),
-        Call::ProviderFactory(call) => {
-            Call::ProviderFactory(crate::guest_calls::providers::FactoryCall {
+        Call::AutocompleteFactory(call) => {
+            Call::AutocompleteFactory(crate::guest_calls::providers::FactoryCall {
                 handler: completion.callback(call.handler),
                 current: call.current,
                 emitter: call.emitter,
                 reply: call.reply,
             })
         }
-        Call::Provider(call) => Call::Provider(crate::guest_calls::providers::ProviderCall {
-            handler: completion.callback(call.handler),
-            request: call.request,
-            signal: call.signal,
-            reply: call.reply,
-        }),
+        Call::Autocomplete(call) => {
+            Call::Autocomplete(crate::guest_calls::providers::ProviderCall {
+                handler: completion.callback(call.handler),
+                request: call.request,
+                signal: call.signal,
+                reply: call.reply,
+            })
+        }
         Call::Editor(call) => Call::Editor(crate::guest_calls::editors::EditorCall {
             handler: completion.callback(call.handler),
             request: call.request,
@@ -220,6 +221,9 @@ fn component(call: ComponentCall, completion: &Completion) -> ComponentCall<Call
         ComponentCall::Unit(owner, method, emitter, reply) => {
             ComponentCall::Unit(completion.callback(owner), method, emitter, reply)
         }
+        ComponentCall::Focused(owner, emitter, reply) => {
+            ComponentCall::Focused(completion.callback(owner), emitter, reply)
+        }
         ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
             ComponentCall::WantsKeyRelease(completion.callback(owner), emitter, reply)
         }
@@ -305,6 +309,60 @@ fn stream(
         handler: completion.callback(call.handler),
         value: completion.callback(call.value),
         operation: call.operation,
+        reply: call.reply,
+    }
+}
+
+/// Transfer setup admission beside its original native capability operands.
+fn provider(
+    call: crate::provider_calls::Invocation,
+    completion: &Completion,
+) -> crate::provider_calls::Invocation<Callback> {
+    crate::provider_calls::Invocation {
+        handler: completion.callback(call.handler),
+        data: call.data,
+        input: call.input,
+        reply: call.reply,
+    }
+}
+/// Transfer returned-stream admission beside only its observation's cancellation.
+fn assistant(
+    call: crate::provider_calls::Assistant,
+    completion: &Completion,
+) -> crate::provider_calls::Assistant<Callback> {
+    crate::provider_calls::Assistant {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        data: call.data,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Transfer schema admission without extending its invocation-local operand borrow.
+fn schema(
+    call: crate::guest_calls::schema::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::schema::Invocation<Callback> {
+    crate::guest_calls::schema::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        node: call.node,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original provider or interaction callback with its native capability.
+fn oauth(
+    call: crate::oauth_callbacks::Invocation,
+    completion: &Completion,
+) -> crate::oauth_callbacks::Invocation<Callback> {
+    crate::oauth_callbacks::Invocation {
+        handler: completion.callback(call.handler),
+        phase: call.phase,
+        data: call.data,
+        interaction: call.interaction,
         reply: call.reply,
     }
 }

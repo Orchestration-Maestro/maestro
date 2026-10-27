@@ -118,6 +118,10 @@ pub enum Nested {
     /// An authored widget callback of the list under this key; a submenu's answer opens at
     /// the setting index.
     Widget(u32, Option<usize>),
+    /// The scripted native caller's backend outcome, separate from accepted state.
+    CredentialBackend(Option<String>),
+    /// The exact result of the author's synchronous fallback.
+    CredentialFallback(Result<Option<String>, String>),
     /// A footer factory, whose component replaces the current footer.
     Footer,
     /// A header factory, whose component replaces the current header.
@@ -692,6 +696,26 @@ impl State {
         })
     }
 
+    /// Shows the editor a factory built, keeping the custom editor it extends.
+    fn show_built_editor(
+        &mut self,
+        factory: u32,
+        built: host::EditorBuilt,
+    ) -> wasmtime::Result<()> {
+        let custom = built
+            .custom
+            .map(|custom| self.table.delete(custom).map(|widget| widget.0))
+            .transpose()?;
+        let slot = EditorSlot {
+            factory,
+            component: built.component.rep(),
+            editor: built.editor.rep(),
+            custom,
+        };
+        show_editor(&mut self.observed, slot);
+        Ok(())
+    }
+
     /// Shows a built widget, or returns the failure that ends its operation.
     pub(super) fn settle_nested(
         &mut self,
@@ -699,6 +723,14 @@ impl State {
         value: host::LocalResult,
     ) -> wasmtime::Result<Option<String>> {
         match (nested, value) {
+            (Nested::CredentialBackend(expected), host::LocalResult::Unit(actual)) => {
+                assert_eq!(actual.err(), expected);
+                Ok(None)
+            }
+            (Nested::CredentialFallback(expected), host::LocalResult::AuthFallback(actual)) => {
+                assert_eq!(actual, expected);
+                Ok(actual.err())
+            }
             (Nested::Footer, host::LocalResult::Factory(Ok(built))) => {
                 let slot = self.factory_slot("footer".to_owned(), built)?;
                 self.observed.ui.footer.custom = Some(slot);
@@ -715,26 +747,16 @@ impl State {
                 Ok(None)
             }
             (Nested::Editor(factory), host::LocalResult::EditorFactory(Ok(built))) => {
-                let custom = built
-                    .custom
-                    .map(|custom| self.table.delete(custom).map(|widget| widget.0))
-                    .transpose()?;
-                let slot = EditorSlot {
-                    factory,
-                    component: built.component.rep(),
-                    editor: built.editor.rep(),
-                    custom,
-                };
-                show_editor(&mut self.observed, slot);
+                self.show_built_editor(factory, built)?;
                 Ok(None)
             }
-            (Nested::Editor(_), host::LocalResult::EditorFactory(Err(error)))
-            | (Nested::Provider, host::LocalResult::ProviderFactory(Err(error))) => Ok(Some(error)),
-            (Nested::Provider, host::LocalResult::ProviderFactory(Ok(provider))) => {
+            (Nested::Provider, host::LocalResult::AutocompleteFactory(Ok(provider))) => {
                 self.stack_provider(&provider);
                 Ok(None)
             }
-            (
+            (Nested::Editor(_), host::LocalResult::EditorFactory(Err(error)))
+            | (Nested::Provider, host::LocalResult::AutocompleteFactory(Err(error)))
+            | (
                 _,
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
             )
@@ -1184,6 +1206,14 @@ async fn settled(
 }
 
 impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
+    async fn custom(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        factory: Resource<super::host::Identity>,
+        options: Option<host::CustomUiOptions>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        super::custom_host::run(accessor, this, factory, options).await
+    }
     async fn select(
         accessor: &Accessor<State, Self>,
         this: Resource<Ui>,
@@ -1253,6 +1283,18 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
 }
 
 impl host::HostTui for State {
+    fn full_redraws(&mut self, _: Resource<Tui>) -> wasmtime::Result<Result<u64, String>> {
+        self.observed.log("tui fullRedraws");
+        Ok(Ok(17))
+    }
+    fn writer(
+        &mut self,
+        _: Resource<Tui>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        Ok(Err(
+            "the component test host lends no frame writer".to_owned()
+        ))
+    }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)
     }

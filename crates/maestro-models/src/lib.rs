@@ -43,7 +43,9 @@ pub use providers::chat::openai_completions::{
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
-pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
+pub use providers::http::{
+    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
+};
 pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
     AnthropicThinkingDisplay, stream_anthropic, stream_anthropic_for,
@@ -67,8 +69,8 @@ pub use records::diagnostics::{
     append_assistant_message_diagnostic, create_assistant_message_diagnostic,
     extract_diagnostic_error, format_thrown_value, timestamp_now,
 };
-pub use records::event_stream::EventStream;
 pub use records::event_stream::create_assistant_message_event_stream;
+pub use records::event_stream::{AssistantMessageEventStreamPort, EventStream};
 pub use records::hash::short_hash;
 pub use records::headers::headers_to_record;
 pub use records::session_resources::{

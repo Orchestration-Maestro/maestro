@@ -77,6 +77,8 @@ pub(crate) struct State {
     table: ResourceTable,
     /// The original registration facade's endpoint, not a reconstructed API.
     api: Endpoint,
+    /// Application installation identity supplied at factory composition.
+    pub(crate) installation_version: String,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
     /// The original retained pub.
@@ -86,16 +88,21 @@ impl State {
     /// Constructs the one instance state before canonical linking.
     ///
     /// The instance reads `path`, the artifact it is loaded from, as `MAESTRO_EXTENSION_PATH`.
-    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> Self {
-        Self {
-            wasi: wasmtime_wasi::WasiCtxBuilder::new()
-                .env("MAESTRO_EXTENSION_PATH", path)
-                .build(),
+    pub(crate) fn new(
+        api: Endpoint,
+        callbacks: Callbacks,
+        path: &str,
+        installation_version: String,
+        output: Option<crate::wasi::Output>,
+    ) -> wasmtime::Result<Self> {
+        Ok(Self {
+            installation_version,
+            wasi: crate::wasi::build(path, output)?,
             table: ResourceTable::new(),
             api,
             callbacks,
             exports: None,
-        }
+        })
     }
 }
 impl WasiView for State {
@@ -125,9 +132,14 @@ impl crate::callback_imports::CallbackView for State {
 /// Installs each canonical import once against its existing domain owner.
 pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
+    crate::helper_imports::add_to_linker(&mut host)?;
     crate::exec_imports::add_to_linker(&mut host)?;
+    crate::local_resources::native_io::add_to_linker(&mut host)?;
+    crate::native_imports::add_to_linker(&mut host)?;
+
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
     crate::ui_imports::add_to_linker(&mut host)?;

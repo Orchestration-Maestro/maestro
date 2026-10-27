@@ -6,7 +6,6 @@ use maestro_extensions::{
     discover_and_load_extensions, load_extensions,
     types::{ExtensionFactory, ExtensionHandle, FlagValue},
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
@@ -47,7 +46,7 @@ fn recording(steps: &Rc<RefCell<Vec<String>>>) -> ModuleLoader<Local> {
     Rc::new(move |path: &str| {
         steps.borrow_mut().push(format!("load {path}"));
         let (factory, steps, path) = (
-            artifact_factory(path.to_owned(), crate::support::widgets()),
+            crate::artifact(path.to_owned()),
             steps.clone(),
             path.to_owned(),
         );

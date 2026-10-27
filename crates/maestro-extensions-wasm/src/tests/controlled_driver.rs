@@ -39,6 +39,20 @@ pub struct ControlledDriver {
 }
 
 impl ControlledDriver {
+    /// Delivers input to the factory widget the host shows under `key`.
+    pub(super) fn widget_input(&self, key: &str, data: &str) -> Result<(), String> {
+        let component = self
+            .host
+            .widget(key)
+            .ok_or_else(|| format!("no widget {key}"))?;
+        super::renderer_host::invoke(
+            &component,
+            super::renderer_host::Call::Input(data),
+            &self.host,
+            0,
+        )
+        .map(drop)
+    }
     /// A driver with a fresh host.
     pub fn new() -> Self {
         let host = Controlled::default();

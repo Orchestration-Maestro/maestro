@@ -49,6 +49,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
+    crate::custom_imports::add_to_linker(host)?;
     editor(host)?;
     dialogs(host)?;
     widget_factory(host)?;

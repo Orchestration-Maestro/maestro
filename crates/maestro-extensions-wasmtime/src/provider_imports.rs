@@ -1,65 +1,77 @@
-//! Canonical imports of the completion providers the host lends to the guest.
-use crate::callback_imports::CallbackView;
-use crate::guest_calls::providers::{Cursor, Lent, ProviderEndpoint};
-use crate::guest_calls::widget_calls::Item;
-use crate::import_route::push;
-use crate::local_resources::SignalEndpoint;
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
+//! Awaited native hook resources preserve the caller's original invocation family.
+use crate::{
+    callback_imports::CallbackView,
+    guest_calls::Callback,
+    local_resources::{
+        Message, SignalEndpoint,
+        provider_controls::{Endpoint, Request},
+    },
+    model_calls::{Phase, Selection, WireSelection},
 };
+use wasmtime::component::{LinkerInstance, Resource};
 
-/// The operands of a suggestion request.
-type SuggestionOperands = (
-    Resource<ProviderEndpoint>,
-    Vec<String>,
-    Cursor,
-    Resource<SignalEndpoint>,
-    Option<bool>,
+/// Typed operands of the one canonical native-hook method.
+type Operands = (
+    Resource<Endpoint>,
+    Phase,
+    String,
+    String,
+    Option<Resource<SignalEndpoint>>,
+    Option<Resource<Callback>>,
 );
 
-/// Installs the lent provider resource and its methods.
+/// Link the retained resource into the same canonical host instance as model dispatch.
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, ProviderEndpoint>(host, "completion-provider")?;
+    crate::context_imports::add_resource::<T, Endpoint>(host, "provider-controls")?;
     host.func_wrap_concurrent(
-        "[method]completion-provider.get-suggestions",
-        |accessor, (this, lines, cursor, signal, force): SuggestionOperands| {
+        "[method]provider-controls.invoke",
+        |a, (controls, phase, data, model, signal, owner): Operands| {
             Box::pin(async move {
-                let (provider, signal) = accessor.with(|mut access| {
-                    let table = &access.get().ctx().table;
-                    Ok::<_, wasmtime::Error>((
-                        table.get(&this)?.clone(),
-                        table.get(&signal)?.clone(),
-                    ))
+                let (controls, signal, owner) = a.with(|mut access| {
+                    let state = access.get();
+                    let controls = state.ctx().table.get(&controls)?.clone();
+                    let signal = signal
+                        .map(|signal| state.ctx().table.get(&signal).cloned())
+                        .transpose()?;
+                    let owner = owner
+                        .map(|owner| crate::callback_imports::retain_object(state, &owner))
+                        .transpose()?;
+                    Ok::<_, wasmtime::Error>((controls, signal, owner))
                 })?;
-                Ok((provider.suggestions(lines, cursor, signal, force).await,))
+                let result: Result<Selection, String> = controls
+                    .0
+                    .request_async(|id, reply, admission| {
+                        Message::Provider(crate::local_resources::provider_controls::Command::Hook(
+                            id,
+                            Request {
+                                phase,
+                                data,
+                                model,
+                                signal,
+                                owner,
+                                reply,
+                            },
+                            admission,
+                        ))
+                    })
+                    .await;
+                let result = match result {
+                    Ok(result) => Ok(a.with(|mut access| {
+                        Ok::<_, wasmtime::Error>(WireSelection {
+                            data: result.data,
+                            signal: result
+                                .signal
+                                .map(|signal| access.get().ctx().table.push(signal))
+                                .transpose()?,
+                            owner: None,
+                        })
+                    })?),
+                    Err(error) => Err(error),
+                };
+                Ok((result,))
             })
-        },
-    )?;
-    host.func_wrap(
-        "[method]completion-provider.apply-completion",
-        |mut store: StoreContextMut<'_, T>,
-         (this, lines, cursor, item, prefix): (
-            Resource<ProviderEndpoint>,
-            Vec<String>,
-            Cursor,
-            Item,
-            String,
-        )| {
-            let provider = store.data_mut().ctx().table.get(&this)?.clone();
-            let route = provider.route(|reply| Lent::Apply(lines, cursor, item, prefix, reply));
-            Ok((push(store.data_mut(), route)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]completion-provider.should-trigger-file-completion",
-        |mut store: StoreContextMut<'_, T>,
-         (this, lines, cursor): (Resource<ProviderEndpoint>, Vec<String>, Cursor)| {
-            let provider = store.data_mut().ctx().table.get(&this)?.clone();
-            let route = provider.route(|reply| Lent::Trigger(lines, cursor, reply));
-            Ok((push(store.data_mut(), route)?,))
         },
     )
 }

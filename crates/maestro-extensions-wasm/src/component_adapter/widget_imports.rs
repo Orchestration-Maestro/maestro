@@ -139,6 +139,27 @@ pub(crate) trait WidgetImports: Imports {
     ) -> ExtensionResult<()>;
     /// Removes every child.
     fn widget_clear(&self, widget: &Self::Widget) -> ExtensionResult<()>;
+    /// The frame writer behind `tui` as a container widget.
+    fn tui_writer(&self, tui: &Self::Tui) -> ExtensionResult<Self::Widget>;
+    /// One request on a frame writer widget, running the nested calls the host makes first.
+    fn widget_writer(
+        &self,
+        widget: &Self::Widget,
+        request: WriterRequest<'_, Self>,
+    ) -> ExtensionResult<WriterAnswer<Self>>;
+    /// Adds the frame writer's input listener staged under `listener`.
+    fn widget_add_input_listener(
+        &self,
+        widget: &Self::Widget,
+        listener: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
+    /// Discards pending input of the frame writer's terminal.
+    fn widget_drain_input<'a>(
+        &'a self,
+        widget: &'a Self::Widget,
+        max_ms: Option<f64>,
+        idle_ms: Option<f64>,
+    ) -> crate::ExtensionFuture<'a, ()>;
     /// Applies a host style.
     fn style_apply(&self, style: &Self::Style, text: &str) -> ExtensionResult<String>;
     /// Runs the host's highlighting.
@@ -313,6 +334,93 @@ pub(crate) type LayoutRef<'a, I> = (
     Option<&'a <I as Imports>::Callback>,
 );
 
+/// What focus or an overlay goes to.
+pub(crate) enum WriterTarget<'a, I: WidgetImports> {
+    /// A host widget.
+    Widget(&'a I::Widget),
+    /// An authored component, lent now under this identity.
+    Component(&'a I::Callback),
+    /// The identity an authored component was lent under before.
+    Lent(u32),
+}
+
+/// One request on the terminal a frame writer draws on.
+#[derive(Clone, Copy)]
+pub(crate) enum TerminalRequest<'a> {
+    /// Stops the terminal.
+    Stop,
+    /// Writes output.
+    Write(&'a str),
+    /// Reads the width.
+    Columns,
+    /// Reads the height.
+    Rows,
+    /// Reads whether the Kitty keyboard protocol is active.
+    KittyProtocolActive,
+    /// Moves the cursor by rows.
+    MoveBy(i64),
+    /// Hides the cursor.
+    HideCursor,
+    /// Shows the cursor.
+    ShowCursor,
+    /// Clears the current line.
+    ClearLine,
+    /// Clears from the cursor to the end of the screen.
+    ClearFromCursor,
+    /// Clears the screen.
+    ClearScreen,
+    /// Sets the window title.
+    SetTitle(&'a str),
+    /// Turns the progress indicator on or off.
+    SetProgress(bool),
+}
+
+/// One request on a frame writer.
+pub(crate) enum WriterRequest<'a, I: WidgetImports> {
+    /// Reads whether the hardware cursor is shown.
+    GetShowHardwareCursor,
+    /// Shows or hides the hardware cursor.
+    SetShowHardwareCursor(bool),
+    /// Reads whether shrinking content clears the screen.
+    GetClearOnShrink,
+    /// Changes whether shrinking content clears the screen.
+    SetClearOnShrink(bool),
+    /// Moves focus.
+    SetFocus(Option<WriterTarget<'a, I>>),
+    /// Shows an overlay with optional shared placement.
+    ShowOverlay(WriterTarget<'a, I>, Option<&'a I::OverlayOptions>),
+    /// Removes the most recently shown overlay.
+    HideOverlay,
+    /// Reads whether any overlay is visible.
+    HasOverlay,
+    /// Starts the terminal.
+    Start,
+    /// Stops the terminal.
+    Stop,
+    /// Requests a frame, a full one when forced.
+    RequestRender(bool),
+    /// Replaces or removes the debug key's callback.
+    SetOnDebug(Option<&'a I::Callback>),
+    /// A request on the terminal.
+    Terminal(TerminalRequest<'a>),
+    /// Starts the terminal with input and resize callbacks.
+    TerminalStart(&'a I::Callback, &'a I::Callback),
+    /// Reads whether the host still keeps the component lent under an identity.
+    LentLive(u32),
+}
+
+/// What a frame writer request answers.
+pub(crate) enum WriterAnswer<I: WidgetImports> {
+    /// Nothing.
+    Done,
+    /// A flag.
+    Flag(bool),
+    /// A terminal dimension.
+    Count(u32),
+    /// A shown overlay's handle.
+    Overlay(I::OverlayHandle),
+}
+
 /// What a widget tells an authored callback.
 pub(crate) enum WidgetEvent<I: WidgetImports> {
     /// A choice was confirmed.
@@ -337,6 +445,12 @@ pub(crate) enum WidgetEvent<I: WidgetImports> {
     Notice,
     /// Input offered to an editor's interceptor.
     Shortcut(String),
+    /// An overlay's visibility check at these terminal columns and rows.
+    Visible(u32, u32),
+    /// A custom overlay's handle after it is shown.
+    OverlayHandle(I::OverlayHandle),
+    /// A custom overlay asks for its placement.
+    OverlayOptions,
 }
 
 /// What an authored widget callback answers.
@@ -349,6 +463,10 @@ pub(crate) enum WidgetAnswer {
     Component(crate::Component),
     /// Whether an interceptor consumed its input.
     Consumed(bool),
+    /// Whether an overlay is visible.
+    Visible(bool),
+    /// An overlay's placement.
+    OverlayOptions(crate::OverlayOptionsHandle),
 }
 
 /// The widget handler an authored callback replaces.

@@ -10,11 +10,14 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
+mod completions;
 mod credentials;
+pub(crate) mod custom;
 mod editors;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
+mod oauth;
 mod paints;
 mod providers;
 mod widget_calls;
@@ -53,6 +56,8 @@ type Abort = TypedFunc<
 
 /// Exports resolved from the canonical guest interface, never substitute implementations.
 pub(crate) struct Exports {
+    /// Actual OAuth interaction callbacks.
+    oauth: oauth::Exports,
     /// Actual credential backend and fallback callbacks.
     credentials: credentials::Exports,
     /// Original authored factory entry point.
@@ -61,6 +66,8 @@ pub(crate) struct Exports {
     pub(crate) schema: schema::Exports,
     /// Awaited hooks on the native invocation.
     model_hooks: model_hooks::Exports,
+    /// Registered setup and original returned-stream operations.
+    providers: providers::Exports,
     /// Actual synchronous authored-stream callbacks.
     streams: streams::Exports,
     /// Actual renderer and retained component methods.
@@ -75,6 +82,8 @@ pub(crate) struct Exports {
     terminal: terminal::Exports,
     /// Actual component factory export.
     factories: factories::Exports,
+    /// Actual custom prefix and owned continuation exports.
+    custom: custom::Exports,
     /// Authored styling and highlighting exports.
     paints: paints::Exports,
     /// Authored widget callback export.
@@ -82,7 +91,7 @@ pub(crate) struct Exports {
     /// Editor factory and authored editor exports.
     editors: editors::Exports,
     /// Completion provider and provider factory exports.
-    providers: providers::Exports,
+    completions: completions::Exports,
     /// Native component disposal.
     dispose: Abort,
     /// Native branch change listener.
@@ -101,6 +110,8 @@ pub(crate) struct Exports {
     compaction_error: Prefix,
     /// Native abort observer.
     abort: Abort,
+    /// Native file notification callback.
+    watch: Abort,
     /// Independently owned event continuation.
     tail: Tail,
     /// Actual authored table-release operation.
@@ -140,15 +151,17 @@ impl Exports {
         let paints = paints::Exports::new(store, instance, &guest)?;
         let widgets = widget_calls::Exports::new(store, instance, &guest)?;
         let editors = editors::Exports::new(store, instance, &guest)?;
-        let providers = providers::Exports::new(store, instance, &guest)?;
+        let completions = completions::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
+            oauth: oauth::Exports::new(store, instance, &guest)?,
             credentials: credentials::Exports::new(store, instance, &guest)?,
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
             model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
+            providers: providers::Exports::new(store, instance, &guest)?,
             schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
@@ -156,10 +169,11 @@ impl Exports {
             tools,
             terminal,
             factories,
+            custom: custom::Exports::new(store, instance, &guest)?,
             paints,
             widgets,
             editors,
-            providers,
+            completions,
             dispose: typed(store, instance, &guest, "invoke-dispose")?,
             branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
@@ -170,6 +184,7 @@ impl Exports {
             compaction_complete: typed(store, instance, &guest, "invoke-compaction-complete")?,
             compaction_error: typed(store, instance, &guest, "invoke-compaction-error")?,
             abort: typed(store, instance, &guest, "invoke-abort")?,
+            watch: typed(store, instance, &guest, "invoke-watch")?,
             tail: typed(store, instance, &guest, "invoke-tail")?,
         })
     }
@@ -189,7 +204,12 @@ impl Exports {
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
-            call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
+            call @ (Call::Stream(_)
+            | Call::ModelHook(_)
+            | Call::Schema(_)
+            | Call::OAuth(_)
+            | Call::Provider(_)
+            | Call::Assistant(_)) => {
                 self.invoke_value_callback(accessor, call).await?;
             }
             Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
@@ -197,13 +217,14 @@ impl Exports {
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
             call @ (Call::TerminalInput(_)
             | Call::Factory(_)
+            | Call::Custom(_)
             | Call::ToolRender(_)
             | Call::Paint(_)
             | Call::Widget(_)
             | Call::EditorFactory(_)
             | Call::Editor(_)
-            | Call::ProviderFactory(_)
-            | Call::Provider(_)) => {
+            | Call::AutocompleteFactory(_)
+            | Call::Autocomplete(_)) => {
                 self.ui(accessor, call).await?;
             }
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -242,9 +263,12 @@ impl Exports {
         call: Call<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
+            Call::Provider(call) => self.providers.invoke(accessor, call).await,
+            Call::Assistant(call) => self.providers.assistant(accessor, call).await,
             Call::Stream(call) => self.streams.invoke(accessor, call).await,
             Call::ModelHook(call) => self.model_hooks.invoke(accessor, call).await,
             Call::Schema(call) => self.schema.invoke(accessor, call).await,
+            Call::OAuth(call) => self.oauth.invoke(accessor, call).await,
             _ => Err(wasmtime::format_err!("extension call cannot run nested")),
         }
     }
@@ -257,13 +281,14 @@ impl Exports {
         match call {
             Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
             Call::Factory(call) => self.factories.invoke(accessor, call).await,
+            Call::Custom(call) => self.custom.invoke(accessor, call).await,
             Call::ToolRender(call) => self.factories.render(accessor, call).await,
             Call::Paint(call) => self.paints.invoke(accessor, call).await,
             Call::Widget(call) => self.widgets.invoke(accessor, call).await,
             Call::EditorFactory(call) => self.editors.factory(accessor, call).await,
             Call::Editor(call) => self.editors.request(accessor, call).await,
-            Call::ProviderFactory(call) => self.providers.factory(accessor, call).await,
-            Call::Provider(call) => self.providers.request(accessor, call).await,
+            Call::AutocompleteFactory(call) => self.completions.factory(accessor, call).await,
+            Call::Autocomplete(call) => self.completions.request(accessor, call).await,
             _ => Err(wasmtime::format_err!("expected a UI callback")),
         }
     }
@@ -290,8 +315,12 @@ impl Exports {
         handler: &Callback,
         reply: crate::lifecycle::replies::Reply<()>,
     ) -> wasmtime::Result<()> {
-        let callback = accessor
-            .with(|mut access| access.get().ctx().table.push(Callback { id: handler.id }))?;
+        let callback = accessor.with(|mut access| {
+            access.get().ctx().table.push(Callback {
+                id: handler.id,
+                schema: None,
+            })
+        })?;
         let result = self
             .tail
             .call_concurrent(accessor, (Resource::new_borrow(callback.rep()),))
@@ -309,8 +338,8 @@ impl Exports {
     ) -> wasmtime::Result<()> {
         let retired = accessor.with(|mut access| access.get().callbacks().release(&release));
         if let Some(id) = retired {
-            let handler =
-                accessor.with(|mut access| access.get().ctx().table.push(Callback { id }))?;
+            let handler = accessor
+                .with(|mut access| access.get().ctx().table.push(Callback { id, schema: None }))?;
             let result = self
                 .release
                 .call_concurrent(accessor, (Resource::new_borrow(handler.rep()),))
@@ -334,6 +363,7 @@ impl Exports {
             Ok::<_, wasmtime::Error>((
                 table.push(Callback {
                     id: call.handler.id,
+                    schema: None,
                 })?,
                 table.push(call.emitter)?,
             ))
@@ -346,9 +376,13 @@ impl Exports {
             SynchronousKind::Listener => self.listener,
             SynchronousKind::CompactionComplete => self.compaction_complete,
             SynchronousKind::CompactionError => self.compaction_error,
-            SynchronousKind::Abort | SynchronousKind::Dispose | SynchronousKind::BranchChange => {
+            SynchronousKind::Abort
+            | SynchronousKind::Dispose
+            | SynchronousKind::BranchChange
+            | SynchronousKind::Watch => {
                 let export = match call.kind {
                     SynchronousKind::Abort => self.abort,
+                    SynchronousKind::Watch => self.watch,
                     SynchronousKind::Dispose => self.dispose,
                     _ => self.branch_change,
                 };
@@ -406,6 +440,12 @@ fn arguments<T: WasiView + 'static, V: Send + 'static>(
 ) -> wasmtime::Result<(Resource<Callback>, Resource<V>)> {
     accessor.with(|mut access| {
         let table = access.get().ctx().table;
-        Ok((table.push(Callback { id: handler.id })?, table.push(value)?))
+        Ok((
+            table.push(Callback {
+                id: handler.id,
+                schema: None,
+            })?,
+            table.push(value)?,
+        ))
     })
 }

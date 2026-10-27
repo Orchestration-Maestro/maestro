@@ -200,7 +200,8 @@ The native component host forwards provider registration and removal through the
 extension's existing runtime. Registration before binding uses its queue; direct
 mutations through a retained `ModelRegistry` use that catalog instead. Catalog
 refresh, authentication metadata, display names and request authentication reach
-the original native owner.
+the original native owner. Invalid provider input is rejected before publication;
+a rejected operation leaves independently retained credentials usable.
 
 `ModelRegistry::auth_storage` in the guest returns the same credentials the
 catalog uses. Its retained handle also keeps the catalog's credential-command

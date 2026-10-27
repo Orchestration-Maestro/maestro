@@ -74,15 +74,15 @@ fn tool(
         callbacks,
         renderers,
         registry.clone(),
-        api.events.clone(),
+        api.clone(),
     )?;
     api.register_tool(definition)
         .map_err(|error| error.to_string())
 }
 
-impl Request {
+impl crate::api_reads::ApiRequest for Request {
     /// Calls native registration outside all resource-table borrows.
-    pub(crate) fn answer(self, api: &ExtensionAPI<Local>, registry: &Registry) {
+    fn answer(self, api: &ExtensionAPI<Local>, registry: &Registry) {
         let (result, reply) = match self {
             Self::Construct(request) => {
                 request.answer(api, registry);
@@ -142,7 +142,7 @@ impl Request {
     }
 
     /// Settles the caller when its original API capability has ended.
-    pub(crate) fn reject(self, error: &str) {
+    fn reject(self, error: &str) {
         match self {
             Self::Construct(request) => request.reject(error),
             Self::Command { reply, .. }

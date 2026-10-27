@@ -352,6 +352,10 @@ strings, lists, maps and `false` stay as written.
 records (`ApiKeyCredential`, `AuthCredential`, `AuthStorageData`, `AuthSource` and
 `AuthStatus`) are the [credential owner's](credentials.md) typed records, defined
 once here and re-exported by models, credentials and the guest.
+`maestro-request::oauth` also owns `OAuthPrompt`, `OAuthAuthInfo`,
+`OAuthSelectOption` and `OAuthSelectPrompt`, re-exported by models and the guest.
+These are plain interaction data; callable login operations stay with their
+native or guest owners.
 
 ## Raw user-block text
 

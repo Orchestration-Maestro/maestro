@@ -35,7 +35,7 @@ pub(in super::super) struct LocalEditor {
 /// Owned operands of one nested request on an authored completion provider.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-pub(in super::super) struct LocalProvider {
+pub(in super::super) struct LocalAutocomplete {
     /// Authored identity of the provider.
     target: u32,
     /// The request.
@@ -47,7 +47,7 @@ pub(in super::super) struct LocalProvider {
 /// Owned operands of one nested completion provider factory.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-pub(in super::super) struct LocalProviderFactory {
+pub(in super::super) struct LocalAutocompleteFactory {
     /// Authored identity of the factory.
     target: u32,
     /// The current provider, lent.
@@ -74,7 +74,7 @@ pub(super) fn lower(
             request: call.request.lower(table)?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        Call::Provider(call) => LocalCall::Provider(LocalProvider {
+        Call::Autocomplete(call) => LocalCall::Autocomplete(LocalAutocomplete {
             target: call.handler.id,
             request: call.request.clone(),
             signal: call
@@ -83,11 +83,13 @@ pub(super) fn lower(
                 .map(|signal| table.push(signal))
                 .transpose()?,
         }),
-        Call::ProviderFactory(call) => LocalCall::ProviderFactory(LocalProviderFactory {
-            target: call.handler.id,
-            current: table.push(call.current.clone())?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
+        Call::AutocompleteFactory(call) => {
+            LocalCall::AutocompleteFactory(LocalAutocompleteFactory {
+                target: call.handler.id,
+                current: table.push(call.current.clone())?,
+                emitter: table.push(call.emitter.clone())?,
+            })
+        }
         _ => {
             return Err(wasmtime::format_err!(
                 "expected an editor or provider callback"
@@ -118,10 +120,10 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             };
             let _ = call.reply.send(value);
         }
-        (Call::Provider(call), LocalResult::Provider(value)) => {
+        (Call::Autocomplete(call), LocalResult::Autocomplete(value)) => {
             let _ = call.reply.send(value);
         }
-        (Call::ProviderFactory(call), LocalResult::ProviderFactory(value)) => {
+        (Call::AutocompleteFactory(call), LocalResult::AutocompleteFactory(value)) => {
             let value = match value {
                 Ok(provider) => Ok(crate::callback_imports::transferred(store, provider)?),
                 Err(error) => Err(error),

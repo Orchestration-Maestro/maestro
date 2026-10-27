@@ -1576,3 +1576,47 @@ fn listener_collection_declarations_stay_with_owner() {
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("duplicate declaration Listeners"), "{error}");
 }
+
+#[test]
+fn wit_generate_all_keeps_static_path_enforcement() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    let guest = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions-wasm/interfaces");
+    std::fs::create_dir(&guest).unwrap();
+    std::fs::write(
+        guest.join("world.wit"),
+        "package maestro:fixture; world fixture {}",
+    )
+    .unwrap();
+    for input in [
+        r#"wit_bindgen::generate!({ generate_all, path: "interfaces", world: "fixture" });"#,
+        r#"wit_bindgen::generate!({ path: "interfaces", generate_all, world: "fixture" });"#,
+        r#"wit_bindgen::generate!({ path: "interfaces", world: "fixture", generate_all });"#,
+    ] {
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/bindings.rs",
+            input,
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{input}");
+    }
+    for input in [
+        r"wit_bindgen::generate!({ generate_all });",
+        r#"wit_bindgen::generate!({ generate_all, path: env!("WIT_PATH") });"#,
+        r"wit_bindgen::generate!({ generate_all, path: WIT_PATH });",
+        r#"wit_bindgen::generate!({ generate_all, path: ["interfaces", WIT_PATH] });"#,
+    ] {
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/bindings.rs",
+            input,
+        );
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(error.contains("expected static path"), "{input}: {error}");
+    }
+}

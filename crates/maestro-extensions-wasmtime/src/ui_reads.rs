@@ -174,23 +174,26 @@ impl FactoryRequest {
             }
             Self::Footer(factory, api, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
-                    let factory =
-                        factory.map(|factory| factory.footer_factory(registry.clone(), &api));
+                    let reporter = api.ui_error_reporter(ui).ok();
+                    let factory = factory
+                        .map(|factory| factory.footer_factory(registry.clone(), &api, reporter));
                     ui.set_footer(factory).map_err(|error| error.to_string())
                 });
                 let _ = reply.send(shown);
             }
             Self::Header(factory, api, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
-                    let factory =
-                        factory.map(|factory| factory.component_factory(registry.clone(), &api));
+                    let reporter = api.ui_error_reporter(ui).ok();
+                    let factory = factory
+                        .map(|factory| factory.component_factory(registry.clone(), &api, reporter));
                     ui.set_header(factory).map_err(|error| error.to_string())
                 });
                 let _ = reply.send(shown);
             }
             Self::WidgetFactory(key, factory, api, options, reply) => {
                 let shown = registry.facade(&api).and_then(|api| {
-                    let factory = factory.component_factory(registry.clone(), &api);
+                    let reporter = api.ui_error_reporter(ui).ok();
+                    let factory = factory.component_factory(registry.clone(), &api, reporter);
                     let content = Some(WidgetContent::Factory(factory));
                     ui.set_widget(key, content, options)
                         .map_err(|error| error.to_string())
@@ -219,6 +222,8 @@ type Answer<T> = tokio::sync::oneshot::Sender<Result<T, String>>;
 
 /// One dialog on the original UI, with the reply its answer settles.
 pub(crate) enum Dialog {
+    /// Shows a custom component on the original native UI until it closes.
+    Custom(crate::custom_reads::Request, Answer<()>),
     /// Shows a selector over ordered literal choices.
     Select(String, Vec<String>, Answer<Option<String>>),
     /// Asks for confirmation of a literal message.
@@ -245,12 +250,19 @@ impl DialogRequest {
         self,
         ui: &ExtensionUIContext,
         signal: Option<maestro_extensions::Cancellation>,
+        registry: &crate::local_resources::Registry,
     ) -> crate::local_resources::Work {
         let opts = Some(maestro_extensions::ExtensionUIDialogOptions {
             signal,
             timeout: self.timeout,
         });
         match self.dialog {
+            Dialog::Custom(request, reply) => match request.start(ui, registry) {
+                Ok(custom) => settle(custom, reply),
+                Err(error) => Box::pin(async move {
+                    let _ = reply.send(Err(error));
+                }),
+            },
             Dialog::Select(title, options, reply) => settle(ui.select(title, options, opts), reply),
             Dialog::Confirm(title, message, reply) => {
                 settle(ui.confirm(title, message, opts), reply)
@@ -270,6 +282,7 @@ impl DialogRequest {
                 reply.send(Err(error)).is_ok()
             }
             Dialog::Confirm(.., reply) => reply.send(Err(error)).is_ok(),
+            Dialog::Custom(_, reply) => reply.send(Err(error)).is_ok(),
         };
     }
 }

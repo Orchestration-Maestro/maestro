@@ -1,6 +1,7 @@
 //! Awaited compiled-guest edits reach a real protocol request only after each gate opens.
 #![cfg(test)]
 mod http;
+mod reverse;
 
 use maestro_extensions::{
     CommandContextOperations, ExtensionCommandContextActions, ExtensionContextActions,
@@ -21,8 +22,18 @@ fn hook_failures_end_the_provider_stream_once() {
     run_cases(&["payload-failure", "response-failure"]);
 }
 
+#[test]
+fn response_hook_precedes_stream_body_consumption() {
+    run_cases(&["keep"]);
+}
+
+#[test]
+fn awaited_hooks_gate_the_same_pending_invocation() {
+    run_cases(&["replace"]);
+}
+
 /// Each case owns a new containing component and the same raw/simple native protocol routes.
-fn run_cases(actions: &[&str]) {
+pub(super) fn run_cases(actions: &[&str]) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -34,6 +45,7 @@ fn run_cases(actions: &[&str]) {
             }
         }
     });
+    reverse::run(actions);
 }
 
 /// The guest waits inside both original hook exports while native observations stay pending.
@@ -79,7 +91,7 @@ async fn exercise(simple: bool, action: &str) {
                 serde_json::from_str(&output).unwrap_or_else(|_| panic!("{output}"));
             check_output(&output, action);
         },
-        drive(incoming, &probe, action),
+        drive(incoming, &probe, action, None),
     )
     .await;
     assert_eq!(signal.is_aborted(), action == "abort");
@@ -147,18 +159,19 @@ async fn drive(
     mut incoming: mpsc::UnboundedReceiver<oneshot::Sender<()>>,
     probe: &http::Probe,
     action: &str,
+    imported: Option<&maestro_models::AssistantMessageEventStream>,
 ) {
     let payload = incoming.recv().await.unwrap();
     assert_eq!(probe.dispatches(), 0);
     assert_eq!(probe.body_polls(), 0);
-    probe.assert_pending();
+    assert_pending(probe, imported);
     probe.allow_payload();
     payload.send(()).unwrap();
     if !matches!(action, "abort" | "payload-failure") {
         let response = incoming.recv().await.unwrap();
         assert_eq!(probe.dispatches(), 1);
         assert_eq!(probe.body_polls(), 0);
-        probe.assert_pending();
+        assert_pending(probe, imported);
         probe.allow_response();
         response.send(()).unwrap();
     }
@@ -166,6 +179,10 @@ async fn drive(
 
 /// Compare the selected JSON at the real local HTTP peer, including an unchanged neighbor.
 fn check_request(request: &Value, action: &str) {
+    if let Some(selected) = selected_payload(action) {
+        assert_eq!(request, &selected);
+        return;
+    }
     assert_eq!(request["stream"], true);
     if action == "replace" {
         assert_eq!(
@@ -191,6 +208,21 @@ fn check_request(request: &Value, action: &str) {
         request.get("max_tokens"),
         (action != "delete").then_some(&json!(17))
     );
+}
+
+/// Literal selections are compared at the actual TCP peer, not a simulated provider phase.
+fn selected_payload(action: &str) -> Option<Value> {
+    match action {
+        "null" => Some(Value::Null),
+        "false" => Some(json!(false)),
+        "zero" => Some(json!(0)),
+        "empty-string" => Some(json!("")),
+        "number" => Some(json!(7.5)),
+        "string" => Some(json!("replacement 雪")),
+        "object" => Some(json!({"selected":true})),
+        "array" => Some(json!([null, false, 0])),
+        _ => None,
+    }
 }
 
 /// A parked hook still belongs to the same invocation and yields its normal terminal protocol.
@@ -252,4 +284,15 @@ fn check_hook_error(output: &Value, phase: &str) {
         output["message"]["errorMessage"],
         format!("{phase} gate failed")
     );
+}
+
+/// Observe both the underlying HTTP producer and any registered guest-facing stream.
+fn assert_pending(
+    probe: &http::Probe,
+    imported: Option<&maestro_models::AssistantMessageEventStream>,
+) {
+    probe.assert_pending();
+    if let Some(stream) = imported {
+        super::model_registered::pending(stream);
+    }
 }

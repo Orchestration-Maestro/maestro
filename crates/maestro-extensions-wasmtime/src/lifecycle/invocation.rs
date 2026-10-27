@@ -40,20 +40,25 @@ impl Call {
                 ComponentCall::Render(_, _, _, reply) => attach(reply, completion),
                 ComponentCall::Unit(_, _, _, reply) => attach(reply, completion),
                 ComponentCall::WantsKeyRelease(_, _, reply) => attach(reply, completion),
+                ComponentCall::Focused(_, _, reply) => attach(reply, completion),
             },
             Self::Synchronous(call) => attach(&call.completion, completion),
             Self::TerminalInput(call) => attach(&call.reply, completion),
             Self::Factory(call) => attach(&call.reply, completion),
+            Self::Custom(call) => attach_custom(call, completion),
             Self::ToolRender(call) => attach(&call.reply, completion),
             Self::Widget(call) => attach(&call.reply, completion),
             Self::EditorFactory(call) => attach(&call.reply, completion),
             Self::Editor(call) => attach(&call.reply, completion),
-            Self::ProviderFactory(call) => attach(&call.reply, completion),
-            Self::Provider(call) => attach(&call.reply, completion),
+            Self::AutocompleteFactory(call) => attach(&call.reply, completion),
+            Self::Autocomplete(call) => attach(&call.reply, completion),
             Self::Paint(crate::guest_calls::paints::PaintCall::Highlight(_, _, _, reply)) => {
                 attach(reply, completion);
             }
             Self::Stream(call) => attach(&call.reply, completion),
+            Self::OAuth(call) => attach(&call.reply, completion),
+            Self::Provider(call) => attach(&call.reply, completion),
+            Self::Assistant(call) => attach(&call.reply, completion),
             Self::ModelHook(call) => attach(&call.reply, completion),
             Self::Schema(call) => attach(&call.reply, completion),
             Self::Credential(call) => match call {
@@ -83,6 +88,14 @@ impl Call {
             }
             Self::Finished => {}
         }
+    }
+}
+
+/// Attaches completion to a custom factory prefix's or continuation's reply.
+fn attach_custom(call: &crate::guest_calls::custom::Invocation, completion: &Completion) {
+    match call {
+        crate::guest_calls::custom::Invocation::Prefix(call) => attach(&call.reply, completion),
+        crate::guest_calls::custom::Invocation::Future(_, reply) => attach(reply, completion),
     }
 }
 

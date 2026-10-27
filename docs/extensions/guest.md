@@ -8,6 +8,8 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
+Native waits, child processes, raw HTTP bodies and file watches are described in
+[native operations](guest_operations.md).
 Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
 
 ## Build a component
@@ -188,12 +190,58 @@ message, stack and code. Ordinary extension operations still use `ExtensionResul
 and string errors. Schema code stays out of serialized metadata and provider
 JSON; decoding ordinary JSON produces no callbacks.
 
-Enumerating and re-registering a guest's own schemas keeps their callbacks and
-author captures. Bindings follow each tool, not the first tool in a listing.
-Independent identities release separately; the last holder releases the capture.
-Foreign entries remain data-only. Live foreign schema enumeration, retention,
-re-registration and invocation are tracked together in
-[the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
+### Foreign schema calls
+
+Enumeration keeps executable schemas from this guest, other guests and native
+callers. Bindings follow each tool, not the first tool in a listing. Each listing
+retains independent identities; keeping the received schema or registering a new
+tool with it keeps its callbacks alive. Releasing one identity does not revoke
+another. The last holder releases the originating captures through the existing
+native request pump and Store release path, not from a resource destructor.
+
+`SchemaCallback::new` and `call` remain synchronous. Same-origin callbacks keep
+their original capture identity and run locally, without host mediation. A foreign
+call follows this path:
+
+```text
+SchemaCallback::call
+  callback.schema-invoke → existing native import route
+    scoped operand wait → retained native SchemaNode
+      originating native callback or guest callback
+  import-route.schema-result → original result or structured diagnostic
+```
+
+The native node lives in the receiving guest's existing capability registry. Its
+scoped wait borrows the checker's original mutable value, including a selected
+child, so edits remain visible on success and error without a subtree copy.
+Passing an absent child to a foreign callback returns `JSON operand is absent`;
+it never substitutes JSON null. A local guest callback can still observe absence
+through `kind` and `read`.
+
+The import route returns nested same-instance calls to the guest, which runs the
+same Rust callback bodies its exports use. This supports A→B→A without entering
+an instance while it is blocked inside an import. Only the dedicated Store thread
+waits on synchronous host imports; the original native request receiver continues
+servicing requests. No synchronous callback tries to suspend through an async
+canonical import, and no additional registry or work queue is involved.
+
+This relies on Wasmtime's blocking [`func_wrap` contract][schema-sync-import],
+not on suspending a synchronous component task. Wasmtime [rejects such
+suspension][schema-sync-task] and [prevents reentry into an active stackful
+instance][schema-reentry]. These links name the pinned runtime revision. The host
+continues to install [WASI 0.2 standard-library imports][schema-wasi] alongside its
+native-async component exports; the foreign-call route requires no WASI polling
+or new WASI interface.
+
+The original facade's activity guard runs before entering a guest-origin schema.
+Unload or reload leaves an already-admitted callback running to completion, but
+later calls return that origin's stale-runtime message without guest entry.
+Ordinary extension results and string-error APIs are unchanged.
+
+[schema-sync-import]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/linker.rs#L675-L683
+[schema-sync-task]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L2728-L2736
+[schema-reentry]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L784-L793
+[schema-wasi]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasi/src/p2/mod.rs#L314-L324
 
 ## Event channels
 
@@ -391,6 +439,11 @@ draining reach that same owner. `get_api_key` uses its original credential-comma
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
 remain in `drain_errors` rather than rolling back accepted state.
 
+A stale registration facade does not invalidate credentials acquired earlier.
+Malformed host input and nonfinite authored numbers fail before provider or
+credential mutation; another valid resource remains callable. Rejections preserve
+the host's supplied error text.
+
 The guest currently acquires credentials from a catalog or wraps a supplied
 `AuthStoragePort`. `AuthStorage::create(&api, path)` and
 `ModelRegistry::create(&api, auth_storage, path)` accept independent optional file
@@ -411,6 +464,45 @@ host, including from synchronous credential and catalog metadata reads. Callback
 resources stay typed; their identities are never placed in JSON. Callable provider
 stream and OAuth fields remain separate from the provider data record.
 
+### Native OAuth providers
+
+`AuthStorage::get_oauth_providers()` returns callable native implementations in
+registration order. Each retained `OAuthProviderInterface` exposes its literal
+`id`, login `name` and optional `uses_callback_server` value. An absent value is
+not changed to false. Removing a provider from the native registry does not
+replace an already retained implementation; its final guest alias releases it.
+
+`get_api_key` and `modify_models` are synchronous. `refresh_token` awaits the
+native token exchange without adding an expiry decision or persisting the
+returned credentials. Its future retains the provider after the initiating
+handler and facade are released. `modify_models` returns `None` when the provider has no
+modifier. The guest forwards complete credentials and model descriptors,
+including open credential fields, and rejects authored nonfinite numbers before
+encoding them. Provider failures retain their messages.
+
+`login` returns an owned future over the same native provider. Supply
+`Rc<OAuthLoginCallbacks>` with synchronous `on_auth` and optional `on_progress`
+notifications, an awaited `on_prompt`, and optional awaited manual-code and
+selection callbacks. An absent selection callback differs from a supplied
+callback returning `None` on cancel. Prompt records keep supplied text, optional
+fields and choice order. Callback failures retain their messages, and synchronous
+notifications may call back into the host before returning.
+
+The optional caller signal follows live cancellation, including a prior abort.
+Native callback aliases retain the interaction and its signal binding after the
+initiating login future ends; the final native release drops their captures.
+Pending input does not block other host requests. These methods reuse the native
+OAuth implementations; provider methods do not store login credentials.
+
+`AuthStorage::login(provider_id, callbacks)` instead delegates authorization and
+persistence to the retained native credential owner. It returns an owned future,
+so dropping the initiating facade does not end the operation. Successful login
+accepts the complete OAuth record and persists it through the original backend;
+other provider records stay unchanged. Unknown providers and interaction failures
+return their original messages. As with `AuthStorage::set`, persistence failures
+leave accepted state available and are reported by `drain_errors`, not as a failed
+login.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
@@ -418,186 +510,9 @@ usage whose two estimates are unknown.
 
 ## Retained UI requests
 
-`ExtensionUIContext` sends these synchronous requests to the installed host and
-returns its rejection as a recoverable `ExtensionResult` error:
-
-| Method | Request |
-| --- | --- |
-| `notify` | A literal message with an optional `NotificationType`. |
-| `set_status` | Text for one status key, or that key's clearing. |
-| `set_working_message` | Literal working text, or the host default. |
-| `set_working_visible` | Show or hide the working loader row. |
-| `set_working_indicator` | `WorkingIndicatorOptions` with independent optional `frames` and `interval_ms`, or the host default. |
-| `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
-| `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
-| `set_title` | A literal terminal title. |
-| `paste_to_editor` | Literal text the host editor receives as a paste, through its paste handling. |
-| `set_editor_text` | Literal replacement text for the host editor. |
-| `get_editor_text` | Reads the host editor's current text, returned unchanged. |
-
-The four option types are generated from the same interface file and re-exported at
-the author root. `None` and a present empty value stay different requests. The text
-methods forward what the caller supplied, so `Some("")` is an empty string the host
-keeps, while `None` means what its method says: `set_status` clears that key's text,
-`set_widget` removes the keyed widget, and `set_working_message`,
-`set_working_indicator` and `set_hidden_thinking_label` ask the host to restore its
-own default. `notify` without a severity leaves the notification's kind to the host.
-Inside the option records, an absent `placement` or an absent `frames` or
-`interval_ms` member stays absent, so the host applies its own default. Literal text
-crosses unchanged, including whitespace, Unicode and styling bytes. Indicator frames
-are supplied verbatim and `interval_ms` crosses as `f64` without serialization,
-clamping or a guest timer. An empty frame list hides the indicator while `None`
-restores the animated default; both the animation and the placement defaults stay
-with the host.
-
-A request borrows its text and lines only for the synchronous call; the host owns
-anything it retains. Clones of the facade share the acquired resource, so a handle
-kept past its callback keeps reading that resource, and a second acquisition stays
-independent.
-
-`set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
-factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
-and returns an `ExtensionComponent`: the component, optional disposal and expansion
-callbacks, and an optional implicit width. See [factory component capabilities](guest_ui.md#factory-component-capabilities)
-for callback ownership and errors. The host
-runs the disposal of the widget a key already shows before it runs the new factory, and
-both finish before the setter returns. `set_widget` with lines or `None` disposes a
-factory widget under the same key too. The factory's captures stay usable while the
-host shows the component and are released after the host removes it. A factory error
-is the setter's error.
-
-`set_footer` replaces the footer with the component a `FooterFactory` builds from the
-terminal, the theme and the `FooterData` the host lends, or restores the host's footer
-with `None`; the host disposes the custom footer it replaces first. `FooterData` reads
-the current branch, extension statuses in insertion order and provider count on every
-call, so a retained footer sees later changes. `on_branch_change` keeps its
-`BranchChangeListener` until the returned subscription is unsubscribed; dropping the
-subscription keeps it.
-
-`set_header` replaces the header with the component a factory builds, or restores the
-host's header with `None`. The host disposes the custom header it replaces first, and a
-host that has not built its own header yet runs no factory.
-
-### Host widgets
-
-`Text`, `Box`, `Container`, `Spacer`, `Markdown` and `DynamicBorder` are widgets the host
-builds and keeps; each facade forwards to the host's widget. Building one needs no UI, so
-an extension may build widgets in any mode, and only showing them goes through the UI.
-`From<&Text>` and the other conversions make a widget a `Component`, which a factory
-returns or a container holds; the host keeps such a child as the widget itself.
-
-| Widget | Operations beside `render` and `invalidate` |
-| --- | --- |
-| `Text::new(text, padding_x, padding_y, custom_bg_fn)` | `set_text`, `set_custom_bg_fn` |
-| `Box::new(padding_x, padding_y, bg_fn)` | `add_child`, `remove_child`, `clear`, `set_bg_fn` |
-| `Container::new()` | `add_child`, `remove_child`, `clear` |
-| `Spacer::new(lines)` | `set_lines` |
-| `Markdown::new(text, padding_x, padding_y, theme, default_text_style)` | `set_text` |
-| `DynamicBorder::new(color)` | none |
-
-A container or box renders host widgets and authored components in insertion order; the
-same component may be added more than once, `remove_child` removes its first occurrence and
-an absent child changes nothing. A removed child stays usable. An authored component may
-render host widgets from its own `render`, which runs while the host renders its parent.
-
-A `Style` styles text: `Style::new` wraps an authored function, which the host calls while
-it renders. `get_markdown_theme` returns a `MarkdownTheme` whose styles read the live theme
-and whose `Highlight` is the host's code highlighting; those go back to the host as its own
-when a widget uses them. An authored `MarkdownTheme` may supply its own styles, highlighting
-and code-block indent. The first failure of an authored style or highlighting is the next
-`render` or `invalidate` error of the widget that uses it. `DynamicBorder` without a color
-paints with the live border color.
-
-`SelectList` shows `SelectItem` choices: `set_filter` keeps the choices whose value starts
-with the filter, ignoring case; `set_selected_index` clamps to the rows; `get_selected_item`
-reads the selection; and `set_on_select`, `set_on_cancel` and `set_on_selection_change`
-replace or remove the handlers its input runs. `SelectListLayoutOptions` sets the narrowest
-and widest primary column and may replace the primary truncation with an authored
-`TruncatePrimary`. `SettingsList` shows `SettingItem` rows whose `values` cycle and whose
-`Submenu` opens a component with a `SubmenuDone`; closing it with a value reports the change
-to the list's `SettingChange` callback, and `update_value` changes a value without reporting
-it. `BorderedLoader` builds the application's loader from a lent `TUI` and `Theme`, so it is
-built inside a factory; its `signal` reports a cancellation, `set_on_abort` replaces the
-handler a cancellation runs, `dispose` stops the animation and its rows take children. A
-loader built with `cancellable: Some(false)` ignores input. `get_select_list_theme` and
-`get_settings_list_theme` lend the live theme's styles; a `RowStyle` also receives whether
-its row is selected. The first failure of an authored handler or style is the next `render`
-or `handle_input` error of its widget.
-
-`KeybindingsManager` is a manager the host keeps. `KeybindingsManager::new` and
-`KeybindingsManager::create` build one of the application's keybindings, with user bindings
-and the file `reload` reads, or loaded from `keybindings.json` in an agent directory;
-`from_definitions` builds one of supplied `KeybindingDefinition`s; `get_keybindings` returns
-the keybindings the host's terminal uses. A manager matches input, reads keys, definitions,
-conflicts, user, resolved and effective bindings, and replaces its user bindings; a manager
-without a file keeps its bindings on `reload`. `key_text`, `key_hint` and `raw_key_hint`
-format keybinding hints with the host's keybindings and live theme, and `get_editor_theme`
-lends the live editor styles.
-
-`Editor::new` builds the host's multiline editor on a lent terminal, with an `EditorTheme` and
-`EditorOptions`; `CustomEditor::new` builds the application's editor with a keybindings
-manager. An editor reads and replaces its text, lines, cursor, history, padding, completion
-rows, submission and focus, and takes submission and change handlers; replacing or inserting
-text runs the change handler first. A custom editor also offers input to its
-`set_on_extension_shortcut` interceptor, which consumes the input by answering `true`, then
-runs its interrupt, exit and image-paste handlers and the `on_action` handlers of the
-application actions its manager binds; replacing an action keeps its place.
-
-The [authored editor and completion contracts](guest_ui.md) describe `EditorComponent`,
-`AutocompleteProvider` and their optional operations. The host-backed editor facades implement
-the editor traits, and [an editor factory](guest_ui.md#editor-factories) replaces the host's
-editor with an authored one.
-
-### Themes and tool expansion
-
-`theme` returns the UI's live theme, which reads the host's later selections.
-`get_all_themes` lists `ThemeInfo` records in the host's order, with an absent `path`
-for a theme without a file. `get_theme` loads a theme by name without selecting it and
-returns `None` for an unknown name. `set_theme` selects a theme with
-`ThemeSelection::Name` or a host-supplied `ThemeSelection::Theme` and returns the host's
-`ThemeSetResult`, whose `error` explains a selection that did not apply; a theme the
-author built itself cannot be passed back and returns an error. A host rejection is an
-error, not a failed selection. `get_tools_expanded` and `set_tools_expanded` read and
-change the tool output expansion.
-
-`Theme::get_thinking_border_color` and `Theme::get_bash_mode_border_color` return a
-`BorderColor` callback that asks the theme's owner to color text with the border color
-of a `ModelThinkingLevel` or of the shell mode. The level-to-color choice stays with the
-host's theme, and each call reads the theme the handle currently observes.
-
-### Terminal input
-
-`on_terminal_input` adds a listener that sees each raw chunk of terminal input before
-the focused component does. It runs synchronously with a callback emitter, like the
-other synchronous callbacks, and returns `None` to leave the chunk as it is or a
-`TerminalInputResult`: `consume: Some(true)` stops the chunk, `data` replaces it for the
-listeners after it, and absent members leave it unchanged. When both are set,
-consumption wins. A listener's error reaches the host with its message. `unsubscribe`
-on the returned `Subscription` removes the listener; dropping the subscription keeps
-it. The host owns the order of listeners and the delivery of what remains.
-
-### Dialogs
-
-`select`, `confirm`, `input` and `editor` ask the host for an answer and return a
-future that owns its operands, so it may outlive the handle that started it:
-
-| Method | Request | Dismissal |
-| --- | --- | --- |
-| `select` | A title and the ordered choices, repetitions and empty entries included. | `None` |
-| `confirm` | A title and a message. | `false` |
-| `input` | A title and an optional placeholder. | `None` |
-| `editor` | A title and optional prefilled text. | `None` |
-
-`ExtensionUIDialogOptions::timeout` reaches the host's dialog as the supplied
-milliseconds, without a guest timer or a changed value. A supplied `signal` gets a
-host signal of its own for that dialog: an abort before the call, or while the dialog
-waits, reaches the host, which decides what the dialog answers. The guest adds no
-deadline or dismissal of its own. When the dialog returns, its listener on the
-caller's signal is removed, so the caller can keep the signal, abort it later or
-pass it to another dialog. An absent placeholder or
-prefill stays distinct from an empty one, and an empty answer stays distinct from a
-dismissal. A host rejection resolves to its message; it is never turned into a
-dismissal.
+[Guest UI](guest_ui.md) describes `ExtensionUIContext` requests, the widget, header and
+footer factories, themes, terminal input and dialogs, and lists each UI resource with
+its native counterpart.
 
 The component example's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction
@@ -624,8 +539,21 @@ schema and details text with semantic JSON serialization.
 
 `ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
 host, and `unregister_provider` sends a name. `ProviderConfig` and
-`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
-carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`ProviderModelConfig` use the [shared provider records](../records.md#provider-registration-records).
+`ProviderConfig` specializes its callback slot with the guest's `ProviderCallbacks`.
+Serialized metadata carries data only. Set `callbacks.oauth` to `Some(Rc<dyn OAuthProviderInterface>)` to register
+an authored OAuth implementation through the same API or catalog operation. The
+registration name supplies its installed identifier; its login label and optional
+callback-server value remain as authored. The native catalog retains the actual
+guest implementation, including independently owned login and refresh futures,
+synchronous computed keys and optional model transformation. Login receives the
+original native interaction through retained capabilities, preserving callback
+presence, synchronous notifications, awaited input and live cancellation. The guest
+may keep the callback record or an input future after login ends; its last alias
+releases the original native captures. Pending input leaves the host available,
+and synchronous native notifications may reenter the same guest implementation.
+
+Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
 sees the call. Queuing during loading, validation and replacement stay host policy.
@@ -1155,3 +1083,14 @@ and the style algorithms, so every call reads its current state:
 The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
 owner's message. A theme kept past its renderer call observes later theme changes and provenance
 edits made through any of its clones.
+
+See [native helpers](guest_operations.md) for synchronous terminal operations.
+
+## Standard operating-system interfaces
+
+Rust standard-library environment, file and byte I/O use the host's WASI 0.2
+baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
+0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
+and `wit_stream` byte-stream construction. Both generations use the same host
+context; neither introduces an extension-specific permission list. See
+[component operating environment](host_io.md) for access and platform limits.

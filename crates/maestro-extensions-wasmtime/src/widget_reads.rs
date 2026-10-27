@@ -7,7 +7,7 @@ use maestro_extensions::widgets::{
     TextDecoration,
 };
 use maestro_extensions::{ComponentHandle, EventBus, Local};
-use std::{cell::RefCell, rc::Rc, sync::Arc, sync::mpsc::Sender};
+use std::{cell::OnceCell, cell::RefCell, rc::Rc, sync::Arc, sync::mpsc::Sender};
 
 /// Catchable completion of one widget request.
 pub(crate) type Reply<T> = Sender<Result<T, String>>;
@@ -108,10 +108,38 @@ pub(crate) enum Request {
     List(crate::widget_lists::ListRequest),
     /// A request only an editor takes.
     Editor(crate::widget_editors::EditorRequest),
+    /// A request only a frame writer takes; it answers through the import route.
+    Writer(
+        crate::frame_writer::Request,
+        Reply<crate::import_route::Value>,
+    ),
+    /// Adds a frame writer's authored input listener.
+    AddInputListener(
+        Handle,
+        Reply<crate::local_resources::effects::SubscriptionEndpoint>,
+    ),
 }
 
 /// A message for the widgets of one extension.
 pub(crate) enum WidgetMessage {
+    /// Requests on retained overlay capabilities.
+    Overlay(crate::overlay_reads::OverlayMessage),
+    /// The full redraw count of the original frame writer.
+    FullRedraws(u64, Reply<u64>),
+    /// Builds the writer widget of a lent frame writer for the extension whose API has this
+    /// identity.
+    Writer(
+        u64,
+        crate::local_resources::effects::TuiEndpoint,
+        Reply<WidgetEndpoint>,
+    ),
+    /// Discards pending input of the terminal of the writer widget with this identity.
+    Drain(
+        u64,
+        (Option<f64>, Option<f64>),
+        tokio::sync::oneshot::Sender<Result<(), String>>,
+        crate::local_resources::Admission,
+    ),
     /// Retains the host's live theme independently of UI availability.
     GlobalTheme(Reply<crate::theme_reads::Endpoint>),
     /// A request on the widget with this identity.
@@ -186,7 +214,7 @@ impl Lent {
 }
 
 /// The toolkit widget behind one host widget.
-enum Kind {
+pub(crate) enum Kind {
     /// Wrapped text.
     Text(Rc<Text>),
     /// A padded box.
@@ -203,18 +231,22 @@ enum Kind {
     List(crate::widget_lists::ListKind),
     /// An editor or custom editor.
     Editor(crate::widget_editors::EditorKind),
+    /// A lent frame writer and the component it renders as.
+    Writer(Rc<crate::frame_writer::Writer>, ComponentHandle),
 }
 
 /// One host widget, the failure its authored functions report and its authored children.
 pub(crate) struct Widget {
     /// The toolkit widget.
-    kind: Kind,
+    pub(crate) kind: Kind,
     /// The first failure of an authored function since the last rendering.
-    failure: Failure,
+    pub(crate) failure: Failure,
     /// The extension's bus, whose frames enter authored children.
-    events: EventBus<Local>,
+    pub(crate) events: EventBus<Local>,
     /// Authored children by the identity each was added under, in insertion order.
-    guests: RefCell<Vec<(u32, ComponentHandle)>>,
+    pub(crate) guests: RefCell<Vec<(u32, ComponentHandle)>>,
+    /// The widget as another component's child, built once so removal finds it.
+    pub(crate) nested: OnceCell<ComponentHandle>,
 }
 
 impl Widget {
@@ -239,6 +271,7 @@ impl Widget {
             Kind::Plain(widget) => widget.clone(),
             Kind::List(list) => list.component(),
             Kind::Editor(editor) => editor.component(),
+            Kind::Writer(_, component) => component.clone(),
         }
     }
 
@@ -253,6 +286,7 @@ impl Widget {
             failure,
             events,
             guests: RefCell::default(),
+            nested: OnceCell::new(),
         }
     }
 
@@ -308,6 +342,7 @@ impl Widget {
             failure,
             events,
             guests: RefCell::default(),
+            nested: OnceCell::new(),
         })
     }
 
@@ -363,12 +398,21 @@ impl Widget {
                 Kind::Editor(editor) => editor.answer(request, &self.binding(registry)),
                 _ => request.reject("the widget is no editor"),
             },
+            Request::Writer(request, reply) => {
+                let _ = reply.send(self.writer_request(request, registry));
+            }
+            Request::AddInputListener(handle, reply) => {
+                let _ = reply.send(self.add_input_listener(handle, registry));
+            }
             request => self.children(request, registry),
         }
     }
 
     /// What the widget's authored callbacks are bound to.
-    fn binding<'a>(&'a self, registry: &'a Registry) -> crate::widget_lists::Binding<'a> {
+    pub(crate) fn binding<'a>(
+        &'a self,
+        registry: &'a Registry,
+    ) -> crate::widget_lists::Binding<'a> {
         crate::widget_lists::Binding {
             registry,
             events: &self.events,
@@ -403,6 +447,7 @@ impl Widget {
     fn children(&self, request: Request, registry: &Registry) {
         let parent = match &self.kind {
             Kind::Container(widget) => Parent::Container(widget),
+            Kind::Writer(writer, _) => Parent::Writer(&writer.tui),
             Kind::Box(widget) => Parent::Box(widget),
             Kind::List(list) => match list.rows() {
                 Some(rows) => Parent::Container(rows),
@@ -433,7 +478,7 @@ impl Widget {
     /// The component of a child to add; an authored one is kept under its identity.
     fn child(&self, child: Child, registry: &Registry) -> Result<ComponentHandle, String> {
         match child {
-            Child::Widget(widget) => registry.widget(&widget).map(|widget| widget.component()),
+            Child::Widget(widget) => registry.widget(&widget).map(|widget| widget.nested()),
             Child::Component(handle) => {
                 let id = handle.id();
                 let view = crate::guest_component::GuestComponent::new(
@@ -451,9 +496,7 @@ impl Widget {
     /// The component of a child to remove, absent when no authored child has the identity.
     fn key(&self, key: Key, registry: &Registry) -> Result<Option<ComponentHandle>, String> {
         match key {
-            Key::Widget(widget) => registry
-                .widget(&widget)
-                .map(|widget| Some(widget.component())),
+            Key::Widget(widget) => registry.widget(&widget).map(|widget| Some(widget.nested())),
             Key::Component(id) => {
                 let mut guests = self.guests.borrow_mut();
                 let index = guests.iter().position(|(added, _)| *added == id);
@@ -469,6 +512,8 @@ enum Parent<'a> {
     Container(&'a Container),
     /// A box.
     Box(&'a Boxed),
+    /// A frame writer.
+    Writer(&'a maestro_extensions::TUI),
 }
 
 impl Parent<'_> {
@@ -477,6 +522,7 @@ impl Parent<'_> {
         match self {
             Self::Container(parent) => parent.add_child(child),
             Self::Box(parent) => parent.add_child(child),
+            Self::Writer(parent) => parent.add_child(child),
         }
     }
     /// Removes the first occurrence of a child.
@@ -484,6 +530,7 @@ impl Parent<'_> {
         match self {
             Self::Container(parent) => parent.remove_child(child),
             Self::Box(parent) => parent.remove_child(child),
+            Self::Writer(parent) => parent.remove_child(child),
         }
     }
     /// Removes every child.
@@ -491,6 +538,7 @@ impl Parent<'_> {
         match self {
             Self::Container(parent) => parent.clear(),
             Self::Box(parent) => parent.clear(),
+            Self::Writer(parent) => parent.clear(),
         }
     }
 }
@@ -510,6 +558,8 @@ impl Request {
             | Self::Input(_, reply) => drop(reply.send(Err(error.to_owned()))),
             Self::List(request) => request.reject(error),
             Self::Editor(request) => request.reject(error),
+            Self::Writer(_, reply) => drop(reply.send(Err(error.to_owned()))),
+            Self::AddInputListener(_, reply) => drop(reply.send(Err(error.to_owned()))),
         }
     }
 }

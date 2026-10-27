@@ -440,6 +440,7 @@ impl ExtensionUIContextBinding {
             Self::Borrowed { port, fallback } => port.upgrade().map(|port| ExtensionUIContext {
                 port,
                 fallback: *fallback,
+                error_reporter: None,
             }),
         }
     }
@@ -464,6 +465,8 @@ pub struct ExtensionUIContext {
     pub(crate) port: Rc<dyn ExtensionUIContextPort>,
     /// Whether this is the headless fallback rather than an installed host.
     pub(crate) fallback: bool,
+    /// Attributed errors use the originating runner's live listener owner.
+    pub(crate) error_reporter: Option<super::ExtensionErrorListener>,
 }
 
 impl Deref for ExtensionUIContext {
@@ -480,8 +483,21 @@ impl ExtensionUIContext {
         Self {
             port,
             fallback: false,
+            error_reporter: None,
         }
     }
+    /// Shows a component using the host's accepted-close operation.
+    ///
+    /// The returned future settles when the host closes the component or reports its failure.
+    #[must_use]
+    pub fn custom_component(
+        &self,
+        factory: CustomComponentFactory,
+        options: Option<CustomUIOptions>,
+    ) -> ExtensionUIFuture<()> {
+        self.port.custom_component(factory, options)
+    }
+
     /// Shows a custom component; settles with the first committed result.
     ///
     /// `done` commits only after the host accepts the first close. A committed
@@ -499,7 +515,7 @@ impl ExtensionUIContext {
                 let done = committing_done(close, Rc::clone(&slot));
                 factory.call((tui, theme, keybindings, done))
             });
-        let closed = self.port.custom_component(component, options);
+        let closed = self.custom_component(component, options);
         Box::pin(async move {
             let outcome = closed.await;
             match result.take() {
