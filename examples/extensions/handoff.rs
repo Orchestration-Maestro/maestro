@@ -11,8 +11,8 @@ use maestro_extensions_wasm::{
     CustomFactoryOutcome, EventListener, ExtensionAPI, ExtensionCommandContext, ExtensionComponent,
     ExtensionFuture, ExtensionResult, Message, Model, NewSessionCommandData,
     NewSessionCommandOptions, NotificationType, ProviderStreamOptions, ResolvedRequestAuth,
-    SessionEntry, StopReason, StreamOptions, UserContent, UserMessage, complete, convert_to_llm,
-    serialize_conversation, utils,
+    SessionEntry, StopReason, StreamOptions, TextContent, UserBlock, UserContent, UserMessage,
+    complete, convert_to_llm, serialize_conversation, utils,
 };
 use std::{cell::RefCell, future::poll_fn, rc::Rc, task::Waker, time::SystemTime};
 
@@ -169,7 +169,10 @@ async fn generate(
         Context {
             system_prompt: Some(SYSTEM_PROMPT.into()),
             messages: vec![Message::User(UserMessage {
-                content: UserContent::Text(text),
+                content: UserContent::Blocks(vec![UserBlock::Text(TextContent {
+                    text,
+                    text_signature: None,
+                })]),
                 timestamp: SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
                     .map_err(|error| error.to_string())?
