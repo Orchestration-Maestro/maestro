@@ -63,6 +63,30 @@ impl AsyncWrite for Output {
         self.poll_flush(cx)
     }
 }
+/// Throwaway qualification layouts selected by a marker file in the native cwd.
+#[cfg(windows)]
+fn probe(builder: &mut WasiCtxBuilder) -> wasmtime::Result<()> {
+    use maestro_extensions::helpers::guest_path;
+    let Some(cwd) = std::env::current_dir()
+        .ok()
+        .and_then(|cwd| cwd.to_str().map(str::to_owned))
+    else {
+        return Ok(());
+    };
+    let root = std::path::Path::new(&cwd).ancestors().last().unwrap().to_str().unwrap().to_owned();
+    eprintln!("PROBE host cwd-root={root:?} guest-cwd={:?}", guest_path(&cwd));
+    if std::path::Path::new("probe-root-layout").exists() {
+        builder.preopened_dir(&root, "/", wasmtime_wasi::FsPerms::ReadWrite)?;
+        return Ok(());
+    }
+    for root in ('A'..='Z').map(|letter| format!("{letter}:\\")).chain([root]) {
+        let name = guest_path(&root).trim_end_matches('/').to_owned();
+        let opened = builder.preopened_dir(&root, &name, wasmtime_wasi::FsPerms::ReadWrite).map(|_| ());
+        eprintln!("PROBE host root={root:?} name={name:?} opened={opened:?}");
+    }
+    builder.initial_cwd(guest_path(&cwd));
+    Ok(())
+}
 /// Copies the native environment, reserving the artifact location for this instance.
 pub(crate) fn build(path: &str, output: Option<Output>) -> wasmtime::Result<WasiCtx> {
     let env: Vec<_> = std::env::vars_os()
@@ -100,6 +124,8 @@ pub(crate) fn build(path: &str, output: Option<Output>) -> wasmtime::Result<Wasi
         }
         builder.preopened_dir("/", "/", wasmtime_wasi::FsPerms::ReadWrite)?;
     }
+    #[cfg(windows)]
+    probe(&mut builder)?;
     if let Some(output) = output {
         builder.stdout(output);
     }

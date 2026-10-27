@@ -49,10 +49,6 @@ fn ordinary(path: &str, bytes: &[u8], write: bool) -> std::io::Result<Vec<u8>> {
 /// Uses the same root and cwd through the native async filesystem implementation.
 async fn asynchronous(path: &str, bytes: Vec<u8>, write: bool) -> Result<Vec<u8>, ErrorCode> {
     let roots = wasi::filesystem::preopens::get_directories();
-    let (root, _) = roots
-        .iter()
-        .find(|(_, path)| path == "/")
-        .ok_or(ErrorCode::NoEntry)?;
     let absolute = if path.starts_with('/') {
         path.to_owned()
     } else {
@@ -61,7 +57,17 @@ async fn asynchronous(path: &str, bytes: Vec<u8>, write: bool) -> Result<Vec<u8>
             wasi::cli::environment::get_initial_cwd().ok_or(ErrorCode::NoEntry)?
         )
     };
-    let path = absolute.trim_start_matches('/').to_owned();
+    let (root, name) = roots
+        .iter()
+        .map(|(root, name)| (root, name.trim_end_matches('/')))
+        .filter(|(_, name)| {
+            absolute.starts_with(name)
+                && matches!(absolute.as_bytes().get(name.len()), None | Some(b'/'))
+        })
+        .max_by_key(|(_, name)| name.len())
+        .ok_or(ErrorCode::NoEntry)?;
+    let path = absolute[name.len()..].trim_start_matches('/');
+    let path = if path.is_empty() { "." } else { path }.to_owned();
     let flags = if write {
         OpenFlags::CREATE | OpenFlags::TRUNCATE
     } else {

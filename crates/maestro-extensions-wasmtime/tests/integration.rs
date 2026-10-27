@@ -38,6 +38,7 @@ mod wasi_access;
 mod wasi_network;
 mod wasi_output;
 mod wasi_support;
+mod windows_root_probe;
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;
