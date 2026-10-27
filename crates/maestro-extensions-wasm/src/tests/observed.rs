@@ -178,6 +178,13 @@ impl Observed {
         self.next
     }
 
+    /// Identities the controlled host still owns, including widget style callbacks.
+    pub fn live_identities(&self) -> Vec<u32> {
+        (1..=self.next)
+            .filter(|id| !self.dropped.contains(id))
+            .collect()
+    }
+
     /// Records that the extension dropped an identity.
     pub fn drop_identity(&mut self, identity: u32) {
         self.dropped.push(identity);

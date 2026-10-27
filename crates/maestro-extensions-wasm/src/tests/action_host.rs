@@ -9,6 +9,8 @@ pub struct Bank {
     pub value: Value,
     /// Optional raw wire record.
     pub raw: Option<String>,
+    /// Exact helper operands mapped to supplied replies.
+    pub helpers: std::collections::HashMap<String, Value>,
     /// Rejection before action effects.
     pub error: Option<String>,
 }
@@ -28,6 +30,21 @@ impl Bank {
             .raw
             .clone()
             .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
+    }
+    /// Supplies a helper reply for exact operands before falling back to operation replies.
+    pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
+        self.check()?;
+        self.helpers
+            .get(&format!("{operation} {data}"))
+            .map_or_else(|| self.record_for(operation), |value| Ok(value.to_string()))
+    }
+    /// Reads a supplied boolean while preserving literal host refusal messages.
+    pub fn boolean(&self, operation: &str) -> Result<bool, String> {
+        self.check()?;
+        let value = self.value.get(operation).unwrap_or(&self.value);
+        value
+            .as_bool()
+            .ok_or_else(|| value.as_str().unwrap_or("missing boolean reply").to_owned())
     }
     /// Supply raw selected record input without changing decoder policy.
     pub fn record(&self) -> Result<String, String> {

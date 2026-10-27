@@ -1228,6 +1228,22 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/pirate.rs"),
     ),
     (
+        "examples/extensions/preset.rs",
+        include_str!("../../../examples/extensions/preset.rs"),
+    ),
+    (
+        "examples/extensions/preset/config.rs",
+        include_str!("../../../examples/extensions/preset/config.rs"),
+    ),
+    (
+        "examples/extensions/preset/selector.rs",
+        include_str!("../../../examples/extensions/preset/selector.rs"),
+    ),
+    (
+        "examples/extensions/preset/startup.rs",
+        include_str!("../../../examples/extensions/preset/startup.rs"),
+    ),
+    (
         "examples/extensions/prompt_customizer.rs",
         include_str!("../../../examples/extensions/prompt_customizer.rs"),
     ),
