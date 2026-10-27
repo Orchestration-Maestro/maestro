@@ -25,6 +25,7 @@ macro_rules! on_both_adapters {
     }};
 }
 
+mod abort_controller;
 pub(crate) mod action_host;
 mod advanced_ui;
 mod agent_events;
@@ -116,6 +117,7 @@ mod signal_callbacks;
 mod stream_events;
 mod system_prompt_header_example;
 pub(crate) mod theme_host;
+mod timed_confirm_example;
 mod tool_callbacks;
 mod tool_events;
 mod tools_example;

@@ -39,6 +39,7 @@ inserts at its own place instead of appending at the end of each list.
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `timed_confirm.rs` | `/timed`, `/timed-select` and `/timed-signal` commands that cancel dialogs after five or ten seconds. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
@@ -87,6 +88,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- timed_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -306,3 +309,21 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the timed dialogs do
+
+`/timed` asks for confirmation with a five-second countdown. `/timed-select`
+offers Option A, Option B and Option C with a ten-second countdown. Both use the
+host's dialog timeout and report its answer or dismissal. `/timed-signal` instead
+uses a caller-owned `AbortController` and the host's five-second native wait. It
+reports approval, user cancellation and expiration separately, and drops the
+unfinished wait when the dialog answers first. Only the timeout-option dialogs
+request the host's live countdown; the signal variant announces its deadline in
+a notification.
+
+Build with `--example timed_confirm` using the command above. The `timed_`
+controlled runs invoke every command on the built component and the in-process
+adapter. Separate dialog and clock barriers distinguish approval, cancellation
+and expiration without wall-clock waits. No provider, credentials or installation
+is needed. Loading the component is opt-in and needs a component-enabled host with
+dialog UI and native-wait support.

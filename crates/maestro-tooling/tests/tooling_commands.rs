@@ -1248,6 +1248,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/system_prompt_header.rs"),
     ),
     (
+        "examples/extensions/timed_confirm.rs",
+        include_str!("../../../examples/extensions/timed_confirm.rs"),
+    ),
+    (
         "examples/extensions/trigger_compact.rs",
         include_str!("../../../examples/extensions/trigger_compact.rs"),
     ),
