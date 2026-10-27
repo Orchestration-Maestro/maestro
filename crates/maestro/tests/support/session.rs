@@ -20,7 +20,10 @@ pub async fn component_session(
         .push(maestro_extensions_wasmtime::artifact_factory(
             component,
             super::widgets(),
-            env!("CARGO_PKG_VERSION").into(),
+            maestro_extensions_wasmtime::Installation {
+                version: env!("CARGO_PKG_VERSION").into(),
+                agent_dir: root.path("agent").display().to_string(),
+            },
         ));
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());

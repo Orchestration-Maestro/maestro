@@ -12,6 +12,13 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
             &maestro_tools::path_utils::expand_path(&path).map_err(|error| error.to_string())?,
         );
     }
+    if operation == "paths.resolve" {
+        let (paths,): (Vec<String>,) = decode(data)?;
+        let paths: Vec<_> = paths.iter().map(String::as_str).collect();
+        return encode(
+            &maestro_resources::paths::resolve(&paths).map_err(|error| error.to_string())?,
+        );
+    }
     let (path, cwd): (String, String) = decode(data)?;
     match operation {
         "paths.resolve_to_cwd" => encode(

@@ -27,7 +27,10 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
         crate::artifact_factory(
             path.clone(),
             crate::tests::support::widgets(),
-            "local-shell-test".into(),
+            crate::Installation {
+                version: "local-shell-test".into(),
+                agent_dir: "/controlled-agent".into(),
+            },
         ),
         "/".into(),
         events.for_extension(),
