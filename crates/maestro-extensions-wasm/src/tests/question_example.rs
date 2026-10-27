@@ -54,9 +54,18 @@ fn question_headless_preserves_labels_and_null_answer() -> Result<(), String> {
             .await?,
             json!({"content":[{"type":"text","text":"Error: UI not available (running in non-interactive mode)"}],"details":{"question":"Which?","options":["Rust"],"answer":null}})
         );
-        super::example_support::release_all(&host, &["tool question"]);
+        super::example_support::release_all(
+            &host,
+            &[
+                "render-call question",
+                "render-result question",
+                "tool question",
+            ],
+        );
         Ok(())
     })
 }
 
 mod ui;
+
+mod render;
