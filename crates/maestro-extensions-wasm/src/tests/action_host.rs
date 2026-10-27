@@ -5,6 +5,9 @@ use serde_json::{Value, json};
 #[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct Bank {
+    /// Literal helper replies keyed by operation and encoded operands.
+    #[serde(skip)]
+    pub helpers: std::collections::HashMap<(String, String), Value>,
     /// Selected host reply.
     pub value: Value,
     /// Optional raw wire record.
@@ -28,6 +31,13 @@ impl Bank {
             .raw
             .clone()
             .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
+    }
+    /// Returns a supplied operand-specific helper answer or the existing canned fallback.
+    pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
+        self.check()?;
+        self.helpers
+            .get(&(operation.to_owned(), data.to_owned()))
+            .map_or_else(|| self.record_for(operation), |value| Ok(value.to_string()))
     }
     /// Supply raw selected record input without changing decoder policy.
     pub fn record(&self) -> Result<String, String> {

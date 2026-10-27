@@ -37,6 +37,9 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `space_invaders.rs` | An `/invaders` custom terminal game with held-key movement, firing, destructible shields and session-entry saves. |
+| `space_invaders/game.rs` | Saved game records and deterministic simulation ticks for `space_invaders.rs`. |
+| `space_invaders/render.rs` | The game's sprites, ANSI colours, borders and status text. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
@@ -82,6 +85,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- space_invaders_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -285,3 +290,29 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the Space Invaders game does
+
+Build with `--example space_invaders` using the component command above. Loading
+it is opt-in and needs a component-enabled interactive host with custom views,
+native sleep and terminal key helpers. Run `/invaders` in that host. A terminal
+with the enhanced keyboard protocol is needed for smooth press/release movement;
+without release events, movement or firing can remain held until the view closes.
+The game uses a fixed 60-by-24 playfield and draws 30 rows including its border,
+header and controls; smaller viewports do not shrink the playfield.
+
+Move with Left/Right or A/D and fire with Space/F. Escape saves the game to a
+`space-invaders-save` custom session entry and closes the view. Reopening it
+loads the newest save from all session entries and starts paused. Any non-release
+key resumes it; Escape or Q while paused closes it without changing the save.
+During play, Q discards the save. R or Space after a win or loss starts again,
+keeping the high score; a win advances the level. Starting a new level clears
+held keys and the old save.
+
+Each view owns one cancellable 50 ms ticking operation in an event listener tail.
+The host's disposal cancels its pending sleep, removes the listener and clears
+held keys. No provider, paid service, process or external file is needed. The
+controlled runs compare rendered ANSI frames and saved records with captured
+reference outputs, supply ticks and column choices, and check both adapters'
+registered commands. Shared CI's example line-coverage row is deferred to
+[workflow coverage support](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/207).
