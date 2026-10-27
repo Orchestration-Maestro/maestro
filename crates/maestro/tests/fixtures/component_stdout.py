@@ -13,6 +13,19 @@ environment = dict(os.environ, MAESTRO_WASI_ROOT_OUTPUT=endpoint)
 environment["MAESTRO_WASI_STARTUP_OUTPUT"] = json.dumps(
     {"generation": generation, "bytes": list(init)}
 )
+# Noninteractive modes keep real stdout, including regular-file destinations.
+for mode in ("text", "json", "rpc"):
+    command = [binary, "--offline", "--print", "--mode", mode, "--extension", component]
+    control = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, env=environment)
+    assert control.returncode == 0, control.stderr
+    assert control.stdout.startswith(init), (mode, control.stdout)
+    assert init not in control.stderr, (mode, control.stderr)
+    with open(endpoint + ".stdout", "w+b") as destination:
+        control = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=destination, stderr=subprocess.PIPE, env=environment)
+        assert control.returncode == 0, control.stderr
+        destination.seek(0)
+        assert destination.read().startswith(init), mode
+
 master, slave = pty.openpty()
 listener = socket.socket(socket.AF_UNIX)
 listener.bind(endpoint)

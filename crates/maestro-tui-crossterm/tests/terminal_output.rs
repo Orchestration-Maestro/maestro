@@ -1005,6 +1005,7 @@ fn assert_closed_writer(writer: &mut maestro_tui_crossterm::terminal::output::Ou
 
 #[test]
 fn native_standard_output_writer_follows_terminal_lifecycle() {
+    isolated!(1, &[], standard_output_to_regular_file);
     isolated!(&[], || {
         use std::io::Write;
         let rig = Rig::paused();
@@ -1056,5 +1057,35 @@ fn native_standard_output_writer_follows_terminal_lifecycle() {
         assert_eq!(output.take(), "after-drop");
         drop(output);
         assert!(standard.write_all(b"refused").is_err());
+    });
+}
+
+/// A synchronous destination is visible before stop and keeps the caller's byte errors.
+fn standard_output_to_regular_file() {
+    use std::io::Write;
+    let rig = Rig::paused();
+    let _input = pipe_input();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("regular");
+    let file = fs::File::create(&path).unwrap();
+    rustix::stdio::dup2_stdout(&file).unwrap();
+    let mut terminal = ProcessTerminal::new(rig.local());
+    let mut standard = terminal.standard_output_writer();
+    rig.run(async {
+        terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+        standard.write_all(b"regular").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            format!("{START_BYTES}regular").as_bytes()
+        );
+        assert!(terminal.output_writer().is_none());
+        terminal.stop().unwrap();
+        standard.write_all(b"after").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            format!("{START_BYTES}regular\x1b[?2004lafter").as_bytes()
+        );
     });
 }
