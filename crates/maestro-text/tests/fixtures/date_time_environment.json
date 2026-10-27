@@ -1,0 +1,77 @@
+[
+  {
+    "environment": {},
+    "calls": [
+      "LC_ALL",
+      "LC_MESSAGES",
+      "LANG"
+    ],
+    "expected": "10/27/2026, 9:25:07 AM"
+  },
+  {
+    "environment": {
+      "LANG": "C.UTF-8"
+    },
+    "calls": [
+      "LC_ALL",
+      "LC_MESSAGES",
+      "LANG"
+    ],
+    "expected": "10/27/2026, 9:25:07 AM"
+  },
+  {
+    "environment": {
+      "LANG": "POSIX"
+    },
+    "calls": [
+      "LC_ALL",
+      "LC_MESSAGES",
+      "LANG"
+    ],
+    "expected": "10/27/2026, 9:25:07 AM"
+  },
+  {
+    "environment": {
+      "LC_ALL": "",
+      "LANG": "fr_CA"
+    },
+    "calls": [
+      "LC_ALL"
+    ],
+    "expected": "2026-10-27 9:25:07 AM"
+  },
+  {
+    "environment": {
+      "LC_ALL": "en_GB",
+      "LC_MESSAGES": "fr_CA",
+      "LANG": "en_US"
+    },
+    "calls": [
+      "LC_ALL"
+    ],
+    "expected": "27/10/2026, 09:25:07"
+  },
+  {
+    "environment": {
+      "LC_MESSAGES": "fr_CA",
+      "LANG": "en_US"
+    },
+    "calls": [
+      "LC_ALL",
+      "LC_MESSAGES"
+    ],
+    "expected": "2026-10-27 09 h 25 min 07 s"
+  },
+  {
+    "environment": {
+      "LANG": "en_US",
+      "LC_TIME": "fr_CA"
+    },
+    "calls": [
+      "LC_ALL",
+      "LC_MESSAGES",
+      "LANG"
+    ],
+    "expected": "10/27/2026, 9:25:07 AM"
+  }
+]
