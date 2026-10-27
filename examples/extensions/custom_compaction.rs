@@ -23,22 +23,23 @@ use std::{
 fn prompt(conversation: &str, previous: &Presence<String>) -> String {
     let previous = match previous {
         Presence::Present(summary) if !summary.is_empty() => {
-            format!("\n\nPrevious session summary for context:\n{summary}")
+            format!("\n\nEarlier session context:\n{summary}")
         }
         _ => String::new(),
     };
-    format!("You are a conversation summarizer. Create a comprehensive summary of this conversation that captures:{previous}
+    format!("Write a session handoff from the conversation below.{previous}
 
-1. The main goals and objectives discussed
-2. Key decisions made and their rationale
-3. Important code changes, file modifications, or technical details
-4. Current state of any ongoing work
-5. Any blockers, issues, or open questions
-6. Next steps that were planned or suggested
+Cover these points:
+- Goals the session is working toward.
+- Decisions and the reasons behind them.
+- Relevant code edits, affected files and technical details.
+- Work in progress and its current status.
+- Blockers, unresolved issues and unanswered questions.
+- Planned or proposed actions to take next.
 
-Be thorough but concise. The summary will replace the ENTIRE conversation history, so include all information needed to continue the work effectively.
+This summary replaces the full conversation history. Keep everything needed to resume the work, without unnecessary detail.
 
-Format the summary as structured markdown with clear sections.
+Use Markdown headings to organize the handoff.
 
 <conversation>
 {conversation}
@@ -83,7 +84,7 @@ async fn model_options(
     let registry = ctx.model_registry()?;
     let Some(model) = registry.find("google", "gemini-2.5-flash")? else {
         ctx.ui()?.notify(
-            "Could not find Gemini Flash model, using default compaction",
+            "Summary model gemini-2.5-flash is unavailable; keeping default compaction",
             Some(NotificationType::Warning),
         )?;
         return Ok(None);
@@ -92,7 +93,7 @@ async fn model_options(
         ResolvedRequestAuth::Ok { api_key, headers } => (api_key, headers),
         ResolvedRequestAuth::Error { error } => {
             ctx.ui()?.notify(
-                &format!("Compaction auth failed: {error}"),
+                &format!("Cannot authenticate the summary request: {error}"),
                 Some(NotificationType::Warning),
             )?;
             return Ok(None);
@@ -101,7 +102,7 @@ async fn model_options(
     let Some(api_key) = api_key.filter(|key| !key.is_empty()) else {
         ctx.ui()?.notify(
             &format!(
-                "No API key for {}, using default compaction",
+                "Summary provider {} has no API key; keeping default compaction",
                 model.provider
             ),
             Some(NotificationType::Warning),
@@ -150,7 +151,7 @@ async fn summarize(
         .collect();
     ctx.ui()?.notify(
         &format!(
-            "Custom compaction: summarizing {} messages ({} tokens) with {}...",
+            "Summarizing {} messages ({} tokens) with {}",
             messages.len(),
             preparation.tokens_before,
             model.id,
@@ -178,7 +179,7 @@ async fn summarize(
     let summary = summary_text(&response.content);
     if summary_is_blank(api, &summary)? {
         ctx.ui()?.notify(
-            "Compaction summary was empty, using default compaction",
+            "Summary contains no text; keeping default compaction",
             Some(NotificationType::Warning),
         )?;
         return Ok(None);
@@ -201,7 +202,7 @@ async fn on_compact(
         return Ok(None);
     };
     ctx.ui()?.notify(
-        "Custom compaction extension triggered",
+        "Custom summary requested for compaction",
         Some(NotificationType::Info),
     )?;
     if event.signal.aborted() {
@@ -214,7 +215,7 @@ async fn on_compact(
         Ok(compaction) => compaction,
         Err(error) => {
             ctx.ui()?.notify(
-                &format!("Compaction failed: {error}"),
+                &format!("Cannot create the custom summary: {error}"),
                 Some(NotificationType::Error),
             )?;
             None
