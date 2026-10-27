@@ -468,8 +468,9 @@ accepted layer and reports an error. With no layer, the result equals the raw
 global snapshot. Workspace preferences never use project settings, project base
 layers or runtime chat overrides. Stored lock conflicts are nonfatal diagnostics;
 explicit refused edits remain failures. `load_config` consumes startup global
-errors and returns unrelated project errors separately. Read or parse failures emit a structured warning and
-use defaults. `reload_config` waits for queued writes before separating earlier
+errors and returns unrelated project errors separately. Read or parse failures
+emit a structured warning and compose the base with an empty user scope, so
+locks still hold. `reload_config` waits for queued writes before separating earlier
 errors, awaits the existing manager reload, then applies valid semantic areas.
 Only a new global document failure retains every area and reports `Failed`.
 Warnings or rejected areas report `Partial`; a clean reload reports `Applied`.
@@ -477,13 +478,14 @@ Earlier errors and new project errors are returned for their own reporting path.
 
 The independent areas are onboarding, theme, UI (including sidebar, toast and
 sound), terminal, restore, server, update, advanced, worktrees, experimental and
-remote. A malformed unlocked area retains its previous values without blocking
-valid siblings. If the area contains a global lock, it follows the global base
-instead: absent base fields use engine defaults, and a diagnostic explains that
-the area follows the locked base until the invalid value is fixed. Correcting the
-user value restores ordinary overrides of unlocked fields. Project-only locks do
-not change this behavior. Removed members return to defaults. Required fields reject wrong JSON
-kinds, including positional arrays in place of records. Optional null values
+remote. A malformed area retains its last accepted settings document without
+blocking valid siblings. Current global locks are restored in that document
+before decoding it again: locked fields follow the base, while unlocked fields
+keep their previous values. If the area has never decoded successfully, it uses
+the base with an empty user scope, as at startup. A diagnostic identifies the
+invalid area. Correcting the user value restores ordinary overrides of unlocked
+fields. Project-only locks do not change this behavior. Removed members return
+to defaults. Required fields reject wrong JSON kinds, including positional arrays in place of records. Optional null values
 remain absent. Unknown nested keys produce sorted, deduplicated paths after their
 area decodes successfully; unknown global settings stay silent. Typed projection
 does not rewrite raw values.

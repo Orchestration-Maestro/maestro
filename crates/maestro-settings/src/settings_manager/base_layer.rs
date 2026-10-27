@@ -32,6 +32,24 @@ impl BaseSettingsLayer {
         self.locked_path(&path).is_some()
     }
 
+    /// Composes this base with supplied user preferences and restores its locks.
+    #[must_use]
+    pub fn compose_settings(&self, user: &Settings) -> Settings {
+        self.compose_with(user.0.clone(), |_| {})
+    }
+
+    /// Restores current locks in a previously accepted plain settings document.
+    pub fn restore_locked_settings(&self, settings: &mut Settings) {
+        self.apply_locks(&mut settings.0, |_| {});
+    }
+
+    /// Uses the same composition path with caller-owned conflict reporting.
+    fn compose_with(&self, user: Map<String, Value>, ignored: impl FnMut(&str)) -> Settings {
+        let mut settings = merge_one_level(self.settings.0.clone(), user);
+        self.apply_locks(&mut settings, ignored);
+        Settings(settings)
+    }
+
     /// Finds a lock on a path, one of its parents or one of its children.
     fn locked_path(&self, path: &[&str]) -> Option<&str> {
         self.locked.iter().find_map(|locked| {
@@ -94,16 +112,14 @@ impl SettingsManager {
         let Some(layer) = self.base_layers[SettingsScope::Global as usize].as_ref() else {
             return self.get_global_settings();
         };
-        let mut settings = merge_one_level(layer.settings.0.clone(), self.global.settings.clone());
-        layer.apply_locks(&mut settings, |path| {
+        layer.compose_with(self.global.settings.clone(), |path| {
             self.record_lock(
                 SettingsScope::Global,
                 layer,
                 path,
                 SettingsErrorKind::StoredValueIgnored,
             );
-        });
-        Settings(settings)
+        })
     }
 
     /// Queries the current layer, with a project layer taking precedence.

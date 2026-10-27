@@ -1,93 +1,84 @@
-//! Typed-area retention using the settings owner's global constraint queries.
+//! Plain accepted documents retained independently for each typed configuration area.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::Path};
 
-use maestro_settings::BaseSettingsLayer;
+use maestro_settings::{BaseSettingsLayer, Settings};
 
-use super::{super::model::LoadedConfig, FieldSource};
+use super::{super::model::LoadedConfig, project_global_settings};
 
-/// Declared decoder sources for rejected semantic areas.
-pub(super) type AreaSchemas = BTreeMap<&'static str, Vec<FieldSource>>;
+/// Loader-owned documents last accepted by each independent area decoder.
+#[derive(Clone, Debug, Default)]
+pub struct AcceptedAreas(BTreeMap<String, Settings>);
 
-/// Ask the owner about exactly the sources consumed by the decoder.
-fn sources_locked(layer: &BaseSettingsLayer, sources: &[FieldSource]) -> bool {
-    sources.iter().any(|source| {
-        if source.fields.is_empty() {
-            return path_locked(layer, source.root, None);
-        }
-        source
-            .fields
-            .iter()
-            .any(|key| path_locked(layer, source.root, Some(key)))
-    })
-}
-
-/// Turn a declared source location into the owner's literal-path query.
-fn path_locked(layer: &BaseSettingsLayer, root: &str, key: Option<&str>) -> bool {
-    let mut path = root.split('.');
-    let Some(field) = path.next() else {
-        return false;
-    };
-    let mut keys: Vec<_> = path.collect();
-    keys.extend(key);
-    layer.is_key_path_locked(field, &keys)
-}
-
-/// Replace rejected locked areas with validated base values instead of stale values.
-pub(super) fn recover_locked_areas(
-    loaded: &mut LoadedConfig,
-    base: LoadedConfig,
-    layer: &BaseSettingsLayer,
-    schemas: &AreaSchemas,
-) {
-    macro_rules! recover {
-        ($($field:ident),* $(,)?) => { $(
-            if should_recover(loaded, &base.invalid_sections, layer, schemas, stringify!($field)) {
-                loaded.config.$field = base.config.$field;
-                describe_recovery(loaded, stringify!($field), layer);
-            }
-        )* };
+impl AcceptedAreas {
+    /// Retains decoded plain JSON, never a serialization of typed configuration.
+    pub(super) fn remember(&mut self, area: &str, settings: &Settings) {
+        self.0.insert(area.to_owned(), settings.clone());
     }
-    recover!(
-        onboarding,
-        theme,
-        terminal,
-        session,
-        server,
-        update,
-        ui,
-        worktrees,
-        advanced,
-        experimental,
-        remote
-    );
-}
 
-/// Require a rejected user area, a valid base area and an owner-reported lock.
-fn should_recover(
-    loaded: &LoadedConfig,
-    invalid_base: &[String],
-    layer: &BaseSettingsLayer,
-    schemas: &AreaSchemas,
-    area: &str,
-) -> bool {
-    loaded.invalid_sections.iter().any(|name| name == area)
-        && !invalid_base.iter().any(|name| name == area)
-        && schemas
-            .get(area)
-            .is_some_and(|sources| sources_locked(layer, sources))
-}
-
-/// Preserve the original type error while explaining the temporary base fallback.
-fn describe_recovery(loaded: &mut LoadedConfig, area: &str, layer: &BaseSettingsLayer) {
-    loaded.invalid_sections.retain(|name| name != area);
-    let suffix = format!("; keeping current {area} settings");
-    for diagnostic in &mut loaded.diagnostics {
-        if let Some(error) = diagnostic.strip_suffix(&suffix) {
-            *diagnostic = format!(
-                "{error}; following locked base from {} (recorded {}) until the value is fixed",
-                layer.source, layer.recorded_at
-            );
+    /// Re-decodes rejected areas after the settings owner restores current locks.
+    pub(super) fn recover(
+        &self,
+        loaded: &mut LoadedConfig,
+        layer: Option<&BaseSettingsLayer>,
+        agent_dir: &Path,
+    ) {
+        macro_rules! recover {
+            ($($field:ident),* $(,)?) => { $(
+                if let Some(recovered) = self.recover_area(loaded, layer, stringify!($field), agent_dir) {
+                    loaded.config.$field = recovered.config.$field;
+                }
+            )* };
         }
+        recover!(
+            onboarding,
+            theme,
+            terminal,
+            session,
+            server,
+            update,
+            ui,
+            worktrees,
+            advanced,
+            experimental,
+            remote
+        );
+    }
+
+    /// Recovers one rejected area while retaining its original failure diagnostic.
+    fn recover_area(
+        &self,
+        loaded: &mut LoadedConfig,
+        layer: Option<&BaseSettingsLayer>,
+        area: &str,
+        agent_dir: &Path,
+    ) -> Option<LoadedConfig> {
+        if !loaded.invalid_sections.iter().any(|name| name == area) {
+            return None;
+        }
+        if let Some(previous) = self.0.get(area) {
+            loaded.accepted_areas.remember(area, previous);
+        }
+        let document = self.restored_document(area, layer);
+        let recovered = project_global_settings(&document, agent_dir);
+        if recovered.invalid_sections.iter().any(|name| name == area) {
+            return None;
+        }
+        loaded.invalid_sections.retain(|name| name != area);
+        loaded.accepted_areas.remember(area, &document);
+        Some(recovered)
+    }
+
+    /// Uses the accepted area document, or the ordinary empty-user startup view.
+    fn restored_document(&self, area: &str, layer: Option<&BaseSettingsLayer>) -> Settings {
+        let Some(mut document) = self.0.get(area).cloned() else {
+            return layer.map_or_else(Settings::default, |base| {
+                base.compose_settings(&Settings::default())
+            });
+        };
+        if let Some(base) = layer {
+            base.restore_locked_settings(&mut document);
+        }
+        document
     }
 }

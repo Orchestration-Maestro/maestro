@@ -8,44 +8,15 @@ mod retention;
 pub(crate) use reload::apply_loaded;
 pub use reload::{config_diagnostic_summary, load_config, load_live_config, reload_config};
 
-use std::{
-    cell::{Cell, RefCell},
-    path::Path,
-};
+use std::{cell::RefCell, path::Path};
 
-use maestro_settings::{BaseSettingsLayer, Settings};
+use maestro_settings::Settings;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use super::model::{Config, LoadedConfig};
 use ignored::{Decoder, Segment, ValueRef, format_path, path_key};
-use retention::{AreaSchemas, recover_locked_areas};
-
-/// One declared group of fields selected from an authored namespace.
-struct FieldSource {
-    /// Namespace used to read the supplied settings document.
-    root: &'static str,
-    /// The same members supplied to the typed decoder.
-    fields: &'static [&'static str],
-}
-
-/// Decoder input retaining origins that flattening would otherwise discard.
-struct AreaInput<'a> {
-    /// Borrowed value or selected members consumed by Serde.
-    value: ValueRef<'a>,
-    /// Declared selections, including members absent from this document.
-    sources: Vec<FieldSource>,
-}
-
-impl<'a> AreaInput<'a> {
-    /// Use the decoder's own declared fields for an unflattened input.
-    fn unmapped(value: ValueRef<'a>) -> Self {
-        Self {
-            value,
-            sources: Vec::new(),
-        }
-    }
-}
+pub use retention::AcceptedAreas;
 
 /// Client experimental keys stored alongside interface preferences.
 const EXPERIMENTAL_KEYS: &[&str] = &[
@@ -73,28 +44,13 @@ const DAEMON_KEYS: &[&str] = &[
 /// Decode only the accepted global document without changing its raw members.
 #[must_use]
 pub fn project_global_settings(settings: &Settings, agent_dir: &Path) -> LoadedConfig {
-    project_global_settings_with_base(settings, None, agent_dir)
-}
-
-/// Decode global preferences, using the base for invalid areas containing a lock.
-fn project_global_settings_with_base(
-    settings: &Settings,
-    base_layer: Option<&BaseSettingsLayer>,
-    agent_dir: &Path,
-) -> LoadedConfig {
     let mut loaded = LoadedConfig {
         config: Config::default(),
         diagnostics: Vec::new(),
         invalid_sections: Vec::new(),
+        accepted_areas: AcceptedAreas::default(),
     };
-    let mut schemas = AreaSchemas::new();
-    project_areas(settings, &mut loaded, &mut schemas);
-    if !loaded.invalid_sections.is_empty()
-        && let Some(layer) = base_layer
-    {
-        let base = project_global_settings(&layer.settings, agent_dir);
-        recover_locked_areas(&mut loaded, base, layer, &schemas);
-    }
+    project_areas(settings, &mut loaded);
     unknown_namespace_keys(
         settings.0.get("daemon"),
         "daemon",
@@ -116,17 +72,18 @@ fn project_global_settings_with_base(
 }
 
 /// Decode each original area independently after selecting its stored keys.
-fn project_areas(settings: &Settings, loaded: &mut LoadedConfig, schemas: &mut AreaSchemas) {
+fn project_areas(settings: &Settings, loaded: &mut LoadedConfig) {
     let mux = settings.0.get("multiplexer");
     macro_rules! area {
         ($field:ident, $root:literal, $value:expr) => {
-            if let Some(value) = decode_area($value, $root, stringify!($field), loaded, schemas) {
+            if let Some(value) = decode_area($value, $root, stringify!($field), loaded) {
                 loaded.config.$field = value;
+                loaded.accepted_areas.remember(stringify!($field), settings);
             }
         };
     }
     let empty = Value::Object(serde_json::Map::new());
-    project_onboarding(mux, loaded, schemas);
+    project_onboarding(settings, loaded);
     area!(theme, "multiplexer.theme", nested(mux, "theme", &empty));
     area!(remote, "multiplexer.remote", nested(mux, "remote", &empty));
     area!(ui, "multiplexer", ui_values(mux));
@@ -178,34 +135,28 @@ fn project_areas(settings: &Settings, loaded: &mut LoadedConfig, schemas: &mut A
 }
 
 /// Optional onboarding still requires its enclosing namespace to be an object.
-fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig, schemas: &mut AreaSchemas) {
+fn project_onboarding(settings: &Settings, loaded: &mut LoadedConfig) {
+    let mux = settings.0.get("multiplexer");
     if mux.is_some_and(|value| !value.is_object()) {
-        schemas.insert(
-            "onboarding",
-            vec![FieldSource {
-                root: "multiplexer.onboarding",
-                fields: &[],
-            }],
-        );
         reject_area("onboarding", "multiplexer must be an object", loaded);
     } else if let Some(value) = decode_area(
         nested(mux, "onboarding", &Value::Null),
         "multiplexer.onboarding",
         "onboarding",
         loaded,
-        schemas,
     ) {
         loaded.config.onboarding = value;
+        loaded.accepted_areas.remember("onboarding", settings);
     }
 }
 
 /// Select a nested record, preserving a malformed container for typed rejection.
-fn nested<'a>(container: Option<&'a Value>, key: &str, fallback: &'a Value) -> AreaInput<'a> {
-    AreaInput::unmapped(ValueRef::Value(match container {
+fn nested<'a>(container: Option<&'a Value>, key: &str, fallback: &'a Value) -> ValueRef<'a> {
+    ValueRef::Value(match container {
         None => fallback,
         Some(Value::Object(values)) => values.get(key).unwrap_or(fallback),
         Some(value) => value,
-    }))
+    })
 }
 
 /// Select flattened keys for one original semantic area.
@@ -213,8 +164,8 @@ fn selected<'a>(
     settings: &'a Settings,
     root: &'static str,
     keys: &'static [&'static str],
-) -> AreaInput<'a> {
-    let value = match settings.0.get(root) {
+) -> ValueRef<'a> {
+    match settings.0.get(root) {
         None => ValueRef::Fields(Vec::new()),
         Some(Value::Object(values)) => ValueRef::Fields(
             values
@@ -224,16 +175,12 @@ fn selected<'a>(
                 .collect(),
         ),
         Some(value) => ValueRef::Value(value),
-    };
-    AreaInput {
-        value,
-        sources: vec![FieldSource { root, fields: keys }],
     }
 }
 
 /// Interface fields and unknown siblings, excluding independently decoded areas.
-fn ui_values(container: Option<&Value>) -> AreaInput<'_> {
-    AreaInput::unmapped(match container {
+fn ui_values(container: Option<&Value>) -> ValueRef<'_> {
+    match container {
         None => ValueRef::Fields(Vec::new()),
         Some(Value::Object(values)) => ValueRef::Fields(
             values
@@ -246,34 +193,29 @@ fn ui_values(container: Option<&Value>) -> AreaInput<'_> {
                 .collect(),
         ),
         Some(value) => ValueRef::Value(value),
-    })
+    }
 }
 
 /// Join fields split between namespaces without hiding a malformed source.
-fn combined<'a>(first: AreaInput<'a>, second: AreaInput<'a>) -> AreaInput<'a> {
-    let sources = first.sources.into_iter().chain(second.sources).collect();
-    let value = match (first.value, second.value) {
+fn combined<'a>(first: ValueRef<'a>, second: ValueRef<'a>) -> ValueRef<'a> {
+    match (first, second) {
         (ValueRef::Fields(mut first), ValueRef::Fields(second)) => {
             first.extend(second);
             first.sort_unstable_by_key(|(key, _)| *key);
             ValueRef::Fields(first)
         }
         (ValueRef::Fields(_), invalid) | (invalid, _) => invalid,
-    };
-    AreaInput { value, sources }
+    }
 }
 
 /// Decode once and publish ignored paths only after the complete area succeeds.
 fn decode_area<T: DeserializeOwned>(
-    input: AreaInput<'_>,
+    value: ValueRef<'_>,
     root: &'static str,
     area: &'static str,
     loaded: &mut LoadedConfig,
-    schemas: &mut AreaSchemas,
 ) -> Option<T> {
-    let AreaInput { value, mut sources } = input;
     let ignored = RefCell::new(Vec::new());
-    let declared = Cell::new(None);
     match T::deserialize(Decoder {
         value,
         path: root
@@ -281,7 +223,6 @@ fn decode_area<T: DeserializeOwned>(
             .map(|key| Segment::Key(key.to_owned()))
             .collect(),
         ignored: &ignored,
-        declared: &declared,
     }) {
         Ok(config) => {
             let mut paths = ignored.into_inner();
@@ -293,13 +234,6 @@ fn decode_area<T: DeserializeOwned>(
             Some(config)
         }
         Err(error) => {
-            if sources.is_empty() {
-                sources.push(FieldSource {
-                    root,
-                    fields: declared.get().unwrap_or(&[]),
-                });
-            }
-            schemas.insert(area, sources);
             reject_area(area, &error.to_string(), loaded);
             None
         }

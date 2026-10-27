@@ -98,6 +98,8 @@ pub struct LoadedConfig {
     pub diagnostics: Vec<String>,
     /// Semantic areas whose typed decoding failed.
     pub invalid_sections: Vec<String>,
+    /// Last successfully decoded plain document for each independent area.
+    pub accepted_areas: crate::settings::io::AcceptedAreas,
 }
 
 /// Result of applying a live preference reload.

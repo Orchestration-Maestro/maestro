@@ -2,23 +2,25 @@
 
 use std::path::Path;
 
-use maestro_settings::{SettingsError, SettingsErrorKind, SettingsManager, SettingsScope};
+use maestro_settings::{
+    Settings, SettingsError, SettingsErrorKind, SettingsManager, SettingsScope,
+};
 
 use super::{
     super::model::{Config, ConfigReloadReport, ConfigReloadStatus, LoadedConfig},
-    project_global_settings_with_base,
+    AcceptedAreas, project_global_settings,
 };
 
 /// Load startup preferences from the supplied, newly initialized manager.
 ///
-/// Global read/parse failures use defaults and emit startup warnings. Project
-/// errors are returned separately for their existing reporting path.
+/// Global read/parse failures use the base with an empty user scope and emit
+/// warnings. Project errors are returned separately for their existing reporting path.
 pub fn load_config(
     manager: &mut SettingsManager,
     agent_dir: &Path,
 ) -> (LoadedConfig, Vec<SettingsError>) {
     let earlier = manager.drain_errors();
-    let settings = manager.effective_global_settings();
+    let mut settings = manager.effective_global_settings();
     let (global, other, mut diagnostics) = drain_load_errors(manager, earlier);
     if !global.is_empty() {
         diagnostics.extend(global.iter().map(|error| {
@@ -29,18 +31,19 @@ pub fn load_config(
             }
             document_diagnostic(error, "using defaults")
         }));
-        return (
-            LoadedConfig {
-                config: Config::default(),
-                diagnostics,
-                invalid_sections: Vec::new(),
-            },
-            other,
-        );
+        settings = manager
+            .get_global_base_layer()
+            .map_or_else(Default::default, |layer| {
+                layer.compose_settings(&Settings::default())
+            });
     }
-    let mut loaded =
-        project_global_settings_with_base(&settings, manager.get_global_base_layer(), agent_dir);
-    if !loaded.invalid_sections.is_empty() {
+    let mut loaded = project_global_settings(&settings, agent_dir);
+    AcceptedAreas::default().recover(&mut loaded, manager.get_global_base_layer(), agent_dir);
+    if loaded
+        .diagnostics
+        .iter()
+        .any(|message| message.starts_with("invalid "))
+    {
         tracing::warn!(err = ?loaded.diagnostics, "config parse error, using defaults");
         for diagnostic in &mut loaded.diagnostics {
             if let Some((message, _)) = diagnostic.split_once("; keeping current ") {
@@ -61,9 +64,12 @@ pub async fn reload_config(
     current: &mut LoadedConfig,
     agent_dir: &Path,
 ) -> (ConfigReloadReport, Vec<SettingsError>) {
-    let (loaded, other) = load_live_config(manager, agent_dir).await;
+    let (loaded, other) = load_live_config(manager, &current.accepted_areas, agent_dir).await;
     let report = match loaded {
-        Ok(loaded) => apply_loaded(&mut current.config, loaded),
+        Ok(loaded) => {
+            current.accepted_areas.clone_from(&loaded.accepted_areas);
+            apply_loaded(&mut current.config, loaded)
+        }
         Err(diagnostics) => ConfigReloadReport {
             status: ConfigReloadStatus::Failed,
             diagnostics,
@@ -76,6 +82,7 @@ pub async fn reload_config(
 /// Global document errors reject the load; project errors retain their separate reporting path.
 pub async fn load_live_config(
     manager: &mut SettingsManager,
+    accepted: &AcceptedAreas,
     agent_dir: &Path,
 ) -> (Result<LoadedConfig, Vec<String>>, Vec<SettingsError>) {
     manager.flush().await;
@@ -94,8 +101,8 @@ pub async fn load_live_config(
             other,
         );
     }
-    let mut loaded =
-        project_global_settings_with_base(&settings, manager.get_global_base_layer(), agent_dir);
+    let mut loaded = project_global_settings(&settings, agent_dir);
+    accepted.recover(&mut loaded, manager.get_global_base_layer(), agent_dir);
     loaded.diagnostics.append(&mut diagnostics);
     (Ok(loaded), other)
 }
