@@ -201,7 +201,7 @@ fn custom_message_provider_registers_models_and_streams_with_api_key() {
         .unwrap();
         let result = stream.result().await;
         let result = serde_json::to_value(&*result.read().unwrap()).unwrap();
-        assert_eq!(result["stopReason"], "stop");
+        assert_eq!(result["stopReason"], "stop", "{result}");
         assert_eq!(
             result["content"],
             json!([{"type":"text","text":"controlled response"}])
