@@ -12,8 +12,9 @@ history, add a provider, or offer dialogs and terminal components. The
 [`hello.rs`](../examples/extensions/hello.rs), which registers one greeting tool.
 
 Extensions run with the user's access. They inherit environment variables and
-standard streams, can use the network, and on Unix can read and write through a
-preopened filesystem root. A component is **not an untrusted-code sandbox** in
+standard streams, can use the network, and can read and write through
+preopened filesystem roots: `/` on Unix, and each accessible drive and the
+working directory's share on Windows. A component is **not an untrusted-code sandbox** in
 Maestro. Inspect an extension before loading it; see the
 [operating environment](extensions/host_io.md) for the precise access and current
 platform limitations.

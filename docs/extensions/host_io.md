@@ -24,11 +24,46 @@ accessible absolute artifact: no initial directory is supplied, and the guest
 keeps its libc default. Filesystem operations still report ordinary
 operating-system failures.
 
+On Windows there is no single root, so the host opens each accessible drive and
+the native cwd's own root, which may be a network share. Each root takes its
+component name: `C:\` is `/C:` and `\\server\share` is `/SERVER/SHARE`. A root
+the host cannot open is left out without affecting the others. The cwd is
+supplied in the same spelling, for example `/C:/Users/me/project`. Other
+shares are not reachable yet, and a drive that appears after the extension
+loads needs a reload
+([#2942](https://github.com/Orchestration-Maestro/maestro/issues/2942)).
+
+The component's standard library treats only `/` as a separator and only a
+leading `/` as absolute. A native Windows path such as `C:\Users\me\notes.txt`
+is therefore joined to the cwd, and Windows reads its `C:` segment as the
+current directory of that drive, so the call can fail or open a different file.
+Host paths, including `ctx.cwd()`, the agent directory and the results of
+`tools::path_utils::resolve`, keep the native spelling. Convert one with
+`tools::path_utils::guest_path` just before a `std::fs` call and keep the
+native text for display and records:
+
+```rust,ignore
+let path = resolve(&api, &[&ctx.cwd()?, &params.path])?;
+let bytes = std::fs::read(guest_path(&api, &path)?)?;
+```
+
+The conversion uses `/` separators, adds a leading `/` and an uppercase letter
+to a drive path, uppercases a share's server and share names, and drops the
+verbatim `\\?\` prefix. Windows ignores letter case in these names, so every
+spelling of a drive or share reaches the same root. Names uppercase one
+character at a time, as Windows compares them: `ß` keeps its case, so shares
+named `ß` and `SS` keep separate roots. Relative paths keep
+their form. Resolve a drive-relative path such as `C:notes.txt` or `\notes.txt`
+first; its meaning depends on per-drive state the component does not have. Unix
+paths are returned unchanged. The 0.3 interfaces list the same roots by these
+names, so a component that opens through them selects the longest root that
+ends at a `/` in the converted path.
+
 This is not complete native filesystem parity. Relative symbolic links can
 leave cwd, but the pinned filesystem implementation rejects absolute symbolic
-links; support remains open in #2642. Atomic saves, file modes and Windows root
-qualification remain undelivered. Final application-mode output routing remains
-separate from these host capabilities.
+links; support remains open in #2642. Atomic saves and file modes remain
+undelivered. Final application-mode output routing remains separate from these
+host capabilities.
 
 ## Supplied stdout
 

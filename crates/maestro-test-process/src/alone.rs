@@ -14,6 +14,9 @@ const ALONE: &str = "MAESTRO_TEST_ALONE";
 /// in the isolated process, where the test body runs. Call it before the body starts any
 /// child whose pipes the test closes.
 ///
+/// A passing run repeats what the body wrote to standard error, such as why it skipped a
+/// case; its standard output stays hidden.
+///
 /// # Errors
 ///
 /// Fails when `test` is not the running test, the isolated process does not start exactly
@@ -24,8 +27,9 @@ pub fn run_alone(test: &str) -> Result<bool, TestProcessError> {
         return Ok(false);
     }
     let name = process.name().to_owned();
-    let output = process.env(ALONE, "1").output()?;
+    let output = process.env(ALONE, "1").nocapture().output()?;
     if output.status.success() {
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
         return Ok(true);
     }
     Err(TestProcessError::new(
