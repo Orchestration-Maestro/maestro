@@ -135,3 +135,16 @@ fn check_token_requests(host: &Controlled) {
         json!({"grant_type":"refresh_token", "client_id":"9d1c250a-e61b-44d9-88ed-5944d1962f5e", "refresh_token":"refresh-first"})
     );
 }
+
+#[test]
+fn custom_message_provider_rejects_mismatched_authorization_state() {
+    let host = Controlled::default();
+    let provider = authorization(&host);
+    tokens(&host, "must-not-use", "must-not-use", 3600);
+    let mut interaction = callbacks();
+    Rc::get_mut(&mut interaction).unwrap().on_prompt =
+        Rc::new(|_| Box::pin(async { Ok("controlled-code#unrelated-state".into()) }));
+    let result = super::block_on(provider.login(interaction));
+    assert_eq!(result.unwrap_err(), "Authorization state mismatch");
+    assert!(host.observed().native_http.requests.is_empty());
+}
