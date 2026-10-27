@@ -9,7 +9,9 @@ mod configuration;
 mod configured_resolution;
 mod git;
 mod git_checks;
+mod inspection;
 mod integrity;
+pub use inspection::GitRelease;
 pub use integrity::GitPinStatus;
 mod glob;
 mod manifest;
@@ -217,6 +219,11 @@ pub trait PackageManager {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()>;
+    /// Lists Git tags and their peeled commit IDs without selecting a release.
+    /// Offline mode refuses remote work rather than returning stale results.
+    /// # Errors
+    /// Returns invalid source, offline or Git capture failures.
+    fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>>;
     /// Installs, then adds the source to settings; an existing entry is not an error.
     /// Nothing is flushed; a failed settings edit does not undo acquired contents.
     /// # Errors
@@ -312,6 +319,9 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
         Box::pin(self.repair_pin(source, scope))
+    }
+    fn list_releases<'a>(&'a self, _source: &'a str) -> PackageFuture<'a, Vec<GitRelease>> {
+        Box::pin(async { Err(io::Error::other("Release inspection unavailable")) })
     }
     fn install_and_persist<'a>(
         &'a self,

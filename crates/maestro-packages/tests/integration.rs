@@ -36,6 +36,7 @@ mod pin_integrity_checks;
 mod pin_safety_checks;
 mod pinned_manifest_checks;
 mod process_checks;
+mod release_inspection_checks;
 #[cfg(not(target_arch = "wasm32"))]
 mod resolution_support;
 mod resolved_package_checks;
