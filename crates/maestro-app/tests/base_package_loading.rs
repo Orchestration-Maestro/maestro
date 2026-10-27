@@ -94,3 +94,94 @@ fn base_factories_run_first_without_moving_registrations() {
         );
     });
 }
+
+/// Writes a local package with one extension and a prompt template.
+fn package(path: &str, name: &str) {
+    std::fs::create_dir_all(format!("{path}/prompts")).unwrap();
+    std::fs::write(format!("{path}/{name}.wasm"), "").unwrap();
+    std::fs::write(
+        format!("{path}/prompts/{name}.md"),
+        format!("{name} prompt"),
+    )
+    .unwrap();
+    std::fs::write(
+        format!("{path}/package.json"),
+        json!({
+            "maestro":{"extensions":[format!("{name}.wasm")], "prompts":["prompts"]}
+        })
+        .to_string(),
+    )
+    .unwrap();
+}
+
+/// Only base factories offer load-time inputs; ordinary factories observe rejection.
+fn contributing_modules(
+    payload: serde_json::Value,
+    calls: Rc<RefCell<Vec<String>>>,
+) -> ModuleLoader<Local> {
+    Rc::new(move |path: &str| {
+        let base = path.ends_with("base.wasm");
+        let payload = payload.clone();
+        let calls = Rc::clone(&calls);
+        let initialize: ExtensionFactory<Local> = Rc::new(move |api| {
+            calls
+                .borrow_mut()
+                .push(if base { "base" } else { "extra" }.into());
+            let result = if base {
+                api.contribute_load_time(payload.clone())
+            } else {
+                assert!(api.contribute_load_time(json!({})).is_err());
+                Ok(())
+            };
+            Box::pin(async move { result })
+        });
+        Box::pin(async move { Ok(Some(initialize)) })
+    })
+}
+
+/// A base factory's sources and prompt inputs enter the current startup once.
+#[test]
+fn base_contributions_load_sources_and_prompt_inputs_in_the_same_startup() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let base = format!("{root}/base");
+    let extra = format!("{root}/extra");
+    let cwd = format!("{root}/project");
+    let agent = format!("{root}/agent");
+    for dir in [&cwd, &agent] {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    package(&base, "base");
+    package(&extra, "extra");
+    let payload = json!({
+        "packageSources":[{"source":extra,"scope":"user"},{"source":extra,"scope":"user"}],
+        "baseSystemPrompt":"base system", "baseAppendText":["base append"]
+    });
+    on_task_set(|local| async move {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, contributing_modules(payload, Rc::clone(&calls)));
+        resources.base_package_sources = vec![base];
+        resources.append_system_prompt = Some(vec!["explicit append".into()]);
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: None,
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert_eq!(&*calls.borrow(), &["base", "extra"]);
+        assert!(loader.get_extensions().errors.is_empty());
+        assert_eq!(loader.get_system_prompt().as_deref(), Some("base system"));
+        assert_eq!(
+            &*loader.get_append_system_prompt(),
+            &["base append", "explicit append"]
+        );
+        let prompts = loader.get_prompts();
+        assert_eq!(prompts.prompts.len(), 2);
+        assert_eq!(prompts.prompts[1].name, "extra");
+        loader.reload().await.unwrap();
+        assert_eq!(&*calls.borrow(), &["base", "extra", "base", "extra"]);
+        assert_eq!(loader.get_prompts().prompts.len(), 2);
+    });
+}
