@@ -380,3 +380,35 @@ fn overlay_test_menu_clamps_and_reports_each_choice() {
         }
     });
 }
+
+#[test]
+fn overlay_test_long_fields_scroll_inside_the_border() {
+    run(async |demo| {
+        let running = demo.open().await;
+        let digits = "0123456789".repeat(10);
+        let typed: Vec<String> = digits.chars().map(String::from).collect();
+        demo.keys(&typed.iter().map(String::as_str).collect::<Vec<_>>());
+        for (lefts, shown, column) in [(0, 42..100, 68), (50, 21..80, 39), (50, 0..59, 10)] {
+            demo.keys(&vec![LEFT; lefts]);
+            let find = format!(" ▶ Find: {}", &digits[shown]);
+            let rows = overlay([&find, "   Launch: ", "   Preferences", "   Dismiss"]);
+            assert_eq!(demo.frame(), (composed(&rows), cursor(9, column)));
+        }
+        demo.keys(&[DOWN]);
+        demo.keys(&["中"; 40]);
+        let find = format!("   Find: {}", &digits[..59]);
+        let launch = format!(" ▶ Launch: {}", "中".repeat(28));
+        let rows = overlay([&find, &launch, "   Preferences", "   Dismiss"]);
+        for (lefts, column) in [(0, 68), (1, 66)] {
+            demo.keys(&vec![LEFT; lefts]);
+            assert_eq!(demo.frame(), (composed(&rows), cursor(10, column)));
+        }
+        demo.keys(&[UP, "\r"]);
+        running.await.unwrap().unwrap();
+        let report = format!("Find: \"{digits}\"");
+        assert_eq!(
+            demo.ui.notes.take(),
+            [(report, Some(NotificationType::Info))]
+        );
+    });
+}
