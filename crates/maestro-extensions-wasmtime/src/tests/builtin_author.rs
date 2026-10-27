@@ -48,7 +48,10 @@ pub(super) async fn loaded_with_reporter(
         crate::artifact_factory(
             path.clone(),
             crate::tests::support::widgets(),
-            "builtin-test-version".into(),
+            crate::Installation {
+                version: "builtin-test-version".into(),
+                agent_dir: "/controlled-agent".into(),
+            },
         ),
         "/".into(),
         events.for_extension(),

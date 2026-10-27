@@ -147,6 +147,11 @@ fn helper_conversation_serialization_keeps_text_and_tools() {
 }
 
 #[test]
+fn helper_agent_directory_reads_installation_identity() {
+    check("helper_agent_directory_reads_installation_identity");
+}
+
+#[test]
 fn helper_version_reads_installation_identity() {
     check("helper_version_reads_installation_identity");
 }
