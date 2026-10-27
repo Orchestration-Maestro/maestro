@@ -97,11 +97,12 @@ fn tick_loop(
 struct SnakeView(Rc<SnakeComponent>);
 impl ComponentView for SnakeView {
     fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
-        Ok(render::render(
+        render::render(
+            &self.0.api,
             &self.0.state.borrow(),
             *self.0.paused.borrow(),
             width,
-        ))
+        )
     }
     fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         Ok(())

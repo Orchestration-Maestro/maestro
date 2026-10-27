@@ -2,12 +2,30 @@
 use serde_json::{Value, json};
 
 /// Counts visible characters in the source's literal terminal styles.
-fn visible(text: &str) -> usize {
+pub fn visible(text: &str) -> usize {
     regex::Regex::new("\x1b\\[[0-9;]*m")
         .unwrap()
         .replace_all(text, "")
         .chars()
         .count()
+}
+/// Literal host truncation replies for frames containing only single-cell glyphs and SGR styles.
+pub fn fitted(line: &str, width: usize) -> String {
+    if width == 0 {
+        return String::new();
+    }
+    if visible(line) <= width {
+        return line.into();
+    }
+    let tokens = regex::Regex::new("\x1b\\[[0-9;]*m|.").unwrap();
+    let end = tokens
+        .find_iter(line)
+        .filter(|token| !token.as_str().starts_with('\x1b'))
+        .take(width)
+        .last()
+        .unwrap()
+        .end();
+    format!("{}\x1b[0m", &line[..end])
 }
 /// A dim terminal border with the source's exact reset sequence.
 fn dim(text: &str) -> String {

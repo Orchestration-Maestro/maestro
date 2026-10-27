@@ -1,5 +1,8 @@
 //! The game's bordered, two-column terminal cells and input hints.
 use super::game::{GAME_HEIGHT, GAME_WIDTH, GameState, Point};
+use maestro_extensions_wasm::{
+    ExtensionAPI, ExtensionResult, truncate_to_width, utils::TruncateOptions,
+};
 
 /// Wraps text in the requested terminal style.
 fn style(code: &str, text: &str) -> String {
@@ -26,8 +29,16 @@ fn box_line(text: &str, visible: usize, size: usize) -> (String, usize) {
         size.max(visible) + 3,
     )
 }
-/// Draws the complete frame, retaining the authored text and terminal colours.
-pub fn render(state: &GameState, paused: bool, width: u32) -> Vec<String> {
+/// Draws the frame within the viewport, retaining the authored text and terminal colours.
+///
+/// # Errors
+/// Returns the host's terminal truncation failure.
+pub fn render(
+    api: &ExtensionAPI,
+    state: &GameState,
+    paused: bool,
+    width: u32,
+) -> ExtensionResult<Vec<String>> {
     let width = usize::try_from(width).unwrap_or(usize::MAX);
     let columns = (width.saturating_sub(4) / 2).min(usize::try_from(GAME_WIDTH).unwrap_or(40));
     let size = columns * 2;
@@ -74,7 +85,14 @@ pub fn render(state: &GameState, paused: bool, width: u32) -> Vec<String> {
     let (footer, visible) = footer(state, paused);
     lines.push(boxed(&footer, visible));
     lines.push(border("╰", "╯"));
+    let options = TruncateOptions {
+        ellipsis: "",
+        pad: false,
+    };
     lines
+        .iter()
+        .map(|line| truncate_to_width(api, line, width, options))
+        .collect()
 }
 /// Selects the head, body, food or empty-cell glyph in that order.
 fn cell(state: &GameState, point: Point) -> String {

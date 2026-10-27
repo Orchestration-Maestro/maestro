@@ -63,10 +63,28 @@ fn run(
     display: (Vec<Vec<String>>, u32),
 ) -> Result<(), String> {
     history(host, entries);
+    let frames = display
+        .0
+        .into_iter()
+        .map(|frame| {
+            frame
+                .into_iter()
+                .map(|line| {
+                    let width = usize::try_from(display.1).unwrap();
+                    let fitted = super::snake_frames::fitted(&line, width);
+                    assert!(super::snake_frames::visible(&fitted) <= width);
+                    host.observed().actions.value
+                        [format!("truncate_to_width {}", json!([line, width, "", false]))] =
+                        json!(fitted);
+                    fitted
+                })
+                .collect()
+        })
+        .collect();
     host.observed().ui.custom_script = Some(Script {
         width: None,
         inputs: inputs.iter().map(|s| (*s).into()).collect(),
-        frames: display.0,
+        frames,
         ticks,
         columns: display.1,
     });
@@ -131,6 +149,34 @@ fn snake_restores_latest_save_paused_and_disposes_without_clearing() -> Result<(
         )?;
         assert!(saves(&mut host).is_empty());
         assert!(host.observed().bus.tails.is_empty());
+    }
+    Ok(())
+}
+/// Narrow frames fit while movement still collides at the full board's wall.
+#[test]
+fn snake_narrow_frames_fit_without_changing_collision_boundaries() -> Result<(), String> {
+    for width in [0, 1, 2, 3, 20, 40, 42, 43, 45, 46, 84] {
+        let mut host = host()?;
+        let game = state(&[(38, 7), (37, 7), (36, 7)], (0, 0), "right", 10);
+        let moved = state(&[(39, 7), (38, 7), (37, 7)], (0, 0), "right", 10);
+        let mut over = moved.clone();
+        over["gameOver"] = json!(true);
+        run(
+            &mut host,
+            &json!([entry(&game)]),
+            &["x", "x", "q"],
+            vec![0, 1, 1, 0],
+            (
+                vec![
+                    frame(&game, "paused", width),
+                    frame(&moved, "playing", width),
+                    frame(&over, "over", width),
+                    frame(&over, "over", width),
+                ],
+                u32::try_from(width).unwrap(),
+            ),
+        )?;
+        assert_eq!(saves(&mut host), [Value::Null]);
     }
     Ok(())
 }
