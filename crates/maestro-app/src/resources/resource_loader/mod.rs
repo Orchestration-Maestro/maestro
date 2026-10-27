@@ -5,6 +5,7 @@ mod base_packages;
 mod context;
 mod discovery;
 mod extensions;
+mod load_time;
 mod overrides;
 mod themes;
 
@@ -245,6 +246,10 @@ struct LoaderState<E: ExtensionExecution> {
     system_prompt: Option<Rc<str>>,
     /// The appended texts.
     append_system_prompt: Rc<[String]>,
+    /// The system prompt candidate below ordinary prompt inputs.
+    base_system_prompt: Option<String>,
+    /// Text that always precedes the ordinary append choice.
+    base_append_text: Vec<String>,
     /// Skill paths and contributions.
     skill_sources: Contributed,
     /// Prompt template paths and contributions.
@@ -341,6 +346,8 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             agents_files: Rc::from([]),
             system_prompt: None,
             append_system_prompt: Rc::from([]),
+            base_system_prompt: None,
+            base_append_text: Vec::new(),
             skill_sources: Contributed::default(),
             prompt_sources: Contributed::default(),
             theme_sources: Contributed::default(),

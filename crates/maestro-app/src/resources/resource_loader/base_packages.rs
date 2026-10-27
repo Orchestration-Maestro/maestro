@@ -21,9 +21,11 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     pub(super) async fn resolve_packages(
         &self,
     ) -> io::Result<(ResolvedPaths, LoadExtensionsResult<E>)> {
-        let (base_paths, extensions) = self.load_base_packages().await?;
+        let (base_paths, mut extensions) = self.load_base_packages().await?;
+        let contributions = self.collect_load_time(&mut extensions).await?;
         let mut resolved = self.package_manager.resolve(None).await?;
         append_paths(&mut resolved, base_paths);
+        append_paths(&mut resolved, contributions);
         Ok((resolved, extensions))
     }
 
@@ -61,6 +63,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             }),
             config_values: crate::runtime::agent_session_services::native_config_values(),
         });
+        runtime.begin_load_time(paths.clone());
         let result = load_extensions_with_runtime(
             paths,
             &self.cwd,
