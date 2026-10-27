@@ -37,3 +37,6 @@ pub mod number_format;
 
 #[cfg(feature = "date-time-format")]
 pub mod date_time_format;
+
+#[cfg(feature = "date-time-format")]
+mod date_time_data;
