@@ -206,9 +206,14 @@ fn pin_checks_do_not_trust_index_suppression_flags() {
         let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
         git(&fixture.repo.target, &["update-index", flag, "content"]);
         std::fs::write(fixture.repo.target.join("content"), "hidden edit").unwrap();
+        let index = std::fs::read(fixture.repo.target.join(".git/index")).unwrap();
         let status = fixture
             .run(fixture.manager.verify_pin(&source, None))
             .unwrap();
+        assert_eq!(
+            std::fs::read(fixture.repo.target.join(".git/index")).unwrap(),
+            index
+        );
         assert_eq!(status.changed_paths, ["content"]);
         assert!(!status.is_clean());
         fixture
