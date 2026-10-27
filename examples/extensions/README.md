@@ -36,6 +36,7 @@ inserts at its own place instead of appending at the end of each list.
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
+| `minimal_mode.rs` | Opt-in minimal call rows for all seven built-in tools, with counts for searches and listings and full expanded text. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -105,6 +106,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- minimal_mode_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -666,3 +669,24 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the minimal display example does
+
+Build with `--example minimal_mode` using the component command above, then
+load `target/wasm32-wasip2/release/examples/minimal_mode.wasm` through the
+[extension loader](../../docs/extensions/loading.md). Loading is opt-in.
+
+The example replaces the display of `read`, `bash`, `write`, `edit`, `find`,
+`grep` and `ls`, not their native execution. Collapsed file and shell results
+are hidden; searches and listings show counts. Expanded rows show the first
+text block without an additional display limit. Read image attachments retain
+the host's image handling; this text renderer does not create image previews.
+The existing expand-tools keybinding switches collapsed and expanded output;
+this example adds no third mode or keybinding.
+
+Use a Unix native component host with the built-in tool factories enabled and
+a terminal UI to see the rows. Shell and search tools keep their normal shell,
+`fd` and `rg` prerequisites. Loading does not run tools, but invoking `write`,
+`edit` or `bash` can change files or run commands with normal host permissions.
+Use a disposable directory for a walkthrough. No provider or credentials are
+needed for the controlled run above.

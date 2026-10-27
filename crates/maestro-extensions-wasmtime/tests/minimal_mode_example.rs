@@ -189,3 +189,32 @@ fn minimal_mode_preserves_cancellation_and_native_read_limits() {
         assert_eq!(error.message, "Operation aborted");
     });
 }
+/// Draws an independent literal using the same toolkit text layout.
+fn expected(text: String) -> Vec<String> {
+    use maestro_tui::Component as _;
+    maestro_tui::Text::new(text, 0, 0, None).render(200)
+}
+
+/// Distinct supplied colors make semantic-role mistakes visible in assertions.
+fn theme() -> maestro_theme::LiveTheme {
+    use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
+    let colors = [
+        (ThemeColor::ToolTitle, ColorValue::Index(1)),
+        (ThemeColor::Accent, ColorValue::Index(2)),
+        (ThemeColor::ToolOutput, ColorValue::Index(3)),
+        (ThemeColor::Warning, ColorValue::Index(4)),
+        (ThemeColor::Muted, ColorValue::Index(5)),
+        (ThemeColor::Error, ColorValue::Index(6)),
+    ];
+    maestro_theme::LiveTheme::from_theme(Rc::new(
+        Theme::new(colors, [], ColorMode::Color256, ThemeOptions::default()).unwrap(),
+    ))
+}
+
+/// Applies one literal semantic role using the native theme.
+fn fg(role: &maestro_theme::ThemeColor, text: &str) -> String {
+    theme().get().unwrap().fg(role, text).unwrap()
+}
+
+/// Call rows through the native renderer interface.
+mod calls;
