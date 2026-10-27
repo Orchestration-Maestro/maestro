@@ -1,10 +1,11 @@
 # Native component execution
 
-`maestro-extensions-wasmtime::artifact_factory(path, widgets, installation_version)` creates a
+`maestro-extensions-wasmtime::artifact_factory(path, widgets, installation)` creates a
 local extension factory for an already-built component whose host widgets `widgets`, an
 `ExtensionWidgets`, builds. Pass it to
 `maestro_extensions::load_extension_from_factory` on a Tokio local task set.
-Construction does not discover files or compile source.
+The `Installation { version, agent_dir }` value comes from the application
+configuration owner. Construction does not discover files or compile source.
 
 Compiled artifacts use Wasmtime's user cache (`$XDG_CACHE_HOME/wasmtime`, or
 `~/.cache/wasmtime` by default on Linux); cache failures fall back to compilation,

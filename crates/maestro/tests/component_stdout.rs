@@ -66,7 +66,10 @@ fn compose_frames() {
         let factory = artifact_factory_with_stdout(
             path,
             crate::support::widgets(),
-            maestro_app::configuration::config::VERSION.into(),
+            maestro_extensions_wasmtime::Installation {
+                version: maestro_app::configuration::config::VERSION.into(),
+                agent_dir: "/controlled-agent".into(),
+            },
             Box::new(terminal.output_writer().unwrap()),
             true,
         );

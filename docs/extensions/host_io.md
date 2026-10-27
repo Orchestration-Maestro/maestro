@@ -32,7 +32,7 @@ separate from these host capabilities.
 
 ## Supplied stdout
 
-`artifact_factory_with_stdout(path, widgets, installation_version, writer, terminal)`
+`artifact_factory_with_stdout(path, widgets, installation, writer, terminal)`
 retains a standard `Write + Send` sink across initialization and later
 callbacks. Both standard output generations share that sink and report the
 supplied terminal observation. Closing one guest output view does not close the
