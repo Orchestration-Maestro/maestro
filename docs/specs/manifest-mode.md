@@ -942,9 +942,12 @@ change only with the manifest.
    mutable text or details with listeners. `/settings` shows the setting as locked,
    like any locked value.
    With the setting `false`, the default, streaming is unchanged.
-8. **Limits.** The output of the user's `!` and `!!` commands is saved as produced
-   and checked only when a later agent request carries it (item 3). Guards do not
-   rewrite existing session files.
+8. **Limits.** Three gaps are tracked as their own issues. The output of the
+   user's `!` and `!!` commands is saved as produced and checked only when a later
+   agent request carries it (item 3; [#2891](https://github.com/Orchestration-Maestro/maestro/issues/2891)). Thinking blocks are not
+   checked, because providers sign them and replay them unchanged
+   ([#2894](https://github.com/Orchestration-Maestro/maestro/issues/2894)). Guards do not rewrite session files saved before the
+   manifest was selected ([#2895](https://github.com/Orchestration-Maestro/maestro/issues/2895)).
 
 ## Core hooks
 
@@ -1200,9 +1203,8 @@ owners keep their ordering and accepted-write semantics.
   supplies and installs the files.
 - New RPC or JSON fields.
 - Guards without a manifest, local guard files and settings that change guards;
-  checking thinking blocks, which providers sign and replay unchanged; checking
-  the user's shell command output before it is saved (M20.8, tracked separately);
-  rewriting existing session files; and detection other than regular expressions.
+  the three limits in M20.8 until their issues land; and detection other than
+  regular expressions.
 - Manifest mode in the browser application.
 
 ## Glossary
