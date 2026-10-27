@@ -69,20 +69,33 @@ fn read_result(
     Ok(text)
 }
 
+/// Reads the first content block only when it holds text.
+fn first_text(result: &ToolRenderResultLike) -> &str {
+    match result.result.content.first() {
+        Some(UserBlock::Text(content)) => &content.text,
+        _ => "",
+    }
+}
+
 /// Shows the shell's reported exit code and at most twenty expanded output lines.
 fn bash_result(
     api: &ExtensionAPI,
-    output: &str,
+    result: &ToolRenderResultLike,
     details: &Value,
     options: ToolRenderResultOptions,
     theme: &Theme,
 ) -> ExtensionResult<String> {
-    let pattern = regex::Regex::new(r"exit code: ([0-9]+)").map_err(|error| error.to_string())?;
+    let output = first_text(result);
+    let pattern = regex::Regex::new(r"(?:exit code: |Command exited with code )([0-9]+)")
+        .map_err(|error| error.to_string())?;
     let code = pattern
         .captures(output)
         .and_then(|capture| capture[1].parse::<u64>().ok());
     let mut text = match code {
         Some(code) if code != 0 => theme.fg("error", &format!("exit {code}"))?,
+        None if result.is_error.present() == Some(&true) => {
+            return theme.fg("error", output.split('\n').next().unwrap_or(""));
+        }
         _ => theme.fg("success", "done")?,
     };
     text.push_str(&theme.fg("dim", &format!(" ({} lines)", output_lines(api, output)?))?);
@@ -169,13 +182,13 @@ fn render_result(
         .map_err(|error| error.to_string())?
         .unwrap_or(Value::Null);
     let content = result.result.content.first();
-    let output = match content {
-        Some(UserBlock::Text(content)) => content.text.as_str(),
-        _ => "",
-    };
+    let output = first_text(result);
+    if name != "bash" && result.is_error.present() == Some(&true) {
+        return view(&theme.fg("error", output.split('\n').next().unwrap_or(""))?);
+    }
     let text = match name {
         "read" => read_result(content, &details, options.expanded, theme)?,
-        "bash" => bash_result(api, output, &details, options, theme)?,
+        "bash" => bash_result(api, result, &details, options, theme)?,
         _ if output.starts_with("Error") => {
             theme.fg("error", output.split('\n').next().unwrap_or(""))?
         }
