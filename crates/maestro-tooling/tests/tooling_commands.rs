@@ -3421,3 +3421,32 @@ fn example_index_discovers_independent_additions() {
     );
     assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
 }
+
+/// The tracked repository index is exactly the table rendered from its files.
+#[test]
+fn shipped_example_index_matches_documentation() {
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    tooling::run(
+        &["example-index".into(), "--check".into()],
+        Path::new("unused-cargo"),
+        &checkout,
+    )
+    .unwrap();
+}
+
+/// Two new example test files enter the same generated module inventory independently.
+#[test]
+fn example_test_modules_discover_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["zebra_example.rs", "alpha_example.rs", "helper.rs"] {
+        fs::write(root.path().join(name), "// test fixture\n").unwrap();
+    }
+    let declarations = crate::example_test_modules::generate(root.path()).unwrap();
+    assert!(declarations.contains("mod alpha_example;"));
+    assert!(declarations.contains("mod zebra_example;"));
+    assert!(!declarations.contains("mod helper;"));
+    assert!(
+        declarations.find("alpha_example").unwrap() < declarations.find("zebra_example").unwrap()
+    );
+    assert!(declarations.contains(&format!("{:?}", root.path().join("alpha_example.rs"))));
+}
