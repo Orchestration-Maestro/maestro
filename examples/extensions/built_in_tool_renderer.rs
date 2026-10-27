@@ -86,14 +86,15 @@ fn bash_result(
     theme: &Theme,
 ) -> ExtensionResult<String> {
     let output = first_text(result);
-    let pattern = regex::Regex::new(r"(?:exit code: |Command exited with code )([0-9]+)")
+    let pattern = regex::Regex::new(r"(?:exit code: |Command exited with code )([0-9]+)\z")
         .map_err(|error| error.to_string())?;
     let code = pattern
         .captures(output)
+        .filter(|_| result.is_error.present() != Some(&false))
         .and_then(|capture| capture[1].parse::<u64>().ok());
     let mut text = match code {
         Some(code) if code != 0 => theme.fg("error", &format!("exit {code}"))?,
-        None if result.is_error.present() == Some(&true) => {
+        _ if result.is_error.present() == Some(&true) => {
             return theme.fg("error", output.split('\n').next().unwrap_or(""));
         }
         _ => theme.fg("success", "done")?,
