@@ -70,25 +70,36 @@ impl SettingsManager {
 
     /// Refuses a whole explicit request before it changes any manager state.
     pub(super) fn refuse_changes(&self, scope: SettingsScope, changes: &[Change]) -> bool {
-        let Some(locked) = changes
+        if let Err(message) = self.check_changes(changes) {
+            self.queue.record_error(scope, message.into());
+            return true;
+        }
+        false
+    }
+
+    /// Checks a derived edit without publishing a diagnostic or changing the queue.
+    pub(super) fn check_changes(&self, changes: &[Change]) -> Result<(), String> {
+        let message = changes
             .iter()
             .find_map(|change| self.locked_path(&change.components()))
-        else {
-            return false;
-        };
-        self.record_lock(scope, locked, "Edit refused");
-        true
+            .and_then(|path| self.lock_message(path, "Edit refused"));
+        message.map_or(Ok(()), Err)
     }
 
     /// Reports a constraint with the publisher's persisted provenance.
     fn record_lock(&self, scope: SettingsScope, path: &str, action: &str) {
-        if let Some(layer) = self.get_base_layer() {
-            let message = format!(
-                "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
-                layer.source, layer.recorded_at
-            );
+        if let Some(message) = self.lock_message(path, action) {
             self.queue.record_error(scope, message.into());
         }
+    }
+
+    /// Formats a constraint with the accepted publisher's provenance.
+    fn lock_message(&self, path: &str, action: &str) -> Option<String> {
+        let layer = self.get_base_layer()?;
+        Some(format!(
+            "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
+            layer.source, layer.recorded_at
+        ))
     }
 
     /// Restores locked leaves after the ordinary merges without editing raw scopes.

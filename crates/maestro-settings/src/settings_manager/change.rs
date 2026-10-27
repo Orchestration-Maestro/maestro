@@ -56,6 +56,14 @@ pub(super) struct Change {
 }
 
 impl Change {
+    /// Captures a public edit whose nonempty path was checked before admission.
+    pub(super) fn from_requested(change: super::SettingsChange) -> Self {
+        Self {
+            edit: Edit(change.path),
+            value: change.value,
+        }
+    }
+
     /// Captures precisely the paths a one-level runtime merge can replace.
     pub(super) fn overrides(document: &Map<String, Value>) -> Vec<Self> {
         document

@@ -7,10 +7,10 @@ pub use settings_manager::FileSettingsStorage;
 pub use settings_manager::{
     BaseSettingsLayer, BranchSummarySettings, CompactionSettings, DecisionRequest,
     DoubleEscapeAction, FilteredPackage, ImageSettings, InMemorySettingsStorage, MarkdownSettings,
-    MessageDeliveryMode, PackageSource, ProviderRetrySettings, ResolvedBranchSummarySettings,
-    ResolvedCompactionSettings, ResolvedProviderRetrySettings, ResolvedRetrySettings,
-    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsDeciderHandle, SettingsError,
-    SettingsListEntry, SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError,
-    SettingsStorageHandle, SettingsUpdate, TerminalSettings, ThinkingBudgetsSettings,
-    ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
+    MessageDeliveryMode, PackageSource, PreparedSettingsEdit, ProviderRetrySettings,
+    ResolvedBranchSummarySettings, ResolvedCompactionSettings, ResolvedProviderRetrySettings,
+    ResolvedRetrySettings, RetrySettings, Settings, SettingsChange, SettingsDecider,
+    SettingsDeciderHandle, SettingsError, SettingsListEntry, SettingsManager, SettingsScope,
+    SettingsStorage, SettingsStorageError, SettingsStorageHandle, SettingsUpdate, TerminalSettings,
+    ThinkingBudgetsSettings, ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
 };

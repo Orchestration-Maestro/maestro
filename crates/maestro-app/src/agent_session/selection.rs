@@ -10,7 +10,9 @@ use maestro_models::{
     models_are_equal,
 };
 use maestro_session::Presence;
-use maestro_settings::{MessageDeliveryMode, ThinkingLevel as SavedThinkingLevel};
+use maestro_settings::{
+    MessageDeliveryMode, PreparedSettingsEdit, ThinkingLevel as SavedThinkingLevel,
+};
 use std::sync::{Arc, RwLock};
 
 /// A model to cycle to with its explicit thinking level.
@@ -40,7 +42,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }
         let previous = self.model();
         let level = self.thinking_level_for_model_switch(None);
-        self.apply_model(&model, level)?;
+        let edits = self.prepare_model_selection(&model, &level)?;
+        self.apply_model(&model, level, edits)?;
         self.emit_model_select(model, previous, ModelSelectSource::Set)
             .await
     }
@@ -50,7 +53,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
         &self,
         model: &Arc<RwLock<Model>>,
         level: ModelThinkingLevel,
+        edits: PreparedSettingsEdit,
     ) -> Result<(), DiagnosticErrorInfo> {
+        let (model_edits, thinking_edits) = edits.split_at(2);
         write(self.agent.state()).model = Arc::clone(model);
         let (provider, id) = {
             let model = read(model);
@@ -62,8 +67,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .map_err(thrown)?;
         self.settings_manager
             .borrow_mut()
-            .set_default_model_and_provider(provider, id);
-        self.set_thinking_level(level)
+            .apply_prepared_edit(model_edits);
+        self.apply_thinking_level(level, thinking_edits)
     }
 
     /// Selects the next or previous scoped model, or else the next or previous available
@@ -92,7 +97,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         let (model, explicit) = candidates.swap_remove(next);
         let level = self.thinking_level_for_model_switch(explicit);
-        self.apply_model(&model, level)?;
+        let edits = self.prepare_model_selection(&model, &level)?;
+        self.apply_model(&model, level, edits)?;
         self.emit_model_select(Arc::clone(&model), current, ModelSelectSource::Cycle)
             .await?;
         let thinking_level = read(self.agent.state()).thinking_level.clone();
@@ -133,6 +139,16 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns a recording failure after the agent state changed.
     pub fn set_thinking_level(&self, level: ModelThinkingLevel) -> Result<(), DiagnosticErrorInfo> {
+        let edits = self.prepare_thinking_selection(&level)?;
+        self.apply_thinking_level(level, edits)
+    }
+
+    /// Applies an admitted level with the original history, settings and event ordering.
+    fn apply_thinking_level(
+        &self,
+        level: ModelThinkingLevel,
+        edits: PreparedSettingsEdit,
+    ) -> Result<(), DiagnosticErrorInfo> {
         let effective = if self.get_available_thinking_levels().contains(&level) {
             level
         } else {
@@ -150,11 +166,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .borrow_mut()
             .append_thinking_level_change(saved.as_str())
             .map_err(thrown)?;
-        if self.supports_thinking() || effective != ModelThinkingLevel::Off {
-            self.settings_manager
-                .borrow_mut()
-                .set_default_thinking_level(saved);
-        }
+        self.settings_manager
+            .borrow_mut()
+            .apply_prepared_edit(edits);
         self.emit(&AgentSessionEvent::ThinkingLevelChanged {
             level: effective.clone(),
         });

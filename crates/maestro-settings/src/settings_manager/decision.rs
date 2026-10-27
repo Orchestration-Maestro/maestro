@@ -29,6 +29,17 @@ pub enum DecisionRequest<'a> {
         /// Every requested edit, in application order.
         changes: &'a [SettingsChange],
     },
+    /// A model selection with its requested thinking level, before capability clamping.
+    Model {
+        /// The requested provider.
+        provider: &'a str,
+        /// The requested model identifier.
+        model_id: &'a str,
+        /// The requested thinking level.
+        thinking_level: &'a str,
+    },
+    /// A requested thinking level before capability clamping.
+    ThinkingLevel(&'a str),
     /// A one-level merge into the runtime preference view.
     RuntimeOverrides(&'a Settings),
 }
@@ -115,5 +126,59 @@ impl SettingsManager {
             return true;
         }
         false
+    }
+}
+
+/// An admitted preference edit whose effects may follow other owner effects.
+/// Only the preparing manager should apply it, before another explicit operation.
+pub struct PreparedSettingsEdit {
+    /// The scope checked before the operation started.
+    scope: SettingsScope,
+    /// The exact edits already admitted by the publisher and base locks.
+    changes: Vec<super::Change>,
+}
+
+impl PreparedSettingsEdit {
+    /// Splits admitted edits so an owner can retain its existing effect order.
+    #[must_use]
+    pub fn split_at(mut self, index: usize) -> (Self, Self) {
+        let changes = self.changes.split_off(index.min(self.changes.len()));
+        let remaining = Self {
+            scope: self.scope,
+            changes,
+        };
+        (self, remaining)
+    }
+}
+
+impl SettingsManager {
+    /// Admits an operation and all of its derived preference writes without publishing them.
+    /// The request describes intent; the edits may contain a capability-clamped result.
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal, a locked-path message or an empty-path error.
+    pub fn prepare_operation(
+        &self,
+        request: &DecisionRequest<'_>,
+        scope: SettingsScope,
+        changes: Vec<SettingsChange>,
+    ) -> Result<PreparedSettingsEdit, String> {
+        self.decide(request)?;
+        if changes.iter().any(|change| change.path.is_empty()) {
+            return Err("Settings edit path cannot be empty".into());
+        }
+        let changes: Vec<_> = changes
+            .into_iter()
+            .map(super::Change::from_requested)
+            .collect();
+        self.check_changes(&changes)?;
+        Ok(PreparedSettingsEdit { scope, changes })
+    }
+
+    /// Publishes a prepared edit at its owner's original save position, without deciding twice.
+    pub fn apply_prepared_edit(&mut self, edit: PreparedSettingsEdit) {
+        if !edit.changes.is_empty() {
+            self.edit_accepted(edit.scope, edit.changes);
+        }
     }
 }

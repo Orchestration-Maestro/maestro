@@ -26,7 +26,9 @@ use maestro_json::pretty_object;
 use persistence::Queue;
 
 pub use base_layer::BaseSettingsLayer;
-pub use decision::{DecisionRequest, SettingsChange, SettingsDecider, SettingsDeciderHandle};
+pub use decision::{
+    DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsDecider, SettingsDeciderHandle,
+};
 pub use entries::{FilteredPackage, PackageSource, SettingsListEntry};
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_storage::FileSettingsStorage;
