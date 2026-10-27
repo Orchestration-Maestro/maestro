@@ -125,6 +125,7 @@ mod tool_callbacks;
 mod tool_events;
 mod tools_example;
 mod trigger_compact_example;
+mod truncated_tool_example;
 pub(crate) mod ui_host;
 pub(crate) mod widget_component;
 mod widget_controlled;

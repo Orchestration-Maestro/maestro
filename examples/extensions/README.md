@@ -45,6 +45,7 @@ inserts at its own place instead of appending at the end of each list.
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `truncated_tool.rs` | An opt-in ripgrep search tool that applies the host's line/byte limits, saves complete truncated output to a temporary file, and renders calls and results. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
@@ -109,6 +110,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- truncated_tool_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- truncated_tool_component_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- widget_placement
@@ -166,6 +171,25 @@ no credentials or paid service: the component run uses a loopback provider. Test
 create the fixed path exclusively and refuse to touch a file already there. The
 nextest file-trigger group runs those tests one at a time; do not run separate
 file-trigger test commands concurrently.
+
+### What the truncated search tool does
+
+Build with `--example truncated_tool`, then load the component into a Unix
+component-enabled host with `rg` on its `PATH`. The opt-in `rg` tool searches the
+supplied directory (or the session's current directory), with an optional file
+glob. Patterns, paths and globs are literal process arguments, not shell text.
+
+Results retain the first 2,000 lines or 50 KB, whichever limit is reached first.
+When truncated, the tool awaits a queued write of the complete output to
+`maestro-rg-*/output.txt` in the host's temporary directory before returning its
+path and omitted line/byte counts. Expanded results show the first 20 lines and
+the full-output path. No matches and search errors have separate outcomes.
+
+Search output can contain private file contents. Temporary artifacts remain on
+disk so the read tool can open them; remove their directories when no longer
+needed. Loading and searching are opt-in; no provider or paid service is needed
+for the controlled runs above. Those runs use disposable files and real ripgrep
+through the production component runtime.
 
 ### What the shutdown example does
 
