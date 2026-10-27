@@ -1,0 +1,43 @@
+name: Disposable nextest bound proof
+on:
+  push:
+    branches: [ci/2848-proof-1]
+permissions:
+  contents: read
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        state: [before, after]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install pinned nextest
+        run: |
+          curl --fail --retry 3 --location https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.148/cargo-nextest-0.9.148-x86_64-unknown-linux-musl.tar.gz --output /tmp/nextest.tar.gz
+          echo 'bf92cb81450872d960ffa13857a83084d557ec0cdc141663d263bb23ef756f97  /tmp/nextest.tar.gz' | sha256sum --check
+          tar -xzf /tmp/nextest.tar.gz -C "$HOME/.cargo/bin" cargo-nextest
+      - name: Select original config
+        if: matrix.state == 'before'
+        run: git show 532e4899fb7145664cc66a29042aa3216ae9824c:.config/nextest.toml > .config/nextest.toml
+      - name: Prove termination and test identity
+        env:
+          STATE: ${{ matrix.state }}
+        run: |
+          set +e
+          cargo nextest run --locked -p maestro-path --test integration -E 'test(nextest_terminates_and_names_overlong_test)' --retries 0 2>&1 | tee proof.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "nextest exit: $status"
+          if test "$STATE" = before; then
+            test "$status" = 0
+            grep -E 'PASS.*nextest_terminates_and_names_overlong_test' proof.log
+            echo 'RED: the deadline assertion below fails without the config change'
+            if grep -E 'TIMEOUT.*nextest_terminates_and_names_overlong_test' proof.log; then exit 1; fi
+          else
+            test "$status" = 100
+            grep -E 'TIMEOUT.*nextest_terminates_and_names_overlong_test' proof.log
+            echo 'GREEN: nextest terminates the overlong test and names it'
+          fi
