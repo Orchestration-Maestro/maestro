@@ -29,10 +29,12 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
+| `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
+| `handoff.rs` | A `/handoff <goal>` command that generates an editable prompt from the selected branch, then opens a parent-linked replacement session. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
@@ -95,6 +97,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_header_component_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
@@ -106,6 +110,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- git_checkpoint_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- git_checkpoint_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- handoff_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -194,6 +200,24 @@ Build it with the command above using `--example commands`. The controlled
 `commands_` runs need no provider, credentials or installation. Loading the built
 component is opt-in and needs a component-enabled host; browsing commands also
 needs that host's selector and confirmation UI.
+
+### What the custom header example does
+
+On `session_start`, a host with UI receives a custom header factory. Its retained
+view draws a block-character North Star over an M, with a `Custom header`
+subtitle. It uses the live theme supplied to the factory, ignores the render
+width and needs no image support. Headless startup makes no UI request.
+
+`/builtin-header` restores the built-in header and its keybinding hints, then
+reports `Built-in header restored`. The command forwards both requests even in a
+headless host, where the host decides how to handle them. A later session start
+installs the custom header again.
+
+The controlled run builds and instantiates the component, supplies the session
+and theme observations, renders its retained view and invokes its reset command.
+It needs no provider, credentials or installation. Loading the component into an
+application is opt-in and needs that application's component runtime; displaying
+the header also needs an interactive UI host.
 
 ### What the file trigger example does
 
@@ -721,6 +745,30 @@ Git's unreachable objects. There is no persistent recovery catalog, automatic
 reset, stash push, or built-in checkpoint policy. The controlled runs load the
 built component through the production runner in disposable repositories with
 scripted UI choices. They need Git but no provider, credentials or paid service.
+
+### What the handoff example does
+
+`/handoff <goal>` selects the current branch's conversation. After compaction it
+uses the latest summary, the kept prefix and subsequent messages. Message and
+compaction entries are included; settings, labels and other entry kinds are not.
+It asks the selected model for a focused prompt, shows a cancellable loader, and
+opens **Edit handoff prompt** for review.
+Only response text enters the draft, with a newline between text blocks.
+
+Accepting the editor opens a new session with the current session file as its
+parent. The replacement context puts the edited prompt in that session's editor
+and reports `Handoff ready. Submit when ready.` It does not submit the prompt.
+Cancelling generation or the editor leaves the session alone; a host veto of
+replacement reports `New session cancelled` without writing to another editor.
+Missing credentials or generation failures report `Cancelled`; the generation
+error is also written to the host's error output.
+
+Build with `--example handoff` using the command above. Loading it is opt-in and
+requires a component-enabled interactive host with custom UI, editor dialogs,
+event tails and session replacement. Real generation sends the selected history
+and goal to the configured model and requires that provider's API key; it can
+incur charges. The controlled `handoff_` run uses an in-memory provider, history,
+credentials and terminal, with no network calls or extension installation.
 
 ### What the question extractor does
 

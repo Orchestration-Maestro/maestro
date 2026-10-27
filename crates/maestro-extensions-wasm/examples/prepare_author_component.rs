@@ -18,45 +18,46 @@ fn main() -> Result<(), String> {
     build::compile(path).map_err(|error| error.to_string())?;
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
-    let ssh = build::component("ssh", "MAESTRO_SSH_COMPONENT")?;
-    let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
-    let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
-    let tools = build::component("tools", "MAESTRO_TOOLS_COMPONENT")?;
-    let shell = build::component("local_shell_component", "MAESTRO_LOCAL_SHELL_COMPONENT")?;
-    let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
     let file_trigger = build::component("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT")?;
     let checkpoint = build::component("git_checkpoint", "MAESTRO_GIT_CHECKPOINT_COMPONENT")?;
-    let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
-    let wasi = build::component("wasi_capabilities", "MAESTRO_WASI_COMPONENT")?;
+    let handoff = build::component("handoff", "MAESTRO_HANDOFF_COMPONENT")?;
     let helpers = build::component("helper_capabilities", "MAESTRO_HELPER_COMPONENT")?;
     let hooks = build::component("hook_component", "MAESTRO_HOOK_COMPONENT")?;
+    let shell = build::component("local_shell_component", "MAESTRO_LOCAL_SHELL_COMPONENT")?;
+    let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
+    let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
+    let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
     let resources = build::component("resource_component", "MAESTRO_RESOURCE_COMPONENT")?;
     let reloaded = build::component(
         "resource_component_reloaded",
         "MAESTRO_RESOURCE_RELOADED_COMPONENT",
     )?;
+    let ssh = build::component("ssh", "MAESTRO_SSH_COMPONENT")?;
+    let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
+    let tools = build::component("tools", "MAESTRO_TOOLS_COMPONENT")?;
+    let wasi = build::component("wasi_capabilities", "MAESTRO_WASI_COMPONENT")?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
         std::fs::write(
             environment,
             format!(
-                "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_SSH_COMPONENT={}\n",
+                "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_SSH_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\n",
                 path.display(),
                 context.display(),
-                shell.display(),
-                native_io.display(),
                 file_trigger.display(),
-                location.display(),
-                wasi.display(),
+                checkpoint.display(),
+                handoff.display(),
                 helpers.display(),
                 hooks.display(),
+                shell.display(),
+                location.display(),
+                native_io.display(),
+                qna.display(),
                 resources.display(),
                 reloaded.display(),
-                tools.display(),
-                checkpoint.display(),
+                ssh.display(),
                 tool_override.display(),
-                qna.display(),
-                ssh.display()
+                tools.display(),
+                wasi.display()
             ),
         )
         .map_err(|error| error.to_string())?;
