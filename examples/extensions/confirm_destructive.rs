@@ -9,8 +9,8 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     AgentMessage, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, Message, NotificationType, Presence, SessionBeforeSwitchReason,
-    SessionBeforeSwitchResult, SessionEntry, SessionEvent,
+    ExtensionFuture, Message, NotificationType, Presence, SessionBeforeForkResult,
+    SessionBeforeSwitchReason, SessionBeforeSwitchResult, SessionEntry, SessionEvent,
 };
 
 /// Asks before a new session or before leaving history containing a user message.
@@ -63,10 +63,51 @@ fn before_switch(
     })
 }
 
+/// Permits a fork only when its selector returns the exact affirmative choice.
+fn before_fork(
+    event: &mut ExtensionEvent,
+    ctx: ExtensionContext,
+) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+    Box::pin(async move {
+        if !ctx.has_ui()? {
+            return Ok(None);
+        }
+        let ExtensionEvent::Session(SessionEvent::BeforeFork(event)) = event else {
+            return Ok(None);
+        };
+        let entry_id: String = event.entry_id.chars().take(8).collect();
+        let choice = ctx
+            .ui()?
+            .select(
+                format!("Fork from entry {entry_id}?"),
+                vec![
+                    "Yes, create fork".into(),
+                    "No, stay in current session".into(),
+                ],
+                None,
+            )
+            .await?;
+        if choice.as_deref() == Some("Yes, create fork") {
+            return Ok(None);
+        }
+        ctx.ui()?
+            .notify("Fork cancelled", Some(NotificationType::Info))?;
+        Ok(Some(ExtensionEventResult::SessionBeforeFork(
+            SessionBeforeForkResult {
+                cancel: Presence::Present(true),
+                skip_conversation_restore: Presence::Missing,
+            },
+        )))
+    })
+}
+
 /// Registers session confirmation handlers with the supplied host.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
-    Box::pin(async move { api.on("session_before_switch", Rc::new(before_switch)) })
+    Box::pin(async move {
+        api.on("session_before_switch", Rc::new(before_switch))?;
+        api.on("session_before_fork", Rc::new(before_fork))
+    })
 }
 
 #[cfg(target_arch = "wasm32")]
