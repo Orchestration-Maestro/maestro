@@ -402,6 +402,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
         identity.keep(options.handler);
         Ok(())
     }
+    fn contribute_load_time(&self, contributions: serde_json::Value) -> ExtensionResult<()> {
+        self.0.contribute_load_time(&encode_value(&contributions)?)
+    }
     fn register_flag(&self, name: &str, options: FlagOptions) -> ExtensionResult<()> {
         self.0.register_flag(name, &options)
     }
