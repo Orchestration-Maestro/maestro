@@ -69,6 +69,14 @@ impl Session {
     }
 }
 
+/// One tool registration the guest attempted, whether or not the host admitted it.
+pub struct Attempt {
+    /// The metadata document the guest sent.
+    pub metadata: String,
+    /// How many transcript lines the host recorded before the attempt.
+    pub position: usize,
+}
+
 /// Lines the host observed, the identities the extension dropped, how many resources the host
 /// still lends out, and the registrations it received.
 #[derive(Default)]
@@ -109,6 +117,8 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    /// Tool registrations the guest attempted, admitted or not, in attempt order.
+    pub attempts: Vec<Attempt>,
     pub schemas: Vec<(String, String, u32)>,
     pub schema_request_bytes: usize,
     pub schema_response_bytes: usize,
@@ -216,6 +226,10 @@ impl Observed {
             name: String,
         }
         let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
+        self.attempts.push(Attempt {
+            metadata: metadata.into(),
+            position: self.transcript.len(),
+        });
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }
