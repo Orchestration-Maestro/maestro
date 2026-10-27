@@ -55,17 +55,6 @@ fn registered_guest_streams_reach_the_native_agent() {
     });
 }
 
-/// The application's host widgets over the default live theme.
-fn widgets() -> Rc<dyn maestro_app::ExtensionWidgets> {
-    let highlighter =
-        Rc::new(maestro_theme::SyntectHighlighter::new().expect("bundled syntax definitions"));
-    Rc::new(maestro_chat::ExtensionWidgetHost::new(
-        maestro_theme::LiveTheme::default(),
-        highlighter,
-        maestro_tui::TerminalImage::default(),
-    ))
-}
-
 /// Build an isolated SDK session with the production component factory and no ambient auth.
 async fn session(
     root: &super::support::Root,
@@ -77,7 +66,7 @@ async fn session(
         .extension_factories
         .push(maestro_extensions_wasmtime::artifact_factory(
             std::env::var("MAESTRO_CONTEXT_COMPONENT").expect("nextest author-component setup"),
-            widgets(),
+            crate::support::widgets(),
             env!("CARGO_PKG_VERSION").into(),
         ));
     resources.system_prompt = Some(String::new());

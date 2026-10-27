@@ -153,11 +153,18 @@ impl OutputPort for Output {
     fn write(&self, text: &str) -> io::Result<()> {
         let writer = self.0.borrow().clone();
         if let Some(writer) = writer {
-            writer.write(text);
-            Ok(())
+            writer.write(text)
         } else {
             tty_writer::write_sync(text)
         }
+    }
+
+    /// Keeps only the sendable ingress in the caller's handle.
+    fn output_writer(&self) -> Option<crate::terminal::output::OutputWriter> {
+        self.0
+            .borrow()
+            .as_ref()
+            .map(|writer| writer.output_writer())
     }
 
     /// Takes the writer out of service before draining any retained front.

@@ -50,7 +50,7 @@ async fn observe_faulted_store(release_trap: bool) {
     let retained = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let version = "installed-component-host".into();
-    let mut state = lifecycle::State::new(endpoint, callbacks, &path, version);
+    let mut state = lifecycle::State::new(endpoint, callbacks, &path, version, None).unwrap();
     let count = Arc::new(AtomicUsize::new(0));
     let (dropped, observed) = tokio::sync::oneshot::channel();
     state

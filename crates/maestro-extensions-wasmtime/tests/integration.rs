@@ -25,11 +25,16 @@ mod lifetimes;
 mod listener_prefixes;
 mod module_location;
 mod native_helpers;
+mod native_io;
 mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
 mod startup;
 mod synchronous_reentry;
+mod wasi_access;
+mod wasi_network;
+mod wasi_output;
+mod wasi_support;
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;

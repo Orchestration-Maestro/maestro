@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::callbacks::Identity;
 use super::event_bus::subscription;
 use super::imports::{Dialog, Imports};
-use super::signals::Mirror;
+use super::signals::Binding;
 use crate::types::{ExtensionFuture, ExtensionResult};
 use crate::{
     ExtensionUIContext, ExtensionUIContextPort, ExtensionUIDialogOptions, ExtensionWidgetOptions,
@@ -32,9 +32,9 @@ impl<I: Imports> Ui<I> {
 fn follow<I: Imports>(
     imports: &I,
     opts: Option<ExtensionUIDialogOptions>,
-) -> ExtensionResult<(Mirror<I>, Option<f64>)> {
+) -> ExtensionResult<(Binding<I>, Option<f64>)> {
     let (signal, timeout) = opts.map_or((None, None), |opts| (opts.signal, opts.timeout));
-    Ok((Mirror::new(imports, signal.as_ref())?, timeout))
+    Ok((Binding::new(imports, signal.as_ref())?, timeout))
 }
 
 impl<I: Imports> ExtensionUIContextPort for Ui<I> {
@@ -214,13 +214,13 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     ) -> ExtensionFuture<'static, Option<String>> {
         let (imports, resource) = self.owned();
         Box::pin(async move {
-            let (mirror, timeout) = follow(&imports, opts)?;
+            let (binding, timeout) = follow(&imports, opts)?;
             let dialog = Dialog {
-                signal: mirror.signal(),
+                signal: binding.signal(),
                 timeout,
             };
             let answer = imports.ui_select(&resource, title, options, dialog).await;
-            mirror.settle(answer)
+            binding.settle(answer)
         })
     }
     fn confirm(
@@ -231,13 +231,13 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     ) -> ExtensionFuture<'static, bool> {
         let (imports, resource) = self.owned();
         Box::pin(async move {
-            let (mirror, timeout) = follow(&imports, opts)?;
+            let (binding, timeout) = follow(&imports, opts)?;
             let dialog = Dialog {
-                signal: mirror.signal(),
+                signal: binding.signal(),
                 timeout,
             };
             let answer = imports.ui_confirm(&resource, title, message, dialog).await;
-            mirror.settle(answer)
+            binding.settle(answer)
         })
     }
     fn input(
@@ -248,15 +248,15 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     ) -> ExtensionFuture<'static, Option<String>> {
         let (imports, resource) = self.owned();
         Box::pin(async move {
-            let (mirror, timeout) = follow(&imports, opts)?;
+            let (binding, timeout) = follow(&imports, opts)?;
             let dialog = Dialog {
-                signal: mirror.signal(),
+                signal: binding.signal(),
                 timeout,
             };
             let answer = imports
                 .ui_input(&resource, title, placeholder, dialog)
                 .await;
-            mirror.settle(answer)
+            binding.settle(answer)
         })
     }
     fn editor(

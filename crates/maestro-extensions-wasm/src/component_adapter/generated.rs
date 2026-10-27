@@ -50,6 +50,9 @@ pub(crate) mod provider_streams;
 #[derive(Clone, Copy)]
 struct Generated;
 
+#[path = "generated_native.rs"]
+mod native;
+
 impl Imports for Generated {
     type OAuthProvider = host::OauthProvider;
     fn credentials_oauth_providers(
@@ -96,6 +99,9 @@ impl Imports for Generated {
         route::text(&provider.get_api_key(credentials))
     }
 
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher> {
+        host::watch(&path, listener)
+    }
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
         registry_register_provider(resource: &Self::Registry, name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => register_provider(name, config, callbacks);
@@ -488,7 +494,6 @@ impl Imports for Generated {
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Theme = host::Theme;
-    type Signal = host::AbortSignal;
     type Context = host::Context;
     type CommandContext = host::CommandContext;
     type ReplacedContext = host::ReplacedSessionContext;

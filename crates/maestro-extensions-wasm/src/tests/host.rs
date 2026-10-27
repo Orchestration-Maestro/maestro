@@ -878,6 +878,16 @@ impl host::Host for State {
         }))
     }
 
+    fn watch(
+        &mut self,
+        _path: String,
+        _listener: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::native_watch_host::Watcher>, String>> {
+        Ok(Err("native file watch requires the production host".into()))
+    }
+    fn kill(&mut self, pid: i32, signal: Option<String>) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.observed.native_io.kill(pid, signal))
+    }
     fn model_stream(
         &mut self,
         _: bool,
@@ -1577,6 +1587,7 @@ pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Compon
 fn component_linker(engine: &Engine) -> wasmtime::Result<Linker<State>> {
     let mut linker = Linker::new(engine);
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
     Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
     Ok(linker)
 }
@@ -1783,6 +1794,56 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn fetch(
+        accessor: &Accessor<State, Self>,
+        request: host::HttpRequest,
+        signal: Option<Resource<Flag>>,
+    ) -> impl Future<
+        Output = wasmtime::Result<Result<Resource<super::native_http_host::Response>, String>>,
+    > {
+        std::future::ready(super::native_http_host::fetch(accessor, request, signal))
+    }
+    fn spawn(
+        accessor: &Accessor<State, Self>,
+        command: String,
+        args: Vec<String>,
+        options: host::SpawnOptions,
+    ) -> impl Future<Output = wasmtime::Result<Result<Resource<super::native_io_host::Child>, String>>>
+    {
+        std::future::ready(super::native_io_host::spawn(
+            accessor, command, args, options,
+        ))
+    }
+
+    async fn sleep(
+        accessor: &Accessor<State, Self>,
+        duration: (u64, u32),
+        signal: Option<Resource<Flag>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let aborted = |a: &Accessor<State, Self>| {
+            a.with(|mut a| {
+                signal
+                    .as_ref()
+                    .is_some_and(|s| a.get().table.get(s).unwrap().0.load(Ordering::SeqCst))
+            })
+        };
+        if aborted(accessor) {
+            return Ok(Err("Aborted".into()));
+        }
+        let hold = accessor.with(|mut a| {
+            a.get()
+                .observed
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            a.get().observed.take_hold()
+        });
+        pause(hold).await;
+        Ok(if aborted(accessor) {
+            Err("Aborted".into())
+        } else {
+            Ok(())
+        })
+    }
+
     async fn call(
         accessor: &Accessor<State, Self>,
         operation: String,

@@ -68,6 +68,10 @@ mod host_widgets;
 mod join;
 mod json_payloads;
 mod model_streams;
+pub(crate) mod native_http_host;
+mod native_io;
+pub(crate) mod native_io_host;
+pub(crate) mod native_watch_host;
 mod observed;
 pub(crate) mod overlay_host;
 mod parameter_schemas;
@@ -601,12 +605,20 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_setup_contract(&contract);
     assert_replacement_contract(&contract);
     assert_ui_contract(&contract);
+    assert_async_imports(&contract);
+    assert_interface_contract(&contract);
+    Ok(())
+}
+
+/// Checks every asynchronous host import the guest calls.
+fn assert_async_imports(contract: &Contract) {
     assert_eq!(
         names(&contract.imports, true),
         [
             "[method]auth-lock-update.update-async",
             "[method]auth-storage.get-api-key",
             "[method]auth-storage.login",
+            "[method]child-process.wait",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
@@ -625,18 +637,24 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]oauth-provider.login",
             "[method]oauth-provider.refresh-token",
             "[method]provider-controls.invoke",
+            "[method]readable.read",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "[method]response.json",
+            "[method]response.text",
             "[method]widget.drain-input",
+            "[method]writable.end",
+            "[method]writable.write",
             "call",
             "event-emit",
+            "fetch",
             "get-all-tools",
             "register-tool",
             "set-model",
+            "sleep",
+            "spawn",
         ]
     );
-    assert_interface_contract(&contract);
-    Ok(())
 }
 
 /// Reads the retained UI request signatures of the built component.
@@ -814,11 +832,24 @@ fn assert_interface_contract(contract: &Contract) {
         outside.is_empty(),
         "only the author world and WASI interfaces are imported: {outside:?}"
     );
-    let wasi = contract
+    let wasi: Vec<_> = contract
         .interfaces
         .iter()
-        .filter(|name| name.starts_with("wasi:"));
-    assert!(wasi.clone().count() > 0 && wasi.into_iter().all(|name| name.contains("@0.2.")));
+        .filter(|name| name.starts_with("wasi:"))
+        .collect();
+    assert!(
+        wasi.iter().any(|name| name.contains("@0.2.")),
+        "standard-library baseline remains available"
+    );
+    assert!(
+        wasi.iter().any(|name| name.contains("@0.3.")),
+        "native asynchronous standard imports are available"
+    );
+    assert!(
+        wasi.iter()
+            .all(|name| name.contains("@0.2.") || name.contains("@0.3.")),
+        "only supported standard generations: {wasi:?}"
+    );
 }
 
 /// Expected parameter/result sequences for the action wire.
@@ -1152,6 +1183,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-terminal-input",
             "invoke-tool",
             "invoke-tool-render",
+            "invoke-watch",
             "invoke-widget",
             "invoke-with-session",
             "start"

@@ -50,6 +50,8 @@ pub mod footer_data_provider;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod helpers;
 mod loader;
+/// Native effects supplied to extension adapters.
+pub mod native_io;
 /// Owned registration records and callback types.
 pub mod types;
 pub use maestro_catalog::{

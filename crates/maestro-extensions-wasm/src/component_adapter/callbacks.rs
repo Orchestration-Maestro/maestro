@@ -91,6 +91,7 @@ kinds! {
         CompactionComplete(crate::CompactionComplete),
         CompactionError(crate::CompactionError),
         Listener(crate::EventListener),
+        Watch(super::io::WatchCallback),
         Command(CommandHandler),
         Completion(crate::ArgumentCompletions),
         Shortcut(crate::ShortcutHandler),

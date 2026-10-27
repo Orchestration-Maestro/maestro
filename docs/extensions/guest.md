@@ -8,6 +8,8 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
+Native waits, child processes, raw HTTP bodies and file watches are described in
+[native operations](guest_operations.md).
 Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
 
 ## Build a component
@@ -1083,3 +1085,12 @@ owner's message. A theme kept past its renderer call observes later theme change
 edits made through any of its clones.
 
 See [native helpers](guest_operations.md) for synchronous terminal operations.
+
+## Standard operating-system interfaces
+
+Rust standard-library environment, file and byte I/O use the host's WASI 0.2
+baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
+0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
+and `wit_stream` byte-stream construction. Both generations use the same host
+context; neither introduces an extension-specific permission list. See
+[component operating environment](host_io.md) for access and platform limits.

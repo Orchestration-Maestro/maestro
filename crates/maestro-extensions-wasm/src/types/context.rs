@@ -185,9 +185,9 @@ pub trait SignalPort {
 /// callback that received them.
 #[derive(Clone)]
 pub struct AbortSignal {
-    /// The flag's requests.
+    /// Cancellation observations supplied by the signal's owner.
     port: Rc<dyn SignalPort>,
-    /// The host resource behind a flag the host lent, which goes back to the host unchanged.
+    /// Original host resource, retained when the host supplied this signal.
     #[cfg(any(test, target_arch = "wasm32"))]
     host: Option<Rc<dyn std::any::Any>>,
 }
@@ -203,16 +203,16 @@ impl AbortSignal {
         }
     }
 
-    /// Wraps a flag the host lent as a `P`.
+    /// Keeps a supplied host resource available for later operations.
     #[cfg(any(test, target_arch = "wasm32"))]
-    pub(crate) fn lent<P: SignalPort + 'static>(port: Rc<P>) -> Self {
+    pub(crate) fn supplied<P: SignalPort + 'static>(port: Rc<P>) -> Self {
         Self {
             port: port.clone(),
             host: Some(port),
         }
     }
 
-    /// The host flag behind this signal, when the host lent it as a `P`.
+    /// Recovers the retained host resource without creating another signal.
     #[cfg(any(test, target_arch = "wasm32"))]
     pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
         self.host.clone()?.downcast().ok()

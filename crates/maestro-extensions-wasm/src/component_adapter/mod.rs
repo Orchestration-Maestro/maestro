@@ -28,15 +28,18 @@ pub(crate) use generated::model_streams;
 pub(crate) use generated::new_event_stream;
 #[cfg(test)]
 pub(crate) use signals::signal;
+mod byte_resources;
 mod exports;
 pub(crate) mod factories;
 #[cfg(target_arch = "wasm32")]
 mod generated;
 mod host_api;
 mod imports;
+mod io;
 mod keys;
 mod lists;
 mod model_registry;
+mod native_imports;
 pub(crate) mod oauth;
 pub(crate) mod overlays;
 mod providers;
@@ -84,6 +87,8 @@ pub(crate) use imports::Imports;
 pub(crate) use imports::ProviderRegistration;
 #[cfg(test)]
 pub(crate) use imports::ToolCallbacks;
+#[cfg(test)]
+pub(crate) use native_imports::NativeImports;
 
 pub(crate) use tools::ToolListing;
 
