@@ -2448,9 +2448,8 @@ impl Imports for Controlled {
     }
 
     fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
-        let _ = context;
         self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire();
+        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
         Ok(Ui {
             key,
             _lease: Lease::new(&self.observed),
@@ -2531,9 +2530,8 @@ impl Imports for Controlled {
         Ok(self.observed.borrow().catalog.data.prompt.clone())
     }
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
-        let _ = context;
         self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire();
+        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
         Ok(Ui {
             key,
             _lease: Lease::new(&self.observed),

@@ -31,7 +31,8 @@ that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start. `extensions/working_indicator.rs` builds a command that selects
 a dot, pulse, hidden indicator, custom spinner or host-default spinner, with
-themed status. The
+themed status. `extensions/status_line.rs` shows themed readiness and counted
+turn progress in the footer; its controlled run is listed in the extension index. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
