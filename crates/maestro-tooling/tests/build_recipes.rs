@@ -1623,7 +1623,8 @@ fn watch_child_transcript_survives_forced_kill() {
         assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
         assert_eq!(receive.recv().unwrap(), "watch phase: ready");
         recipe_support::record("phase: blocked waiting for controller");
-        println!("READY {}", std::process::id());
+        // Separate readiness from libtest's unterminated test-name prefix.
+        println!("\nREADY {}", std::process::id());
         std::io::stdout().flush().unwrap();
         let _ = std::io::stdin().read(&mut [0]).unwrap();
         panic!("controller must kill the blocked test");
