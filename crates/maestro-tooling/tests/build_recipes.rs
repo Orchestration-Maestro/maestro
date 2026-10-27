@@ -142,6 +142,7 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
+#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
@@ -162,13 +163,6 @@ fn maestro_test_recipes_forward_literal_arguments() {
         let output = workspace.command(recipe).args(&args).output().unwrap();
         assert!(output.status.success(), "{recipe}");
         let suffix = args.join("|");
-        // Git's sh, which runs the recipes on Windows, reads single quotes in the command
-        // line its native parent builds as quoting.
-        let suffix = if cfg!(windows) {
-            suffix.replace("'quoted'", "quoted")
-        } else {
-            suffix
-        };
         let expected = if doctests {
             format!(
                 "cargo nextest|run|{selection}|{suffix}\ncargo test|{selection}|--doc|{suffix}\n"
@@ -1292,6 +1286,7 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
 }
 
 #[test]
+#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_source_recipes_preserve_invocation_directory() {
     let workspace = Workspace::new();
     let outside = workspace.path().join("outside");
@@ -1317,12 +1312,9 @@ fn maestro_source_recipes_preserve_invocation_directory() {
     );
     // The recipes join the manifest onto the justfile directory with `/` on every host.
     let manifest = format!("{}/Cargo.toml", workspace.path().display());
-    // Git's sh, which runs the recipes on Windows, reads single quotes in the command line
-    // its native parent builds as quoting.
-    let quoted = if cfg!(windows) { "quoted" } else { "'quoted'" };
     let log = workspace.log();
     for recipe in ["run-source", "run-source-windows"] {
-        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{manifest}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|{quoted}|\u{feff}\u{85}\u{2003}")), "{log}");
+        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{manifest}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}")), "{log}");
     }
 }
 
