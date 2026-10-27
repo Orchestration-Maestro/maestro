@@ -751,13 +751,16 @@ fn native_output_restores_output_flags() {
                 let mut terminal = queued_terminal(&rig, &output).await;
                 assert!(fcntl_getfl(stdout()).unwrap().contains(OFlags::NONBLOCK));
                 terminal.write("flags").unwrap();
+                // Some hosts' drain of a terminal waits until its reader takes this output.
+                let reader = Capture(output.0.try_clone().unwrap());
+                let collector = collect_bytes(reader, "flags\x1b[?2004l".len());
                 if case % 4 < 2 {
                     terminal.stop().unwrap();
                 } else {
                     drop(terminal);
                 }
                 assert_eq!(support::stdout_flags(), flags);
-                assert_eq!(output.take(), "flags\x1b[?2004l");
+                assert_eq!(collector.join().unwrap(), b"flags\x1b[?2004l");
             });
         });
     }
