@@ -1,4 +1,4 @@
-# Consume JSON session events
+# JSON session events
 
 Use `--mode json` to run prompts to completion while another program reads the
 session's events. Standard output is newline-delimited JSON, not a single JSON
