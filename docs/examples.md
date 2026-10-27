@@ -9,6 +9,9 @@ Run them directly with Cargo in a disposable Unix terminal.
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
 `sdk/`, and each folder has its own index page. Shipped extensions include:
+`extensions/confirm_destructive.rs` asks before replacing or forking a session;
+its controlled runs supply history and dialog answers without changing a session.
+Loading is opt-in and interactive confirmation needs the host's UI.
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
@@ -30,6 +33,8 @@ a command that adds more echo tools while the session runs,
 friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
+`extensions/model_status.rs` sets the `model` status for each selected model
+and notifies only on an explicit selection or a cycle, never on a restore.
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start. `extensions/qna.rs` extracts questions from the latest complete
 assistant reply into the editor through the configured model, with a cancellable
@@ -54,6 +59,13 @@ is opt-in. Temporary output can contain private contents and remains until
 removed. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
+
+`extensions/handoff.rs` generates an editable prompt from the selected branch
+and opens a parent-linked session without submitting it. Loading it is opt-in
+and needs an interactive component host with custom UI, editor dialogs, event
+tails, session replacement and configured model credentials. Real generation
+sends the selected history to that model and can incur charges. The extension
+index lists the controlled `handoff_` run, which needs no live service.
 
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a

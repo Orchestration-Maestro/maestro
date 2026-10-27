@@ -22,6 +22,7 @@ fn main() -> Result<(), String> {
     build::compile(&context).map_err(|error| error.to_string())?;
     let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
     let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
+    let handoff = build::component("handoff", "MAESTRO_HANDOFF_COMPONENT")?;
     let tools = build::component("tools", "MAESTRO_TOOLS_COMPONENT")?;
     let shell = build::component("local_shell_component", "MAESTRO_LOCAL_SHELL_COMPONENT")?;
     let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
@@ -42,7 +43,7 @@ fn main() -> Result<(), String> {
             format!(
                 "MAESTRO_TEST_RG={rg}\nMAESTRO_TEST_FD={fd}\n\
                  MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\n",
+                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\n",
                 path.display(),
                 context.display(),
                 shell.display(),
@@ -57,6 +58,7 @@ fn main() -> Result<(), String> {
                 tools.display(),
                 checkpoint.display(),
                 tool_override.display(),
+                handoff.display(),
                 qna.display()
             ),
         )

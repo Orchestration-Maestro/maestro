@@ -28,17 +28,24 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `confirm_destructive.rs` | Confirmation before starting a new session, switching away from user history or forking. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
+| `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
+| `handoff.rs` | A `/handoff <goal>` command that generates an editable prompt from the selected branch, then opens a parent-linked replacement session. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
+| `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
+| `preset.rs` | A `--preset` flag, `/preset` selector and Ctrl+Shift+U shortcut for named model, thinking, tool and prompt configurations. |
+| [`preset/config.rs`](preset/config.rs) | Layered configuration loading for `preset.rs`. |
+| [`preset/selector.rs`](preset/selector.rs) | Retained, themed preset selector for `preset.rs`. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
@@ -86,7 +93,11 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- confirm_destructive_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_header_component_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -100,17 +111,25 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- git_checkpoint_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- handoff_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- preset_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -179,6 +198,24 @@ Build it with the command above using `--example commands`. The controlled
 `commands_` runs need no provider, credentials or installation. Loading the built
 component is opt-in and needs a component-enabled host; browsing commands also
 needs that host's selector and confirmation UI.
+
+### What the custom header example does
+
+On `session_start`, a host with UI receives a custom header factory. Its retained
+view draws a block-character North Star over an M, with a `Custom header`
+subtitle. It uses the live theme supplied to the factory, ignores the render
+width and needs no image support. Headless startup makes no UI request.
+
+`/builtin-header` restores the built-in header and its keybinding hints, then
+reports `Built-in header restored`. The command forwards both requests even in a
+headless host, where the host decides how to handle them. A later session start
+installs the custom header again.
+
+The controlled run builds and instantiates the component, supplies the session
+and theme observations, renders its retained view and invokes its reset command.
+It needs no provider, credentials or installation. Loading the component into an
+application is opt-in and needs that application's component runtime; displaying
+the header also needs an interactive UI host.
 
 ### What the file trigger example does
 
@@ -464,6 +501,21 @@ that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.
 
+### What the model status example does
+
+`model_select` reads the selection the host reports. On an explicit selection or
+a cycle it notifies `Model: {provider}/{id}` with info severity; restoring a
+saved selection skips the notification. Every selection then sets the `model`
+status to `🤖 {id}` and writes the previous and selected identifiers and
+the selection source to standard output. An absent previous model reads `none`.
+Repeated and unchanged selections are reported too.
+
+The example makes no model or provider call and paints no footer; a host that
+shows the status decides where it goes. `model_status_component_runs_selection_hook`
+instantiates the built component and checks its host requests and its standard
+output against the recorded selections. Loading the component into an application
+is opt-in and needs that application's component runtime.
+
 ### What the widget placement example does
 
 On every `session_start`, `widget_placement` reads the host's current UI
@@ -510,6 +562,52 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the preset example does
+
+Build with `--example preset` in the build command above. The component reads
+`presets.json` in `MAESTRO_CODING_AGENT_DIR` (default `~/.maestro/agent`) and
+`<cwd>/.maestro/presets.json` at session start. A project entry replaces the whole
+global entry with the same name. Missing files are ignored; unreadable files,
+invalid JSON or invalid field types report a diagnostic and leave the other
+layer available.
+
+Each file maps names to optional `provider`, `model`, `thinkingLevel`, `tools`
+and `instructions` fields. For example:
+
+```json
+{
+  "plan": {
+    "thinkingLevel": "high",
+    "tools": ["read", "grep", "find", "ls"],
+    "instructions": "Understand the problem before proposing changes."
+  }
+}
+```
+
+`--preset plan` applies the preset before session startup completes, including
+model selection. `/preset plan` selects it directly; `/preset` opens **Select
+Preset**. Ctrl+Shift+U cycles names in sorted order, including `(none)` to clear.
+Clearing restores the model, thinking level and tools captured before the first
+application. Without a snapshot it restores `read`, `bash`, `edit` and `write`.
+Unknown models, missing authentication and unknown tools produce warnings;
+nonempty valid tool selections still apply. Empty or wholly invalid tool lists
+leave the host's tools unchanged.
+
+Active instructions append to the supplied system prompt. The footer shows
+`preset:<name>`. Turn-start entries retain the active name, including a cleared
+choice, on the current branch. Session start and tree navigation restore only
+the newest name on that branch, without reapplying model or tool settings.
+The flag takes precedence over the saved name.
+
+Loading is opt-in and needs a component-enabled native host with filesystem and
+environment access; browsing the selector also needs custom UI and retained
+widgets. Adding `provider` and `model` selects that exact configured registry
+entry and needs its authentication for real requests. This example changes
+session settings and appends session entries, but writes no configuration file.
+Real prompts can incur provider charges. The `preset_` controlled runs use
+read-only fixture files, supplied registry replies and terminal input; they
+need no credentials, installation or paid services.
 
 ### What the input transform example does
 
@@ -646,6 +744,30 @@ reset, stash push, or built-in checkpoint policy. The controlled runs load the
 built component through the production runner in disposable repositories with
 scripted UI choices. They need Git but no provider, credentials or paid service.
 
+### What the handoff example does
+
+`/handoff <goal>` selects the current branch's conversation. After compaction it
+uses the latest summary, the kept prefix and subsequent messages. Message and
+compaction entries are included; settings, labels and other entry kinds are not.
+It asks the selected model for a focused prompt, shows a cancellable loader, and
+opens **Edit handoff prompt** for review.
+Only response text enters the draft, with a newline between text blocks.
+
+Accepting the editor opens a new session with the current session file as its
+parent. The replacement context puts the edited prompt in that session's editor
+and reports `Handoff ready. Submit when ready.` It does not submit the prompt.
+Cancelling generation or the editor leaves the session alone; a host veto of
+replacement reports `New session cancelled` without writing to another editor.
+Missing credentials or generation failures report `Cancelled`; the generation
+error is also written to the host's error output.
+
+Build with `--example handoff` using the command above. Loading it is opt-in and
+requires a component-enabled interactive host with custom UI, editor dialogs,
+event tails and session replacement. Real generation sends the selected history
+and goal to the configured model and requires that provider's API key; it can
+incur charges. The controlled `handoff_` run uses an in-memory provider, history,
+credentials and terminal, with no network calls or extension installation.
+
 ### What the question extractor does
 
 `/qna` reads the latest complete assistant reply on the current branch. It skips
@@ -666,3 +788,26 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the session confirmation example does
+
+Build with `--example confirm_destructive` using the command above. Loading is
+opt-in and needs a component-enabled host. Interactive confirmation needs that
+host's dialog and notification UI; headless hosts continue without a veto.
+
+Starting a new session always asks **Clear session?**, even when history is empty.
+Resuming another session asks **Switch session?** only when the current session
+contains a user message anywhere in its entries. Other entry kinds do not count.
+Declining or dismissing either confirmation reports cancellation and vetoes the
+replacement. Approving returns no override.
+
+Before a fork, the selector shows the first eight characters of the entry ID.
+Only **Yes, create fork** permits it; **No, stay in current session**, dismissal
+and any other answer report `Fork cancelled` and veto it. The host owns session
+replacement and forking: this example only returns cancellation decisions and
+never deletes messages or changes files itself.
+
+The controlled `confirm_destructive_` runs replay scripted history and UI answers
+through both the in-process adapter and the built component. They need no
+provider, credentials, filesystem changes or extension installation. A host
+rejection propagates unchanged instead of becoming an approval.
