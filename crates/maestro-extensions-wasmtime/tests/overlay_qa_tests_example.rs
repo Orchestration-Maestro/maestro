@@ -443,37 +443,43 @@ fn overlay_qa_tests_register_every_demonstration() {
         for (name, description) in [
             (
                 "overlay-animation",
-                "Test real-time animation in overlay (~30 FPS)",
+                "Animate an overlay at about 30 frames a second",
             ),
-            ("overlay-anchors", "Cycle through all anchor positions"),
-            ("overlay-margins", "Test margin and offset options"),
-            ("overlay-stack", "Test stacked overlays"),
+            (
+                "overlay-anchors",
+                "Show an overlay at each of the nine anchors",
+            ),
+            (
+                "overlay-margins",
+                "Place an overlay with margins and offsets",
+            ),
+            ("overlay-stack", "Stack three overlapping overlays"),
             (
                 "overlay-overflow",
-                "Test width overflow with streaming process output",
+                "Stream long process output into a narrower overlay",
             ),
-            ("overlay-edge", "Test overlay positioned at terminal edge"),
-            ("overlay-percent", "Test percentage-based positioning"),
-            ("overlay-maxheight", "Test maxHeight truncation"),
+            ("overlay-edge", "Place an overlay against the right edge"),
+            (
+                "overlay-percent",
+                "Place an overlay by row and column percentages",
+            ),
+            ("overlay-maxheight", "Cut an overlay at its maximum height"),
             (
                 "overlay-sidepanel",
-                "Test responsive sidepanel (hides when terminal < 100 cols)",
+                "Show a side panel that hides below 100 columns",
             ),
-            (
-                "overlay-toggle",
-                "Test overlay toggle (press 't' to toggle visibility)",
-            ),
+            ("overlay-toggle", "Hide an overlay for one second with t"),
             (
                 "overlay-passive",
-                "Test non-capturing overlay (passive info panel alongside active overlay)",
+                "Type beside a timer that never takes focus",
             ),
             (
                 "overlay-focus",
-                "Test focus cycling and rendering order with non-capturing overlays",
+                "Move focus between overlapping non-capturing panels",
             ),
             (
                 "overlay-streaming",
-                "Multiple input panels with simulated streaming (Tab to cycle focus)",
+                "Type into panels beside a simulated stream",
             ),
         ] {
             let command = host.runner.get_command(name).unwrap().command;
@@ -501,7 +507,7 @@ fn overlay_qa_tests_anchors_cycle_all_nine_positions_and_confirm() {
             host.shown(index + 1).await;
             let screen = host.screen();
             assert_eq!(corner(&screen), Some(position), "{name}");
-            assert!(screen[position.0 + 2].contains(&format!("│ Current: {name} ")));
+            assert!(screen[position.0 + 2].contains(&format!("│ Anchor: {name} ")));
             host.press(match index {
                 8 => "\r",
                 _ if index % 2 == 0 => " ",
@@ -509,13 +515,13 @@ fn overlay_qa_tests_anchors_cycle_all_nine_positions_and_confirm() {
             });
         }
         host.finished(command).await;
-        assert_eq!(host.calls(), [info("Selected: bottom-right")]);
+        assert_eq!(host.calls(), [info("Anchor selected: bottom-right")]);
         let command = host.command("overlay-anchors");
         for index in 9..=18 {
             host.shown(index + 1).await;
             host.press(if index == 18 { "\x1b" } else { " " });
         }
-        assert!(host.rows(18, 40)[2].contains("Current: top-left"));
+        assert!(host.rows(18, 40)[2].contains("Anchor: top-left"));
         host.finished(command).await;
         assert_eq!(host.calls().len(), 1, "cancelling reports nothing");
     });
@@ -543,11 +549,11 @@ fn overlay_qa_tests_margins_and_offsets_place_each_configuration() {
     run((80, 24), None, async |host| {
         let corners = [(0, 0), (3, 3), (5, 10), (5, 32), (14, 43)];
         let labels = [
-            "No margin (top-left)",
-            "Margin: 3 all sides",
-            "Margin: top=5, left=10",
-            "Center + offset (10, -3)",
-            "Bottom-right, margin: 2",
+            "Top left, no margin",
+            "Top left, margin 3",
+            "Top left, margin top 5, left 10",
+            "Center, 10 right and 3 up",
+            "Bottom right, margin 2",
         ];
         cycle(host, "overlay-margins", corners, labels).await;
         let width = host.ui.shown.borrow()[0].placement.borrow().width.clone();
@@ -563,11 +569,11 @@ fn overlay_qa_tests_percentages_place_rows_and_columns() {
     run((80, 24), None, async |host| {
         let corners = [(0, 25), (8, 25), (16, 25), (8, 0), (8, 50)];
         let labels = [
-            "rowPercent: 0 (top)",
-            "rowPercent: 50 (middle)",
-            "rowPercent: 100 (bottom)",
-            "colPercent: 0 (left)",
-            "colPercent: 100 (right)",
+            "Row 0% (top)",
+            "Row 50% (middle)",
+            "Row 100% (bottom)",
+            "Column 0% (left)",
+            "Column 100% (right)",
         ];
         cycle(host, "overlay-percent", corners, labels).await;
     });
@@ -579,7 +585,7 @@ fn overlay_qa_tests_stack_shows_layers_in_turn_and_reports_close_order() {
         tokio::time::pause();
         let command = host.command("overlay-stack");
         host.shown(1).await;
-        assert_eq!(host.calls(), [info("Showing overlay 1 (back)...")]);
+        assert_eq!(host.calls(), [info("Layer 1 of 3 (back) shown")]);
         for count in [2, 3] {
             elapse(Duration::from_millis(399)).await;
             assert_eq!(
@@ -594,8 +600,8 @@ fn overlay_qa_tests_stack_shows_layers_in_turn_and_reports_close_order() {
         for (row, col) in [(2, 7), (6, 15), (10, 23)] {
             assert_eq!(screen[row].chars().nth(col), Some('╭'), "{row}, {col}");
         }
-        assert!(screen[11].contains("│ Overlay #3"));
-        assert!(screen[12].contains("Layer: front (blue border)"));
+        assert!(screen[11].contains("│ Layer #3"));
+        assert!(screen[12].contains("Depth: front, blue border"));
         for key in ["\x1b", "\r", "\x03"] {
             host.press(key);
         }
@@ -603,10 +609,10 @@ fn overlay_qa_tests_stack_shows_layers_in_turn_and_reports_close_order() {
         assert_eq!(
             host.calls(),
             [
-                info("Showing overlay 1 (back)..."),
-                info("Showing overlay 2 (middle)..."),
-                info("Showing overlay 3 (front)..."),
-                info("Closed in order: Overlay 3, Overlay 2, Overlay 1"),
+                info("Layer 1 of 3 (back) shown"),
+                info("Layer 2 of 3 (middle) shown"),
+                info("Layer 3 of 3 (front) shown"),
+                info("Close order: layer 3, layer 2, layer 1"),
             ]
         );
     });
@@ -628,7 +634,7 @@ fn overlay_qa_tests_animation_advances_with_each_native_wait() {
         until(|| host.shows(0, 50, "│ Frame: 1 ")).await;
         assert!(host.shows(0, 50, "│ Spinner: ◓ "));
         assert_eq!(bar(host), Some(20));
-        assert!(host.shows(0, 50, "(game views use the same approach)"));
+        assert!(host.shows(0, 50, "│ Each frame comes from one native wait."));
         host.press("\x1b");
         host.finished(command).await;
     });
@@ -690,7 +696,7 @@ fn overlay_qa_tests_overflow_streams_process_output_within_the_width() {
             "errors do not scroll"
         );
         drop((out, err));
-        until(|| host.shows(0, 80, "│ ✓ Done | ↑↓ scroll | Esc close")).await;
+        until(|| host.shows(0, 80, "│ ✓ Exited | ↑↓ scroll | Esc close")).await;
         host.press("\x1b");
         host.finished(command).await;
         assert_eq!(
@@ -719,7 +725,7 @@ fn overlay_qa_tests_edge_and_max_height_place_their_notices() {
         host.shown(2).await;
         let screen = host.screen();
         assert_eq!(corner(&screen), Some((7, 15)));
-        assert!(screen[16].contains("│ Line 6 of 14"));
+        assert!(screen[16].contains("│ Row 6 of 14"));
         assert!(screen[17].trim().is_empty());
         assert!(
             !screen.iter().any(|row| row.contains('╰')),
@@ -737,13 +743,13 @@ fn overlay_qa_tests_sidepanel_hides_below_one_hundred_columns() {
         host.shown(1).await;
         let screen = host.screen();
         assert_eq!(corner(&screen), Some((8, 89)));
-        assert!(screen[11].contains("│→ Dashboard"));
+        assert!(screen[11].contains("│→ Sessions"));
         host.press("\x1b[B");
-        assert!(host.screen()[12].contains("│→ Messages"));
+        assert!(host.screen()[12].contains("│→ Models"));
         for key in ["\x1b[A", "\x1b[A", "\r"] {
             host.press(key);
         }
-        assert!(host.screen()[11].contains("│→ Dashboard"));
+        assert!(host.screen()[11].contains("│→ Sessions"));
         host.terminal.resize(99, 30);
         assert!(!host.ui.tui.has_overlay());
         assert_eq!(corner(&host.screen()), None);
@@ -765,7 +771,7 @@ fn overlay_qa_tests_toggle_hides_for_one_second_through_its_handle() {
             host.press("t");
             assert!(!host.ui.tui.has_overlay());
             host.press("t");
-            assert!(host.shows(0, 50, &format!("│ Toggle count: {count} ")));
+            assert!(host.shows(0, 50, &format!("│ Times hidden: {count} ")));
             elapse(Duration::from_millis(999)).await;
             assert!(!host.ui.tui.has_overlay(), "hidden for one second");
             elapse(Duration::from_millis(1)).await;
@@ -786,14 +792,14 @@ fn overlay_qa_tests_passive_timer_leaves_typing_with_the_controller() {
         let screen = host.screen();
         assert_eq!(corner(&screen), Some((1, 56)), "the timer is top-right");
         assert!(screen[2].contains("│ 00:00"));
-        assert!(screen[8].contains("│ focused=true inputs=0"));
-        assert!(screen[9].contains("│ last: none"));
+        assert!(screen[8].contains("│ Focused: true, inputs: 0"));
+        assert!(screen[9].contains("│ Last input: none"));
         for key in ["h", "i", "\x7f"] {
             host.press(key);
         }
         let screen = host.screen();
-        assert!(screen[8].contains("│ focused=true inputs=3"));
-        assert!(screen[9].contains("│ last: len=1 c0=127"));
+        assert!(screen[8].contains("│ Focused: true, inputs: 3"));
+        assert!(screen[9].contains("│ Last input: length 1, code 127"));
         assert!(screen[11].contains("│ > h "));
         elapse(Duration::from_secs(1)).await;
         until(|| host.screen()[2].contains("│ 00:01")).await;
@@ -808,17 +814,17 @@ fn overlay_qa_tests_focus_cycles_panels_and_raises_the_focused_one() {
         let command = host.command("overlay-focus");
         host.shown(1).await;
         let screen = host.screen();
-        assert!(screen[3].contains("│ Alph│ Beta│ Gamma"), "{}", screen[3]);
-        assert!(screen[11].contains("Current focus: Controller"));
+        assert!(screen[3].contains("│ Firs│ Seco│ Third"), "{}", screen[3]);
+        assert!(screen[11].contains("Focus: Controller"));
         host.press("\t");
         let screen = host.screen();
         assert!(
-            screen[3].contains("│ Alpha "),
+            screen[3].contains("│ First "),
             "the focused panel renders on top"
         );
-        assert!(screen[5].contains("│ ● FOCUSED"));
-        assert!(screen[11].contains("Current focus: Alpha"));
-        for (label, col) in [("Beta", 13), ("Gamma", 19)] {
+        assert!(screen[5].contains("│ ● Focused"));
+        assert!(screen[11].contains("Focus: First"));
+        for (label, col) in [("Second", 13), ("Third", 19)] {
             host.press("\t");
             let screen = host.screen();
             assert_eq!(
@@ -829,22 +835,22 @@ fn overlay_qa_tests_focus_cycles_panels_and_raises_the_focused_one() {
                     .collect::<String>(),
                 label
             );
-            assert!(screen[11].contains(&format!("Current focus: {label}")));
+            assert!(screen[11].contains(&format!("Focus: {label}")));
         }
         host.press("\t");
-        assert!(host.screen()[11].contains("Current focus: Controller"));
+        assert!(host.screen()[11].contains("Focus: Controller"));
         host.press("\x1b");
         host.finished(command).await;
     });
 }
 
-/// Whether a stream row is `[<local time>] Streaming line <count>...`.
+/// Whether a stream row is `[<local time>] Line <count>`.
 fn streamed(row: &str, count: u64) -> bool {
     let Some((time, rest)) = row.trim_start_matches(['│', ' ']).split_once("] ") else {
         return false;
     };
     let time = time.trim_start_matches('[');
-    rest.trim_end_matches(['│', ' ']) == format!("Streaming line {count}...")
+    rest.trim_end_matches(['│', ' ']) == format!("Line {count}")
         && (time.ends_with(" AM") || time.ends_with(" PM"))
         && time.matches(':').count() == 2
 }
@@ -861,12 +867,7 @@ fn overlay_qa_tests_streaming_routes_typing_to_the_focused_panel() {
             until(|| host.rows(0, 60).iter().any(|row| streamed(row, count))).await;
         }
         let rows = host.rows(0, 60);
-        assert_eq!(
-            rows.iter()
-                .filter(|row| row.contains("Streaming line"))
-                .count(),
-            8
-        );
+        assert_eq!(rows.iter().filter(|row| row.contains("] Line ")).count(), 8);
         assert!(
             !rows.iter().any(|row| streamed(row, 1)),
             "the oldest line scrolls away"
@@ -877,15 +878,15 @@ fn overlay_qa_tests_streaming_routes_typing_to_the_focused_panel() {
         }
         assert!(
             host.screen()[6].contains("│ > x "),
-            "Panel A receives typing"
+            "input A receives typing"
         );
         host.press("\t");
         host.press("y");
         assert!(
             host.screen()[15].contains("│ > y "),
-            "Panel B receives typing"
+            "input B receives typing"
         );
-        assert!(host.shows(0, 60, "Current focus: Panel B"));
+        assert!(host.shows(0, 60, "Focus: Input B"));
         host.press("\x1b");
         host.finished(command).await;
     });
