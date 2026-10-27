@@ -1056,7 +1056,11 @@ fn native_standard_output_writer_follows_terminal_lifecycle() {
         standard.flush().unwrap();
         assert_eq!(output.take(), "after-drop");
         drop(output);
-        assert!(standard.write_all(b"refused").is_err());
+        standard.write_all(b"refused").unwrap();
+        assert_eq!(
+            standard.flush().unwrap_err().kind(),
+            std::io::ErrorKind::BrokenPipe
+        );
     });
 }
 
@@ -1094,6 +1098,7 @@ fn standard_output_to_regular_file() {
 fn standard_output_preserves_partial_progress_and_reports_flush_failure() {
     isolated!(&[], || {
         use std::io::Write;
+        let _rig = Rig::paused();
         let output = pipe_output();
         fcntl_setfl(stdout(), fcntl_getfl(stdout()).unwrap() | OFlags::NONBLOCK).unwrap();
         let mut standard = maestro_tui_crossterm::terminal::output::StandardOutput::default();
