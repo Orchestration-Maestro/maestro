@@ -5,7 +5,10 @@ use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
 use maestro_resources::{SourceScope, canonicalize_path};
 use maestro_settings::{BaseSettingsLayer, SettingsScope};
 use serde::Deserialize;
-use std::{collections::HashMap, io};
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+};
 
 /// A contributed package source resolved in its supplied installation scope.
 #[derive(Deserialize, PartialEq)]
@@ -90,9 +93,17 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             state.base_append_text.clear();
             state.model_files.clear();
         }
+        let loaded: HashSet<_> = extensions
+            .extensions
+            .iter()
+            .map(|owner| crate::utils::lock::read(owner).path.clone())
+            .collect();
         let mut publisher = None;
         let mut packages = Vec::new();
         for (path, payload) in extensions.runtime.finish_load_time() {
+            if !loaded.contains(&path) {
+                continue;
+            }
             let source = owners
                 .get(&canonicalize_path(&path))
                 .copied()
