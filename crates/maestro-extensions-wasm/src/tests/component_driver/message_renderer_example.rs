@@ -307,3 +307,36 @@ fn message_renderer_defaults_level_and_skips_absent_timestamps() -> Result<(), S
         Ok(())
     })
 }
+
+/// Any nonzero numeric timestamp shows a time: its milliseconds truncate toward zero, and a
+/// value past every instant reaches the host as one beyond the calendar.
+#[test]
+fn message_renderer_truncates_numeric_timestamps() -> Result<(), String> {
+    crate::tests::block_on(async {
+        let mut driver = start().await?;
+        for (timestamp, time) in [
+            (
+                json!(1_767_323_045_678.0),
+                (1_767_323_045_678, "3:04:05 AM"),
+            ),
+            (
+                json!(1_767_323_045_678.9),
+                (1_767_323_045_678, "3:04:05 AM"),
+            ),
+            (json!(-1.5), (-1, "11:59:59 PM")),
+            (json!(0.5), (0, "12:00:00 AM")),
+            (json!(1e300), (i64::MAX, "Invalid Date")),
+        ] {
+            let drawing = Drawing {
+                message: stored(json!({ "timestamp": timestamp }), &json!("x")),
+                expanded: true,
+                level: ("success", "[INFO]"),
+                content: "x",
+                time: Some(time),
+            };
+            drawn(&mut driver, drawing).await?;
+        }
+        driver.release_all().await;
+        Ok(())
+    })
+}
