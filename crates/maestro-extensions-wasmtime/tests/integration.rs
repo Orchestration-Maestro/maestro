@@ -19,6 +19,7 @@ mod components;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
+mod extension_guide;
 mod factory_capabilities;
 mod factory_shutdown;
 mod lifetimes;

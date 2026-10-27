@@ -56,6 +56,11 @@ name = "native_io_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "permission_gate"
+path = "../../examples/extensions/permission_gate.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "pirate"
 path = "../../examples/extensions/pirate.rs"
 crate-type = ["cdylib"]
@@ -106,6 +111,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "tools"
+path = "../../examples/extensions/tools.rs"
 crate-type = ["cdylib"]
 
 [[example]]

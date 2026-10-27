@@ -3132,12 +3132,24 @@ impl Controlled {
         emitter: &super::bus_host::Emitter,
     ) -> ExtensionResult<()> {
         use super::renderer_host::{Call, Reply, invoke};
-        assert_eq!(built.width, Some(13.0));
-        assert_eq!(
-            invoke(&built.component, Call::Render(20), self, 0)?,
-            Reply::Lines(vec!["custom 23".into()])
-        );
-        invoke(&built.component, Call::Input("commit"), self, 0)?;
+        let script = self
+            .observed
+            .borrow()
+            .ui
+            .custom_script
+            .clone()
+            .unwrap_or_default();
+        assert_eq!(built.width, script.width);
+        assert_eq!(script.frames.len(), script.inputs.len() + 1);
+        for (index, frame) in script.frames.iter().enumerate() {
+            assert_eq!(
+                invoke(&built.component, Call::Render(20), self, 0)?,
+                Reply::Lines(frame.clone())
+            );
+            if let Some(data) = script.inputs.get(index) {
+                invoke(&built.component, Call::Input(data), self, 0)?;
+            }
+        }
         if let Some(dispose) = built.dispose {
             crate::component_adapter::renderers::with_emitter(self, emitter, |emitter| {
                 dispose(emitter)

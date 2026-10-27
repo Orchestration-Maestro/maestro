@@ -1212,6 +1212,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
     ),
     (
+        "examples/extensions/permission_gate.rs",
+        include_str!("../../../examples/extensions/permission_gate.rs"),
+    ),
+    (
         "examples/extensions/pirate.rs",
         include_str!("../../../examples/extensions/pirate.rs"),
     ),
@@ -1624,7 +1628,7 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
-    // The shipped example reaches the standalone copy byte for byte.
+    // The shipped examples reach the standalone copy byte for byte.
     assert_eq!(
         fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
         include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
@@ -1632,6 +1636,10 @@ fn maestro_package_assets_come_from_the_package_directory() {
     assert_eq!(
         fs::read(destination.join("examples/extensions/status_line.rs")).unwrap(),
         include_str!("../../../examples/extensions/status_line.rs").as_bytes()
+    );
+    assert_eq!(
+        fs::read(destination.join("examples/extensions/permission_gate.rs")).unwrap(),
+        include_str!("../../../examples/extensions/permission_gate.rs").as_bytes()
     );
 }
 
