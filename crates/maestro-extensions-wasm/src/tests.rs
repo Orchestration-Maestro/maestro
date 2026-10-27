@@ -45,6 +45,7 @@ mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;
 mod documents;
+mod dynamic_tools_example;
 mod event_bus_example;
 mod event_transport;
 mod event_values;
@@ -76,6 +77,7 @@ pub(crate) mod native_http_host;
 mod native_io;
 pub(crate) mod native_io_host;
 pub(crate) mod native_watch_host;
+mod notify_example;
 mod observed;
 pub(crate) mod overlay_host;
 mod parameter_schemas;
@@ -1245,3 +1247,8 @@ mod tool_record_views;
 
 mod credential_host;
 mod native_helpers;
+
+mod custom_ticks;
+mod snake_example;
+
+mod snake_frames;

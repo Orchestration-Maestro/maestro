@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "dynamic_tools"
+path = "../../examples/extensions/dynamic_tools.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "event_bus"
 path = "../../examples/extensions/event_bus.rs"
 crate-type = ["cdylib"]
@@ -63,6 +68,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "native_io_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "notify"
+path = "../../examples/extensions/notify.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -111,6 +121,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "shutdown_command"
 path = "../../examples/extensions/shutdown_command.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "snake"
+path = "../../examples/extensions/snake.rs"
 crate-type = ["cdylib"]
 
 [[example]]

@@ -181,6 +181,7 @@ impl Host {
                 width: None,
                 inputs: inputs.iter().map(|s| (*s).to_owned()).collect(),
                 frames,
+                ..super::custom_host::Script::default()
             });
         });
     }
