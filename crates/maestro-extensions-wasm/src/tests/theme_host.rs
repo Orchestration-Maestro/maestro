@@ -87,7 +87,7 @@ impl Bank {
     pub fn control(&mut self, text: &str) {
         let control: Control = serde_json::from_str(text).unwrap();
         let palette = corpus().palettes.remove(&control.palette).unwrap();
-        self.themes.insert(control.theme, palette);
+        self.publish(&control.theme, palette);
     }
 
     /// The current state behind `key`.
