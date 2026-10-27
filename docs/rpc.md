@@ -474,18 +474,19 @@ The delta is nested at `assistantMessageEvent`, not a top-level RPC record.
 
 | Inner event | Fields beyond `type` |
 |---|---|
-| `start` | `partial` |
 | `text_start`, `thinking_start`, `toolcall_start` | `contentIndex`, `partial` |
 | `text_delta`, `thinking_delta`, `toolcall_delta` | `contentIndex`, `delta`, `partial` |
 | `text_end`, `thinking_end` | `contentIndex`, `content`, `partial` |
 | `toolcall_end` | `contentIndex`, `toolCall`, `partial` |
-| `done` | `reason` (`stop`, `length`, `toolUse`), `message` |
-| `error` | `reason` (`error`, `aborted`), `error` (the assistant message) |
 
 Tool-call deltas can contain incomplete JSON. Wait for `toolcall_end.toolCall`
-for complete arguments rather than trying to execute partial text. A `done`
-with `toolUse` completes the assistant message, not the whole run. The run may
-execute tools and request another assistant message before `agent_end`.
+for complete arguments rather than trying to execute partial text.
+
+For assistant completion, inspect `message_end.message.stopReason`: `stop` and
+`length` end the answer, `toolUse` requests tool execution, and `error` or
+`aborted` indicates failure or cancellation. Display `message.errorMessage`
+when present. A `message_end` completes one message, not the whole run. The run
+may execute tools and request another assistant message before `agent_end`.
 
 Correlate `tool_execution_start`, `tool_execution_update` and
 `tool_execution_end` by `toolCallId`. Start and update include `toolName` and
