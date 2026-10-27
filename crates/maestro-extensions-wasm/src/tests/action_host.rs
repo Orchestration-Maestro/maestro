@@ -35,10 +35,13 @@ impl Bank {
     pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
         self.check()?;
         let key = format!("{operation} {data}");
-        self.helpers
-            .get(&key)
-            .or_else(|| self.value.get(&key))
-            .map_or_else(|| self.record_for(operation), |value| Ok(value.to_string()))
+        if let Some(value) = self.helpers.get(&key) {
+            Ok(value.to_string())
+        } else if self.value.get(&key).is_some() {
+            self.record_for(&key)
+        } else {
+            self.record_for(operation)
+        }
     }
     /// Reads a supplied boolean while preserving literal host refusal messages.
     pub fn boolean(&self, operation: &str) -> Result<bool, String> {
