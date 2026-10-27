@@ -676,3 +676,50 @@ fn extension_flag_values_use_the_first_registered_kind() {
         );
     });
 }
+
+/// Explicit base sources bootstrap while ordinary discovery is disabled.
+#[test]
+fn disabled_extension_discovery_keeps_base_sources_at_package_precedence() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    let cli = format!("{root}/cli.wasm");
+    package(&base, "base");
+    std::fs::create_dir_all(&agent).unwrap();
+    std::fs::create_dir_all(format!("{cwd}/.maestro/extensions")).unwrap();
+    std::fs::write(format!("{cwd}/.maestro/extensions/project.wasm"), "").unwrap();
+    std::fs::write(&cli, "").unwrap();
+    on_task_set(|local| async move {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, recording_modules(Rc::clone(&calls)));
+        resources.base_package_sources = vec![base];
+        resources.additional_extension_paths = vec![cli];
+        resources
+            .disabled
+            .insert(maestro_app::ResourceKind::Extensions);
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: None,
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert_eq!(&*calls.borrow(), &["base", "cli"]);
+        let result = loader.get_extensions();
+        let names: Vec<_> = result
+            .extensions
+            .iter()
+            .map(|extension| {
+                extension.read().unwrap().commands["same"]
+                    .read()
+                    .unwrap()
+                    .description
+                    .clone()
+            })
+            .collect();
+        assert_eq!(names, [Some("cli".into()), Some("base".into())]);
+    });
+}
