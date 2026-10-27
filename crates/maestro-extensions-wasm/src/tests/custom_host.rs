@@ -17,6 +17,26 @@ use std::sync::{
 };
 use wasmtime::component::{Accessor, Resource};
 
+/// Input and rendering expectations supplied to either custom-view adapter.
+#[derive(Clone)]
+pub struct Script {
+    /// Width requested by the authored view.
+    pub width: Option<f64>,
+    /// Frames before input and after every input.
+    pub frames: Vec<Vec<String>>,
+    /// Terminal input delivered in order.
+    pub inputs: Vec<String>,
+}
+impl Default for Script {
+    fn default() -> Self {
+        Self {
+            width: Some(13.0),
+            frames: vec![vec!["custom 23".into()]; 2],
+            inputs: vec!["commit".into()],
+        }
+    }
+}
+
 /// Shared native close decision, independent of callback-table slot reuse.
 #[derive(Clone, Default)]
 pub struct Close(Arc<AtomicBool>);
@@ -52,12 +72,22 @@ pub(super) async fn run(
     factory: Resource<Identity>,
     options: Option<host::CustomUiOptions>,
 ) -> wasmtime::Result<Result<(), String>> {
+    let admitted = accessor.with(|mut access| {
+        let state = access.get();
+        let key = state.table.get(&ui)?.0;
+        Ok::<_, wasmtime::Error>(super::ui_host::call(
+            &mut state.observed,
+            key,
+            "custom",
+            &serde_json::json!([]),
+        ))
+    })?;
+    if let Err(error) = admitted {
+        return Ok(Err(error));
+    }
     let close = Close::default();
     let (guest, input, emitter) = accessor.with(|mut access| {
         let state = access.get();
-        let key = state.table.get(&ui)?.0;
-        super::ui_host::call(&mut state.observed, key, "custom", &serde_json::json!([]))
-            .map_err(wasmtime::Error::msg)?;
         let guest = state
             .guest
             .clone()
@@ -143,43 +173,11 @@ async fn view(
     built: host::FactoryComponent,
     emitter: Resource<Emitter>,
 ) -> wasmtime::Result<Result<(), String>> {
-    assert_eq!(built.width, Some(13.0));
-    let render = accessor.with(|access| {
-        guest
-            .func_component_render()
-            .func()
-            .typed::<(Resource<Identity>, u32, Resource<Emitter>), (Result<Vec<String>, String>,)>(
-                access,
-            )
-    })?;
-    let (rows,) = render
-        .call_concurrent(
-            accessor,
-            (
-                Resource::new_borrow(built.component.rep()),
-                20,
-                Resource::new_borrow(emitter.rep()),
-            ),
-        )
-        .await?;
-    assert_eq!(rows.unwrap(), ["custom 23"]);
-    let input = accessor.with(|access| {
-        guest
-            .func_component_handle_input()
-            .func()
-            .typed::<(Resource<Identity>, String, Resource<Emitter>), (Result<(), String>,)>(access)
-    })?;
-    let (result,) = input
-        .call_concurrent(
-            accessor,
-            (
-                Resource::new_borrow(built.component.rep()),
-                "commit".into(),
-                Resource::new_borrow(emitter.rep()),
-            ),
-        )
-        .await?;
-    if let Err(error) = result {
+    let script = accessor
+        .with(|mut access| access.get().observed.ui.custom_script.clone())
+        .unwrap_or_default();
+    assert_eq!(built.width, script.width);
+    if let Err(error) = drive_view(accessor, guest, (&built, &emitter), script).await? {
         return Ok(Err(error));
     }
     if let Some(dispose) = &built.dispose
@@ -192,6 +190,58 @@ async fn view(
         .flatten()
     {
         release(accessor, guest, callback).await?;
+    }
+    Ok(Ok(()))
+}
+/// Renders supplied frames and delivers terminal input through the retained component.
+async fn drive_view(
+    accessor: &Accessor<State, Imports>,
+    guest: &Guest,
+    (built, emitter): (&host::FactoryComponent, &Resource<Emitter>),
+    script: Script,
+) -> wasmtime::Result<Result<(), String>> {
+    let render = accessor.with(|access| {
+        guest
+            .func_component_render()
+            .func()
+            .typed::<(Resource<Identity>, u32, Resource<Emitter>), (Result<Vec<String>, String>,)>(
+                access,
+            )
+    })?;
+    let input = accessor.with(|access| {
+        guest
+            .func_component_handle_input()
+            .func()
+            .typed::<(Resource<Identity>, String, Resource<Emitter>), (Result<(), String>,)>(access)
+    })?;
+    assert_eq!(script.frames.len(), script.inputs.len() + 1);
+    for (index, frame) in script.frames.iter().enumerate() {
+        let (rows,) = render
+            .call_concurrent(
+                accessor,
+                (
+                    Resource::new_borrow(built.component.rep()),
+                    20,
+                    Resource::new_borrow(emitter.rep()),
+                ),
+            )
+            .await?;
+        assert_eq!(rows.unwrap(), *frame);
+        if let Some(data) = script.inputs.get(index) {
+            let (result,) = input
+                .call_concurrent(
+                    accessor,
+                    (
+                        Resource::new_borrow(built.component.rep()),
+                        data.clone(),
+                        Resource::new_borrow(emitter.rep()),
+                    ),
+                )
+                .await?;
+            if let Err(error) = result {
+                return Ok(Err(error));
+            }
+        }
     }
     Ok(Ok(()))
 }

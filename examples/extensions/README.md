@@ -7,8 +7,9 @@ lists each one with its owner.
 ## Usage
 
 An extension crate is a `cdylib` whose root names its factory. The
-[extension guide](../../docs/extensions/guest.md) describes the interface the
-factory registers.
+[extension guide](../../docs/extensions.md) covers project setup, building,
+packaging and loading. The [guest API](../../docs/extensions/guest.md) describes
+the interface the factory registers.
 
 Maestro discovers extensions in two directories, in this order:
 
@@ -26,9 +27,11 @@ inserts at its own place instead of appending at the end of each list.
 | File | Registers |
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
+| `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
@@ -37,6 +40,7 @@ inserts at its own place instead of appending at the end of each list.
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
@@ -63,6 +67,8 @@ component. Both invoke its registered `before_agent_start` event handler:
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- commands_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
@@ -70,6 +76,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -85,6 +93,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- tools_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- tools_component_changes_native_session_and_restores_branch
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
@@ -97,6 +109,25 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 No provider, paid service or extension installation is required. Loading a
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the command listing example does
+
+`/commands` lists the slash commands the host supplies, grouped as Extensions,
+Prompts and Skills in that order. `/commands extension`, `/commands prompt` and
+`/commands skill` filter by that exact source; argument completion offers those
+three singular labels. An empty inventory or unmatched filter reports that no
+commands were found. Dismissing the selector or choosing a group heading does
+nothing else.
+
+Choosing a command with a nonempty source path opens a confirmation showing that
+path. Confirming also sends it as an informational notification; declining sends
+no notification. The extension reads only the host's command metadata and never
+opens a source file. It registers no built-in command and discovers no resources.
+
+Build it with the command above using `--example commands`. The controlled
+`commands_` runs need no provider, credentials or installation. Loading the built
+component is opt-in and needs a component-enabled host; browsing commands also
+needs that host's selector and confirmation UI.
 
 ### What the shutdown example does
 
@@ -117,6 +148,24 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+### What the permission gate does
+
+`tool_call` leaves non-bash tools and commands outside its three patterns alone.
+For case-insensitive matches of `rm` followed by `-r`, `-rf` or `--recursive`,
+`sudo` as a word, or `chmod`/`chown` followed on the same line by `777`, it asks
+`Allow?` with `Yes` and `No` choices. Only `Yes` permits the call; dismissal or
+any other answer blocks it with `Blocked by user`. Without UI it blocks with
+`Dangerous command blocked (no UI for confirmation)`.
+
+This is an illustrative regex matcher, not a security sandbox or a shell parser.
+It can match quoted text and miss dangerous commands; its flag alternatives also
+match prefixes such as `-rubbish`. The host still owns execution. Loading the
+component is opt-in and needs a component-enabled host; interactive approval
+needs that host's UI. The controlled runs deliver calls to both the in-process
+adapter and the built component with scripted selections. They execute no shell
+commands and need no provider, credentials or installation. Build it with the
+command above using `--example permission_gate`.
+
 ### What the protected-paths hook does
 
 `tool_call` inspects only the `write` and `edit` tools and reads their `path`
@@ -256,3 +305,24 @@ the session selector shows in place of the first message. The command reads and
 writes the name through the session operations the host supplies, so it stores
 nothing itself; the controlled run names no session in a running application.
 Loading the component is opt-in and needs that application's component runtime.
+
+### What the tool selector does
+
+`/tools` opens **Tool Configuration**, with one enabled/disabled setting for each
+currently available tool, including extension tools. Each change immediately
+updates the active tools and appends a `tools-config` session entry containing
+`enabledTools`. Escape closes the view without undoing those changes.
+
+On session start and tree navigation, the example reads only the current branch.
+It restores the newest saved selection, discarding tools no longer available;
+an empty saved selection disables every tool. Without saved configuration it
+keeps the host's active selection. Opening the view refreshes the inventory, so
+new tools appear disabled until selected.
+
+The controlled run uses supplied tool inventories, branch entries and terminal
+input. The native session run also checks active tools, persisted entries, tree
+navigation and reload. Neither run calls a provider or changes project files.
+Loading the built component
+is opt-in and needs a component-enabled interactive host with custom UI and
+settings widgets; loading it permits changes to that session's active tools and
+configuration entries.

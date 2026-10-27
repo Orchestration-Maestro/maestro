@@ -261,8 +261,12 @@ impl host::HostWidget for State {
     fn writer(
         &mut self,
         _: Resource<WidgetResource>,
-        _: host::WriterRequest,
+        request: host::WriterRequest,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let host::WriterRequest::RequestRender(force) = request {
+            self.observed.log(format!("writer requestRender {force}"));
+            return self.routed(Ok(()));
+        }
         self.routed(Err(NO_WRITER.to_owned()))
     }
     fn add_input_listener(

@@ -17,6 +17,11 @@ path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "commands"
+path = "../../examples/extensions/commands.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "context_bridge"
 crate-type = ["cdylib"]
 
@@ -53,6 +58,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "native_io_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "permission_gate"
+path = "../../examples/extensions/permission_gate.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -101,6 +111,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "tools"
+path = "../../examples/extensions/tools.rs"
 crate-type = ["cdylib"]
 
 [[example]]

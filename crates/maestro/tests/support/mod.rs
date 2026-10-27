@@ -160,3 +160,6 @@ pub fn widgets() -> std::rc::Rc<dyn maestro_app::ExtensionWidgets> {
         maestro_tui::TerminalImage::default(),
     ))
 }
+
+/// SDK construction for compiled extension witnesses.
+pub mod session;

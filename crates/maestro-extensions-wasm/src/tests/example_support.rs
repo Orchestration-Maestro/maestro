@@ -117,9 +117,13 @@ pub fn result_value(encoded: &str) -> Value {
     serde_json::from_str(encoded).unwrap()
 }
 
-/// Releases every registration in the order the host received it, asserting the host admitted
+/// Releases list handlers and every registration in arrival order, asserting the host admitted
 /// exactly `expected` and kept nothing lent.
 pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
+    let handlers = host.observe().ui.lists.take_handlers();
+    for key in handlers {
+        release(key);
+    }
     let expected: Vec<&str> = expected.iter().map(AsRef::as_ref).collect();
     let mut names = Vec::new();
     loop {

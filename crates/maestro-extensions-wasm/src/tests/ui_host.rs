@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
 use serde::Deserialize;
@@ -154,8 +154,12 @@ pub struct Bank {
     editors: HashMap<usize, String>,
     /// Decision the next dialog answers with; absent dismisses it.
     answer: Option<Value>,
+    /// Ordered replies for a command that opens several dialogs.
+    answers: VecDeque<Value>,
     /// Recorded palette the UI's live theme reads; absent reads the dark palette.
     theme: Option<String>,
+    /// Supplied custom-view inputs and expected frames.
+    pub custom_script: Option<super::custom_host::Script>,
     /// Factory widgets in the order they were shown.
     pub widgets: Vec<WidgetSlot>,
     /// The header container.
@@ -241,6 +245,9 @@ struct Control {
     binding: Option<usize>,
     /// Decision the next dialog answers with; absent dismisses it.
     answer: Option<Value>,
+    /// Ordered replies for successive dialogs; absent keeps the single-answer route.
+    #[serde(default)]
+    answers: VecDeque<Value>,
     /// Builds the built-in header: `ready` adds it after a banner, `detached` keeps only the
     /// banner.
     header: Option<String>,
@@ -261,6 +268,7 @@ impl Bank {
             self.foreign.kind = control.foreign;
         }
         self.answer = control.answer;
+        self.answers = control.answers;
         if let Some(footer) = control.footer {
             let custom = self.footer.custom.take();
             self.footer = Footer { custom, ..footer };
@@ -482,7 +490,12 @@ pub fn set_result(result: &Value) -> host::ThemeSetResult {
 
 /// The decision supplied for the dialog that is settling.
 pub fn decision(observed: &mut Observed) -> Value {
-    observed.ui.answer.take().unwrap_or(Value::Null)
+    observed
+        .ui
+        .answers
+        .pop_front()
+        .or_else(|| observed.ui.answer.take())
+        .unwrap_or(Value::Null)
 }
 
 /// The text a dialog decision chooses; any other decision dismisses the dialog.
@@ -1298,9 +1311,7 @@ impl host::HostTui for State {
         &mut self,
         _: Resource<Tui>,
     ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
-        Ok(Err(
-            "the component test host lends no frame writer".to_owned()
-        ))
+        Ok(Ok(self.push(super::widget_component::WidgetResource(0))?))
     }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)
