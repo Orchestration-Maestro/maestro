@@ -518,6 +518,35 @@ printf '%s\n' '{"type":"extension_ui_request","id":"c","method":"notify","notify
 printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notifyType":"error","message":"failure"}'
 "#;
 
+    /// Model text, tool names and protocol errors are literal data, not terminal commands.
+    #[test]
+    fn streamed_literal_text_cannot_issue_terminal_control_commands() {
+        run_async(async {
+            let case = run_case(shell(LITERAL_PEER), vec![("RPC Chat", "hello\r")]).await;
+            assert!(case.status.success());
+            assert!(
+                !case.raw.contains("\x1b]52;"),
+                "untrusted clipboard command reached the terminal"
+            );
+            let output = maestro_app::strip_ansi(&case.raw).unwrap();
+            for expected in ["visible", "second line", "split", "tool", "error"] {
+                assert!(output.contains(expected), "missing {expected}: {output}");
+            }
+        });
+    }
+
+    /// Complete and split clipboard controls reach the same literal-text boundary.
+    const LITERAL_PEER: &str = r#"
+read -r line || exit 8
+printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":false,"error":"error \u001b]52;c;?\u0007 text"}'
+printf '%s\n' '{"type":"agent_start"}'
+printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"visible \u001b]52;c;?\u0007 end\nsecond line"}}'
+printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":" split \u001b]"}}'
+printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"52;c;?\u0007 end"}}'
+printf '%s\n' '{"type":"tool_execution_start","toolName":"tool \u001b]52;c;?\u0007 name"}'
+printf '%s\n' '{"type":"agent_end","messages":[]}'
+"#;
+
     /// The peer must receive only the final ordinary prompt with the first identifier.
     #[cfg(unix)]
     const LOCAL_PEER: &str = r#"
