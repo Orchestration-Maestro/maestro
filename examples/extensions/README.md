@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
@@ -41,6 +42,7 @@ inserts at its own place instead of appending at the end of each list.
 | `snake.rs` | A `/snake` custom view with arrow/WASD controls, 100 ms ticks and saved games in session entries. |
 | `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
 | `snake/render.rs` | The bordered Snake board and input hints. |
+| `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
@@ -72,6 +74,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
@@ -91,6 +97,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- snake_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -131,6 +139,32 @@ Build it with the command above using `--example commands`. The controlled
 `commands_` runs need no provider, credentials or installation. Loading the built
 component is opt-in and needs a component-enabled host; browsing commands also
 needs that host's selector and confirmation UI.
+
+### What the file trigger example does
+
+Create `/tmp/agent-trigger.txt` before loading the component into a native host
+with filesystem and watch support. On each session start the example watches
+that fixed path and, when UI is available, reports `Watching /tmp/agent-trigger.txt`.
+To send a prompt from another process, write it to the existing file:
+
+```sh
+printf '%s\n' 'Run the tests' > /tmp/agent-trigger.txt
+```
+
+A change reads and trims the contents. Nonempty text becomes a displayed
+`file-trigger` custom message prefixed with `External trigger: `, with
+`triggerTurn: true`; the file is cleared only after the host accepts the message.
+Empty or unreadable contents do nothing. A missing file at startup fails watch
+creation, so create it first. Each new session replaces the previous watch;
+shutdown releases it through the existing watch owner.
+
+Loading this example is opt-in. Anyone able to write the trigger file can ask the
+agent to act; use it only in a trusted local environment. A real response uses the
+host's configured model and can incur provider charges. The controlled runs need
+no credentials or paid service: the component run uses a loopback provider. Tests
+create the fixed path exclusively and refuse to touch a file already there. The
+nextest file-trigger group runs those tests one at a time; do not run separate
+file-trigger test commands concurrently.
 
 ### What the shutdown example does
 
@@ -197,6 +231,21 @@ text as it is. When the host rejects a request the command ends with the host's
 message, and the label the example retains stays the one the command chose.
 Loading the component into an application is opt-in and needs a host that enables
 the component runtime.
+
+### What the turn status line example does
+
+`session_start` sets `status-demo` to dim `Ready`. Each `turn_start` increments
+this factory's counter and shows an accent `●` followed by dim ` Turn N...`.
+`turn_end` shows a success `✓` followed by dim ` Turn N complete`. Each hook
+reads the current UI theme; the counter stays in place across session starts
+and starts at zero in a new factory instance. A host rejection returns its
+message without undoing a counted turn.
+
+Build with `<name>` set to `status_line` in the build command above. The
+controlled runs invoke the built component with supplied theme and UI answers;
+they need no provider, credentials or installation. Loading it into an
+application is opt-in and needs that application's component runtime. A UI host
+must provide footer status and theme operations to show the status.
 
 ### What the system prompt status example does
 

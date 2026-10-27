@@ -31,7 +31,9 @@ that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start. `extensions/snake.rs` opens a custom Snake game with keyboard
 controls, timed movement and saved games in session entries; its index gives the
-build/run commands and interactive-host prerequisites. The
+build/run commands and interactive-host prerequisites.
+`extensions/status_line.rs` shows themed readiness and counted turn progress in
+the footer; its controlled run is listed in the extension index. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
