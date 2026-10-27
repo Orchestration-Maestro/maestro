@@ -97,6 +97,11 @@ fn helper_frontmatter_preserves_document_kinds() {
 }
 
 #[test]
+fn helper_raw_yaml_preserves_document_values() {
+    check("helper_raw_yaml_preserves_document_values");
+}
+
+#[test]
 fn helper_strip_frontmatter_keeps_parse_failures() {
     check("helper_strip_frontmatter_keeps_parse_failures");
 }

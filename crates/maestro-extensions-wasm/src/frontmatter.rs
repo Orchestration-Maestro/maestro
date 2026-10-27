@@ -80,3 +80,11 @@ fn read_value(
 pub fn strip_frontmatter(api: &ExtensionAPI, content: &str) -> ExtensionResult<String> {
     api.helper("strip_frontmatter", &(content,))
 }
+
+/// Parses one YAML document through the native metadata owner.
+///
+/// # Errors
+/// Returns native parsing failures, including source coordinates.
+pub fn parse_yaml(api: &ExtensionAPI, content: &str) -> ExtensionResult<FrontmatterValue> {
+    Ok(parse_frontmatter(api, content)?.frontmatter)
+}
