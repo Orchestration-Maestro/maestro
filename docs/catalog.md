@@ -12,6 +12,8 @@ which runs the commands that configured credential values name; it is a platform
 handle in the same way. Native file and command effects require `Send + Sync`;
 browser effects may capture local `Rc` state.
 
+[Configure custom models](models/custom.md) walks through editing `models.json`,
+local endpoints, field defaults and compatibility settings.
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
 ## Errors
