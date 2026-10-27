@@ -81,6 +81,8 @@ pub struct Attempt {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Controlled native waits while a custom view script drives independent tails.
+    pub tick_clock: Option<super::custom_ticks::Clock>,
     /// Supplied native byte resources and exact operand observations.
     pub native_io: super::native_io_host::Bank,
     /// Supplied HTTP responses and forwarded request operands.
@@ -103,6 +105,8 @@ pub struct Observed {
     pub compactions: usize,
     /// Ordinary action controls.
     pub actions: super::action_host::Bank,
+    /// Host helper operations and their literal encoded operands.
+    pub helper_calls: Vec<(String, String)>,
     /// Registration transport observations and supplied flag replies.
     pub registrations: super::registration_host::Bank,
     /// Event-channel observations.
