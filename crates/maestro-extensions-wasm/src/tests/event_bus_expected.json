@@ -1,0 +1,522 @@
+{
+  "metadata": {
+    "registrations": [
+      {
+        "operation": "event",
+        "name": "session_start"
+      },
+      {
+        "operation": "listener",
+        "name": "my:notification"
+      },
+      {
+        "operation": "command",
+        "name": "emit"
+      },
+      {
+        "operation": "event",
+        "name": "session_start"
+      }
+    ],
+    "eventHandlers": [
+      "session_start",
+      "session_start"
+    ],
+    "command": [
+      {
+        "name": "emit",
+        "description": "Emit my:notification event (usage: /emit message)",
+        "completions": false
+      }
+    ]
+  },
+  "rows": [
+    {
+      "name": "empty",
+      "operation": "command",
+      "input": "",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "hello",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: hello",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ascii_whitespace",
+      "operation": "command",
+      "input": " \t\r\n",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "hello",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: hello",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "trimmed_message",
+      "operation": "command",
+      "input": "  hello there  ",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "hello there",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: hello there",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "internal_whitespace",
+      "operation": "command",
+      "input": "  a\t b\n c  ",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "a\t b\n c",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: a\t b\n c",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode",
+      "operation": "command",
+      "input": "  雪 🦀  ",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "雪 🦀",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: 雪 🦀",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "zero_width_retained",
+      "operation": "command",
+      "input": "​",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "​",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: ​",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "feff_runtime_trim",
+      "operation": "command",
+      "input": "﻿hello﻿",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "﻿hello﻿",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: ﻿hello﻿",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "nel_runtime_trim",
+      "operation": "command",
+      "input": "hello",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "hello",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: hello",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "literal_event_name",
+      "operation": "command",
+      "input": "other:event payload",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "other:event payload",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: other:event payload",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ansi_literal",
+      "operation": "command",
+      "input": "\u001b[7m x \u001b[27m",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "\u001b[7m x \u001b[27m",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from /emit command: \u001b[7m x \u001b[27m",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "external_before_start",
+      "operation": "external",
+      "input": {
+        "channel": "my:notification",
+        "data": {
+          "message": "before",
+          "from": "peer"
+        },
+        "before": true
+      },
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "before",
+              "from": "peer"
+            }
+          },
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "Session started",
+              "from": "event-bus-example"
+            }
+          },
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "before",
+              "from": "peer"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from event-bus-example: Session started",
+            "kind": "info"
+          },
+          {
+            "owner": "first",
+            "message": "Event from peer: before",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "external_strings",
+      "operation": "external",
+      "input": {
+        "channel": "my:notification",
+        "data": {
+          "message": "peer payload",
+          "from": "peer"
+        },
+        "before": false
+      },
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "peer payload",
+              "from": "peer"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from peer: peer payload",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "external_empty",
+      "operation": "external",
+      "input": {
+        "channel": "my:notification",
+        "data": {
+          "message": "",
+          "from": ""
+        },
+        "before": false
+      },
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "",
+              "from": ""
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from : ",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "external_extra_members",
+      "operation": "external",
+      "input": {
+        "channel": "my:notification",
+        "data": {
+          "message": " x\n",
+          "from": " 雪 ",
+          "ignored": 42
+        },
+        "before": false
+      },
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": " x\n",
+              "from": " 雪 ",
+              "ignored": 42
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from  雪 :  x\n",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unrelated_channel",
+      "operation": "external",
+      "input": {
+        "channel": "other:event",
+        "data": {
+          "message": "ignored",
+          "from": "peer"
+        },
+        "before": false
+      },
+      "expected": {
+        "emissions": [
+          {
+            "channel": "other:event",
+            "data": {
+              "message": "ignored",
+              "from": "peer"
+            }
+          }
+        ],
+        "notifications": []
+      }
+    },
+    {
+      "name": "startup_and_replacement",
+      "operation": "lifecycle",
+      "input": [
+        "first",
+        "second"
+      ],
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "Session started",
+              "from": "event-bus-example"
+            }
+          },
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "Session started",
+              "from": "event-bus-example"
+            }
+          },
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "later",
+              "from": "peer"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from event-bus-example: Session started",
+            "kind": "info"
+          },
+          {
+            "owner": "second",
+            "message": "Event from event-bus-example: Session started",
+            "kind": "info"
+          },
+          {
+            "owner": "second",
+            "message": "Event from peer: later",
+            "kind": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": "command_before_start",
+      "operation": "before_start",
+      "input": " before ",
+      "expected": {
+        "emissions": [
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "before",
+              "from": "/emit command"
+            }
+          },
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "Session started",
+              "from": "event-bus-example"
+            }
+          },
+          {
+            "channel": "my:notification",
+            "data": {
+              "message": "before",
+              "from": "/emit command"
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "owner": "first",
+            "message": "Event from event-bus-example: Session started",
+            "kind": "info"
+          },
+          {
+            "owner": "first",
+            "message": "Event from /emit command: before",
+            "kind": "info"
+          }
+        ]
+      }
+    }
+  ]
+}
