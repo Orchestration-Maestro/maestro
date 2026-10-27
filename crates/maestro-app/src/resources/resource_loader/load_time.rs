@@ -1,11 +1,11 @@
 //! Application decoding of the base packages' single load-time input channel.
 use super::{DefaultEventBus, DefaultResourceLoader};
 use maestro_extensions::{ExtensionLoadError, LoadExtensionsResult};
-use maestro_packages::{PackageManager, ResolvedPaths};
-use maestro_resources::SourceScope;
+use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
+use maestro_resources::{SourceScope, canonicalize_path};
 use maestro_settings::{BaseSettingsLayer, SettingsScope};
 use serde::Deserialize;
-use std::io;
+use std::{collections::HashMap, io};
 
 /// A contributed package source resolved in its supplied installation scope.
 #[derive(Deserialize, PartialEq)]
@@ -25,6 +25,14 @@ struct LayerInput {
     scope: SourceScope,
     /// The settings owner's record, or an explicit removal.
     layer: Option<BaseSettingsLayer>,
+}
+
+/// One package's publication identity and the extension named in diagnostics.
+struct Publisher {
+    /// The source shared by every entrypoint of this package.
+    source: String,
+    /// Its first publishing extension.
+    path: String,
 }
 
 /// The generic load-time input format; no manifest policy is interpreted here.
@@ -48,9 +56,19 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     pub(super) async fn collect_load_time(
         &self,
         extensions: &mut LoadExtensionsResult<E>,
+        resources: &[ResolvedResource],
     ) -> io::Result<ResolvedPaths> {
+        let owners = resources
+            .iter()
+            .map(|resource| {
+                (
+                    canonicalize_path(&resource.path),
+                    resource.metadata.source.as_str(),
+                )
+            })
+            .collect();
         let mut paths = ResolvedPaths::default();
-        for package in self.load_time_inputs(extensions) {
+        for package in self.load_time_inputs(extensions, &owners) {
             let found = self
                 .package_manager
                 .resolve_extension_sources(&[package.source], Some(package.scope))
@@ -61,7 +79,11 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     }
 
     /// Starts a fresh publication window and attributes decoding or publisher failures.
-    fn load_time_inputs(&self, extensions: &mut LoadExtensionsResult<E>) -> Vec<PackageInput> {
+    fn load_time_inputs(
+        &self,
+        extensions: &mut LoadExtensionsResult<E>,
+        owners: &HashMap<String, &str>,
+    ) -> Vec<PackageInput> {
         {
             let mut state = self.state.borrow_mut();
             state.base_system_prompt = None;
@@ -71,9 +93,13 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let mut publisher = None;
         let mut packages = Vec::new();
         for (path, payload) in extensions.runtime.finish_load_time() {
+            let source = owners
+                .get(&canonicalize_path(&path))
+                .copied()
+                .unwrap_or(&path);
             let accepted = serde_json::from_value::<Inputs>(payload)
                 .map_err(|error| error.to_string())
-                .and_then(|inputs| self.accept_load_time(inputs, &path, &mut publisher));
+                .and_then(|inputs| self.accept_load_time(inputs, &path, source, &mut publisher));
             let inputs = match accepted {
                 Ok(inputs) => inputs,
                 Err(error) => {
@@ -96,13 +122,15 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         &self,
         inputs: Inputs,
         path: &str,
-        publisher: &mut Option<String>,
+        source: &str,
+        publisher: &mut Option<Publisher>,
     ) -> Result<Vec<PackageInput>, String> {
-        if !inputs.base_layers.is_empty() && publisher.as_deref().is_some_and(|owner| owner != path)
+        if !inputs.base_layers.is_empty()
+            && let Some(owner) = publisher.as_ref().filter(|owner| owner.source != source)
         {
             return Err(format!(
                 "Base layer publisher already registered by {}",
-                publisher.as_deref().unwrap_or_default()
+                owner.path
             ));
         }
         let layers: Result<Vec<_>, _> = inputs
@@ -124,7 +152,10 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             .merge_paths(&inputs.model_files, [])
             .map_err(|error| error.to_string())?;
         if !layers.is_empty() {
-            publisher.get_or_insert_with(|| path.to_owned());
+            publisher.get_or_insert_with(|| Publisher {
+                source: source.to_owned(),
+                path: path.to_owned(),
+            });
         }
         for (scope, layer) in layers {
             self.settings_manager

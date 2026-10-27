@@ -22,7 +22,9 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         &self,
     ) -> io::Result<(ResolvedPaths, LoadExtensionsResult<E>)> {
         let (base_paths, mut extensions) = self.load_base_packages().await?;
-        let contributions = self.collect_load_time(&mut extensions).await?;
+        let contributions = self
+            .collect_load_time(&mut extensions, &base_paths.extensions)
+            .await?;
         let mut resolved = self.package_manager.resolve(None).await?;
         append_paths(&mut resolved, base_paths);
         append_paths(&mut resolved, contributions);
