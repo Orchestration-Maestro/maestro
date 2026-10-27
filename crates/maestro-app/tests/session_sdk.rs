@@ -3,7 +3,7 @@
 //! hooks, withheld images and both resource routes, compared with the recorded SDK cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, answer, assistant,
+    Auth, Harness, HarnessOptions, TestResourceLoader, answer, as_recorded, assistant,
     create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
     recorded_number, script_responses, summary_provider, usage,
 };
@@ -143,10 +143,7 @@ fn resolves_the_working_directory_from_the_explicit_option() {
             .get_cwd()
             .to_owned();
         let observed = json!({"manager_cwd": manager_cwd, "session_cwd": session_cwd(&created)});
-        assert_eq!(
-            observed.to_string().replace(&root, "$ROOT"),
-            expected.to_string()
-        );
+        assert_eq!(as_recorded(observed, &[(&root, "$ROOT")]), expected);
     });
 }
 
@@ -171,10 +168,7 @@ fn resolves_the_working_directory_from_the_session_manager() {
             "manager_cwd": manager_cwd, "session_cwd": session_cwd(&created),
             "model_fallback_message": created.model_fallback_message,
         });
-        assert_eq!(
-            observed.to_string().replace(&root, "$ROOT"),
-            expected.to_string()
-        );
+        assert_eq!(as_recorded(observed, &[(&root, "$ROOT")]), expected);
     });
 }
 

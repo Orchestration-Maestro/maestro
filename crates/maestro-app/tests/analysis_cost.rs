@@ -62,7 +62,8 @@ fn cost_arguments_keep_required_and_help_branches() {
             assert_eq!(
                 run.stderr,
                 format!(
-                    "Sessions directory not found: {base}/home/.maestro/agent/sessions/----help--\n"
+                    "Sessions directory not found: {}\n",
+                    maestro_path::join(&[base, "home/.maestro/agent/sessions/----help--"])
                 )
             );
             assert!(run.failed());
@@ -270,7 +271,8 @@ fn cost_empty_and_missing_directories() {
             assert_eq!(
                 run.stderr,
                 format!(
-                    "Sessions directory not found: {base}/home/.maestro/agent/sessions/--absent--\n"
+                    "Sessions directory not found: {}\n",
+                    maestro_path::join(&[base, "home/.maestro/agent/sessions/--absent--"])
                 )
             );
             let run = run_cost(&["-d", "/project", "-n", "7"]).expect("the report runs");
@@ -293,7 +295,13 @@ fn cost_empty_and_missing_directories() {
             .expect("the fixture directory is creatable");
             let error = run_cost(&["-d", "/project", "-n", "7"])
                 .expect_err("a reached read failure rejects the report");
-            assert_eq!(error.kind(), std::io::ErrorKind::IsADirectory);
+            // The host's own refusal: Unix reports a directory, Windows denies access.
+            let refused = std::fs::read(
+                std::path::Path::new(&directory).join("2026-03-09T13-00-00-000Z_b.jsonl"),
+            )
+            .expect_err("a directory is not readable as a file")
+            .kind();
+            assert_eq!(error.kind(), refused);
         },
     );
 }

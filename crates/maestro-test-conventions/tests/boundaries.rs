@@ -854,7 +854,16 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
         .root
         .path()
         .join(support::native_path("crates/maestro-extensions-wasm"));
-    std::fs::create_dir_all(member.join(directory)).unwrap();
+    // Windows refuses quotes and control characters in a name, so those spellings cannot
+    // be exercised there.
+    match std::fs::create_dir_all(member.join(directory)) {
+        Ok(()) => {}
+        Err(_) if cfg!(windows) => {
+            eprintln!("premise not met: this host refuses the directory {directory:?}");
+            return;
+        }
+        Err(error) => panic!("{directory:?}: {error}"),
+    }
     source(
         workspace,
         "maestro-extensions-wasm",

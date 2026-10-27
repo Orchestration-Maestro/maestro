@@ -62,8 +62,9 @@ fn transcript_arguments_keep_output_and_cwd_selection() {
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
             let directory = sessions(base, &project, &[("a.jsonl", &journal(true))]);
-            let first = format!("{base}/first");
-            let second = format!("{base}/second");
+            // The command prints the working directory it resolved, natively joined.
+            let first = maestro_path::join(&[base, "first"]);
+            let second = maestro_path::join(&[base, "second"]);
             let run = run_transcripts(&["--output", &first, "--ignored", &project], false)
                 .expect("the command reads its directory");
             assert!(run.succeeded(), "{run:?}");
@@ -97,7 +98,12 @@ fn transcript_arguments_keep_output_and_cwd_selection() {
                 .expect("the command reads its directory");
             assert!(ignored.failed());
             assert!(ignored.stderr.starts_with("No sessions found for "));
-            assert!(ignored.stderr.contains("/-h\nExpected: "));
+            let separator = std::path::MAIN_SEPARATOR;
+            assert!(
+                ignored
+                    .stderr
+                    .contains(&format!("{separator}-h\nExpected: "))
+            );
         },
     );
 }
@@ -346,7 +352,16 @@ fn transcript_directory_lookup_matches_session_writer() {
         |base| {
             for project in ["a/b", "c:d", "e\\f"] {
                 let cwd = format!("{base}/{project}");
-                std::fs::create_dir_all(&cwd).expect("the fixture directory is creatable");
+                // Windows refuses `:` in a directory name, so that spelling cannot be
+                // exercised there.
+                match std::fs::create_dir_all(&cwd) {
+                    Ok(()) => {}
+                    Err(_) if cfg!(windows) => {
+                        eprintln!("premise not met: this host refuses the directory {project:?}");
+                        continue;
+                    }
+                    Err(error) => panic!("the fixture directory is creatable: {error}"),
+                }
                 sessions(base, &cwd, &[("a.jsonl", &journal(true))]);
                 let output = format!("{base}/out");
                 let run = run_transcripts(&["--output", &output, &cwd], false)

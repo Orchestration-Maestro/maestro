@@ -73,10 +73,12 @@ impl AutocompleteOperations for Files {
         self.trace
             .borrow_mut()
             .push(vec!["is_directory".into(), path.into()]);
+        // The stat answers are keyed by the recorded spelling, as the trace is compared.
+        let recorded = &recorded_trace(&[vec![path.to_owned()]])[0][0];
         match self
             .stat
             .iter()
-            .find(|(name, _)| *name == path)
+            .find(|(name, _)| name == recorded)
             .map(|(_, kind)| *kind)
         {
             Some("directory") => Ok(true),

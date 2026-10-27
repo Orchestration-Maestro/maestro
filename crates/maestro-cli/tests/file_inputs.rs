@@ -253,6 +253,10 @@ fn native_and_supplied_file_operations_have_the_same_contract() {
             // The fatal cases leave the process; they have their own witnesses.
             continue;
         }
+        if cfg!(windows) && file_names(&case).iter().any(|name| name.contains('"')) {
+            // Windows cannot store a double quote in a name, so it has no such fixture.
+            continue;
+        }
         assert_prepared(&case, scratch.path(), &native);
         let supplied = SuppliedFileOperations::new();
         assert_prepared(&case, scratch.path(), &supplied);
