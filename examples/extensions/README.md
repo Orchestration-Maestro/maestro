@@ -39,7 +39,9 @@ blocks and the tracked table remain shared edits; alphabetical neighbours can
 still conflict. Regenerate the table after merging another example. Examples
 with additional native-runner tests also need an explicit alphabetical module
 entry in `crates/maestro-extensions-wasmtime/tests/integration.rs`, as required by
-the workspace integration-test conventions.
+the workspace integration-test conventions. Retain both sides’ Cargo target
+blocks and native integration module declarations in alphabetical order when
+resolving conflicts, then regenerate the table.
 
 ## Examples
 
@@ -76,6 +78,8 @@ the workspace integration-test conventions.
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
+| `qna.md` | Qna |
+| `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |
@@ -94,12 +98,17 @@ the workspace integration-test conventions.
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `titlebar_spinner.md` | Titlebar spinner |
 | `titlebar_spinner.rs` | Animates the terminal title while the agent works, restoring it when work stops. |
+| `todo.md` | Todo |
+| `todo.rs` | A todo tool whose result snapshots follow the active session branch. |
+| `todo/view.rs` | Tool rows and the interactive todo list, using the host's theme and terminal helpers. |
 | `tool_override.md` | Tool override |
 | `tool_override.rs` | An opt-in read override with access records and illustrative sensitive-path checks. |
 | `tools.md` | Tools |
 | `tools.rs` | Interactive tool selection retained in the current session branch. |
 | `trigger_compact.md` | Trigger compact |
 | `trigger_compact.rs` | A turn hook that requests compaction above a usage threshold and a command that requests it immediately. |
+| `truncated_tool.md` | Truncated tool |
+| `truncated_tool.rs` | A ripgrep tool that retains full output when the host's output limits are reached. |
 | `widget_placement.md` | Widget placement |
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
 | `with-deps.md` | With deps |
