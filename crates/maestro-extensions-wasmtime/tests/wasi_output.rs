@@ -127,7 +127,10 @@ async fn output_host(case: &str, captured: &Capture) -> Harness {
         Harness::factory(artifact_factory_with_stdout(
             path,
             super::support::widgets(),
-            "installed-component-host".into(),
+            maestro_extensions_wasmtime::Installation {
+                version: "installed-component-host".into(),
+                agent_dir: "/controlled-agent".into(),
+            },
             writer,
             case == "terminal",
         ))

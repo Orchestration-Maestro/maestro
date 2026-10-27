@@ -55,9 +55,9 @@ fn leaf(host: &Controlled, value: &Value) {
     );
 }
 
-/// Supplies an execution result, including deliberately nonzero status.
+/// Supplies a successfully completed execution result.
 fn stdout(host: &Controlled, value: &str) {
-    host.observe().actions.value = json!({"stdout":value,"stderr":"controlled","code":7,"killed":false,"is_whitespace_char":false});
+    host.observe().actions.value = json!({"stdout":value,"stderr":"controlled","code":0,"killed":false,"is_whitespace_char":false});
 }
 
 /// The literal turn-start document accepted by the registered handler.
@@ -149,6 +149,44 @@ fn git_checkpoint_factory_preserves_commands_whitespace_and_entry_kinds() -> Res
         let mark = host.observed().transcript.len();
         returned(&fire(&host, &exports, fork("assistant")).await);
         assert!(super::ui_host::receipts(&host.observed().transcript[mark..]).is_empty());
+        release(&host);
+        Ok(())
+    })
+}
+
+/// Nonzero and terminated applications fail without announcing a successful restore.
+#[test]
+fn git_checkpoint_factory_rejects_failed_restores() -> Result<(), String> {
+    super::block_on(async {
+        let (host, exports) = super::example_support::start::<Checkpoint>().await?;
+        leaf(
+            &host,
+            &json!({"type":"custom","id":"entry","parentId":null,"timestamp":"now","customType":"state"}),
+        );
+        returned(&fire(&host, &exports, result()).await);
+        stdout(&host, "object-id");
+        returned(&fire(&host, &exports, turn()).await);
+        host.observe().catalog.data.has_ui = true;
+        for (code, killed) in [(7, false), (0, true), (7, true)] {
+            host.observe().actions.value["code"] = json!(code);
+            host.observe().actions.value["killed"] = json!(killed);
+            host.observe()
+                .ui
+                .control(&json!({"answer":"Yes"}).to_string());
+            let mark = host.observed().transcript.len();
+            assert_eq!(
+                fire(&host, &exports, fork("entry")).await,
+                Ended::Failed(format!(
+                    "Could not restore checkpoint (exit code {code}, killed: {killed}): controlled"
+                ))
+            );
+            let lines = host.observed().transcript[mark..].to_vec();
+            assert!(lines.contains(
+                &r#"action exec ["git",["stash","apply","object-id"],null]"#.to_owned()
+            ));
+            let receipts = super::ui_host::receipts(&lines);
+            assert_eq!(receipts.len(), 1, "no success notification: {lines:?}");
+        }
         release(&host);
         Ok(())
     })
