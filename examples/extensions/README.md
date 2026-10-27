@@ -29,6 +29,7 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
+| `github_issue_autocomplete.rs` | Open-issue `#...` completion from the GitHub CLI, wrapped around the current editor provider. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
@@ -74,6 +75,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- github_issue_autocomplete_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -374,3 +377,28 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the issue autocomplete example does
+
+On session start, `github_issue_autocomplete` resolves the first GitHub SSH or
+HTTP remote in `git remote -v` order. It preloads up to 100 open issues with
+`gh issue list` in a host-owned listener tail, so startup does not wait for
+GitHub. Both commands use the session directory and a five-second timeout.
+Every completion request in that session shares the same result, including a
+failure; command and JSON failures show one error notification and leave
+completion to the previous provider.
+
+Type `#` at the start of a line or after a space or tab. The example offers at
+most 20 issues, preferring number prefixes for numeric queries and otherwise
+using the host's fuzzy ranking over issue numbers and titles. Choosing an item
+uses the previous provider's completion operation; unrelated input and missing
+matches also pass through to that provider. The cache refreshes on session start,
+not while typing.
+
+Build with `--example github_issue_autocomplete` using the command above.
+Loading it is opt-in and needs a component-enabled interactive host with editor
+completion, `git` and `gh` on its process PATH, a GitHub repository checkout, and
+GitHub CLI authentication with permission to read that repository's issues.
+Loading runs the two read-only commands and can contact GitHub. The controlled
+`github_issue_autocomplete_` tests supply command results and editor requests;
+they need no network, credentials, provider or installation.

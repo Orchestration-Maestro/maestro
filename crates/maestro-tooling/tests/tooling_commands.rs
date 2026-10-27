@@ -1208,6 +1208,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/file_trigger.rs"),
     ),
     (
+        "examples/extensions/github_issue_autocomplete.rs",
+        include_str!("../../../examples/extensions/github_issue_autocomplete.rs"),
+    ),
+    (
         "examples/extensions/hello.rs",
         include_str!("../../../examples/extensions/hello.rs"),
     ),

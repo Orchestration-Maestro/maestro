@@ -62,6 +62,7 @@ mod editor_driver;
 pub(crate) mod editor_host;
 mod editor_ui;
 mod foreign_host;
+mod github_issue_autocomplete_example;
 mod guest_family;
 mod hello_example;
 mod hidden_thinking_label_example;
