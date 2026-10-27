@@ -79,7 +79,7 @@ without losing the default arrow keys:
 Ctrl+N remains a named-session filter in the session picker. This example changes
 editor movement, not every selector's controls.
 
-### Home-row navigation without a mode switch
+### Modal-style navigation without a mode switch
 
 Use Alt with home-row keys to keep unmodified letters available for typing:
 
