@@ -3,6 +3,7 @@
 mod accessors;
 mod base_layer;
 mod change;
+mod composition;
 mod conversion;
 mod decision;
 mod entries;
@@ -254,6 +255,7 @@ impl SettingsManager {
             .map_or_else(Map::new, |layer| layer.settings.0.clone());
         let global = merge_one_level(base, self.global.settings.clone());
         self.effective = merge_one_level(global, self.project.settings.clone());
+        self.effective = self.compose_effective_settings(self.get_base_layer(), Map::new(), &[]);
         self.effective_nan = self.accepted_nan.unless_defined_by(&self.project.settings);
         self.apply_base_locks();
         self.resolve_effective();
