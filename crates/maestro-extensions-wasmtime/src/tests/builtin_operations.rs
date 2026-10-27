@@ -739,10 +739,11 @@ async fn native_write_result(content: &str) -> serde_json::Value {
     serde_json::to_value(result).unwrap()
 }
 
-/// Edit access consumes text/numeric codes before display; later failures keep their reached phase.
+/// Every operation family preserves errors at its reached phase; edit access consumes supplied codes.
 #[test]
 fn builtin_operation_errors_keep_codes_and_messages() {
     let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
@@ -770,8 +771,101 @@ fn builtin_operation_errors_keep_codes_and_messages() {
             ] {
                 observe_edit_error(&runner, executable, (stage, code, error)).await;
             }
+            other_file_errors(&runner, executable).await;
+            other_search_errors(&runner, executable).await;
+            grep_errors(executable).await;
+            let success = observe_progress(&runner, &json!({"cwd":"/virtual","executable":executable,"chunks":[b"shell".to_vec()]})).await;
+            assert_progress(&success, "shell");
+            let failure = observe_progress(&runner, &json!({"cwd":"/virtual","executable":executable,"chunks":[b"shell".to_vec()],"operation_error":"opaque failure 雪"})).await;
+            assert_eq!(failure["result"], json!({"Err":"opaque failure 雪"}));
         }
     });
+}
+
+/// Reuses the byte/effect witnesses for successful and failed read and write callbacks.
+async fn other_file_errors(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+) {
+    observe_read_case(
+        runner,
+        json!({"detect":true,"mime":null,"bytes":b"file","resize":false,"executable":executable}),
+        None,
+        executable,
+    )
+    .await;
+    for stage in ["access", "mime", "read"] {
+        for mode in ["ready", "pending"] {
+            observe_read_failure(runner, stage, mode).await;
+        }
+    }
+    observe_write(
+        runner,
+        json!({"content":"é","executable":executable}),
+        "ready",
+        None,
+    )
+    .await;
+    for stage in ["mkdir", "write"] {
+        for mode in ["ready", "pending"] {
+            observe_write(
+                runner,
+                json!({"content":"é","executable":executable,"fail":stage}),
+                mode,
+                Some(stage),
+            )
+            .await;
+        }
+    }
+}
+
+/// Native search and listing comparisons retain reached-stage prefixes and skipped entries.
+async fn other_search_errors(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    executable: bool,
+) {
+    let find = json!({"args":{"pattern":"*","path":"雪"},"exists":true,"paths":["a.rs"],"executable":executable});
+    observe_find(runner, find.clone()).await;
+    for stage in ["exists", "glob"] {
+        for pending in [false, true] {
+            let mut request = find.clone();
+            request["fail"] = json!(stage);
+            request["gate"] = json!(pending.then_some(stage));
+            observe_find(runner, request).await;
+        }
+    }
+    let listing = json!({"args":{"path":"雪"},"exists":true,"directory":true,"names":["skip","雪"],"executable":executable});
+    observe_listing(runner, listing.clone(), &["skip", "雪"]).await;
+    for stage in ["exists", "stat", "readdir"] {
+        for pending in [false, true] {
+            let mut request = listing.clone();
+            request["fail"] = json!(stage);
+            request["gate"] = json!(pending.then_some(stage));
+            observe_listing(runner, request, &[]).await;
+        }
+    }
+}
+
+/// A real grep consumes its original directory/read callbacks through success and both failures.
+async fn grep_errors(executable: bool) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let file = scratch.path().join("雪.txt");
+    std::fs::write(&file, "before\nneedle\nafter\n").unwrap();
+    let manager = std::sync::Arc::new(
+        maestro_extensions::ToolsManager::new(scratch.path().display().to_string(), None)
+            .with_offline(Some(true)),
+    );
+    let runner =
+        super::builtin_author::loaded_with_tool_services(maestro_extensions::ToolConstruction {
+            tools_manager: manager.clone(),
+            bin_dir: scratch.path().display().to_string(),
+        })
+        .await
+        .0;
+    let base = json!({"cwd":scratch.path(),"args":{"pattern":"needle","path":file,"context":1},"custom":true,"directory":false,"text":"authored before\nauthored needle\nauthored after\n","executable":executable});
+    for request in grep_outcomes(&base) {
+        observe_grep(&runner, &manager, request).await;
+    }
 }
 
 /// Exercises both immediately-ready and positively observed pending callbacks.
