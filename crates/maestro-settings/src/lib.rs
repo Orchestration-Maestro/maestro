@@ -5,11 +5,12 @@ pub mod settings_manager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use settings_manager::FileSettingsStorage;
 pub use settings_manager::{
-    BaseSettingsLayer, BranchSummarySettings, CompactionSettings, DoubleEscapeAction,
-    FilteredPackage, ImageSettings, InMemorySettingsStorage, MarkdownSettings, MessageDeliveryMode,
-    PackageSource, ProviderRetrySettings, ResolvedBranchSummarySettings,
+    BaseSettingsLayer, BranchSummarySettings, CompactionSettings, DecisionRequest,
+    DoubleEscapeAction, FilteredPackage, ImageSettings, InMemorySettingsStorage, MarkdownSettings,
+    MessageDeliveryMode, PackageSource, ProviderRetrySettings, ResolvedBranchSummarySettings,
     ResolvedCompactionSettings, ResolvedProviderRetrySettings, ResolvedRetrySettings,
-    RetrySettings, Settings, SettingsError, SettingsListEntry, SettingsManager, SettingsScope,
-    SettingsStorage, SettingsStorageError, SettingsStorageHandle, SettingsUpdate, TerminalSettings,
-    ThinkingBudgetsSettings, ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
+    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsError, SettingsListEntry,
+    SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError, SettingsStorageHandle,
+    SettingsUpdate, TerminalSettings, ThinkingBudgetsSettings, ThinkingLevel, TransportSetting,
+    TreeFilterMode, WarningSettings,
 };
