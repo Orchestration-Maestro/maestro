@@ -16,7 +16,7 @@ mod package_manager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use package_manager::NativePackageOperations;
 pub use package_manager::{
-    CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager,
+    CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager, GitPinStatus,
     InstalledSourceScope, MissingSourceAction, PackageFuture, PackageManager,
     PackageManagerOptions, PackageOperations, PackageUpdate, PackageUpdateType, ProgressAction,
     ProgressCallback, ProgressEvent, ProgressEventType, ResolvedPackage, ResolvedPaths,

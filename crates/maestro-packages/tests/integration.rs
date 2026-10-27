@@ -32,6 +32,7 @@ mod native_git_command;
 mod native_support;
 mod npm_root_checks;
 mod pattern_reexport_checks;
+mod pin_integrity_checks;
 mod pinned_manifest_checks;
 mod process_checks;
 #[cfg(not(target_arch = "wasm32"))]
