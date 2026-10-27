@@ -1177,6 +1177,8 @@ interface host {
         /// Optional default, independently typed from the kind.
         %default: option<flag-value>,
     }
+    /// Offers JSON inputs only while this base package's factory loads.
+    contribute-load-time: func(contributions: string) -> result<_, string>;
     /// Registers a literal shortcut.
     register-shortcut: func(shortcut: string, description: option<string>, handler: borrow<callback>) -> result<_, string>;
     /// Registers a flag.

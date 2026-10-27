@@ -51,6 +51,8 @@ port! {
         /// Formats a native byte count without narrowing its floating-point domain.
         #[doc(hidden)]
         fn native_format_size(bytes: f64) -> String;
+        /// Offers package sources, base prompts, model files and scoped base layers during base loading.
+        fn contribute_load_time(contributions: Value) -> ();
         /// Reads complete typed metadata through the installed host.
         #[doc(hidden)]
         fn native_frontmatter(content: &str) -> crate::bindings::maestro::extension::host::FrontmatterDocument;
@@ -211,15 +213,6 @@ impl ExtensionAPI {
 }
 
 impl ExtensionAPI {
-    /// Offers load-time package, prompt, model and settings inputs to the host.
-    ///
-    /// # Errors
-    /// Returns the host's rejection message.
-    pub fn contribute_load_time(&self, _contributions: Value) -> ExtensionResult<()> {
-        let _ = self;
-        Ok(())
-    }
-
     /// Runs an operation in the native file queue, preserving its guest-owned result.
     ///
     /// Admission occurs before the returned future is polled. Dropping that future

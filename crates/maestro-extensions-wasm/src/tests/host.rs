@@ -1398,6 +1398,13 @@ impl host::Host for State {
             .register(format!("shortcut {shortcut}"), handler.rep());
         Ok(Ok(()))
     }
+    fn contribute_load_time(
+        &mut self,
+        contributions: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.observed.log(format!("load-time {contributions}"));
+        Ok(Ok(()))
+    }
     fn register_flag(
         &mut self,
         name: String,
