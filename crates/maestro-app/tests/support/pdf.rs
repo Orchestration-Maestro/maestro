@@ -144,6 +144,26 @@ pub fn load(name: &str) -> Result<Attachment, AttachmentError> {
         &fetch,
     ))
 }
+/// Previews the approved engine rasterizes differently on aarch64. Its SIMD rounding there
+/// moves some antialiased edge pixels by at most 2, identically on Linux and macOS, so these
+/// documents keep a second exact baseline recorded from the unchanged engine on aarch64.
+pub const AARCH64_PREVIEWS: [&str; 3] = [
+    "TAMReview.pdf.png",
+    "alphatrans.pdf.png",
+    "images_1bit_grayscale.pdf.png",
+];
+/// Name the aarch64 baseline of one preview.
+pub fn aarch64_preview(file: &str) -> String {
+    format!("{}.aarch64.png", file.trim_end_matches(".png"))
+}
+/// Name the baseline this target compares a preview with.
+fn preview_baseline(file: &str) -> String {
+    if cfg!(target_arch = "aarch64") && AARCH64_PREVIEWS.contains(&file) {
+        aarch64_preview(file)
+    } else {
+        file.to_owned()
+    }
+}
 /// Decode the observed standard base64 PNG.
 pub fn pixels(encoded: &str) -> Pixmap {
     let data = STANDARD.decode(encoded).unwrap();
@@ -154,7 +174,10 @@ pub fn check_preview(encoded: Option<&str>, expected: Option<&Preview>) {
     match (encoded, expected) {
         (Some(encoded), Some(expected)) => {
             let actual = pixels(encoded);
-            let baseline = Pixmap::from_png(std::io::Cursor::new(bytes(&expected.file))).unwrap();
+            let baseline = Pixmap::from_png(std::io::Cursor::new(bytes(&preview_baseline(
+                &expected.file,
+            ))))
+            .unwrap();
             assert_eq!(
                 (actual.width(), actual.height()),
                 (expected.width, expected.height)
