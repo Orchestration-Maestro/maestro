@@ -39,10 +39,10 @@ pub(super) async fn load(uri: &url::Url, cache: Option<&Cache>) -> Result<Source
 }
 
 /// Missing files alone have the source's authored not-found category. Windows refuses to
-/// open an existing directory named with a trailing separator as not found, so the entry's
-/// existence decides.
+/// open an existing directory named with a trailing separator as not found, so the existence
+/// of the entry the open would reach, following links, decides.
 fn not_found(error: std::io::Error, path: &std::path::Path) -> Failure {
-    if error.kind() == std::io::ErrorKind::NotFound && std::fs::symlink_metadata(path).is_err() {
+    if error.kind() == std::io::ErrorKind::NotFound && std::fs::metadata(path).is_err() {
         NotFound.into()
     } else {
         error.into()
