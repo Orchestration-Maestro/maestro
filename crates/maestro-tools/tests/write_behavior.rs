@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::loop_support;
+use crate::ls_support::posix_rows;
 use crate::read_support;
 use crate::runtime;
 use crate::write_support;
@@ -451,15 +452,15 @@ fn write_native_and_supplied_adapters_share_one_caller() {
         json!([{"type": "text", "text": "Successfully wrote 14 bytes to x/y.txt"}])
     );
     assert_eq!(
-        ops.calls(),
-        [
+        posix_rows(&ops.calls()),
+        posix_rows(&[
             vec!["mkdir".to_owned(), format!("{cwd}/x")],
             vec![
                 "write".to_owned(),
                 format!("{cwd}/x/y.txt"),
                 "supplied bytes".to_owned()
             ]
-        ]
+        ])
     );
     assert!(!dir.path().join("x").exists());
 }

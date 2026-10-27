@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::edit_support;
+use crate::ls_support::posix_rows;
 use crate::read_support;
 use crate::runtime::run;
 use crate::write_support;
@@ -640,8 +641,8 @@ fn edit_definition_and_wrapper_share_operations() {
             assert_eq!(result.details.unwrap().diff, "-1 supplied\n+1 changed");
         }
         assert_eq!(
-            ops.script.calls(),
-            vec![
+            posix_rows(&ops.script.calls()),
+            posix_rows(&[
                 vec!["access".into(), format!("{}/target", dir.text())],
                 vec!["read".into(), format!("{}/target", dir.text())],
                 vec![
@@ -649,7 +650,7 @@ fn edit_definition_and_wrapper_share_operations() {
                     format!("{}/target", dir.text()),
                     "changed".into()
                 ]
-            ]
+            ])
         );
         assert_eq!(*ops.bytes.lock().unwrap(), b"changed");
     }

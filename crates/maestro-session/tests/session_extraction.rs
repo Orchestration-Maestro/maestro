@@ -203,6 +203,9 @@ fn extracted_context_reuses_local_timestamp_conversion() {
             .expect("selected timezone")
     });
     let Some(zone) = zone else {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         for zone in ["America/New_York", "UTC"] {
             let output = maestro_test_process::TestProcess::current(name)
                 .unwrap()

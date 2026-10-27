@@ -118,6 +118,13 @@ impl CaseSelection {
     }
 }
 
+/// Whether a child's local time zone follows its `TZ` variable, the premise of a test
+/// that selects a zone that way.
+#[must_use]
+pub fn local_zone_follows_tz() -> bool {
+    true
+}
+
 /// Return this process's typed case or environment-group selection.
 #[must_use]
 pub fn selection() -> CaseSelection {

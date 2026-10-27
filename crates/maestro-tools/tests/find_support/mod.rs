@@ -3,7 +3,7 @@
 use crate::{
     display_support::{Case, search_cases, search_keys},
     ls_support::{
-        RecordedTruncation, assert_rows, canon, check_reuse_as, check_theme_error_as,
+        RecordedTruncation, assert_rows, canon, check_reuse_as, check_theme_error_as, posix_value,
         render_case_as, result_json, with_home,
     },
     read_support::{Fixture, Scratch},
@@ -236,7 +236,7 @@ pub fn check_custom(test: &str) {
             assert_eq!(c.expected["error_kind"], json!("required-cwd"));
         } else {
             assert_eq!(
-                canon(&actual),
+                canon(&posix_value(&actual)),
                 canon(&with_home(&c.expected)),
                 "case {}",
                 c.id
