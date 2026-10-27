@@ -64,12 +64,14 @@ mod editor_driver;
 pub(crate) mod editor_host;
 mod editor_ui;
 mod foreign_host;
+mod git_checkpoint_example;
 mod guest_family;
 mod hello_example;
 mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
 mod host_widgets;
+mod input_transform_example;
 mod join;
 mod json_payloads;
 mod model_streams;
@@ -1246,3 +1248,8 @@ mod tool_record_views;
 
 mod credential_host;
 mod native_helpers;
+
+mod custom_ticks;
+mod snake_example;
+
+mod snake_frames;

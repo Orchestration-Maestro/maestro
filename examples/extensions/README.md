@@ -28,11 +28,14 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
+| `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -42,6 +45,9 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `snake.rs` | A `/snake` custom view with arrow/WASD controls, 100 ms ticks and saved games in session entries. |
+| `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
+| `snake/render.rs` | The bordered Snake board and input hints. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
@@ -76,6 +82,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_footer_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
@@ -84,9 +92,15 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- git_checkpoint_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- git_checkpoint_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- input_transform_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -103,6 +117,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- snake_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -287,6 +303,25 @@ removes the status under the same key, including when no start came before it.
 A host rejection is returned to the host unchanged. Loading the component into
 an application is opt-in.
 
+### What the custom footer does
+
+`/footer` switches between the host's default footer and one dimmed line showing
+input tokens, output tokens, total cost, the current model and the Git branch.
+Each render totals the assistant messages on the active session branch; it ignores
+other messages and entries. Counts below 1,000 are shown as numbers, larger counts
+as one decimal followed by `k`, and cost as dollars with three decimal places.
+Without a model the footer shows `no-model`; without a Git branch it omits the
+parenthesized branch. The host's terminal helpers measure and clip the line to
+its supplied width, preserving styling and whole graphemes.
+
+Branch changes request a render. Restoring the default footer disposes the custom
+one and unsubscribes its branch listener. The controlled run invokes the built
+component with supplied history, model, branch, theme and terminal-helper replies;
+it needs no provider, repository, credentials or installation. Loading the
+component is opt-in and needs an application with the component runtime and an
+interactive UI host. Build it with the command above using `custom_footer` as
+the example name.
+
 ### Building with-deps
 
 The [`with-deps/main.rs`](with-deps/main.rs) example parses a duration string
@@ -444,6 +479,45 @@ is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
 
+### What the input transform example does
+
+`?quick <question>` returns `Respond briefly in 1-2 sentences: <question>`,
+trimming the question's edges with the host's shared whitespace definition.
+An empty question warns `Usage: ?quick <question>` and stops. `ping` and `time`
+ignore ASCII case and stop after informational feedback: `pong` or the host's
+current local date and time. Other text, including extension-injected input,
+continues unchanged. The rewrite omits replacement images, leaving the host to
+keep the supplied attachments.
+
+Time uses the host's local time zone with the en-US pattern
+`M/D/YYYY, h:mm:ss AM`; other locale patterns are not selected. Build with
+`--example input_transform` in the command above. The controlled `input_transform_`
+runs supply whitespace and clock replies, invoke both adapters and need no
+provider, credentials or installation. Loading is opt-in and needs a
+component-enabled host with notification UI. Quick questions still use that
+host's configured model and can incur provider charges; ping, time and empty
+quick input do not call a model.
+
+### What the Snake game does
+
+Build with `--example snake`, then load the component into a component-enabled
+interactive host with custom UI, keyboard helpers, native waits and a WASI random
+source. Loading and playing are opt-in; no model, provider or network is needed.
+Run `/snake` to open the 40 by 15 board. Arrow keys or WASD steer; each food is
+worth 10 points. Escape saves the current game in a `snake-save` session entry
+and closes the view. Q closes it and clears the save. A restored game starts
+paused: any key except Escape or Q resumes it; those two keys close it without
+changing the saved game. After a collision, R or Space restarts with the high
+score retained. The newest save is read from the whole session, not only the
+current branch. A finished saved game starts a new game with its high score.
+
+The controlled `snake_` runs use the built component with supplied terminal
+input, random bytes, history and tick completions. Closing the view cancels its
+pending native wait and removes its event listener. The example never writes a
+file directly; saving and clearing append ordinary session entries through the
+host. Narrow views show fewer columns without changing the game's collision
+boundaries.
+
 ### What the audited read override does
 
 `tool_override` replaces `read` only when you load it. It records each resolved
@@ -487,3 +561,33 @@ session names, so they need no provider, paid service or terminal installation.
 The example starts no process and reads no files. A title-write or name-read
 failure ends the callback or animation with the host's error; tail errors go to
 the host's event-bus reporter.
+
+### What the Git checkpoint example does
+
+Build with `--example git_checkpoint` using the command above. Loading it is
+opt-in and needs a component-enabled native host, Git on `PATH`, and a Git
+repository with an initial commit and a configured author identity. Use a
+disposable checkout first: approving a restore runs `git stash apply` against
+the host's working directory and can change tracked files or leave conflicts.
+Interactive restoration also needs the host's selector UI.
+
+`tool_result` remembers the current session leaf when one exists. `turn_start`
+awaits `git stash create` and associates a nonempty object ID with that entry,
+replacing its previous checkpoint. Creating the object leaves the working tree
+and stash list alone; it does not include untracked files. A clean tree creates
+no checkpoint and keeps any previous one.
+
+Before a fork, a matching checkpoint and an available UI open **Restore code
+state?** with **Yes, restore code to that point** and **No, keep current code**.
+A selection starting with `Yes` awaits `git stash apply` and reports
+`Code restored to checkpoint` only if Git exits with code zero without being
+terminated. A nonzero exit or terminated command fails the callback with the
+exit code, termination flag and Git's standard error instead; inspect any partial
+changes or conflicts before continuing. Dismissal, another choice, a missing
+checkpoint or a headless host leave the working tree alone.
+
+`agent_end` clears the in-memory checkpoint map, not the remembered entry or
+Git's unreachable objects. There is no persistent recovery catalog, automatic
+reset, stash push, or built-in checkpoint policy. The controlled runs load the
+built component through the production runner in disposable repositories with
+scripted UI choices. They need Git but no provider, credentials or paid service.
