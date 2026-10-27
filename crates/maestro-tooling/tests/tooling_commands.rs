@@ -381,7 +381,7 @@ fn main() {
     }
     if env::args().nth(1).as_deref() != Some("format") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
-            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
                 let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
                 assert!(output.status.success());
                 assert_eq!(output.stdout, b"formatted");
@@ -389,7 +389,7 @@ fn main() {
         }
     }
     if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
@@ -2291,14 +2291,28 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
                 &[],
             )
             .envs(
-                // The child compiles a fixture: Windows finds its linker through the
-                // program-data and program-files locations and writes to its temporary one.
+                // The child compiles a fixture, which on Windows needs the system locations
+                // its linker discovery and temporary files read.
                 [
                     "RUSTUP_HOME",
                     "CARGO_HOME",
                     "RUSTUP_AUTO_INSTALL",
+                    "SYSTEMDRIVE",
+                    "COMSPEC",
+                    "PATHEXT",
                     "PROGRAMDATA",
+                    "PROGRAMFILES",
                     "PROGRAMFILES(X86)",
+                    "PROGRAMW6432",
+                    "COMMONPROGRAMFILES",
+                    "COMMONPROGRAMFILES(X86)",
+                    "COMMONPROGRAMW6432",
+                    "NUMBER_OF_PROCESSORS",
+                    "PROCESSOR_ARCHITECTURE",
+                    "OS",
+                    "USERPROFILE",
+                    "APPDATA",
+                    "LOCALAPPDATA",
                     "TEMP",
                     "TMP",
                 ]

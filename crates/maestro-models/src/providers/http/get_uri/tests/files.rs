@@ -34,10 +34,15 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
             uri.as_str().replace("space", "bad%2fspace"),
             format!("file://foreign.invalid{}", uri.path()),
         ] {
-            assert!(
-                get_uri::load(&url::Url::parse(&text).unwrap(), None, &fetch)
-                    .await
-                    .is_err(),
+            let url = url::Url::parse(&text).unwrap();
+            // The host decides what a file URL names: Windows reads a foreign host as a UNC
+            // server, where other hosts refuse it.
+            let readable = url
+                .to_file_path()
+                .is_ok_and(|path| std::fs::read(path).is_ok());
+            assert_eq!(
+                get_uri::load(&url, None, &fetch).await.is_ok(),
+                readable,
                 "{text}"
             );
         }

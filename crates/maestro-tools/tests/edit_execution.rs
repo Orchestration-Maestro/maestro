@@ -365,10 +365,11 @@ fn edit_execution_binds_expanded_paths_before_polling() {
         calls: Vec<Vec<String>>,
         result: Value,
     }
+    let home = Some("/maestro-test-home");
     if !read_support::isolated(
         "edit_execution_binds_expanded_paths_before_polling",
         "paths",
-        &[("HOME", Some("/maestro-test-home"))],
+        &[("HOME", home), ("USERPROFILE", home)],
     ) {
         return;
     }

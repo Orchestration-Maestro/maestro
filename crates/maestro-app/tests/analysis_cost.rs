@@ -77,6 +77,9 @@ fn cost_filename_cutoff_uses_local_midnight() {
         "cost_filename_cutoff_uses_local_midnight",
         &[("TZ", ZONE)],
         |base| {
+            if !maestro_test_process::local_zone_follows_tz() {
+                return;
+            }
             let older = entry("2026-03-09T12:00:00Z", "older", 1.0);
             let cutoff = entry("2026-03-09T12:00:00Z", "cutoff", 1.0);
             let before = entry("2026-03-09T12:00:00Z", "before", 1.0);

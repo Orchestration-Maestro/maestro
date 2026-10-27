@@ -59,14 +59,14 @@ fn builtin_defaults_preserve_individual_corrections() {
         default_find_tree(scratch.path());
         let observed = default_results(&runner, json!({"cwd":cwd,"tool":"find","args":[
             {"pattern":"*.txt","path":"many","limit":0},
-            {"pattern":"**/*.txt","path":"./paths/a/..","limit":0},
-            {"pattern":"a/**/*.txt","path":scratch.path().join("paths")},
+            {"pattern":"**/*.txt","path":"./paths/one/..","limit":0},
+            {"pattern":"one/**/*.txt","path":scratch.path().join("paths")},
             {"pattern":"--help","path":"paths"}
         ]})).await;
         assert_eq!(observed.len(), 4);
         assert_default_listing(&observed[0], &(0..1005).map(|n| format!("file-{n}.txt")).collect());
-        assert_default_listing(&observed[1], &[".secret/hidden.txt", "node_modules/dependency.txt", "a/kept.txt", "a/deep/leaf.txt", "b/secret.txt", "kept.txt"].map(str::to_owned).into());
-        assert_default_listing(&observed[2], &["a/kept.txt", "a/deep/leaf.txt"].map(str::to_owned).into());
+        assert_default_listing(&observed[1], &[".secret/hidden.txt", "node_modules/dependency.txt", "one/kept.txt", "one/deep/leaf.txt", "b/secret.txt", "kept.txt"].map(str::to_owned).into());
+        assert_default_listing(&observed[2], &["one/kept.txt", "one/deep/leaf.txt"].map(str::to_owned).into());
         assert_default_listing(&observed[3], &["--help".to_owned()].into());
     });
 }
@@ -86,10 +86,12 @@ async fn default_results(
 }
 
 /// The actual native search observes hidden paths, nested ignores and literal glob operands.
+/// A full-path glob matches the absolute path, so the nested directory is named `one`, which
+/// no ancestor of a scratch root is (Windows runners keep their work below `D:\a`).
 fn default_find_tree(root: &std::path::Path) {
     for dir in [
         "many",
-        "paths/a/deep",
+        "paths/one/deep",
         "paths/b",
         "paths/.secret",
         "paths/.git",
@@ -101,12 +103,12 @@ fn default_find_tree(root: &std::path::Path) {
         std::fs::write(root.join(format!("many/file-{n}.txt")), "").unwrap();
     }
     std::fs::write(root.join("paths/.gitignore"), "ignored.txt\n").unwrap();
-    std::fs::write(root.join("paths/a/.gitignore"), "secret.txt\n").unwrap();
+    std::fs::write(root.join("paths/one/.gitignore"), "secret.txt\n").unwrap();
     for path in [
-        "a/ignored.txt",
-        "a/secret.txt",
-        "a/kept.txt",
-        "a/deep/leaf.txt",
+        "one/ignored.txt",
+        "one/secret.txt",
+        "one/kept.txt",
+        "one/deep/leaf.txt",
         "b/secret.txt",
         "kept.txt",
         "ignored.txt",
@@ -218,7 +220,7 @@ fn builtin_read_options_preserve_reverse_operations() {
             .await
             .unwrap_err()
             .to_string();
-            let observed: serde_json::Value = serde_json::from_str(&result).unwrap();
+            let observed = observation(&result);
             let calls: Vec<_> = stages
                 .into_iter()
                 .map(|stage| json!([stage, "/virtual/雪.bin"]))
@@ -1174,12 +1176,12 @@ async fn check_edit_preparation(
     assert_eq!(result.is_ok(), written.is_some(), "{id}: {result:?}");
     if let Some(written) = written {
         assert_eq!(
-            *calls.borrow(),
-            vec![
-                json!(["access", "/virtual/f"]),
-                json!(["read", "/virtual/f"]),
-                json!(["write", "/virtual/f", written])
-            ],
+            observation(&json!(*calls.borrow()).to_string()),
+            json!([
+                ["access", "/virtual/f"],
+                ["read", "/virtual/f"],
+                ["write", "/virtual/f", written]
+            ]),
             "{id}"
         );
     } else {
@@ -1894,7 +1896,9 @@ impl maestro_extensions::LsOperations for ListingAnswer {
         ))
     }
     fn stat(&self, path: String) -> ReadFuture<bool> {
-        let (stage, value) = if path == "/virtual/雪" {
+        // Windows resolves the root on the working drive and joins with `\`.
+        let path = path.replace('\\', "/");
+        let (stage, value) = if path.ends_with("/virtual/雪") {
             ("stat", self.0["directory"].as_bool().unwrap())
         } else if path.ends_with("/skip") {
             ("skip", false)
