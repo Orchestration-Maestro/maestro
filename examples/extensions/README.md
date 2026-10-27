@@ -193,8 +193,9 @@ the full-output path. No matches and search errors have separate outcomes.
 Search output can contain private file contents. Temporary artifacts remain on
 disk so the read tool can open them; remove their directories when no longer
 needed. Loading and searching are opt-in; no provider or paid service is needed
-for the controlled runs above. Those runs use disposable files and real ripgrep
-through the production component runtime.
+for the controlled runs above. Those runs use disposable files and a controlled
+search process through the production component runtime. They need
+`/usr/bin/python3`, not ripgrep.
 
 ### What the shutdown example does
 
