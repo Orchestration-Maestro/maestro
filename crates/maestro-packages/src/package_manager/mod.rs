@@ -335,10 +335,10 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
     }
     fn read_candidate_files<'a>(
         &'a self,
-        _source: &'a str,
-        _paths: &'a [String],
+        source: &'a str,
+        paths: &'a [String],
     ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>> {
-        Box::pin(async { Err(io::Error::other("Candidate inspection unavailable")) })
+        Box::pin(self.inspect_candidate_files(source, paths))
     }
     fn install_and_persist<'a>(
         &'a self,

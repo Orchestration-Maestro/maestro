@@ -1,5 +1,18 @@
 //! Read-only release discovery and isolated candidate contents.
 
+use super::{
+    DefaultPackageManager, PackageOperations,
+    git::GitStaging,
+    sources::{self, Source},
+};
+use maestro_path::dirname;
+use maestro_resources::SourceScope;
+use std::{
+    collections::BTreeMap,
+    io,
+    path::{Component, Path},
+};
+
 /// One Git tag with its peeled commit identity.
 #[derive(Debug, PartialEq, Eq)]
 pub struct GitRelease {
@@ -8,12 +21,6 @@ pub struct GitRelease {
     /// Commit named by the tag, not an annotated tag object.
     pub commit: String,
 }
-
-use super::{
-    DefaultPackageManager, PackageOperations,
-    sources::{self, Source},
-};
-use std::{collections::BTreeMap, io};
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Lists remote tags without acquiring or updating any checkout.
@@ -68,4 +75,62 @@ fn inspection_source(source: &str) -> io::Result<crate::GitSource> {
             "Package inspection requires a Git source",
         )),
     }
+}
+
+impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Reads a fresh candidate and removes it before returning any bytes.
+    pub(super) async fn inspect_candidate_files(
+        &self,
+        source: &str,
+        paths: &[String],
+    ) -> io::Result<Vec<Option<Vec<u8>>>> {
+        let git = inspection_source(source)?;
+        if !git.pinned {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Candidate inspection requires a Git pin",
+            ));
+        }
+        for path in paths {
+            if Path::new(path)
+                .components()
+                .any(|component| !matches!(component, Component::Normal(_) | Component::CurDir))
+            {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Candidate paths must stay relative to the release",
+                ));
+            }
+        }
+        self.require_inspection_online()?;
+        let parent = dirname(&self.git_path(&git, SourceScope::Temporary));
+        std::fs::create_dir_all(&parent)?;
+        let mut stage = GitStaging::new(&parent)?;
+        let result = async {
+            self.prepare_git_checkout(&git, stage.path()).await?;
+            let root = std::fs::canonicalize(stage.path())?;
+            paths
+                .iter()
+                .map(|path| read_candidate_file(&root, path))
+                .collect()
+        }
+        .await;
+        stage.finish(result)
+    }
+}
+
+/// Follows in-release links but never reads a target outside the staged candidate.
+fn read_candidate_file(root: &Path, path: &str) -> io::Result<Option<Vec<u8>>> {
+    let target = match std::fs::canonicalize(root.join(path)) {
+        Ok(target) => target,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    if !target.starts_with(root) {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "Candidate file resolves outside the release",
+        ));
+    }
+    std::fs::read(target).map(Some)
 }

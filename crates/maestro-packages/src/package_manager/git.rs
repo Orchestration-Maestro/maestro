@@ -44,25 +44,26 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         std::fs::create_dir_all(dirname(target))?;
         let mut stage = GitStaging::new(&dirname(target))?;
         let result = async {
-            let clone = [
-                "clone".to_owned(),
-                git.repo.clone(),
-                stage.path().to_owned(),
-            ];
-            self.run_command("git", &clone, None).await?;
-            if let Some(reference) = &git.r#ref {
-                let checkout = ["checkout".to_owned(), reference.clone()];
-                self.run_command("git", &checkout, Some(stage.path()))
-                    .await?;
-            }
+            self.prepare_git_checkout(git, stage.path()).await?;
             self.install_git_dependencies(stage.path()).await?;
             stage.publish(target)
         }
         .await;
-        match result {
-            Ok(()) => Ok(()),
-            Err(error) => Err(with_recovery(error, stage.discard())),
+        stage.finish(result)
+    }
+    /// Clones and selects a checkout without executing dependency installation.
+    pub(super) async fn prepare_git_checkout(
+        &self,
+        git: &GitSource,
+        target: &str,
+    ) -> io::Result<()> {
+        let clone = ["clone".to_owned(), git.repo.clone(), target.to_owned()];
+        self.run_command("git", &clone, None).await?;
+        if let Some(reference) = &git.r#ref {
+            let checkout = ["checkout".to_owned(), reference.clone()];
+            self.run_command("git", &checkout, Some(target)).await?;
         }
+        Ok(())
     }
     /// Prepares ordinary installation before replacing any existing managed checkout.
     pub(super) async fn reinstall_git(
@@ -394,6 +395,16 @@ impl GitStaging {
         std::fs::rename(&self.path, target)?;
         self.owned = false;
         Ok(())
+    }
+    /// Settles an operation with explicit cleanup, retaining both errors on failure.
+    pub(super) fn finish<T>(&mut self, result: io::Result<T>) -> io::Result<T> {
+        match result {
+            Ok(value) => {
+                self.discard()?;
+                Ok(value)
+            }
+            Err(error) => Err(with_recovery(error, self.discard())),
+        }
     }
     /// Reports cleanup errors without deleting any path not owned here.
     fn discard(&mut self) -> io::Result<()> {
