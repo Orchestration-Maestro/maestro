@@ -1,5 +1,8 @@
 # Command-line input
 
+For daily workflows, complete option and environment tables, and attachment
+examples, read [daily use](usage.md). This page describes the library boundary.
+
 The `maestro-cli` library prepares the input of a command-line run: it turns
 authored arguments into retained input, prepares file and image attachments,
 assembles the first message, renders the available-model table, selects what a

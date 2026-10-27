@@ -69,10 +69,20 @@ impl Session {
     }
 }
 
+/// One tool registration the guest attempted, whether or not the host admitted it.
+pub struct Attempt {
+    /// The metadata document the guest sent.
+    pub metadata: String,
+    /// How many transcript lines the host recorded before the attempt.
+    pub position: usize,
+}
+
 /// Lines the host observed, the identities the extension dropped, how many resources the host
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Controlled native waits while a custom view script drives independent tails.
+    pub tick_clock: Option<super::custom_ticks::Clock>,
     /// Supplied native byte resources and exact operand observations.
     pub native_io: super::native_io_host::Bank,
     /// Supplied HTTP responses and forwarded request operands.
@@ -95,6 +105,8 @@ pub struct Observed {
     pub compactions: usize,
     /// Ordinary action controls.
     pub actions: super::action_host::Bank,
+    /// Host helper operations and their literal encoded operands.
+    pub helper_calls: Vec<(String, String)>,
     /// Registration transport observations and supplied flag replies.
     pub registrations: super::registration_host::Bank,
     /// Event-channel observations.
@@ -107,6 +119,8 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    /// Tool registrations the guest attempted, admitted or not, in attempt order.
+    pub attempts: Vec<Attempt>,
     pub schemas: Vec<(String, String, u32)>,
     pub schema_request_bytes: usize,
     pub schema_response_bytes: usize,
@@ -214,6 +228,10 @@ impl Observed {
             name: String,
         }
         let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
+        self.attempts.push(Attempt {
+            metadata: metadata.into(),
+            position: self.transcript.len(),
+        });
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }
