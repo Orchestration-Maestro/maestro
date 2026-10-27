@@ -45,6 +45,23 @@ const WIN_LINES: [[(usize, usize); 3]; 8] = [
     [(0, 2), (1, 1), (2, 0)],
 ];
 impl BoardDetails {
+    /// Rejects unknown marks and out-of-grid coordinates before rendering or indexing.
+    pub fn validate(&self) -> ExtensionResult<()> {
+        if self.agent_cursor_row > 2
+            || self.agent_cursor_col > 2
+            || !matches!(self.current_turn, 'X' | 'O')
+            || !matches!(self.status.as_str(), "playing" | "win_X" | "win_O" | "draw")
+            || self
+                .board
+                .iter()
+                .flatten()
+                .any(|cell| !matches!(cell, ' ' | 'X' | 'O'))
+        {
+            return Err("Invalid tic-tac-toe snapshot".into());
+        }
+        Ok(())
+    }
+
     /// Returns the first winning line for both status and border highlighting.
     pub fn win_line(&self) -> Option<[(usize, usize); 3]> {
         WIN_LINES.iter().copied().find(|line| {

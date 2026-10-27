@@ -33,6 +33,7 @@ fn restore(ctx: &ExtensionContext, state: &RefCell<BoardDetails>) -> ExtensionRe
             _ => {}
         }
     }
+    restored.validate()?;
     state.replace(restored);
     Ok(())
 }
