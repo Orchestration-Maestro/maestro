@@ -108,3 +108,11 @@ pub fn strip_frontmatter(content: &str) -> Result<String, FrontmatterError> {
 }
 
 pub(crate) use maestro_text::is_whitespace_scalar as text_whitespace;
+
+/// Parse one YAML document without extracting a metadata header.
+///
+/// # Errors
+/// Returns the native parser's cause and source coordinates.
+pub fn parse_yaml(content: &str) -> Result<FrontmatterValue, FrontmatterError> {
+    composer::compose(content)
+}
