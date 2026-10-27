@@ -5256,5 +5256,12 @@
       -0.0
     ],
     "ok": "0B"
+  },
+  {
+    "test": "helper_agent_directory_reads_installation_identity",
+    "operation": "config.getAgentDir",
+    "args": [],
+    "context": {},
+    "ok": "/controlled-agent"
   }
 ]

@@ -124,6 +124,11 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "tool_override"
+path = "../../examples/extensions/tool_override.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "tools"
 path = "../../examples/extensions/tools.rs"
 crate-type = ["cdylib"]
@@ -163,6 +168,7 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 regex.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

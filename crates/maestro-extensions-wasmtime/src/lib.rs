@@ -31,7 +31,9 @@ mod footer_data;
 mod foreign_editor_imports;
 mod frame_writer;
 mod frame_writer_imports;
-pub use factory::{artifact_factory, artifact_factory_with_io, artifact_factory_with_stdout};
+pub use factory::{
+    Installation, artifact_factory, artifact_factory_with_io, artifact_factory_with_stdout,
+};
 mod guest_calls;
 mod guest_component;
 mod guest_editor;
