@@ -34,19 +34,58 @@ impl ExtensionUIContextPort for Ui {
 
 /// Captures the real model request before returning a deterministic response.
 #[derive(Default)]
-struct Provider(Mutex<Vec<Value>>);
+struct Provider(Mutex<Vec<Value>>, &'static str);
 impl<E: ProviderExecution> Invoke<E, ProviderCall<E, ProviderStreamOptions<E>>> for Provider {
     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
     fn invoke(&self, call: ProviderCall<E, ProviderStreamOptions<E>>) -> Self::Return {
+        if self.1 == "cancel" {
+            call.options
+                .as_ref()
+                .unwrap()
+                .common
+                .signal
+                .as_ref()
+                .expect("compaction signal")
+                .abort();
+        }
         self.0.lock().unwrap().push(json!({"model":call.model,"context":call.context,"options":call.options.map(|options| options.common)}));
+        if self.1 == "reject" {
+            return Err(DiagnosticErrorInfo::new(None, "controlled failure"));
+        }
+        let reason = match self.1 {
+            "provider_error" => StopReason::Error,
+            "aborted_response" => StopReason::Aborted,
+            _ => StopReason::Stop,
+        };
+        let content = match self.1 {
+            "empty" => vec![AssistantContent::Text(faux_text(" \u{feff}\n\t"))],
+            "thinking" => vec![AssistantContent::Thinking(faux_thinking("not a summary"))],
+            _ => vec![AssistantContent::Text(faux_text(
+                "# Summary\nAll work retained",
+            ))],
+        };
         let stream = AssistantMessageEventStream::new();
         let message = Arc::new(RwLock::new(faux_assistant_message(
-            "# Summary\nAll work retained",
-            FauxAssistantMessageOptions::default(),
+            content,
+            FauxAssistantMessageOptions {
+                stop_reason: Some(reason.clone()),
+                error_message: (reason == StopReason::Error).then(|| "controlled failure".into()),
+                ..Default::default()
+            },
         )));
-        stream.push(AssistantMessageEvent::Done {
-            reason: DoneReason::Stop,
-            message,
+        stream.push(match reason {
+            StopReason::Error => AssistantMessageEvent::Error {
+                reason: ErrorReason::Error,
+                error: message,
+            },
+            StopReason::Aborted => AssistantMessageEvent::Error {
+                reason: ErrorReason::Aborted,
+                error: message,
+            },
+            _ => AssistantMessageEvent::Done {
+                reason: DoneReason::Stop,
+                message,
+            },
         });
         Ok(stream)
     }
@@ -83,6 +122,10 @@ struct Harness {
     history: Rc<RefCell<maestro_session::SessionManager>>,
     /// Receives notifications without terminal effects.
     ui: Rc<Ui>,
+    /// The same mutable catalog the live context reads.
+    catalog: Arc<maestro_catalog::ModelRegistry>,
+    /// Unhandled callback failures must not masquerade as intentional fallback.
+    errors: Rc<RefCell<Vec<String>>>,
 }
 impl Harness {
     /// Registers a controlled Google descriptor and binds the compiled extension.
@@ -97,6 +140,11 @@ impl Harness {
         session
             .model_registry
             .register_provider("google", Arc::new(RwLock::new(config)))
+            .unwrap();
+        let catalog = session.model_registry.clone();
+        history
+            .borrow_mut()
+            .append_message(json!({"role":"user","content":"history must remain","timestamp":1}))
             .unwrap();
         let runtime = create_extension_runtime::<Local>();
         let bus = create_event_bus_for::<Local>(
@@ -123,10 +171,18 @@ impl Harness {
         super::support::bind_prompt(&runner, "controlled compaction");
         let ui = Rc::new(Ui::default());
         runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+        let errors = Rc::new(RefCell::new(Vec::new()));
+        let reported = errors.clone();
+        let _remove = runner.on_error(Rc::new(move |error| {
+            reported.borrow_mut().push(format!("{error:?}"));
+            Ok(())
+        }));
         Self {
             runner,
             history,
             ui,
+            catalog,
+            errors,
         }
     }
 }
@@ -199,5 +255,113 @@ fn custom_compaction_summarizes_both_spans_and_preserves_retention() {
                 .any(|(text, _)| text.contains("2 messages"))
         );
         unregister_api_providers("custom-compaction-success");
+    });
+}
+
+/// Supplies missing prerequisites using only the catalog's existing public operations.
+fn prerequisites(harness: &Harness, case: &str) {
+    if case == "missing_model" {
+        harness.catalog.get_all().write().unwrap().retain(|model| {
+            let model = model.read().unwrap();
+            model.provider != "google" || model.id != "gemini-2.5-flash"
+        });
+    }
+    if matches!(case, "missing_auth" | "auth_failed") {
+        harness.catalog.auth_storage().set(
+            "google",
+            maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+                key: String::new(),
+            }),
+        );
+    }
+    if case == "auth_failed" {
+        let config =
+            serde_json::from_value(json!({"apiKey":"controlled-key","authHeader":true})).unwrap();
+        harness
+            .catalog
+            .register_provider("google", Arc::new(RwLock::new(config)))
+            .unwrap();
+    }
+}
+
+/// Observes fallback, diagnostics, cancellation and history through the real runner.
+async fn fallback(case: &'static str) -> Value {
+    let provider = Arc::new(Provider(Mutex::default(), case));
+    register_api_provider(
+        ApiProvider {
+            api: "custom-compaction-fallback".into(),
+            stream: provider.clone(),
+            stream_simple: provider.clone(),
+        },
+        Some("custom-compaction-fallback".into()),
+    );
+    let harness = Harness::new("custom-compaction-fallback").await;
+    prerequisites(&harness, case);
+    let history = serde_json::to_value(harness.history.borrow().get_entries()).unwrap();
+    let mut event = event();
+    let data = serde_json::to_value(&event.data).unwrap();
+    if case == "pre_cancel" {
+        event.signal.abort();
+    }
+    let result = harness.runner.emit(&mut event).await.unwrap();
+    let notices: Vec<_> = harness
+        .ui
+        .0
+        .borrow()
+        .iter()
+        .filter(|(_, kind)| {
+            matches!(
+                kind,
+                Some(NotificationType::Warning | NotificationType::Error)
+            )
+        })
+        .map(|(text, kind)| json!([kind, text]))
+        .collect();
+    let observed = json!({
+        "case":case,"fallback":result.is_none(),"calls":provider.0.lock().unwrap().len(),
+        "notices":notices,"errors":harness.errors.borrow().len(),"cancelled":event.signal.is_aborted(),
+        "historyUnchanged":history == serde_json::to_value(harness.history.borrow().get_entries()).unwrap(),
+        "preparationUnchanged":data == serde_json::to_value(&event.data).unwrap(),
+    });
+    unregister_api_providers("custom-compaction-fallback");
+    observed
+}
+
+#[test]
+fn custom_compaction_unusable_summaries_fall_back_without_editing_history() {
+    super::components::local(async {
+        let mut observed = Vec::new();
+        let mut expected = Vec::new();
+        let missing_model = json!([[
+            "warning",
+            "Could not find Gemini Flash model, using default compaction"
+        ]]);
+        let missing_auth = json!([["warning", "No API key for google, using default compaction"]]);
+        let auth_failed = json!([[
+            "warning",
+            "Compaction auth failed: No API key found for \"google\""
+        ]]);
+        let empty = json!([[
+            "warning",
+            "Compaction summary was empty, using default compaction"
+        ]]);
+        let failed = json!([["error", "Compaction failed: controlled failure"]]);
+        for (case, calls, notices, cancelled) in [
+            ("missing_model", 0, missing_model, false),
+            ("missing_auth", 0, missing_auth, false),
+            ("auth_failed", 0, auth_failed, false),
+            ("empty", 1, empty.clone(), false),
+            ("thinking", 1, empty, false),
+            ("provider_error", 1, failed.clone(), false),
+            ("reject", 1, failed, false),
+            ("cancel", 1, json!([]), true),
+            ("aborted_response", 1, json!([]), false),
+            ("pre_cancel", 0, json!([]), true),
+        ] {
+            observed.push(fallback(case).await);
+            expected.push(json!({"case":case,"fallback":true,"calls":calls,"notices":notices,
+                "errors":0,"cancelled":cancelled,"historyUnchanged":true,"preparationUnchanged":true}));
+        }
+        assert_eq!(observed, expected);
     });
 }
