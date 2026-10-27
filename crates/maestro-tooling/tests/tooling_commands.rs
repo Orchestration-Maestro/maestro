@@ -1240,6 +1240,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/shutdown_command.rs"),
     ),
     (
+        "examples/extensions/status_line.rs",
+        include_str!("../../../examples/extensions/status_line.rs"),
+    ),
+    (
         "examples/extensions/system_prompt_header.rs",
         include_str!("../../../examples/extensions/system_prompt_header.rs"),
     ),
@@ -1624,6 +1628,10 @@ fn maestro_package_assets_come_from_the_package_directory() {
     assert_eq!(
         fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
         include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
+    );
+    assert_eq!(
+        fs::read(destination.join("examples/extensions/status_line.rs")).unwrap(),
+        include_str!("../../../examples/extensions/status_line.rs").as_bytes()
     );
 }
 

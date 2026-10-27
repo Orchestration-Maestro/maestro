@@ -99,6 +99,11 @@ path = "../../examples/extensions/shutdown_command.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "status_line"
+path = "../../examples/extensions/status_line.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]

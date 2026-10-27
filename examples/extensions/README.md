@@ -36,6 +36,7 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
@@ -80,6 +81,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -162,6 +165,21 @@ text as it is. When the host rejects a request the command ends with the host's
 message, and the label the example retains stays the one the command chose.
 Loading the component into an application is opt-in and needs a host that enables
 the component runtime.
+
+### What the turn status line example does
+
+`session_start` sets `status-demo` to dim `Ready`. Each `turn_start` increments
+this factory's counter and shows an accent `●` followed by dim ` Turn N...`.
+`turn_end` shows a success `✓` followed by dim ` Turn N complete`. Each hook
+reads the current UI theme; the counter stays in place across session starts
+and starts at zero in a new factory instance. A host rejection returns its
+message without undoing a counted turn.
+
+Build with `<name>` set to `status_line` in the build command above. The
+controlled runs invoke the built component with supplied theme and UI answers;
+they need no provider, credentials or installation. Loading it into an
+application is opt-in and needs that application's component runtime. A UI host
+must provide footer status and theme operations to show the status.
 
 ### What the system prompt status example does
 
