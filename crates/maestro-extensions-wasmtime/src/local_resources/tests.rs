@@ -29,7 +29,7 @@ fn retained_ui_outlives_context_without_retaining_it() {
 #[test]
 fn retired_pump_rejects_resource_registration_with_live_admission() {
     let runner = runner("/closed-pump");
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     drop(pump);
     assert!(
@@ -64,7 +64,7 @@ impl Drop for RegisterOnDrop {
 
 #[test]
 fn pump_revokes_admission_before_releasing_caller_capabilities() {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let refused = Rc::new(std::cell::Cell::new(None));
     let ui = maestro_extensions::ExtensionUIContext::new(Rc::new(RegisterOnDrop {
@@ -110,7 +110,7 @@ async fn independent_ui(command: bool) {
     } else {
         Owner::Base(runner.create_context())
     };
-    let (mut pump, admission) = Pump::new();
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump.registry().context(owner).unwrap();
     drop(admission);
     let (release, released) = mpsc::channel();

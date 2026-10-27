@@ -38,12 +38,18 @@ pub(crate) struct ContextBinding {
     pub(super) no_ui: ExtensionUIContext,
     /// The current UI context.
     pub(super) ui: RefCell<ExtensionUIContextBinding>,
+    /// The callback bound once to this runner's current UI acquisition.
+    pub(super) ui_error_reporter: RefCell<Option<crate::types::ExtensionErrorListener>>,
 }
 
 impl ContextBinding {
     /// Returns the current UI context; it keeps its host after later changes.
     pub(super) fn get_ui_context(&self) -> ExtensionUIContext {
-        self.ui.borrow().get().unwrap_or_else(|| self.no_ui.clone())
+        let mut context = self.ui.borrow().get().unwrap_or_else(|| self.no_ui.clone());
+        context
+            .error_reporter
+            .clone_from(&self.ui_error_reporter.borrow());
+        context
     }
     /// Whether an installed context, rather than a headless fallback, is current.
     pub(super) fn has_ui(&self) -> bool {

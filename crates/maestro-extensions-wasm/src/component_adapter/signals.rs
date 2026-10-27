@@ -13,7 +13,7 @@ pub(super) struct Signal<I: Imports> {
     /// The host the signal belongs to.
     imports: I,
     /// The host's cancellation flag.
-    signal: I::Signal,
+    pub(super) signal: I::Signal,
 }
 
 impl<I: Imports> SignalPort for Signal<I> {

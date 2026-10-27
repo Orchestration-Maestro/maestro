@@ -46,7 +46,9 @@ independent.
 
 `set_widget_factory` shows the component a `ComponentFactory` builds under one key. The
 factory runs synchronously with the lent `TUI`, the live `Theme` and a callback emitter
-and returns an `ExtensionComponent`: the component and an optional disposal. The host
+and returns an `ExtensionComponent`: the component, optional disposal and expansion
+callbacks, and an optional implicit width. See [factory component capabilities](#factory-component-capabilities)
+for callback ownership and errors. The host
 runs the disposal of the widget a key already shows before it runs the new factory, and
 both finish before the setter returns. `set_widget` with lines or `None` disposes a
 factory widget under the same key too. The factory's captures stay usable while the
@@ -64,6 +66,76 @@ subscription keeps it.
 `set_header` replaces the header with the component a factory builds, or restores the
 host's header with `None`. The host disposes the custom header it replaces first, and a
 host that has not built its own header yet runs no factory.
+
+### Host widgets
+
+`Text`, `Box`, `Container`, `Spacer`, `Markdown` and `DynamicBorder` are widgets the host
+builds and keeps; each facade forwards to the host's widget. Building one needs no UI, so
+an extension may build widgets in any mode, and only showing them goes through the UI.
+`From<&Text>` and the other conversions make a widget a `Component`, which a factory
+returns or a container holds; the host keeps such a child as the widget itself.
+
+| Widget | Operations beside `render` and `invalidate` |
+| --- | --- |
+| `Text::new(text, padding_x, padding_y, custom_bg_fn)` | `set_text`, `set_custom_bg_fn` |
+| `Box::new(padding_x, padding_y, bg_fn)` | `add_child`, `remove_child`, `clear`, `set_bg_fn` |
+| `Container::new()` | `add_child`, `remove_child`, `clear` |
+| `Spacer::new(lines)` | `set_lines` |
+| `Markdown::new(text, padding_x, padding_y, theme, default_text_style)` | `set_text` |
+| `DynamicBorder::new(color)` | none |
+
+A container or box renders host widgets and authored components in insertion order; the
+same component may be added more than once, `remove_child` removes its first occurrence and
+an absent child changes nothing. A removed child stays usable. An authored component may
+render host widgets from its own `render`, which runs while the host renders its parent.
+
+A `Style` styles text: `Style::new` wraps an authored function, which the host calls while
+it renders. `get_markdown_theme` returns a `MarkdownTheme` whose styles read the live theme
+and whose `Highlight` is the host's code highlighting; those go back to the host as its own
+when a widget uses them. An authored `MarkdownTheme` may supply its own styles, highlighting
+and code-block indent. The first failure of an authored style or highlighting is the next
+`render` or `invalidate` error of the widget that uses it. `DynamicBorder` without a color
+paints with the live border color.
+
+`SelectList` shows `SelectItem` choices: `set_filter` keeps the choices whose value starts
+with the filter, ignoring case; `set_selected_index` clamps to the rows; `get_selected_item`
+reads the selection; and `set_on_select`, `set_on_cancel` and `set_on_selection_change`
+replace or remove the handlers its input runs. `SelectListLayoutOptions` sets the narrowest
+and widest primary column and may replace the primary truncation with an authored
+`TruncatePrimary`. `SettingsList` shows `SettingItem` rows whose `values` cycle and whose
+`Submenu` opens a component with a `SubmenuDone`; closing it with a value reports the change
+to the list's `SettingChange` callback, and `update_value` changes a value without reporting
+it. `BorderedLoader` builds the application's loader from a lent `TUI` and `Theme`, so it is
+built inside a factory; its `signal` reports a cancellation, `set_on_abort` replaces the
+handler a cancellation runs, `dispose` stops the animation and its rows take children. A
+loader built with `cancellable: Some(false)` ignores input. `get_select_list_theme` and
+`get_settings_list_theme` lend the live theme's styles; a `RowStyle` also receives whether
+its row is selected. The first failure of an authored handler or style is the next `render`
+or `handle_input` error of its widget.
+
+`KeybindingsManager` is a manager the host keeps. `KeybindingsManager::new` and
+`KeybindingsManager::create` build one of the application's keybindings, with user bindings
+and the file `reload` reads, or loaded from `keybindings.json` in an agent directory;
+`from_definitions` builds one of supplied `KeybindingDefinition`s; `get_keybindings` returns
+the keybindings the host's terminal uses. A manager matches input, reads keys, definitions,
+conflicts, user, resolved and effective bindings, and replaces its user bindings; a manager
+without a file keeps its bindings on `reload`. `key_text`, `key_hint` and `raw_key_hint`
+format keybinding hints with the host's keybindings and live theme, and `get_editor_theme`
+lends the live editor styles.
+
+`Editor::new` builds the host's multiline editor on a lent terminal, with an `EditorTheme` and
+`EditorOptions`; `CustomEditor::new` builds the application's editor with a keybindings
+manager. An editor reads and replaces its text, lines, cursor, history, padding, completion
+rows, submission and focus, and takes submission and change handlers; replacing or inserting
+text runs the change handler first. A custom editor also offers input to its
+`set_on_extension_shortcut` interceptor, which consumes the input by answering `true`, then
+runs its interrupt, exit and image-paste handlers and the `on_action` handlers of the
+application actions its manager binds; replacing an action keeps its place.
+
+The [authored editor and completion contracts](#authored-editor-and-completion-contracts) describe `EditorComponent`,
+`AutocompleteProvider` and their optional operations. The host-backed editor facades implement
+the editor traits, and [an editor factory](#editor-factories) replaces the host's
+editor with an authored one.
 
 ### Themes and tool expansion
 
@@ -136,3 +208,262 @@ Components cross as `callback` resources: a guest `Component` becomes a
 `maestro_tui::Component` on the host, and a factory's optional disposal becomes the
 native `ExtensionComponent` disposal. A terminal input answer becomes a native
 `InputListenerResult`.
+
+## Authored editor and completion contracts
+
+The guest library defines `EditorComponent` and `AutocompleteProvider` for authored
+editors and completion providers. An editor factory installs an authored editor in
+place of the host's editor, and a provider factory stacks an authored provider on the
+host's provider. The host-backed `Editor` and `CustomEditor` facades implement the editor
+traits.
+
+## Editors
+
+Implement `ComponentView` for rendering and invalidation, then `EditorComponent`
+for text access, input, submission/change callback setters and a change-callback
+getter. Its required
+`handle_input` is separate from `ComponentView`'s optional input handler. When an
+editor is also used as an ordinary component, delegate that handler with
+`EditorComponent::handle_input(self, data, emitter)`.
+
+Every operation is synchronous and returns `ExtensionResult`. `CallbackEmitter`
+is `Copy`: reuse it across several editor operations in one callback. Its copies
+borrow the same frame and cannot outlive that invocation. Retain callbacks and
+editor state, not emitters. Callbacks run after releasing any mutable borrow of editor state, so a
+handler can call back into the same editor.
+
+History, cursor insertion, expanded text, completion-provider installation,
+border color and padding/completion-row setters are optional. Their defaults
+return `Ok(None)`. `Some(())` means an operation ran; `None` means it is absent.
+An expanded-text reader that gets `None` can fall back to `get_text`. An error is
+neither absence nor a successful no-op.
+
+## Completion providers
+
+`AutocompleteProvider::get_suggestions` returns an asynchronous `ExtensionFuture`.
+It receives the edited lines, a `CursorPosition` and `CompletionOptions`. Cursor
+columns are UTF-8 byte offsets. The options borrow an `AbortSignal`; clone the
+signal when keeping it independently. `force: None`, `Some(false)` and
+`Some(true)` remain distinct. Providers choose how to react to cancellation.
+
+`AutocompleteSuggestions` holds candidates and the prefix they replace.
+`Ok(None)` means no suggestions; `Ok(Some(...))` with an empty candidate list is
+a separate result. Candidate values, labels, descriptions and prefixes remain
+literal, including empty strings and newlines.
+
+`apply_completion` is synchronous and returns `CompletionResult`, with the edited
+lines and cursor. `should_trigger_file_completion` is also synchronous. Its
+default `Ok(None)` leaves the decision to the caller; `Some(false)` and
+`Some(true)` are explicit decisions. Provider errors remain errors.
+
+A wrapper can retain an `Rc<dyn AutocompleteProvider>` and delegate requests to
+it.
+
+`ExtensionUIContext::add_autocomplete_provider(factory)` stacks an
+`AutocompleteProviderFactory` on the host's current provider. The factory receives that
+provider and returns the provider the host uses from then on. The host keeps the factory
+and runs it again whenever it rebuilds its provider stack, so each factory receives the
+provider the factories before it returned. The host runs the factory before the request
+returns, and the factory's error is the request's error.
+
+A provider the host lends to a factory or to an editor forwards each request to the
+host. A suggestion request keeps the caller's own signal when the host lent that signal,
+so a provider that keeps the signal sees a later cancellation. Applying a completion and
+the file-completion decision are synchronous, and the host provider may call back into
+the extension before it answers. An authored provider's failure in an operation whose
+native signature cannot return an error is reported by the provider's next suggestion
+request.
+
+The host's `Editor` and `CustomEditor` install a provider with
+`set_autocomplete_provider`; an authored editor without the operation answers `None`.
+
+## Editor factories
+
+`ExtensionUIContext::set_editor_component(Some(factory))` replaces the host's editor
+with the editor `factory` builds. The host runs the factory before the request
+returns, and its error is the request's error. `None` restores the host's own editor.
+`get_editor_component()` returns the factory that is current, or `None` while the
+host's own editor is in use. A factory this extension set comes back as the same `Rc`
+it supplied. A factory another extension set comes back as a factory the host runs:
+calling it, usually from this extension's own factory, builds that extension's
+editor. The result is an `EditorFactoryOutcome` like any other. Its editor reaches
+the other extension's editor through the host and keeps the operations that editor
+lacks absent. A wrapping factory can return the outcome as it is or delegate to it.
+
+An `EditorFactory` receives the terminal, the editor styles, the keybindings manager
+and a borrowed emitter. It returns an `EditorFactoryOutcome`:
+
+- `Editor` holds an editor with only the editor operations.
+- `CustomEditor` holds a `CustomEditorComponent`, an editor built on the application's
+  `CustomEditor`. Its `custom_editor` names that custom editor. The host shares the
+  custom editor's application actions and its interrupt, exit, image-paste and
+  shortcut callbacks. Input the authored editor passes on to the custom editor runs
+  those actions, and the custom editor's focus is the authored editor's focus.
+
+`Editor` and `CustomEditor` implement the matching traits. A factory can return one as
+it is, or wrap one and delegate to it, as a modal editor does for the keys it does not
+keep.
+
+The host calls the authored editor through its operations. It renders and delivers
+input through the editor's component, and the input reaches
+`EditorComponent::handle_input`. Submission and change callbacks the host installs
+are host callbacks lent to the editor. A change callback the editor returns can be
+called by the host. The host keeps the submission callback it installed; reading it
+does not enter the editor. Optional operations keep their absence, so the host skips
+a border, padding or expansion the editor lacks. When an operation whose native
+signature cannot return an error fails, the editor's next rendering reports that
+failure.
+
+## Factory component capabilities
+
+`ExtensionComponent` returns the component, optional `dispose` and `set_expanded`
+callbacks, and an optional `width`. Set unused fields to `None`.
+`ComponentExpansionHandler` receives a boolean and a borrowed `CallbackEmitter`.
+It runs synchronously, can run repeatedly after the factory returns, and returns
+its original error to the host. A host can also call it before its UI setter
+returns. Cloned native handles share the callback; removing the shown component
+does not invalidate an independently retained handle.
+
+The width crosses the boundary unchanged, including absent, zero and fractional
+values. It is an implicit overlay width for a host that supports custom overlays;
+this record does not install an overlay or choose its layout.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `factory-component` | `ExtensionComponent` | Transfers the component, optional disposal and expansion callback through the existing callback owner; carries width by value. |
+| `set-expanded` callback | `UIHostCall<bool, ()>` | Retained independently; each call borrows its own emission frame. Its final native handle releases the authored capture. |
+| `set-editor-component`, `get-editor-component` | `ExtensionUIContextPort::set_editor_component`, `get_editor_component` | The host retains the factory identity while the factory is installed, and answers it back by identity. |
+| `invoke-editor-factory`, `editor-built` | `EditorFactory`, `EditorFactoryOutcome` | Lends the terminal, styles and keybindings for the call; transfers the editor's component and editor identities, and a shared handle of the custom editor it extends. |
+| `invoke-editor` | `EditorComponent` | One request per editor operation, each with its own emission frame. |
+| `text-callback` | `TextCallback` | A host callback lent to the editor; dropping it keeps the host's callback. |
+| `widget.border-color`, `widget.share` | `Editor::border_color`, the widget itself | Lends the host editor's border style; shares the widget handle with the host. |
+| `current-editor-factory`, `editor-factory.build` | `EditorFactory` another extension set | Lends that factory; each build lends the terminal, styles and keybindings and transfers the built editor's widget, and whether it extends the custom editor. |
+| `widget.foreign-editor` | `EditorComponent` of that built editor | One request per editor operation; `absent` answers an optional operation the editor lacks. |
+| `add-autocomplete-provider`, `invoke-provider-factory` | `ExtensionUIContextPort::add_autocomplete_provider`, `AutocompleteProviderFactory` | The host retains the factory for later rebuilds; each call lends the current provider and transfers the returned provider's identity. |
+| `invoke-provider` | `AutocompleteProvider` | One request per provider operation; a suggestion request owns its lent signal. |
+| `completion-provider` | `AutocompleteProvider` | A host provider lent to a factory or editor; dropping it keeps the host's provider. |
+| `widget.set-autocomplete-provider` | `Editor::set_autocomplete_provider` | Transfers an authored provider to the host editor. |
+
+Disposal, component removal and final callback release remain separate effects.
+Neither calling expansion nor dropping its handle invokes disposal.
+
+### Retained frame writer
+
+A factory's `TUI::full_redraws` reads the original host frame writer's count on
+every call. Clones retain the same host capability after the factory returns;
+releasing the last clone releases that capability, not the host terminal.
+
+The other `TUI` methods forward to that same frame writer. `add_child`,
+`remove_child`, `clear`, `invalidate` and `render` work on the writer's own
+components, which may be host widgets or authored components. `set_focus` and
+`show_overlay` accept either kind; an authored component keeps one host identity
+per `TUI` value, so focusing the component an overlay shows moves focus to that
+overlay. `show_overlay` returns an `OverlayHandle`. The hardware-cursor and
+clear-on-shrink flags, `hide_overlay`, `has_overlay`, `start`, `stop` and
+`request_render` call the host operation of the same name.
+
+`add_input_listener` takes a `TerminalInputHandler` and returns a `Subscription`;
+`remove_input_listener` removes the listener added as that same handler.
+`set_on_debug` replaces or removes the callback for the debug key. These callbacks
+cannot report a failure while the host runs them: a failed listener consumes its
+input chunk, and the next request on the frame writer returns the first failure.
+
+`TUI::terminal` returns the `Terminal` the writer draws on. Its methods read the
+live size and the Kitty keyboard protocol flag, write output, move and show or hide
+the cursor, clear, set the title and progress indicator, and start or stop the
+terminal. `drain_input` resolves once the host's drain finishes; `None` keeps the
+terminal's default limits. `start` takes an input `TextHandler` and a resize
+`WidgetNotice`; their failures surface like those of input listeners.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `tui.writer` | `TUI` as a container widget | Lends the original frame writer once per `TUI` value; it keeps the authored components it lent. |
+| `widget.writer`, `writer-request`, `terminal-request` | `TUI` and `TUI::terminal` methods | One request per operation; focus, overlay and visibility requests may call back into the guest. The host holds focus and overlay targets only while the frame writer does, so refocusing a component first asks `lent-live` and lends it again once released. |
+| `widget.add-input-listener` | `TUI::add_input_listener` | The host keeps the listener until its subscription is unsubscribed. |
+| `widget.drain-input` | `Terminal::drain_input` | The host owns the drain future until it settles. |
+
+### Authored focus
+
+A `ComponentView` can return `Some(self)` from `focusable` when it implements
+`Focusable`. Its getter and setter run synchronously with a borrowed
+`CallbackEmitter`. `is_focusable` tests whether the capability exists, not whether
+its flag is currently true. The host calls the setter on focus and blur, including
+repeated assignments. Ordinary callback failures surface on the next fallible
+render, as they do for input and invalidation.
+
+Emit `CURSOR_MARKER` at the text cursor only while focused. The host removes the
+zero-width marker and positions its hardware cursor there. This does not install
+an overlay or make a nonfocusable view focusable.
+
+`Editor` and `CustomEditor` keep their host focus capability through either
+`Component::from(&editor)` or `Component::new(editor.clone())`. Both views read and
+change the original editor's flag, rather than keeping a second guest flag.
+
+| Protocol operation | Native counterpart | Ownership |
+| --- | --- | --- |
+| `component-focused`, `component-set-focused` | `Component::focusable`, `Focusable::set_focused` | Borrows the retained component and the current emission frame; focus state stays with the author. |
+## Live themes
+
+`theme()` retains the live theme used by the host's widgets, without acquiring a UI.
+Call it after the extension host starts. Its methods report
+`Theme not initialized. Call initTheme() first.` until the host publishes a palette.
+Retained aliases read later name, path, provenance, palette and color-mode changes.
+Dropping an alias releases that resource, not the host's palette.
+
+`ThemeColor` and `ThemeBg` name borrowed string keys. `fg` and `get_fg_ansi` accept
+foreground keys; `bg` and `get_bg_ansi` accept background keys. Strings cross unchanged.
+Unknown keys return the host's lookup error rather than choosing a fallback color.
+`ExtensionUIContext::theme()` still reads that UI owner's live theme; a renderer keeps
+the independently supplied theme it received.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `global-theme` | `ExtensionWidgets::theme`, `LiveTheme` | Lends the widget host's live slot through the existing retained theme resource. |
+
+## Shared overlay placement
+
+`OverlayOptions` holds the placement fields, with `SizeValue` for cells or
+percentage text, all nine `OverlayAnchor` positions and uniform or per-edge
+margins. The host toolkit resolves those values; the guest does not lay out an
+overlay.
+
+`OverlayOptionsHandle::new` creates one host-owned placement record. Clones share
+it: `get` reads the current native fields and `set` replaces them on that same
+record. A replacement preserves the record's executable visibility policy.
+Dropping a guest alias releases that capability, not another native owner's
+reference to the record.
+
+`set_visible` replaces or removes the record's visibility check. The host runs it at
+each render with the terminal's columns and rows; placement replacements keep it.
+A failed or trapped check counts as hidden for that render. Once a custom component
+uses the record, the host reports each such failure as an extension error for the
+`overlay.visible` event, attributed to the extension that set the check, and goes on
+rendering.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `overlay-options` | `Rc<RefCell<maestro_tui::OverlayOptions>>` | Retains one shared record; `get`/`set` carry only placement, not executable code. |
+| `overlay-options.set-visible` | `OverlayOptions::visible` | The host keeps the authored check until it is replaced or the record is dropped. |
+| `overlay-handle` | `Rc<RefCell<Box<dyn OverlayHandle>>>` | Shares the shown overlay's handle; dropping it does not hide the overlay. |
+
+## Custom components
+
+`ExtensionUIContext::custom` shows the component a `CustomFactory` builds and
+resolves to the first value passed to its `CustomDone`, or `None` when the host
+closes the component without one. The value stays in the guest, so it need not
+be serializable. A factory returns `CustomFactoryOutcome::Ready` with the
+component, or `Async` with a future that owns its captures; only custom factories
+may build asynchronously.
+
+`CustomUIOptions` keeps absent fields absent. With `overlay` set, the host shows the
+component as an overlay. `overlay_options` is a shared `OverlayOptionsHandle` or an
+`OverlayOptionsResolver` that the host calls after the component is built. With
+neither, the host uses the component's own `width`. After the overlay is shown, the
+host calls `on_handle` with its `OverlayHandle`. The handle's `hide`, `set_hidden`,
+`is_hidden`, `focus`, `unfocus` and `is_focused` forward to the host's handle.
+
+| Protocol value | Native counterpart | Ownership |
+| --- | --- | --- |
+| `extension-ui-context.custom`, `custom-ui-options` | `ExtensionUIContextPort::custom_component`, `CustomUIOptions` | The factory, resolver and handle callback live until the custom operation ends. |
+| `custom-close` | `CustomClose` | Closes the component; only the first accepted close commits the guest's value. |
+| `invoke-custom-factory`, `invoke-custom-future` | `CustomComponentFactory`, `CustomFactoryOutcome` | The factory prefix borrows its emission frame; an asynchronous future owns its captures. |

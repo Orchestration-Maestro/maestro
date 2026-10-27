@@ -20,7 +20,7 @@ use serde_json::json;
 
 /// A cancellation flag the test controls.
 #[derive(Clone, Default)]
-pub struct Flag(std::sync::Arc<std::sync::atomic::AtomicBool>);
+pub struct Flag(pub(super) std::sync::Arc<std::sync::atomic::AtomicBool>);
 
 impl Flag {
     /// Shared flag for controlled receiver cancellation.
@@ -62,7 +62,7 @@ impl Drop for Lease {
 /// Owner handle of a callback identity; the host sees it dropped.
 pub struct Callback {
     /// Key of the identity.
-    id: u32,
+    pub(super) id: u32,
     /// What the host observed.
     observed: Rc<RefCell<Observed>>,
 }
@@ -155,7 +155,7 @@ pub struct Node {
 /// Counted theme owner with its literal identity.
 pub struct Theme {
     /// Supplied identity.
-    key: String,
+    pub(super) key: String,
     /// Shared observations.
     observed: Rc<RefCell<Observed>>,
     /// Owned resource count.
@@ -173,7 +173,7 @@ impl Drop for Theme {
 #[derive(Clone, Default)]
 pub struct Controlled {
     /// What the host observed.
-    observed: Rc<RefCell<Observed>>,
+    pub(super) observed: Rc<RefCell<Observed>>,
     /// Components factory widgets built, by the handle their slots name.
     widgets: Rc<RefCell<std::collections::HashMap<u32, crate::ExtensionComponent>>>,
 }
@@ -181,6 +181,24 @@ pub struct Controlled {
 /// Terminal lent to a component factory, with a counted lifetime.
 pub struct Tui {
     /// Counted owner.
+    _lease: Lease,
+}
+impl Tui {
+    /// Lends a counted terminal or overlay handle.
+    pub(super) fn lent(observed: &Rc<RefCell<Observed>>) -> Self {
+        Self {
+            _lease: Lease::new(observed),
+        }
+    }
+}
+
+/// Retained placement and its counted host capability.
+pub struct OverlayOptions {
+    /// The shared record.
+    pub(super) value: super::overlay_host::Options,
+    /// The identity of the record's visibility check, shared by its owners.
+    pub(super) visible: Rc<std::cell::Cell<Option<u32>>>,
+    /// Counted resource lifetime.
     _lease: Lease,
 }
 
@@ -239,6 +257,25 @@ impl Controlled {
         Ok(handle)
     }
 
+    /// Keeps a component an authored widget callback returned, under a fresh identity.
+    pub(super) fn keep_component(&self, component: crate::Component) -> u32 {
+        let handle = self.observed.borrow_mut().next_identity();
+        let kept = crate::ExtensionComponent {
+            component,
+            dispose: None,
+            set_expanded: None,
+            width: None,
+        };
+        self.widgets.borrow_mut().insert(handle, kept);
+        handle
+    }
+
+    /// The component kept under `handle`.
+    pub(super) fn kept_component(&self, handle: u32) -> Option<crate::Component> {
+        let kept = self.widgets.borrow();
+        kept.get(&handle).map(|kept| kept.component.clone())
+    }
+
     /// The redraw capability of the tool row `row`.
     pub fn invalidator(&self, row: &str) -> Invalidator {
         Invalidator {
@@ -280,11 +317,60 @@ impl Controlled {
     }
 
     /// Runs one widget disposal with a lent emitter.
+    /// Runs an editor factory with the host's terminal, editor styles and keybindings, and
+    /// shows what it built.
+    fn build_editor_component(&self, factory: u32) -> ExtensionResult<()> {
+        let roles = [
+            "selectedPrefix",
+            "selectedText",
+            "description",
+            "scrollInfo",
+            "noMatch",
+        ];
+        let lent = crate::component_adapter::LentEditor {
+            tui: Tui {
+                _lease: Lease::new(&self.observed),
+            },
+            theme: (
+                super::widget_controlled::Style("borderMuted".to_owned()),
+                roles
+                    .map(|role| super::widget_controlled::Style(role.to_owned()))
+                    .into(),
+            ),
+            keybindings: super::widget_controlled::Keybindings(0),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let outcome = Exports::new(self.clone()).invoke_editor_factory(factory, lent, &emitter)?;
+        let (component, editor, custom) =
+            crate::component_adapter::keep_editor(self, &outcome, |widget| widget.0)?;
+        let slot = super::ui_host::EditorSlot {
+            factory,
+            component,
+            editor,
+            custom,
+        };
+        super::ui_host::show_editor(&mut self.observed.borrow_mut(), slot);
+        Ok(())
+    }
+
     fn dispose(&self, dispose: &crate::ComponentDisposer) -> ExtensionResult<()> {
         let emitter = super::bus_host::Emitter { key: 0 };
         crate::component_adapter::renderers::with_emitter(self, &emitter, |emitter| {
             dispose(emitter)
         })
+    }
+
+    /// The complete component the factory under `key` built.
+    pub fn widget_built(&self, key: &str) -> Option<crate::ExtensionComponent> {
+        let slot = self
+            .observed
+            .borrow()
+            .ui
+            .widgets
+            .iter()
+            .find(|slot| slot.key == key)?
+            .component;
+        self.widgets.borrow().get(&slot).cloned()
     }
 
     /// The component the factory widget under `key` shows.
@@ -1616,7 +1702,80 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    type CustomClose = super::custom_host::Close;
+    fn custom_close(&self, close: &Self::CustomClose) -> ExtensionResult<bool> {
+        Ok(close.close())
+    }
+    fn ui_custom<'a>(
+        &'a self,
+        resource: &'a Ui,
+        factory: &'a Callback,
+        options: Option<crate::component_adapter::custom::CustomOptionsRef<'a, Self>>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            ui_call(&self.observed, resource.key, "custom", &json!([]))?;
+            match options {
+                Some(options) if options.overlay == Some(true) => {
+                    self.custom_overlay(factory, options).await
+                }
+                _ => self.custom(factory).await,
+            }
+        })
+    }
+    type OverlayOptions = OverlayOptions;
+    fn new_overlay_options(&self, encoded: &str) -> ExtensionResult<OverlayOptions> {
+        Ok(OverlayOptions {
+            value: super::overlay_host::Options::new(encoded)?,
+            visible: Rc::default(),
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn overlay_options_get(&self, options: &OverlayOptions) -> ExtensionResult<String> {
+        options.value.get()
+    }
+    fn overlay_options_set(&self, options: &OverlayOptions, encoded: &str) -> ExtensionResult<()> {
+        options.value.set(encoded)
+    }
+    fn overlay_options_share(&self, options: &OverlayOptions) -> OverlayOptions {
+        OverlayOptions {
+            value: options.value.clone(),
+            visible: options.visible.clone(),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+    fn overlay_options_set_visible(
+        &self,
+        options: &OverlayOptions,
+        visible: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observe()
+            .log(format!("overlay visible {}", visible.is_some()));
+        options.visible.set(visible.map(|visible| visible.id));
+        Ok(())
+    }
+    type OverlayHandle = Tui;
+    fn overlay_handle_request(
+        &self,
+        _: &Tui,
+        request: crate::component_adapter::overlays::OverlayRequest,
+    ) -> ExtensionResult<Option<bool>> {
+        use crate::component_adapter::overlays::OverlayRequest;
+        let (line, flag) = match request {
+            OverlayRequest::Hide => ("hide".to_owned(), None),
+            OverlayRequest::SetHidden(hidden) => (format!("setHidden {hidden}"), None),
+            OverlayRequest::IsHidden => ("isHidden".to_owned(), Some(false)),
+            OverlayRequest::Focus => ("focus".to_owned(), None),
+            OverlayRequest::Unfocus => ("unfocus".to_owned(), None),
+            OverlayRequest::IsFocused => ("isFocused".to_owned(), Some(true)),
+        };
+        self.observe().log(format!("overlay handle {line}"));
+        Ok(flag)
+    }
     type Tui = Tui;
+    fn tui_full_redraws(&self, _: &Tui) -> ExtensionResult<u64> {
+        self.observe().log("tui fullRedraws");
+        Ok(17)
+    }
     type Invalidator = Invalidator;
     fn invalidate(&self, invalidator: &Invalidator) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();
@@ -1762,6 +1921,8 @@ impl Imports for Controlled {
                 key: key.to_owned(),
                 component: handle,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             });
         Ok(())
     }
@@ -1780,6 +1941,8 @@ impl Imports for Controlled {
                 key: "footer".to_owned(),
                 component,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             });
         }
         Ok(())
@@ -1809,6 +1972,8 @@ impl Imports for Controlled {
                 key: "header".to_owned(),
                 component: self.build(factory, false)?,
                 dispose: None,
+                set_expanded: None,
+                width: None,
             }),
         };
         self.observed.borrow_mut().ui.header.install(slot);
@@ -1835,6 +2000,50 @@ impl Imports for Controlled {
     }
     fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
         super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
+    fn ui_set_editor_component(
+        &self,
+        resource: &Ui,
+        factory: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        let target = factory.map(|factory| factory.id);
+        let old = super::ui_host::set_editor_component(
+            &mut self.observed.borrow_mut(),
+            resource.key,
+            target,
+        )?;
+        if let Some(old) = old {
+            let mut observed = self.observed.borrow_mut();
+            observed.register(format!("editor component {}", old.component), old.component);
+            observed.register(format!("editor {}", old.editor), old.editor);
+        }
+        target.map_or(Ok(()), |factory| self.build_editor_component(factory))
+    }
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Ui,
+        factory: &Callback,
+    ) -> ExtensionResult<()> {
+        let current = super::provider_host::add(&mut self.observed.borrow_mut(), resource.key)?;
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let exports = Exports::new(self.clone());
+        let provider = exports.invoke_provider_factory(factory.id, current, &emitter)?;
+        let id = crate::component_adapter::keep_provider(self, provider);
+        super::provider_host::push(&mut self.observed.borrow_mut(), id);
+        Ok(())
+    }
+    fn ui_get_editor_component(
+        &self,
+        resource: &Ui,
+    ) -> ExtensionResult<crate::component_adapter::CurrentFactory> {
+        let current =
+            super::ui_host::get_editor_component(&mut self.observed.borrow_mut(), resource.key)?;
+        Ok(current.map(|current| {
+            current.map_err(|custom| {
+                std::rc::Rc::new(super::widget_controlled::ForeignFactory(custom))
+                    as std::rc::Rc<dyn std::any::Any>
+            })
+        }))
     }
     fn ui_theme(&self, resource: &Ui) -> ExtensionResult<Theme> {
         let key = self.ui_themed(resource, "theme", &serde_json::Value::Null)?;
@@ -2719,6 +2928,53 @@ impl Imports for Controlled {
 }
 
 impl Controlled {
+    /// Constructs both custom factory forms without retaining their borrowed emitter.
+    async fn custom(&self, factory: &Callback) -> ExtensionResult<()> {
+        let (built, close) = self.custom_build(factory).await?;
+        self.custom_input(built, &super::bus_host::Emitter { key: 0 })?;
+        assert!(close.is_closed());
+        Ok(())
+    }
+    /// Runs a custom factory's prefix, then awaits its owned continuation when there is one.
+    pub(super) async fn custom_build(
+        &self,
+        factory: &Callback,
+    ) -> ExtensionResult<(crate::ExtensionComponent, super::custom_host::Close)> {
+        let close = super::custom_host::Close::default();
+        let lent = crate::component_adapter::custom::Lent {
+            tui: Tui::lent(&self.observed),
+            theme: self.theme("dark"),
+            keybindings: super::widget_controlled::Keybindings(0),
+            close: close.clone(),
+        };
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let built = Exports::new(self.clone()).invoke_custom_factory(factory.id, lent, &emitter)?;
+        let built = match built {
+            crate::CustomFactoryOutcome::Ready(built) => built,
+            crate::CustomFactoryOutcome::Async(building) => building.await?,
+        };
+        Ok((built, close))
+    }
+    /// Exercises the view after the prefix returns, then disposes it before releasing it.
+    fn custom_input(
+        &self,
+        built: crate::ExtensionComponent,
+        emitter: &super::bus_host::Emitter,
+    ) -> ExtensionResult<()> {
+        use super::renderer_host::{Call, Reply, invoke};
+        assert_eq!(built.width, Some(13.0));
+        assert_eq!(
+            invoke(&built.component, Call::Render(20), self, 0)?,
+            Reply::Lines(vec!["custom 23".into()])
+        );
+        invoke(&built.component, Call::Input("commit"), self, 0)?;
+        if let Some(dispose) = built.dispose {
+            crate::component_adapter::renderers::with_emitter(self, emitter, |emitter| {
+                dispose(emitter)
+            })?;
+        }
+        Ok(())
+    }
     /// Calls the actual backend body and verifies the script's native-owner error channel.
     fn credential_backend(&self, resource: &Reader) -> ExtensionResult<()> {
         let target = resource.data.1.lock().unwrap().backend;

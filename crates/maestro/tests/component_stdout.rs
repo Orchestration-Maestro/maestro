@@ -65,6 +65,7 @@ fn compose_frames() {
         let path = std::env::var("MAESTRO_WASI_COMPONENT").unwrap();
         let factory = artifact_factory_with_stdout(
             path,
+            crate::support::widgets(),
             maestro_app::configuration::config::VERSION.into(),
             Box::new(terminal.output_writer().unwrap()),
             true,

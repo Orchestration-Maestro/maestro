@@ -381,6 +381,7 @@ impl State {
         self.push(super::host::Route {
             steps,
             running: None,
+            rows: None,
             result: Some(result),
         })
     }
@@ -407,6 +408,7 @@ impl State {
         self.push(super::host::Route {
             steps,
             running: None,
+            rows: None,
             result: Some(result),
         })
     }

@@ -148,3 +148,15 @@ pub fn resources(root: &Root) -> std::path::PathBuf {
     }
     base
 }
+
+/// The application's host widgets over the default live theme.
+pub fn widgets() -> std::rc::Rc<dyn maestro_app::ExtensionWidgets> {
+    let highlighter = std::rc::Rc::new(
+        maestro_theme::SyntectHighlighter::new().expect("bundled syntax definitions"),
+    );
+    std::rc::Rc::new(maestro_chat::ExtensionWidgetHost::new(
+        maestro_theme::LiveTheme::default(),
+        highlighter,
+        maestro_tui::TerminalImage::default(),
+    ))
+}

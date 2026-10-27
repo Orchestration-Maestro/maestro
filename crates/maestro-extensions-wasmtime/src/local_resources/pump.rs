@@ -73,13 +73,14 @@ impl Drop for JoinGuard {
 
 impl Pump {
     /// Separates startup admission from the local owner without spawning work.
-    pub(crate) fn new() -> (Self, Admission) {
+    pub(crate) fn new(widgets: Rc<dyn maestro_extensions::ExtensionWidgets>) -> (Self, Admission) {
         let (requests, receiver) = unbounded_channel();
         let state = Rc::new_cyclic(|state| State {
             registry: Registry {
                 resources: Rc::default(),
                 requests: requests.downgrade(),
                 pump: state.clone(),
+                widgets,
             },
             requests: RefCell::new(receiver),
             pending: RefCell::new(FuturesUnordered::new()),
@@ -211,14 +212,10 @@ impl State {
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
-            Message::OAuthLogin(id, controls, reply, admission) => {
-                self.start_oauth_login(id, controls, reply, admission);
-            }
-            Message::OAuthRefresh(id, data, reply, admission) => {
-                self.start_oauth_refresh(id, data, reply, admission);
-            }
-            Message::OAuthProvider(id, request) => self.oauth_provider(id, request),
-            Message::OAuthInteraction(request) => self.oauth_interaction(request),
+            message @ (Message::OAuthLogin(..)
+            | Message::OAuthRefresh(..)
+            | Message::OAuthProvider(..)
+            | Message::OAuthInteraction(..)) => self.oauth(message),
             Message::Credentials(id, request) => self.credentials(id, request),
             Message::CredentialLogin(id, provider, controls, reply, admission) => {
                 self.start_credential_login(id, (provider, controls), reply, admission);
@@ -235,6 +232,7 @@ impl State {
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
             Message::Footer(id, request) => self.footer(id, request),
             Message::Theme(id, request) => self.theme(id, request),
+            Message::Widgets(message) => self.widgets(message),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
             Message::Http(id, request) => self.http(id, request),

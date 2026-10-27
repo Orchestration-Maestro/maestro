@@ -2,7 +2,7 @@
 use super::arguments;
 use crate::guest_calls::{
     Callback,
-    factories::{Built, FactoryCall},
+    factories::{Built, FactoryCall, RetainedComponent},
 };
 use crate::local_resources::effects::{EmitterEndpoint, ThemeEndpoint, TuiEndpoint};
 use wasmtime::{
@@ -139,18 +139,24 @@ pub(crate) fn rendered_owners<T: crate::callback_imports::CallbackView>(
     Ok((component, row))
 }
 
-/// Retains a built component and its optional disposal as native owners.
+/// Retains a built component and its callbacks beside the supplied width.
 pub(crate) fn retained<T: crate::callback_imports::CallbackView>(
     store: &mut T,
     built: Built,
-) -> wasmtime::Result<(
-    crate::guest_calls::Handle,
-    Option<crate::guest_calls::Handle>,
-)> {
+) -> wasmtime::Result<RetainedComponent> {
     let component = crate::callback_imports::transferred(store, built.component)?;
     let dispose = built
         .dispose
         .map(|dispose| crate::callback_imports::transferred(store, dispose))
         .transpose()?;
-    Ok((component, dispose))
+    let set_expanded = built
+        .set_expanded
+        .map(|handler| crate::callback_imports::transferred(store, handler))
+        .transpose()?;
+    Ok(RetainedComponent {
+        component,
+        dispose,
+        set_expanded,
+        width: built.width,
+    })
 }

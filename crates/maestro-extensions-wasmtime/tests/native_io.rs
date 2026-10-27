@@ -24,7 +24,11 @@ async fn loaded() -> ExtensionRunner<Local> {
     let runtime = create_extension_runtime::<Local>();
     let path = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
-        maestro_extensions_wasmtime::artifact_factory(path.clone(), "native-io-host".into()),
+        maestro_extensions_wasmtime::artifact_factory(
+            path.clone(),
+            super::support::widgets(),
+            "native-io-host".into(),
+        ),
         "/".into(),
         bus.for_extension(),
         runtime.clone(),

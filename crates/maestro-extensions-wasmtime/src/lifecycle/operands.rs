@@ -34,21 +34,8 @@ impl Call {
                 completion.retain(release.calls.take());
                 Call::Release(release)
             }
-            Self::Renderer(call) => Call::Renderer(RendererCall {
-                handler: completion.callback(call.handler),
-                message: call.message,
-                expanded: call.expanded,
-                theme: call.theme,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
-            Self::Event(call) => Call::Event(crate::guest_calls::EventCall {
-                handler: completion.callback(call.handler),
-                event: call.event,
-                context: call.context,
-                signal: call.signal,
-                reply: call.reply,
-            }),
+            Self::Renderer(call) => Call::Renderer(renderer(call, completion)),
+            Self::Event(call) => Call::Event(event(call, completion)),
             Self::Bash(call) => Call::Bash(crate::guest_calls::BashCall {
                 owner: completion.callback(call.owner),
                 request: call.request,
@@ -56,9 +43,16 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
-            Self::Factory(call) => Call::Factory(factory(call, completion)),
-            Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
-            Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
+            call @ (Self::Factory(_)
+            | Self::Custom(_)
+            | Self::ToolRender(_)
+            | Self::Paint(_)
+            | Self::Widget(_)
+            | Self::EditorFactory(_)
+            | Self::AutocompleteFactory(_)
+            | Self::Autocomplete(_)
+            | Self::Editor(_)
+            | Self::TerminalInput(_)) => ui(call, completion),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
                 kind: call.kind,
@@ -67,6 +61,96 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the admission of a UI callback beside its operands.
+fn ui(call: Call, completion: &Completion) -> Call<Callback> {
+    match call {
+        Call::Factory(call) => Call::Factory(factory(call, completion)),
+        Call::Custom(call) => Call::Custom(call.map(|handler| completion.callback(handler))),
+        Call::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
+        Call::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
+        Call::Widget(call) => Call::Widget(widget(call, completion)),
+        Call::EditorFactory(call) => Call::EditorFactory(editor_factory(call, completion)),
+        Call::AutocompleteFactory(call) => {
+            Call::AutocompleteFactory(crate::guest_calls::providers::FactoryCall {
+                handler: completion.callback(call.handler),
+                current: call.current,
+                emitter: call.emitter,
+                reply: call.reply,
+            })
+        }
+        Call::Autocomplete(call) => {
+            Call::Autocomplete(crate::guest_calls::providers::ProviderCall {
+                handler: completion.callback(call.handler),
+                request: call.request,
+                signal: call.signal,
+                reply: call.reply,
+            })
+        }
+        Call::Editor(call) => Call::Editor(crate::guest_calls::editors::EditorCall {
+            handler: completion.callback(call.handler),
+            request: call.request,
+            emitter: call.emitter,
+            reply: call.reply,
+        }),
+        Call::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
+        call => call.admitted(completion),
+    }
+}
+
+/// Transfers the renderer admission beside its message operands.
+fn renderer(call: RendererCall, completion: &Completion) -> RendererCall<Callback> {
+    RendererCall {
+        handler: completion.callback(call.handler),
+        message: call.message,
+        expanded: call.expanded,
+        theme: call.theme,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the event handler admission beside its context and signal.
+fn event(
+    call: crate::guest_calls::EventCall,
+    completion: &Completion,
+) -> crate::guest_calls::EventCall<Callback> {
+    crate::guest_calls::EventCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        context: call.context,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the widget callback admission beside its event.
+fn widget(
+    call: crate::guest_calls::widget_calls::WidgetCall,
+    completion: &Completion,
+) -> crate::guest_calls::widget_calls::WidgetCall<Callback> {
+    crate::guest_calls::widget_calls::WidgetCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the editor factory admission beside its lent terminal, styles and keybindings.
+fn editor_factory(
+    call: crate::guest_calls::editors::FactoryCall,
+    completion: &Completion,
+) -> crate::guest_calls::editors::FactoryCall<Callback> {
+    crate::guest_calls::editors::FactoryCall {
+        handler: completion.callback(call.handler),
+        tui: call.tui,
+        theme: call.theme,
+        keybindings: call.keybindings,
+        emitter: call.emitter,
+        reply: call.reply,
     }
 }
 
@@ -136,6 +220,9 @@ fn component(call: ComponentCall, completion: &Completion) -> ComponentCall<Call
         }
         ComponentCall::Unit(owner, method, emitter, reply) => {
             ComponentCall::Unit(completion.callback(owner), method, emitter, reply)
+        }
+        ComponentCall::Focused(owner, emitter, reply) => {
+            ComponentCall::Focused(completion.callback(owner), emitter, reply)
         }
         ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
             ComponentCall::WantsKeyRelease(completion.callback(owner), emitter, reply)

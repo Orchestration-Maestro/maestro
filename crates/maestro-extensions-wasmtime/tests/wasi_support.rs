@@ -35,6 +35,7 @@ impl Harness {
     pub async fn load(path: &Path) -> Self {
         Self::factory(artifact_factory(
             path.to_str().unwrap().into(),
+            super::support::widgets(),
             "installed-component-host".into(),
         ))
         .await

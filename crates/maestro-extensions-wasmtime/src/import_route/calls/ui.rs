@@ -1,5 +1,6 @@
 //! Nested UI callbacks preserve their original retained capabilities.
-use super::{Call, Callback, LocalCall};
+use super::{Call, Callback, LocalCall, LocalResult};
+use crate::guest_calls::paints::PaintCall;
 use crate::local_resources::effects::EmitterEndpoint;
 use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
 
@@ -47,7 +48,53 @@ pub(in super::super) struct LocalTerminalInput {
     emitter: Resource<EmitterEndpoint>,
 }
 
-/// Marshals one component factory, tool renderer or terminal input callback.
+/// Owned operands of one nested expansion callback.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalExpanded {
+    /// Authored identity of the expansion handler.
+    pub(super) target: u32,
+    /// The requested expansion.
+    pub(super) expanded: bool,
+    /// Independent native invocation frame.
+    pub(super) emitter: Resource<EmitterEndpoint>,
+}
+
+/// Owned operands of one nested authored styling.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalStyle {
+    /// Authored identity of the style.
+    target: u32,
+    /// The text to style.
+    text: String,
+}
+
+/// Owned operands of one nested authored highlighting.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalHighlight {
+    /// Authored identity of the highlighting.
+    target: u32,
+    /// The code to highlight.
+    code: String,
+    /// The code block's language, when it names one.
+    lang: Option<String>,
+}
+
+/// Owned operands of one nested authored widget callback.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalWidget {
+    /// Authored identity of the callback.
+    target: u32,
+    /// What the widget tells it.
+    event: crate::guest_calls::widget_calls::WireEvent,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
+/// Marshals one component factory, tool renderer, terminal input or widget callback.
 pub(super) fn lower(
     table: &mut ResourceTable,
     call: &Call<Callback>,
@@ -76,6 +123,68 @@ pub(super) fn lower(
             data: call.data.clone(),
             emitter: table.push(call.emitter.clone())?,
         }),
+        Call::Paint(PaintCall::Style(handler, text, _)) => LocalCall::Style(LocalStyle {
+            target: handler.id,
+            text: text.clone(),
+        }),
+        Call::Paint(PaintCall::Highlight(handler, code, lang, _)) => {
+            LocalCall::Highlight(LocalHighlight {
+                target: handler.id,
+                code: code.clone(),
+                lang: lang.clone(),
+            })
+        }
+        Call::Widget(call) => LocalCall::Widget(LocalWidget {
+            target: call.handler.id,
+            event: call.event.lower(table)?,
+            emitter: table.push(call.emitter.clone())?,
+        }),
         _ => return Err(wasmtime::format_err!("expected a UI callback")),
     })
+}
+
+/// Delivers a nested factory, tool rendering, terminal input or widget callback's result.
+pub(super) fn settle<T: crate::callback_imports::CallbackView>(
+    store: &mut T,
+    call: Call<Callback>,
+    value: LocalResult,
+) -> wasmtime::Result<()> {
+    match (call, value) {
+        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
+            let _ = call.reply.send(value);
+        }
+        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
+            let value = match value {
+                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Factory(call), LocalResult::Factory(value)) => {
+            let value = match value {
+                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        (Call::Paint(PaintCall::Style(_, _, reply)), LocalResult::Style(value)) => {
+            let _ = reply.send(value);
+        }
+        (Call::Paint(PaintCall::Highlight(_, _, _, reply)), LocalResult::Highlight(value)) => {
+            let _ = reply.send(value);
+        }
+        (Call::Widget(call), LocalResult::Widget(value)) => {
+            let value = match value {
+                Ok(answer) => Ok(crate::guest_calls::widget_calls::answered(store, answer)?),
+                Err(error) => Err(error),
+            };
+            let _ = call.reply.send(value);
+        }
+        _ => {
+            return Err(wasmtime::format_err!(
+                "extension route result kind mismatch"
+            ));
+        }
+    }
+    Ok(())
 }

@@ -1,6 +1,27 @@
 //! Nested credential callbacks retain their original update capability.
-use super::{Call, Callback, LocalBackend, LocalCall, LocalFallback};
+use super::{Call, Callback, LocalCall};
 use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
+
+/// Owned operands of one nested credential backend method.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalBackend {
+    /// Authored backend identity.
+    target: u32,
+    /// Invocation-local native update.
+    update: Resource<crate::local_resources::credential_scope::Endpoint>,
+    /// Whether the author must await its update.
+    asynchronous: bool,
+}
+/// Owned operands of one nested fallback lookup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(in super::super) struct LocalFallback {
+    /// Authored resolver identity.
+    target: u32,
+    /// Literal provider.
+    provider: String,
+}
 
 /// Marshals one credential callback with its original update capability.
 pub(super) fn lower(
@@ -24,13 +45,13 @@ pub(super) fn lower(
     })
 }
 
-/// Delivers a nested credential callback's original result.
-pub(super) fn settle(
-    call: crate::guest_calls::credentials::CredentialCall<Callback>,
-    value: super::LocalResult,
-) -> wasmtime::Result<()> {
+/// Delivers a nested credential or OAuth callback's original result.
+pub(super) fn settle(call: Call<Callback>, value: super::LocalResult) -> wasmtime::Result<()> {
     use super::LocalResult;
-    match (Call::Credential(call), value) {
+    match (call, value) {
+        (Call::OAuth(call), LocalResult::OAuth(value)) => {
+            let _ = call.reply.send(value);
+        }
         (
             Call::Credential(crate::guest_calls::credentials::CredentialCall::Backend(call)),
             LocalResult::Unit(value),

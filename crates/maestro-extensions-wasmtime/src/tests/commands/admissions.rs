@@ -33,7 +33,7 @@ fn cancelled_import_does_not_revoke_its_admitted_operation() {
                     ..crate::context_actions::silent_command_operations()
                 },
             )));
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump
                 .registry()
                 .context(Owner::Command(runner.create_command_context()))

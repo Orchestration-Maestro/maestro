@@ -14,12 +14,51 @@ use maestro_extensions_wasm::{
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+#[path = "../../src/tests/custom_author.rs"]
+mod custom_author;
+#[path = "../../src/tests/custom_overlay_author.rs"]
+mod custom_overlay_author;
+#[path = "../../src/tests/editor_factory_author.rs"]
+mod editor_factory_author;
+#[path = "../../src/tests/factory_component_author.rs"]
+mod factory_component_author;
+#[path = "../../src/tests/focus_author.rs"]
+mod focus_author;
+#[path = "../../src/tests/overlay_author.rs"]
+mod overlay_author;
+#[path = "../../src/tests/stacked_provider_author.rs"]
+mod stacked_provider_author;
+#[path = "../../src/tests/tui_author.rs"]
+mod tui_author;
+#[path = "../../src/tests/widget_author.rs"]
+mod widget_author;
+#[path = "../../src/tests/writer_author.rs"]
+pub(super) mod writer_author;
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
 pub(super) fn observe(
     context: &ExtensionContext,
     api: &ExtensionAPI,
     args: &str,
 ) -> ExtensionResult<String> {
+    if args == "ui overlay-options" {
+        return overlay_author::options();
+    }
+    if args == "ui editor-focus" {
+        focus_author::install_editors(&context.ui()?)?;
+        return Ok("editor focus shown".into());
+    }
+    if args == "ui focus" {
+        focus_author::install(&context.ui()?)?;
+        return Ok("focus shown".into());
+    }
+    if args == "ui writer" {
+        writer_author::install(&context.ui()?)?;
+        return Ok("writer shown".into());
+    }
+    if args == "ui tui" {
+        tui_author::install(&context.ui()?)?;
+        return Ok("terminal shown".into());
+    }
     if let Some(operation) = args.strip_prefix("editor ") {
         return editor(context, operation);
     }
@@ -29,9 +68,31 @@ pub(super) fn observe(
     if let Some(request) = args.strip_prefix("ui theme ") {
         return themes(context, request);
     }
+    if let Some(steps) = args.strip_prefix("ui widgets ") {
+        let steps = serde_json::from_str(steps).map_err(|error| error.to_string())?;
+        return Ok(widget_author::run(steps, context.ui().ok()).to_string());
+    }
+    if let Some(name) = args.strip_prefix("ui provider ") {
+        stacked_provider_author::install(&context.ui()?, name)?;
+        return Ok("provider stacked".into());
+    }
+    if let Some(kind) = args.strip_prefix("ui editor ") {
+        return Ok(editor_factory_author::install(&context.ui()?, kind)?.to_string());
+    }
+    if let Some(options) = args.strip_prefix("ui capabilities ") {
+        let (width, expandable): (Option<f64>, bool) =
+            serde_json::from_str(options).map_err(|e| e.to_string())?;
+        factory_component_author::install(&context.ui()?, width, expandable)?;
+        return Ok("capabilities shown".into());
+    }
     if let Some(label) = args.strip_prefix("ui widget ") {
         return widget(context, api, label);
     }
+    basic(context, args)
+}
+
+/// Forwards fixed UI values or their explicit clearing forms.
+fn basic(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
     let clear = args == "ui clear";
     let ui = context.ui()?;
     ui.notify(
@@ -60,6 +121,28 @@ pub(super) fn observe(
     )?;
     ui.set_title(if clear { "" } else { " literal title " })?;
     Ok("UI forwarded".into())
+}
+
+/// Runs the custom component `args` names: a factory that returns immediately or after
+/// yielding, or an overlay with static or resolved placement; `None` for other commands.
+pub(super) async fn custom(
+    context: &ExtensionContext,
+    args: &str,
+) -> Option<ExtensionResult<String>> {
+    let overlay = match args {
+        "ui custom-ready" | "ui custom-async" => None,
+        "ui custom-overlay static" => Some(false),
+        "ui custom-overlay resolved" => Some(true),
+        _ => return None,
+    };
+    let ui = match context.ui() {
+        Ok(ui) => ui,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(match overlay {
+        Some(resolved) => custom_overlay_author::run(&ui, resolved).await,
+        None => custom_author::run(&ui, args == "ui custom-async").await,
+    })
 }
 
 /// Shows the dialog `request` names on the originally acquired UI, with an already aborted
@@ -129,6 +212,8 @@ fn labelled(api: &ExtensionAPI, label: &str) -> ComponentFactory {
                 _capture: capture,
             }),
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -176,6 +261,8 @@ fn footer(api: &ExtensionAPI, label: &str) -> FooterFactory {
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: None,
+            set_expanded: None,
+            width: None,
         })
     })
 }

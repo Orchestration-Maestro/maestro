@@ -17,6 +17,14 @@ mod credentials;
 #[macro_use]
 mod catalog;
 
+/// Custom component and overlay declarations on the same canonical import trait.
+#[macro_use]
+mod overlays;
+
+/// Declarations of the capabilities lent to component factories on the same import trait.
+#[macro_use]
+mod factories;
+
 /// The callbacks one tool registers beside its metadata.
 pub struct ToolCallbacks<'a, C> {
     /// Optional argument preparation.
@@ -530,32 +538,8 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
     /// The label timestamp retained by this node.
     fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
 
-    /// Terminal handle lent to a component factory.
-    type Tui: 'static;
-    /// Redraw capability of one tool row.
-    type Invalidator: 'static;
-    /// Redraws the tool row behind `invalidator`.
-    fn invalidate(&self, invalidator: &Self::Invalidator) -> ExtensionResult<()>;
-    /// Footer metadata lent to a footer factory.
-    type FooterData: 'static;
-    /// Reads the current branch.
-    fn footer_get_git_branch(&self, footer: &Self::FooterData) -> ExtensionResult<Option<String>>;
-    /// Reads the extension statuses in insertion order.
-    fn footer_get_extension_statuses(
-        &self,
-        footer: &Self::FooterData,
-    ) -> ExtensionResult<Vec<(String, String)>>;
-    /// Reads the count of providers with available models.
-    fn footer_get_available_provider_count(
-        &self,
-        footer: &Self::FooterData,
-    ) -> ExtensionResult<f64>;
-    /// Adds the branch change listener under `listener`, returning its host remover.
-    fn footer_on_branch_change(
-        &self,
-        footer: &Self::FooterData,
-        listener: &Self::Callback,
-    ) -> ExtensionResult<Self::Subscription>;
+    overlay_imports!();
+    factory_imports!();
     /// Independently owned host capability.
     type Ui: 'static;
     /// Independently owned host capability.
@@ -633,6 +617,20 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
     fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
     /// Reads the host editor's current text.
     fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Forwards the editor factory, which the host runs before answering, or its removal.
+    fn ui_set_editor_component(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Reads the current editor factory.
+    fn ui_get_editor_component(&self, ui: &Self::Ui) -> ExtensionResult<super::CurrentFactory>;
+    /// Forwards a provider factory, which the host runs before answering.
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Self::Ui,
+        factory: &Self::Callback,
+    ) -> ExtensionResult<()>;
     /// Reads the UI's live theme.
     fn ui_theme(&self, resource: &Self::Ui) -> ExtensionResult<Self::Theme>;
     /// Lists every available theme.

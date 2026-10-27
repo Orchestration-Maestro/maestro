@@ -16,12 +16,15 @@ pub(crate) mod http;
 pub(crate) mod model_streams;
 pub(crate) mod native_io;
 pub(crate) mod native_resources;
+mod overlays;
 pub(crate) mod provider_controls;
+mod providers;
 pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
 pub(crate) mod watches;
+mod widgets;
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -178,6 +181,8 @@ pub(crate) enum Message {
     Theme(u64, crate::theme_reads::Request),
     /// Reads or subscribes to the footer metadata lent to a footer factory.
     Footer(u64, crate::footer_data::Request),
+    /// Builds, uses or lends host widgets and styles.
+    Widgets(crate::widget_reads::WidgetMessage),
     /// Typed operations on original application-supplied native resources.
     Native(u64, native_resources::Request),
     /// HTTP operations retain their native response and signal.
@@ -337,11 +342,36 @@ enum Capability {
     Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
     /// Original redraw capability of one tool row.
     Invalidate(Rc<dyn Fn()>),
-    /// Original terminal lent to a component factory.
-    Tui {
-        /// Ownership alone crosses the opaque canonical terminal resource.
-        _owner: maestro_extensions::TUI,
-    },
+    /// A host widget the extension built.
+    Widget(Rc<crate::widget_reads::Widget>),
+    /// A lent host style.
+    Style(maestro_extensions::widgets::BorderColor),
+    /// The lent host highlighting.
+    Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
+    /// Shared native overlay placement and its bound error reporter.
+    OverlayOptions(overlays::Placement),
+    /// A shown overlay's native handle, shared with the host.
+    OverlayHandle(overlays::SharedHandle),
+    /// Original custom-component close operation.
+    CustomClose(maestro_extensions::types::CustomClose),
+    /// Original terminal lent to a component factory, with the reporter of failures of the
+    /// callbacks it runs.
+    Tui(
+        maestro_extensions::TUI,
+        Option<maestro_extensions::types::UIErrorReporter>,
+    ),
+    /// A lent settings row style.
+    RowStyle(Rc<crate::widget_lists::RowStyleFn>),
+    /// Closes an open settings submenu.
+    SubmenuDone(Rc<dyn Fn(Option<String>)>),
+    /// A keybindings manager.
+    Keybindings(maestro_extensions::widgets::ExtensionKeybindings),
+    /// A native text callback lent to an authored editor.
+    Text(maestro_extensions::widgets::TextCallback),
+    /// A native completion provider lent to the guest.
+    Provider(crate::guest_calls::providers::Native),
+    /// An editor factory another extension set.
+    EditorFactory(maestro_extensions::types::EditorFactory),
 }
 
 /// Local entries and their monotonic identities.
@@ -369,6 +399,8 @@ pub(crate) struct Registry {
     requests: WeakUnboundedSender<Message>,
     /// Receiver access is weak until a synchronous invocation has been admitted.
     pump: std::rc::Weak<pump::State>,
+    /// Builds the widgets whose look depends on the host.
+    widgets: Rc<dyn maestro_extensions::ExtensionWidgets>,
 }
 
 impl Registry {
@@ -606,6 +638,18 @@ pub(crate) enum Identity {
     ),
     /// The original weak schema allocation and guest callback admission.
     Schema(crate::schema_registration::Identity),
+    /// A native editor factory and the identity of the authored factory it runs.
+    EditorFactory(
+        maestro_extensions::types::WeakUIHostCall<
+            (
+                maestro_extensions::TUI,
+                maestro_extensions::widgets::EditorTheme,
+                maestro_extensions::KeybindingsManager,
+            ),
+            maestro_extensions::types::EditorFactoryOutcome,
+        >,
+        u32,
+    ),
 }
 impl Identity {
     /// Whether the original callback still has a strong capture owner.
@@ -613,6 +657,7 @@ impl Identity {
         match self {
             Self::Listener(weak, _) => weak.strong_count() > 0,
             Self::Schema((weak, _)) => weak.strong_count() > 0,
+            Self::EditorFactory(weak, _) => weak.alive(),
         }
     }
 }

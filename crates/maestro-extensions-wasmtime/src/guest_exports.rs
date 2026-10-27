@@ -10,12 +10,17 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
+mod completions;
 mod credentials;
+pub(crate) mod custom;
+mod editors;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
 mod oauth;
+mod paints;
 mod providers;
+mod widget_calls;
 pub(crate) use factories::{rendered_owners, retained};
 pub(crate) mod registrations;
 mod renderers;
@@ -77,6 +82,16 @@ pub(crate) struct Exports {
     terminal: terminal::Exports,
     /// Actual component factory export.
     factories: factories::Exports,
+    /// Actual custom prefix and owned continuation exports.
+    custom: custom::Exports,
+    /// Authored styling and highlighting exports.
+    paints: paints::Exports,
+    /// Authored widget callback export.
+    widgets: widget_calls::Exports,
+    /// Editor factory and authored editor exports.
+    editors: editors::Exports,
+    /// Completion provider and provider factory exports.
+    completions: completions::Exports,
     /// Native component disposal.
     dispose: Abort,
     /// Native branch change listener.
@@ -133,6 +148,10 @@ impl Exports {
         let tools = tools::Exports::new(store, instance, &guest)?;
         let terminal = terminal::Exports::new(store, instance, &guest)?;
         let factories = factories::Exports::new(store, instance, &guest)?;
+        let paints = paints::Exports::new(store, instance, &guest)?;
+        let widgets = widget_calls::Exports::new(store, instance, &guest)?;
+        let editors = editors::Exports::new(store, instance, &guest)?;
+        let completions = completions::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
@@ -150,6 +169,11 @@ impl Exports {
             tools,
             terminal,
             factories,
+            custom: custom::Exports::new(store, instance, &guest)?,
+            paints,
+            widgets,
+            editors,
+            completions,
             dispose: typed(store, instance, &guest, "invoke-dispose")?,
             branch_change: typed(store, instance, &guest, "invoke-branch-change")?,
             registered,
@@ -191,7 +215,16 @@ impl Exports {
             Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
-            call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
+            call @ (Call::TerminalInput(_)
+            | Call::Factory(_)
+            | Call::Custom(_)
+            | Call::ToolRender(_)
+            | Call::Paint(_)
+            | Call::Widget(_)
+            | Call::EditorFactory(_)
+            | Call::Editor(_)
+            | Call::AutocompleteFactory(_)
+            | Call::Autocomplete(_)) => {
                 self.ui(accessor, call).await?;
             }
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -248,7 +281,14 @@ impl Exports {
         match call {
             Call::TerminalInput(call) => self.terminal.invoke(accessor, call).await,
             Call::Factory(call) => self.factories.invoke(accessor, call).await,
+            Call::Custom(call) => self.custom.invoke(accessor, call).await,
             Call::ToolRender(call) => self.factories.render(accessor, call).await,
+            Call::Paint(call) => self.paints.invoke(accessor, call).await,
+            Call::Widget(call) => self.widgets.invoke(accessor, call).await,
+            Call::EditorFactory(call) => self.editors.factory(accessor, call).await,
+            Call::Editor(call) => self.editors.request(accessor, call).await,
+            Call::AutocompleteFactory(call) => self.completions.factory(accessor, call).await,
+            Call::Autocomplete(call) => self.completions.request(accessor, call).await,
             _ => Err(wasmtime::format_err!("expected a UI callback")),
         }
     }

@@ -109,6 +109,23 @@ impl maestro_app::ConfigValueOperations for NoCommands {
     }
 }
 
+/// Loads each component with the failing native capability in place of the real one.
+fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestro_app::Local> {
+    let io: Rc<dyn NativeIo> = Rc::new(FailedIo(
+        maestro_app::extension_native_io::extension_native_io(local),
+    ));
+    Rc::new(move |path: &str| {
+        Box::pin(std::future::ready(Ok(Some(
+            maestro_extensions_wasmtime::artifact_factory_with_io(
+                path.into(),
+                crate::support::widgets(),
+                maestro_app::configuration::config::VERSION.into(),
+                Rc::clone(&io),
+            ),
+        ))))
+    })
+}
+
 /// Creates the normal embedding session with an explicitly swapped native capability.
 async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_app::AgentSession> {
     root.models("http://127.0.0.1:1/v1");
@@ -124,20 +141,10 @@ async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_a
         .unwrap(),
     );
     let model = registry.find("startup", "controlled").unwrap();
-    let io: Rc<dyn NativeIo> = Rc::new(FailedIo(
-        maestro_app::extension_native_io::extension_native_io(local),
-    ));
-    let loader: maestro_app::ModuleLoader<maestro_app::Local> = Rc::new(move |path: &str| {
-        Box::pin(std::future::ready(Ok(Some(
-            maestro_extensions_wasmtime::artifact_factory_with_io(
-                path.into(),
-                maestro_app::configuration::config::VERSION.into(),
-                Rc::clone(&io),
-            ),
-        ))))
-    });
-    let mut resources =
-        maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(Rc::clone(local), loader);
+    let mut resources = maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(
+        Rc::clone(local),
+        loader(local),
+    );
     resources
         .additional_extension_paths
         .push(std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap());

@@ -117,6 +117,12 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         api.register_message_renderer(
             "bridge-view",
             Rc::new(move |message, options, theme, emitter| {
+                if let Some(method) = message.custom_type.strip_prefix("global-theme ") {
+                    return Ok(Some(theme::view(
+                        maestro_extensions_wasm::theme()?,
+                        method.into(),
+                    )));
+                }
                 if let Some(method) = message.custom_type.strip_prefix("theme ") {
                     return Ok(Some(theme::view(theme, method.into())));
                 }
@@ -268,6 +274,12 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Some(answer) = ui::custom(&context, &args).await {
+            return Err(answer?);
+        }
+        if args == "ui writer-drain" {
+            return Err(ui::writer_author::drain().await?);
+        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());

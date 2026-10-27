@@ -26,9 +26,16 @@ type Input =
     TypedFunc<(Resource<Callback>, String, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component invalidation method.
 type Invalidate = TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+/// Retained expansion callback.
+type SetExpanded =
+    TypedFunc<(Resource<Callback>, bool, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component key-release preference.
 type WantsKeyRelease =
     TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<bool, String>,)>;
+
+/// Optional focus state of an authored component.
+type Focused =
+    TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<Option<bool>, String>,)>;
 
 /// All methods belong to the same canonical component instance.
 pub(super) struct Exports {
@@ -40,8 +47,14 @@ pub(super) struct Exports {
     input: Input,
     /// Actual component cache invalidation method.
     invalidate: Invalidate,
+    /// Actual expansion callback.
+    set_expanded: SetExpanded,
     /// Actual component key-release preference method.
     wants_key_release: WantsKeyRelease,
+    /// The component's optional focus state.
+    focused: Focused,
+    /// The component's synchronous focus setter.
+    set_focused: SetExpanded,
 }
 impl Exports {
     /// Resolves required canonical methods without a fallback implementation.
@@ -55,7 +68,10 @@ impl Exports {
             render: super::typed(store, instance, guest, "component-render")?,
             input: super::typed(store, instance, guest, "component-handle-input")?,
             invalidate: super::typed(store, instance, guest, "component-invalidate")?,
+            set_expanded: super::typed(store, instance, guest, "invoke-set-expanded")?,
             wants_key_release: super::typed(store, instance, guest, "component-wants-key-release")?,
+            focused: super::typed(store, instance, guest, "component-focused")?,
+            set_focused: super::typed(store, instance, guest, "component-set-focused")?,
         })
     }
     /// Transfers the original theme and borrows only the callback and invocation frame.
@@ -114,19 +130,18 @@ impl Exports {
             }
             ComponentCall::Unit(owner, method, emitter, reply) => {
                 let (owner, emitter) = insert(accessor, owner, emitter)?;
-                let (view, frame) = (borrow(&owner), borrow(&emitter));
-                let result = match method {
-                    ComponentMethod::Input(data) => {
-                        self.input
-                            .call_concurrent(accessor, (view, data, frame))
-                            .await
-                    }
-                    ComponentMethod::Invalidate => {
-                        self.invalidate
-                            .call_concurrent(accessor, (view, frame))
-                            .await
-                    }
-                };
+                let result = self
+                    .unit(accessor, borrow(&owner), borrow(&emitter), method)
+                    .await;
+                delete(accessor, owner, emitter)?;
+                let _ = reply.send(result?.0);
+            }
+            ComponentCall::Focused(owner, emitter, reply) => {
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
+                let result = self
+                    .focused
+                    .call_concurrent(accessor, (borrow(&owner), borrow(&emitter)))
+                    .await;
                 delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
@@ -141,6 +156,37 @@ impl Exports {
             }
         }
         Ok(())
+    }
+    /// Runs one unit-returning component operation with its original borrowed operands.
+    async fn unit<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        view: Resource<Callback>,
+        frame: Resource<EmitterEndpoint>,
+        method: ComponentMethod,
+    ) -> wasmtime::Result<(Result<(), String>,)> {
+        match method {
+            ComponentMethod::Input(data) => {
+                self.input
+                    .call_concurrent(accessor, (view, data, frame))
+                    .await
+            }
+            ComponentMethod::SetExpanded(expanded) => {
+                self.set_expanded
+                    .call_concurrent(accessor, (view, expanded, frame))
+                    .await
+            }
+            ComponentMethod::SetFocused(focused) => {
+                self.set_focused
+                    .call_concurrent(accessor, (view, focused, frame))
+                    .await
+            }
+            ComponentMethod::Invalidate => {
+                self.invalidate
+                    .call_concurrent(accessor, (view, frame))
+                    .await
+            }
+        }
     }
 }
 /// Inserts the retained identity and this call's original native invocation frame.

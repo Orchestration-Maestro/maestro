@@ -6,7 +6,10 @@ use crate::{
     },
     local_resources::{Registry, effects::EmitterEndpoint},
 };
-use maestro_extensions::{Component, EventBus, InputHandler, Local};
+use maestro_extensions::{
+    Component, EventBus, InputHandler, Local,
+    widgets::{FocusFlag, Focusable},
+};
 use std::cell::RefCell;
 
 /// A native view owns the actual guest component and its independent admission.
@@ -17,6 +20,8 @@ pub(crate) struct GuestComponent {
     registry: Registry,
     /// Each synchronous call gets the original bus's native invocation frame.
     events: EventBus<Local>,
+    /// The native observation of the authored focus flag.
+    focus: FocusFlag,
     /// Infallible methods retain their first error until the next fallible render.
     error: RefCell<Option<String>>,
 }
@@ -28,6 +33,7 @@ impl GuestComponent {
             registry,
             events,
             error: RefCell::default(),
+            focus: FocusFlag::default(),
         }
     }
     /// Calls the original synchronous waiter with a fresh native invocation frame.
@@ -88,6 +94,14 @@ impl Component for GuestComponent {
     fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
+    fn focusable(&self) -> Option<&dyn Focusable> {
+        let focused =
+            self.retain_error(self.invoke(|emitter, reply| {
+                ComponentCall::Focused(self.owner.clone(), emitter, reply)
+            }))?;
+        self.focus.set(focused);
+        Some(self)
+    }
     fn wants_key_release(&self) -> bool {
         self.retain_error(self.invoke(|emitter, reply| {
             ComponentCall::WantsKeyRelease(self.owner.clone(), emitter, reply)
@@ -115,5 +129,22 @@ impl InputHandler for GuestComponent {
             )
         })
         .map_err(Into::into)
+    }
+}
+
+impl Focusable for GuestComponent {
+    fn focus_flag(&self) -> &FocusFlag {
+        &self.focus
+    }
+    fn set_focused(&self, focused: bool) {
+        self.focus.set(focused);
+        self.retain_error(self.invoke(|emitter, reply| {
+            ComponentCall::Unit(
+                self.owner.clone(),
+                ComponentMethod::SetFocused(focused),
+                emitter,
+                reply,
+            )
+        }));
     }
 }

@@ -4,6 +4,8 @@ pub mod components;
 
 pub use components::dynamic_border::DynamicBorder;
 
+pub use components::extension_widgets::ExtensionWidgetHost;
+
 pub use components::countdown_timer::CountdownTimer;
 
 pub use components::bordered_loader::{BorderedLoader, BorderedLoaderOptions};

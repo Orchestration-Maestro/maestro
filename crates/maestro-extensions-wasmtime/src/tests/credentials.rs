@@ -90,8 +90,8 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
         models_path: Arc::new(|| Err("default path must remain lazy".into())),
         config_values: values.clone(),
     });
-    let (first, _first_admission) = Pump::new();
-    let (other, _other_admission) = Pump::new();
+    let (first, _first_admission) = Pump::new(crate::tests::support::widgets());
+    let (other, _other_admission) = Pump::new(crate::tests::support::widgets());
     let accepted = Arc::new(maestro_extensions::AuthStorage::in_memory(
         maestro_extensions::AuthStorageData::default(),
     ));
@@ -238,7 +238,7 @@ fn catalog_constructors_keep_selected_credential_command_effects() {
                 crate::construction::Source::File(Some(String::new())),
                 crate::construction::Source::Memory,
             ] {
-                let (pump, admission) = Pump::new();
+                let (pump, admission) = Pump::new(crate::tests::support::widgets());
                 let registry = pump.registry();
                 let owner = Arc::new(maestro_extensions::AuthStorage::in_memory(
                     maestro_extensions::AuthStorageData::default(),
@@ -279,7 +279,7 @@ fn native_backend() -> (
     Arc<Backend>,
     tokio::sync::mpsc::UnboundedReceiver<Call>,
 ) {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let (_owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<
         maestro_extensions::Local,

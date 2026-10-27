@@ -239,4 +239,4 @@ the native authored-path policy and existing-spelling fallback order.
 
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
-supply this value to `artifact_factory(path, installation_version)`.
+supply this value to `artifact_factory(path, widgets, installation_version)`.

@@ -95,9 +95,9 @@ pub use types::{
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
     ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIContextBinding,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler, MessageRenderOptions,
-    MessageRenderer, MessageRendererCall, NavigateTreeHandler, NewSessionHandler,
-    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, ExtensionWidgets, ForkHandler,
+    MessageRenderOptions, MessageRenderer, MessageRendererCall, NavigateTreeHandler,
+    NewSessionHandler, RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
     SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
     WorkingIndicatorOptions,
 };
@@ -160,4 +160,29 @@ pub use maestro_tools::{
     ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
+/// Toolkit widgets an extension host builds, and the capability that builds the ones whose
+/// look depends on the host.
+pub mod widgets {
+    pub use crate::types::{
+        ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets,
+    };
+    pub use maestro_tools::key_text;
+    pub use maestro_tui::{
+        AutocompleteProvider, AutocompleteSuggestions,
+        autocomplete::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
+    };
+    pub use maestro_tui::{
+        Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
+        SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
+        SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
+        components::settings_list::SettingsListOptions,
+        editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
+    };
+    pub use maestro_tui::{
+        Editor, EditorOptions, EditorTheme, FocusFlag, Focusable, KeybindingConflict,
+        KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, KeybindingsConfig,
+        OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
+        get_keybindings,
+    };
+}
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

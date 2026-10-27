@@ -38,6 +38,23 @@ fn follow<I: Imports>(
 }
 
 impl<I: Imports> ExtensionUIContextPort for Ui<I> {
+    fn custom_component(
+        &self,
+        factory: crate::CustomComponentFactory,
+        options: Option<crate::CustomUIOptions>,
+    ) -> ExtensionFuture<'static, ()> {
+        let (imports, resource) = self.owned();
+        Box::pin(async move {
+            let identity = super::callbacks::Scoped::new(&imports, factory);
+            let retained = options
+                .map(|options| super::custom::Retained::new(&imports, options))
+                .transpose()?;
+            let options = retained.as_ref().map(super::custom::Retained::operands);
+            imports
+                .ui_custom(&resource, &identity.handle, options)
+                .await
+        })
+    }
     fn notify(&self, message: &str, kind: Option<NotificationType>) -> ExtensionResult<()> {
         self.imports.ui_notify(&self.resource, message, kind)
     }
@@ -119,6 +136,39 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     }
     fn get_editor_text(&self) -> ExtensionResult<String> {
         self.imports.ui_get_editor_text(&self.resource)
+    }
+    fn set_editor_component(&self, factory: Option<crate::EditorFactory>) -> ExtensionResult<()> {
+        let Some(factory) = factory else {
+            return self.imports.ui_set_editor_component(&self.resource, None);
+        };
+        let identity = Identity::new(&self.imports);
+        identity.stage(factory);
+        let result = self
+            .imports
+            .ui_set_editor_component(&self.resource, Some(&identity.handle));
+        identity.settle(result.is_ok());
+        result
+    }
+    fn add_autocomplete_provider(
+        &self,
+        factory: crate::AutocompleteProviderFactory,
+    ) -> ExtensionResult<()> {
+        let identity = Identity::new(&self.imports);
+        identity.stage(factory);
+        let result = self
+            .imports
+            .ui_add_autocomplete_provider(&self.resource, &identity.handle);
+        identity.settle(result.is_ok());
+        result
+    }
+    fn get_editor_component(&self) -> ExtensionResult<Option<crate::EditorFactory>> {
+        Ok(
+            match self.imports.ui_get_editor_component(&self.resource)? {
+                None => None,
+                Some(Ok(id)) => Some(super::callbacks::find(id)?),
+                Some(Err(factory)) => Some(super::foreign_editors::factory(factory)),
+            },
+        )
     }
     fn theme(&self) -> ExtensionResult<Theme> {
         let theme = self.imports.ui_theme(&self.resource)?;

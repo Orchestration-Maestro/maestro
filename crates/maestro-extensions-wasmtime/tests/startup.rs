@@ -4,7 +4,6 @@ use maestro_extensions::{
     ExtensionRunner, Local, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory, types::FlagValue,
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use std::{rc::Rc, sync::RwLock};
 
 /// Checks failed startup teardown before starting an independently healthy component.
@@ -24,7 +23,7 @@ pub(super) async fn failed() {
     );
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let error = load_extension_from_factory(
-        artifact_factory(path.clone(), "installed-component-host".into()),
+        crate::artifact(path.clone()),
         "/failed-startup".into(),
         bus.for_extension(),
         runtime,

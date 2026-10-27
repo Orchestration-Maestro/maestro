@@ -25,6 +25,24 @@ mod glue;
 #[path = "generated_model_streams.rs"]
 pub(crate) mod model_streams;
 
+#[path = "generated_widgets.rs"]
+mod widgets;
+
+#[path = "generated_overlays.rs"]
+#[macro_use]
+mod overlays;
+
+#[path = "generated_widget_events.rs"]
+mod widget_events;
+
+#[path = "generated_writer.rs"]
+mod writer;
+
+#[path = "generated_keys.rs"]
+mod keys;
+
+#[path = "generated_editors.rs"]
+mod editors;
 #[path = "generated_provider_streams.rs"]
 pub(crate) mod provider_streams;
 
@@ -182,6 +200,18 @@ impl Imports for Generated {
         ))
     }
 
+    fn ui_get_editor_component(
+        &self,
+        ui: &host::ExtensionUiContext,
+    ) -> ExtensionResult<super::CurrentFactory> {
+        Ok(ui.get_editor_component()?.map(|current| match current {
+            host::CurrentEditorFactory::Authored(id) => Ok(id),
+            host::CurrentEditorFactory::Host(factory) => {
+                Err(std::rc::Rc::new(factory) as std::rc::Rc<dyn std::any::Any>)
+            }
+        }))
+    }
+
     fn schema_invoke(
         &self,
         callback: &Self::Callback,
@@ -233,6 +263,8 @@ impl Imports for Generated {
         ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
         ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
         ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
+        ui_set_editor_component(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_editor_component(factory);
+        ui_add_autocomplete_provider(resource: &Self::Ui, factory: &Self::Callback) => add_autocomplete_provider(factory);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
@@ -383,7 +415,11 @@ impl Imports for Generated {
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
+    overlay_forwarding!();
     type Tui = host::Tui;
+    fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {
+        tui.full_redraws()
+    }
     type Invalidator = host::ToolInvalidator;
     fn register_tool(
         &self,

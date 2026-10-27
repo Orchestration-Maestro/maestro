@@ -13,7 +13,6 @@ use maestro_extensions::{
     load_extension_from_factory,
     types::{ExtensionHandle, ExtensionRuntime, ProviderActions},
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
@@ -90,7 +89,7 @@ impl Harness {
         let bus = TracedBus::new();
         let loads = (0..POOL).map(|index| {
             load_extension_from_factory(
-                artifact_factory(path.clone(), "installed-component-host".into()),
+                crate::artifact(path.clone()),
                 "/work".into(),
                 bus.controller.for_extension(),
                 runtime.clone(),

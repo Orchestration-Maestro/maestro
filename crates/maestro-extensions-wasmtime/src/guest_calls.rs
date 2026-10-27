@@ -15,8 +15,13 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
+pub(crate) mod custom;
+pub(crate) mod editors;
 pub(crate) mod events;
 pub(crate) mod factories;
+pub(crate) mod paints;
+pub(crate) mod providers;
+pub(crate) mod widget_calls;
 pub(crate) use events::EventCall;
 pub(crate) mod credentials;
 pub(crate) mod registrations;
@@ -69,8 +74,22 @@ pub(crate) enum Call<H = Handle> {
     TerminalInput(terminal::Input<H>),
     /// Builds one component with the terminal and theme the native owner lent.
     Factory(factories::FactoryCall<H>),
+    /// Builds a custom component or awaits its owned continuation.
+    Custom(custom::Invocation<H>),
     /// Renders one tool row through its authored renderer.
     ToolRender(tool_renders::ToolRenderCall<H>),
+    /// Calls an authored styling or highlighting function for a host widget.
+    Paint(paints::PaintCall<H>),
+    /// Calls an authored handler, style, truncation or submenu of a host list or loader.
+    Widget(widget_calls::WidgetCall<H>),
+    /// Builds one editor with what the native owner lent.
+    EditorFactory(editors::FactoryCall<H>),
+    /// Runs one native request on an authored editor.
+    Editor(editors::EditorCall<H>),
+    /// Runs a completion provider factory on the lent current provider.
+    AutocompleteFactory(providers::FactoryCall<H>),
+    /// Runs one native request on an authored completion provider.
+    Autocomplete(providers::ProviderCall<H>),
     /// Awaits an authored hook on the original pending native model invocation.
     ModelHook(crate::model_calls::Invocation<H>),
     /// Sets up the original registered guest provider.

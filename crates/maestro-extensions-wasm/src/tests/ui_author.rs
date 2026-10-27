@@ -14,9 +14,9 @@ use maestro_extensions_wasm::{
     CompactOptions, Component, ComponentDisposer, ComponentFactory, ComponentView, ExtensionAPI,
     ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterData, FooterFactory, NotificationType,
-    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Theme, ThemeSelection,
+    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Text, Theme, ThemeSelection,
     ThemeSetResult, ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderResult,
-    WidgetPlacement, WorkingIndicatorOptions,
+    WidgetPlacement, WorkingIndicatorOptions, is_focusable,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -203,6 +203,8 @@ fn label_factory(api: &ExtensionAPI, label: String, dispose: bool) -> ComponentF
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: disposal,
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -259,6 +261,8 @@ fn footer_factory(api: &ExtensionAPI, label: String) -> FooterFactory {
         Ok(ExtensionComponent {
             component: Component::new(view),
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -702,6 +706,58 @@ enum Operation {
     },
     /// Registers the painter tool, whose renderers report what they read.
     Painter,
+    /// Shows a component with optional width and expansion.
+    FactoryCapabilities {
+        /// The supplied width.
+        width: Option<f64>,
+        /// Whether the component accepts expansion.
+        expandable: bool,
+    },
+    /// Shows an authored editor through a retained component.
+    AuthoredEditorContract,
+    /// Stacks a completion provider named `name` on the current provider.
+    StackProvider {
+        /// The candidate the provider adds.
+        name: String,
+    },
+    /// Replaces the host editor with the editor `kind` names, or restores it for `none`.
+    EditorFactory {
+        /// `plain`, `host`, `custom`, `failing` or `none`.
+        kind: String,
+    },
+    /// Calls an authored asynchronous completion provider.
+    CompletionContract {
+        /// Whether completion was explicitly requested.
+        force: Option<bool>,
+    },
+    /// Installs a retained terminal view.
+    TuiFactory,
+    /// Checks the authored component focus contract.
+    FocusContract,
+    /// Checks host editors through the component focus capability.
+    HostEditorFocus,
+    /// Reads and replaces one retained overlay options owner.
+    OverlayOptions,
+    /// Runs an immediately ready or asynchronous custom factory.
+    Custom {
+        /// Whether the factory returns a future.
+        asynchronous: bool,
+    },
+    /// Shows a custom overlay with static or resolved placement.
+    CustomOverlay {
+        /// Whether a resolver supplies the placement.
+        resolved: bool,
+    },
+    /// Shows a widget that drives the frame writer its factory received.
+    WriterFactory,
+    /// Drains the input of the last driver widget's terminal.
+    WriterDrain,
+    /// Runs a host widget script.
+    Widgets {
+        /// The steps, in order.
+        steps: Vec<super::widget_author::Step>,
+    },
+
     /// Shows a labelled factory widget whose component the author also keeps.
     KeptWidget {
         /// Label the widget renders.
@@ -757,24 +813,9 @@ enum Operation {
         /// Payload to emit.
         input: Value,
     },
-    /// Supplies the host rejection of the next request, or the host's next UI binding.
-    Control {
-        /// Message the next request is rejected with.
-        #[serde(default)]
-        error: Option<String>,
-        /// Identity of the binding later acquisitions resolve.
-        #[serde(default)]
-        binding: Option<usize>,
-        /// Decision the host's next dialog answers with.
-        #[serde(default)]
-        answer: Option<Value>,
-        /// How the host builds its built-in header.
-        #[serde(default)]
-        header: Option<String>,
-        /// Footer metadata the host now reports.
-        #[serde(default)]
-        footer: Option<Value>,
-    },
+    /// Supplies the host rejection of the next request, the host's next UI binding or other
+    /// host state, forwarded as given.
+    Control(serde_json::Map<String, Value>),
 }
 
 /// Runs one request through the supplied handle, returning what a read request answered.
@@ -818,6 +859,32 @@ fn caught(result: ExtensionResult<Option<Value>>) -> Value {
     }
 }
 
+/// Checks authored focus without assuming every component has that capability.
+fn focus_probe(ctx: &ExtensionContext) -> ExtensionResult<Option<Value>> {
+    super::focus_author::install(&ctx.ui()?)?;
+    let emitter = CallbackEmitter::new(&Silent);
+    let field = super::focus_author::component();
+    let plain = Component::from(&Text::new("plain", 0, 0, None)?);
+    assert!(!is_focusable(Some(&plain)));
+    assert_eq!(plain.focused(emitter)?, None);
+    plain.set_focused(true, emitter)?;
+    assert_eq!(plain.focused(emitter)?, None);
+    assert!(!is_focusable(None));
+    assert!(is_focusable(Some(&field)));
+    assert_eq!(field.focused(emitter)?, Some(false));
+    field.set_focused(true, emitter)?;
+    assert_eq!(field.focused(emitter)?, Some(true));
+    field.set_focused(false, emitter)?;
+    field.set_focused(true, emitter)?;
+    Ok(Some(json!(field.render(10, emitter)?)))
+}
+
+/// Drops the author's retained aliases without removing the host's components.
+fn drop_kept() -> Value {
+    drop(ALIASES.take());
+    json!("dropped")
+}
+
 /// Renders every kept component alias with a silent emitter.
 fn render_kept(width: u32) -> ExtensionResult<Value> {
     let aliases = ALIASES.with_borrow(Clone::clone);
@@ -835,6 +902,9 @@ fn factories(
     operation: Operation,
 ) -> ExtensionResult<()> {
     match operation {
+        Operation::TuiFactory => super::tui_author::install(&ctx.ui()?),
+        Operation::WriterFactory => super::writer_author::install(&ctx.ui()?),
+        Operation::HostEditorFocus => super::focus_author::install_editors(&ctx.ui()?),
         Operation::WidgetFactory {
             key,
             label,
@@ -846,6 +916,9 @@ fn factories(
             });
             let factory = label_factory(api, label, dispose);
             ctx.ui()?.set_widget_factory(&key, factory, options)
+        }
+        Operation::FactoryCapabilities { width, expandable } => {
+            super::factory_component_author::install(&ctx.ui()?, width, expandable)
         }
         Operation::Footer { label } => {
             let factory = label.map(|label| footer_factory(api, label));
@@ -872,6 +945,22 @@ fn factories(
     }
 }
 
+/// Runs a custom component, reads and replaces retained overlay placement, or drains the
+/// frame writer's terminal.
+async fn custom(ctx: &ExtensionContext, operation: Operation) -> ExtensionResult<String> {
+    match operation {
+        Operation::OverlayOptions => super::overlay_author::options(),
+        Operation::WriterDrain => super::writer_author::drain().await,
+        Operation::Custom { asynchronous } => {
+            super::custom_author::run(&ctx.ui()?, asynchronous).await
+        }
+        Operation::CustomOverlay { resolved } => {
+            super::custom_overlay_author::run(&ctx.ui()?, resolved).await
+        }
+        _ => Err("expected a custom component operation".into()),
+    }
+}
+
 /// Runs one operation and reports its outcome.
 async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> ExtensionResult<()> {
     let operation: Operation = serde_json::from_str(text).map_err(|error| error.to_string())?;
@@ -886,11 +975,31 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
                 .and_then(|tool| api.register_tool(tool))
                 .map(|()| None),
         ),
-        Operation::DropKept => {
-            drop(ALIASES.take());
-            json!("dropped")
+        operation @ (Operation::AuthoredEditorContract
+        | Operation::EditorFactory { .. }
+        | Operation::StackProvider { .. }) => caught(editors(ctx, operation)),
+        Operation::CompletionContract { force } => {
+            let signal = AbortSignal::new(Rc::new(Caller(Rc::default())));
+            caught(
+                super::completion_author::run(ctx.ui()?, signal, force)
+                    .await
+                    .map(Some),
+            )
         }
-        operation @ (Operation::WidgetFactory { .. }
+        operation @ (Operation::OverlayOptions
+        | Operation::Custom { .. }
+        | Operation::CustomOverlay { .. }
+        | Operation::WriterDrain) => {
+            caught(custom(ctx, operation).await.map(|value| Some(json!(value))))
+        }
+        Operation::FocusContract => caught(focus_probe(ctx)),
+        Operation::Widgets { steps } => super::widget_author::run(steps, ctx.ui().ok()),
+        Operation::DropKept => drop_kept(),
+        operation @ (Operation::HostEditorFocus
+        | Operation::TuiFactory
+        | Operation::WriterFactory
+        | Operation::WidgetFactory { .. }
+        | Operation::FactoryCapabilities { .. }
         | Operation::KeptWidget { .. }
         | Operation::Footer { .. }
         | Operation::Unbranch { .. }
@@ -904,21 +1013,27 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             api.events().emit(&channel, input).await?;
             json!("emitted")
         }
-        Operation::Control {
-            error,
-            binding,
-            answer,
-            header,
-            footer,
-        } => {
-            let control = json!({ "error": error, "binding": binding, "answer": answer,
-                "header": header, "footer": footer });
-            api.append_entry("ui-control", Some(control))?;
+        Operation::Control(control) => {
+            api.append_entry("ui-control", Some(Value::Object(control)))?;
             json!("controlled")
         }
     };
     api.append_entry("ui-answer", Some(answer))?;
     api.append_entry("ui-done", None)
+}
+
+/// Shows an authored editor through a component, installs an editor factory or stacks a
+/// completion provider.
+fn editors(ctx: &ExtensionContext, operation: Operation) -> ExtensionResult<Option<Value>> {
+    match operation {
+        Operation::EditorFactory { kind } => {
+            super::editor_factory_author::install(&ctx.ui()?, &kind).map(Some)
+        }
+        Operation::StackProvider { name } => {
+            super::stacked_provider_author::install(&ctx.ui()?, &name).map(|()| None)
+        }
+        _ => super::authored_editor_author::install(&ctx.ui()?).map(|()| None),
+    }
 }
 
 /// Registers the bus listener through an acquired handle, which reports that owner.

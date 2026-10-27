@@ -10,9 +10,9 @@ pub use maestro_extensions::{
     EventError, ExtensionActions, ExtensionCommandContext, ExtensionCommandContextActions,
     ExtensionContext, ExtensionContextActions, ExtensionError, ExtensionRuntime,
     ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ProviderConfig,
-    ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall, WidgetPlacement,
-    WorkingIndicatorOptions, create_extension_runtime,
+    ExtensionWidgetOptions, ExtensionWidgets, MessageRenderOptions, MessageRenderer,
+    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall,
+    WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
 };
 
 pub use maestro_extensions::types::events::*;
@@ -34,6 +34,9 @@ pub use maestro_models::system_prompt::{BuildSystemPromptOptions, ContextFile};
 pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode};
 
 pub use maestro_extensions::MessageRendererCall;
+
+/// The application's bordered loader, as an extension holds it.
+pub use maestro_extensions::widgets::{ExtensionEditor, ExtensionKeybindings, ExtensionLoader};
 
 /// Creates an empty shared event bus whose default callbacks use the thread-safe family.
 ///

@@ -3,7 +3,6 @@
 use maestro_extensions::{
     ExtensionRunner, Local, create_extension_runtime, load_extension_from_factory,
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use serde_json::Value;
 use std::{rc::Rc, sync::RwLock};
 
@@ -169,7 +168,7 @@ fn check(name: &str) {
         let runtime = create_extension_runtime::<Local>();
         let path = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
         let owner = load_extension_from_factory(
-            artifact_factory(path.clone(), "installed-component-host".into()),
+            crate::artifact(path.clone()),
             "/helpers".into(),
             bus.controller.for_extension(),
             runtime.clone(),

@@ -4,7 +4,7 @@ use crate::{
     lifecycle::{self, replies::Replies},
     local_resources::Pump,
 };
-use maestro_extensions::{ExtensionFactory, Local};
+use maestro_extensions::{ExtensionFactory, ExtensionWidgets, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
@@ -12,17 +12,23 @@ use wasmtime::{
     component::{Component, Linker},
 };
 
-/// Creates a local factory for one authored extension component at the supplied path.
+/// Creates a local factory for one authored extension component at the supplied path, whose
+/// host widgets `widgets` builds.
 ///
 /// The application supplies its installation version; components do not choose it.
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
-pub fn artifact_factory(path: String, installation_version: String) -> ExtensionFactory<Local> {
-    factory(path, installation_version, None, None)
+pub fn artifact_factory(
+    path: String,
+    widgets: Rc<dyn ExtensionWidgets>,
+    installation_version: String,
+) -> ExtensionFactory<Local> {
+    factory(path, widgets, installation_version, None, None)
 }
 
-/// Creates an artifact factory whose standard output uses the supplied byte writer.
+/// Creates an artifact factory whose standard output uses the supplied byte writer, and whose
+/// host widgets `widgets` builds.
 ///
 /// The writer is shared across initialization and later callbacks on the Store thread.
 /// Closing one guest output view does not close the caller's sink. The caller owns
@@ -30,45 +36,51 @@ pub fn artifact_factory(path: String, installation_version: String) -> Extension
 #[must_use]
 pub fn artifact_factory_with_stdout(
     path: String,
+    widgets: Rc<dyn ExtensionWidgets>,
     installation_version: String,
     stdout: Box<dyn std::io::Write + Send>,
     terminal: bool,
 ) -> ExtensionFactory<Local> {
     factory(
         path,
+        widgets,
         installation_version,
         Some(crate::wasi::Output::new(stdout, terminal)),
         None,
     )
 }
 
-/// Creates the production component factory with application-supplied native effects.
+/// Creates the production component factory with application-supplied native effects, whose
+/// host widgets `widgets` builds.
 ///
 /// The application supplies its installation version and the operations' original local
 /// executor. Construction performs no native launch or request; guest calls select their effects.
 #[must_use]
 pub fn artifact_factory_with_io(
     path: String,
+    widgets: Rc<dyn ExtensionWidgets>,
     installation_version: String,
     io: Rc<dyn maestro_extensions::native_io::NativeIo>,
 ) -> ExtensionFactory<Local> {
-    factory(path, installation_version, None, Some(io))
+    factory(path, widgets, installation_version, None, Some(io))
 }
 
-/// Retains supplied output and native effects for each component.
+/// Retains the original supplied widgets, output and native effects for each independently
+/// loaded component.
 fn factory(
     path: String,
+    widgets: Rc<dyn ExtensionWidgets>,
     installation_version: String,
     output: Option<crate::wasi::Output>,
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
-        let path = path.clone();
+        let (path, widgets) = (path.clone(), widgets.clone());
         let output = output.clone();
         let io = io.clone();
         let installation_version = installation_version.clone();
         Box::pin(async move {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(widgets);
             pump.registry().resources.borrow_mut().native_io = io;
             let endpoint = pump.registry().api(api)?;
             let (calls, incoming) = mpsc::unbounded_channel();

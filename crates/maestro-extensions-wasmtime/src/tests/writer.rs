@@ -18,7 +18,7 @@ fn writable_setup_and_its_reader_share_the_real_session() {
             let history = Rc::new(RefCell::new(
                 SessionManager::in_memory(Some("/setup")).unwrap(),
             ));
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let writer = pump.registry().writable(history.clone()).unwrap();
             let worker = std::thread::spawn(move || {
                 observe(&writer);

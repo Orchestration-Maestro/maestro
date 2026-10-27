@@ -11,7 +11,7 @@ use std::{rc::Rc, sync::mpsc};
 #[test]
 fn synchronous_native_callbacks_service_nested_original_context_reads() {
     let runner = runner("/synchronous-original");
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let context = registry
         .context(Owner::Base(runner.create_context()))
@@ -46,7 +46,7 @@ fn synchronous_native_callbacks_service_nested_original_context_reads() {
 
 #[test]
 fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     assert_eq!(
         registry
@@ -77,7 +77,7 @@ fn consecutive_synchronous_invocations_return_without_the_caller_task_yielding()
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let registry = pump.registry();
             for _ in 0..1000 {
                 registry
@@ -110,7 +110,7 @@ fn synchronous_wait_returns_receiver_wakeups_to_the_suspended_async_owner() {
         sync::{Arc, atomic::Ordering},
         task::{Context, Waker},
     };
-    let (mut pump, admission) = Pump::new();
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let executor = Arc::new(ExecutorWake::default());
     let observed = executor.clone();
@@ -147,8 +147,8 @@ fn other_store_invocation_during_a_blocking_request_completes() {
         .build()
         .unwrap()
         .block_on(async {
-            let (mut pump, admission) = Pump::new();
-            let (other, other_admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+            let (other, other_admission) = Pump::new(crate::tests::support::widgets());
             let target = other.registry();
             let (started, starts) = mpsc::channel::<Completion>();
             let other_store = std::thread::spawn(move || starts.recv().unwrap().complete(Ok(())));

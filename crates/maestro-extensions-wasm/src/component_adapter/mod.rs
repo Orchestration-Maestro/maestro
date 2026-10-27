@@ -9,12 +9,16 @@
 
 mod callbacks;
 mod compaction;
+pub(crate) mod custom;
 mod event_bus;
 pub(crate) mod renderers;
 #[cfg(test)]
 pub(crate) use event_bus::events;
 pub(crate) mod bash;
 mod contexts;
+mod editor_factories;
+mod editors;
+mod foreign_editors;
 mod provider_registration;
 mod signals;
 pub(crate) mod streams;
@@ -32,9 +36,13 @@ mod generated;
 mod host_api;
 mod imports;
 mod io;
+mod keys;
+mod lists;
 mod model_registry;
 mod native_imports;
 pub(crate) mod oauth;
+pub(crate) mod overlays;
+mod providers;
 mod schema;
 mod session;
 mod setup;
@@ -42,8 +50,29 @@ mod theme;
 pub(crate) mod tool_renders;
 mod tools;
 mod ui;
+mod widget_imports;
+mod widgets;
+mod writer;
+#[cfg(test)]
+pub(crate) use editor_factories::keep_editor;
+pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, CurrentFactory, LentEditor};
+pub(crate) use foreign_editors::{ForeignAnswer, ForeignRequest};
+pub(crate) use lists::invoke_widget;
+#[cfg(test)]
+pub(crate) use providers::keep_provider;
+pub(crate) use providers::{EditorImports, ProviderAnswer, ProviderRequest};
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;
+pub(crate) use widget_imports::{
+    ChildKey, ChildRef, EditorAnswer, EditorRequest, EditorStyles, HandlerSlot, HighlightRef,
+    HostMarkdownTheme, HostSettingsTheme, KeyHint, KeybindingsAnswer, KeybindingsRequest,
+    LayoutRef, MarkdownStyles, RowStyleRef, SettingRef, SettingsStyles, StyleRef, TerminalRequest,
+    TextStyle, WidgetAnswer, WidgetEvent, WidgetImports, WriterAnswer, WriterRequest, WriterTarget,
+};
+#[cfg(test)]
+pub(crate) use widgets::authored_component;
+pub(crate) use widgets::{Builder, install};
+pub(crate) use widgets::{invoke_highlight, invoke_style, widget_host};
 
 pub(crate) use callbacks::release;
 pub(crate) use exports::{Capabilities, Exports};

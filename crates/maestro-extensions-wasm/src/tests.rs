@@ -30,6 +30,7 @@ mod advanced_ui;
 mod agent_events;
 mod application_messages;
 pub(crate) mod author;
+mod authored_editor;
 mod authored_streams;
 mod basic_ui;
 mod bookmark_example;
@@ -37,6 +38,7 @@ mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
+mod completion_contract;
 mod component_driver;
 mod context_catalog;
 pub(crate) mod controlled;
@@ -48,13 +50,21 @@ mod example_support;
 mod exec_records;
 mod finite_records;
 pub(crate) mod stream_host;
+mod tui_ui;
 #[macro_use]
 mod fixtures;
+pub(crate) mod custom_host;
+pub(crate) mod editor_component;
+mod editor_driver;
+pub(crate) mod editor_host;
+mod editor_ui;
+mod foreign_host;
 mod guest_family;
 mod hello_example;
 mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
+mod host_widgets;
 mod join;
 mod json_payloads;
 mod model_streams;
@@ -63,12 +73,15 @@ mod native_io;
 pub(crate) mod native_io_host;
 pub(crate) mod native_watch_host;
 mod observed;
+pub(crate) mod overlay_host;
 mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
 mod provider_catalog;
+mod provider_component;
 mod provider_composition;
+pub(crate) mod provider_host;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
@@ -105,8 +118,16 @@ mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;
 pub(crate) mod ui_host;
+pub(crate) mod widget_component;
+mod widget_controlled;
+pub(crate) mod widget_editors;
+pub(crate) mod widget_host;
+pub(crate) mod widget_keys;
+pub(crate) mod widget_lists;
 mod with_deps_example;
 mod working_message_example;
+mod writer_controlled;
+mod writer_ui;
 
 use std::future::Future;
 
@@ -584,6 +605,13 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_setup_contract(&contract);
     assert_replacement_contract(&contract);
     assert_ui_contract(&contract);
+    assert_async_imports(&contract);
+    assert_interface_contract(&contract);
+    Ok(())
+}
+
+/// Checks every asynchronous host import the guest calls.
+fn assert_async_imports(contract: &Contract) {
     assert_eq!(
         names(&contract.imports, true),
         [
@@ -597,7 +625,9 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]command-context.reload",
             "[method]command-context.switch-session",
             "[method]command-context.wait-for-idle",
+            "[method]completion-provider.get-suggestions",
             "[method]extension-ui-context.confirm",
+            "[method]extension-ui-context.custom",
             "[method]extension-ui-context.editor",
             "[method]extension-ui-context.input",
             "[method]extension-ui-context.select",
@@ -612,6 +642,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]replaced-session-context.send-user-message",
             "[method]response.json",
             "[method]response.text",
+            "[method]widget.drain-input",
             "[method]writable.end",
             "[method]writable.write",
             "call",
@@ -624,8 +655,6 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "spawn",
         ]
     );
-    assert_interface_contract(&contract);
-    Ok(())
 }
 
 /// Reads the retained UI request signatures of the built component.
@@ -1113,22 +1142,31 @@ fn assert_async_exports(contract: &Contract) {
         names(&contract.exports, true),
         [
             "bash-exec",
+            "component-focused",
             "component-handle-input",
             "component-invalidate",
             "component-render",
+            "component-set-focused",
             "component-wants-key-release",
             "invoke-abort",
             "invoke-assistant",
             "invoke-auth-backend",
             "invoke-auth-fallback",
+            "invoke-autocomplete",
+            "invoke-autocomplete-factory",
             "invoke-branch-change",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",
             "invoke-completion",
             "invoke-component-factory",
+            "invoke-custom-factory",
+            "invoke-custom-future",
             "invoke-dispose",
+            "invoke-editor",
+            "invoke-editor-factory",
             "invoke-event",
+            "invoke-highlight",
             "invoke-listener",
             "invoke-model-hook",
             "invoke-oauth-callback",
@@ -1136,14 +1174,17 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-provider",
             "invoke-renderer",
             "invoke-schema",
+            "invoke-set-expanded",
             "invoke-setup",
             "invoke-shortcut",
             "invoke-stream",
+            "invoke-style",
             "invoke-tail",
             "invoke-terminal-input",
             "invoke-tool",
             "invoke-tool-render",
             "invoke-watch",
+            "invoke-widget",
             "invoke-with-session",
             "start"
         ],

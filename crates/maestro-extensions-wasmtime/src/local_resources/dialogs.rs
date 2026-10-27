@@ -16,7 +16,7 @@ impl State {
             .map(|signal| self.registry.cancellation(signal))
             .transpose();
         match signal {
-            Ok(signal) => self.admit(request.start(ui, signal), admission),
+            Ok(signal) => self.admit(request.start(ui, signal, &self.registry), admission),
             Err(error) => request.reject(&error),
         }
     }

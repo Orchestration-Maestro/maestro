@@ -126,6 +126,7 @@ async fn output_host(case: &str, captured: &Capture) -> Harness {
         };
         Harness::factory(artifact_factory_with_stdout(
             path,
+            super::support::widgets(),
             "installed-component-host".into(),
             writer,
             case == "terminal",

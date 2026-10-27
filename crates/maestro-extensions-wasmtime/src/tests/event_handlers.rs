@@ -13,7 +13,7 @@ use maestro_extensions::{ExtensionExecution, Local, ToolCallEvent, ToolCallEvent
 
 #[test]
 fn edited_event_failure_discards_a_valid_decision() {
-    let (pump, _admission) = Pump::new();
+    let (pump, _admission) = Pump::new(crate::tests::support::widgets());
     for edit in [Err("bad edit".into()), Ok(Some("{\"toolName\":7}".into()))] {
         let mut event = tool_event();
         let outcome = Outcome {
@@ -30,7 +30,7 @@ fn edited_event_failure_discards_a_valid_decision() {
 
 #[test]
 fn valid_edits_survive_failed_decisions_and_valid_decisions_are_retained() {
-    let (pump, _admission) = Pump::new();
+    let (pump, _admission) = Pump::new(crate::tests::support::widgets());
     for (decision, expected) in [
         (Decision::Failed("handler failed".into()), None),
         (Decision::Returned(Err("bad decision".into())), None),
@@ -68,7 +68,7 @@ fn registered_handler_uses_actual_native_types_and_original_context() {
         .block_on(async {
             let (owner, api) =
                 super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let callback = callbacks.allocate().unwrap();
@@ -117,7 +117,7 @@ fn registered_handler_uses_actual_native_types_and_original_context() {
 
 #[test]
 fn failed_edit_releases_returned_operations_through_the_original_store_queue() {
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
     let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
     let (_, operations) = super::returned_bash::operations(&mut callbacks, admission);

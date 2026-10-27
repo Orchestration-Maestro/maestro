@@ -209,6 +209,7 @@ impl host::HostModelRegistry for State {
         self.push(super::host::Route {
             steps: std::collections::VecDeque::new(),
             running: None,
+            rows: None,
             result: Some(result),
         })
     }
@@ -249,6 +250,7 @@ impl host::HostModelRegistry for State {
         self.push(super::host::Route {
             steps: std::collections::VecDeque::new(),
             running: None,
+            rows: None,
             result: Some(result),
         })
     }
@@ -266,6 +268,7 @@ impl host::HostModelRegistry for State {
         self.push(super::host::Route {
             steps: std::collections::VecDeque::new(),
             running: None,
+            rows: None,
             result: Some(result),
         })
     }

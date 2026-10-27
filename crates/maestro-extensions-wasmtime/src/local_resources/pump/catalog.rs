@@ -90,6 +90,20 @@ impl State {
 }
 
 impl State {
+    /// Starts an OAuth login or refresh, or serves an OAuth provider or interaction request.
+    pub(super) fn oauth(&self, message: super::Message) {
+        match message {
+            super::Message::OAuthLogin(id, controls, reply, admission) => {
+                self.start_oauth_login(id, controls, reply, admission);
+            }
+            super::Message::OAuthRefresh(id, data, reply, admission) => {
+                self.start_oauth_refresh(id, data, reply, admission);
+            }
+            super::Message::OAuthProvider(id, request) => self.oauth_provider(id, request),
+            super::Message::OAuthInteraction(request) => self.oauth_interaction(request),
+            _ => {}
+        }
+    }
     /// Calls an OAuth implementation outside the capability-table borrow.
     pub(super) fn oauth_provider(&self, id: u64, request: crate::oauth_reads::Request) {
         let capability = self.registry.capability(id);

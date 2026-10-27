@@ -10,12 +10,16 @@ mod canonical_json;
 mod canonical_schema;
 mod canonical_theme;
 mod canonical_ui;
+mod canonical_widgets;
 mod compilation_cache;
+mod completion_providers;
 mod component_events;
 mod component_loading;
 mod components;
+mod editor_factories;
 mod exec_io;
 mod execution_bridge;
+mod factory_capabilities;
 mod factory_shutdown;
 mod lifetimes;
 mod listener_prefixes;
@@ -63,6 +67,9 @@ mod model_finite;
 mod model_hook_gates;
 mod model_signal_selection;
 
+mod tui_capabilities;
+
+mod custom_ui;
 mod model_lifetimes;
 
 mod foreign_schema;
@@ -70,3 +77,12 @@ mod model_protocol_routes;
 mod oauth;
 
 mod model_registered;
+
+/// The production artifact factory over toolkit widgets and a fixed installation version.
+fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extensions::Local> {
+    maestro_extensions_wasmtime::artifact_factory(
+        path,
+        support::widgets(),
+        "installed-component-host".into(),
+    )
+}
