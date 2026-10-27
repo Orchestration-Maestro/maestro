@@ -32,6 +32,7 @@ fn replay_native(rows: &[Value]) -> Result<(), String> {
             width: None,
             inputs: serde_json::from_value(row["inputs"].clone()).unwrap(),
             frames: serde_json::from_value(row["frames"].clone()).unwrap(),
+            ..Default::default()
         });
         let actual = super::block_on(exports.invoke_tool(
             key,
@@ -82,6 +83,7 @@ fn execute(host: &mut Harness, row: &Value) -> Result<Value, String> {
         width: None,
         inputs: serde_json::from_value(row["inputs"].clone()).unwrap(),
         frames: serde_json::from_value(row["frames"].clone()).unwrap(),
+        ..Default::default()
     });
     let key = host
         .callback("tool questionnaire")

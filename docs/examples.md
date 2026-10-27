@@ -8,7 +8,7 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. The shipped extensions include:
+`sdk/`, and each folder has its own index page. Shipped extensions include:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
@@ -34,6 +34,9 @@ that send ordinary, steering, follow-up and two-block user messages, and
 session start. `extensions/questionnaire.rs` asks one or more questions through
 a tabbed view with selectable options and an inline editor; its support modules
 are indexed beside it.
+`extensions/snake.rs` opens a custom Snake game with keyboard
+controls, timed movement and saved games in session entries; its index gives the
+build/run commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
