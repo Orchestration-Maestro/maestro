@@ -11,8 +11,8 @@ use maestro_extensions_wasm::{
     CustomFactoryOutcome, EventListener, ExtensionAPI, ExtensionCommandContext, ExtensionComponent,
     ExtensionFuture, ExtensionResult, Message, Model, NewSessionCommandData,
     NewSessionCommandOptions, NotificationType, ProviderStreamOptions, ResolvedRequestAuth,
-    SessionEntry, StopReason, StreamOptions, UserContent, UserMessage, complete, convert_to_llm,
-    serialize_conversation, utils,
+    SessionEntry, StopReason, StreamOptions, TextContent, UserBlock, UserContent, UserMessage,
+    complete, convert_to_llm, serialize_conversation, utils,
 };
 use std::{cell::RefCell, future::poll_fn, rc::Rc, task::Waker, time::SystemTime};
 
@@ -169,7 +169,10 @@ async fn generate(
         Context {
             system_prompt: Some(SYSTEM_PROMPT.into()),
             messages: vec![Message::User(UserMessage {
-                content: UserContent::Text(text),
+                content: UserContent::Blocks(vec![UserBlock::Text(TextContent {
+                    text,
+                    text_signature: None,
+                })]),
                 timestamp: SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
                     .map_err(|error| error.to_string())?
@@ -273,15 +276,16 @@ async fn handoff(
     args: String,
     ctx: ExtensionCommandContext,
 ) -> ExtensionResult<()> {
-    let ui = ctx.ui()?;
     if !ctx.has_ui()? {
-        return ui.notify(
+        return ctx.ui()?.notify(
             "handoff requires interactive mode",
             Some(NotificationType::Error),
         );
     }
     let Some(model) = ctx.model()? else {
-        return ui.notify("No model selected", Some(NotificationType::Error));
+        return ctx
+            .ui()?
+            .notify("No model selected", Some(NotificationType::Error));
     };
     let mut whitespace_error = None;
     let goal = args.trim_matches(|c: char| {
@@ -294,7 +298,7 @@ async fn handoff(
         return Err(error);
     }
     if goal.is_empty() {
-        return ui.notify(
+        return ctx.ui()?.notify(
             "Usage: /handoff <goal for new thread>",
             Some(NotificationType::Error),
         );
@@ -302,7 +306,9 @@ async fn handoff(
     let reader = ctx.session_manager()?;
     let messages = handoff_messages(&reader.get_branch(None)?);
     if messages.is_empty() {
-        return ui.notify("No conversation to hand off", Some(NotificationType::Error));
+        return ctx
+            .ui()?
+            .notify("No conversation to hand off", Some(NotificationType::Error));
     }
     let conversation = serialize_conversation(&api, &convert_to_llm(&api, &messages)?)?;
     let parent_session = reader.get_session_file()?;
@@ -310,7 +316,7 @@ async fn handoff(
         "## Conversation History\n\n{conversation}\n\n## User's Goal for New Thread\n\n{goal}"
     );
     let Some(result) = draft(api, current, ctx.clone(), model, text).await? else {
-        return ui.notify("Cancelled", Some(NotificationType::Info));
+        return ctx.ui()?.notify("Cancelled", Some(NotificationType::Info));
     };
     review(ctx, result, parent_session).await
 }
@@ -326,7 +332,7 @@ async fn review(
         .editor("Edit handoff prompt".into(), Some(result))
         .await?
     else {
-        return ui.notify("Cancelled", Some(NotificationType::Info));
+        return ctx.ui()?.notify("Cancelled", Some(NotificationType::Info));
     };
     let outcome = ctx
         .new_session(Some(NewSessionCommandOptions {
@@ -344,7 +350,8 @@ async fn review(
         }))
         .await?;
     if outcome.cancelled {
-        ui.notify("New session cancelled", Some(NotificationType::Info))?;
+        ctx.ui()?
+            .notify("New session cancelled", Some(NotificationType::Info))?;
     }
     Ok(())
 }

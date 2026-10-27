@@ -343,6 +343,9 @@ async fn replace_session(
 ) -> Result<maestro_extensions::types::SessionChangeResult, EventError> {
     parents.borrow_mut().push(options.parent_session);
     if veto {
+        old.upgrade()
+            .unwrap()
+            .set_ui_context(Some(ExtensionUIContext::new(ui)));
         return Ok(maestro_extensions::types::SessionChangeResult { cancelled: true });
     }
     old.upgrade().unwrap().invalidate(None);
@@ -472,7 +475,7 @@ fn handoff_reviews_draft_and_uses_replacement_context() {
             assert_eq!(requests[0]["headers"]["x-handoff"], "configured");
             assert_eq!(
                 requests[0]["context"]["messages"][0]["content"],
-                "## Conversation History\n\n[User]: Discuss src/auth.rs\n\n## User's Goal for New Thread\n\nimplement teams"
+                json!([{"type":"text", "text":"## Conversation History\n\n[User]: Discuss src/auth.rs\n\n## User's Goal for New Thread\n\nimplement teams"}])
             );
             let prompt = requests[0]["context"]["systemPrompt"].as_str().unwrap();
             assert!(prompt.starts_with("You are a context transfer assistant."));
@@ -496,10 +499,11 @@ fn handoff_selected_history_uses_latest_compaction_and_kept_prefix() {
         driver.message("other branch excluded");
         driver.history.borrow_mut().branch(&tip).unwrap();
         driver.command("next").await;
-        let text = provider.requests.lock().unwrap()[0]["context"]["messages"][0]["content"]
-            .as_str()
-            .unwrap()
-            .to_owned();
+        let text =
+            provider.requests.lock().unwrap()[0]["context"]["messages"][0]["content"][0]["text"]
+                .as_str()
+                .unwrap()
+                .to_owned();
         let entries = driver
             .history
             .borrow()
@@ -524,10 +528,15 @@ fn handoff_selected_history_uses_latest_compaction_and_kept_prefix() {
             assert!(!text.contains(excluded));
         }
         assert_eq!(
-            driver.ui.calls.borrow().last().unwrap(),
-            &json!(["notify", "New session cancelled", "info"])
+            driver.ui.calls.borrow().len(),
+            1,
+            "only the editor used the original UI"
         );
-        assert!(driver.replacement.calls.borrow().is_empty());
+        assert_eq!(
+            *driver.replacement.calls.borrow(),
+            [json!(["notify", "New session cancelled", "info"])],
+            "a veto notification reacquires the current UI without setting any editor"
+        );
     });
 }
 
