@@ -205,10 +205,12 @@ cycling choices, with an optional level per choice.
 Retain one `Arc<AuthStorage>` and the `Arc<ModelRegistry>` built over it when
 credentials must be shared. `AuthStorage::create` uses your chosen file path;
 `AuthStorage::in_memory` avoids credential persistence. A runtime API key set
-with `set_runtime_api_key` is not saved. Request lookup tries a nonempty runtime
-key, stored credentials, provider environment values, then the fallback resolver.
-Stored OAuth credentials may refresh during lookup. A malformed stored record
-can stop lookup rather than falling through; [credentials](../credentials.md)
+with `set_runtime_api_key` is not saved. SDK request lookup tries a nonempty
+runtime key, stored credentials, provider environment values, then the catalog's
+configured provider key. SDK requests do not call the credential fallback resolver;
+direct `AuthStorage::get_api_key` lookup can include it when `include_fallback`
+is `true`. Stored OAuth credentials may refresh during lookup. A malformed stored
+record can stop lookup rather than falling through; [credentials](../credentials.md)
 describes the exact cases and login callbacks.
 
 `ModelRegistry::create` loads your model file, whereas `in_memory` avoids model
