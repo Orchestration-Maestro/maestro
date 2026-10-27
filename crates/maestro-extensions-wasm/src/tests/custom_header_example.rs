@@ -21,6 +21,10 @@ fn start(has_ui: bool) -> Result<Harness, String> {
         )]
     );
     harness.observed().catalog.data.has_ui = has_ui;
+    harness
+        .observed()
+        .actions
+        .control(r#"{"value":{"version":"9.8.7-host"}}"#);
     harness.observed().ui.control(r#"{"header":"ready"}"#);
     Ok(harness)
 }
@@ -122,9 +126,9 @@ fn finish(harness: &mut Harness) -> Result<(), String> {
     Ok(())
 }
 
-/// Every start reason installs the branded illustration; renders use the live supplied theme.
+/// Every start reason installs the illustration and host version using the live supplied theme.
 #[test]
-fn custom_header_component_renders_illustration_with_live_theme() -> Result<(), String> {
+fn custom_header_component_renders_host_version_with_live_theme() -> Result<(), String> {
     let mut harness = start(true)?;
     for reason in ["startup", "reload", "new", "resume", "fork"] {
         let event = json!({"type":"session_start", "reason":reason});
@@ -146,7 +150,9 @@ fn custom_header_component_renders_illustration_with_live_theme() -> Result<(), 
                 format!("<{palette} accent>  █ ▀▄   ▄▀ █</accent>"),
                 format!("<{palette} accent>  █   ▀█▀   █</accent>"),
                 String::new(),
-                format!("<{palette} muted>   Custom header</muted>"),
+                format!(
+                    "<{palette} muted>   Custom header</muted><{palette} dim> v9.8.7-host</dim>"
+                ),
             ];
             for width in [1, 24, 80] {
                 assert_eq!(view(&mut harness, Some(width))?, expected);

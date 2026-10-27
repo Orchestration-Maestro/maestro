@@ -10,11 +10,11 @@ use std::rc::Rc;
 use maestro_extensions_wasm::{
     CallbackEmitter, CommandOptions, Component, ComponentView, ExtensionAPI, ExtensionComponent,
     ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    NotificationType, Theme,
+    NotificationType, Theme, config,
 };
 
-/// A header that renders with the live theme its factory received.
-struct Header(Theme);
+/// A header that renders the host version with the live theme its factory received.
+struct Header(Theme, String);
 
 impl ComponentView for Header {
     fn render(&self, _width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
@@ -28,7 +28,11 @@ impl ComponentView for Header {
             accent("  █ ▀▄   ▄▀ █")?,
             accent("  █   ▀█▀   █")?,
             String::new(),
-            self.0.fg("muted", "   Custom header")?,
+            format!(
+                "{}{}",
+                self.0.fg("muted", "   Custom header")?,
+                self.0.fg("dim", &format!(" v{}", self.1))?
+            ),
         ])
     }
 
@@ -39,19 +43,22 @@ impl ComponentView for Header {
 
 /// Installs the illustration when the supplied context has UI.
 fn session_start(
+    api: ExtensionAPI,
     _event: &mut ExtensionEvent,
     ctx: ExtensionContext,
 ) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         if ctx.has_ui()? {
-            ctx.ui()?.set_header(Some(Rc::new(|_tui, theme, _emitter| {
-                Ok(ExtensionComponent {
-                    component: Component::new(Header(theme)),
-                    dispose: None,
-                    set_expanded: None,
-                    width: None,
-                })
-            })))?;
+            let version = config::version(&api)?;
+            ctx.ui()?
+                .set_header(Some(Rc::new(move |_tui, theme, _emitter| {
+                    Ok(ExtensionComponent {
+                        component: Component::new(Header(theme, version.clone())),
+                        dispose: None,
+                        set_expanded: None,
+                        width: None,
+                    })
+                })))?;
         }
         Ok(None)
     })
@@ -64,7 +71,11 @@ fn session_start(
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        api.on("session_start", Rc::new(session_start))?;
+        let registered = api.clone();
+        api.on(
+            "session_start",
+            Rc::new(move |event, ctx| session_start(registered.clone(), event, ctx)),
+        )?;
         api.register_command(
             "builtin-header",
             CommandOptions {

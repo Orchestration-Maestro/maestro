@@ -894,6 +894,16 @@
           "answer": {
             "ok": "<dark muted>   Custom header</muted>"
           }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "dim",
+            " v9.8.7-host"
+          ],
+          "answer": {
+            "ok": "<dark dim> v9.8.7-host</dim>"
+          }
         }
       ]
     },
@@ -971,6 +981,16 @@
           ],
           "answer": {
             "ok": "<alternate muted>   Custom header</muted>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "dim",
+            " v9.8.7-host"
+          ],
+          "answer": {
+            "ok": "<alternate dim> v9.8.7-host</dim>"
           }
         }
       ]
