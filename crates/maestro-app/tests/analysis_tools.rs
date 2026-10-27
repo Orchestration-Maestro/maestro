@@ -526,7 +526,16 @@ fn tool_report_keeps_empty_and_nonempty_page_states() {
 fn tool_report_treats_data_and_paths_as_text() {
     with_controlled_viewer("tool_report_treats_data_and_paths_as_text", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions<img src=x>", root(&scratch));
+        let name = "sessions<img src=x>";
+        // Windows refuses `<` and `>` in a name, so the premise cannot be exercised there.
+        if !scratch
+            .keeps_distinct(&[std::ffi::OsStr::new(name)])
+            .unwrap()
+        {
+            eprintln!("premise not met: this host refuses the name {name:?}");
+            return;
+        }
+        let sessions = format!("{}/{name}", root(&scratch));
         write(
             &sessions,
             &[(
