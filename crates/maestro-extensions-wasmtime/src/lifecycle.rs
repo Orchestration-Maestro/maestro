@@ -78,7 +78,7 @@ pub(crate) struct State {
     /// The original registration facade's endpoint, not a reconstructed API.
     api: Endpoint,
     /// Application installation identity supplied at factory composition.
-    pub(crate) installation_version: String,
+    pub(crate) installation: crate::Installation,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
     /// The original retained pub.
@@ -92,11 +92,11 @@ impl State {
         api: Endpoint,
         callbacks: Callbacks,
         path: &str,
-        installation_version: String,
+        installation: crate::Installation,
         output: Option<crate::wasi::Output>,
     ) -> wasmtime::Result<Self> {
         Ok(Self {
-            installation_version,
+            installation,
             wasi: crate::wasi::build(path, output)?,
             table: ResourceTable::new(),
             api,

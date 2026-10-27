@@ -28,10 +28,12 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
@@ -45,6 +47,7 @@ inserts at its own place instead of appending at the end of each list.
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
 | `todo/view.rs` | The todo example's themed tool rows and interactive list view. |
+| `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
@@ -75,6 +78,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- dynamic_tools_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- file_trigger_
@@ -84,6 +89,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -106,6 +113,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- titlebar_spinner_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- todo_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- tool_override_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- tool_override_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -190,6 +201,24 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+
+### What the notification example does
+
+Build with `--example notify` using the command above. Loading the component is
+opt-in and needs a native component-enabled host with inherited environment and
+stdout. On every `agent_end` it sends `Maestro` / `Ready for input`. A nonempty
+`WT_SESSION` selects `powershell.exe` (including from WSL); otherwise a nonempty
+`KITTY_WINDOW_ID` selects Kitty's two-part OSC 99 notification. Other environments
+use OSC 777, supported by Ghostty, iTerm2, WezTerm and rxvt-unicode. The terminal
+must permit desktop notifications. Windows needs `powershell.exe` on PATH and
+Windows toast support; the callback waits for that command to finish.
+
+Notification text cannot inject OSC fields or control sequences, and PowerShell
+apostrophes are quoted before the Windows DOM creates XML text nodes. The
+controlled `notify_` tests capture terminal bytes and supply child-process
+results: they send no desktop notifications and need no provider or credentials.
+The example registers no command and adds no built-in notification setting.
+
 ### What the permission gate does
 
 `tool_call` leaves non-bash tools and commands outside its three patterns alone.
@@ -322,6 +351,23 @@ the built component with a supplied wall clock, so it needs no provider and no
 installation; loading the component into an application is opt-in and needs
 that application's component runtime.
 
+### What the dynamic tools example does
+
+`session_start` registers one `echo_session` tool, and `/add-echo-tool
+<tool_name>` registers further echo tools while the session runs. The argument is
+trimmed and lowercased, then admitted only when it holds ASCII letters, digits
+and underscores, so `/add-echo-tool Shared_9` registers `shared_9`. Each tool
+echoes its message behind `[<name>] ` and returns the name and prefix as details,
+and a name that is already registered answers `Tool already registered: <name>`
+instead of replacing the first tool.
+
+The names belong to the factory instance, so two loaded copies register apart.
+A name stays registered when the host refuses its registration, and a host
+refusal ends the command with the host's message. The controlled run replays
+every recorded sequence against the built component and needs no provider and no
+installation; loading the component into an application is opt-in and needs that
+application's component runtime.
+
 ### What the runtime reload command does
 
 `/reload-runtime` awaits the reload request its command context supplies and
@@ -401,6 +447,32 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the audited read override does
+
+`tool_override` replaces `read` only when you load it. It records each resolved
+path in `<agent_dir>/read-access.log` through the host's file-mutation queue,
+including blocked attempts and failed reads. Logging failures do not prevent a
+read. `/read-log` shows the last twenty records as an informational notification,
+or `No access log found` when the log cannot be read.
+
+The case-sensitive patterns block `.env`, `.env.<suffix>`, and paths containing
+`/.ssh/`, `/.aws/` or `/.gnupg/`. The secret/credential filename patterns ignore
+case and match singular or plural names ending in `.json`, `.yaml`, `.yml` or
+`.toml`. These are literal illustrative patterns, not a security sandbox:
+symlinks, alternate spellings and names outside them can bypass the checks.
+
+Allowed reads return text, with optional numeric `offset` and `limit`, and the
+total line count. The example decodes invalid UTF-8 with replacement characters
+and clips selected text at a whole UTF-8 scalar within 50 KiB, followed by
+`[Output truncated at 50KB]`. It supplies no custom renderer. This simplified
+reader does not preserve the built-in read tool's image and truncation features.
+
+Build with `--example tool_override` in the command above. Loading is opt-in and
+requires a component-enabled native host with filesystem access; recording also
+needs an existing writable agent directory. Log display needs the host's
+notification UI. Logs contain paths, timestamps and access decisions, not file
+contents. The controlled run uses disposable files and no provider or credentials.
 
 ### What the titlebar spinner does
 
