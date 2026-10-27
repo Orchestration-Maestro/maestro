@@ -37,8 +37,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
             preference("defaultModel", json!(model.id)),
         ];
         let effective = clamp_thinking_level(&model, requested.clone());
-        changes.extend(self.thinking_preferences(&effective, model.reasoning));
         let settings = self.settings_manager.borrow();
+        if !settings.is_key_path_locked("defaultThinkingLevel", &[]) {
+            changes.extend(self.thinking_preferences(&effective, model.reasoning));
+        }
         let saved = saved_level(requested);
         let request = DecisionRequest::Model {
             provider: &model.provider,
