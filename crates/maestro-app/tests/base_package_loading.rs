@@ -385,3 +385,56 @@ fn second_base_layer_publisher_is_reported_without_application() {
         assert_eq!(settings.borrow().get_base_layer().unwrap().source, "one");
     });
 }
+
+/// Session services read contributed model files below the user's file in the same startup.
+#[test]
+fn session_services_apply_contributed_models_before_user_models() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    let models = format!("{base}/models.json");
+    for dir in [&agent, &cwd] {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    package(&base, "base");
+    std::fs::write(&models, json!({"providers":{"openai":{"modelOverrides":{"gpt-4o":{"contextWindow":12345,"cost":{"input":1,"output":2}}}}}}).to_string()).unwrap();
+    std::fs::write(
+        format!("{agent}/models.json"),
+        json!({"providers":{"openai":{"modelOverrides":{"gpt-4o":{"cost":{"input":3}}}}}})
+            .to_string(),
+    )
+    .unwrap();
+    on_task_set(|local| async move {
+        let mut resources: ResourceLoaderOptions<Local> = ResourceLoaderOptions::new(
+            local,
+            contributing_modules(json!({"modelFiles":[models]}), Rc::default()),
+        );
+        resources.base_package_sources = vec![base];
+        let services = maestro_app::create_agent_session_services(
+            maestro_app::CreateAgentSessionServicesOptions {
+                cwd,
+                agent_dir: Some(agent),
+                auth_storage: Some(std::sync::Arc::new(
+                    maestro_credentials::AuthStorage::in_memory(
+                        maestro_credentials::AuthStorageData::default(),
+                    ),
+                )),
+                settings_manager: None,
+                model_registry: None,
+                extension_flag_values: None,
+                resource_loader_options: resources,
+                offline: Some(true),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(services.resource_loader.get_extensions().errors.is_empty());
+        let model = services.model_registry.find("openai", "gpt-4o").unwrap();
+        let model = model.read().unwrap();
+        assert_eq!(model.context_window.to_bits(), 12345.0_f64.to_bits());
+        assert_eq!(model.cost.input.to_bits(), 3.0_f64.to_bits());
+        assert_eq!(model.cost.output.to_bits(), 2.0_f64.to_bits());
+    });
+}
