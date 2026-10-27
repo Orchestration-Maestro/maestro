@@ -159,6 +159,11 @@ path = "../../examples/extensions/snake.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "ssh"
+path = "../../examples/extensions/ssh.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
 crate-type = ["cdylib"]

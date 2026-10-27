@@ -66,3 +66,7 @@ The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the
 same path. The standalone copy reads the README, the release history, the
 documentation and the examples from the package directory.
+
+`extensions/ssh.rs` supplies opt-in SSH operations to the original coding tools
+and user shell commands. Its extension index documents the remote flag, connection
+prerequisites and controlled run; without the flag it keeps local operations.

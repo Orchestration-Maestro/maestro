@@ -53,6 +53,7 @@ inserts at its own place instead of appending at the end of each list.
 | `snake.rs` | A `/snake` custom view with arrow/WASD controls, 100 ms ticks and saved games in session entries. |
 | `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
 | `snake/render.rs` | The bordered Snake board and input hints. |
+| `ssh.rs` | Opt-in remote read, write, edit, bash and user-shell operations through SSH, with local tools when unset. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
@@ -135,6 +136,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- snake_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- ssh_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -737,3 +740,29 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the SSH example does
+
+Build with `--example ssh`. Load the component into a native component-enabled
+host and pass `--ssh user@host:/remote/path`, or `--ssh user@host` to discover the
+remote directory with `pwd`. Without the flag, the registered read, write, edit
+and bash tools use the host's original local operations. With it, those tools
+and user `!` commands run through SSH. Session startup reports the selected host
+and directory; the supplied system prompt names that remote directory.
+
+Loading and remote execution are opt-in. The local host needs `ssh` on `PATH`,
+key-based authentication and a trusted host key already configured, with no
+password or host-key prompts. The remote needs a POSIX shell, bash, `cat`, `test`,
+`mkdir` and `file` for image classification. The example transfers original file
+bytes and writes UTF-8 content through a child input pipe. Shell quoting keeps
+paths literal, including apostrophes and shell substitutions. Paths beneath the
+local working directory map to the remote directory; other absolute paths stay
+absolute.
+
+SSH uses the user's own connection configuration and permissions: remote reads
+can expose private data, and writes, edits and shell commands can change or delete
+remote files. Cancellation and bash deadlines terminate the local SSH process;
+they cannot guarantee that work already accepted remotely stops. No connection
+pool or remote rollback is provided. The controlled `ssh_` runs use disposable
+files and a checked child process instead of a live server, with no provider,
+credentials or paid service.

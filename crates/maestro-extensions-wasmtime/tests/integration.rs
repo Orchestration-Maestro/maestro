@@ -93,3 +93,5 @@ fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extens
         },
     )
 }
+
+mod ssh_example;
