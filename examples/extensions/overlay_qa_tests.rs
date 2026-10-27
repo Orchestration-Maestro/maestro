@@ -167,7 +167,7 @@ async fn anchors(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionRe
         match overlay(&ctx, options, None, view).await? {
             Some(Step::Next) => index = (index + 1) % ANCHORS.len(),
             Some(Step::Confirm) => {
-                let message = format!("Selected: {name}");
+                let message = format!("Anchor selected: {name}");
                 return ctx.ui()?.notify(&message, Some(NotificationType::Info));
             }
             Some(Step::Close) | None => return Ok(()),
@@ -181,26 +181,26 @@ fn margin_configs() -> [(&'static str, OverlayOptions); 5] {
     (offset.offset_x, offset.offset_y) = (Some(10), Some(-3));
     [
         (
-            "No margin (top-left)",
+            "Top left, no margin",
             placement(Some(OverlayAnchor::TopLeft), 35),
         ),
         (
-            "Margin: 3 all sides",
+            "Top left, margin 3",
             OverlayOptions {
                 margin: Some(OverlayMarginValue::Uniform(3)),
                 ..placement(Some(OverlayAnchor::TopLeft), 35)
             },
         ),
         (
-            "Margin: top=5, left=10",
+            "Top left, margin top 5, left 10",
             OverlayOptions {
                 margin: Some(sides(Some(5), None, None, Some(10))),
                 ..placement(Some(OverlayAnchor::TopLeft), 35)
             },
         ),
-        ("Center + offset (10, -3)", offset),
+        ("Center, 10 right and 3 up", offset),
         (
-            "Bottom-right, margin: 2",
+            "Bottom right, margin 2",
             OverlayOptions {
                 margin: Some(OverlayMarginValue::Uniform(2)),
                 ..placement(Some(OverlayAnchor::BottomRight), 35)
@@ -211,11 +211,11 @@ fn margin_configs() -> [(&'static str, OverlayOptions); 5] {
 
 /// Percentage positions shown by `/overlay-percent`, as row and column percentages.
 const PERCENTS: [(&str, u8, u8); 5] = [
-    ("rowPercent: 0 (top)", 0, 50),
-    ("rowPercent: 50 (middle)", 50, 50),
-    ("rowPercent: 100 (bottom)", 100, 50),
-    ("colPercent: 0 (left)", 50, 0),
-    ("colPercent: 100 (right)", 50, 100),
+    ("Row 0% (top)", 0, 50),
+    ("Row 50% (middle)", 50, 50),
+    ("Row 100% (bottom)", 100, 50),
+    ("Column 0% (left)", 50, 0),
+    ("Column 100% (right)", 50, 100),
 ];
 
 /// Cycles titled configurations until the overlay closes.
@@ -239,7 +239,7 @@ async fn cycle(
 /// Cycles the margin and offset configurations.
 async fn margins(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionResult<()> {
     let configs = margin_configs().map(|(name, options)| (name.to_owned(), options));
-    let labels = ("Margin Test", "Space/→ = next config");
+    let labels = ("Margins", "Space/→ next placement");
     cycle(api, ctx, labels, configs.into()).await
 }
 
@@ -254,16 +254,22 @@ async fn percent(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionRe
         };
         (name.to_owned(), options)
     });
-    cycle(api, ctx, ("Percent Test", "Space/→ = next"), configs.into()).await
+    cycle(
+        api,
+        ctx,
+        ("Percentages", "Space/→ next position"),
+        configs.into(),
+    )
+    .await
 }
 
 /// Shows three overlapping overlays 400 ms apart and reports the order they closed in.
 async fn stack(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionResult<()> {
     let closed = Rc::new(RefCell::new(Vec::new()));
     let layers = [
-        (1, "back (red border)", -8, -4),
-        (2, "middle (green border)", 0, 0),
-        (3, "front (blue border)", 8, 4),
+        (1, "back, red border", -8, -4),
+        (2, "middle, green border", 0, 0),
+        (3, "front, blue border", 8, 4),
     ];
     let tasks = layers.map(|(number, position, x, y)| {
         let (api, ctx, closed) = (api.clone(), ctx.clone(), closed.clone());
@@ -273,7 +279,7 @@ async fn stack(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionResu
                 api.native_io().sleep(delay, None).await?;
             }
             let order = ["back", "middle", "front"][usize::try_from(number - 1).unwrap_or(0)];
-            let message = format!("Showing overlay {number} ({order})...");
+            let message = format!("Layer {number} of 3 ({order}) shown");
             ctx.ui()?.notify(&message, Some(NotificationType::Info))?;
             let options = OverlayOptions {
                 offset_x: Some(x),
@@ -291,7 +297,7 @@ async fn stack(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionResu
         }) as ExtensionFuture<'static, ()>
     });
     join_all(tasks.into()).await?;
-    let message = format!("Closed in order: {}", closed.borrow().join(", "));
+    let message = format!("Close order: {}", closed.borrow().join(", "));
     ctx.ui()?.notify(&message, Some(NotificationType::Info))
 }
 
@@ -368,63 +374,67 @@ macro_rules! demo {
 const DEMOS: [(&str, &str, Demo); 13] = [
     (
         "overlay-animation",
-        "Test real-time animation in overlay (~30 FPS)",
+        "Animate an overlay at about 30 frames a second",
         demo!(live::animation),
     ),
     (
         "overlay-anchors",
-        "Cycle through all anchor positions",
+        "Show an overlay at each of the nine anchors",
         demo!(anchors),
     ),
     (
         "overlay-margins",
-        "Test margin and offset options",
+        "Place an overlay with margins and offsets",
         demo!(margins),
     ),
-    ("overlay-stack", "Test stacked overlays", demo!(stack)),
+    (
+        "overlay-stack",
+        "Stack three overlapping overlays",
+        demo!(stack),
+    ),
     (
         "overlay-overflow",
-        "Test width overflow with streaming process output",
+        "Stream long process output into a narrower overlay",
         demo!(live::overflow),
     ),
     (
         "overlay-edge",
-        "Test overlay positioned at terminal edge",
+        "Place an overlay against the right edge",
         demo!(edge),
     ),
     (
         "overlay-percent",
-        "Test percentage-based positioning",
+        "Place an overlay by row and column percentages",
         demo!(percent),
     ),
     (
         "overlay-maxheight",
-        "Test maxHeight truncation",
+        "Cut an overlay at its maximum height",
         demo!(max_height),
     ),
     (
         "overlay-sidepanel",
-        "Test responsive sidepanel (hides when terminal < 100 cols)",
+        "Show a side panel that hides below 100 columns",
         demo!(sidepanel),
     ),
     (
         "overlay-toggle",
-        "Test overlay toggle (press 't' to toggle visibility)",
+        "Hide an overlay for one second with t",
         demo!(live::toggle),
     ),
     (
         "overlay-passive",
-        "Test non-capturing overlay (passive info panel alongside active overlay)",
+        "Type beside a timer that never takes focus",
         demo!(panels::passive),
     ),
     (
         "overlay-focus",
-        "Test focus cycling and rendering order with non-capturing overlays",
+        "Move focus between overlapping non-capturing panels",
         demo!(panels::focus),
     ),
     (
         "overlay-streaming",
-        "Multiple input panels with simulated streaming (Tab to cycle focus)",
+        "Type into panels beside a simulated stream",
         demo!(panels::streaming),
     ),
 ];

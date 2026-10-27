@@ -38,7 +38,7 @@ impl Typed {
     fn display(&self, paint: &Paint) -> ExtensionResult<String> {
         let typed = self.0.borrow();
         if typed.is_empty() {
-            paint.dim("(type here)")
+            paint.dim("(empty)")
         } else {
             Ok(typed.clone())
         }
@@ -72,19 +72,19 @@ impl ComponentView for Passive {
         let rows = vec![
             String::new(),
             paint.hint(&format!(
-                "focused={} inputs={}",
+                "Focused: {}, inputs: {}",
                 self.focused.get(),
                 self.inputs.get()
             ))?,
             paint.hint(&format!(
-                "last: {}",
+                "Last input: {}",
                 if last.is_empty() { "none" } else { &last }
             ))?,
             String::new(),
             format!(" > {}", self.typed.display(paint)?),
             String::new(),
-            paint.dim(" Type to prove input goes here.")?,
-            paint.dim(" Press Esc to close both.")?,
+            paint.dim(" Typing reaches this view.")?,
+            paint.dim(" Esc closes both overlays.")?,
             String::new(),
         ];
         paint.boxed(rows, width, "Non-Capturing Demo")
@@ -92,8 +92,10 @@ impl ComponentView for Passive {
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         let first = data.encode_utf16().next().unwrap_or(0);
         self.inputs.set(self.inputs.get() + 1);
-        self.last
-            .replace(format!("len={} c0={first}", data.encode_utf16().count()));
+        self.last.replace(format!(
+            "length {}, code {first}",
+            data.encode_utf16().count()
+        ));
         if self.paint.closes(data)? {
             hide_timer(&self.timer)?;
             return (self.done)(());
@@ -273,10 +275,10 @@ impl ComponentView for Panel {
         let label = paint.fg("accent", self.ring.labels[self.index])?;
         let mut rows = vec![Row::Text(format!(" {label}")), Row::Text(String::new())];
         if focused {
-            rows.push(Row::Text(paint.fg("success", " ● FOCUSED")?));
-            rows.push(Row::Text(paint.dim(" (receiving input)")?));
+            rows.push(Row::Text(paint.fg("success", " ● Focused")?));
+            rows.push(Row::Text(paint.dim(" (gets input)")?));
         } else {
-            rows.push(Row::Text(paint.dim(" ○ unfocused")?));
+            rows.push(Row::Text(paint.dim(" ○ Not focused")?));
             rows.push(Row::Text(match self.typed {
                 Some(_) => String::new(),
                 None => paint.dim(" (passive)")?,
@@ -356,22 +358,19 @@ impl ComponentView for FocusDemo {
         let focused = paint.fg("accent", self.ring.focused().unwrap_or("Controller"))?;
         let rows = vec![
             String::new(),
-            format!(" Current focus: {focused}"),
+            format!(" Focus: {focused}"),
             String::new(),
-            " Three overlapping panels above are".into(),
-            format!(
-                " all {}. Press Tab to",
-                paint.fg("accent", "non_capturing")?
-            ),
-            " cycle focus() between them.".into(),
+            " The three panels above are".into(),
+            format!(" all {}. Tab moves", paint.fg("accent", "non_capturing")?),
+            " focus() from one to the next.".into(),
             String::new(),
-            " Focused panel renders on top".into(),
-            " (focus-based rendering order).".into(),
+            " The focused panel draws on top,".into(),
+            " above the others.".into(),
             String::new(),
-            paint.dim(" Tab = cycle focus | Esc = close")?,
+            paint.dim(" Tab next | Esc close")?,
             String::new(),
         ];
-        paint.boxed(rows, width, "Focus Demo")
+        paint.boxed(rows, width, "Focus")
     }
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         self.ring.input(&self.paint, data)
@@ -388,7 +387,7 @@ pub async fn focus(api: ExtensionAPI, ctx: ExtensionCommandContext) -> Extension
             api: api.clone(),
             theme,
         };
-        let labels = ["Alpha", "Beta", "Gamma"];
+        let labels = ["First", "Second", "Third"];
         let ring = ring((tui, &paint, done), labels, false, |i| (2, 5 + i * 6, 28))?;
         let disposing = ring.clone();
         Ok(built(
@@ -431,15 +430,15 @@ impl ComponentView for StreamingDemo {
         let paint = &self.paint;
         let focused = match self.ring.focused() {
             Some(label) => label.to_owned(),
-            None => paint.fg("success", "Controller (this panel)")?,
+            None => paint.fg("success", "Controller (this view)")?,
         };
         let rule =
             paint.dim(&" ─".repeat(usize::try_from(width.saturating_sub(2) / 2).unwrap_or(0)))?;
         let mut rows = vec![
             String::new(),
-            format!(" Current focus: {}", paint.fg("accent", &focused)?),
+            format!(" Focus: {}", paint.fg("accent", &focused)?),
             String::new(),
-            " Simulated streaming output:".into(),
+            " Simulated stream:".into(),
             rule.clone(),
         ];
         for line in self.feed.lines.borrow().iter() {
@@ -453,13 +452,13 @@ impl ComponentView for StreamingDemo {
                 " Three {} input panels on the left.",
                 paint.fg("accent", "non_capturing")?
             ),
-            " Tab cycles: Controller → Panel A → B → C → Controller".into(),
-            " Type in each panel to test input routing.".into(),
+            " Tab: controller → A → B → C → controller".into(),
+            " Each panel keeps its own typing.".into(),
             String::new(),
-            paint.dim(" Tab = cycle focus | Esc = close all")?,
+            paint.dim(" Tab next | Esc close all")?,
             String::new(),
         ]);
-        paint.boxed(rows, width, "Streaming + Input Test")
+        paint.boxed(rows, width, "Stream and input")
     }
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         self.ring.input(&self.paint, data)
@@ -478,7 +477,7 @@ async fn feed(api: ExtensionAPI, feed: Rc<Feed>) -> ExtensionResult<()> {
         let now = local_date_time_string(&api)?;
         let time = now.split_once(", ").map_or(now.as_str(), |(_, time)| time);
         let mut lines = feed.lines.borrow_mut();
-        lines.push_back(format!("[{time}] Streaming line {}...", feed.count.get()));
+        lines.push_back(format!("[{time}] Line {}", feed.count.get()));
         if lines.len() > KEPT {
             lines.pop_front();
         }
@@ -497,7 +496,7 @@ pub async fn streaming(api: ExtensionAPI, ctx: ExtensionCommandContext) -> Exten
             api: owner.clone(),
             theme,
         };
-        let labels = ["Panel A", "Panel B", "Panel C"];
+        let labels = ["Input A", "Input B", "Input C"];
         let ring = ring((tui, &paint, done), labels, true, |i| (1 + i * 9, 2, 35))?;
         let disposing = ring.clone();
         let view = StreamingDemo {

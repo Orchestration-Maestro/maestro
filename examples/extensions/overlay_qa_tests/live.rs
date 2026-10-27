@@ -96,7 +96,7 @@ impl ComponentView for AnimationView {
         let [r, g, b] = hue_rgb(f64::from(frame * 3 % 360));
         let block = format!("\x1b[48;2;{r};{g};{b}m{}\x1b[0m", "  ".repeat(10));
         let mut rows = vec![
-            Row::Text(paint.fg("accent", " Animation Demo (~30 FPS)")?),
+            Row::Text(paint.fg("accent", " Overlay animation (~30 FPS)")?),
             Row::Text(String::new()),
             Row::Text(format!(
                 " Frame: {}",
@@ -109,18 +109,18 @@ impl ComponentView for AnimationView {
             Row::Text(String::new()),
             Row::Text(format!(" {bar}")),
             Row::Text(format!(" Spinner: {}", paint.fg("warning", spin)?)),
-            Row::Text(format!(" Color: {block}")),
+            Row::Text(format!(" Colour: {block}")),
             Row::Text(String::new()),
         ];
         for text in [
-            " This proves overlays can handle",
-            " real-time game-like rendering.",
-            " (game views use the same approach)",
+            " Each frame comes from one native wait.",
+            " The view redraws whole, so a game",
+            " view can draw the same way.",
         ] {
             rows.push(Row::Text(paint.dim(text)?));
         }
         rows.push(Row::Text(String::new()));
-        rows.push(Row::Text(paint.dim(" Press Esc to close")?));
+        rows.push(Row::Text(paint.dim(" Esc closes")?));
         paint.framed("border", rows, width)
     }
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
@@ -182,27 +182,27 @@ pub async fn animation(api: ExtensionAPI, ctx: ExtensionCommandContext) -> Exten
 
 /// One hundred long, coloured, hyperlinked lines over thirty seconds.
 const SCRIPT: &str = r#"
-echo "Starting streaming overflow test (30+ seconds)..."
-echo "This simulates subagent output with colors, hyperlinks, and long paths"
+echo "Streaming 100 long lines over 30 seconds."
+echo "Each line carries colour, a hyperlink or a long path."
 echo ""
 for i in $(seq 1 100); do
 	DIR="/Users/example/Documents/development/maestro/crates/maestro-chat/src/interactive_mode"
 	FILE="${DIR}/components/very-long-component-name-that-exceeds-width-${i}.rs"
 	echo -e "\033]8;;file://${FILE}\007▶ read: ${FILE}\033]8;;\007"
 	if [ $((i % 5)) -eq 0 ]; then
-		echo -e "  \033[32m✓ Successfully processed ${i} files in /Users/example/Documents/development/maestro\033[0m"
+		echo -e "  \033[32m✓ Read ${i} files under /Users/example/Documents/development/maestro\033[0m"
 	fi
 	if [ $((i % 7)) -eq 0 ]; then
-		echo -e "  \033[33m⚠ Warning: potential issue detected at line ${i} in very-long-component-name-that-exceeds-width.rs\033[0m"
+		echo -e "  \033[33m⚠ Warning: line ${i} of very-long-component-name-that-exceeds-width.rs needs a look\033[0m"
 	fi
 	if [ $((i % 11)) -eq 0 ]; then
-		echo -e "  \033[31m✗ Error: file not found /some/really/long/path/that/definitely/exceeds/the/overlay/width/limit/file-${i}.rs\033[0m"
+		echo -e "  \033[31m✗ Error: missing /some/really/long/path/that/definitely/exceeds/the/overlay/width/limit/file-${i}.rs\033[0m"
 	fi
 	sleep 0.3
 done
 echo ""
-echo -e "\033[32m✓ Complete - 100 files processed in 30 seconds\033[0m"
-echo "Press Esc to close"
+echo -e "\033[32m✓ Done: 100 files in 30 seconds.\033[0m"
+echo "Esc closes this view."
 "#;
 
 /// Rows shown at once by the output view.
@@ -271,7 +271,7 @@ impl ComponentView for OutputView {
         }
         rows.resize_with(VISIBLE + 1, || Row::Text(String::new()));
         let status = if state.finished.get() {
-            paint.fg("success", "✓ Done")?
+            paint.fg("success", "✓ Exited")?
         } else {
             paint.fg("warning", "● Running")?
         };
@@ -281,7 +281,7 @@ impl ComponentView for OutputView {
         )));
         let mut drawn = paint.framed("border", rows, width)?;
         let inner = inner(width);
-        let title = format!(" Streaming Output ({} lines) ", lines.len());
+        let title = format!(" Process output ({} lines) ", lines.len());
         let title = truncate_to_width(&paint.api, &title, inner, TruncateOptions::default())?;
         let rest = inner.saturating_sub(visible_width(&paint.api, &title)?);
         drawn[0] = format!(
@@ -410,22 +410,22 @@ impl ComponentView for ToggleView {
         let count = paint.fg("accent", &self.state.count.get().to_string())?;
         let mut rows = vec![
             String::new(),
-            paint.fg("accent", " Toggle Demo")?,
+            paint.fg("accent", " Visibility toggle")?,
             String::new(),
-            " This overlay demonstrates the".into(),
-            " on_handle callback API.".into(),
+            " t hides this overlay through".into(),
+            " the handle on_handle received.".into(),
             String::new(),
-            format!(" Toggle count: {count}"),
+            format!(" Times hidden: {count}"),
             String::new(),
         ];
         for text in [
-            " Press 't' to hide for 1 second",
-            " (demonstrates set_hidden API)",
+            " t hides it for one second",
+            " (set_hidden on the handle)",
             "",
-            " In real usage, a global keybinding",
-            " would toggle visibility externally.",
+            " A global key binding could",
+            " drive the same handle.",
             "",
-            " Press Esc to close",
+            " Esc closes",
         ] {
             rows.push(if text.is_empty() {
                 String::new()
@@ -434,7 +434,7 @@ impl ComponentView for ToggleView {
             });
         }
         rows.push(String::new());
-        paint.boxed(rows, width, "Toggle Demo")
+        paint.boxed(rows, width, "Toggle")
     }
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         let state = &self.state;

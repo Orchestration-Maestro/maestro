@@ -47,10 +47,10 @@ impl Cycle {
                         api: api.clone(),
                         theme,
                     },
-                    title: "Anchor Test",
-                    label: "Current: ",
+                    title: "Anchors",
+                    label: "Anchor: ",
                     name: name.into(),
-                    hints: vec!["Space/→ = next anchor", "Enter = confirm", "Esc = cancel"],
+                    hints: vec!["Space/→ next anchor", "Enter select", "Esc cancel"],
                     confirms: true,
                     done,
                 },
@@ -76,7 +76,7 @@ impl Cycle {
                     title,
                     label: "",
                     name: name.clone(),
-                    hints: vec![next, "Esc = close"],
+                    hints: vec![next, "Esc close"],
                     confirms: false,
                     done,
                 },
@@ -153,20 +153,20 @@ impl ComponentView for Layer {
         let shade = "░".repeat(super::paint::inner(width).saturating_sub(2));
         let mut rows = vec![
             Row::Text(format!(
-                " Overlay {}",
+                " Layer {}",
                 paint.fg("accent", &format!("#{}", self.number))?
             )),
-            Row::Text(format!(" Layer: {}", paint.fg(color, self.position)?)),
+            Row::Text(format!(" Depth: {}", paint.fg(color, self.position)?)),
             Row::Text(String::new()),
         ];
         rows.extend((0..5).map(|_| Row::Text(format!(" {shade} "))));
         rows.push(Row::Text(String::new()));
-        rows.push(Row::Text(paint.dim(" Press Enter/Esc to close")?));
+        rows.push(Row::Text(paint.dim(" Enter or Esc closes this layer")?));
         paint.framed(color, rows, width)
     }
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         if self.paint.closes(data)? || self.paint.is(data, &["return"])? {
-            (self.done)(format!("Overlay {}", self.number))
+            (self.done)(format!("layer {}", self.number))
         } else {
             Ok(())
         }
@@ -229,16 +229,16 @@ fn notice(
 
 /// The notice placed against the right edge of the terminal.
 pub fn edge(api: &ExtensionAPI) -> CustomFactory<()> {
-    notice(api, "Edge Test", |paint| {
+    notice(api, "Right edge", |paint| {
         Ok(vec![
             String::new(),
-            " This overlay is at the".into(),
-            " right edge of terminal.".into(),
+            " This overlay touches the".into(),
+            " terminal's right edge.".into(),
             String::new(),
-            paint.hint("Verify right border")?,
-            paint.hint("aligns with edge.")?,
+            paint.hint("Its right border sits")?,
+            paint.hint("in the last column.")?,
             String::new(),
-            paint.hint("Press Esc to close")?,
+            paint.hint("Esc closes")?,
             String::new(),
         ])
     })
@@ -248,19 +248,19 @@ pub fn edge(api: &ExtensionAPI) -> CustomFactory<()> {
 pub fn max_height(api: &ExtensionAPI) -> CustomFactory<()> {
     notice(api, "MaxHeight Test", |paint| {
         let mut rows = vec![
-            paint.fg("warning", " ⚠ Rendering 21 lines, maxHeight: 10")?,
-            paint.dim(" Lines 11-21 truncated (no bottom border)")?,
+            paint.fg("warning", " ⚠ 21 rows drawn, max_height 10")?,
+            paint.dim(" Rows 11-21 and the bottom border are cut")?,
             String::new(),
         ];
-        rows.extend((1..=14).map(|line| format!(" Line {line} of 14")));
+        rows.extend((1..=14).map(|line| format!(" Row {line} of 14")));
         rows.push(String::new());
-        rows.push(paint.dim(" Press Esc to close")?);
+        rows.push(paint.dim(" Esc closes")?);
         Ok(rows)
     })
 }
 
 /// Menu entries of the side panel.
-const ITEMS: [&str; 5] = ["Dashboard", "Messages", "Settings", "Help", "About"];
+const ITEMS: [&str; 5] = ["Sessions", "Models", "Tools", "Settings", "Help"];
 
 /// A menu whose overlay hides itself in narrow terminals.
 struct Sidepanel {
@@ -294,10 +294,7 @@ pub fn sidepanel(api: &ExtensionAPI) -> CustomFactory<()> {
 impl ComponentView for Sidepanel {
     fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
         let paint = &self.paint;
-        let mut rows = vec![
-            Row::Text(paint.fg("accent", " Responsive Sidepanel")?),
-            Row::Divider,
-        ];
+        let mut rows = vec![Row::Text(paint.fg("accent", " Side panel")?), Row::Divider];
         for (index, item) in ITEMS.iter().enumerate() {
             rows.push(Row::Text(if index == self.selected.get() {
                 format!("{}{}", paint.fg("accent", "→ ")?, paint.fg("accent", item)?)
@@ -307,10 +304,10 @@ impl ComponentView for Sidepanel {
         }
         rows.push(Row::Divider);
         for (color, text) in [
-            ("warning", " ⚠ Resize terminal < 100 cols"),
-            ("warning", "   to see panel auto-hide"),
-            ("dim", " Uses set_visible: width >= 100"),
-            ("dim", " ↑↓ navigate | Esc close"),
+            ("warning", " ⚠ Below 100 columns"),
+            ("warning", "   this panel hides"),
+            ("dim", " set_visible: width >= 100"),
+            ("dim", " ↑↓ select | Esc close"),
         ] {
             rows.push(Row::Text(paint.fg(color, text)?));
         }
