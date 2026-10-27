@@ -288,15 +288,9 @@ fn asynchronous(call: host::LocalCall) -> Running {
                 )
                 .await,
             ),
-            host::LocalCall::Oauth(call) => host::LocalResult::Oauth(
-                super::super::oauth::invoke(
-                    call.target,
-                    call.phase,
-                    &call.data,
-                    call.interaction.map(super::oauth::interaction),
-                )
-                .await,
-            ),
+            host::LocalCall::Oauth(call) => {
+                host::LocalResult::Oauth(super::oauth::invoke(call).await)
+            }
             host::LocalCall::Event(call) => {
                 host::LocalResult::Event(event(call.target, call.event, call.resources).await)
             }

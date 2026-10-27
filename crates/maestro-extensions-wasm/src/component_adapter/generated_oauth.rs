@@ -82,3 +82,14 @@ fn required(input: ExtensionFuture<'static, Option<String>>) -> ExtensionFuture<
             .ok_or_else(|| "missing OAuth text response".into())
     })
 }
+
+/// Invokes the original authored interaction with its retained native capability.
+pub(super) async fn invoke(call: host::LocalOauth) -> ExtensionResult<Option<String>> {
+    super::super::oauth::invoke(
+        call.target,
+        call.phase,
+        &call.data,
+        call.interaction.map(interaction),
+    )
+    .await
+}
