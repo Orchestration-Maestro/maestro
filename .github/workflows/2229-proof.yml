@@ -17,7 +17,7 @@ jobs:
       NEXTEST_TEST_THREADS: '3'
       RUST_TEST_THREADS: '3'
       SCCACHE_GHA_ENABLED: 'false'
-      SCCACHE_DIR: ${{ runner.temp }}/maestro-sccache
+      SCCACHE_DIR: /tmp/maestro-sccache
       SCCACHE_CACHE_SIZE: '1073741824'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -39,7 +39,7 @@ jobs:
           PY
       - uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
         with:
-          path: ${{ runner.temp }}/maestro-sccache
+          path: /tmp/maestro-sccache
           key: ${{ steps.cache.outputs.prefix }}proof-${{ github.run_id }}
           restore-keys: ${{ steps.cache.outputs.prefix }}
       - name: Install checked test tools
