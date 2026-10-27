@@ -50,3 +50,59 @@ fn pinned_checkout_reports_and_restores_all_same_head_drift() {
     );
     assert_eq!(fixture.settings.borrow().get_global_settings(), before);
 }
+
+#[test]
+fn unavailable_pin_reinstalls_without_losing_checkout_on_failure() {
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    git(&fixture.repo.seed, &["tag", "release"]);
+    git(&fixture.repo.seed, &["push", "origin", "release"]);
+    let source = "git:github.com/acme/tool@release";
+    let status = fixture
+        .run(fixture.manager.verify_pin(source, None))
+        .unwrap();
+    assert!(status.expected_commit.is_none());
+    std::fs::write(fixture.repo.target.join("content"), "retain until prepared").unwrap();
+    *fixture.fail.borrow_mut() = "clone".into();
+    assert!(
+        fixture
+            .run(fixture.manager.restore_pin(source, None))
+            .is_err()
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
+        "retain until prepared"
+    );
+    fixture
+        .run(fixture.manager.restore_pin(source, None))
+        .unwrap();
+    assert!(
+        fixture
+            .run(fixture.manager.verify_pin(source, None))
+            .unwrap()
+            .is_clean()
+    );
+    std::fs::remove_dir_all(&fixture.repo.target).unwrap();
+    assert!(
+        fixture
+            .run(fixture.manager.verify_pin(source, None))
+            .unwrap()
+            .head_commit
+            .is_none()
+    );
+    fixture
+        .run(fixture.manager.restore_pin(source, None))
+        .unwrap();
+    assert!(
+        fixture
+            .run(fixture.manager.verify_pin(source, None))
+            .unwrap()
+            .is_clean()
+    );
+    assert_eq!(
+        std::fs::read_dir(fixture.repo.target.parent().unwrap())
+            .unwrap()
+            .count(),
+        1
+    );
+}
