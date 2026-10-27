@@ -1,5 +1,6 @@
 //! Custom summaries through the shipped component, native runner and controlled provider.
 #![cfg(test)]
+use maestro_credentials::{ApiKeyCredential, AuthCredential};
 use maestro_extensions::{
     ExtensionRunner, ExtensionUIContext, Local, SessionBeforeCompactEvent, create_event_bus_for,
     create_extension_runtime, load_extension_from_factory,
@@ -141,6 +142,10 @@ impl Harness {
             .model_registry
             .register_provider("google", Arc::new(RwLock::new(config)))
             .unwrap();
+        let auth = AuthCredential::ApiKey(ApiKeyCredential {
+            key: "controlled-key".into(),
+        });
+        session.model_registry.auth_storage().set("google", auth);
         let catalog = session.model_registry.clone();
         history
             .borrow_mut()
@@ -269,9 +274,7 @@ fn prerequisites(harness: &Harness, case: &str) {
     if matches!(case, "missing_auth" | "auth_failed") {
         harness.catalog.auth_storage().set(
             "google",
-            maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                key: String::new(),
-            }),
+            AuthCredential::ApiKey(ApiKeyCredential { key: String::new() }),
         );
     }
     if case == "auth_failed" {
