@@ -31,6 +31,10 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(cwd) = args.strip_prefix("builtin-fresh ") {
+        let result = super::builtin_factories::fresh(api, context, cwd).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(result) = factories_command(api, args).await {
         return Some(result);
     }

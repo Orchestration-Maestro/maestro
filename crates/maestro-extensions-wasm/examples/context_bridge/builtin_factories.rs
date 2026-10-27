@@ -169,3 +169,136 @@ fn tool_names(tools: Vec<Tool>) -> Vec<String> {
 fn definition_names(tools: Vec<ToolDefinition>) -> Vec<String> {
     tools.into_iter().map(|tool| tool.metadata.name).collect()
 }
+
+/// Closes every construction owner before observing the complete admission transcript.
+pub(super) async fn fresh(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+    cwd: &str,
+) -> ExtensionResult<String> {
+    let effects = super::builtin_selection::Effects::default();
+    for _ in 0..2 {
+        drop(individual(api, cwd)?);
+        drop(membership(api, cwd)?);
+        drop(configured(api, cwd, &effects)?);
+        for name in ["read", "bash", "edit", "write", "grep", "find", "ls"] {
+            drop(api.create_tool(
+                name,
+                cwd.into(),
+                super::builtin_selection::options(&effects),
+            )?);
+            drop(api.create_tool_definition(
+                name,
+                cwd.into(),
+                super::builtin_selection::options(&effects),
+            )?);
+        }
+        configured_presets(api, cwd, &effects)?;
+    }
+    let closed = effects.borrow().clone();
+    let first = super::builtin_selection::Effects::default();
+    let second = super::builtin_selection::Effects::default();
+    let tools = configured(api, cwd, &first)?;
+    drop(configured(api, cwd, &second)?);
+    let failed = exercise_fresh(tools, context).await;
+    Ok(
+        json!({"construction":closed,"first":*first.borrow(),"second":*second.borrow(),
+        "failed":failed})
+        .to_string(),
+    )
+}
+
+/// Executes retained pairs only after the other complete set has been released.
+async fn exercise_fresh(
+    tools: Vec<(Tool, ToolDefinition)>,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+) -> Vec<bool> {
+    let args = [
+        json!({"path":"fresh.txt"}),
+        json!({"command":"unused"}),
+        json!({"path":"fresh.txt","edits":[{"oldText":"a","newText":"b"}]}),
+        json!({"path":"fresh.txt","content":"unused"}),
+        json!({"pattern":"unused","path":"fresh.txt"}),
+        json!({"pattern":"unused","path":"fresh.txt"}),
+        json!({"path":"fresh.txt"}),
+    ];
+    let mut failed = Vec::new();
+    for ((tool, definition), args) in tools.into_iter().zip(args) {
+        failed.push(
+            (tool.execute)("fresh-tool".into(), args.clone(), None, None)
+                .await
+                .is_err(),
+        );
+        drop(tool);
+        failed.push(
+            (definition.execute)(
+                "fresh-definition".into(),
+                args,
+                None,
+                None,
+                (**context).clone(),
+            )
+            .await
+            .is_err(),
+        );
+        drop(definition);
+    }
+    failed
+}
+
+/// Independent retained read owners outlive the other construction's release.
+fn fresh_read(
+    api: &ExtensionAPI,
+    cwd: &str,
+    effects: &super::builtin_selection::Effects,
+) -> ExtensionResult<(Tool, ToolDefinition)> {
+    Ok((
+        api.create_read_tool(cwd.into(), super::builtin_selection::options(effects).read)?,
+        api.create_read_tool_definition(
+            cwd.into(),
+            super::builtin_selection::options(effects).read,
+        )?,
+    ))
+}
+
+/// Supplies every callback to individual factories without invoking it.
+fn configured(
+    api: &ExtensionAPI,
+    cwd: &str,
+    effects: &super::builtin_selection::Effects,
+) -> ExtensionResult<Vec<(Tool, ToolDefinition)>> {
+    use super::builtin_selection::options;
+    macro_rules! pair {
+        ($tool:ident, $definition:ident, $field:ident) => {
+            (
+                api.$tool(cwd.into(), options(effects).$field)?,
+                api.$definition(cwd.into(), options(effects).$field)?,
+            )
+        };
+    }
+    Ok(vec![
+        fresh_read(api, cwd, effects)?,
+        pair!(create_bash_tool, create_bash_tool_definition, bash),
+        pair!(create_edit_tool, create_edit_tool_definition, edit),
+        pair!(create_write_tool, create_write_tool_definition, write),
+        pair!(create_grep_tool, create_grep_tool_definition, grep),
+        pair!(create_find_tool, create_find_tool_definition, find),
+        pair!(create_ls_tool, create_ls_tool_definition, ls),
+    ])
+}
+
+/// Every native preset retains the same all-family forbidden effect transcript.
+fn configured_presets(
+    api: &ExtensionAPI,
+    cwd: &str,
+    effects: &super::builtin_selection::Effects,
+) -> ExtensionResult<()> {
+    use super::builtin_selection::options;
+    drop(api.create_coding_tools(cwd.into(), options(effects))?);
+    drop(api.create_coding_tool_definitions(cwd.into(), options(effects))?);
+    drop(api.create_read_only_tools(cwd.into(), options(effects))?);
+    drop(api.create_read_only_tool_definitions(cwd.into(), options(effects))?);
+    drop(api.create_all_tools(cwd.into(), options(effects))?);
+    drop(api.create_all_tool_definitions(cwd.into(), options(effects))?);
+    Ok(())
+}

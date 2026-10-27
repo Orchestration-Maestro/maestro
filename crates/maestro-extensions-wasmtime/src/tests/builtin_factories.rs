@@ -286,3 +286,50 @@ fn builtin_factories_preserve_membership_and_order() {
         }
     });
 }
+
+/// Construction closes without effects; releasing another set leaves every owner executable.
+#[test]
+fn builtin_factory_construction_is_lazy_and_fresh() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let runner = super::builtin_author::loaded().await;
+        let reads = Rc::new(Cell::new(0));
+        let observed = reads.clone();
+        runner
+            .bind_core(
+                <Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+                maestro_extensions::ExtensionContextActions {
+                    get_model: Rc::new(move || {
+                        observed.set(observed.get() + 1);
+                        Ok(None)
+                    }),
+                    ..Default::default()
+                },
+                maestro_extensions::types::ProviderActions::default(),
+            )
+            .unwrap();
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let result = (command.handler)(
+            "builtin-fresh /absent-lazy-root/雪".into(),
+            runner.create_command_context(),
+        )
+        .await;
+        let observed: Value = serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        assert_eq!(
+            observed,
+            json!({"construction":[], "first":[
+            "read.access","read.access","bash.hook","bash.hook",
+            "edit.access","edit.access","write.mkdir","write.mkdir",
+            "grep.is_directory","grep.is_directory","find.exists","find.exists",
+            "ls.exists","ls.exists"],"second":[],"failed":vec![true;14]})
+        );
+        assert_eq!(
+            reads.get(),
+            1,
+            "only the executed read definition consults a model"
+        );
+    });
+}
