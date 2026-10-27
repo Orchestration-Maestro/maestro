@@ -58,6 +58,55 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             Err(error) => Err(with_recovery(error, stage.discard())),
         }
     }
+    /// Prepares ordinary installation before replacing any existing managed checkout.
+    pub(super) async fn reinstall_git(&self, git: &GitSource, target: &str) -> io::Result<()> {
+        std::fs::create_dir_all(dirname(target))?;
+        let mut stage = GitStaging::new(&dirname(target))?;
+        let fresh = join(&[stage.path(), "checkout"]);
+        self.install_missing_git(git, &fresh).await?;
+        self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(&fresh))
+            .await?;
+        let previous = join(&[stage.path(), "previous"]);
+        let existed = Path::new(target).exists();
+        if existed {
+            std::fs::rename(target, &previous)?;
+        }
+        if let Err(error) = std::fs::rename(&fresh, target) {
+            if existed && let Err(recovery) = std::fs::rename(&previous, target) {
+                stage.owned = false;
+                return Err(with_recovery(
+                    error,
+                    Err(io::Error::other(format!(
+                        "{recovery}; checkout retained at {previous}"
+                    ))),
+                ));
+            }
+            return Err(error);
+        }
+        stage.discard()
+    }
+    /// Resets and cleans a known commit, recovering selection after command failures.
+    pub(super) async fn restore_git_commit(&self, path: &str, expected: &str) -> io::Result<()> {
+        let previous = self.get_git_head(path).await?;
+        let result = async {
+            self.run_command(
+                "git",
+                &["reset", "--hard", expected].map(str::to_owned),
+                Some(path),
+            )
+            .await?;
+            self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(path))
+                .await
+        }
+        .await;
+        match result {
+            Ok(()) => Ok(()),
+            Err(error) => Err(with_recovery(
+                error,
+                self.restore_git_head(path, &previous).await,
+            )),
+        }
+    }
     /// Best-effort refresh, with collection left outside the progress catch.
     pub(super) async fn refresh_temporary_git(&self, git: &GitSource, source: &str) {
         if self.offline() {

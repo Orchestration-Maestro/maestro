@@ -111,22 +111,23 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
-        let (_, path) = self.pin_target(source, scope.unwrap_or(InstalledSourceScope::User))?;
-        let status = self.inspect_pin(source, scope).await?;
+        let scope = scope.unwrap_or(InstalledSourceScope::User);
+        let (git, path) = self.pin_target(source, scope)?;
+        let status = self.inspect_pin(source, Some(scope)).await?;
         if status.is_clean() {
             return Ok(());
         }
-        let expected = status
-            .expected_commit
-            .ok_or_else(|| io::Error::other("Pinned commit is unavailable"))?;
-        self.run_command(
-            "git",
-            &["reset", "--hard", &expected].map(str::to_owned),
-            Some(&path),
-        )
-        .await?;
-        self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(&path))
-            .await
+        if let Some(expected) = status.expected_commit {
+            match self.restore_git_commit(&path, &expected).await {
+                Ok(()) => return Ok(()),
+                Err(error) if self.offline() => return Err(error),
+                Err(_) => {}
+            }
+        }
+        if self.offline() {
+            return Err(io::Error::other("Pinned commit is unavailable offline"));
+        }
+        self.reinstall_git(&git, &path).await
     }
 }
 
