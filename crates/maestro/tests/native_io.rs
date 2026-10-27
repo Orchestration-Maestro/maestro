@@ -529,6 +529,54 @@ fn native_child_abort_keeps_the_original_signal() {
 }
 
 #[test]
+fn native_io_keeps_full_user_basics() {
+    use std::{io::Write, process::Stdio};
+    let root = Root::new();
+    root.models("http://127.0.0.1:1/v1");
+    let outside = root.path("outside Ω");
+    let target = root.path("linked 雪");
+    let link = root.path("project/relative link");
+    std::fs::write(&outside, b"absolute\0\xff").unwrap();
+    std::fs::write(&target, b"symlink\0\xfe").unwrap();
+    std::os::unix::fs::symlink("../linked 雪", &link).unwrap();
+    let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
+    let mut child = root
+        .command(&[
+            "--mode",
+            "rpc",
+            "--provider",
+            "startup",
+            "--model",
+            "controlled",
+            "--extension",
+            &component,
+        ])
+        .env(
+            "MAESTRO_NATIVE_IO_BASICS",
+            json!([outside, "relative link"]).to_string(),
+        )
+        .env("NATIVE_IO_SENTINEL", "inherited Ω\n")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let input = b"input\0\xff\xe2\x82\xac";
+    child.stdin.take().unwrap().write_all(input).unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        output.stdout,
+        b"inherited \xce\xa9\nabsolute\0\xffsymlink\0\xfeOUT[input\0\xff\xe2\x82\xac]"
+    );
+    assert_eq!(output.stderr, b"ERR[\xac\x82\xe2\xff\0tupni]");
+    for path in [&outside, &target, &link] {
+        assert_eq!(std::fs::read(path).unwrap(), b"changed\0\xff\xe9\x9b\xaa");
+    }
+    assert!(std::fs::symlink_metadata(link).unwrap().is_symlink());
+}
+
+#[test]
 fn native_io_adapters_keep_the_same_author_contract() {
     let root = Root::new();
     let mut rpc = loaded(&root);

@@ -3,6 +3,14 @@
 Get an owned native-operation handle from `ExtensionAPI::native_io()`. The handle can
 outlive the callback that obtained it.
 
+These resources leave the standard full-user environment, filesystem and standard
+streams intact. Components can use Rust's standard library to read inherited
+environment values, read and write absolute files outside cwd, and follow relative
+symlinks allowed by the host. Standard input, output and error remain separate byte
+streams. The default streams are shared with the native process: reading stdin or
+writing stdout can interfere with a protocol frontend. The native-operation handle
+does not change their routing.
+
 ## Wait
 
 ```rust
