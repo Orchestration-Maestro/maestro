@@ -8,7 +8,7 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. Thirteen extensions ship:
+`sdk/`, and each folder has its own index page. Shipped extensions include:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
@@ -29,7 +29,8 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
-session start. The
+session start. `extensions/summarize.rs` completes a current-branch summary and
+shows it in a custom Markdown view, closing on Enter or Escape. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

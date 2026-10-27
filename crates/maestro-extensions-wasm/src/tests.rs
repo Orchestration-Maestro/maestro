@@ -116,6 +116,7 @@ pub(crate) mod shell_host;
 mod shutdown_example;
 mod signal_callbacks;
 mod stream_events;
+mod summarize_example;
 mod system_prompt_header_example;
 pub(crate) mod theme_host;
 mod tool_callbacks;

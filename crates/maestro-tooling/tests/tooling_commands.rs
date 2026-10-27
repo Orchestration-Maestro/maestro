@@ -1248,6 +1248,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/shutdown_command.rs"),
     ),
     (
+        "examples/extensions/summarize.rs",
+        include_str!("../../../examples/extensions/summarize.rs"),
+    ),
+    (
         "examples/extensions/system_prompt_header.rs",
         include_str!("../../../examples/extensions/system_prompt_header.rs"),
     ),
