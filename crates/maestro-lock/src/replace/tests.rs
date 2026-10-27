@@ -1,9 +1,6 @@
 //! Deterministic publication phases exercised through the native transaction.
 use super::*;
-use std::{
-    cell::RefCell,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::cell::RefCell;
 
 /// Per-test-thread observations; no global subscriber or process mutation.
 #[derive(Default)]
@@ -11,6 +8,9 @@ struct Effects {
     events: Vec<&'static str>,
     fault: Option<(&'static str, io::ErrorKind)>,
     collision: bool,
+    temporary_path: Option<PathBuf>,
+    #[cfg(unix)]
+    temporary_mode: Option<u32>,
 }
 thread_local! {
     static EFFECTS: RefCell<Effects> = RefCell::default();
@@ -20,6 +20,16 @@ thread_local! {
 pub(super) fn effect(phase: &'static str) -> io::Result<()> {
     EFFECTS.with_borrow_mut(|effects| {
         effects.events.push(phase);
+        #[cfg(unix)]
+        if phase == "write_all" {
+            use std::os::unix::fs::PermissionsExt;
+            effects.temporary_mode = Some(
+                fs::metadata(effects.temporary_path.as_ref().unwrap())?
+                    .permissions()
+                    .mode()
+                    & 0o7777,
+            );
+        }
         match effects.fault {
             Some((at, kind)) if phase == at => {
                 Err(io::Error::new(kind, "controlled operation failure"))
@@ -36,6 +46,10 @@ struct Observation {
     bytes: Vec<u8>,
     entries: usize,
     temporary_bytes: Vec<Vec<u8>>,
+    #[cfg(unix)]
+    mode: u32,
+    #[cfg(unix)]
+    temporary_mode: Option<u32>,
 }
 
 /// Runs one isolated publication with an optional refused operation.
@@ -48,19 +62,20 @@ fn run_with_collision(
     fault: Option<(&'static str, io::ErrorKind)>,
     collision: bool,
 ) -> Observation {
-    static NEXT: AtomicUsize = AtomicUsize::new(0);
-    let dir = std::env::temp_dir().join(format!(
-        "maestro-publication-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
-    fs::create_dir(&dir).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path();
     let target = dir.join("snapshot");
     fs::write(&target, b"old").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+    }
     EFFECTS.set(Effects {
         events: vec![],
         fault,
         collision,
+        ..Effects::default()
     });
     let result = replace(
         &target,
@@ -69,22 +84,30 @@ fn run_with_collision(
             through_symlinks: false,
         },
     );
-    let events = EFFECTS.take().events;
+    let effects = EFFECTS.take();
     let bytes = fs::read(&target).unwrap();
-    let entries = fs::read_dir(&dir).unwrap().count();
-    let temporary_bytes = fs::read_dir(&dir)
+    let entries = fs::read_dir(dir).unwrap().count();
+    let temporary_bytes = fs::read_dir(dir)
         .unwrap()
         .map(|entry| entry.unwrap().path())
         .filter(|path| path != &target)
         .map(|path| fs::read(path).unwrap())
         .collect();
-    fs::remove_dir_all(dir).unwrap();
+    #[cfg(unix)]
+    let mode = {
+        use std::os::unix::fs::PermissionsExt;
+        fs::metadata(&target).unwrap().permissions().mode() & 0o7777
+    };
     Observation {
         result,
-        events,
+        events: effects.events,
         bytes,
         entries,
         temporary_bytes,
+        #[cfg(unix)]
+        mode,
+        #[cfg(unix)]
+        temporary_mode: effects.temporary_mode,
     }
 }
 
@@ -111,6 +134,7 @@ fn replacement_syncs_before_and_after_commit() {
 /// Observes exclusive creation, optionally simulating a competing creator.
 pub(super) fn before_create(path: &Path) -> io::Result<()> {
     effect("create")?;
+    EFFECTS.with_borrow_mut(|effects| effects.temporary_path = Some(path.to_path_buf()));
     if EFFECTS.with_borrow(|effects| effects.collision) {
         fs::write(path, b"competitor").unwrap();
     }
@@ -130,6 +154,8 @@ fn replacement_errors_before_commit_keep_old_bytes() {
         assert_eq!(observed.events.last(), Some(&phase));
         assert_eq!(observed.bytes, b"old");
         assert_eq!(observed.entries, 1);
+        #[cfg(unix)]
+        assert_eq!(observed.mode, 0o640);
     }
     let observed = run_with_collision(None, true);
     assert_eq!(
@@ -201,4 +227,13 @@ fn root_link_resolution_reaches_final_target() {
     let actual = resolve_write_target(&dir.join("link-0")).unwrap();
     assert_eq!(actual, dir.join("target"));
     fs::remove_dir_all(dir).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn replacement_preserves_existing_permissions_before_publication() {
+    let observed = run(None);
+    observed.result.unwrap();
+    assert_eq!(observed.temporary_mode.unwrap() & !0o640, 0);
+    assert_eq!(observed.mode, 0o640);
 }
