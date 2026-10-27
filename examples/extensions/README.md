@@ -26,6 +26,7 @@ inserts at its own place instead of appending at the end of each list.
 | File | Registers |
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -62,6 +63,10 @@ component. Both invoke its registered `before_agent_start` event handler:
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- file_trigger_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
@@ -92,6 +97,32 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 No provider, paid service or extension installation is required. Loading a
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the file trigger example does
+
+Create `/tmp/agent-trigger.txt` before loading the component into a native host
+with filesystem and watch support. On each session start the example watches
+that fixed path and, when UI is available, reports `Watching /tmp/agent-trigger.txt`.
+To send a prompt from another process, write it to the existing file:
+
+```sh
+printf '%s\n' 'Run the tests' > /tmp/agent-trigger.txt
+```
+
+A change reads and trims the contents. Nonempty text becomes a displayed
+`file-trigger` custom message prefixed with `External trigger: `, with
+`triggerTurn: true`; the file is cleared only after the host accepts the message.
+Empty or unreadable contents do nothing. A missing file at startup fails watch
+creation, so create it first. Each new session replaces the previous watch;
+shutdown releases it through the existing watch owner.
+
+Loading this example is opt-in. Anyone able to write the trigger file can ask the
+agent to act; use it only in a trusted local environment. A real response uses the
+host's configured model and can incur provider charges. The controlled runs need
+no credentials or paid service: the component run uses a loopback provider. Tests
+create the fixed path exclusively and refuse to touch a file already there. The
+nextest file-trigger group runs those tests one at a time; do not run separate
+file-trigger test commands concurrently.
 
 ### What the shutdown example does
 
