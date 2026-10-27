@@ -9,13 +9,7 @@ use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionCommandContext, ExtensionComponent, ExtensionFuture, ExtensionResult,
     NotificationType, SessionEntry, Subscription, TUI, keys::matches_key,
 };
-use std::{
-    cell::RefCell,
-    future::poll_fn,
-    rc::Rc,
-    task::{Poll, Waker},
-    time::Duration,
-};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 #[path = "snake/game.rs"]
 mod game;
 #[path = "snake/render.rs"]
@@ -25,25 +19,9 @@ use game::{Direction, GameState};
 const CHANNEL: &str = "maestro.example.snake";
 /// The custom session entry holding the most recently saved game or null.
 const SNAKE_SAVE_TYPE: &str = "snake-save";
-/// One owned, cancellable tick loop, polled by a host-owned listener tail.
-#[derive(Default)]
-struct Ticks {
-    /// Dropping the future also drops its pending native wait.
-    running: Option<ExtensionFuture<'static, ()>>,
-    /// Wakes the listener tail after disposal clears its future.
-    waker: Option<Waker>,
-    /// Prevents another copy's channel emission from claiming this loop twice.
-    claimed: bool,
-}
-impl Ticks {
-    /// Cancels movement and wakes the host so it can settle the tail.
-    fn stop(&mut self) {
-        self.running = None;
-        if let Some(waker) = self.waker.take() {
-            waker.wake();
-        }
-    }
-}
+#[path = "support/tail.rs"]
+mod tail;
+use tail::Tail;
 /// The state retained while the custom component is visible.
 struct SnakeComponent {
     /// The game saved when Escape closes the view.
@@ -57,17 +35,18 @@ struct SnakeComponent {
     /// Completes this custom view once.
     done: CustomDone<()>,
     /// The sole owned tick slot.
-    ticks: Rc<RefCell<Ticks>>,
+    ticks: Tail,
 }
 impl SnakeComponent {
     /// Installs one tick loop and announces its independent host tail.
     fn start(self: &Rc<Self>, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
-        self.ticks.borrow_mut().running = Some(tick_loop(self.api.clone(), Rc::downgrade(self)));
+        self.ticks
+            .start(tick_loop(self.api.clone(), Rc::downgrade(self)));
         emitter.emit(CHANNEL, serde_json::Value::Null)
     }
     /// Stops before saving or closing, leaving a failed save visible to the host.
     fn close(&self, save: Option<serde_json::Value>) -> ExtensionResult<()> {
-        self.ticks.borrow_mut().stop();
+        self.ticks.stop();
         if let Some(save) = save {
             self.api.append_entry(SNAKE_SAVE_TYPE, Some(save))?;
         }
@@ -158,28 +137,8 @@ fn build(
     paused: bool,
     input: (TUI, CustomDone<()>, CallbackEmitter<'_>),
 ) -> ExtensionResult<ExtensionComponent> {
-    let ticks = Rc::new(RefCell::new(Ticks::default()));
-    let weak = Rc::downgrade(&ticks);
-    let subscription = api.events().on(
-        CHANNEL,
-        Rc::new(move |_, _| {
-            let Some(ticks) = weak.upgrade() else {
-                return Ok(None);
-            };
-            if ticks.borrow().running.is_none() || ticks.borrow().claimed {
-                return Ok(None);
-            }
-            ticks.borrow_mut().claimed = true;
-            Ok(Some(Box::pin(poll_fn(move |cx| {
-                let mut ticks = ticks.borrow_mut();
-                ticks.waker = Some(cx.waker().clone());
-                ticks
-                    .running
-                    .as_mut()
-                    .map_or(Poll::Ready(Ok(())), |running| running.as_mut().poll(cx))
-            }))))
-        }),
-    )?;
+    let ticks = Tail::default();
+    let subscription = api.events().on(CHANNEL, ticks.listener())?;
     let view = Rc::new(SnakeComponent {
         state: RefCell::new(state),
         paused: RefCell::new(paused),
@@ -202,7 +161,7 @@ fn build(
 }
 /// Cancels pending movement before removing the listener.
 fn dispose(view: &SnakeComponent, subscription: &Subscription) -> ExtensionResult<()> {
-    view.ticks.borrow_mut().stop();
+    view.ticks.stop();
     subscription.unsubscribe()
 }
 /// Reads the last matching entry from the entire session, including a null clearing entry.

@@ -36,6 +36,7 @@ inserts at its own place instead of appending at the end of each list.
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
+| `mac_system_theme.rs` | Opt-in macOS appearance synchronization, checked every two seconds through a host-owned cancellable tail. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -50,6 +51,7 @@ inserts at its own place instead of appending at the end of each list.
 | `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
 | `snake/render.rs` | The bordered Snake board and input hints. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
+| `support/tail.rs` | Cancellable event-tail work shared by appearance synchronization, the title spinner, Snake and question extraction. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
@@ -105,6 +107,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- mac_system_theme_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -666,3 +670,21 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the system appearance example does
+
+Build with `--example mac_system_theme` using the command above. Loading it is
+opt-in and needs a native component-enabled macOS host with `osascript` on `PATH`,
+permission to query System Events, theme operations and native waits. On each
+session start it selects `dark` when the appearance command succeeds with trimmed
+output `true`, otherwise `light`. Every two seconds it queries again and requests
+a theme only when the appearance changes. A failed or terminated command falls
+back to light, including after startup. Theme selection results belong to the
+host; the example does not install themes or change system appearance.
+
+Restarting a session cancels the previous poller before selecting the initial
+theme again. Shutdown drops the pending wait and removes the listener. The
+controlled `mac_system_theme_` runs supply command results and wait completions,
+including a built component, so they need no macOS desktop, provider or credentials.
+`support/tail.rs` also owns cancellable event-tail work for the title spinner,
+Snake and question extractor; each example keeps its own interval and policy.

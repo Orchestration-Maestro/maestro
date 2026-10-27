@@ -60,6 +60,13 @@ folder's index, and every relative link or table row an index carries names a
 path that exists. The extension index keeps its table and its run commands in
 file-name order, so a new example inserts at its own place.
 
+`extensions/mac_system_theme.rs` follows macOS dark/light appearance at startup
+and every two seconds. Loading it is opt-in and requires a native macOS component
+host, `osascript`, permission to query System Events and theme UI. Its controlled
+runs use supplied command results and clocks without a desktop. Appearance
+polling, the title spinner, Snake and question extraction share the shipped
+`extensions/support/tail.rs` cancellation owner.
+
 The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the
 same path. The standalone copy reads the README, the release history, the
