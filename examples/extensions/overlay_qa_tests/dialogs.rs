@@ -246,7 +246,7 @@ pub fn edge(api: &ExtensionAPI) -> CustomFactory<()> {
 
 /// Twenty-one rendered rows, of which a maximum height of ten keeps the first ten.
 pub fn max_height(api: &ExtensionAPI) -> CustomFactory<()> {
-    notice(api, "MaxHeight Test", |paint| {
+    notice(api, "Maximum height", |paint| {
         let mut rows = vec![
             paint.fg("warning", " ⚠ 21 rows drawn, max_height 10")?,
             paint.dim(" Rows 11-21 and the bottom border are cut")?,

@@ -87,7 +87,7 @@ impl ComponentView for Passive {
             paint.dim(" Esc closes both overlays.")?,
             String::new(),
         ];
-        paint.boxed(rows, width, "Non-Capturing Demo")
+        paint.boxed(rows, width, "Typing")
     }
     fn handle_input(&self, data: &str, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         let first = data.encode_utf16().next().unwrap_or(0);
