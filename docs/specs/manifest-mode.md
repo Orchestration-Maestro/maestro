@@ -960,17 +960,23 @@ change only with the manifest.
    manifest package checks every saved session file in the background, with the
    same rules as live text, and rewrites each file that changes through the
    session owner's single conditional rewrite, which replaces the file atomically.
-   Every session append and rewrite acquires the same stable sidecar file lock
-   through `maestro-lock::acquire`, with the settings owner's acquisition timeout
-   and recovery after a lock holder exits. Ordinary writers hold the lock only
-   while opening, writing and closing the file. The conditional rewrite holds that
-   lock across the final re-read, hash comparison and atomic replacement. The
-   package reads and checks a file before requesting the rewrite; if the hash of
-   those bytes differs from the locked re-read, it reads and checks again. An
-   append attempted after the final comparison waits until replacement finishes,
-   then appends to the published file. A digest of the rules last applied is kept
-   in the configuration root's state, next to the persisted base layers, so an
-   unchanged rule set is not swept again. The original text is not kept.
+   Every session append and rewrite waits for the same stable sidecar file's
+   exclusive lock through the lock component's waiting acquisition, using
+   `std::fs::File::lock` (dependency authorization: [#2906](https://github.com/Orchestration-Maestro/maestro/issues/2906)).
+   Settings keep their bounded acquisition. The operating system releases the
+   lock when its holder exits; no separate stale-lock recovery is needed. Ordinary
+   writers hold the lock only while opening, writing and closing the file. If a
+   writer runs on an async executor thread, it waits where the existing
+   synchronous session write already runs, without a new blocking pool. The
+   conditional rewrite holds the lock across the final re-read, hash comparison
+   and atomic replacement. The package reads and checks a file before requesting
+   the rewrite; if the hash of those bytes differs from the locked re-read, it
+   reads and checks again. This hash check covers the window from the first read
+   to taking the lock. An append attempted after the final comparison waits until
+   replacement finishes, then appends to the published file. A digest of the rules
+   last applied is kept in the configuration root's state, next to the persisted
+   base layers, so an unchanged rule set is not swept again. The original text is
+   not kept.
 
 ## Core hooks
 
@@ -1151,12 +1157,14 @@ changes nothing, and enabling it only withholds text until checked.
   same rule digest, runs again when a rule changes, and reads and checks again
   when another process appends during the check. Attempt an append from another
   process after the final hash comparison but before replacement: it waits for
-  publication, then its entry survives in the rewritten file. Exercise every
-  append and rewrite caller under the same exclusion. A terminated lock holder
-  does not prevent a later writer from acquiring the lock. A plain single-process
-  append shows no visible delay: measure once with and without the coordination
-  and record the numbers in the implementation pull request. A crash between writing and replacing leaves the
-  previous file whole.
+  publication, then its entry survives in the rewritten file. Hold a writer's
+  lock through a slow synchronization beyond the bounded acquisition's entire
+  retry window: a concurrent append waits, finishes afterwards and leaves its
+  entry intact. Exercise every append and rewrite caller under the same exclusion.
+  A terminated lock holder does not prevent a later writer from acquiring the
+  lock. A plain single-process append shows no visible delay: measure once with
+  and without the coordination and record the numbers in the implementation pull
+  request. A crash between writing and replacing leaves the previous file whole.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
