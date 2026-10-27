@@ -334,7 +334,8 @@ pub struct SettingsList;
         );
         let error = check_workspace(workspace.root.path()).unwrap_err();
         let line = innocent.lines().count() + 2;
-        assert!(error.contains(&format!("src/lib.rs:{line}:")), "{error}");
+        let location = format!("{}:{line}:", support::native_path_text("src/lib.rs"));
+        assert!(error.contains(&location), "{error}");
         source(&workspace, "maestro-tui", "src/lib.rs", innocent);
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }

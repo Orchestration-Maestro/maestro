@@ -59,20 +59,26 @@ impl ExpectedPaths {
 impl ExpectedResource {
     /// Compare authored spellings after binding the recorded absolute root.
     fn check(&self, actual: &ResolvedResource, root: &str) {
-        assert_eq!(actual.path, self.path.replace("$ROOT", root));
+        let recorded = |path: &str| recorded(path, root);
+        assert_eq!(recorded(&actual.path), self.path);
         assert_eq!(actual.enabled, self.enabled);
-        assert_eq!(
-            actual.metadata.source,
-            self.metadata.source.replace("$ROOT", root)
-        );
+        assert_eq!(recorded(&actual.metadata.source), self.metadata.source);
         assert_eq!(actual.metadata.scope, self.metadata.scope);
         assert_eq!(actual.metadata.origin, self.metadata.origin);
         assert_eq!(
-            actual.metadata.base_dir,
-            self.metadata
-                .base_dir
-                .as_ref()
-                .map(|s| s.replace("$ROOT", root))
+            actual.metadata.base_dir.as_deref().map(recorded),
+            self.metadata.base_dir
         );
+    }
+}
+
+/// `path` as the recordings spell it: the root as `$ROOT` and, on Windows, which never
+/// stores `\\` in a name, every native separator as `/`.
+fn recorded(path: &str, root: &str) -> String {
+    let path = path.replace(root, "$ROOT");
+    if cfg!(windows) {
+        path.replace('\\', "/")
+    } else {
+        path
     }
 }
