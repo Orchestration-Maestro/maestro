@@ -3,12 +3,12 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::edit_support;
-#[cfg(unix)]
 use crate::ls_support::posix_spelling;
 use crate::read_support::{
     Fixture, Scratch, call, content_json, input, isolated, only_text, text_json,
 };
 use crate::runtime::run;
+#[cfg(unix)]
 use crate::{find_support, grep_support, ls_support};
 use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolInput, WriteToolOptions,
