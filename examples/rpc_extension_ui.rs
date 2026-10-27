@@ -5,9 +5,10 @@ use std::io::{self, BufRead};
 
 /// Reads one complete JSON event per physical line without splitting Unicode text.
 fn read_events(reader: impl BufRead, mut receive: impl FnMut(Value)) -> io::Result<()> {
-    let _ = &mut receive;
     for line in reader.lines() {
-        let _line = line?;
+        if let Ok(event) = serde_json::from_str(&line?) {
+            receive(event);
+        }
     }
     Ok(())
 }
