@@ -50,7 +50,9 @@ let bytes = std::fs::read(guest_path(&api, &path)?)?;
 The conversion uses `/` separators, adds a leading `/` and an uppercase letter
 to a drive path, uppercases a share's server and share names, and drops the
 verbatim `\\?\` prefix. Windows ignores letter case in these names, so every
-spelling of a drive or share reaches the same root. Relative paths keep
+spelling of a drive or share reaches the same root. Names uppercase one
+character at a time, as Windows compares them: `ß` keeps its case, so shares
+named `ß` and `SS` keep separate roots. Relative paths keep
 their form. Resolve a drive-relative path such as `C:notes.txt` or `\notes.txt`
 first; its meaning depends on per-drive state the component does not have. Unix
 paths are returned unchanged. The 0.3 interfaces list the same roots by these

@@ -65,7 +65,8 @@ pub fn guest_path(path: &str) -> String {
 /// `/SERVER/SHARE`: the form the component's libc reports for its cwd.
 /// Windows ignores letter case in drive, server and share names, while the
 /// component matches roots byte for byte, so each spelling of one root gets
-/// the same name. The verbatim `\\?\` prefix names the same file and is
+/// the same name. Names uppercase as Windows compares them, one character at
+/// a time. The verbatim `\\?\` prefix names the same file and is
 /// dropped.
 fn win32_guest_path(path: &str) -> String {
     let path = match path.strip_prefix(r"\\?\") {
@@ -83,9 +84,23 @@ fn win32_guest_path(path: &str) -> String {
                 .match_indices('/')
                 .nth(1)
                 .map_or(path.len(), |(at, _)| at + 2);
-            format!("{}{}", path[1..root].to_uppercase(), &path[root..])
+            let name: String = path[1..root].chars().map(upcase).collect();
+            format!("{name}{}", &path[root..])
         }
         _ => path,
+    }
+}
+
+/// Uppercases one character the way Windows compares names.
+///
+/// Windows maps each UTF-16 unit to at most one unit, so a character whose
+/// uppercase form is longer, such as `ß`, or that needs two units keeps its
+/// case. Expanding it would give distinct shares like `ß` and `SS` one root.
+fn upcase(character: char) -> char {
+    let mut upper = character.to_uppercase();
+    match (upper.next(), upper.next()) {
+        (Some(single), None) if character.len_utf16() == 1 => single,
+        _ => character,
     }
 }
 
