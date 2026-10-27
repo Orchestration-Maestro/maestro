@@ -68,12 +68,18 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `model_status.md` | Model status |
+| `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
 | `notify.rs` | Sends an opt-in desktop notification when the agent is ready for input. |
 | `permission_gate.md` | Permission gate |
 | `permission_gate.rs` | An opt-in confirmation hook for illustrative dangerous bash patterns. |
 | `pirate.md` | Pirate |
 | `pirate.rs` | A command that toggles a pirate response style in the assembled system prompt. |
+| `preset.md` | Preset |
+| `preset.rs` | Named model, thinking, tool and prompt configurations selected for one session. |
+| `preset/config.rs` | Layered preset files read through the host's authored-path helpers. |
+| `preset/selector.rs` | Themed preset selection through the host's retained list and container widgets. |
 | `prompt_customizer.md` | Prompt customizer |
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
