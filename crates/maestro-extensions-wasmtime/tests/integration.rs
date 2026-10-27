@@ -32,6 +32,7 @@ mod retained_components;
 mod retained_contexts;
 mod startup;
 mod synchronous_reentry;
+mod truncated_tool_example;
 mod wasi_access;
 mod wasi_network;
 mod wasi_output;
