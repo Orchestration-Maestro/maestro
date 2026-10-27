@@ -22,6 +22,11 @@ path = "../../examples/extensions/commands.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "confirm_destructive"
+path = "../../examples/extensions/confirm_destructive.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "context_bridge"
 crate-type = ["cdylib"]
 

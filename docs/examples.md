@@ -9,6 +9,9 @@ Run them directly with Cargo in a disposable Unix terminal.
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
 `sdk/`, and each folder has its own index page. Shipped extensions include:
+`extensions/confirm_destructive.rs` asks before replacing or forking a session;
+its controlled runs supply history and dialog answers without changing a session.
+Loading is opt-in and interactive confirmation needs the host's UI.
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
