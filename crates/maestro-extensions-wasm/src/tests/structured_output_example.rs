@@ -61,6 +61,22 @@ async fn rendering(driver: &mut impl Driver) -> Result<(), String> {
             ),
             (json!({"content":[],"details":null}), ""),
             (
+                json!({"content":[{"type":"text","text":"fallback"}],"details":false}),
+                "fallback",
+            ),
+            (
+                json!({"content":[{"type":"text","text":"fallback"}],"details":0}),
+                "fallback",
+            ),
+            (
+                json!({"content":[{"type":"text","text":"fallback"}],"details":-0.0}),
+                "fallback",
+            ),
+            (
+                json!({"content":[{"type":"text","text":"fallback"}],"details":""}),
+                "fallback",
+            ),
+            (
                 json!({"content":[{"type":"image","data":"AA==","mimeType":"image/png"},{"type":"text","text":"not first"}]}),
                 "",
             ),

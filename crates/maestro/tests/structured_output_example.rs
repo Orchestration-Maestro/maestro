@@ -54,7 +54,7 @@ fn structured_output_ends_the_run_without_another_completion() {
         let messages: Vec<Value> = state.messages().read().unwrap().iter().map(|message| serde_json::to_value(message).unwrap()).collect();
         assert_eq!(messages.len(), 3);
         assert_eq!(messages[2]["role"], "toolResult");
-        assert_eq!(messages[2]["content"], json!([{"type":"text","text":"Saved structured output:  Ship 雪 "}]));
+        assert_eq!(messages[2]["content"], json!([{"type":"text","text":"Structured answer ready:  Ship 雪 "}]));
         assert_eq!(messages[2]["details"], details());
         assert_eq!(messages[2]["isError"], false);
         drop(state);
