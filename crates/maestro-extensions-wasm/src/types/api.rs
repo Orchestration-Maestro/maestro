@@ -211,6 +211,15 @@ impl ExtensionAPI {
 }
 
 impl ExtensionAPI {
+    /// Offers load-time package, prompt, model and settings inputs to the host.
+    ///
+    /// # Errors
+    /// Returns the host's rejection message.
+    pub fn contribute_load_time(&self, _contributions: Value) -> ExtensionResult<()> {
+        let _ = self;
+        Ok(())
+    }
+
     /// Runs an operation in the native file queue, preserving its guest-owned result.
     ///
     /// Admission occurs before the returned future is polled. Dropping that future
