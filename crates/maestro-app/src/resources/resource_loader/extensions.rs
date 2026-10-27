@@ -121,6 +121,7 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         paths: Vec<String>,
         mut result: LoadExtensionsResult<E>,
     ) -> io::Result<()> {
+        let base_loaded = !result.extensions.is_empty();
         let mut seen: std::collections::HashSet<_> = result
             .extensions
             .iter()
@@ -142,14 +143,7 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         .await?;
         result.extensions.extend(ordinary.extensions);
         result.errors.extend(ordinary.errors);
-        let order: HashMap<_, _> = paths
-            .iter()
-            .enumerate()
-            .map(|(index, path)| (path.as_str(), index))
-            .collect();
-        result
-            .extensions
-            .sort_by_key(|extension| order.get(read(extension).path.as_str()).copied());
+        restore_extension_order(&paths, &mut result);
         self.load_inline_factories(&mut result).await;
         result.errors.extend(conflicts(&result));
         for path in &self.options.additional_extension_paths {
@@ -161,6 +155,9 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
             }
         }
         let result = apply(self.options.extensions_override.as_ref(), result);
+        if base_loaded {
+            restore_flag_defaults(&result);
+        }
         self.apply_extension_provenance(&result)?;
         self.state.borrow_mut().extensions = Rc::new(result);
         Ok(())
@@ -207,5 +204,40 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
             extension.source_info = shared;
         }
         Ok(())
+    }
+}
+
+/// Restores the caller's ordinary list order after early base factory execution.
+fn restore_extension_order<E: ExtensionExecution>(
+    paths: &[String],
+    result: &mut LoadExtensionsResult<E>,
+) {
+    let order: HashMap<_, _> = paths
+        .iter()
+        .enumerate()
+        .map(|(index, path)| (path.as_str(), index))
+        .collect();
+    result
+        .extensions
+        .sort_by_key(|extension| order.get(read(extension).path.as_str()).copied());
+}
+
+/// Defaults are seeded during factory execution, so reselect them from registration order.
+fn restore_flag_defaults<E: ExtensionExecution>(result: &LoadExtensionsResult<E>) {
+    let mut defaults = indexmap::IndexMap::new();
+    for extension in &result.extensions {
+        for (name, flag) in &read(extension).flags {
+            defaults
+                .entry(name.clone())
+                .or_insert_with(|| read(flag).default.clone());
+        }
+    }
+    let mut values = write(&result.runtime.flag_values);
+    for (name, value) in defaults {
+        if let Some(value) = value {
+            values.insert(name, value);
+        } else {
+            values.shift_remove(&name);
+        }
     }
 }
