@@ -178,7 +178,7 @@ fn assert_malformed_reload(
     base: Value,
     path: &str,
     expected: &maestro_daemon::settings::model::Config,
-) {
+) -> maestro_daemon::settings::model::ConfigReloadReport {
     use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
     let text = user.to_string();
     let storage = Arc::new(InMemorySettingsStorage::new());
@@ -196,10 +196,31 @@ fn assert_malformed_reload(
         UpdateChannelConfig::Preview => UpdateChannelConfig::Stable,
     };
     current.remote.manage_ssh_config = !expected.remote.manage_ssh_config;
+    current.update.manifest_check = !expected.update.manifest_check;
+    current.experimental.pane_history.0 = !expected.experimental.pane_history.0;
+    current.ui.tab_bar_right = if expected.ui.tab_bar_right.is_empty() {
+        vec![TabBarRightEntryConfig::Hostname {}]
+    } else {
+        Vec::new()
+    };
     let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
     assert!(errors.is_empty());
     assert_eq!(current, *expected);
     assert_eq!(report.status, ConfigReloadStatus::Partial);
+    storage
+        .with_lock(SettingsScope::Global, &mut |saved| {
+            assert_eq!(saved, Some(text.as_str()));
+            Ok(None)
+        })
+        .unwrap();
+    report
+}
+
+/// Require one provenance-bearing diagnostic for a restored locked path.
+fn assert_lock_diagnostic(
+    report: &maestro_daemon::settings::model::ConfigReloadReport,
+    path: &str,
+) {
     let locks: Vec<_> = report
         .diagnostics
         .iter()
@@ -208,12 +229,6 @@ fn assert_malformed_reload(
     assert_eq!(locks.len(), 1);
     assert!(locks[0].contains(path));
     assert!(locks[0].contains("git:example/config#v1"));
-    storage
-        .with_lock(SettingsScope::Global, &mut |saved| {
-            assert_eq!(saved, Some(text.as_str()));
-            Ok(None)
-        })
-        .unwrap();
 }
 
 #[test]
@@ -236,12 +251,13 @@ fn daemon_locks_restore_absent_and_present_values_under_malformed_ancestors() {
             let mut expected = Config::default();
             expected.update.channel = channel;
             expected.terminal.default_shell = "retained".into();
-            assert_malformed_reload(
+            let report = assert_malformed_reload(
                 &json!({"update":malformed,"daemon":{"paneShell":17}}),
                 base.clone(),
                 "update.channel",
                 &expected,
             );
+            assert_lock_diagnostic(&report, "update.channel");
         }
     }
     for (base, manage) in [
@@ -255,13 +271,40 @@ fn daemon_locks_restore_absent_and_present_values_under_malformed_ancestors() {
         expected.remote.manage_ssh_config = manage;
         expected.ui.mouse_capture.0 = false;
         expected.terminal.default_shell = "retained".into();
-        assert_malformed_reload(
+        let report = assert_malformed_reload(
             &json!({"multiplexer":{"remote":"bad","mouseCapture":false},"daemon":{"paneShell":17}}),
             base,
             "multiplexer.remote.manageSshConfig",
             &expected,
         );
+        assert_lock_diagnostic(&report, "multiplexer.remote.manageSshConfig");
     }
+}
+
+/// Valid user values still override unlocked members of a constrained area.
+fn assert_valid_locked_area_unchanged(
+    manager: &mut SettingsManager,
+    storage: &InMemorySettingsStorage,
+) {
+    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    let user = json!({"update":{"channel":"stable","versionCheck":false},"daemon":{"paneShell":"user-shell"}});
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| Ok(Some(user.to_string())))
+        .unwrap();
+    let settings = serde_json::from_value(user.clone()).unwrap();
+    let mut current = project_global_settings(&settings, Path::new(".")).config;
+    let before = current.clone();
+    let (report, errors) = block_on(reload_config(manager, &mut current, Path::new(".")));
+    assert!(errors.is_empty());
+    assert_eq!(report.status, ConfigReloadStatus::Applied);
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(current, before);
+    assert!(!current.update.version_check);
+    assert_eq!(current.terminal.default_shell, "user-shell");
+    assert_eq!(
+        manager.get_global_settings().0,
+        user.as_object().unwrap().clone()
+    );
 }
 
 #[test]
@@ -293,7 +336,7 @@ fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current
             )),
         )
         .unwrap();
-    let mut manager = SettingsManager::from_storage(storage);
+    let mut manager = SettingsManager::from_storage(storage.clone());
     manager.drain_errors();
     let mut current = Config::default();
     current.update.channel = UpdateChannelConfig::Preview;
@@ -323,4 +366,54 @@ fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current
         manager.get_global_settings().0,
         user.as_object().unwrap().clone()
     );
+    assert_valid_locked_area_unchanged(&mut manager, &storage);
+}
+
+#[test]
+fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
+    use maestro_daemon::settings::model::Config;
+    let mut ui = Config::default();
+    ui.terminal.default_shell = "retained".into();
+    let mut ui_present = ui.clone();
+    ui_present.ui.tab_bar_right = vec![TabBarRightEntryConfig::Hostname {}];
+    let mut catalog = ui.clone();
+    catalog.update.manifest_check = false;
+    let mut history = ui.clone();
+    history.experimental.pane_history.0 = true;
+    for (user, base, path, expected) in [
+        (
+            json!({"multiplexer":{"sidebarWidth":"bad"},"daemon":{"paneShell":17}}),
+            json!({}),
+            "multiplexer.tabBarRight",
+            ui,
+        ),
+        (
+            json!({"multiplexer":{"sidebarWidth":"bad"},"daemon":{"paneShell":17}}),
+            json!({"multiplexer":{"tabBarRight":[{"type":"hostname"}]}}),
+            "multiplexer.tabBarRight",
+            ui_present,
+        ),
+        (
+            json!({"update":{"channel":17},"daemon":{"paneShell":17}}),
+            json!({"daemon":{"detectionCatalogCheck":false}}),
+            "daemon.detectionCatalogCheck",
+            catalog,
+        ),
+        (
+            json!({"multiplexer":{"allowNested":17},"daemon":{"paneShell":17}}),
+            json!({"daemon":{"paneHistory":true}}),
+            "daemon.paneHistory",
+            history,
+        ),
+    ] {
+        let report = assert_malformed_reload(&user, base, path, &expected);
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|message| message.contains("locked base")
+                    && message.contains("until")
+                    && message.contains("fixed"))
+        );
+    }
 }
