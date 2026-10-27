@@ -34,6 +34,11 @@ that send ordinary, steering, follow-up and two-block user messages, and
 session start. `extensions/qna.rs` extracts questions from the latest complete
 assistant reply into the editor through the configured model, with a cancellable
 loader; real extraction is opt-in and requires interactive UI and credentials.
+`extensions/question.rs` registers a single-question tool with described choices,
+an inline custom-answer editor and call/result rendering. Loading is opt-in and
+requires an interactive component host; its controlled runs use scripted terminal
+input without a model request. Its rendering and view modules are indexed beside
+it in `examples/extensions/README.md`.
 `extensions/git_checkpoint.rs` creates opt-in Git stash checkpoints for session
 entries and asks before applying one when forking; its controlled run uses
 disposable repositories and scripted UI choices. Loading it requires Git and a

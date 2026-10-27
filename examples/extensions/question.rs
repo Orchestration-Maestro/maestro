@@ -28,6 +28,9 @@ struct Params {
     /// Original choices, excluding custom input.
     options: Vec<OptionWithDesc>,
 }
+/// Compact tool-call and result presentation.
+#[path = "question/render.rs"]
+mod render;
 /// Retained choices and inline editing through the supplied terminal host.
 #[path = "question/view.rs"]
 mod view;
@@ -107,7 +110,8 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                     execute(api, params, ctx).await
                 })
             }),
-            render_call: None, render_result: None,
+            render_call: Some(Rc::new(|args, theme, _, _| render::call(args.as_ref(), &theme))),
+            render_result: Some(Rc::new(|result, _, theme, _, _| render::result(&result.result, &theme))),
         })
     })
 }

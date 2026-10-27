@@ -42,6 +42,9 @@ inserts at its own place instead of appending at the end of each list.
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
+| `question.rs` | A `question` tool with described choices, an inline custom-answer editor and compact call/result rows. |
+| `question/render.rs` | Call and result rendering for `question.rs`. |
+| `question/view.rs` | Retained option navigation and host-backed inline editing for `question.rs`. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
@@ -117,6 +120,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- qna_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- question_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -666,3 +671,20 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the single-question tool does
+
+Build with `--example question` using the command above. Loading is opt-in and
+requires a component host with interactive custom views and retained editor
+widgets. The `question` tool takes a question and options with labels and optional
+descriptions. Arrow keys navigate; Enter selects a choice or opens “Type
+something.” for a custom answer. Empty custom submissions return to the choices.
+Escape in the editor clears its text and returns to the choices; Escape there
+cancels. Without UI, the tool returns an error message and a null answer.
+
+Result details retain the question, original option labels, answer and, when
+answered, whether it was custom. Call rows show numbered choices, including
+custom input; result rows distinguish selections, written answers and cancellation.
+The `question_` controlled runs exercise both the native callbacks and built
+component with scripted terminal input. They need no provider, credentials,
+external process or filesystem writes beyond component-build artifacts.
