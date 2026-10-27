@@ -391,13 +391,12 @@ fn component_windows_roots_reach_drive_spellings() {
         "../sibling Ω space/file Ω name".into(),
     ];
     // An account the host refuses symbolic links has no relative-link spelling to offer.
-    if std::os::windows::fs::symlink_dir(
+    match std::os::windows::fs::symlink_dir(
         r"..\sibling Ω space",
         scratch.path().join(r"cwd\relative-link"),
-    )
-    .is_ok()
-    {
-        paths.push(r"relative-link\file Ω name".into());
+    ) {
+        Ok(()) => paths.push(r"relative-link\file Ω name".into()),
+        Err(error) => eprintln!("skipped the relative-link spelling: {error}"),
     }
     run(root_paths(&paths, &target));
     std::env::set_current_dir(original).unwrap();
@@ -415,6 +414,7 @@ fn component_windows_roots_reach_a_second_volume() {
             maestro_test_directory::Scratch::new_in(Path::new(&format!(r"{letter}:\"))).ok()
         })
     else {
+        eprintln!("skipped: no writable volume besides {drive}:");
         return;
     };
     let target = scratch.path().join("file Ω name");
@@ -440,7 +440,8 @@ fn component_windows_roots_reach_a_share_working_directory() {
     let local = plain(scratch.path());
     let share = format!(r"\\localhost\{}${}", &local[..1], &local[2..]);
     // The administrative share is a host premise; without it no share is reachable.
-    if std::env::set_current_dir(format!(r"{share}\cwd")).is_err() {
+    if let Err(error) = std::env::set_current_dir(format!(r"{share}\cwd")) {
+        eprintln!("skipped: {share} is unavailable: {error}");
         return;
     }
     let target = scratch.path().join(r"sibling Ω space\file Ω name");
