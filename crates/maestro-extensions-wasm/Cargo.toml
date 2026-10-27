@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_footer"
+path = "../../examples/extensions/custom_footer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dynamic_tools"
 path = "../../examples/extensions/dynamic_tools.rs"
 crate-type = ["cdylib"]
@@ -38,6 +43,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "file_trigger"
 path = "../../examples/extensions/file_trigger.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "git_checkpoint"
+path = "../../examples/extensions/git_checkpoint.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -56,6 +66,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "hook_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "input_transform"
+path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -96,6 +111,11 @@ path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "qna"
+path = "../../examples/extensions/qna.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
@@ -124,6 +144,11 @@ path = "../../examples/extensions/shutdown_command.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "snake"
+path = "../../examples/extensions/snake.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
 crate-type = ["cdylib"]
@@ -139,6 +164,11 @@ path = "../../examples/extensions/titlebar_spinner.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "todo"
+path = "../../examples/extensions/todo.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "tool_override"
 path = "../../examples/extensions/tool_override.rs"
 crate-type = ["cdylib"]
@@ -151,6 +181,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "trigger_compact"
 path = "../../examples/extensions/trigger_compact.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "truncated_tool"
+path = "../../examples/extensions/truncated_tool.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -185,6 +220,7 @@ serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 [dev-dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 regex.workspace = true
+ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-models = { path = "../maestro-models" }

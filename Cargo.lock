@@ -4071,6 +4071,7 @@ dependencies = [
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "indexmap 2.14.2",
  "maestro-agent",
  "maestro-catalog",
@@ -4104,6 +4105,7 @@ dependencies = [
  "maestro-request",
  "maestro-tool",
  "regex",
+ "ryu-js",
  "serde",
  "serde_json",
  "tokio",
