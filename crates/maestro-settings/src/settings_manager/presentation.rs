@@ -4,9 +4,9 @@ use maestro_resources::paths::{expand_tilde_text, native_home_directory};
 use serde_json::Value;
 use std::io;
 
-use super::SettingsManager;
 use super::conversion::number;
 use super::vocabulary::{DoubleEscapeAction, TreeFilterMode};
+use super::{Change, SettingsManager, SettingsScope};
 
 /// Environment variable that enables clearing empty rows when the preference is
 /// neither a boolean nor `null`.
@@ -189,6 +189,12 @@ impl SettingsManager {
     /// Sets the editor's horizontal padding, rounded down into 0 to 3; `NaN` is
     /// kept as the typed result and stored as `null`.
     pub fn set_editor_padding_x(&mut self, value: f64) {
+        if self.refuse_changes(
+            SettingsScope::Global,
+            &[Change::field("editorPaddingX", None)],
+        ) {
+            return;
+        }
         let padding = clamp_floor(value, 0.0, 3.0);
         self.accepted_nan.editor_padding_x = padding.is_nan();
         self.set_global("editorPaddingX", number(padding));
@@ -211,6 +217,12 @@ impl SettingsManager {
     /// Sets the visible autocomplete rows, rounded down into 3 to 20; `NaN` is kept
     /// as the typed result and stored as `null`.
     pub fn set_autocomplete_max_visible(&mut self, value: f64) {
+        if self.refuse_changes(
+            SettingsScope::Global,
+            &[Change::field("autocompleteMaxVisible", None)],
+        ) {
+            return;
+        }
         let rows = clamp_floor(value, 3.0, 20.0);
         self.accepted_nan.autocomplete_max_visible = rows.is_nan();
         self.set_global("autocompleteMaxVisible", number(rows));
