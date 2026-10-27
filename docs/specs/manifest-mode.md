@@ -890,9 +890,12 @@ change only with the manifest.
    and automatic compaction, split-turn summaries and branch summaries. Because
    guards run last (item 6), the guard's summary replaces a summary an earlier
    extension supplied.
-   If generation or checking fails, the guard returns `cancel: true` with the
-   failure as the reason instead of throwing. No unchecked fallback summary is
-   generated, saved or shown.
+   If generation or checking fails, the guard reports the guard name and cause
+   through the existing extension error path, using the same warning channel as
+   other extension failures, and returns `cancel: true` instead of throwing. The
+   cancellation result gains no reason field; manual compaction keeps its existing
+   `Compaction cancelled` text. No unchecked fallback summary is generated, saved
+   or shown.
 
 4. **Actions.** Each rule names its own action. The manifest's files set the usual
    choices: `confirm` for destructive commands, `block` for protected paths,
@@ -955,28 +958,33 @@ change only with the manifest.
    mutable text or details with listeners. `/settings` shows the setting as locked,
    like any locked value.
    With the setting `false`, the default, streaming is unchanged.
-8. **Saved sessions.** At the first session start under rules that target
-   `tool-output`, `agent-output` or `prompt`, and whenever those rules change, the
-   manifest package checks every saved session file in the background, with the
-   same rules as live text, and rewrites each file that changes through the
-   session owner's single conditional rewrite, which replaces the file atomically.
+8. **Saved sessions.** At each session start under rules that target
+   `tool-output`, `agent-output` or `prompt`, the manifest package checks saved
+   session files in the background with the same rules as live text. It checks
+   every file at the first guarded start and whenever those rules change;
+   otherwise it checks only new files or files whose bytes changed since their
+   last check. It rewrites each file that changes through the session owner's
+   single conditional rewrite, which replaces the file atomically.
    Every session append and rewrite waits for the same stable sidecar file's
    exclusive lock through the lock component's waiting acquisition, using
    `std::fs::File::lock` (dependency authorization: [#2906](https://github.com/Orchestration-Maestro/maestro/issues/2906)).
    Settings keep their bounded acquisition. The operating system releases the
-   lock when its holder exits; no separate stale-lock recovery is needed. Ordinary
-   writers hold the lock only while opening, writing and closing the file. If a
+   lock when its holder exits; no separate stale-lock recovery is needed. Each
+   holder keeps the lock for one write only. Ordinary writers hold it only while
+   opening, writing and closing the file. If a
    writer runs on an async executor thread, it waits where the existing
    synchronous session write already runs, without a new blocking pool. The
-   conditional rewrite holds the lock across the final re-read, hash comparison
-   and atomic replacement. The package reads and checks a file before requesting
+   conditional rewrite holds the lock across one file's final re-read, hash
+   comparison and atomic replacement. The package reads and checks a file before requesting
    the rewrite; if the hash of those bytes differs from the locked re-read, it
    reads and checks again. This hash check covers the window from the first read
    to taking the lock. An append attempted after the final comparison waits until
-   replacement finishes, then appends to the published file. A digest of the rules
-   last applied is kept in the configuration root's state, next to the persisted
-   base layers, so an unchanged rule set is not swept again. The original text is
-   not kept.
+   replacement finishes, then appends to the published file. The sweep record in
+   the configuration root's state, next to the persisted base layers, keeps the
+   digest of the rules last applied and, for each session file, the hash of its
+   bytes after it was last checked. An unchanged rule digest skips only files
+   whose bytes still match their recorded hash; a changed digest checks all files.
+   The original text is not kept.
 
 ## Core hooks
 
@@ -1145,22 +1153,29 @@ changes nothing, and enabling it only withholds text until checked.
   earlier extension supplied. `/compact SIN 046-454-286` and branch-summary
   instructions containing the same text are checked with prompt rules before
   reaching the provider. A guard generation failure (including a provider timeout)
-  or check failure returns `cancel: true` with its reason, without throwing; no
-  unchecked fallback is generated, saved or emitted. Test both summary routes.
+  or check failure reports the guard name and cause through the existing extension
+  error warning channel and returns `cancel: true`, without throwing or adding a
+  reason field; no unchecked fallback is generated, saved or emitted. Test warning
+  delivery on both summary routes without a UI, and verify that manual compaction
+  retains its existing `Compaction cancelled` text.
   The summary path itself leaves existing entries unchanged; item 8 cleans them.
 - Thinking, shell output and saved sessions: a thinking block with personal data
   is held until its message ends, saved redacted and replayed as unsigned text to
   the faux provider. A user shell command's output is held while it runs, saved
   redacted and withheld on a `block` match; an earlier extension that handles the
   command itself is not checked. A sweep rewrites every saved session that holds
-  matching text, leaves clean files byte-identical, does not run again for the
-  same rule digest, runs again when a rule changes, and reads and checks again
-  when another process appends during the check. Attempt an append from another
+  matching text and leaves clean files byte-identical. With the same rule digest,
+  it skips files whose bytes match their recorded hashes but checks new or changed
+  files; a rule change checks all files again. Run with guards, save a session
+  without a manifest, then select the same rules again: that file is cleaned.
+  The sweep reads and checks again when another process appends during the check.
+  Attempt an append from another
   process after the final hash comparison but before replacement: it waits for
   publication, then its entry survives in the rewritten file. Hold a writer's
   lock through a slow synchronization beyond the bounded acquisition's entire
-  retry window: a concurrent append waits, finishes afterwards and leaves its
-  entry intact. Exercise every append and rewrite caller under the same exclusion.
+  retry window: an append waits for at most one concurrent write, finishes
+  afterwards and leaves its entry intact. Exercise every append and rewrite caller
+  under the same exclusion.
   A terminated lock holder does not prevent a later writer from acquiring the
   lock. A plain single-process append shows no visible delay: measure once with
   and without the coordination and record the numbers in the implementation pull
