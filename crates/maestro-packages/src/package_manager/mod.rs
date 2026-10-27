@@ -301,17 +301,17 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
     }
     fn verify_pin<'a>(
         &'a self,
-        _source: &'a str,
-        _scope: Option<InstalledSourceScope>,
+        source: &'a str,
+        scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, GitPinStatus> {
-        Box::pin(async { Ok(GitPinStatus::default()) })
+        Box::pin(self.inspect_pin(source, scope))
     }
     fn restore_pin<'a>(
         &'a self,
-        _source: &'a str,
-        _scope: Option<InstalledSourceScope>,
+        source: &'a str,
+        scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
-        Box::pin(async { Ok(()) })
+        Box::pin(self.repair_pin(source, scope))
     }
     fn install_and_persist<'a>(
         &'a self,
