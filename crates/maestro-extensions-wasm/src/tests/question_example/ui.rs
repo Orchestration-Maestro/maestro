@@ -25,6 +25,9 @@ impl Host {
             return Ok(Self::Component(Box::new(Harness::example("question")?)));
         }
         let (host, exports) = crate::tests::block_on(example_support::start::<Question>())?;
+        crate::component_adapter::install(std::rc::Rc::new(crate::component_adapter::Builder(
+            host.clone(),
+        )));
         Ok(Self::Native(host, exports))
     }
     /// Changes observations between tool invocations, never during callbacks.
