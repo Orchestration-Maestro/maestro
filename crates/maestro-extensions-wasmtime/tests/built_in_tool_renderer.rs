@@ -248,3 +248,168 @@ fn built_in_tool_renderer_displays_progress_content_and_failures() {
         }
     });
 }
+
+/// Paints the registered call renderer in a real native row.
+fn call(binding: &ToolRendererBinding, args: &Value) -> Vec<String> {
+    let rows = ToolRendererState::default();
+    binding.render_call.as_ref().unwrap()(Some(args), &theme(), &context(args, &rows))
+        .unwrap()
+        .try_render(200)
+        .unwrap()
+        .into_iter()
+        .map(|line| line.trim_end().to_owned())
+        .collect()
+}
+
+/// Checks authored call labels, numeric ranges, content counts and command clipping.
+fn compact_calls(runner: &ExtensionRunner<Local>) {
+    for (name, args, operand, suffix) in [
+        (
+            "read",
+            json!({"path":"src.rs","offset":2,"limit":3}),
+            "src.rs",
+            " (offset=2, limit=3)",
+        ),
+        (
+            "read",
+            json!({"path":"src.rs","offset":0,"limit":0}),
+            "src.rs",
+            "",
+        ),
+        ("edit", json!({"path":"src.rs"}), "src.rs", ""),
+        (
+            "write",
+            json!({"path":"src.rs","content":"a\nb\n"}),
+            "src.rs",
+            " (3 lines)",
+        ),
+    ] {
+        let title = fg(
+            &ThemeColor::ToolTitle,
+            &maestro_theme::Theme::bold(&format!("{name} "), true),
+        );
+        assert_eq!(
+            call(&binding(runner, name), &args),
+            [format!(
+                "{title}{}{}",
+                fg(&ThemeColor::Accent, operand),
+                if suffix.is_empty() {
+                    String::new()
+                } else {
+                    fg(&ThemeColor::Dim, suffix)
+                }
+            )]
+        );
+    }
+    let title = fg(
+        &ThemeColor::ToolTitle,
+        &maestro_theme::Theme::bold("$ ", true),
+    );
+    for (command, expected) in [
+        ("x".repeat(80), "x".repeat(80)),
+        ("x".repeat(81), format!("{}...", "x".repeat(77))),
+        ("😀".repeat(41), format!("{}...", "😀".repeat(38))),
+    ] {
+        assert_eq!(
+            call(
+                &binding(runner, "bash"),
+                &json!({"command":command,"timeout":5})
+            ),
+            [format!(
+                "{title}{}{}",
+                fg(&ThemeColor::Accent, &expected),
+                fg(&ThemeColor::Dim, " (timeout: 5s)")
+            )]
+        );
+    }
+}
+
+/// Checks the read and shell preview limits and truncation warnings independently.
+fn content_previews(runner: &ExtensionRunner<Local>) {
+    let read = json!({"content":[{"type":"text","text":format!("{}tail", "x\n".repeat(15))}],
+        "details":{"truncation":{"truncated":true,"totalLines":99}}});
+    let heading = format!(
+        "{}{}",
+        fg(&ThemeColor::Success, "16 lines"),
+        fg(&ThemeColor::Warning, " (truncated from 99)")
+    );
+    assert_eq!(
+        paint(&binding(runner, "read"), &read, [false; 2]),
+        std::slice::from_ref(&heading)
+    );
+    let mut expected = vec![heading];
+    expected.extend(vec![fg(&ThemeColor::Dim, "x"); 15]);
+    expected.push(fg(&ThemeColor::Muted, "... 1 more lines"));
+    assert_eq!(
+        paint(&binding(runner, "read"), &read, [true, false]),
+        expected
+    );
+    let bash = json!({"content":[{"type":"text","text":format!("{}last", "x\n".repeat(20))}],
+        "details":{"truncation":{"truncated":true}}});
+    let heading = format!(
+        "{}{}{}",
+        fg(&ThemeColor::Success, "done"),
+        fg(&ThemeColor::Dim, " (21 lines)"),
+        fg(&ThemeColor::Warning, " [truncated]")
+    );
+    assert_eq!(
+        paint(&binding(runner, "bash"), &bash, [false; 2]),
+        std::slice::from_ref(&heading)
+    );
+    let mut expected = vec![heading];
+    expected.extend(vec![fg(&ThemeColor::Dim, "x"); 20]);
+    expected.push(fg(&ThemeColor::Muted, "... more output"));
+    assert_eq!(
+        paint(&binding(runner, "bash"), &bash, [true, false]),
+        expected
+    );
+    assert_eq!(
+        paint(&binding(runner, "bash"), &text("\u{feff}\n"), [false; 2]),
+        [format!(
+            "{}{}",
+            fg(&ThemeColor::Success, "done"),
+            fg(&ThemeColor::Dim, " (0 lines)")
+        )]
+    );
+}
+
+/// Checks diff headers, additions, removals and the thirty-line expanded limit.
+fn diff_preview(runner: &ExtensionRunner<Local>) {
+    let result = json!({"content":[],"details":{"diff":format!("+++ file\n--- file\n+add\n-remove\n same\n{}", "+x\n".repeat(26))}});
+    let heading = format!(
+        "{}{}{}",
+        fg(&ThemeColor::Success, "+27"),
+        fg(&ThemeColor::Dim, " / "),
+        fg(&ThemeColor::Error, "-1")
+    );
+    let edit = binding(runner, "edit");
+    assert!(matches!(
+        edit.render_shell,
+        Some(maestro_extensions::ToolRenderShell::SelfRendered)
+    ));
+    assert_eq!(
+        paint(&edit, &result, [false; 2]),
+        std::slice::from_ref(&heading)
+    );
+    let mut expected = vec![
+        heading,
+        fg(&ThemeColor::Dim, "+++ file"),
+        fg(&ThemeColor::Dim, "--- file"),
+        fg(&ThemeColor::Success, "+add"),
+        fg(&ThemeColor::Error, "-remove"),
+        fg(&ThemeColor::Dim, " same"),
+    ];
+    expected.extend(vec![fg(&ThemeColor::Success, "+x"); 25]);
+    expected.push(fg(&ThemeColor::Muted, "... 2 more diff lines"));
+    assert_eq!(paint(&edit, &result, [true, false]), expected);
+}
+
+#[test]
+fn built_in_tool_renderer_compacts_calls_and_expanded_results() {
+    super::wasi_support::run(async {
+        let runner = loaded().await;
+        compact_calls(&runner);
+        content_previews(&runner);
+        diff_preview(&runner);
+    });
+}
