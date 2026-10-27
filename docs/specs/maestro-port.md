@@ -545,7 +545,7 @@ retry and polling policy remain in their feature owners. Existing theme watch
 paths may re-export the same moved types, not retain a second implementation.
 
 `maestro-lock` acquires a caller-opened file-write lock with the existing bounded
-synchronous contention retry. It also owns byte-oriented atomic replacement: an
+synchronous contention retry. It also owns byte-oriented atomic replacement: a
 short exclusive temporary sibling is written, synced, closed and renamed before the
 parent directory is synced. Replacement preserves existing native permissions;
 a supplied creation mode applies only to missing files. Unix creation applies
