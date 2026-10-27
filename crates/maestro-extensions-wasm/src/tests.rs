@@ -113,6 +113,7 @@ mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
 mod signal_callbacks;
+mod space_invaders_example;
 mod stream_events;
 mod system_prompt_header_example;
 pub(crate) mod theme_host;

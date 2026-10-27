@@ -1021,8 +1021,8 @@ impl Imports for Controlled {
             body: "body".into(),
         })
     }
-    fn native_helper(&self, operation: &str, _data: &str) -> ExtensionResult<String> {
-        self.observe().actions.record_for(operation)
+    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
+        self.observe().actions.helper(operation, data)
     }
     type LockUpdate = Reader;
     fn lock_update(

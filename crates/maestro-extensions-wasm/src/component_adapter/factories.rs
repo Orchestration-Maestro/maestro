@@ -153,3 +153,9 @@ pub(super) fn transfer<
 pub(crate) fn invoke_branch_change(handler: u32) -> ExtensionResult<()> {
     callbacks::find::<BranchChangeListener>(handler)?()
 }
+
+/// Lends the original terminal facade to controlled component tests.
+#[cfg(test)]
+pub(crate) fn test_tui<I: WidgetImports>(imports: &I, tui: I::Tui) -> TUI {
+    Terminal::lent(imports, tui)
+}

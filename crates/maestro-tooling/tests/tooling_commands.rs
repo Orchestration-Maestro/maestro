@@ -1244,6 +1244,18 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/shutdown_command.rs"),
     ),
     (
+        "examples/extensions/space_invaders.rs",
+        include_str!("../../../examples/extensions/space_invaders.rs"),
+    ),
+    (
+        "examples/extensions/space_invaders/game.rs",
+        include_str!("../../../examples/extensions/space_invaders/game.rs"),
+    ),
+    (
+        "examples/extensions/space_invaders/render.rs",
+        include_str!("../../../examples/extensions/space_invaders/render.rs"),
+    ),
+    (
         "examples/extensions/system_prompt_header.rs",
         include_str!("../../../examples/extensions/system_prompt_header.rs"),
     ),
