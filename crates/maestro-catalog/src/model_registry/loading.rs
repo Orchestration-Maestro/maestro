@@ -10,11 +10,38 @@ use std::sync::LazyLock;
 /// Source-derived file schema, retained without conversion.
 static SCHEMA: LazyLock<Result<Value, serde_json::Error>> =
     LazyLock::new(|| serde_json::from_str(include_str!("../../assets/models.schema.json")));
-/// Read and check a complete document; an absent path has no configuration.
+/// Read checked documents in order, retaining undefined fields and replacing custom models.
 pub(super) fn load(
-    path: &str,
+    paths: &[String],
     operations: &dyn ModelFileOperations,
 ) -> Result<Option<Vec<(String, ProviderConfig)>>, String> {
+    let mut combined = None;
+    let mut sources = Vec::new();
+    for path in paths {
+        if let Some(value) = read_document(path, operations)? {
+            sources.push(path.as_str());
+            match &mut combined {
+                Some(current) => merge_document(current, value, 0),
+                None => combined = Some(value),
+            }
+        }
+    }
+    let Some(value) = combined else {
+        return Ok(None);
+    };
+    let sources = sources.join(", ");
+    let providers = composition::providers(value)
+        .map_err(|error| envelope("Failed to load models.json", &error.to_string(), &sources))?;
+    validate(&providers)
+        .map_err(|error| envelope("Failed to load models.json", &error, &sources))?;
+    Ok(Some(providers))
+}
+
+/// Checks each original document before any merging; missing files contribute nothing.
+fn read_document(
+    path: &str,
+    operations: &dyn ModelFileOperations,
+) -> Result<Option<Value>, String> {
     if path.is_empty() || !operations.exists(path) {
         return Ok(None);
     }
@@ -35,11 +62,48 @@ pub(super) fn load(
             path,
         ));
     }
-    let providers = composition::providers(value)
-        .map_err(|e| envelope("Failed to load models.json", &e.to_string(), path))?;
-    validate(&providers).map_err(|e| envelope("Failed to load models.json", &e, path))?;
-    Ok(Some(providers))
+    Ok(Some(value))
 }
+
+/// Merges fields recursively; only `providers.<provider>.models` at depth two uses identities.
+fn merge_document(current: &mut Value, incoming: Value, depth: usize) {
+    match (current, incoming) {
+        (Value::Object(current), Value::Object(incoming)) => {
+            for (key, value) in incoming {
+                match current.get_mut(&key) {
+                    Some(existing) if depth == 2 && key == "models" => {
+                        merge_models(existing, value);
+                    }
+                    Some(existing) => merge_document(existing, value, depth + 1),
+                    None => {
+                        current.insert(key, value);
+                    }
+                }
+            }
+        }
+        (current, incoming) => *current = incoming,
+    }
+}
+
+/// Later custom definitions replace the whole model without moving its first list slot.
+fn merge_models(current: &mut Value, incoming: Value) {
+    match (current, incoming) {
+        (Value::Array(current), Value::Array(incoming)) => {
+            for model in incoming {
+                if let Some(existing) = current
+                    .iter_mut()
+                    .find(|existing| existing.get("id") == model.get("id"))
+                {
+                    *existing = model;
+                } else {
+                    current.push(model);
+                }
+            }
+        }
+        (current, incoming) => *current = incoming,
+    }
+}
+
 /// Remove line comments first, then recognize trailing commas on the resulting text.
 fn strip_comments(text: &str) -> String {
     let mut without_comments = String::with_capacity(text.len());
