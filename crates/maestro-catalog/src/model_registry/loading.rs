@@ -90,11 +90,12 @@ fn merge_models(current: &mut Value, incoming: Value) {
     match (current, incoming) {
         (Value::Array(current), Value::Array(incoming)) => {
             for model in incoming {
-                if let Some(existing) = current
-                    .iter_mut()
-                    .find(|existing| existing.get("id") == model.get("id"))
+                if let Some(position) = current
+                    .iter()
+                    .position(|existing| existing.get("id") == model.get("id"))
                 {
-                    *existing = model;
+                    current.retain(|existing| existing.get("id") != model.get("id"));
+                    current.insert(position, model);
                 } else {
                     current.push(model);
                 }
