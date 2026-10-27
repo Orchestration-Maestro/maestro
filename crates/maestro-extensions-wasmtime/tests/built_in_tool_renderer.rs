@@ -185,6 +185,37 @@ fn text(value: &str) -> Value {
     json!({"content":[{"type":"text","text":value}]})
 }
 
+/// Checks shell status without mistaking successful output for an exit failure.
+fn shell_results(runner: &ExtensionRunner<Local>) {
+    let bash = binding(runner, "bash");
+    let mut shell_error = text("one\n \ntwo\nexit code: 7");
+    shell_error["isError"] = json!(true);
+    assert_eq!(
+        paint(&bash, &shell_error, [false; 2]),
+        [format!(
+            "{}{}",
+            fg(&ThemeColor::Error, "exit 7"),
+            fg(&ThemeColor::Dim, " (3 lines)")
+        )]
+    );
+    assert_eq!(
+        paint(&bash, &text("exit code: 7"), [false; 2]),
+        [format!(
+            "{}{}",
+            fg(&ThemeColor::Success, "done"),
+            fg(&ThemeColor::Dim, " (1 lines)")
+        )]
+    );
+    assert_eq!(
+        paint(&bash, &json!({"content":[]}), [false; 2]),
+        [format!(
+            "{}{}",
+            fg(&ThemeColor::Success, "done"),
+            fg(&ThemeColor::Dim, " (0 lines)")
+        )]
+    );
+}
+
 #[test]
 fn built_in_tool_renderer_displays_progress_content_and_failures() {
     super::wasi_support::run(async {
@@ -218,23 +249,7 @@ fn built_in_tool_renderer_displays_progress_content_and_failures() {
             ),
             [fg(&ThemeColor::Success, "Image loaded")]
         );
-        let bash = binding(&runner, "bash");
-        assert_eq!(
-            paint(&bash, &text("one\n \ntwo\nexit code: 7"), [false; 2]),
-            [format!(
-                "{}{}",
-                fg(&ThemeColor::Error, "exit 7"),
-                fg(&ThemeColor::Dim, " (3 lines)")
-            )]
-        );
-        assert_eq!(
-            paint(&bash, &json!({"content":[]}), [false; 2]),
-            [format!(
-                "{}{}",
-                fg(&ThemeColor::Success, "done"),
-                fg(&ThemeColor::Dim, " (0 lines)")
-            )]
-        );
+        shell_results(&runner);
         for (name, success) in [("edit", "Applied"), ("write", "Written")] {
             let binding = binding(&runner, name);
             assert_eq!(
