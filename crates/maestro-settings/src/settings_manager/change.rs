@@ -102,6 +102,14 @@ impl Change {
         self.edit.0.iter().map(String::as_str).collect()
     }
 
+    /// Copies this edit for the publisher without exposing persistence internals.
+    pub(super) fn requested(&self) -> super::SettingsChange {
+        super::SettingsChange {
+            path: self.edit.0.clone(),
+            value: self.value.clone(),
+        }
+    }
+
     /// Publishes the value immediately and returns its captured persistence identity.
     pub(super) fn apply(self, document: &mut Map<String, Value>) -> Edit {
         self.edit.apply(document, self.value);

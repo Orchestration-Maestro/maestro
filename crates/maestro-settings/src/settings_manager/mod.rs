@@ -80,6 +80,8 @@ impl NotANumber {
 pub struct SettingsManager {
     /// Where scopes are loaded from and saved to.
     storage: SettingsStorageHandle,
+    /// The sole session publisher; decisions run outside persistence locks.
+    decider: Option<SettingsDeciderHandle>,
     /// Read-only published layers, in global/project order.
     base_layers: [Option<BaseSettingsLayer>; 2],
     /// The accepted global scope.
@@ -105,6 +107,7 @@ impl SettingsManager {
         let queue = Queue::new(storage.clone());
         let mut manager = Self {
             storage,
+            decider: None,
             base_layers: [None, None],
             global: Scope::default(),
             project: Scope::default(),
@@ -180,7 +183,12 @@ impl SettingsManager {
 
     /// Layers runtime preferences over the effective settings without saving them.
     pub fn apply_overrides(&mut self, overrides: Settings) {
-        if self.refuse_changes(SettingsScope::Global, &Change::overrides(&overrides.0)) {
+        if self.refuse_changes(SettingsScope::Global, &Change::overrides(&overrides.0))
+            || self.refuse_request(
+                SettingsScope::Global,
+                &DecisionRequest::RuntimeOverrides(&overrides),
+            )
+        {
             return;
         }
         self.effective_nan = self.effective_nan.unless_defined_by(&overrides.0);
@@ -250,9 +258,14 @@ impl SettingsManager {
     /// Publishes edits to a scope immediately and queues one save of them unless
     /// the scope's load failed.
     fn edit(&mut self, scope: SettingsScope, changes: Vec<Change>) {
-        if self.refuse_changes(scope, &changes) {
+        if self.refuse_edit(scope, &changes) {
             return;
         }
+        self.edit_accepted(scope, changes);
+    }
+
+    /// Publishes an already checked request, preserving the ordinary save order.
+    fn edit_accepted(&mut self, scope: SettingsScope, changes: Vec<Change>) {
         let document = &mut self.scope_mut(scope).settings;
         let edits: Vec<Edit> = changes
             .into_iter()

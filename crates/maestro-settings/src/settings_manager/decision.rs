@@ -53,7 +53,51 @@ impl SettingsManager {
     ///
     /// # Errors
     /// Returns an error if a publisher is already registered, retaining the first one.
-    pub fn register_decider(&mut self, _decider: SettingsDeciderHandle) -> Result<(), String> {
+    pub fn register_decider(&mut self, decider: SettingsDeciderHandle) -> Result<(), String> {
+        self.decider = Some(decider);
         Ok(())
+    }
+
+    /// Asks the publisher without changing any settings or acquiring storage locks.
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal message.
+    pub fn decide(&self, request: &DecisionRequest<'_>) -> Result<(), String> {
+        self.decider
+            .as_ref()
+            .map_or(Ok(()), |decider| decider.decide(request))
+    }
+
+    /// Reports a refusal through the ordinary settings error channel.
+    pub fn report_refusal(&self, scope: SettingsScope, message: String) {
+        self.queue.record_error(scope, message.into());
+    }
+
+    /// Checks all edits before publishing any of them.
+    pub(super) fn refuse_edit(&self, scope: SettingsScope, changes: &[super::Change]) -> bool {
+        if self.refuse_changes(scope, changes) {
+            return true;
+        }
+        let changes: Vec<_> = changes.iter().map(super::Change::requested).collect();
+        self.refuse_request(
+            scope,
+            &DecisionRequest::SettingsEdit {
+                scope,
+                changes: &changes,
+            },
+        )
+    }
+
+    /// Reports an explicit request's refusal without touching pending edits.
+    pub(super) fn refuse_request(
+        &self,
+        scope: SettingsScope,
+        request: &DecisionRequest<'_>,
+    ) -> bool {
+        if let Err(message) = self.decide(request) {
+            self.report_refusal(scope, message);
+            return true;
+        }
+        false
     }
 }
