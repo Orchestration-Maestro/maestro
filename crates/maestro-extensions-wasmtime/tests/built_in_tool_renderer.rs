@@ -175,6 +175,9 @@ fn paint(binding: &ToolRendererBinding, value: &Value, flags: [bool; 2]) -> Vec<
         .unwrap()
         .try_render(200)
         .unwrap()
+        .into_iter()
+        .map(|line| line.trim_end().to_owned())
+        .collect()
 }
 
 /// One literal text result, with no details or hidden inferred state.
