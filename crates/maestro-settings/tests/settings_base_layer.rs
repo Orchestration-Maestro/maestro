@@ -187,6 +187,68 @@ fn persisted_layers_are_isolated_by_configuration_and_project_root() {
     );
 }
 
+/// A failed clear can be retried after storage recovers, without retaining stale locks.
+#[test]
+fn failed_base_layer_removal_can_be_retried() {
+    use crate::support::{Scratch, location};
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        let root = Scratch::new().unwrap();
+        let agent = location(root.path(), "agent");
+        let work = location(root.path(), "work");
+        let mut manager = SettingsManager::create(&work, &agent, ".maestro");
+        let base = layer(json!({"defaultModel":"base"}), &["defaultModel"]);
+        manager.publish_base_layer(scope, Some(base.clone()));
+        block_on(manager.flush());
+        assert!(manager.drain_errors().is_empty());
+        let record = root.path().join(match scope {
+            SettingsScope::Global => "agent/base-settings.json",
+            SettingsScope::Project => "agent/state/base-settings.json",
+        });
+        let saved = record.with_extension("saved");
+        std::fs::rename(&record, &saved).unwrap();
+        std::fs::create_dir(&record).unwrap();
+        manager.publish_base_layer(scope, None);
+        block_on(manager.flush());
+        assert_eq!(manager.get_base_layer(), None);
+        assert!(!manager.is_key_path_locked("defaultModel", &[]));
+        let errors = manager.drain_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].scope, scope);
+        std::fs::remove_dir(&record).unwrap();
+        std::fs::rename(&saved, &record).unwrap();
+        let stale = SettingsManager::create(&work, &agent, ".maestro");
+        assert_eq!(stale.get_base_layer(), Some(&base));
+        assert!(stale.is_key_path_locked("defaultModel", &[]));
+        manager.publish_base_layer(scope, None);
+        block_on(manager.flush());
+        assert!(manager.drain_errors().is_empty());
+        let fresh = SettingsManager::create(&work, &agent, ".maestro");
+        assert_eq!(fresh.get_base_layer(), None);
+        assert!(!fresh.is_key_path_locked("defaultModel", &[]));
+    }
+}
+
+/// Clearing an absent record creates neither directories nor record or lock files.
+#[test]
+fn clearing_missing_base_layers_leaves_storage_untouched() {
+    use crate::support::{Scratch, file_storage, location};
+    use maestro_settings::SettingsStorage;
+    let root = Scratch::new().unwrap();
+    let storage = file_storage(root.path());
+    let mut manager = SettingsManager::create(
+        &location(root.path(), "work"),
+        &location(root.path(), "agent"),
+        ".maestro",
+    );
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        manager.publish_base_layer(scope, None);
+        block_on(manager.flush());
+        assert!(manager.drain_errors().is_empty());
+        storage.write_base_layer(scope, None).unwrap();
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
+    }
+}
+
 /// Reload retains the layer and failed scopes, while successful loads discard overrides.
 #[test]
 fn reload_keeps_base_locks_and_independent_failed_scope_rules() {
