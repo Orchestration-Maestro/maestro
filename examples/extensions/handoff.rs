@@ -75,17 +75,22 @@ fn listener(current: Current) -> EventListener {
             return Ok(None);
         }
         Ok(Some(Box::pin(poll_fn(move |cx| {
-            let mut current = current.borrow_mut();
-            current.waker = Some(cx.waker().clone());
-            let result = current
-                .running
+            let mut running = {
+                let mut current = current.borrow_mut();
+                current.waker = Some(cx.waker().clone());
+                current.running.take()
+            };
+            // Completion can synchronously dispose the loader and cancel this job.
+            let result = running
                 .as_mut()
                 .map_or(std::task::Poll::Ready(Ok(())), |running| {
                     running.as_mut().poll(cx)
                 });
+            let mut current = current.borrow_mut();
             if result.is_ready() {
-                current.running = None;
                 current.waker = None;
+            } else if current.waker.is_some() {
+                current.running = running;
             }
             result
         }))))

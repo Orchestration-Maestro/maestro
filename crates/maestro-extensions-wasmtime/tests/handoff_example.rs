@@ -5,8 +5,9 @@ use maestro_extensions::{
     ExtensionRunner, ExtensionUIContext, Local, ReplacedSessionContext, create_event_bus_for,
     create_extension_runtime, load_extension_from_factory,
     types::{
-        CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionUIContextPort,
-        ExtensionUIFuture, NotificationType, ProviderActions,
+        ComponentDisposer, CustomClose, CustomComponentFactory, CustomFactoryOutcome,
+        CustomUIOptions, ExtensionUIContextPort, ExtensionUIFuture, NotificationType,
+        ProviderActions,
     },
 };
 use maestro_models::*;
@@ -93,6 +94,8 @@ struct Ui {
     edited: RefCell<Option<String>>,
     /// Escape only after the provider has admitted the pending request.
     wait: RefCell<Option<tokio::sync::oneshot::Receiver<()>>>,
+    /// Lets a controlled response wait until closing will dispose the installed loader.
+    installed: RefCell<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 impl ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {
@@ -128,14 +131,8 @@ impl ExtensionUIContextPort for Ui {
         _: Option<CustomUIOptions>,
     ) -> ExtensionUIFuture<()> {
         let (send, receive) = tokio::sync::oneshot::channel();
-        let send = RefCell::new(Some(send));
-        let close = Rc::new(move || {
-            let Some(send) = send.borrow_mut().take() else {
-                return Ok(false);
-            };
-            let _ = send.send(());
-            Ok(true)
-        });
+        let disposer = Rc::new(RefCell::new(None::<ComponentDisposer>));
+        let close = loader_close(send, disposer.clone());
         let (tui, _) = super::canonical_ui::screen();
         let keys = maestro_extensions::widgets::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(
@@ -147,8 +144,9 @@ impl ExtensionUIContextPort for Ui {
         let built = factory.call((tui, self.theme(), keys, close));
         let escape = self.escape.get();
         let wait = self.wait.borrow_mut().take();
+        let installed = self.installed.borrow_mut().take();
         Box::pin(async move {
-            let built = match built? {
+            let mut built = match built? {
                 CustomFactoryOutcome::Ready(built) => built,
                 CustomFactoryOutcome::Async(built) => built.await?,
             };
@@ -160,6 +158,10 @@ impl ExtensionUIContextPort for Ui {
                     .join("\n")
                     .contains("Generating handoff prompt...")
             );
+            *disposer.borrow_mut() = built.dispose.take();
+            if let Some(installed) = installed {
+                installed.send(()).unwrap();
+            }
             if let Some(wait) = wait {
                 wait.await.unwrap();
             }
@@ -174,10 +176,32 @@ impl ExtensionUIContextPort for Ui {
             receive
                 .await
                 .map_err(|error| EventError::from(error.to_string()))?;
-            built.dispose.unwrap().call(())?;
+            let dispose = disposer.borrow_mut().take();
+            if let Some(dispose) = dispose {
+                dispose.call(())?;
+            }
             Ok(())
         })
     }
+}
+
+/// Settles once and disposes an installed loader synchronously, as the interactive host does.
+fn loader_close(
+    send: tokio::sync::oneshot::Sender<()>,
+    disposer: Rc<RefCell<Option<ComponentDisposer>>>,
+) -> CustomClose {
+    let send = RefCell::new(Some(send));
+    Rc::new(move || {
+        let Some(send) = send.borrow_mut().take() else {
+            return Ok(false);
+        };
+        let _ = send.send(());
+        let dispose = disposer.borrow_mut().take();
+        if let Some(dispose) = dispose {
+            dispose.call(())?;
+        }
+        Ok(true)
+    })
 }
 
 /// The model supplier varies independently of the configured registry.
@@ -484,6 +508,41 @@ fn handoff_reviews_draft_and_uses_replacement_context() {
             );
         });
     }
+}
+
+#[test]
+fn handoff_delayed_completion_disposes_loader_synchronously() {
+    run("handoff-delayed", async |provider, driver| {
+        driver.message("history");
+        let (start, admitted) = tokio::sync::oneshot::channel();
+        *provider.start.lock().unwrap() = Some(start);
+        let (installed, shown) = tokio::sync::oneshot::channel();
+        *driver.ui.installed.borrow_mut() = Some(installed);
+        let complete = async {
+            admitted.await.unwrap();
+            shown.await.unwrap();
+            let (signal, stream) = provider.pending.lock().unwrap().take().unwrap();
+            assert!(!signal.is_aborted());
+            stream.end(Some(Arc::new(RwLock::new(faux_assistant_message(
+                "Delayed draft",
+                FauxAssistantMessageOptions::default(),
+            )))));
+        };
+        tokio::join!(driver.command("goal"), complete);
+        assert_eq!(
+            *driver.ui.calls.borrow(),
+            [json!(["editor", "Edit handoff prompt", "Delayed draft"])]
+        );
+        assert_eq!(
+            *driver.replacement.calls.borrow(),
+            [
+                json!(["set", " Edited\n雪 "]),
+                json!(["notify", "Handoff ready. Submit when ready.", "info"])
+            ]
+        );
+        assert_eq!(driver.parents.borrow().len(), 1);
+        assert_eq!(provider.requests.lock().unwrap().len(), 1);
+    });
 }
 
 #[test]
