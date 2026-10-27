@@ -7,9 +7,9 @@ use maestro_extensions::{
     create_event_bus_for, load_extension_from_factory, load_extensions_with_runtime,
 };
 use maestro_models::{Execution, Local, Threaded};
-use maestro_resources::is_local_path;
+use maestro_resources::{canonicalize_path, is_local_path};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     io,
     path::Path,
     rc::Rc,
@@ -125,28 +125,10 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         if base_attempted {
             write(&result.runtime.flag_values).clear();
         }
-        let mut seen: std::collections::HashSet<_> = result
-            .extensions
-            .iter()
-            .map(|extension| read(extension).path.clone())
-            .collect();
-        seen.extend(result.errors.iter().map(|error| error.path.clone()));
-        let remaining = paths
-            .iter()
-            .filter(|path| !seen.contains(*path))
-            .cloned()
-            .collect();
-        let ordinary = load_extensions_with_runtime(
-            remaining,
-            &self.cwd,
-            &self.event_bus,
-            &self.options.module_loader,
-            result.runtime.clone(),
-        )
-        .await?;
-        result.extensions.extend(ordinary.extensions);
-        result.errors.extend(ordinary.errors);
-        restore_extension_order(&paths, &mut result);
+        result = self.load_ordered_paths(paths, result).await?;
+        if base_attempted {
+            restore_flag_defaults(&result);
+        }
         self.load_inline_factories(&mut result).await;
         result.errors.extend(conflicts(&result));
         for path in &self.options.additional_extension_paths {
@@ -164,6 +146,61 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         self.apply_extension_provenance(&result)?;
         self.state.borrow_mut().extensions = Rc::new(result);
         Ok(())
+    }
+
+    /// Reuses early factories at their canonical ordinary slots, exposing each prefix's defaults.
+    async fn load_ordered_paths(
+        &self,
+        paths: Vec<String>,
+        mut result: LoadExtensionsResult<E>,
+    ) -> io::Result<LoadExtensionsResult<E>> {
+        if result.extensions.is_empty() && result.errors.is_empty() {
+            return load_extensions_with_runtime(
+                paths,
+                &self.cwd,
+                &self.event_bus,
+                &self.options.module_loader,
+                result.runtime,
+            )
+            .await;
+        }
+        let base = std::mem::take(&mut result.extensions);
+        let mut by_path: HashMap<_, _> = base
+            .iter()
+            .map(|extension| (canonicalize_path(&read(extension).path), extension.clone()))
+            .collect();
+        let failed: HashSet<_> = result
+            .errors
+            .iter()
+            .map(|error| canonicalize_path(&error.path))
+            .collect();
+        for path in paths {
+            let canonical = canonicalize_path(&path);
+            if let Some(extension) = by_path.remove(&canonical) {
+                result.extensions.push(extension);
+                restore_flag_defaults(&result);
+                continue;
+            }
+            if failed.contains(&canonical) {
+                continue;
+            }
+            let loaded = load_extensions_with_runtime(
+                vec![path],
+                &self.cwd,
+                &self.event_bus,
+                &self.options.module_loader,
+                result.runtime.clone(),
+            )
+            .await?;
+            result.extensions.extend(loaded.extensions);
+            result.errors.extend(loaded.errors);
+        }
+        result.extensions.extend(
+            base.into_iter().filter(|extension| {
+                by_path.contains_key(&canonicalize_path(&read(extension).path))
+            }),
+        );
+        Ok(result)
     }
 
     /// Runs inline factories after every path factory on the same runtime.
@@ -208,24 +245,6 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         }
         Ok(())
     }
-}
-
-/// Restores the caller's ordinary list order after early base factory execution.
-fn restore_extension_order<E: ExtensionExecution>(
-    paths: &[String],
-    result: &mut LoadExtensionsResult<E>,
-) {
-    let order: HashMap<_, _> = paths
-        .iter()
-        .enumerate()
-        .map(|(index, path)| (path.as_str(), index))
-        .collect();
-    result.extensions.sort_by_key(|extension| {
-        order
-            .get(read(extension).path.as_str())
-            .copied()
-            .unwrap_or(paths.len())
-    });
 }
 
 /// Defaults are seeded during factory execution, so reselect them from registration order.
