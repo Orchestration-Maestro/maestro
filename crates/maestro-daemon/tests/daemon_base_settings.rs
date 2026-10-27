@@ -171,3 +171,156 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     assert_eq!(current.terminal.default_shell, "");
     assert!(!current.experimental.allow_nested.0);
 }
+
+/// Reload malformed user input while retaining an unrelated invalid area's old value.
+fn assert_malformed_reload(
+    user: &Value,
+    base: Value,
+    path: &str,
+    expected: &maestro_daemon::settings::model::Config,
+) {
+    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    let text = user.to_string();
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| Ok(Some(text.clone())))
+        .unwrap();
+    storage
+        .write_base_layer(SettingsScope::Global, Some(&layer(base, &[path])))
+        .unwrap();
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    manager.drain_errors();
+    let mut current = expected.clone();
+    current.update.channel = match expected.update.channel {
+        UpdateChannelConfig::Stable => UpdateChannelConfig::Preview,
+        UpdateChannelConfig::Preview => UpdateChannelConfig::Stable,
+    };
+    current.remote.manage_ssh_config = !expected.remote.manage_ssh_config;
+    let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
+    assert!(errors.is_empty());
+    assert_eq!(current, *expected);
+    assert_eq!(report.status, ConfigReloadStatus::Partial);
+    let locks: Vec<_> = report
+        .diagnostics
+        .iter()
+        .filter(|message| message.starts_with("Stored value ignored:"))
+        .collect();
+    assert_eq!(locks.len(), 1);
+    assert!(locks[0].contains(path));
+    assert!(locks[0].contains("git:example/config#v1"));
+    storage
+        .with_lock(SettingsScope::Global, &mut |saved| {
+            assert_eq!(saved, Some(text.as_str()));
+            Ok(None)
+        })
+        .unwrap();
+}
+
+#[test]
+fn daemon_locks_restore_absent_and_present_values_under_malformed_ancestors() {
+    use maestro_daemon::settings::model::Config;
+    for (base, channel) in [
+        (json!({}), Config::default().update.channel),
+        (
+            json!({"update":{"channel":"stable"}}),
+            UpdateChannelConfig::Stable,
+        ),
+    ] {
+        for malformed in [
+            Value::Null,
+            json!(false),
+            json!(17),
+            json!("bad"),
+            json!([]),
+        ] {
+            let mut expected = Config::default();
+            expected.update.channel = channel;
+            expected.terminal.default_shell = "retained".into();
+            assert_malformed_reload(
+                &json!({"update":malformed,"daemon":{"paneShell":17}}),
+                base.clone(),
+                "update.channel",
+                &expected,
+            );
+        }
+    }
+    for (base, manage) in [
+        (json!({}), true),
+        (
+            json!({"multiplexer":{"remote":{"manageSshConfig":false}}}),
+            false,
+        ),
+    ] {
+        let mut expected = Config::default();
+        expected.remote.manage_ssh_config = manage;
+        expected.ui.mouse_capture.0 = false;
+        expected.terminal.default_shell = "retained".into();
+        assert_malformed_reload(
+            &json!({"multiplexer":{"remote":"bad","mouseCapture":false},"daemon":{"paneShell":17}}),
+            base,
+            "multiplexer.remote.manageSshConfig",
+            &expected,
+        );
+    }
+}
+
+#[test]
+fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current() {
+    use maestro_daemon::settings::{
+        io::reload_config,
+        model::{Config, ConfigReloadStatus},
+    };
+    let user = json!({"update":{"versionCheck":"bad"},"daemon":{"paneShell":17}});
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| Ok(Some(user.to_string())))
+        .unwrap();
+    storage
+        .write_base_layer(
+            SettingsScope::Global,
+            Some(&layer(
+                json!({"update":{"channel":"stable"},"daemon":{"paneShell":"global-base"}}),
+                &["update.channel"],
+            )),
+        )
+        .unwrap();
+    storage
+        .write_base_layer(
+            SettingsScope::Project,
+            Some(&layer(
+                json!({"daemon":{"paneShell":"project-base"}}),
+                &["daemon.paneShell"],
+            )),
+        )
+        .unwrap();
+    let mut manager = SettingsManager::from_storage(storage);
+    manager.drain_errors();
+    let mut current = Config::default();
+    current.update.channel = UpdateChannelConfig::Preview;
+    current.update.version_check = false;
+    current.terminal.default_shell = "retained".into();
+    let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
+    assert!(errors.is_empty());
+    assert_eq!(report.status, ConfigReloadStatus::Partial);
+    assert_eq!(current.update.channel, UpdateChannelConfig::Stable);
+    assert!(current.update.version_check);
+    assert_eq!(current.terminal.default_shell, "retained");
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|message| message.contains("locked base")
+                && message.contains("until")
+                && message.contains("fixed"))
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|message| message.contains("keeping current terminal settings"))
+    );
+    assert_eq!(
+        manager.get_global_settings().0,
+        user.as_object().unwrap().clone()
+    );
+}
