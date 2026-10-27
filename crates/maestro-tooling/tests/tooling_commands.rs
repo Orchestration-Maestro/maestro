@@ -1244,6 +1244,18 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/shutdown_command.rs"),
     ),
     (
+        "examples/extensions/snake.rs",
+        include_str!("../../../examples/extensions/snake.rs"),
+    ),
+    (
+        "examples/extensions/snake/game.rs",
+        include_str!("../../../examples/extensions/snake/game.rs"),
+    ),
+    (
+        "examples/extensions/snake/render.rs",
+        include_str!("../../../examples/extensions/snake/render.rs"),
+    ),
+    (
         "examples/extensions/system_prompt_header.rs",
         include_str!("../../../examples/extensions/system_prompt_header.rs"),
     ),
