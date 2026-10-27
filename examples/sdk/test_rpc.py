@@ -57,9 +57,19 @@ assert sys.stdin.buffer.read() == b""
         self.assertEqual(records[-1]["id"], "prompt")
         self.assertIn("agent_end", [record["type"] for record in records])
 
+    def test_nonzero_child_exit_fails_after_a_successful_response(self):
+        result = self.run_peer('''
+request = json.loads(sys.stdin.buffer.readline())
+print(json.dumps({"type": "response", "id": request["id"], "success": True}), flush=True)
+assert sys.stdin.buffer.read() == b""
+sys.exit(3)
+''')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"status 3", result.stderr)
+
     def test_refusal_and_premature_eof_fail_without_waiting_for_agent_end(self):
         for reply in [
-            '{"type": "response", "id": "state", "success": False, "error": "refused"}',
+            '{"type": "response", "id": "state", "success": false, "error": "refused"}',
             None,
         ]:
             with self.subTest(reply=reply):
