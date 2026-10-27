@@ -159,3 +159,100 @@ fn persisted_and_replayed(host: &mut Harness, board: &Value, played: &Value) -> 
     );
     Ok(())
 }
+
+/// Every row, column and diagonal can finish, and a full board without a line draws.
+#[test]
+fn tic_tac_toe_finishes_wins_and_draws_once() -> Result<(), String> {
+    let mut host = Harness::example("tic_tac_toe")?;
+    for (board, row, col, status) in FINISHES {
+        let details = json!({"board":board,"agentCursorRow":row,"agentCursorCol":col,"status":"playing","currentTurn":"O"});
+        restore(&mut host, "session_tree", &json!([save(&details)]))?;
+        let before = host
+            .observed()
+            .transcript
+            .iter()
+            .filter(|s| s.starts_with("action sendMessage "))
+            .count();
+        let result = tool(&mut host, "tic_tac_toe", &json!({"action":"play"}))?;
+        assert_eq!(result["details"]["status"], status);
+        assert_eq!(result["details"]["agentCursorRow"], 0);
+        assert_eq!(result["details"]["agentCursorCol"], 0);
+        assert_eq!(
+            tool(&mut host, "tic_tac_toe", &json!({"action":"play"})),
+            Err(format!("Game is over ({status})."))
+        );
+        let messages: Vec<Value> = host
+            .observed()
+            .transcript
+            .iter()
+            .filter_map(|s| s.strip_prefix("action sendMessage "))
+            .map(|s| serde_json::from_str(s).unwrap())
+            .collect();
+        assert_eq!(messages.len(), before + 1);
+        assert_eq!(
+            messages.last().unwrap()[0]["customType"],
+            "tic-tac-toe-game-over"
+        );
+        assert_eq!(messages.last().unwrap()[0]["details"], result["details"]);
+    }
+    super::example_support::released_component(&mut host)?;
+    Ok(())
+}
+
+/// Independently worked final moves covering all eight lines and a draw.
+const FINISHES: [([[&str; 3]; 3], usize, usize, &str); 9] = [
+    (
+        [["O", "O", " "], [" ", "X", " "], ["X", " ", " "]],
+        0,
+        2,
+        "win_O",
+    ),
+    (
+        [["X", " ", " "], ["O", "O", " "], ["X", " ", " "]],
+        1,
+        2,
+        "win_O",
+    ),
+    (
+        [["X", " ", " "], [" ", "X", " "], ["O", "O", " "]],
+        2,
+        2,
+        "win_O",
+    ),
+    (
+        [["O", "X", " "], ["O", "X", " "], [" ", " ", " "]],
+        2,
+        0,
+        "win_O",
+    ),
+    (
+        [["X", "O", " "], ["X", "O", " "], [" ", " ", " "]],
+        2,
+        1,
+        "win_O",
+    ),
+    (
+        [["X", " ", "O"], ["X", " ", "O"], [" ", " ", " "]],
+        2,
+        2,
+        "win_O",
+    ),
+    (
+        [["O", "X", " "], ["X", "O", " "], [" ", " ", " "]],
+        2,
+        2,
+        "win_O",
+    ),
+    (
+        [["X", "X", "O"], [" ", "O", " "], [" ", " ", " "]],
+        2,
+        0,
+        "win_O",
+    ),
+    (
+        [["X", "O", "X"], ["X", "O", "O"], ["O", "X", " "]],
+        2,
+        2,
+        "draw",
+    ),
+];
