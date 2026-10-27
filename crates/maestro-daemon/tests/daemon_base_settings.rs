@@ -417,3 +417,77 @@ fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
         );
     }
 }
+
+#[test]
+fn daemon_startup_keeps_base_locks_when_user_document_is_unavailable() {
+    use maestro_test_directory::Scratch;
+    for unreadable in [false, true] {
+        let root = Scratch::new().unwrap();
+        let agent = root.path().join("agent");
+        let mut publisher = SettingsManager::create(".", agent.to_str().unwrap(), ".maestro");
+        publisher.publish_base_layer(
+            SettingsScope::Global,
+            Some(layer(
+                json!({"daemon":{"resumeAgentsOnRestore":false,"paneShell":"base-shell"}}),
+                &["daemon.resumeAgentsOnRestore"],
+            )),
+        );
+        block_on(publisher.flush());
+        let path = agent.join("settings.json");
+        if unreadable {
+            std::fs::create_dir(&path).unwrap();
+        } else {
+            std::fs::write(&path, "{").unwrap();
+        }
+        let mut manager = SettingsManager::create(".", agent.to_str().unwrap(), ".maestro");
+        let (loaded, errors) = load_config(&mut manager, &agent);
+        assert!(errors.is_empty());
+        assert!(!loaded.config.session.resume_agents_on_restore);
+        assert_eq!(loaded.config.terminal.default_shell, "base-shell");
+        assert!(
+            loaded
+                .diagnostics
+                .iter()
+                .any(|message| message.contains("config ") && message.contains("using defaults"))
+        );
+    }
+}
+
+#[test]
+fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
+    use crate::config_support::{block_on, fixture, put};
+    let (mut app, mut manager, storage) = fixture();
+    put(
+        &*storage,
+        r#"{"multiplexer":{"mouseCapture":false,"tabBarRight":[]}}"#,
+    );
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    for entries in [json!([{"type":"hostname"}]), json!([])] {
+        storage
+            .write_base_layer(
+                SettingsScope::Global,
+                Some(&layer(
+                    json!({"multiplexer":{"tabBarRight":entries}}),
+                    &["multiplexer.tabBarRight"],
+                )),
+            )
+            .unwrap();
+        put(
+            &*storage,
+            r#"{"multiplexer":{"sidebarWidth":"bad","mouseCapture":true}}"#,
+        );
+        let (report, errors) = block_on(app.reload_config(&mut manager, Path::new(".")));
+        assert!(errors.is_empty());
+        assert!(!app.config.ui.mouse_capture.0);
+        assert_eq!(
+            serde_json::to_value(&app.config.ui.tab_bar_right).unwrap(),
+            entries
+        );
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|message| message.starts_with("invalid ui config:"))
+        );
+    }
+}
