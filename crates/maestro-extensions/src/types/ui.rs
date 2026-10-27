@@ -10,7 +10,7 @@ pub use editor::{
 use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
-    AutocompleteProvider, EditorTheme, KeybindingsManager, OverlayHandle, OverlayOptions, TUI,
+    AutocompleteProvider, EditorTheme, OverlayHandle, OverlayOptions, TUI,
     tui::{ComponentHandle, InputListenerResult},
 };
 use std::{
@@ -128,8 +128,8 @@ pub type AutocompleteProviderFactory = UIHostCall<
     Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
     Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
 >;
-/// Builds a replacement editor.
-pub type EditorFactory = UIHostCall<(TUI, EditorTheme, KeybindingsManager), EditorFactoryOutcome>;
+/// Builds a replacement editor with the application keybindings.
+pub type EditorFactory = UIHostCall<(TUI, EditorTheme, ExtensionKeybindings), EditorFactoryOutcome>;
 
 /// Resolves overlay options each time the host asks for them.
 pub type OverlayOptionsResolver = UIHostCall<(), Rc<RefCell<OverlayOptions>>>;
@@ -167,12 +167,12 @@ pub enum CustomFactoryOutcome {
     /// The component settles later.
     Async(ExtensionUIFuture<ExtensionComponent>),
 }
-/// Builds a typed custom component.
+/// Builds a typed custom component with the application keybindings.
 pub type CustomFactory<T> =
-    UIHostCall<(TUI, LiveTheme, KeybindingsManager, CustomDone<T>), CustomFactoryOutcome>;
-/// Builds a custom component that the host closes.
+    UIHostCall<(TUI, LiveTheme, ExtensionKeybindings, CustomDone<T>), CustomFactoryOutcome>;
+/// Builds a host-closed custom component with the application keybindings.
 pub type CustomComponentFactory =
-    UIHostCall<(TUI, LiveTheme, KeybindingsManager, CustomClose), CustomFactoryOutcome>;
+    UIHostCall<(TUI, LiveTheme, ExtensionKeybindings, CustomClose), CustomFactoryOutcome>;
 
 /// Settles at once with `value`.
 fn ready<T: 'static>(value: T) -> ExtensionUIFuture<T> {

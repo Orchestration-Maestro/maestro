@@ -624,7 +624,50 @@ fn canonical_keybindings_reach_the_host_managers_hints_and_editor_styles() {
             ok(json!(["x", "x"])),
         ];
         assert_eq!(outcomes, expected);
+        retained_keybinding_configs(runner).await;
     });
+}
+
+/// Retained created and pathless managers keep independent overrides and owned snapshots.
+async fn retained_keybinding_configs(runner: &ExtensionRunner<Local>) {
+    let steps = json!([
+        { "do": "keybindings", "name": "c", "source": "create", "dir": "/explicit" },
+        { "do": "keys", "name": "c", "op": "setUserBindings", "user": [["tui.select.up", "f7"]] },
+        { "do": "keys", "name": "c", "op": "getUserBindings" },
+        { "do": "keys", "name": "c", "op": "getResolvedBindings" },
+        { "do": "keys", "name": "c", "op": "getEffectiveConfig" },
+        { "do": "keys", "name": "c", "op": "reload" },
+        { "do": "keys", "name": "c", "op": "getUserBindings" },
+        { "do": "keys", "name": "c", "op": "getResolvedBindings" },
+        { "do": "keys", "name": "c", "op": "getEffectiveConfig" },
+        { "do": "keys", "name": "k", "op": "getKeys", "id": "tui.select.up" },
+        { "do": "keys", "name": "p", "op": "setUserBindings", "user": [["tui.select.up", []]] },
+        { "do": "keys", "name": "p", "op": "reload" },
+        { "do": "keys", "name": "p", "op": "getKeys", "id": "tui.select.up" },
+        { "do": "keys", "name": "p", "op": "getUserBindings" },
+        { "do": "keys", "name": "p", "op": "setUserBindings", "user": [["tui.select.up", null]] },
+        { "do": "keys", "name": "p", "op": "reload" },
+        { "do": "keys", "name": "p", "op": "getUserBindings" },
+        { "do": "keys", "name": "c", "op": "getKeys", "id": "tui.select.up" },
+    ]);
+    let outcomes = script(runner, &steps).await;
+    assert!(outcomes.iter().all(|outcome| outcome.get("ok").is_some()));
+    assert_eq!(outcomes[2], ok(json!([["tui.select.up", "f7"]])));
+    assert_eq!(outcomes[6], ok(json!([["tui.select.up", "f2"]])));
+    for (index, expected) in [(3, "f7"), (4, "f7"), (7, "f2"), (8, "f2")] {
+        let action = outcomes[index]["ok"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|binding| binding[0] == "tui.select.up")
+            .unwrap();
+        assert_eq!(action, &json!(["tui.select.up", expected]));
+    }
+    assert_eq!(outcomes[9], ok(json!(["f2"])));
+    assert_eq!(outcomes[12], ok(json!([])));
+    assert_eq!(outcomes[13], ok(json!([["tui.select.up", []]])));
+    assert_eq!(outcomes[16], ok(json!([["tui.select.up", null]])));
+    assert_eq!(outcomes[17], ok(json!(["f2"])));
 }
 
 #[test]
