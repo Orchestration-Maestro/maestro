@@ -259,3 +259,34 @@ const FINISHES: [([[&str; 3]; 3], usize, usize, &str); 9] = [
         "draw",
     ),
 ];
+
+/// Malformed saves cannot reach board indexing or replace the last accepted state.
+#[test]
+fn tic_tac_toe_rejects_invalid_snapshots_without_replacing_state() -> Result<(), String> {
+    let mut host = Harness::example("tic_tac_toe")?;
+    let initial = tool(&mut host, "tic_tac_toe_see_board", &json!({}))?;
+    for (field, value) in [
+        ("agentCursorRow", json!(3)),
+        ("agentCursorCol", json!(9)),
+        ("currentTurn", json!("Z")),
+        ("status", json!("unknown")),
+        (
+            "board",
+            json!([["Z", " ", " "], [" ", " ", " "], [" ", " ", " "]]),
+        ),
+    ] {
+        let mut invalid = initial["details"].clone();
+        invalid[field] = value;
+        assert!(restore(&mut host, "session_tree", &json!([save(&invalid)])).is_err());
+        assert_eq!(
+            tool(&mut host, "tic_tac_toe_see_board", &json!({}))?,
+            initial
+        );
+    }
+    assert_eq!(
+        tool(&mut host, "tic_tac_toe", &json!({"action":"jump"})),
+        Err("Unknown action: jump".into())
+    );
+    super::example_support::released_component(&mut host)?;
+    Ok(())
+}
