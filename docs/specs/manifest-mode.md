@@ -187,6 +187,7 @@ answer questions about it.
 80. As a security reviewer, I want tool output that matches a prompt-injection rule withheld from the model with the reason, so that fetched content cannot instruct the agent.
 81. As a developer, I want guards only when a manifest is selected, so that Maestro without a manifest behaves as before.
 82. As a privacy officer, I want guarded replies to appear only once they are complete and checked, so that personal data never shows on screen or in event streams.
+83. As a privacy officer, I want every saved session cleaned when guard rules first apply and whenever they change, so that no personal data stays at rest.
 
 ## Behaviour contract
 
@@ -863,9 +864,14 @@ change only with the manifest.
    |---|---|---|
    | `command` | The `command` argument of the `bash` tool, and the user's `!` and `!!` shell commands | Before the command runs |
    | `path` | The `path` argument of the `write` and `edit` tools, as given | Before the tool runs |
-   | `tool-output` | Each text block of a tool result, and every string in its details, such as an edit's diff | Before the completed result reaches the model, the screen or the session file; partial results are withheld (item 7) |
-   | `agent-output` | Each text block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
+   | `tool-output` | Each text block of a tool result, every string in its details, such as an edit's diff, and the output of the user's `!` and `!!` commands | Before the completed result or output reaches the model, the screen or the session file; partial results and output are withheld (item 7) |
+   | `agent-output` | Each text and thinking block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
    | `prompt` | Each text block of a user message from every route: typed prompts, steering and follow-up messages, SDK and RPC prompts, after prompt-template and skill expansion | When the message ends, before it is saved or sent |
+
+   The guard checks the output of the user's shell commands through the existing
+   user-shell hook: it supplies the command's execution through the host's local
+   shell operation and returns the checked output. An earlier extension that
+   handles a user shell command itself takes it outside the guard (item 6).
 
    Every agent request to the provider is checked again with the same
    `tool-output`, `agent-output` and `prompt` rules through the existing context
@@ -880,9 +886,10 @@ change only with the manifest.
    any previous summary with `agent-output` rules, and checks custom instructions
    from `/compact` or branch summarization with `prompt` rules. It generates the
    summary from the checked text with the compaction-generation host operation,
-   checks the result with `agent-output` rules and returns it. This covers manual and automatic
-   compaction, split-turn summaries and branch summaries. Because guards run last
-   (item 6), the guard's summary replaces a summary an earlier extension supplied.
+   checks the result with `agent-output` rules and returns it. This covers manual
+   and automatic compaction, split-turn summaries and branch summaries. Because
+   guards run last (item 6), the guard's summary replaces a summary an earlier
+   extension supplied.
    If generation or checking fails, the guard returns `cancel: true` with the
    failure as the reason instead of throwing. No unchecked fallback summary is
    generated, saved or shown.
@@ -895,8 +902,10 @@ change only with the manifest.
      text as a warning. A user shell command that matches does not run; its output
      is that text. A `tool-output` match replaces the result's text with
      `Tool output withheld by guard <id>: <description>`, replaces its details with
-     null and marks the result as an error, so the model learns why. An
-     `agent-output` match replaces the message's text with
+     null and marks the result as an error, so the model learns why. A user shell
+     command's output that matches is replaced by
+     `Output withheld by guard <id>: <description>`. An `agent-output` match
+     replaces the message's text and thinking with
      `Response withheld by guard <id>: <description>`. A `prompt` match replaces the
      message's text with `Prompt withheld by guard <id>: <description>`, and the
      interactive mode shows the same text as a warning.
@@ -906,8 +915,10 @@ change only with the manifest.
      RPC without a user interface refuse as `block` does.
    - **`redact`** (`tool-output`, `agent-output` and `prompt` only). Each match
      becomes `[<FAMILY>:<id>]`, where `<FAMILY>` is the file's family in capitals,
-     for example `[PII:canada-sin]`, in text blocks and in every string in a tool
-     result's details.
+     for example `[PII:canada-sin]`, in text and thinking blocks, in user shell
+     output and in every string in a tool result's details. A thinking block that
+     changes drops its provider signature and is replayed as plain unsigned text
+     through the existing conversation projection.
    - **`warn`.** The operation goes ahead unchanged, and a warning names the rule.
 5. **Several matching rules.** Every rule for a target matches against the
    original text. A matching `block` rule wins, then a matching `confirm` rule; the
@@ -935,19 +946,25 @@ change only with the manifest.
    arrived), message snapshots and nested model-event snapshots are all covered.
    Each reply's text reaches the interactive view, JSON and RPC event streams and
    SDK listeners only when its message ends, after the guards have checked it.
-   Thinking and tool status events still stream, with assistant text omitted from
+   Thinking text is held the same way and arrives with its message. Tool-call and
+   tool status events still stream, with assistant text and thinking omitted from
    their accompanying snapshots. Partial tool-result content and details are
-   withheld from progress events; listeners receive the completed result only
-   after the guards have checked it. Emitted snapshots do not share unchecked
+   withheld from progress events, and so is the output of a running user shell
+   command; listeners receive the completed result or output only after the guards
+   have checked it. Emitted snapshots do not share unchecked
    mutable text or details with listeners. `/settings` shows the setting as locked,
    like any locked value.
    With the setting `false`, the default, streaming is unchanged.
-8. **Limits.** Three gaps are tracked as their own issues. The output of the
-   user's `!` and `!!` commands is saved as produced and checked only when a later
-   agent request carries it (item 3; [#2891](https://github.com/Orchestration-Maestro/maestro/issues/2891)). Thinking blocks are not
-   checked, because providers sign them and replay them unchanged
-   ([#2894](https://github.com/Orchestration-Maestro/maestro/issues/2894)). Guards do not rewrite session files saved before the
-   manifest was selected ([#2895](https://github.com/Orchestration-Maestro/maestro/issues/2895)).
+8. **Saved sessions.** At the first session start under rules that target
+   `tool-output`, `agent-output` or `prompt`, and whenever those rules change, the
+   manifest package checks every saved session file in the background, with the
+   same rules as live text, and rewrites each file that changes through the
+   session owner's single rewrite, which replaces the file atomically. The package
+   reads a file, checks it, and just before replacing it compares a hash of the
+   bytes it read with a fresh read; when another process changed the file in
+   between, it reads and checks again. A digest of the rules last applied is kept
+   in the configuration root's state, next to the persisted base layers, so an
+   unchanged rule set is not swept again. The original text is not kept.
 
 ## Core hooks
 
@@ -961,7 +978,7 @@ combines areas; the manifest package does that.
 | H2 Decision hook | `maestro-settings`, `maestro-app` operations and resource collection | One registered decider is asked before the first effect of governed operations (M4), when stored values resolve, and during resource collection for local additions, required collisions and required entries. Early package commands use H1's persisted layer instead. A refusal carries the message to show. | No decider; foundation order |
 | H3 Daemon view | `maestro-daemon` configuration read | The workspace daemon reads the persisted global base layer plus the user settings with locks applied, never project settings. | Today's raw user read |
 | H4 Load-time contributions | `maestro-app` resource loader | Base packages load before every other extension and keep their ordinary place in the extension list. During their load a base package may contribute package sources, base prompt inputs (base system prompt, base append text) and model files ranked before the user's. The context-file loader is unchanged. Contributed package sources install and load in the same startup. Only one package may publish H1 and H2. | Foundation single pass |
-| H5 Host operations | `maestro-app` host operations | Extends the planned settings-reader and package-root facades: read raw user and project settings, list resolved packages with identity, scope and installed path, acquire a pinned source, list a source's releases, verify a release checkout is clean and at its pinned commit and restore it when it is not, read files from a candidate in the temporary scope, write a value through the settings owner, apply package filter semantics, and parse a YAML document with the existing parser. | Unused |
+| H5 Host operations | `maestro-app` host operations | Extends the planned settings-reader and package-root facades: read raw user and project settings, list resolved packages with identity, scope and installed path, acquire a pinned source, list a source's releases, verify a release checkout is clean and at its pinned commit and restore it when it is not, read files from a candidate in the temporary scope, write a value through the settings owner, apply package filter semantics, parse a YAML document with the existing parser, list saved sessions, and rewrite a saved session's entries through the session owner. | Unused |
 
 ### Persisted base layers
 
@@ -1017,7 +1034,10 @@ changes nothing, and enabling it only withholds text until checked.
   applies the decision. Summaries go through the existing session-before-compact
   and session-before-tree hooks: the guard supplies each summary, generated from
   checked text with the compaction-generation host operation, so the context and
-  message-end hooks keep their existing coverage. Expressions compile with the
+  message-end hooks keep their existing coverage. User shell output is checked
+  through the user-shell hook's supplied local shell operation. Saved sessions are
+  cleaned with two host operations over the session owner's existing listing and
+  its single rewrite, which every caller uses. Expressions compile with the
   workspace's existing `regex` crate. `holdUncheckedText` is read in exactly one
   place, the agent session's listener emission boundary for every event that
   carries assistant text or partial tool-result content or details, not only
@@ -1094,14 +1114,15 @@ changes nothing, and enabling it only withholds text until checked.
   request. An earlier extension that edits a tool call's arguments has the edited
   arguments checked. A failing example, an expression that does not compile, a
   duplicate id, an empty `noMatch` list and `confirm` on a text target each fail the
-  load. With `holdUncheckedText` set to `true`, no unchecked assistant text or
-  partial tool output (content or details) reaches the interactive, JSON, RPC or
-  SDK listeners in any payload: test text deltas,
-  a terminal-only response whose message start carries the completed reply, and
-  thinking and tool-call updates whose snapshots also contain text. Thinking
-  and tool status events still arrive; message end delivers only the checked text,
-  and the completed tool result contains only checked content and details. Include
-  a partial tool result with `SIN 046-454-286` in both its text and details.
+  load. With `holdUncheckedText` set to `true`, no unchecked assistant text,
+  thinking, partial tool output (content or details) or running user shell output
+  reaches the interactive, JSON, RPC or SDK listeners in any payload: test text and
+  thinking deltas, a terminal-only response whose message start carries the
+  completed reply, and tool-call updates whose snapshots also contain text.
+  Tool-call and tool status events still arrive; message end delivers only the
+  checked text and thinking, and the completed tool result contains only checked
+  content and details. Include a partial tool result with `SIN 046-454-286` in both
+  its text and details.
   With `false`, the events are byte-identical to today's.
 - Summary guards: resume a session saved before manifest selection with personal
   data in user, assistant and tool messages and in a previous summary. Manual and
@@ -1113,7 +1134,16 @@ changes nothing, and enabling it only withholds text until checked.
   reaching the provider. A guard generation failure (including a provider timeout)
   or check failure returns `cancel: true` with its reason, without throwing; no
   unchecked fallback is generated, saved or emitted. Test both summary routes.
-  Existing session-file bytes stay unchanged.
+  The summary path itself leaves existing entries unchanged; item 8 cleans them.
+- Thinking, shell output and saved sessions: a thinking block with personal data
+  is held until its message ends, saved redacted and replayed as unsigned text to
+  the faux provider. A user shell command's output is held while it runs, saved
+  redacted and withheld on a `block` match; an earlier extension that handles the
+  command itself is not checked. A sweep rewrites every saved session that holds
+  matching text, leaves clean files byte-identical, does not run again for the
+  same rule digest, runs again when a rule changes, and reads and checks again
+  when another process appends during the check. A crash between writing and
+  replacing leaves the previous file whole.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -1161,11 +1191,13 @@ Each item is a deliberate difference from the reference.
     redaction, and the personal-data and prompt-injection families. Confirming
     destructive commands and refusing protected paths follow the reference's
     example extensions, with their patterns taken from the manifest instead of the
-    code. The `holdUncheckedText` setting, which withholds assistant text and
-    partial tool-result content and details until the completed message or result
-    has been checked, while status events still flow.
+    code. Checking thinking and user shell output, and cleaning saved sessions
+    when guard rules apply or change. The `holdUncheckedText` setting, which
+    withholds assistant text, thinking, partial tool-result content and details,
+    and running user shell output until they have been checked, while status
+    events still flow.
 
-## Corrected reference defect
+## Corrected reference defects
 
 A pinned Git source whose checkout is not at its ref is never checked out at the
 ref: installation returns early because the checkout folder exists, and the Git
@@ -1173,6 +1205,10 @@ installation path excludes the ref. A pin change in settings therefore keeps the
 old files, while a pinned npm source is reinstalled on a version mismatch. The
 package owner checks a pinned Git checkout against its ref and checks out the ref
 when they differ. This also corrects internal mode.
+
+A session file rewrite wrote the file in place, so a crash during the write left
+a partial session file. The session owner's single rewrite now replaces the file
+atomically, for every caller. This also corrects internal mode.
 
 ## Runtime mechanics not copied
 
@@ -1203,8 +1239,7 @@ owners keep their ordering and accepted-write semantics.
   supplies and installs the files.
 - New RPC or JSON fields.
 - Guards without a manifest, local guard files and settings that change guards;
-  the three limits in M20.8 until their issues land; and detection other than
-  regular expressions.
+  and detection other than regular expressions.
 - Manifest mode in the browser application.
 
 ## Glossary
