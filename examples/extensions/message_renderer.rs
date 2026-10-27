@@ -1,6 +1,6 @@
-//! Custom message rendering: `/status [warn|error] message` sends a status message, and the
-//! renderer registered for it draws a colored level over the custom message background,
-//! adding the local time it was sent when the message is expanded.
+//! A `/status` command posts status notes, and the renderer it registers draws each one: the
+//! level in its theme color over the custom message background, and the host's local send
+//! time once the message is expanded.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -31,7 +31,7 @@ fn send(api: &ExtensionAPI, args: &str) -> ExtensionResult<()> {
         Some(level @ ("warn" | "error")) => {
             let content = words.collect::<Vec<_>>().join(" ");
             let content = if content.is_empty() {
-                "Status update".to_owned()
+                "Status report".to_owned()
             } else {
                 content
             };
@@ -91,7 +91,7 @@ fn render(
             .filter(|timestamp| *timestamp != 0)
     {
         let time = local_time_string(api, timestamp)?;
-        text = format!("{text}\n{}", theme.fg("dim", &format!("  at {time}"))?);
+        text = format!("{text}\n{}", theme.fg("dim", &format!("  sent {time}"))?);
     }
     let background = Style::new(move |text| theme.bg("customMessageBg", text));
     let view = maestro_extensions_wasm::Box::new(1, 1, Some(&background))?;
@@ -117,9 +117,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         api.register_command(
             "status",
             CommandOptions {
-                description: Some(
-                    "Send a status message (usage: /status [warn|error] message)".to_owned(),
-                ),
+                description: Some("Post a status note: /status [warn|error] <text>".to_owned()),
                 get_argument_completions: None,
                 handler: Rc::new(move |args, _| {
                     let sender = sender.clone();
