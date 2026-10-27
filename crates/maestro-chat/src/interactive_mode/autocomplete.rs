@@ -181,7 +181,7 @@ fn base_commands(
             Command::SlashCommand(SlashCommand {
                 name: command.name.clone(),
                 description: Some(command.description.clone()),
-                argument_hint: None,
+                argument_hint: command.argument_hint.clone(),
                 get_argument_completions: completions,
             })
         })

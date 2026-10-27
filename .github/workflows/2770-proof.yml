@@ -1,0 +1,459 @@
+name: Thinking command proof
+'on':
+  push:
+    branches:
+    - ci/2770-proof-*
+permissions:
+  contents: read
+env:
+  TEST_SHARD_COUNT: 1
+  CARGO_BUILD_JOBS: 4
+jobs:
+  declaration:
+    name: Caller declaration
+    if: ${{ github.repository_id != '1404598722' || (inputs.working-directory != '' && inputs.working-directory != '.') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory || '.' }}
+    outputs:
+      linux_runner: ${{ steps.runner.outputs.labels }}
+      enabled: ${{ steps.config.outputs.enabled }}
+      warm_test_filter: ${{ steps.config.outputs.warm_test_filter }}
+      packages: ${{ steps.selection.outputs.packages }}
+      check_advisories: ${{ steps.selection.outputs.check_advisories }}
+      coverage: ${{ steps.selection.outputs.coverage }}
+      test_shard_count: ${{ env.TEST_SHARD_COUNT }}
+      test_shards: ${{ steps.selection.outputs.test_shards }}
+      wasm_crates: ${{ steps.config.outputs.wasm_crates }}
+      targets: ${{ steps.config.outputs.targets }}
+      browser_test_crates: ${{ steps.config.outputs.browser_test_crates }}
+      browser_tests: ${{ steps.selection.outputs.browser_tests }}
+      browser_build: ${{ steps.config.outputs.browser_build }}
+      test_tools: ${{ steps.config.outputs.test_tools }}
+      reserved_ports: ${{ steps.config.outputs.reserved_ports }}
+      additional_locked_manifests: ${{ steps.config.outputs.additional_locked_manifests }}
+      quality_config: ${{ steps.config.outputs.quality_config }}
+      fuzz_manifest: ${{ steps.config.outputs.fuzz_manifest }}
+      fuzz_targets: ${{ steps.config.outputs.fuzz_targets }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+        repository: ${{ inputs.checkout-repository || github.repository }}
+        path: ${{ inputs.checkout-repository && inputs.working-directory || '.' }}
+        ref: ${{ inputs.checkout-ref || github.sha }}
+        fetch-depth: 0
+    - name: Toolchain
+      run: rustup show
+    - name: Select Linux runner
+      id: runner
+      env:
+        RUNNER_AVAILABILITY: ${{ vars.MAESTRO_AWS_RUNNERS }}
+        CALLER_WORKFLOW: ${{ github.workflow_ref }}
+        CALLER_WORKFLOW_SHA: ${{ github.workflow_sha }}
+        PULL_REQUEST_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        GH_TOKEN: ${{ github.token }}
+      run: "python3 - <<'PYTHON'\nimport base64\nimport json\nimport re\nimport hashlib\nimport os\nimport time\nimport urllib.parse\n\
+        import urllib.request\nlabels = 'ubuntu-latest'\ntry:\n    if os.environ.get('GITHUB_REPOSITORY') == 'Orchestration-Maestro/maestro-rust-workflows':\n\
+        \        raise ValueError('provider self-tests use hosted runners')\n    event = os.environ['GITHUB_EVENT_NAME']\n\
+        \    if event in ('pull_request', 'pull_request_target'):\n        head = os.environ.get('PULL_REQUEST_HEAD_REPOSITORY')\n\
+        \        if not head or head != os.environ.get('GITHUB_REPOSITORY'):\n            raise ValueError('fork or unverifiable\
+        \ pull request uses hosted runners')\n    elif event not in ('push', 'merge_group', 'schedule', 'workflow_dispatch',\
+        \ 'repository_dispatch'):\n        raise ValueError('unverifiable workflow event')\n    availability = json.loads(os.environ.get('RUNNER_AVAILABILITY')\
+        \ or '{}')\n    age = time.time() - availability['timestamp']\n    if not 0 <= age <= 300 or availability['online']\
+        \ <= 0:\n        raise ValueError('no fresh online runner')\n    repository, workflow = os.environ['CALLER_WORKFLOW'].split('/.github/',\
+        \ 1)\n    path, _ = workflow.rsplit('@', 1)\n    ref = os.environ['CALLER_WORKFLOW_SHA']\n    if not re.fullmatch(r'[0-9a-f]{40}',\
+        \ ref):\n        raise ValueError('unverifiable caller workflow revision')\n    url = f'https://api.github.com/repos/{repository}/contents/.github/{path}?ref='\
+        \ + urllib.parse.quote(ref, safe='')\n    request = urllib.request.Request(url, headers={'Authorization': 'Bearer\
+        \ ' + os.environ['GH_TOKEN']})\n    with urllib.request.urlopen(request, timeout=20) as response:\n        source\
+        \ = base64.b64decode(json.load(response)['content']).decode()\n    policy_url = 'https://raw.githubusercontent.com/Orchestration-Maestro/maestro-rust-workflows/01e654dd75e9c3cb82d258ea928c404c83077b43/.github/runner_policy.py'\n\
+        \    with urllib.request.urlopen(policy_url, timeout=20) as response:\n        policy = response.read()\n    if hashlib.sha256(policy).hexdigest()\
+        \ != '10eb5a27191cdc54851aa35a328d187a6b1ccc7fe81043730f04ea62c43bcdbd':\n        raise ValueError('runner policy\
+        \ digest mismatch')\n    namespace = {}\n    exec(compile(policy, 'runner_policy.py', 'exec'), namespace)\n    namespace['require_secret_free'](source)\n\
+        \    import yaml\n    print('Runner policy PyYAML: ' + yaml.__version__)\n    labels = ['self-hosted', 'linux', 'maestro-aws']\n\
+        except (ImportError, KeyError, TypeError, ValueError, OSError):\n    print('Hosted Linux fallback: unavailable runner\
+        \ or unverified secret-free caller')\nprint('Linux runner selection: ' + json.dumps(labels))\nwith open(os.environ['GITHUB_OUTPUT'],\
+        \ 'a', encoding='utf-8') as output:\n    output.write('labels=' + json.dumps(labels) + '\\n')\nPYTHON\n"
+    - name: Read caller declaration
+      id: config
+      env:
+        TEST_EVENT: ${{ inputs.warm-cache && 'push' || github.repository_id == '1404598722' && inputs.test-event || github.event_name
+          }}
+      run: "python3 - <<'PYTHON'\nimport json\nimport os\nimport pathlib\nimport re\nimport tomllib\nimport subprocess\npath\
+        \ = pathlib.Path('.github/ci.toml')\ntry:\n    with path.open('rb') as source:\n        config = tomllib.load(source)\n\
+        except FileNotFoundError:\n    if path.is_symlink():\n        raise SystemExit(f'{path}: unreadable declaration')\n\
+        \    config = None\nexcept (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as error:\n    raise SystemExit(f'{path}:\
+        \ {error}') from error\nvalues = dict(warm_test_filter=json.dumps('none()'), additional_locked_manifests='[]', quality_config='{}',\
+        \ enabled='false', wasm_crates='[]', browser_test_crates='[]', targets='[]', browser_build='false', test_tools='false',\
+        \ reserved_ports='', fuzz_manifest='', fuzz_targets='[]')\nif config is not None:\n    if 'test_shards' in config:\n\
+        \        raise SystemExit(f'{path}: test_shards was removed; nextest partitions tests automatically')\n    unknown\
+        \ = set(config) - {'warm_test_filter', 'wasm_crates', 'check_targets', 'browser_test_crates', 'browser_build', 'test_tools',\
+        \ 'reserved_ports', 'additional_locked_manifests', 'coverage_min_lines', 'spelling_words', 'license_exceptions', 'advisory_exceptions',\
+        \ 'yanked_crate_exceptions', 'git_sources', 'privileged_trigger_workflows', 'fuzz_manifest', 'fuzz_targets', 'test_inputs'}\n\
+        \    if unknown:\n        raise SystemExit(f'{path}: unknown keys {sorted(unknown)!r}')\n    for key in ('wasm_crates',\
+        \ 'check_targets'):\n        if key not in config or not isinstance(config[key], list) or any(type(item) is not str\
+        \ for item in config[key]):\n            raise SystemExit(f'{path}: {key} must be an array of strings')\n    browser_tests\
+        \ = config.get('browser_test_crates', [])\n    if not isinstance(browser_tests, list) or any(type(item) is not str\
+        \ for item in browser_tests):\n        raise SystemExit(f'{path}: browser_test_crates must be an array of strings')\n\
+        \    for key in ('browser_build', 'test_tools'):\n        if type(config.get(key, False)) is not bool:\n         \
+        \   raise SystemExit(f'{path}: {key} must be a boolean')\n    ports = config.get('reserved_ports', [])\n    if not\
+        \ isinstance(ports, list) or any(type(port) is not int or not 1 <= port <= 65535 for port in ports):\n        raise\
+        \ SystemExit(f'{path}: reserved_ports must be an array of integers from 1 to 65535')\n    if len(set(ports)) != len(ports):\n\
+        \        raise SystemExit(f'{path}: reserved_ports entries must be unique')\n    if type(config.get('warm_test_filter',\
+        \ 'none()')) is not str:\n        raise SystemExit(f'{path}: warm_test_filter must be a string')\n    values['warm_test_filter']\
+        \ = json.dumps(config.get('warm_test_filter', 'none()'))\n    values['reserved_ports'] = ','.join(map(str, ports))\n\
+        \    values['additional_locked_manifests'] = json.dumps(config.get('additional_locked_manifests', []))\n    threshold\
+        \ = config.get('coverage_min_lines', 80)\n    if type(threshold) not in (int, float) or not 80 <= threshold <= 100:\n\
+        \        raise SystemExit(f'{path}: coverage_min_lines must be a number from 80 to 100')\n    for key in ('spelling_words',\
+        \ 'git_sources', 'privileged_trigger_workflows', 'additional_locked_manifests'):\n        if not isinstance(config.get(key,\
+        \ []), list) or any(type(item) is not str or not item for item in config.get(key, [])):\n            raise SystemExit(f'{path}:\
+        \ {key} must be an array of nonempty strings')\n    def validate_toml_string(key, value):\n        if any(ord(char)\
+        \ < 32 or 127 <= ord(char) <= 159 or 0xD800 <= ord(char) <= 0xDFFF for char in value):\n            raise SystemExit(f'{path}:\
+        \ {key} cannot contain control characters or surrogates')\n    for key in ('spelling_words', 'git_sources', 'privileged_trigger_workflows',\
+        \ 'additional_locked_manifests'):\n        for value in config.get(key, []):\n            validate_toml_string(key,\
+        \ value)\n    def contained_manifest(value):\n        manifest = pathlib.Path(value)\n        try:\n            return\
+        \ (not manifest.is_absolute() and manifest.name == 'Cargo.toml'\n                    and manifest.resolve().is_relative_to(pathlib.Path.cwd().resolve())\n\
+        \                    and manifest.is_file())\n        except (OSError, RuntimeError):\n            return False\n\
+        \    for value in config.get('additional_locked_manifests', []):\n        if not contained_manifest(value):\n    \
+        \        raise SystemExit(f'{path}: additional_locked_manifests requires existing repository-contained relative Cargo.toml\
+        \ files')\n    if ('fuzz_manifest' in config) != ('fuzz_targets' in config):\n        raise SystemExit(f'{path}: fuzz_manifest\
+        \ and fuzz_targets must be declared together')\n    if 'fuzz_manifest' in config:\n        manifest = config['fuzz_manifest']\n\
+        \        if type(manifest) is not str or not manifest:\n            raise SystemExit(f'{path}: fuzz_manifest must\
+        \ be a nonempty string')\n        validate_toml_string('fuzz_manifest', manifest)\n        if not contained_manifest(manifest):\n\
+        \            raise SystemExit(f'{path}: fuzz_manifest requires an existing repository-contained relative Cargo.toml\
+        \ file')\n        targets = config['fuzz_targets']\n        if not isinstance(targets, list):\n            raise SystemExit(f'{path}:\
+        \ fuzz_targets must be an array')\n        for entry in targets:\n            if not isinstance(entry, dict) or set(entry)\
+        \ != {'name', 'seconds', 'max_len', 'timeout', 'rss_limit_mb'}:\n                raise SystemExit(f'{path}: fuzz_targets\
+        \ requires name, seconds, max_len, timeout and rss_limit_mb')\n            if type(entry['name']) is not str or not\
+        \ re.fullmatch(r'[A-Za-z0-9_-]+', entry['name']):\n                raise SystemExit(f'{path}: fuzz_targets name must\
+        \ be a Cargo target name')\n            if any(type(entry[key]) is not int or entry[key] < 1 for key in ('seconds',\
+        \ 'max_len', 'timeout', 'rss_limit_mb')):\n                raise SystemExit(f'{path}: fuzz_targets seconds, max_len,\
+        \ timeout and rss_limit_mb must be positive integers')\n        if len({entry['name'] for entry in targets}) != len(targets):\n\
+        \            raise SystemExit(f'{path}: fuzz_targets names must be unique')\n        values.update(fuzz_manifest=manifest,\
+        \ fuzz_targets=json.dumps(targets))\n    privileged = config.get('privileged_trigger_workflows', [])\n    if len(set(privileged))\
+        \ != len(privileged):\n        raise SystemExit(f'{path}: privileged_trigger_workflows entries must be unique')\n\
+        \    for value in privileged:\n        if '..' in value or not re.fullmatch(r'\\.github/workflows/[^/\\\\:*?\\[\\\
+        ]]+\\.ya?ml', value) or not pathlib.Path(value).is_file():\n            raise SystemExit(f'{path}: privileged_trigger_workflows\
+        \ requires exact existing .github/workflows/<name>.yml or .yaml files')\n    from urllib.parse import urlsplit\n \
+        \   for url in config.get('git_sources', []):\n        parsed = urlsplit(url)\n        if parsed.scheme != 'https'\
+        \ or not parsed.netloc or parsed.query or parsed.fragment or parsed.username or parsed.password:\n            raise\
+        \ SystemExit(f'{path}: git_sources must contain exact HTTPS repository URLs')\n    exceptions = config.get('license_exceptions',\
+        \ [])\n    if not isinstance(exceptions, list):\n        raise SystemExit(f'{path}: license_exceptions must be an\
+        \ array')\n    for entry in exceptions:\n        if not isinstance(entry, dict) or set(entry) != {'package', 'version',\
+        \ 'licenses'}:\n            raise SystemExit(f'{path}: license_exceptions requires package, version and licenses')\n\
+        \        if any(type(entry[key]) is not str or not entry[key] for key in ('package', 'version')):\n            raise\
+        \ SystemExit(f'{path}: license_exceptions requires an exact package version')\n        if not isinstance(entry['licenses'],\
+        \ list) or not entry['licenses'] or any(type(item) is not str or not item for item in entry['licenses']):\n      \
+        \      raise SystemExit(f'{path}: license_exceptions licenses must be nonempty strings')\n        for key in ('package',\
+        \ 'version'):\n            validate_toml_string('license_exceptions.' + key, entry[key])\n        for value in entry['licenses']:\n\
+        \            validate_toml_string('license_exceptions.licenses', value)\n        if not re.fullmatch(r'\\d+\\.\\d+\\\
+        .\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?', entry['version']):\n            raise SystemExit(f'{path}: license_exceptions\
+        \ requires an exact package version')\n    exact_version = (r'(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)'\n\
+        \                     r'(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'\n                     r'(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?'\n\
+        \                     r'(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?')\n    exceptions = config.get('advisory_exceptions',\
+        \ [])\n    if not isinstance(exceptions, list):\n        raise SystemExit(f'{path}: advisory_exceptions must be an\
+        \ array')\n    for entry in exceptions:\n        if not isinstance(entry, dict) or set(entry) != {'id', 'package',\
+        \ 'version', 'reason'}:\n            raise SystemExit(f'{path}: advisory_exceptions requires id, package, version\
+        \ and reason')\n        if any(type(value) is not str or not value for value in entry.values()):\n            raise\
+        \ SystemExit(f'{path}: advisory_exceptions values must be nonempty strings')\n        for key, value in entry.items():\n\
+        \            validate_toml_string('advisory_exceptions.' + key, value)\n        if not re.fullmatch(r'RUSTSEC-[0-9]{4}-[0-9]{4}',\
+        \ entry['id']):\n            raise SystemExit(f'{path}: advisory_exceptions id must match RUSTSEC-YYYY-NNNN')\n  \
+        \      if not re.fullmatch(exact_version, entry['version']):\n            raise SystemExit(f'{path}: advisory_exceptions\
+        \ requires an exact package version')\n    exceptions = config.get('yanked_crate_exceptions', [])\n    if not isinstance(exceptions,\
+        \ list):\n        raise SystemExit(f'{path}: yanked_crate_exceptions must be an array')\n    for entry in exceptions:\n\
+        \        if not isinstance(entry, dict) or set(entry) != {'package', 'version'}:\n            raise SystemExit(f'{path}:\
+        \ yanked_crate_exceptions requires exactly package and version')\n        if any(type(value) is not str for value\
+        \ in entry.values()):\n            raise SystemExit(f'{path}: yanked_crate_exceptions values must be strings')\n \
+        \       if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', entry['package']) or not re.fullmatch(exact_version, entry['version']):\n\
+        \            raise SystemExit(f'{path}: yanked_crate_exceptions requires an exact crate name and semantic version')\n\
+        \    values['quality_config'] = json.dumps({key: config[key] for key in ('coverage_min_lines', 'spelling_words', 'license_exceptions',\
+        \ 'advisory_exceptions', 'yanked_crate_exceptions', 'git_sources', 'privileged_trigger_workflows') if key in config})\n\
+        \    try:\n        metadata = json.loads(subprocess.check_output(\n            ['cargo', 'metadata', '--no-deps',\
+        \ '--format-version', '1', '--locked'], text=True))\n        packages = {package['name'] for package in metadata['packages']}\n\
+        \        supported = set(subprocess.check_output(['rustc', '--print', 'target-list'], text=True).splitlines())\n \
+        \   except (subprocess.CalledProcessError, OSError, ValueError) as error:\n        raise SystemExit(f'{path}: caller\
+        \ metadata/toolchain failed') from error\n    runners = {\n        'aarch64-unknown-linux-gnu': 'ubuntu-24.04-arm',\n\
+        \        'aarch64-apple-darwin': 'macos-latest',\n        'x86_64-apple-darwin': 'macos-latest',\n        'x86_64-pc-windows-msvc':\
+        \ 'windows-latest',\n    }\n    for crate in config['wasm_crates']:\n        if crate not in packages:\n         \
+        \   raise SystemExit(f'{path}: wasm_crates contains unknown package {crate!r}')\n    for crate in browser_tests:\n\
+        \        if crate not in packages:\n            raise SystemExit(f'{path}: browser_test_crates contains unknown package\
+        \ {crate!r}')\n    values.update(browser_test_crates=json.dumps(sorted(set(browser_tests))))\n    inputs = config.get('test_inputs',\
+        \ {})\n    if not isinstance(inputs, dict) or any(not isinstance(names, list) or any(type(name) is not str for name\
+        \ in names) for names in inputs.values()):\n        raise SystemExit(f'{path}: test_inputs must map repository paths\
+        \ to arrays of package names')\n    for key, names in inputs.items():\n        validate_toml_string('test_inputs',\
+        \ key)\n        if not pathlib.PurePosixPath(key).parts or key.startswith('/') or '\\\\' in key or '..' in pathlib.PurePosixPath(key).parts:\n\
+        \            raise SystemExit(f'{path}: test_inputs keys must be repository-relative paths')\n        for name in\
+        \ names:\n            if name not in packages:\n                raise SystemExit(f'{path}: test_inputs contains unknown\
+        \ package {name!r}')\n    targets = []\n    for target in config['check_targets']:\n        if target not in supported:\n\
+        \            raise SystemExit(f'{path}: check_targets contains unknown target {target!r}')\n        if target not\
+        \ in runners:\n            raise SystemExit(f'{path}: check_targets has no runner for {target!r}')\n        if os.environ.get('TEST_EVENT')\
+        \ != 'pull_request' or target == 'x86_64-pc-windows-msvc':\n            targets.append(dict(target=target, runner=runners[target]))\n\
+        \    values.update(targets=json.dumps(targets))\n    values.update(enabled='true', wasm_crates=json.dumps(config['wasm_crates']),\n\
+        \                  browser_build=str(config.get('browser_build', False)).lower(),\n                  test_tools=str(config.get('test_tools',\
+        \ False)).lower())\nwith open(os.environ['GITHUB_OUTPUT'], 'a', encoding=\"utf-8\") as output:\n    for key, value\
+        \ in values.items():\n        output.write(f'{key}={value}\\n')\nPYTHON\n"
+    - name: Select test packages
+      id: selection
+      env:
+        TEST_EVENT: ${{ inputs.warm-cache && 'push' || github.repository_id == '1404598722' && inputs.test-event || github.event_name
+          }}
+        BASE_REF: ${{ github.repository_id == '1404598722' && inputs.checkout-base-ref || github.event.pull_request.base.sha
+          || github.event.merge_group.base_sha }}
+      run: "python3 - <<'PYTHON'\nimport json\nimport os\nimport pathlib\nimport subprocess\nimport tempfile\nimport tomllib\n\
+        def metadata(directory):\n    return json.loads(subprocess.check_output(\n        ['cargo', 'metadata', '--format-version',\
+        \ '1', '--locked'], cwd=directory, text=True))\nhead = metadata('.')\npackages = {p['id']: p for p in head['packages']}\n\
+        members = set(head['workspace_members'])\nroots = {p: pathlib.Path(packages[p]['manifest_path']).parent.relative_to(pathlib.Path.cwd())\
+        \ for p in members}\nselected = set(members)\nbrowser_changed = False\nevent = os.environ['TEST_EVENT']\nbase = os.environ.get('BASE_REF')\n\
+        def declarations():\n    try:\n        before = tomllib.loads(subprocess.check_output(['git', 'show', f'{base}:./.github/ci.toml'],\
+        \ text=True))\n    except subprocess.CalledProcessError:\n        before = {}\n    path = pathlib.Path('.github/ci.toml')\n\
+        \    return before, tomllib.loads(path.read_text(encoding='utf-8')) if path.exists() else {}\ndeclaration = pathlib.Path('.github/ci.toml')\n\
+        config = tomllib.loads(declaration.read_text(encoding='utf-8')) if declaration.exists() else {}\nids = {packages[p]['name']:\
+        \ p for p in members}\n# Declared paths outside every member select only the packages whose tests read them.\ninputs\
+        \ = {pathlib.Path(key): {ids[name] for name in readers} for key, readers in config.get('test_inputs', {}).items()}\n\
+        if event == 'pull_request' and base:\n    changed = subprocess.check_output(['git', 'diff', '--no-renames', '--name-only',\
+        \ '-z', base, 'HEAD'], text=True).split('\\0')[:-1]\n    selected = set()\n    for filename in changed:\n        path\
+        \ = pathlib.Path(filename)\n        if filename in ('Cargo.toml', 'rust-toolchain', 'rust-toolchain.toml', '.github/ci.schema.json')\
+        \ or filename.startswith('.github/workflows/'):\n            selected = set(members)\n            break\n        if\
+        \ filename in ('Cargo.lock', '.github/ci.toml'):\n            continue\n        owners = {p for p, root in roots.items()\
+        \ if path.is_relative_to(root)}\n        routes = [readers for key, readers in inputs.items() if path.is_relative_to(key)]\n\
+        \        selected.update(owners, *routes)\n        if not owners and not routes and path.suffix not in ('.md',) and\
+        \ not filename.startswith('docs/'):\n            selected = set(members)\n            break\n    if '.github/ci.toml'\
+        \ in changed:\n        before, after = declarations()\n        browser_changed = before.get('browser_test_crates',\
+        \ []) != after.get('browser_test_crates', [])\n        if any(before.get(key) != after.get(key) for key in ('test_tools',\
+        \ 'reserved_ports', 'coverage_min_lines', 'additional_locked_manifests', 'test_inputs')) or bool(before) != bool(after):\n\
+        \            selected = set(members)\n    if 'Cargo.lock' in changed and selected != members:\n        # Resolve both\
+        \ revisions, comparing transitive dependency identities and features.\n        with tempfile.TemporaryDirectory()\
+        \ as temporary:\n            base_dir = str(pathlib.Path(temporary) / 'base')\n            subprocess.run(['git',\
+        \ 'worktree', 'add', '--detach', base_dir, base], check=True)\n            try:\n                caller = pathlib.Path.cwd().relative_to(pathlib.Path(subprocess.check_output(['git',\
+        \ 'rev-parse', '--show-toplevel'], text=True).strip()))\n                before = metadata(pathlib.Path(base_dir)\
+        \ / caller)\n            finally:\n                subprocess.run(['git', 'worktree', 'remove', '--force', base_dir],\
+        \ check=True)\n        def dependencies(data):\n            pkgs = {p['id']: p for p in data['packages']}\n      \
+        \      nodes = {n['id']: n for n in data['resolve']['nodes']}\n            result = {}\n            for member in\
+        \ data['workspace_members']:\n                seen, pending = set(), [member]\n                while pending:\n  \
+        \                  node = pending.pop()\n                    if node not in seen:\n                        seen.add(node)\n\
+        \                        pending.extend(nodes[node]['dependencies'])\n                result[pkgs[member]['name']]\
+        \ = {(pkgs[n]['name'], pkgs[n]['version'], pkgs[n]['source'], tuple(sorted(nodes[n]['features']))) for n in seen}\n\
+        \            return result\n        old, new = dependencies(before), dependencies(head)\n        selected.update(p\
+        \ for p in members if old.get(packages[p]['name']) != new[packages[p]['name']])\n    while True:\n        reverse\
+        \ = {n['id'] for n in head['resolve']['nodes'] if n['id'] in members and set(n['dependencies']) & selected}\n    \
+        \    if reverse <= selected:\n            break\n        selected.update(reverse)\nnames = sorted(packages[p]['name']\
+        \ for p in selected)\nrequested = set(config.get('browser_test_crates', []))\nbrowser_tests = bool(requested and (browser_changed\
+        \ or requested.intersection(names)))\nprint(f'Selected test packages ({event}): {names}')\n# A change can introduce\
+        \ an advisory only through the lockfile or the declared exceptions.\ncheck_advisories = event not in ('pull_request',\
+        \ 'merge_group') or not base\nif not check_advisories:\n    # A base the checkout cannot read keeps the check.\n \
+        \   diff = subprocess.run(['git', 'diff', '--relative', '--name-only', '-z', base, 'HEAD', '--', 'Cargo.lock', '.github/ci.toml'],\
+        \ capture_output=True, text=True)\n    changed_files = diff.stdout.split('\\0')[:-1]\n    if diff.returncode or 'Cargo.lock'\
+        \ in changed_files:\n        check_advisories = True\n    elif '.github/ci.toml' in changed_files:\n        before,\
+        \ after = declarations()\n        check_advisories = any(before.get(key) != after.get(key) for key in ('advisory_exceptions',\
+        \ 'yanked_crate_exceptions'))\nprint(f'Advisory check ({event}): {\"required\" if check_advisories else \"skipped,\
+        \ no change to Cargo.lock or the declared exceptions\"}')\nwith open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8')\
+        \ as output:\n    output.write('browser_tests=' + str(browser_tests).lower() + '\\n')\n    output.write('packages='\
+        \ + json.dumps(names) + '\\n')\n    output.write('coverage=' + str(event != 'pull_request').lower() + '\\n')\n   \
+        \ shards = list(range(1, int(os.environ['TEST_SHARD_COUNT']) + 1))\n    if event != 'pull_request':\n        shards.append('doctests')\n\
+        \    output.write('test_shards=' + json.dumps(shards) + '\\n')\n    output.write('check_advisories=' + str(check_advisories).lower()\
+        \ + '\\n')\nPYTHON\n"
+  tests:
+    needs: declaration
+    name: Native tests (${{ matrix.shard }})
+    if: ${{ needs.declaration.outputs.coverage == 'true' && !inputs.advisory-scan && !inputs.fuzz-scan && (github.repository_id
+      != '1404598722' || (inputs.working-directory != '' && inputs.working-directory != '.')) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+        - 1
+    runs-on: ${{ fromJSON(needs.declaration.outputs.linux_runner) }}
+    env:
+      ADDITIONAL_LOCKED_MANIFESTS: ${{ needs.declaration.outputs.additional_locked_manifests }}
+      WARM_CACHE: ${{ inputs.warm-cache }}
+      WARM_TEST_FILTER: ${{ fromJSON(needs.declaration.outputs.warm_test_filter) }}
+      SHARD: ${{ matrix.shard }}
+      TEST_PACKAGES: '["maestro-app", "maestro-chat", "maestro-cli", "maestro-multiplexer", "maestro-rpc", "maestro-web",
+        "maestro"]'
+      COLLECT_COVERAGE: 'false'
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory || '.' }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+        repository: ${{ inputs.checkout-repository || github.repository }}
+        path: ${{ inputs.checkout-repository && inputs.working-directory || '.' }}
+        ref: ${{ inputs.checkout-ref || github.sha }}
+    - name: Free instrumented build space
+      if: runner.environment == 'github-hosted' && (inputs.warm-cache || needs.declaration.outputs.enabled == 'true')
+      run: '# The deletion overlaps the toolchain, tools and compilation; the build needs the space minutes later.
+
+        sudo nohup rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc >/dev/null 2>&1 &
+
+        '
+    - name: Test toolchain
+      run: 'rustup show
+
+        toolchain=$(rustup show active-toolchain)
+
+        echo "RUSTUP_TOOLCHAIN=${toolchain%% *}" >> "$GITHUB_ENV"
+
+        rustup component add llvm-tools-preview
+
+        '
+    - name: Compile cache identity
+      id: cache-identity
+      env:
+        CALLER_REPOSITORY: ${{ inputs.checkout-repository || github.repository }}
+        CALLER_DIRECTORY: ${{ inputs.working-directory || '.' }}
+        HOST_OS: ${{ runner.os }}
+        HOST_ARCH: ${{ runner.arch }}
+        CACHE_JOB: ${{ github.job }}
+        CACHE_INDEX: ${{ strategy.job-index || 0 }}
+        CACHE_CALL: ${{ inputs.concurrency-key }}
+        CACHE_COVERAGE: ${{ needs.declaration.outputs.coverage }}
+        CACHE_ENABLED: ${{ needs.declaration.outputs.enabled }}
+        CACHE_WARM: ${{ inputs.warm-cache }}
+        CACHE_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: "python3 - <<'PYTHON'\nimport hashlib\nimport json\nimport os\nimport subprocess\nshape = os.environ['CACHE_JOB']\n\
+        if shape == 'tests':\n    coverage = os.environ['CACHE_WARM'] == 'true' or (os.environ['CACHE_ENABLED'] == 'true'\
+        \ and os.environ['CACHE_COVERAGE'] == 'true' and os.environ.get('SHARD', '') not in ('', 'doctests'))\n    shape =\
+        \ 'tests-coverage' if coverage else 'tests-plain'\nelif shape == 'targets':\n    shape += '-clippy-' + os.environ['CACHE_TARGET']\n\
+        compiler = subprocess.check_output(['rustc', '-vV'], text=True)\nidentity = [os.environ[name] for name in ['CALLER_REPOSITORY',\
+        \ 'CALLER_DIRECTORY', 'HOST_OS', 'HOST_ARCH']] + [compiler, shape]\ndigest = hashlib.sha256(json.dumps(identity, ensure_ascii=True,\
+        \ separators=(',', ':')).encode('utf-8')).hexdigest()\nprefix = f'maestro-compile-v1-{digest}-'\ncall = hashlib.sha256(os.environ['CACHE_CALL'].encode('utf-8')).hexdigest()\n\
+        suffix = '-'.join(os.environ[name] for name in ['GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'CACHE_JOB', 'CACHE_INDEX'])\
+        \ + '-' + call\nwriter = os.environ['GITHUB_EVENT_NAME'] == 'push' and os.environ['GITHUB_REF'] == 'refs/heads/' +\
+        \ os.environ['CACHE_DEFAULT_BRANCH']\nif os.environ['CACHE_JOB'] == 'tests':\n    shard = os.environ.get('SHARD',\
+        \ '')\n    writer = writer and (shard in ('warm', '1') or (shard == 'doctests' and os.environ['CACHE_ENABLED'] ==\
+        \ 'true' and os.environ['CACHE_COVERAGE'] == 'true'))\nwith open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8')\
+        \ as output:\n    output.write(f'prefix={prefix}\\nkey={prefix}{suffix}\\nwriter={str(writer).lower()}\\n')\nPYTHON\n"
+    - name: Restore compile cache
+      id: cache-restore
+      continue-on-error: true
+      uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
+      with:
+        path: ${{ runner.temp }}/maestro-sccache
+        key: ${{ steps.cache-identity.outputs.key }}
+        restore-keys: ${{ steps.cache-identity.outputs.prefix }}
+        enableCrossOsArchive: false
+        fail-on-cache-miss: false
+    - name: Compile cache
+      env:
+        CACHE_RESTORE_OUTCOME: ${{ steps.cache-restore.outcome }}
+        CACHE_RESTORE_MATCHED: ${{ steps.cache-restore.outputs.cache-hit }}
+      timeout-minutes: 10
+      run: "version=0.18.0\ncase \"$(uname -s):$(uname -m)\" in\n  Linux:x86_64) platform=x86_64-unknown-linux-musl digest=45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89\
+        \ ;;\n  Linux:aarch64) platform=aarch64-unknown-linux-musl digest=2b3284d5da3b46a47dc4229e75bb7b88ac4aa99c8d754fb7d2f84997e5a4354a\
+        \ ;;\n  Darwin:arm64) platform=aarch64-apple-darwin digest=308184519b646f5125289e8515b36f6ca65a13a041923994aebe702348674e8e\
+        \ ;;\n  *) echo 'Unsupported compile cache runner host' >&2; exit 1 ;;\nesac\nname=sccache-v$version-$platform\nbin=$(mktemp\
+        \ -d \"$RUNNER_TEMP/maestro-sccache.XXXXXX\")\narchive=$(mktemp)\ncurl --fail --retry 3 --location \"https://github.com/mozilla/sccache/releases/download/v$version/$name.tar.gz\"\
+        \ --output \"$archive\"\npython3 - \"$digest\" \"$archive\" <<'PYTHON'\nimport hashlib\nimport sys\nwith open(sys.argv[2],\
+        \ 'rb') as source:\n    raise SystemExit(hashlib.file_digest(source, 'sha256').hexdigest() != sys.argv[1])\nPYTHON\n\
+        tar -xzf \"$archive\" -C \"$bin\" --strip-components=1 \"$name/sccache\"\nrm \"$archive\"\ntest -x \"$bin/sccache\"\
+        \necho \"$bin\" >> \"$GITHUB_PATH\"\nif [ \"$CACHE_RESTORE_OUTCOME\" = failure ] || { [ \"$CACHE_RESTORE_MATCHED\"\
+        \ != true ] && [ \"$CACHE_RESTORE_MATCHED\" != false ]; }; then\n  rm -rf \"$RUNNER_TEMP/maestro-sccache\"\n  echo\
+        \ 'Compile cache snapshot restore failed; using an empty local cache'\nfi\nexport SCCACHE_DIR=\"$RUNNER_TEMP/maestro-sccache\"\
+        \ SCCACHE_CACHE_SIZE=1073741824\nexport SCCACHE_LOCAL_RW_MODE=READ_WRITE SCCACHE_GHA_ENABLED=false CARGO_INCREMENTAL=0\n\
+        export SCCACHE_SKIP_CACHE_CHECK=true SCCACHE_ERROR_LOG=\"$RUNNER_TEMP/sccache-error.log\" SCCACHE_LOG=debug\n{ echo\
+        \ CARGO_BUILD_RUSTC_WRAPPER=sccache; env | grep -E '^(SCCACHE_(DIR|CACHE_SIZE|LOCAL_RW_MODE|GHA_ENABLED|SKIP_CACHE_CHECK|ERROR_LOG|LOG)|CARGO_INCREMENTAL)=';\
+        \ } >> \"$GITHUB_ENV\"\nPATH=\"$bin:$PATH\" sccache --start-server\n"
+    - name: Coverage tools
+      timeout-minutes: 10
+      run: "bin=$(mktemp -d \"$RUNNER_TEMP/maestro-coverage-tools.XXXXXX\")\nwhile read -r url digest binary; do\n  archive=$(mktemp)\n\
+        \  curl --fail --retry 3 --location \"$url\" --output \"$archive\"\n  printf '%s  %s\\n' \"$digest\" \"$archive\"\
+        \ | sha256sum --check --status\n  tar -xzf \"$archive\" -C \"$bin\" \"$binary\"\n  test -x \"$bin/$binary\"\n  rm\
+        \ \"$archive\"\ndone <<'TOOLS'\nhttps://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz\
+        \ 3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522 cargo-llvm-cov\nhttps://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.148/cargo-nextest-0.9.148-x86_64-unknown-linux-musl.tar.gz\
+        \ bf92cb81450872d960ffa13857a83084d557ec0cdc141663d263bb23ef756f97 cargo-nextest\nTOOLS\necho \"TOOLS=$bin\" >> \"\
+        $GITHUB_ENV\"\necho \"$bin\" >> \"$GITHUB_PATH\"\n"
+    - name: Search tools
+      timeout-minutes: 10
+      if: inputs.warm-cache || needs.declaration.outputs.enabled == 'true'
+      run: "# Digests: ripgrep's release .sha256 file and fd's GitHub release asset digest.\nbin=$(mktemp -d \"$RUNNER_TEMP/maestro-search-bin.XXXXXX\"\
+        )\nwhile read -r url digest binary; do\n  archive=$(mktemp)\n  curl --fail --retry 3 --location \"$url\" --output\
+        \ \"$archive\"\n  printf '%s  %s\\n' \"$digest\" \"$archive\" | sha256sum --check --status\n  unpack=$(mktemp -d)\n\
+        \  tar -xzf \"$archive\" -C \"$unpack\"\n  find \"$unpack\" -type f -name \"$binary\" -exec cp '{}' \"$bin/$binary\"\
+        \ \\;\n  test -x \"$bin/$binary\"\n  rm -rf \"$archive\" \"$unpack\"\ndone <<'TOOLS'\nhttps://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz\
+        \ 33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c rg\nhttps://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz\
+        \ 761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7 fd\nTOOLS\n\"$bin/rg\" --version\n\"$bin/fd\" --version\n\
+        echo \"$bin\" >> \"$GITHUB_PATH\"\n"
+    - name: Mise bootstrap
+      timeout-minutes: 10
+      if: needs.declaration.outputs.test_tools == 'true'
+      run: "# https://github.com/jdx/mise/releases/download/v2026.10.2/SHASUMS256.txt\nversion=2026.10.2\nexecutable=mise\n\
+        case \"$(uname -s):$(uname -m)\" in\n  Linux:x86_64) platform=linux-x64 digest=8f5f6660336f572830e33cd9b378d3131e529a0d4c4f0c553776be90a1ba302a\
+        \ ;;\n  Linux:aarch64) platform=linux-arm64 digest=8d230a5a23ac559ea24ec65280867f437000b37473d967a9bb954837592490a8\
+        \ ;;\n  Darwin:arm64) platform=macos-arm64 digest=66d49acecca413c8b334922584982a4907a10588912829873d6c55d0c6d42612\
+        \ ;;\n  Darwin:x86_64) platform=macos-x64 digest=1c6b3d4aaeba8d3b8b57e2d06e4b7825a5134b7aa6e97313bd99db6f22bac21f\
+        \ ;;\n  MINGW*:x86_64) platform=windows-x64.exe executable=mise.exe digest=15901d0b8e0cfe76c1c3b7de4194f929244f331ca3fdf183c2e3aa17ba31634c\
+        \ ;;\n  *) echo 'Unsupported mise runner host' >&2; exit 1 ;;\nesac\nurl=https://github.com/jdx/mise/releases/download/v$version/mise-v$version-$platform\n\
+        installed=$(mise --version 2>/dev/null | cut -d ' ' -f 1) || installed=\nif [ \"$installed\" != \"$version\" ]; then\n\
+        \  bin=$(mktemp -d \"$RUNNER_TEMP/maestro-mise.XXXXXX\")\n  curl --fail --retry 3 --location \"$url\" --output \"\
+        $bin/$executable\"\n  python3 - \"$digest\" \"$bin/$executable\" <<'PYTHON'\nimport hashlib\nimport sys\nwith open(sys.argv[2],\
+        \ 'rb') as source:\n    raise SystemExit(hashlib.file_digest(source, 'sha256').hexdigest() != sys.argv[1])\nPYTHON\n\
+        \  chmod +x \"$bin/$executable\"\n  \"$bin/$executable\" --version | grep \"^$version \"\n  export PATH=\"$bin:$PATH\"\
+        \n  if [ \"$executable\" = mise.exe ]; then bin=$(cygpath -w \"$bin\"); fi\n  echo \"$bin\" >> \"$GITHUB_PATH\"\n\
+        fi\n"
+    - name: Test tools
+      timeout-minutes: 10
+      if: needs.declaration.outputs.test_tools == 'true'
+      run: "if [ ! -f mise.toml ]; then\n  echo 'mise.toml: caller tools require a pinned tool configuration' >&2\n  exit\
+        \ 1\nfi\nmise install\nmise bin-paths | while IFS= read -r bin; do\n  if [ \"${OS:-}\" = Windows_NT ]; then bin=$(cygpath\
+        \ -w \"$bin\"); fi\n  echo \"$bin\" >> \"$GITHUB_PATH\"\ndone\n"
+    - name: Reserved ports
+      if: runner.environment == 'github-hosted' && needs.declaration.outputs.reserved_ports != ''
+      env:
+        RESERVED_PORTS: ${{ needs.declaration.outputs.reserved_ports }}
+      run: sudo sysctl -w net.ipv4.ip_local_reserved_ports="$RESERVED_PORTS"
+    - name: Isolated tests
+      timeout-minutes: 45
+      if: inputs.warm-cache || needs.declaration.outputs.enabled == 'true'
+      env:
+        CARGO_COVERAGE_MIN_LINES: ''
+      run: "python3 - <<'PYTHON'\nimport os\nnames = '''ANTHROPIC_API_KEY ANTHROPIC_OAUTH_TOKEN OPENAI_API_KEY GEMINI_API_KEY\n\
+        GROQ_API_KEY CEREBRAS_API_KEY XAI_API_KEY OPENROUTER_API_KEY ZAI_API_KEY\nMISTRAL_API_KEY MINIMAX_API_KEY MINIMAX_CN_API_KEY\
+        \ KIMI_API_KEY HF_TOKEN\nAI_GATEWAY_API_KEY OPENCODE_API_KEY COPILOT_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN\nGOOGLE_APPLICATION_CREDENTIALS\
+        \ GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT\nGOOGLE_CLOUD_LOCATION AWS_PROFILE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY\n\
+        AWS_SESSION_TOKEN AWS_REGION AWS_DEFAULT_REGION AWS_BEARER_TOKEN_BEDROCK\nAWS_CONTAINER_CREDENTIALS_RELATIVE_URI AWS_CONTAINER_CREDENTIALS_FULL_URI\n\
+        AWS_WEB_IDENTITY_TOKEN_FILE BEDROCK_EXTENSIVE_MODEL_TEST FIREWORKS_API_KEY'''.split()\nfound = sorted(name for name\
+        \ in os.environ if name in names or name.endswith('_API_KEY'))\nif found:\n    raise SystemExit('Credential variables\
+        \ present: ' + ', '.join(found))\nPYTHON\ncargo_home=$(cd \"${CARGO_HOME:-$HOME/.cargo}\" && pwd)\nrustup_home=$(cd\
+        \ \"${RUSTUP_HOME:-$HOME/.rustup}\" && pwd)\ndiagnostics=\"$PWD/target/browser-author-diagnostics\"\nmkdir -p \"$diagnostics\"\
+        \nisolation=$(mktemp -d \"$RUNNER_TEMP/maestro-tests.XXXXXX\")\ntrap 'rm -rf \"$isolation\"' EXIT\nmkdir \"$isolation\"\
+        /{home,tmp,config,data,cache,state,runtime,config-dirs,data-dirs}\nrun_isolated() {\nenv -i PATH=\"${TOOLS:+$TOOLS:}$PATH\"\
+        \ CARGO_HOME=\"$cargo_home\" RUSTUP_HOME=\"$rustup_home\" RUSTUP_TOOLCHAIN=\"$RUSTUP_TOOLCHAIN\" \\\n  HOME=\"$isolation/home\"\
+        \ TMPDIR=\"$isolation/tmp\" TMP=\"$isolation/tmp\" TEMP=\"$isolation/tmp\" \\\n  XDG_CONFIG_HOME=\"$isolation/config\"\
+        \ XDG_DATA_HOME=\"$isolation/data\" \\\n  XDG_CACHE_HOME=\"$isolation/cache\" XDG_STATE_HOME=\"$isolation/state\"\
+        \ \\\n  XDG_RUNTIME_DIR=\"$isolation/runtime\" XDG_CONFIG_DIRS=\"$isolation/config-dirs\" \\\n  XDG_DATA_DIRS=\"$isolation/data-dirs\"\
+        \ MAESTRO_NO_LOCAL_LLM=1 MAESTRO_TEST_DIAGNOSTICS_DIR=\"$diagnostics\" \\\n  CARGO_BUILD_RUSTC_WRAPPER=\"${CARGO_BUILD_RUSTC_WRAPPER-}\"\
+        \ CARGO_INCREMENTAL=\"${CARGO_INCREMENTAL-}\" \\\n  SCCACHE_DIR=\"${SCCACHE_DIR-}\" SCCACHE_CACHE_SIZE=\"${SCCACHE_CACHE_SIZE-}\"\
+        \ \\\n  SCCACHE_LOCAL_RW_MODE=\"${SCCACHE_LOCAL_RW_MODE-}\" SCCACHE_GHA_ENABLED=\"${SCCACHE_GHA_ENABLED-}\" \\\n \
+        \ SCCACHE_SKIP_CACHE_CHECK=\"${SCCACHE_SKIP_CACHE_CHECK-}\" SCCACHE_ERROR_LOG=\"${SCCACHE_ERROR_LOG-}\" SCCACHE_LOG=\"\
+        ${SCCACHE_LOG-}\" \\\n  \"$@\"\n}\ncargo fetch --locked\nmapfile -d '' -t packages < <(python3 -c 'import json, os;\
+        \ print(\"\".join(\"-p\\0\" + name + \"\\0\" for name in json.loads(os.environ.get(\"TEST_PACKAGES\", \"[]\"))), end=\"\
+        \")')\nif [ -z \"${TEST_PACKAGES:-}\" ]; then packages=(--workspace); fi\nif [ \"${TEST_PACKAGES:-}\" = '[]' ] &&\
+        \ [ \"${WARM_CACHE:-false}\" != true ]; then exit 0; fi\nif [ \"${SHARD:-}\" != doctests ]; then\n  if [ -n \"${CARGO_COVERAGE_MIN_LINES:-}\"\
+        \ ]; then\n    run_isolated \"$TOOLS/cargo-llvm-cov\" llvm-cov --workspace --locked --fail-under-lines \"$CARGO_COVERAGE_MIN_LINES\"\
+        \n  elif [ \"${WARM_CACHE:-false}\" = true ] || { [ \"${COLLECT_COVERAGE:-true}\" = true ] && [ -n \"${SHARD:-}\"\
+        \ ]; }; then\n    partition=(--partition \"count:$SHARD/$TEST_SHARD_COUNT\")\n    report=(--lcov --output-path \"\
+        $PWD/shard-$SHARD.lcov\")\n    if [ \"${WARM_CACHE:-false}\" = true ]; then\n      partition=(-E \"${WARM_TEST_FILTER-none()}\"\
+        )\n      report=(--no-report)\n    fi\n    run_isolated \"$TOOLS/cargo-llvm-cov\" llvm-cov nextest --user-config-file\
+        \ none --ignore-default-filter \\\n      --retries 2 --flaky-result pass --final-status-level flaky \"${partition[@]}\"\
+        \ --no-tests pass --workspace --locked \"${report[@]}\" 2>&1 | tee nextest.log\n  else\n    partition=()\n    if [\
+        \ -n \"${SHARD:-}\" ]; then partition=(--partition \"count:$SHARD/$TEST_SHARD_COUNT\"); fi\n    run_isolated \"$TOOLS/cargo-nextest\"\
+        \ nextest run --user-config-file none --ignore-default-filter \\\n      --locked \"${packages[@]}\" --retries 2 --flaky-result\
+        \ pass --final-status-level flaky --no-tests pass \"${partition[@]}\" 2>&1 | tee nextest.log\n  fi\nfi\nif [[ \"${WARM_CACHE:-false}\"\
+        \ != true && -z \"${CARGO_COVERAGE_MIN_LINES:-}\" && ( \"${SHARD:-}\" == doctests || ( \"${SHARD:-1}\" == 1 && \"\
+        ${COLLECT_COVERAGE:-false}\" != true ) ) ]]; then\n  run_isolated cargo test --locked --doc \"${packages[@]}\"\nfi\n"
+    - name: Compile cache statistics
+      id: cache-statistics
+      if: always()
+      run: "test \"$CARGO_BUILD_RUSTC_WRAPPER\" = sccache\ntest \"$CARGO_INCREMENTAL\" = 0\nsccache --show-stats | tee \"\
+        $RUNNER_TEMP/sccache-stats\"\nif grep -Eq '^Cache write errors +[1-9][0-9]*' \"$RUNNER_TEMP/sccache-stats\"; then\n\
+        \  echo write_errors=true >> \"$GITHUB_OUTPUT\"\nelse\n  echo write_errors=false >> \"$GITHUB_OUTPUT\"\nfi\nif [ -f\
+        \ \"$RUNNER_TEMP/sccache-error.log\" ]; then\n  token=$(python3 -c 'import secrets; print(secrets.token_hex(32))')\n\
+        \  echo \"::stop-commands::$token\"\n  cat \"$RUNNER_TEMP/sccache-error.log\"\n  printf '\\n::%s::\\n' \"$token\"\n\
+        fi\n"

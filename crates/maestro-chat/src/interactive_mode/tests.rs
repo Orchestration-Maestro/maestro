@@ -36,6 +36,7 @@ mod session;
 mod settings;
 mod share;
 mod suspend;
+mod thinking;
 mod transcript;
 mod transfer;
 mod typed;
