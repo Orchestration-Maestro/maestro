@@ -318,10 +318,21 @@ pub fn check_rows(test: &str) {
     }
 }
 /// Construct the oracle's native tree, with encoded filenames on Unix.
+///
+/// The recorded results include a file whose name is not valid UTF-8; on a host that refuses
+/// that name the tree is not built and the premise is reported instead.
 #[cfg(unix)]
-pub fn tree() -> Scratch {
+pub fn tree() -> Option<Scratch> {
     use std::os::unix::ffi::OsStrExt;
     let root = Scratch::new().unwrap();
+    let invalid = std::ffi::OsStr::from_bytes(b"invalid-\xff");
+    if !root.keeps_distinct(&[invalid]).unwrap() {
+        eprintln!(
+            "the search tree needs a host that stores the name bytes {:?}",
+            invalid.as_bytes()
+        );
+        return None;
+    }
     for (path, text) in [
         ("example.txt", "first line\nmatch line\nlast line"),
         (
@@ -351,13 +362,8 @@ pub fn tree() -> Scratch {
     root.file("binary", b"needle\0tail\n");
     std::os::unix::fs::symlink("kept.txt", root.path().join("linked-file")).unwrap();
     std::os::unix::fs::symlink("a", root.path().join("linked-dir")).unwrap();
-    std::fs::write(
-        root.path()
-            .join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
-        b"needle\n",
-    )
-    .unwrap();
-    root
+    std::fs::write(root.path().join(invalid), b"needle\n").unwrap();
+    Some(root)
 }
 /// Run real search through the wrapped factory and preserve absent details.
 #[cfg(unix)]

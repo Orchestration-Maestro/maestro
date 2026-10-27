@@ -175,7 +175,9 @@ fn grep_failures_keep_acquisition_path_and_exit_precedence() {
 #[cfg(unix)]
 #[test]
 fn grep_single_file_includes_basename() {
-    let root = crate::grep_support::tree();
+    let Some(root) = crate::grep_support::tree() else {
+        return;
+    };
     for c in crate::grep_support::cases("grep_single_file_includes_basename") {
         crate::grep_support::check_native(&c, &root);
     }
@@ -184,7 +186,9 @@ fn grep_single_file_includes_basename() {
 #[cfg(unix)]
 #[test]
 fn grep_global_limit_includes_requested_context() {
-    let root = crate::grep_support::tree();
+    let Some(root) = crate::grep_support::tree() else {
+        return;
+    };
     for c in crate::grep_support::cases("grep_global_limit_includes_requested_context") {
         crate::grep_support::check_native(&c, &root);
     }
@@ -193,7 +197,9 @@ fn grep_global_limit_includes_requested_context() {
 #[cfg(unix)]
 #[test]
 fn grep_flag_like_pattern_never_runs_commands() {
-    let root = crate::grep_support::tree();
+    let Some(root) = crate::grep_support::tree() else {
+        return;
+    };
     crate::find_support::executable(
         &root,
         "payload.sh",
@@ -211,7 +217,9 @@ fn grep_flag_like_pattern_never_runs_commands() {
 #[test]
 fn grep_native_files_and_protocol_bytes() {
     use crate::grep_support as g;
-    let root = g::tree();
+    let Some(root) = g::tree() else {
+        return;
+    };
     for c in g::cases("grep_native_files_and_protocol_bytes") {
         g::check_native(&c, &root);
     }
@@ -241,7 +249,9 @@ fn grep_native_files_and_protocol_bytes() {
 #[test]
 fn grep_native_search_options_reach_ripgrep() {
     use crate::grep_support as g;
-    let root = g::tree();
+    let Some(root) = g::tree() else {
+        return;
+    };
     for c in g::cases("grep_native_search_options_reach_ripgrep") {
         g::check_native(&c, &root);
     }
@@ -257,23 +267,32 @@ fn grep_native_search_options_reach_ripgrep() {
     );
 }
 
+/// The lines of a result's first text block, sorted, since search order is not recorded.
+#[cfg(unix)]
+fn sorted_lines(result: &serde_json::Value) -> Vec<&str> {
+    let mut lines: Vec<_> = result["content"][0]["text"]
+        .as_str()
+        .unwrap()
+        .lines()
+        .collect();
+    lines.sort_unstable();
+    lines
+}
+
 #[cfg(unix)]
 #[test]
 fn grep_native_nested_ignores_hidden_and_metadata() {
     use crate::grep_support as g;
-    let root = g::tree();
+    let Some(root) = g::tree() else {
+        return;
+    };
     let case = g::cases("grep_native_nested_ignores_hidden_and_metadata").remove(0);
     assert_eq!(case.op, "native-rg");
     assert_eq!(
         case.input,
         serde_json::json!({"params":{"pattern":"needle"}})
     );
-    let mut expected: Vec<_> = case.expected["result"]["content"][0]["text"]
-        .as_str()
-        .unwrap()
-        .lines()
-        .collect();
-    expected.sort_unstable();
+    let expected = sorted_lines(&case.expected["result"]);
     for worktree in [false, true] {
         if worktree {
             assert!(
@@ -287,25 +306,16 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
         }
         let result = g::native(&root, serde_json::json!({"pattern":"needle"})).unwrap();
         assert!(result.get("details").is_none());
-        let mut actual: Vec<_> = result["content"][0]["text"]
-            .as_str()
-            .unwrap()
-            .lines()
-            .collect();
-        actual.sort_unstable();
-        assert_eq!(actual, expected);
+        assert_eq!(sorted_lines(&result), expected);
         let filtered = g::native(
             &root,
             serde_json::json!({"pattern":"needle","glob":"**/local.txt"}),
         )
         .unwrap();
-        let mut rows: Vec<_> = filtered["content"][0]["text"]
-            .as_str()
-            .unwrap()
-            .lines()
-            .collect();
-        rows.sort_unstable();
-        assert_eq!(rows, ["a/local.txt:1: needle", "b/local.txt:1: needle"]);
+        assert_eq!(
+            sorted_lines(&filtered),
+            ["a/local.txt:1: needle", "b/local.txt:1: needle"]
+        );
         root.file(".git/meta.txt", b"needle");
         assert_eq!(
             g::native(

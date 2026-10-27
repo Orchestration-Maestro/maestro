@@ -466,7 +466,9 @@ fn unlimited_find(root: &read_support::Scratch) {
 #[cfg(unix)]
 fn ignored_search() {
     for repository in [false, true] {
-        let root = grep_support::tree();
+        let Some(root) = grep_support::tree() else {
+            return;
+        };
         if repository {
             assert!(
                 std::process::Command::new("git")

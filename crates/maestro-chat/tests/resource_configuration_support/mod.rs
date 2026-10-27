@@ -18,6 +18,13 @@ pub fn group(name: &str) {
             return;
         }
         std::env::set_current_dir("/tmp").unwrap();
+        // These groups record patterns made relative to the spelling `/tmp`; a host whose `/tmp`
+        // reads back under another name makes them relative to that name instead.
+        let read_back = std::env::current_dir().unwrap();
+        if CWD_SPELLED.contains(&name) && read_back != std::path::Path::new("/tmp") {
+            eprintln!("{name} needs `/tmp` to read back as itself, not {read_back:?}");
+            return;
+        }
     }
     let _guard = super::keybindings::bindings_guard();
     let windows = name == "resource_windows_paths_keep_authored_relative_patterns";
@@ -70,6 +77,12 @@ fn replay(input: Input, expected: &Expected) {
     drop(harness);
     assert!(weak.upgrade().is_none(), "last list alias released");
 }
+/// The groups whose recorded patterns depend on the working directory's spelling.
+#[cfg(unix)]
+const CWD_SPELLED: [&str; 2] = [
+    "package_patterns_use_supplied_base_or_parent_fallback",
+    "resource_patterns_replace_exact_signed_entries_in_order",
+];
 /// Fixed ownership inventory, independent of fixture labels.
 const OWNERS: [&str; 23] = [
     "resource_groups_keep_scope_labels_and_kind_order",
