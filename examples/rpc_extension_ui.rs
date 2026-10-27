@@ -489,6 +489,35 @@ with open(sys.argv[1], "w", encoding="utf-8") as marker:
         });
     }
 
+    /// Severity remains readable even when terminal colors are removed.
+    #[test]
+    fn rpc_notifications_retain_their_severity_in_visible_text() {
+        run_async(async {
+            let case = run_case(shell(NOTIFICATION_PEER), vec![("RPC Chat", "hello\r")]).await;
+            assert!(case.status.success());
+            assert_eq!(case.steps, 1);
+            let output = maestro_app::strip_ansi(&case.raw).unwrap();
+            for expected in [
+                "Notification: [info] default notice",
+                "Notification: [info] information",
+                "Notification: [warning] warning",
+                "Notification: [error] failure",
+            ] {
+                assert!(output.contains(expected), "missing {expected}: {output}");
+            }
+        });
+    }
+
+    /// The protocol carries an optional kind, independently of the message wording.
+    const NOTIFICATION_PEER: &str = r#"
+read -r line || exit 8
+printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":true}'
+printf '%s\n' '{"type":"extension_ui_request","id":"a","method":"notify","message":"default notice"}'
+printf '%s\n' '{"type":"extension_ui_request","id":"b","method":"notify","notifyType":"info","message":"information"}'
+printf '%s\n' '{"type":"extension_ui_request","id":"c","method":"notify","notifyType":"warning","message":"warning"}'
+printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notifyType":"error","message":"failure"}'
+"#;
+
     /// The peer must receive only the final ordinary prompt with the first identifier.
     #[cfg(unix)]
     const LOCAL_PEER: &str = r#"
