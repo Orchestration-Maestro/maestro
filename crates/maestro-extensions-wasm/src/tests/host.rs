@@ -1856,6 +1856,17 @@ impl Harness {
         Self::start_on(engine, component, State::new()).await
     }
 
+    /// Instantiates a supplied component with controlled standard environment and streams.
+    pub async fn from_compiled_with_wasi(
+        engine: &Engine,
+        component: &Component,
+        wasi: WasiCtx,
+    ) -> wasmtime::Result<Self> {
+        let mut state = State::new();
+        state.wasi = wasi;
+        Self::start_on(engine, component, state).await
+    }
+
     /// Instantiates a supplied compiled component whose standard library reads `clock`.
     pub async fn from_compiled_with_clock(
         engine: &Engine,

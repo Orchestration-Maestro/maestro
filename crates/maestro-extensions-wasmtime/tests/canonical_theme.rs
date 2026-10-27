@@ -204,7 +204,10 @@ async fn global_runner(
         maestro_extensions_wasmtime::artifact_factory(
             path.clone(),
             super::support::widgets_over(live),
-            "installed-component-host".into(),
+            maestro_extensions_wasmtime::Installation {
+                version: "installed-component-host".into(),
+                agent_dir: "/controlled-agent".into(),
+            },
         ),
         "/global-theme".into(),
         bus.for_extension(),
