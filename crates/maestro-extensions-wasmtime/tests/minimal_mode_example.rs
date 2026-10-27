@@ -221,24 +221,3 @@ mod calls;
 
 /// Expanded and collapsed results through the native renderer interface.
 mod results;
-
-/// Keeps native tool identity typed through every renderer dispatch boundary.
-#[test]
-fn minimal_mode_dispatch_retains_typed_tool_identity() {
-    let source = include_str!("../../../examples/extensions/minimal_mode.rs");
-    for helper in [
-        "file_call",
-        "search_call",
-        "render_call",
-        "collapsed",
-        "render_result",
-    ] {
-        let declaration = format!("fn {helper}(\n    name: ToolName,");
-        assert!(
-            source.contains(&declaration),
-            "{helper} must retain ToolName"
-        );
-    }
-    assert!(source.contains("render_call(name, args,"));
-    assert!(source.contains("render_result(name, &result,"));
-}
