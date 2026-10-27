@@ -34,6 +34,7 @@ inserts at its own place instead of appending at the end of each list.
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -95,6 +96,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- input_transform_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -453,6 +456,25 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the input transform example does
+
+`?quick <question>` returns `Respond briefly in 1-2 sentences: <question>`,
+trimming the question's edges with the host's shared whitespace definition.
+An empty question warns `Usage: ?quick <question>` and stops. `ping` and `time`
+ignore ASCII case and stop after informational feedback: `pong` or the host's
+current local date and time. Other text, including extension-injected input,
+continues unchanged. The rewrite omits replacement images, leaving the host to
+keep the supplied attachments.
+
+Time uses the host's local time zone with the en-US pattern
+`M/D/YYYY, h:mm:ss AM`; other locale patterns are not selected. Build with
+`--example input_transform` in the command above. The controlled `input_transform_`
+runs supply whitespace and clock replies, invoke both adapters and need no
+provider, credentials or installation. Loading is opt-in and needs a
+component-enabled host with notification UI. Quick questions still use that
+host's configured model and can incur provider charges; ping, time and empty
+quick input do not call a model.
 
 ### What the Snake game does
 

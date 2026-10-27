@@ -71,6 +71,7 @@ mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
 mod host_widgets;
+mod input_transform_example;
 mod join;
 mod json_payloads;
 mod model_streams;
