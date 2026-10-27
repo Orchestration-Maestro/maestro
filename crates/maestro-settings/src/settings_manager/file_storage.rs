@@ -184,13 +184,16 @@ impl SettingsStorage for FileSettingsStorage {
         Self::transact(
             Path::new(&self.base_path(scope)),
             &mut |current| {
+                if current.is_none() && layer.is_none() {
+                    return Ok(None);
+                }
                 let text = match scope {
                     SettingsScope::Global => serde_json::to_string_pretty(&layer)?,
                     SettingsScope::Project => self.project_base_text(current, layer)?,
                 };
                 Ok(Some(text))
             },
-            true,
+            layer.is_some(),
         )
     }
 

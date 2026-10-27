@@ -26,10 +26,8 @@ impl SettingsManager {
     /// Replaces or removes the base layer for a scope and queues its persisted record.
     /// Raw preferences and their pending edits are unchanged. Persistence failures
     /// are reported by [`Self::drain_errors`]; [`Self::flush`] waits for the save.
+    /// Repeating a removal retries its persisted write after a failure.
     pub fn publish_base_layer(&mut self, scope: SettingsScope, layer: Option<BaseSettingsLayer>) {
-        if layer.is_none() && self.base_layers[scope as usize].is_none() {
-            return;
-        }
         self.base_layers[scope as usize].clone_from(&layer);
         self.rebuild();
         self.queue.save_base_layer(scope, layer);
