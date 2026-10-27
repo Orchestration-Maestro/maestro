@@ -43,6 +43,11 @@ timed movement and saved games in session entries; its index gives the build/run
 commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
+`extensions/overlay_qa_tests.rs` registers thirteen `/overlay-*` commands that
+demonstrate overlay placement, stacking, overflow, visibility, passive overlays,
+focus and streaming input; its
+[index entry](../examples/extensions/README.md#what-the-overlay-demonstrations-do)
+lists the host prerequisites and controlled run command.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
 through OSC 777, Kitty OSC 99 or Windows PowerShell; its
 [index entry](../examples/extensions/README.md#what-the-notification-example-does)

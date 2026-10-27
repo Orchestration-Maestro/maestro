@@ -37,6 +37,11 @@ inserts at its own place instead of appending at the end of each list.
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
+| `overlay_qa_tests.rs` | Thirteen `/overlay-*` commands that demonstrate overlay animation, anchors, margins, stacking, overflow, edges, percentages, maximum height, a responsive side panel, visibility, passive overlays, focus and streaming input. |
+| `overlay_qa_tests/dialogs.rs` | The placement cycles, stacked layers, edge and maximum-height notices and side panel for `overlay_qa_tests.rs`. |
+| `overlay_qa_tests/live.rs` | The animation, streamed process output and visibility toggle for `overlay_qa_tests.rs`. |
+| `overlay_qa_tests/paint.rs` | The themed borders, fitted rows and key checks shared by the overlay views. |
+| `overlay_qa_tests/panels.rs` | The passive timer, focus cycling and streaming input panels for `overlay_qa_tests.rs`. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
@@ -107,6 +112,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- overlay_qa_tests_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -262,6 +269,51 @@ apostrophes are quoted before the Windows DOM creates XML text nodes. The
 controlled `notify_` tests capture terminal bytes and supply child-process
 results: they send no desktop notifications and need no provider or credentials.
 The example registers no command and adds no built-in notification setting.
+
+### What the overlay demonstrations do
+
+Build with `--example overlay_qa_tests` using the command above. Loading it is
+opt-in and needs a component-enabled interactive host with custom overlay UI,
+keyboard helpers and native waits. `/overlay-overflow` also needs `bash` on
+`PATH`: it runs a 30-second script that prints long, coloured and hyperlinked
+lines, and Escape stops it. No command calls a model, provider or network.
+
+Escape or Ctrl+C closes every demonstration.
+
+- `/overlay-animation` redraws a frame counter, bouncing bar, spinner and colour
+  block about 30 times a second and counts the frames drawn in each second.
+- `/overlay-anchors` shows a 40-column overlay at each of the nine anchors in
+  turn. Space or Right moves to the next anchor, Enter reports the selected
+  anchor and Escape cancels without a report.
+- `/overlay-margins` and `/overlay-percent` cycle through five margin and offset
+  placements, or five row and column percentages, with Space or Right.
+- `/overlay-stack` shows three overlapping overlays 400 ms apart. Enter or Escape
+  closes the front one, and the final notification lists the overlays in the
+  order they closed.
+- `/overlay-overflow` streams the script's output into an overlay 90 columns
+  wide, or as wide as a narrower terminal. Each line is cut at the border. Up
+  and Down scroll.
+- `/overlay-edge` places an overlay against the right edge, and
+  `/overlay-maxheight` draws 21 rows into an overlay that keeps 10.
+- `/overlay-sidepanel` shows a menu a quarter of the terminal wide, at least 30
+  columns, that hides while the terminal is narrower than 100 columns. Up and
+  Down move the selection.
+- `/overlay-toggle` hides its overlay for one second when you press `t`, through
+  the handle `on_handle` received.
+- `/overlay-passive` clears the editor and shows a typing view beside a
+  non-capturing timer that never takes focus.
+- `/overlay-focus` clears the editor and shows three overlapping non-capturing
+  panels. Tab moves focus through them and back to the controller, and the
+  focused panel draws on top.
+- `/overlay-streaming` clears the editor, adds a timestamped line every 500 ms
+  and keeps the newest eight. Tab moves typing between three input panels.
+
+The controlled `overlay_qa_tests_` runs load the built component into the
+production runner with a real frame writer on a recording terminal. They read
+the drawn screen, deliver keys through the frame writer's focus and supply a
+paused clock for the native waits. The overflow run supplies a controlled process
+in place of `bash` and writes its output. No run needs a provider, credentials
+or an installation.
 
 ### What the permission gate does
 
