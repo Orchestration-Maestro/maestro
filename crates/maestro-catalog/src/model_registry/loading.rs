@@ -3,7 +3,7 @@ use super::{
     ModelFileOperations,
     composition::{self, ProviderConfig},
 };
-use maestro_models::arguments::validation::validate_schema;
+use maestro_models::{ModelCompat, arguments::validation::validate_schema};
 use serde_json::Value;
 use std::sync::LazyLock;
 
@@ -74,6 +74,9 @@ fn merge_document(current: &mut Value, incoming: Value, depth: usize) {
                     Some(existing) if depth == 2 && key == "models" => {
                         merge_models(existing, value);
                     }
+                    Some(existing) if matches!(depth, 2 | 4) && key == "compat" => {
+                        merge_compat_fields(existing, value);
+                    }
                     Some(existing) => merge_document(existing, value, depth + 1),
                     None => {
                         current.insert(key, value);
@@ -83,6 +86,16 @@ fn merge_document(current: &mut Value, incoming: Value, depth: usize) {
         }
         (current, incoming) => *current = incoming,
     }
+}
+
+/// Compatibility options use the same routing overlays as descriptor composition.
+fn merge_compat_fields(current: &mut Value, incoming: Value) {
+    let compat = |value| match value {
+        Value::Object(fields) => Some(ModelCompat(fields)),
+        _ => None,
+    };
+    *current = composition::merge_compat(compat(current.take()), compat(incoming))
+        .map_or(Value::Null, |value| Value::Object(value.0));
 }
 
 /// Later custom definitions replace the whole model without moving its first list slot.
