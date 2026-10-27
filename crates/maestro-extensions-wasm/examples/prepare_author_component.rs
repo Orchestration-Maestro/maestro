@@ -18,6 +18,10 @@ fn main() -> Result<(), String> {
     build::compile(path).map_err(|error| error.to_string())?;
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
+    let custom_message_provider = build::component(
+        "custom_message_provider",
+        "MAESTRO_CUSTOM_MESSAGE_PROVIDER_COMPONENT",
+    )?;
     let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
     let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
     let handoff = build::component("handoff", "MAESTRO_HANDOFF_COMPONENT")?;
@@ -40,7 +44,7 @@ fn main() -> Result<(), String> {
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\n",
+                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_CUSTOM_MESSAGE_PROVIDER_COMPONENT={}\n",
                 path.display(),
                 context.display(),
                 shell.display(),
@@ -56,7 +60,8 @@ fn main() -> Result<(), String> {
                 checkpoint.display(),
                 tool_override.display(),
                 handoff.display(),
-                qna.display()
+                qna.display(),
+                custom_message_provider.display()
             ),
         )
         .map_err(|error| error.to_string())?;
