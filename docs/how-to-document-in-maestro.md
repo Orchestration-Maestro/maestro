@@ -12,13 +12,14 @@ enforces are in [AGENTS.md](../AGENTS.md#documentation).
 
 1. [Where documentation lives](#where-documentation-lives)
 2. [Write a guide page](#write-a-guide-page)
-3. [Keep code blocks tested](#keep-code-blocks-tested)
-4. [Add an example](#add-an-example)
-5. [Write a specification](#write-a-specification)
-6. [Record terms and decisions](#record-terms-and-decisions)
-7. [Write rustdoc and comments](#write-rustdoc-and-comments)
-8. [Choose the words](#choose-the-words)
-9. [Check a change](#check-a-change)
+3. [Write a user guide](#write-a-user-guide)
+4. [Keep code blocks tested](#keep-code-blocks-tested)
+5. [Add an example](#add-an-example)
+6. [Write a specification](#write-a-specification)
+7. [Record terms and decisions](#record-terms-and-decisions)
+8. [Write rustdoc and comments](#write-rustdoc-and-comments)
+9. [Choose the words](#choose-the-words)
+10. [Check a change](#check-a-change)
 
 ## Where documentation lives
 
@@ -31,7 +32,7 @@ enforces are in [AGENTS.md](../AGENTS.md#documentation).
 | Decision record | `docs/adr/<decision>.md` | Maintainers who later wonder why something was built this way. |
 | Glossary | `CONTEXT.md` | Everyone: one definition per domain term. |
 | Rustdoc | `//!` and `///` comments in each crate | Callers of a crate's interface. |
-| Changelog | `CHANGELOG.md` | Release readers. It is generated from commit messages at release time, and pull requests never edit it. |
+| Changelog | `CHANGELOG.md` | Release readers. It is generated at release time ([AGENTS.md](../AGENTS.md#documentation)). |
 
 The default system prompt points the agent at the README, the `docs` folder and
 the `examples` folder, and names the guide page for each common topic (for
@@ -66,6 +67,45 @@ A guide page covers one topic. [Extensions](extensions.md) is a good model.
 Use relative links between pages and give every code fence a language (`rust`,
 `toml`, `json`, `sh` or `text`).
 
+## Write a user guide
+
+A user guide is a page someone reads to use Maestro: to install it, run a
+session, change a setting or fix a problem. It starts from what the user wants to
+do, not from how Maestro is built. Every guide page rule above applies; these add
+to them.
+
+Pick the kind of page by the reader's question:
+
+| Kind | Answers | Typical topics |
+| --- | --- | --- |
+| Quickstart | "How do I get going?" It takes a new user from installation to a first useful session in one sitting. | install, sign in, first session |
+| Task guide | "How do I do this?" One goal, in numbered steps. | switch models, continue a session, share a session |
+| Reference | "What exactly are my options?" Every value as Maestro accepts it. | settings, command-line flags, slash commands, keybindings |
+| Concept | "How does this work?" Enough of the model that the user can predict what happens. | sessions and branches, compaction |
+| Platform setup | "How do I make it work here?" One environment, start to finish. | a terminal, a multiplexer, an operating system |
+
+1. **Start from the goal.** Open each task with what it achieves ("To continue an
+   earlier session, ..."), then number the steps. Show the exact command, key or
+   setting, and what Maestro shows back.
+2. **Quote Maestro exactly.** Copy commands, flags, setting names, messages and
+   errors from the code, character for character. A user searches for the text on
+   their screen.
+3. **Verify against the running product.** Run every command, setting and
+   example on the page against current Maestro before it lands. A page that
+   describes behaviour Maestro does not have is a defect, like a failing test.
+4. **Cover every task.** When a feature can be used in several ways, the guide
+   covers each of them, not only the common one. A reference page lists every
+   option, with its type, default and effect.
+5. **Say what can go wrong.** End a task guide with its common failures, each
+   with the message the user sees and the fix.
+6. **Mark platform differences in place** ("On Windows, ..."). Give an
+   environment its own platform setup page only when its setup differs from start
+   to finish.
+7. **Make it findable.** List every user guide in the documentation index, in
+   reading order: quickstart first, then task guides, references, concepts and
+   platform setup. The agent finds user guides through the same folder, so a guide
+   no page links to is one the agent may not find either.
+
 ## Keep code blocks tested
 
 When a guide page documents a crate, the crate root can include the page as its
@@ -97,14 +137,15 @@ An example shows one behaviour in one file.
    file-name order, so a new example goes in its own place.
 
 The shipped-examples test, `crates/maestro-app/tests/shipped_examples.rs`, fails
-when a file has no row, when a row or link names a path that does not exist, or
-when the table or run commands are out of file-name order.
+when an entry of an examples folder is not listed in that folder's index, or when
+an index names a path that does not exist. For the extension index it also fails
+when the table or the run commands are out of file-name order.
 
 ## Write a specification
 
-A feature's specification lives in `docs/specs/<feature>.md` and lands on `main`
-before its implementation. Its issues link to it rather than copying it (see
-[the issue tracker guide](agents/issue-tracker.md)). A feature specification uses
+A feature's specification lives in `docs/specs/<feature>.md`.
+[AGENTS.md](../AGENTS.md) and [the issue tracker guide](agents/issue-tracker.md)
+say when it lands and how issues refer to it. A feature specification uses
 these sections, in this order. Leave out any that do not apply, and add sections
 such as *Delivery order* when the feature needs them:
 
@@ -138,35 +179,26 @@ implementation detail. Add the entry in the same change that introduces the term
 then use the term everywhere. [Domain docs](agents/domain.md) explains how the
 glossary and decision records are read.
 
-**Decision records.** Write `docs/adr/<decision>.md` only when a decision is hard
-to reverse, would surprise a reader without context, and was a real choice
-between alternatives. A record has two sections, *Decision* and *Trade-off*, as
-in [agent execution affinity](adr/agent-execution-affinity.md). Easily reversed
-or obvious choices need no record.
+**Decision records.** `docs/adr/<decision>.md` records a resolved decision that
+needs one ([domain docs](agents/domain.md)). A record has two sections,
+*Decision* and *Trade-off*, as in
+[agent execution affinity](adr/agent-execution-affinity.md).
 
 ## Write rustdoc and comments
 
-Every crate root needs `//!` documentation and every item, private ones
-included, needs `///` documentation; the build denies missing documentation and
-rustdoc warnings ([AGENTS.md](../AGENTS.md#documentation)). Rustdoc starts with
-what the item does, and adds `# Errors`, `# Panics` and `# Examples` only when
-they apply ([identity guide](identity.md#code-identity)).
-
-A comment explains a reason or an invariant the code cannot show. Comments never
-carry planning material such as ticket numbers, issue references or delivery
-notes; the conventions check reports any it finds, with file and line.
+[AGENTS.md](../AGENTS.md#documentation) sets which items need rustdoc and what
+a comment may contain; the build and the conventions check enforce it. The
+[identity guide](identity.md#code-identity) shows how rustdoc and comments read.
 
 ## Choose the words
 
-Write crisp technical prose: state the result, name the constraint, give the next
-action. Use the terms in `CONTEXT.md`, Maestro's own names, sentence-case
-headings and straight quotes. Leave out hype and filler such as "seamless",
-"magic", "just" and "simply". The [identity guide](identity.md#voice) has the
-full word lists and examples.
+The [identity guide's voice section](identity.md#voice) sets the tone of every
+page, with the words to use and the words to avoid. `CONTEXT.md` sets the terms.
 
 ## Check a change
 
-1. Run `just check`. It fails on missing documentation and rustdoc warnings.
+1. Run `just check` ([AGENTS.md](../AGENTS.md#documentation) lists what it
+   enforces for documentation).
 2. Run `just test`. It runs the doctests in included guide pages and the
    shipped-examples test.
 3. Follow every relative link you added or changed.
@@ -174,5 +206,4 @@ full word lists and examples.
    writing patterns: inflated claims, filler, repetitive structure, vague
    sources. Report each edited page in the pull request body as
    `HUMANIZER <path>: <n> fixes`.
-5. Commit with a conventional header such as `docs(settings): ...`, and leave
-   `CHANGELOG.md` alone.
+5. Commit as [AGENTS.md](../AGENTS.md#documentation) describes.
