@@ -8,9 +8,25 @@
 
 Conduct every model.
 
-Maestro is an agent engine in Rust: the foundation the other Maestro parts
-build on. The implementation is being rebuilt crate by crate, with specs in
-`docs/specs/`.
+Maestro is a Rust agent engine. The native executable connects model
+conversations, local file and shell tools, saved sessions and terminal,
+print/JSON and RPC interfaces. See
+[command-line startup](docs/cli.md), [tools](docs/tools.md) and
+[sessions](docs/sessions/session_manager.md) for the delivered behavior.
+
+**Start here: [Your first Maestro session](docs/first-session.md).** Build from
+source, connect an account and get a first result in a disposable project.
+The [foundation specification](docs/specs/maestro-port.md) describes the wider
+architecture; it is not a list of everything available today.
+
+## Before sharing a session
+
+Session files can contain private code, credentials pasted into prompts and shell
+output. Review and redact a copy before publishing, and get permission to share
+other people's material. A secret gist is readable by anyone with its URL.
+[Session publication guidance](docs/first-session.md#next-one-shot-output-or-integration)
+explains the export-bundle requirement and the difference between excluding
+output from model context and keeping it out of stored history.
 
 ## Build and test
 
@@ -54,8 +70,8 @@ Technical wording such as "the JSON-RPC specification", "an async task",
 
 `maestro-test-conventions` runs automatically with the workspace tests. Add
 new members to `workspace-crates.json` with a `core` or `dedicated` class.
-Only the conventions checker is currently implemented. Planned crate classes
-and dependency boundaries remain defined by the foundation specification.
+Delivered crate owners and their dependency boundaries are recorded in the
+[workspace inventory](workspace-crates.json) and the foundation specification.
 
 The checker rejects unlisted members, dependency cycles, core-to-dedicated
 normal/build edges and all internal domain dependencies of leaf crates.
@@ -76,7 +92,14 @@ vocabulary.
 
 ## Documentation
 
+- [First-session user guide](docs/first-session.md)
+- [Library architecture and checks](docs/architecture.md)
+- [Approved libraries](docs/libraries/)
 - [Identity guide and brand pack](docs/identity.md)
 - [Foundation specification](docs/specs/maestro-port.md)
-- [Architecture checks](docs/architecture.md)
 - [Contributor workflow](docs/agents/issue-tracker.md)
+
+## License
+
+Maestro is [MIT licensed](LICENSE). Dependencies retain their own licenses;
+[approved library notes](docs/libraries/) record the selected libraries.
