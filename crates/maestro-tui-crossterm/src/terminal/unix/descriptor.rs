@@ -5,7 +5,8 @@ use std::fs::File;
 use std::io::{self, Read};
 use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 
-use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
+use rustix::fs::{FileType, OFlags, fcntl_getfl, fcntl_setfl, fstat};
+use rustix::termios::isatty;
 use tokio::io::{Interest, unix::AsyncFd};
 
 /// A registered or synchronous descriptor and its saved output flags.
@@ -18,11 +19,22 @@ pub(super) struct Source {
 
 /// How readiness is obtained for the duplicated descriptor.
 enum Kind {
-    /// A descriptor the reactor can wait on: a terminal, pipe or socket.
+    /// A descriptor the reactor waits on: a terminal, pipe or socket.
     Reactor(AsyncFd<OwnedFd>),
-    /// A descriptor the reactor refuses with a permission error, such as a regular file or
-    /// `/dev/null`, which a read does not wait on.
+    /// Any other descriptor, such as a regular file, a directory or `/dev/null`, which a read
+    /// or write never waits on.
     File(File),
+}
+
+/// Whether reads and writes on `fd` can wait: a terminal, pipe or socket. The file type
+/// decides it rather than the reactor's answer, which differs by host: one refuses regular
+/// files that another accepts, and refuses `/dev/null` with a different error.
+fn waits(fd: BorrowedFd<'_>) -> io::Result<bool> {
+    Ok(match FileType::from_raw_mode(fstat(fd)?.st_mode) {
+        FileType::Fifo | FileType::Socket => true,
+        FileType::CharacterDevice => isatty(fd),
+        _ => false,
+    })
 }
 
 impl Source {
@@ -33,20 +45,16 @@ impl Source {
             .is_writable()
             .then(|| fcntl_getfl(&duplicate))
             .transpose()?;
-        // The advisory covers a descriptor the registration does not own; this one owns it.
-        #[expect(
-            deprecated,
-            reason = "owns its descriptor; the advisory concerns unowned ones"
-        )]
-        let registration = AsyncFd::try_with_interest(duplicate, interest);
-        let kind = match registration {
-            Ok(descriptor) => Kind::Reactor(descriptor),
-            Err(refused) => match refused.into_parts() {
-                (descriptor, error) if error.kind() == io::ErrorKind::PermissionDenied => {
-                    Kind::File(File::from(descriptor))
-                }
-                (_, error) => return Err(error),
-            },
+        let kind = if waits(duplicate.as_fd())? {
+            // The advisory covers a descriptor the registration does not own; this one owns it.
+            #[expect(
+                deprecated,
+                reason = "owns its descriptor; the advisory concerns unowned ones"
+            )]
+            let registration = AsyncFd::with_interest(duplicate, interest);
+            Kind::Reactor(registration?)
+        } else {
+            Kind::File(File::from(duplicate))
         };
         let source = Self {
             kind,
