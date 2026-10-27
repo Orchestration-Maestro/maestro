@@ -164,6 +164,11 @@ path = "../../examples/extensions/titlebar_spinner.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "todo"
+path = "../../examples/extensions/todo.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "tool_override"
 path = "../../examples/extensions/tool_override.rs"
 crate-type = ["cdylib"]
