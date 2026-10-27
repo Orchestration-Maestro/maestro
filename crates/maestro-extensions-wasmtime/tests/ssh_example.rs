@@ -10,6 +10,13 @@ use std::{path::Path, rc::Rc, sync::RwLock};
 async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
     let path = std::env::var("MAESTRO_SSH_COMPONENT").unwrap();
     let runtime = create_extension_runtime::<Local>();
+    runtime.set_tool_construction(maestro_extensions::ToolConstruction {
+        tools_manager: std::sync::Arc::new(
+            maestro_extensions::ToolsManager::new(root.to_str().unwrap().into(), None)
+                .with_offline(Some(true)),
+        ),
+        bin_dir: root.to_str().unwrap().into(),
+    });
     let bus = super::components::TracedBus::new();
     let cwd = root.to_str().unwrap();
     let owner = load_extension_from_factory(
