@@ -25,6 +25,9 @@ mod builtin_bash;
 #[path = "context_bridge/builtin_edit.rs"]
 mod builtin_edit;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_factories.rs"]
+mod builtin_factories;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/builtin_find.rs"]
 mod builtin_find;
 #[cfg(target_arch = "wasm32")]

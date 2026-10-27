@@ -31,6 +31,14 @@ pub(super) async fn command(
     context: &maestro_extensions_wasm::ExtensionCommandContext,
     args: &str,
 ) -> Option<ExtensionResult<()>> {
+    if let Some(request) = args.strip_prefix("builtin-defaults ") {
+        let result = super::builtin_factories::defaults(api, request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
+    if let Some(request) = args.strip_prefix("builtin-wrapped ") {
+        let result = super::builtin_factories::wrapped(api, request).await;
+        return Some(Err(result.unwrap_or_else(std::convert::identity)));
+    }
     if let Some(request) = args.strip_prefix("builtin-progress ") {
         let result = super::builtin_progress::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));
@@ -46,6 +54,15 @@ pub(super) async fn command(
     if let Some(request) = args.strip_prefix("builtin-register-edit ") {
         return Some(super::builtin_edit::register(api, request));
     }
+    filesystem_command(api, context, args).await
+}
+
+/// Dispatches filesystem and rendering observations independently of shell and queue probes.
+async fn filesystem_command(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+    args: &str,
+) -> Option<ExtensionResult<()>> {
     if let Some(request) = args.strip_prefix("builtin-custom-edit ") {
         let result = super::builtin_edit::execute(api, context.clone(), request).await;
         return Some(Err(result.unwrap_or_else(std::convert::identity)));
@@ -101,7 +118,7 @@ fn register_read(api: &ExtensionAPI) -> ExtensionResult<()> {
 }
 
 /// Observes only executable metadata; definition-only fields are not on this record.
-fn metadata(tool: &maestro_extensions_wasm::Tool) -> ExtensionResult<serde_json::Value> {
+pub(super) fn metadata(tool: &maestro_extensions_wasm::Tool) -> ExtensionResult<serde_json::Value> {
     let mut metadata = serde_json::json!({"name":tool.name,"label":tool.label,"description":tool.description,"parameters":tool.parameters});
     if !tool.execution_mode.is_missing() {
         metadata["executionMode"] =

@@ -1,6 +1,105 @@
 //! Built-in native tools retained and invoked by a compiled extension author.
 use serde_json::json;
 
+/// Default wrappers retain native byte counts, unlimited search, ignore scope and path handling.
+#[test]
+fn builtin_defaults_preserve_individual_corrections() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let cwd = scratch.path().to_str().unwrap();
+        let (runner, _) = super::builtin_author::loaded_with_tool_services(maestro_extensions::ToolConstruction {
+            tools_manager: std::sync::Arc::new(maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true))),
+            bin_dir: cwd.into(),
+        }).await;
+        for content in ["", "ASCII", "é", "😀", "aé😀"] {
+            let observed = default_results(&runner, json!({"cwd":cwd,"tool":"write","args":[{"path":"parent/雪.txt","content":content}]})).await;
+            assert_eq!(observed, vec![native_write_result(content).await]);
+            assert_eq!(std::fs::read(scratch.path().join("parent/雪.txt")).unwrap(), content.as_bytes());
+        }
+        default_find_tree(scratch.path());
+        let observed = default_results(&runner, json!({"cwd":cwd,"tool":"find","args":[
+            {"pattern":"*.txt","path":"many","limit":0},
+            {"pattern":"**/*.txt","path":"./paths/a/..","limit":0},
+            {"pattern":"a/**/*.txt","path":scratch.path().join("paths")},
+            {"pattern":"--help","path":"paths"}
+        ]})).await;
+        assert_eq!(observed.len(), 4);
+        assert_default_listing(&observed[0], &(0..1005).map(|n| format!("file-{n}.txt")).collect());
+        assert_default_listing(&observed[1], &[".secret/hidden.txt", "node_modules/dependency.txt", "a/kept.txt", "a/deep/leaf.txt", "b/secret.txt", "kept.txt"].map(str::to_owned).into());
+        assert_default_listing(&observed[2], &["a/kept.txt", "a/deep/leaf.txt"].map(str::to_owned).into());
+        assert_default_listing(&observed[3], &["--help".to_owned()].into());
+    });
+}
+
+/// Reads complete results from a compiled guest using unmodified default options.
+async fn default_results(
+    runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
+    request: serde_json::Value,
+) -> Vec<serde_json::Value> {
+    let command = runner.get_command("bridge-observe").unwrap().command;
+    let result = (command.handler)(
+        format!("builtin-defaults {request}"),
+        runner.create_command_context(),
+    )
+    .await;
+    serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
+}
+
+/// The actual native search observes hidden paths, nested ignores and literal glob operands.
+fn default_find_tree(root: &std::path::Path) {
+    for dir in [
+        "many",
+        "paths/a/deep",
+        "paths/b",
+        "paths/.secret",
+        "paths/.git",
+        "paths/node_modules",
+    ] {
+        std::fs::create_dir_all(root.join(dir)).unwrap();
+    }
+    for n in 0..1005 {
+        std::fs::write(root.join(format!("many/file-{n}.txt")), "").unwrap();
+    }
+    std::fs::write(root.join("paths/.gitignore"), "ignored.txt\n").unwrap();
+    std::fs::write(root.join("paths/a/.gitignore"), "secret.txt\n").unwrap();
+    for path in [
+        "a/ignored.txt",
+        "a/secret.txt",
+        "a/kept.txt",
+        "a/deep/leaf.txt",
+        "b/secret.txt",
+        "kept.txt",
+        "ignored.txt",
+        ".git/meta.txt",
+        ".secret/hidden.txt",
+        "node_modules/dependency.txt",
+        "--help",
+    ] {
+        std::fs::write(root.join("paths").join(path), "").unwrap();
+    }
+}
+
+/// Checks the complete untruncated record without imposing an order on the native fd producer.
+fn assert_default_listing(
+    result: &serde_json::Value,
+    expected: &std::collections::BTreeSet<String>,
+) {
+    let text = result["content"][0]["text"].as_str().unwrap();
+    assert_eq!(text.lines().count(), expected.len());
+    assert_eq!(
+        &text
+            .lines()
+            .map(str::to_owned)
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected
+    );
+    assert_eq!(result, &json!({"content":[{"type":"text","text":text}]}));
+}
+
 #[test]
 fn builtin_owned_edit_prepares_before_execution() {
     let runtime = tokio::runtime::Builder::new_current_thread()
