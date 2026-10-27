@@ -5,16 +5,27 @@
     clippy::excessive_nesting
 )]
 
+use std::rc::Rc;
+
 use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionFuture};
 
-/// Registers the native bash tool with the extension's initial working directory.
+/// Registers a profile-sourcing bash override with the extension's initial directory.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         let cwd = std::env::current_dir().map_err(|error| error.to_string())?;
         let tool = api.create_bash_tool_definition(
             cwd.to_string_lossy().into_owned(),
-            BashToolOptions::default(),
+            BashToolOptions {
+                spawn_hook: Some(Rc::new(|mut spawn, _| {
+                    spawn.command = format!("source ~/.profile\n{}", spawn.command);
+                    spawn
+                        .env
+                        .insert("MAESTRO_SPAWN_HOOK".into(), Some("1".into()));
+                    Ok(spawn)
+                })),
+                ..BashToolOptions::default()
+            },
         )?;
         api.register_tool(tool)
     })
