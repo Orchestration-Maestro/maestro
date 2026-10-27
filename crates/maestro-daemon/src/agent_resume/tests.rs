@@ -185,15 +185,18 @@ fn session_reference_limits_use_utf8_bytes_and_literal_argv() {
     ] {
         assert_eq!(AgentSessionRef::id(value).is_some(), valid);
     }
+    // An absolute path starts at a drive on Windows; every case keeps its byte length.
+    let root = if cfg!(windows) { "C:/" } else { "/" };
+    let limit = 4096 - root.len();
     for (value, valid) in [
         (String::new(), false),
         ("relative.jsonl".into(), false),
-        (format!("/{}", "x".repeat(4095)), true),
-        (format!("/{}", "x".repeat(4096)), false),
-        (format!("/{}x", "é".repeat(2047)), true),
-        (format!("/{}", "é".repeat(2048)), false),
-        ("/修复🙂".into(), true),
-        ("/bad\npath".into(), false),
+        (format!("{root}{}", "x".repeat(limit)), true),
+        (format!("{root}{}", "x".repeat(limit + 1)), false),
+        (format!("{root}{}x", "é".repeat((limit - 1) / 2)), true),
+        (format!("{root}{}", "é".repeat(limit / 2 + 1)), false),
+        (format!("{root}修复🙂"), true),
+        (format!("{root}bad\npath"), false),
     ] {
         assert_eq!(AgentSessionRef::path(value).is_some(), valid);
     }
