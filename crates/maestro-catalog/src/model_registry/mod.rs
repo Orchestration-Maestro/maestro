@@ -152,6 +152,24 @@ impl ModelRegistry {
         registry.load_models()?;
         Ok(registry)
     }
+    /// Loads ordered model files with later fields overriding earlier ones.
+    ///
+    /// # Errors
+    /// Returns a catalog error wrapping an account transformation failure.
+    pub fn with_model_files(
+        auth_storage: SharedHandle<AuthStorage>,
+        paths: Vec<String>,
+        operations: impl ModelFileOperations + 'static,
+        config_values: ConfigValues,
+    ) -> Result<Self, CatalogError> {
+        Self::with_operations(
+            auth_storage,
+            paths.into_iter().next_back().unwrap_or_default(),
+            operations,
+            config_values,
+        )
+    }
+
     /// Validate and apply the incoming record, then merge defined fields into retained state.
     ///
     /// The configuration is the platform handle, retained as the browser's local owner or

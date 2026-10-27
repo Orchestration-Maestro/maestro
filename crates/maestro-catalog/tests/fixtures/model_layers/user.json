@@ -1,0 +1,13 @@
+{
+  "providers": {
+    "openai": {
+      "modelOverrides": {
+        "gpt-4o": { "cost": { "input": 3 } }
+      }
+    },
+    "layered": {
+      "headers": { "X-User": "user" },
+      "models": [{ "id": "replaced", "name": "User replaced" }]
+    }
+  }
+}
