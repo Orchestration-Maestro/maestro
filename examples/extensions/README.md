@@ -33,6 +33,7 @@ inserts at its own place instead of appending at the end of each list.
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
+| `handoff.rs` | A `/handoff <goal>` command that generates an editable prompt from the selected branch, then opens a parent-linked replacement session. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
@@ -103,6 +104,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- git_checkpoint_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- git_checkpoint_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- handoff_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -716,6 +719,30 @@ Git's unreachable objects. There is no persistent recovery catalog, automatic
 reset, stash push, or built-in checkpoint policy. The controlled runs load the
 built component through the production runner in disposable repositories with
 scripted UI choices. They need Git but no provider, credentials or paid service.
+
+### What the handoff example does
+
+`/handoff <goal>` selects the current branch's conversation. After compaction it
+uses the latest summary, the kept prefix and subsequent messages. Message and
+compaction entries are included; settings, labels and other entry kinds are not.
+It asks the selected model for a focused prompt, shows a cancellable loader, and
+opens **Edit handoff prompt** for review.
+Only response text enters the draft, with a newline between text blocks.
+
+Accepting the editor opens a new session with the current session file as its
+parent. The replacement context puts the edited prompt in that session's editor
+and reports `Handoff ready. Submit when ready.` It does not submit the prompt.
+Cancelling generation or the editor leaves the session alone; a host veto of
+replacement reports `New session cancelled` without writing to another editor.
+Missing credentials or generation failures report `Cancelled`; the generation
+error is also written to the host's error output.
+
+Build with `--example handoff` using the command above. Loading it is opt-in and
+requires a component-enabled interactive host with custom UI, editor dialogs,
+event tails and session replacement. Real generation sends the selected history
+and goal to the configured model and requires that provider's API key; it can
+incur charges. The controlled `handoff_` run uses an in-memory provider, history,
+credentials and terminal, with no network calls or extension installation.
 
 ### What the question extractor does
 

@@ -51,6 +51,11 @@ path = "../../examples/extensions/git_checkpoint.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "handoff"
+path = "../../examples/extensions/handoff.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
