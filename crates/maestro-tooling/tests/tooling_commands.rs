@@ -1216,6 +1216,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
     ),
     (
+        "examples/extensions/permission_gate.rs",
+        include_str!("../../../examples/extensions/permission_gate.rs"),
+    ),
+    (
         "examples/extensions/pirate.rs",
         include_str!("../../../examples/extensions/pirate.rs"),
     ),
@@ -1250,6 +1254,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
     (
         "examples/extensions/trigger_compact.rs",
         include_str!("../../../examples/extensions/trigger_compact.rs"),
+    ),
+    (
+        "examples/extensions/widget_placement.rs",
+        include_str!("../../../examples/extensions/widget_placement.rs"),
     ),
     (
         "examples/extensions/with-deps/main.rs",
@@ -1624,14 +1632,18 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
+    // The shipped examples reach the standalone copy byte for byte.
     assert_eq!(
         fs::read(destination.join("examples/extensions/custom_header.rs")).unwrap(),
         include_str!("../../../examples/extensions/custom_header.rs").as_bytes()
     );
-    // The shipped example reaches the standalone copy byte for byte.
     assert_eq!(
         fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
         include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
+    );
+    assert_eq!(
+        fs::read(destination.join("examples/extensions/permission_gate.rs")).unwrap(),
+        include_str!("../../../examples/extensions/permission_gate.rs").as_bytes()
     );
 }
 

@@ -31,6 +31,7 @@ inserts at its own place instead of appending at the end of each list.
 | `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
@@ -41,6 +42,7 @@ inserts at its own place instead of appending at the end of each list.
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
 
@@ -74,6 +76,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- permission_gate_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
@@ -95,6 +99,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- widget_placement
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -161,6 +167,24 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+### What the permission gate does
+
+`tool_call` leaves non-bash tools and commands outside its three patterns alone.
+For case-insensitive matches of `rm` followed by `-r`, `-rf` or `--recursive`,
+`sudo` as a word, or `chmod`/`chown` followed on the same line by `777`, it asks
+`Allow?` with `Yes` and `No` choices. Only `Yes` permits the call; dismissal or
+any other answer blocks it with `Blocked by user`. Without UI it blocks with
+`Dangerous command blocked (no UI for confirmation)`.
+
+This is an illustrative regex matcher, not a security sandbox or a shell parser.
+It can match quoted text and miss dangerous commands; its flag alternatives also
+match prefixes such as `-rubbish`. The host still owns execution. Loading the
+component is opt-in and needs a component-enabled host; interactive approval
+needs that host's UI. The controlled runs deliver calls to both the in-process
+adapter and the built component with scripted selections. They execute no shell
+commands and need no provider, credentials or installation. Build it with the
+command above using `--example permission_gate`.
+
 ### What the protected-paths hook does
 
 `tool_call` inspects only the `write` and `edit` tools and reads their `path`
@@ -275,6 +299,22 @@ an interactive host keeps the text across agent turns or loader recreation;
 that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.
+
+### What the widget placement example does
+
+On every `session_start`, `widget_placement` reads the host's current UI
+availability and does nothing when there is none. With a UI it requests the
+`widget-above` widget holding the line `Above editor widget`, then the
+`widget-below` widget holding the line `Below editor widget` with the explicit
+below-editor placement. The first request passes no options, so the host applies
+its own above-editor default.
+
+Each request acquires the UI context again, so a host that changes its binding
+after the first request serves the second on the new one. A rejected request
+ends the callback with that message; the example retries nothing and removes no
+widget the host already accepted. Loading the component into an interactive
+application is opt-in and needs that application's component runtime and UI
+host; the controlled run only records the ordered requests.
 
 ### What the session naming command does
 
