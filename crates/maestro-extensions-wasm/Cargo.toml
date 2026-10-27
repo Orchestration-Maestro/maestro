@@ -41,6 +41,11 @@ path = "../../examples/extensions/file_trigger.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "git_checkpoint"
+path = "../../examples/extensions/git_checkpoint.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
@@ -56,6 +61,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "hook_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "input_transform"
+path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
 
 [[example]]

@@ -33,10 +33,13 @@ that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start. `extensions/questionnaire.rs` asks one or more questions through
 a tabbed view with selectable options and an inline editor; its support modules
-are indexed beside it.
-`extensions/snake.rs` opens a custom Snake game with keyboard
-controls, timed movement and saved games in session entries; its index gives the
-build/run commands and interactive-host prerequisites.
+are indexed beside it. `extensions/git_checkpoint.rs` creates opt-in Git stash
+checkpoints for session entries and asks before applying one when forking; its
+controlled run uses disposable repositories and scripted UI choices. Loading it
+requires Git and a committed repository, and approving a restore can change
+tracked files or leave conflicts. `extensions/snake.rs` opens a custom Snake game
+with keyboard controls, timed movement and saved games in session entries; its
+index gives the build/run commands and interactive-host prerequisites.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
 the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
