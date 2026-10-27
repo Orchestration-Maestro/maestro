@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
@@ -35,11 +36,13 @@ inserts at its own place instead of appending at the end of each list.
 | `handoff.rs` | A `/handoff <goal>` command that generates an editable prompt from the selected branch, then opens a parent-linked replacement session. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
@@ -53,6 +56,7 @@ inserts at its own place instead of appending at the end of each list.
 | `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `truncated_tool.rs` | An opt-in ripgrep search tool that applies the host's line/byte limits, saves complete truncated output to a temporary file, and renders calls and results. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
@@ -81,6 +85,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_footer_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
@@ -99,6 +105,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- input_transform_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
@@ -108,6 +116,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- qna_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -132,6 +142,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- tools_component_changes_native_session_and_restores_branch
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- truncated_tool_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- truncated_tool_component_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -190,6 +204,26 @@ no credentials or paid service: the component run uses a loopback provider. Test
 create the fixed path exclusively and refuse to touch a file already there. The
 nextest file-trigger group runs those tests one at a time; do not run separate
 file-trigger test commands concurrently.
+
+### What the truncated search tool does
+
+Build with `--example truncated_tool`, then load the component into a Unix
+component-enabled host with `rg` on its `PATH`. The opt-in `rg` tool searches the
+supplied directory (or the session's current directory), with an optional file
+glob. Patterns, paths and globs are literal process arguments, not shell text.
+
+Results retain the first 2,000 lines or 50 KB, whichever limit is reached first.
+When truncated, the tool awaits a queued write of the complete output to
+`maestro-rg-*/output.txt` in the host's temporary directory before returning its
+path and omitted line/byte counts. Expanded results show the first 20 lines and
+the full-output path. No matches and search errors have separate outcomes.
+
+Search output can contain private file contents. Temporary artifacts remain on
+disk so the read tool can open them; remove their directories when no longer
+needed. Loading and searching are opt-in; no provider or paid service is needed
+for the controlled runs above. Those runs use disposable files and a controlled
+search process through the production component runtime. They need
+`/usr/bin/python3`, not ripgrep.
 
 ### What the shutdown example does
 
@@ -299,6 +333,25 @@ string stores them; nothing is trimmed, rebuilt or cached. `session_shutdown`
 removes the status under the same key, including when no start came before it.
 A host rejection is returned to the host unchanged. Loading the component into
 an application is opt-in.
+
+### What the custom footer does
+
+`/footer` switches between the host's default footer and one dimmed line showing
+input tokens, output tokens, total cost, the current model and the Git branch.
+Each render totals the assistant messages on the active session branch; it ignores
+other messages and entries. Counts below 1,000 are shown as numbers, larger counts
+as one decimal followed by `k`, and cost as dollars with three decimal places.
+Without a model the footer shows `no-model`; without a Git branch it omits the
+parenthesized branch. The host's terminal helpers measure and clip the line to
+its supplied width, preserving styling and whole graphemes.
+
+Branch changes request a render. Restoring the default footer disposes the custom
+one and unsubscribes its branch listener. The controlled run invokes the built
+component with supplied history, model, branch, theme and terminal-helper replies;
+it needs no provider, repository, credentials or installation. Loading the
+component is opt-in and needs an application with the component runtime and an
+interactive UI host. Build it with the command above using `custom_footer` as
+the example name.
 
 ### Building with-deps
 
@@ -457,6 +510,25 @@ is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
 
+### What the input transform example does
+
+`?quick <question>` returns `Respond briefly in 1-2 sentences: <question>`,
+trimming the question's edges with the host's shared whitespace definition.
+An empty question warns `Usage: ?quick <question>` and stops. `ping` and `time`
+ignore ASCII case and stop after informational feedback: `pong` or the host's
+current local date and time. Other text, including extension-injected input,
+continues unchanged. The rewrite omits replacement images, leaving the host to
+keep the supplied attachments.
+
+Time uses the host's local time zone with the en-US pattern
+`M/D/YYYY, h:mm:ss AM`; other locale patterns are not selected. Build with
+`--example input_transform` in the command above. The controlled `input_transform_`
+runs supply whitespace and clock replies, invoke both adapters and need no
+provider, credentials or installation. Loading is opt-in and needs a
+component-enabled host with notification UI. Quick questions still use that
+host's configured model and can incur provider charges; ping, time and empty
+quick input do not call a model.
+
 ### What the Snake game does
 
 Build with `--example snake`, then load the component into a component-enabled
@@ -574,3 +646,24 @@ event tails and session replacement. Real generation sends the selected history
 and goal to the configured model and requires that provider's API key; it can
 incur charges. The controlled `handoff_` run uses an in-memory provider, history,
 credentials and terminal, with no network calls or extension installation.
+
+### What the question extractor does
+
+`/qna` reads the latest complete assistant reply on the current branch. It skips
+non-text blocks and joins text blocks with newlines, without trimming them. An
+incomplete newest assistant reply is rejected rather than replaced with an older
+one. A reply without text blocks is skipped; a reply with one empty text block
+reports that no assistant messages were found.
+
+The command replaces the editor with a cancellable bordered loader while the
+selected model extracts questions. Escape cancels the view. Missing credentials,
+completion failures and aborted responses report `Cancelled` and leave the editor
+unchanged. A completed extraction replaces the editor text exactly as returned,
+so the user can fill in answers before submitting. Closing the view disposes the
+loader and releases its pending extraction.
+
+Build with `--example qna` using the command above. Loading is opt-in and needs a
+component-enabled interactive host, a selected model and its configured API key.
+A real extraction sends the assistant reply to that provider and can incur
+charges. The controlled `qna_` runs use a loopback provider and supplied terminal
+input; they require no credentials, paid service or installation.
