@@ -36,6 +36,7 @@ inserts at its own place instead of appending at the end of each list.
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
+| `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -105,6 +106,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -463,6 +468,21 @@ an interactive host keeps the text across agent turns or loader recreation;
 that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.
+
+### What the model status example does
+
+`model_select` reads the selection the host reports. On an explicit selection or
+a cycle it notifies `Model: {provider}/{id}` with info severity; restoring a
+saved selection skips the notification. Every selection then sets the `model`
+status to `🤖 {id}` and writes the previous and selected identifiers and
+the selection source to standard output. An absent previous model reads `none`.
+Repeated and unchanged selections are reported too.
+
+The example makes no model or provider call and paints no footer; a host that
+shows the status decides where it goes. `model_status_component_runs_selection_hook`
+instantiates the built component and checks its host requests and its standard
+output against the recorded selections. Loading the component into an application
+is opt-in and needs that application's component runtime.
 
 ### What the widget placement example does
 

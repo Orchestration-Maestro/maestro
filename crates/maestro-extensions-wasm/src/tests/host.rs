@@ -9,6 +9,7 @@ use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::clocks::HostWallClock;
+use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use super::observed::{Observed, Session, pause};
@@ -308,7 +309,21 @@ impl State {
 
     /// A state with no registrations whose standard library reads `clock`.
     fn with_clock(clock: Option<Clock>) -> Self {
+        Self::with_wasi(clock, WasiCtxBuilder::new())
+    }
+
+    /// A state whose standard output the guest writes into `stdout`.
+    fn capturing(stdout: &MemoryOutputPipe) -> Self {
         let mut builder = WasiCtxBuilder::new();
+        builder.stdout(stdout.clone());
+        let mut state = Self::with_wasi(None, builder);
+        state.observed.stdout = Some(stdout.clone());
+        state
+    }
+
+    /// A state with no registrations served by `builder`, reading `clock` when the test
+    /// supplies one.
+    fn with_wasi(clock: Option<Clock>, mut builder: WasiCtxBuilder) -> Self {
         if let Some(clock) = &clock {
             builder.wall_clock(clock.clone());
         }
@@ -1862,6 +1877,18 @@ impl Harness {
         clock: Clock,
     ) -> wasmtime::Result<Self> {
         Self::start_on(engine, component, State::with_clock(Some(clock))).await
+    }
+
+    /// Instantiates a supplied compiled component with the guest's standard output captured
+    /// into a pipe of `size` bytes, which the harness also returns.
+    pub async fn from_compiled_capturing(
+        engine: &Engine,
+        component: &Component,
+        size: usize,
+    ) -> wasmtime::Result<(Self, MemoryOutputPipe)> {
+        let stdout = MemoryOutputPipe::new(size);
+        let harness = Self::start_on(engine, component, State::capturing(&stdout)).await?;
+        Ok((harness, stdout))
     }
 
     /// Instantiates a component on `state` and runs its factory.

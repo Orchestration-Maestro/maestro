@@ -149,6 +149,8 @@ pub struct Observed {
     hold: VecDeque<Hold>,
     /// Whether the next session operation fails without running its continuation.
     reject_session: bool,
+    /// Captured standard output of the guest, when the host installed one.
+    pub stdout: Option<wasmtime_wasi::p2::pipe::MemoryOutputPipe>,
 }
 
 impl Observed {
