@@ -515,3 +515,43 @@ fn ordinary_factories_read_their_first_registered_flag_defaults() {
         );
     });
 }
+
+/// Multiple entrypoints of one base package share its publication identity.
+#[test]
+fn one_base_package_can_publish_from_multiple_entrypoints() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/one");
+    for dir in [&agent, &cwd] {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    package(&base, "one");
+    std::fs::write(format!("{base}/one-extra.wasm"), "").unwrap();
+    std::fs::write(
+        format!("{base}/package.json"),
+        json!({"maestro":{"extensions":["one.wasm","one-extra.wasm"]}}).to_string(),
+    )
+    .unwrap();
+    on_task_set(|local| async move {
+        let settings = Rc::new(RefCell::new(maestro_settings::SettingsManager::in_memory(
+            maestro_settings::Settings::default(),
+        )));
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, publishing_modules());
+        resources.base_package_sources = vec![base];
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: Some(Rc::clone(&settings)),
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert!(loader.get_extensions().errors.is_empty());
+        assert_eq!(
+            settings.borrow().get_base_layer().unwrap().source,
+            "one-extra"
+        );
+    });
+}
