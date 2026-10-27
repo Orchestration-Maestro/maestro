@@ -493,6 +493,61 @@ mod tests {
         );
     }
 
+    #[test]
+    fn shared_credentials_keep_existing_type_identity() {
+        let shared: maestro_request::auth_storage::AuthCredential = oauth("r");
+        let native: AuthCredential = shared.clone();
+        let AuthCredential::OAuth(token) = native else {
+            panic!("OAuth variant");
+        };
+        let _: (maestro_models::OAuthCredentials, OAuthCredential) = (token.clone(), token);
+        let mut data = maestro_request::auth_storage::AuthStorageData::new();
+        data.insert("o".into(), shared);
+        data.insert("k".into(), api_key(""));
+        let text = serde_json::to_string(&data).unwrap();
+        assert_eq!(
+            text,
+            r#"{"o":{"type":"oauth","refresh":"r","access":"access","expires":1730000000000.0,"enterpriseUrl":"https://example.test"},"k":{"type":"api_key","key":""}}"#
+        );
+        let decoded: AuthStorageData = serde_json::from_str(&text).unwrap();
+        assert_eq!(decoded, data);
+        let status: maestro_request::auth_storage::AuthStatus = AuthStatus {
+            configured: false,
+            source: Some(AuthSource::ModelsJsonCommand),
+            label: None,
+        };
+        let text = serde_json::to_string(&status).unwrap();
+        assert_eq!(
+            text,
+            r#"{"configured":false,"source":"models_json_command"}"#
+        );
+        assert_eq!(serde_json::from_str::<AuthStatus>(&text).unwrap(), status);
+    }
+
+    #[test]
+    fn credential_mutations_preserve_untyped_sibling_values() {
+        let dir = TempDir::new("untyped-siblings");
+        let path = dir.path("auth.json");
+        let retained = json!({
+            "null": null, "text": "x\u{feff}", "number": 0.25, "bool": false,
+            "object": {"b": 1, "a": []}, "array": [2, 2, 1],
+        });
+        let text = format!("{retained:#}");
+        write_file(&path, &text);
+        let storage = AuthStorage::create(&path);
+        storage.set("valid", api_key("key"));
+        let mut expected = retained.as_object().unwrap().clone();
+        expected.insert("valid".into(), json!({"type": "api_key", "key": "key"}));
+        assert_eq!(read_file(&path), format!("{:#}", Value::Object(expected)));
+        storage.remove("valid");
+        assert_eq!(read_file(&path), text);
+        for provider in retained.as_object().unwrap().keys() {
+            assert!(storage.has(provider), "{provider}");
+            assert_eq!(storage.get(provider), None, "{provider}");
+        }
+        assert!(storage.get_all().is_empty());
+    }
+
     /// Drive one store through the shared operations and report what it observed.
     fn drive(storage: &AuthStorage) -> Vec<String> {
         storage.set("one", api_key("1"));

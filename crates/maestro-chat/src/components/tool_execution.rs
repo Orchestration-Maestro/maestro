@@ -538,11 +538,9 @@ impl Row {
                 }),
             },
             ImageOptions {
-                max_width_cells: Some(
-                    format!("{:.0}", self.image_width.get().floor().max(1.0))
-                        .parse()
-                        .unwrap_or(u32::MAX),
-                ),
+                max_width_cells: Some(crate::whole_cell_width::whole_cell_width(
+                    self.image_width.get(),
+                )),
                 ..Default::default()
             },
             self.params.environment.terminal_image.clone(),

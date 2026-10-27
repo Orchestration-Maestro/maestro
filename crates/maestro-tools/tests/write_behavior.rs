@@ -123,13 +123,13 @@ fn write_input_fields_follow_shared_preflight_validation() {
         let call = ToolCall {
             id: "call".into(),
             name: "write".into(),
-            arguments,
+            arguments: arguments.into(),
             thought_signature: None,
         };
         match validate_tool_arguments(&tool.definition, &call) {
             Ok(arguments) => {
                 assert!(expected.ok && expected.error.is_none());
-                assert_eq!(Some(Value::Object(arguments)), expected.args);
+                assert_eq!(Some(arguments), expected.args);
             }
             Err(error) => {
                 assert!(!expected.ok && expected.args.is_none());

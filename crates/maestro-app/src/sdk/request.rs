@@ -211,7 +211,7 @@ fn on_response(runner_ref: &ExtensionRunnerRef) -> maestro_models::OnResponse<Lo
 }
 
 /// Lets the extensions rewrite the messages of each request.
-fn transform_context(
+pub fn transform_context(
     runner_ref: &ExtensionRunnerRef,
 ) -> Rc<<Local as AgentExecution>::Transform<CustomAgentMessages>> {
     let runner_ref = Rc::clone(runner_ref);
@@ -229,7 +229,8 @@ fn transform_context(
 }
 
 /// The agent's form of a saved delivery mode.
-fn queue_mode(mode: &MessageDeliveryMode) -> QueueMode {
+#[must_use]
+pub fn queue_mode(mode: &MessageDeliveryMode) -> QueueMode {
     match mode {
         MessageDeliveryMode::All => QueueMode::All,
         _ => QueueMode::OneAtATime,

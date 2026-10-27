@@ -87,10 +87,37 @@ impl Workspace {
         Ok(())
     }
 
-    pub fn command(&self, recipe: &str) -> Command {
-        let mut command = super::toolchain_support::command("just");
+    /// Keep a persistent copy at an absolute path while the original remains disposable.
+    #[cfg(unix)]
+    pub fn cache_at(&mut self, path: &Path) {
+        assert!(path.is_absolute());
+        if path.exists() {
+            fs::remove_dir_all(path).unwrap();
+        }
+        assert!(
+            Command::new("cp")
+                .arg("-a")
+                .arg(self.path())
+                .arg(path)
+                .status()
+                .unwrap()
+                .success()
+        );
+        self.name = path.as_os_str().to_owned();
+    }
+
+    /// Keeps build output inside the fixture's configured target directory.
+    pub fn toolchain_command(&self, program: impl AsRef<OsStr>) -> Command {
+        let mut command = super::toolchain_support::command(program);
         command
             .current_dir(self.path())
+            .env_remove("CARGO_TARGET_DIR");
+        command
+    }
+
+    pub fn command(&self, recipe: &str) -> Command {
+        let mut command = self.toolchain_command("just");
+        command
             .arg(recipe)
             .env("MAESTRO_LOG", self.path().join("log"))
             .env("MAESTRO_CWD", self.path().join("cwd"))

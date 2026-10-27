@@ -41,7 +41,7 @@ impl InteractiveMode {
         };
         let component = match content {
             WidgetContent::Factory(factory) => {
-                factory.call((self.ui.clone(), self.themes.theme()))?
+                factory.call((self.ui.as_ref().clone(), self.themes.theme()))?
             }
             WidgetContent::Lines(lines) => {
                 let container = Rc::new(Container::new());
@@ -59,6 +59,8 @@ impl InteractiveMode {
                 ExtensionComponent {
                     component: container,
                     dispose: None,
+                    set_expanded: None,
+                    width: None,
                 }
             }
         };
@@ -70,6 +72,26 @@ impl InteractiveMode {
             &self.extension_widgets_above
         };
         map.insert(key, Rc::new(component));
+        self.render_widgets();
+        Ok(())
+    }
+
+    /// Calls every widget's disposer, above then below, walking the live maps so a disposer's
+    /// own edits are seen, then empties both maps and rebuilds the containers.
+    ///
+    /// # Errors
+    /// Returns the original disposer failure, before either map is emptied.
+    pub(in super::super) fn clear_extension_widgets(&self) -> Result<(), EventError> {
+        for map in [&self.extension_widgets_above, &self.extension_widgets_below] {
+            for (_, widget) in map {
+                widget
+                    .dispose
+                    .as_ref()
+                    .map_or(Ok(()), |dispose| dispose.call(()))?;
+            }
+        }
+        self.extension_widgets_above.clear();
+        self.extension_widgets_below.clear();
         self.render_widgets();
         Ok(())
     }

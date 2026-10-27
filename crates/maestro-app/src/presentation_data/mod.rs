@@ -12,3 +12,7 @@ pub use maestro_models::{
 };
 
 pub mod slash_commands;
+
+/// Supplied native presentations for the final startup handoff.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod mode_dispatch;

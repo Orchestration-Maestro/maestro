@@ -26,7 +26,6 @@ use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
-    sync::Arc,
 };
 
 /// `value` as a client reads it from the compact protocol text.
@@ -1195,7 +1194,7 @@ fn custom_shell_output_reaches_saved_transcript() {
         let (_h, runtime, _) = runtime_for("custom-shell", Vec::new()).await;
         let session = runtime.session();
         let options = BashRunOptions {
-            operations: Some(Arc::new(ScriptedShell::output(
+            operations: Some(Rc::new(ScriptedShell::output(
                 "hello from custom ops",
                 Some(0.0),
             ))),

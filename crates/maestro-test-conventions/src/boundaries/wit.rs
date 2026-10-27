@@ -110,14 +110,16 @@ fn fields(input: ParseStream<'_>) -> syn::Result<Inputs> {
     let mut result = Inputs::default();
     while !input.is_empty() {
         let name = input.call(syn::Ident::parse_any)?;
-        input.parse::<Token![:]>()?;
-        if name == "path" {
-            result.paths.extend(paths(input)?);
-        } else if name == "inline" {
-            input.parse::<syn::LitStr>()?;
-            result.inline = true;
-        } else {
-            skip_value(input)?;
+        if name != "generate_all" {
+            input.parse::<Token![:]>()?;
+            if name == "path" {
+                result.paths.extend(paths(input)?);
+            } else if name == "inline" {
+                input.parse::<syn::LitStr>()?;
+                result.inline = true;
+            } else {
+                skip_value(input)?;
+            }
         }
         if !input.is_empty() {
             input.parse::<Token![,]>()?;

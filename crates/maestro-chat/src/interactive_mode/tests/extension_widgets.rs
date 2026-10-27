@@ -3,7 +3,7 @@ use super::extension_ui::port;
 use super::{Setup, World, isolated, started};
 use maestro_app::{
     ExtensionAPI, ExtensionComponent, ExtensionFactory, ExtensionWidgetOptions, Local,
-    ReadonlyFooterDataProvider, WidgetContent, WidgetPlacement,
+    ReadonlyFooterDataProvider, SettingsManager, WidgetContent, WidgetPlacement,
 };
 use maestro_tui::{Component, Text};
 use serde::Deserialize;
@@ -63,10 +63,20 @@ fn paint(world: &World) -> (Vec<String>, Vec<String>) {
     )
 }
 /// Loads real bound callbacks with the existing session and terminal fixture.
-fn with_factories(
+pub(super) async fn with_factories<T: 'static>(
     directory: &Path,
-    build: impl Fn(&ExtensionAPI<Local>) -> Vec<WidgetContent> + 'static,
-) -> (World, Vec<WidgetContent>) {
+    build: impl Fn(&ExtensionAPI<Local>) -> Vec<T> + 'static,
+) -> (World, Vec<T>) {
+    with_configured_factories(directory, Box::new(|_| {}), build).await
+}
+
+/// Loads real bound callbacks as [`with_factories`] does, after `configure` changes the
+/// settings.
+pub(super) async fn with_configured_factories<T: 'static>(
+    directory: &Path,
+    configure: Box<dyn FnOnce(&mut SettingsManager)>,
+    build: impl Fn(&ExtensionAPI<Local>) -> Vec<T> + 'static,
+) -> (World, Vec<T>) {
     let stored = Rc::new(RefCell::new(Vec::new()));
     let output = stored.clone();
     let factory: ExtensionFactory<Local> = Rc::new(move |api| {
@@ -75,18 +85,19 @@ fn with_factories(
     });
     let world = Setup {
         extension: Some(factory),
+        configure,
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     let callbacks = stored.take();
     (world, callbacks)
 }
 
 #[test]
 fn widgets_bound_text_rows_and_placement() {
-    isolated("widgets_bound_text_rows_and_placement", |directory| {
-        let world = started(directory);
+    isolated("widgets_bound_text_rows_and_placement", async |directory| {
+        let world = started(directory).await;
         let ui = port(&world.mode);
         for (input, expected) in super::cases::<Placement, Placed>(
             include_str!("../../../tests/fixtures/interactive_extension_widgets.json"),
@@ -136,8 +147,8 @@ fn widgets_bound_text_rows_and_placement() {
 fn status_updates_retain_live_order_and_request_render() {
     isolated(
         "status_updates_retain_live_order_and_request_render",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let ui = port(&world.mode);
             let live = world.mode.footer_data_provider.get_extension_statuses();
             for (key, text, next) in [
@@ -170,8 +181,8 @@ fn status_updates_retain_live_order_and_request_render() {
 fn widgets_keep_empty_unicode_multiline_and_visible_styles() {
     isolated(
         "widgets_keep_empty_unicode_multiline_and_visible_styles",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let ui = port(&world.mode);
             for (input, expected) in super::cases::<Lines, Paint>(
                 include_str!("../../../tests/fixtures/interactive_extension_widgets.json"),
@@ -208,6 +219,8 @@ fn traced(
         Ok(ExtensionComponent {
             component: Rc::new(Text::new(label.into(), 0, 0, None)),
             dispose: Some(dispose.clone()),
+            set_expanded: None,
+            width: None,
         })
     }))
 }
@@ -216,7 +229,7 @@ fn traced(
 fn widgets_replacement_reorders_moves_and_disposes() {
     isolated(
         "widgets_replacement_reorders_moves_and_disposes",
-        |directory| {
+        async |directory| {
             let trace = Rc::new(RefCell::new(Vec::new()));
             let recorded = trace.clone();
             let (world, callbacks) = with_factories(directory, move |api| {
@@ -224,7 +237,8 @@ fn widgets_replacement_reorders_moves_and_disposes() {
                     .into_iter()
                     .map(|label| traced(api, label, &recorded))
                     .collect()
-            });
+            })
+            .await;
             let ui = port(&world.mode);
             let mut callbacks = callbacks.into_iter();
             ui.set_widget("b".into(), callbacks.next(), None).unwrap();
@@ -300,6 +314,8 @@ fn failing_factories(
         Ok(ExtensionComponent {
             component: Rc::new(Text::new("OLD".into(), 0, 0, None)),
             dispose: Some(dispose.clone()),
+            set_expanded: None,
+            width: None,
         })
     });
     let called = recorded.clone();
@@ -315,7 +331,7 @@ fn failing_factories(
 fn widget_failures_preserve_original_error_and_prior_effects() {
     isolated(
         "widget_failures_preserve_original_error_and_prior_effects",
-        |directory| {
+        async |directory| {
             for dispose_fails in [false, true] {
                 let identity = std::sync::Arc::new(());
                 let returned = identity.clone();
@@ -323,7 +339,8 @@ fn widget_failures_preserve_original_error_and_prior_effects() {
                 let recorded = trace.clone();
                 let (world, callbacks) = with_factories(directory, move |api| {
                     failing_factories(api, dispose_fails, &returned, &recorded)
-                });
+                })
+                .await;
                 let ui = port(&world.mode);
                 let mut callbacks = callbacks.into_iter();
                 ui.set_widget("a".into(), callbacks.next(), None).unwrap();
@@ -408,6 +425,8 @@ fn origin_factory(
                 Ok(ExtensionComponent {
                     component: Rc::new(Text::new("bound".into(), 0, 0, None)),
                     dispose: Some(dispose.clone()),
+                    set_expanded: None,
+                    width: None,
                 })
             },
         ))));
@@ -419,7 +438,7 @@ fn origin_factory(
 fn widget_factory_callbacks_retain_origin_and_release_the_last_owner() {
     isolated(
         "widget_factory_callbacks_retain_origin_and_release_the_last_owner",
-        |directory| {
+        async |directory| {
             let trace = Rc::new(RefCell::new(Vec::<String>::new()));
             let controller =
                 maestro_app::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
@@ -432,14 +451,15 @@ fn widget_factory_callbacks_retain_origin_and_release_the_last_owner() {
             let loaded = super::loaded_on_bus(
                 directory.to_str().unwrap(),
                 origin_factory(trace.clone(), stored.clone(), released, operands.clone()),
-                controller.for_extension(),
+                &controller.for_extension(),
+                Vec::new(),
             );
             let callback = stored.take().unwrap();
             let retained_factory = callback.clone();
             drop(loaded);
             drop(foreign);
             drop(controller);
-            let world = started(directory);
+            let world = started(directory).await;
             let ui = port(&world.mode);
             ui.set_widget("bound".into(), Some(callback), None).unwrap();
             assert_eq!(*trace.borrow(), ["before", "same", "after", "foreign"]);

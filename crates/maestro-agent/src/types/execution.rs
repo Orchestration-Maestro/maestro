@@ -6,7 +6,7 @@ use super::{
 };
 use maestro_models::{
     AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo, Message, Model,
-    ProviderStreamOptions, SimpleStreamOptions,
+    ProviderStreamOptions, SchemaCodeSource, SimpleStreamOptions,
 };
 use maestro_models::{Local, Threaded};
 use std::{future::Future, rc::Rc, sync::Arc};
@@ -15,6 +15,25 @@ type CallbackFuture<'a, E, T> =
     <E as maestro_models::Execution>::Future<'a, Result<T, DiagnosticErrorInfo>>;
 /// Agent callback signatures for the lower-owned execution representation.
 pub trait AgentExecution: maestro_models::ProviderExecution {
+    /// Executable annotations follow storage affinity; threaded defaults keep only data.
+    type SchemaCode: maestro_models::SchemaCodeSource + Clone + Default;
+    /// Project retained metadata into local invocation without calling author code.
+    fn local_definition(
+        definition: &maestro_models::Tool<Self::SchemaCode>,
+    ) -> maestro_models::Tool<maestro_models::SchemaCode> {
+        maestro_models::Tool {
+            name: definition.name.clone(),
+            description: definition.description.clone(),
+            parameters: definition.parameters.data().with_code(
+                definition
+                    .parameters
+                    .code()
+                    .schema_code()
+                    .cloned()
+                    .unwrap_or_default(),
+            ),
+        }
+    }
     /// A retained observation future with no borrowed operation data.
     type ObservationFuture: Future<Output = Result<(), DiagnosticErrorInfo>> + Unpin + 'static;
     /// A live model-facing tool description.
@@ -99,9 +118,10 @@ pub trait AgentExecution: maestro_models::ProviderExecution {
 }
 /// One declaration template; only pointer and auto-trait bounds differ.
 macro_rules! family {
- ($mode:ty,$ptr:ident, [$($bound:tt)*], $submission:expr, $dispatch:expr) => {
+ ($mode:ty,$ptr:ident, [$($bound:tt)*], $code:ty, $submission:expr, $dispatch:expr) => {
 
 impl AgentExecution for $mode {
+    type SchemaCode = $code;
     type ObservationFuture = <Self as maestro_models::Execution>::Future<'static,Result<(),DiagnosticErrorInfo>>;
     type Description = dyn Fn() -> Result<String, DiagnosticErrorInfo> $($bound)*;
     type Update<D> = dyn Fn(AgentToolResult<D>) $($bound)*;
@@ -198,6 +218,7 @@ family!(
     Local,
     Rc,
     [],
+    maestro_models::SchemaCode,
     |spawn: crate::AgentSpawner<Local>| Rc::new(move |task| {
         spawn(task);
         true
@@ -210,9 +231,16 @@ family!(
     )
 );
 #[cfg(not(target_arch = "wasm32"))]
-family!(Threaded,Arc,[+ Send + Sync], |_spawn| None, threaded_provider_stream);
+family!(Threaded,Arc,[+ Send + Sync], (), |_spawn| None, threaded_provider_stream);
 #[cfg(target_arch = "wasm32")]
-family!(Threaded, Rc, [], |_spawn| None, threaded_provider_stream);
+family!(
+    Threaded,
+    Rc,
+    [],
+    (),
+    |_spawn| None,
+    threaded_provider_stream
+);
 /// Preserve the ordinary provider default unless an override was supplied.
 fn threaded_provider_stream(
     model: Model,

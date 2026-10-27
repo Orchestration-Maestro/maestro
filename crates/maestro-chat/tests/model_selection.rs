@@ -688,7 +688,10 @@ fn failing_registry(
         .register_provider(
             "maestro-unconfigured",
             SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
-                oauth: Some(SharedHandle::new(RejectingModels)),
+                callbacks: maestro_app::ProviderCallbacks {
+                    oauth: Some(SharedHandle::new(RejectingModels)),
+                    ..Default::default()
+                },
                 models: Some(vec![
                     Descriptor {
                         provider: "maestro-unconfigured".into(),
@@ -824,8 +827,8 @@ impl maestro_app::OAuthProviderInterface for RejectingModels {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_app::OAuthCredentials,
-    ) -> Result<&'a str, maestro_app::OAuthError> {
-        Ok(&credentials.access)
+    ) -> Result<std::borrow::Cow<'a, str>, maestro_app::OAuthError> {
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,
@@ -848,7 +851,10 @@ fn rejecting_registry() -> maestro_app::ModelRegistry {
         .register_provider(
             "maestro-refresh-failure",
             SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
-                oauth: Some(SharedHandle::new(RejectingModels)),
+                callbacks: maestro_app::ProviderCallbacks {
+                    oauth: Some(SharedHandle::new(RejectingModels)),
+                    ..Default::default()
+                },
                 models: Some(vec![
                     Descriptor {
                         provider: "maestro-refresh-failure".into(),

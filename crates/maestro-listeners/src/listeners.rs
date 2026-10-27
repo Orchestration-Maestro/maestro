@@ -29,17 +29,33 @@ impl Drop for ListenerCursor {
     }
 }
 
-/// Callbacks in registration order, deduplicated by identity.
+/// How a collection treats a callback it already holds.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Admission {
+    /// One registration per callback identity.
+    #[default]
+    Identity,
+    /// Every addition is its own registration, as an event-emitter listener list keeps them.
+    Every,
+}
+
+/// Callbacks in registration order, deduplicated by identity unless the caller chose
+/// [`Admission::Every`].
 ///
-/// A callback is admitted once per identity: adding a live one again keeps its first
-/// position. Registration order is the traversal order, and a removed identity that is
-/// added again takes the last position. Traversals see the collection as it is at each
+/// Under identity admission, adding a live callback again keeps its first position.
+/// Registration order is the traversal order, and a removed identity that is added
+/// again takes the last position. Traversals see the collection as it is at each
 /// step: callbacks added meanwhile are visited, callbacks removed before they are
 /// reached are skipped.
 pub struct Listeners<P> {
-    /// Registrations in order; `None` marks a slot retired by removal.
-    entries: Vec<Option<P>>,
-    /// Callback identity of each live registration mapped to its slot.
+    /// How a callback the collection already holds is admitted.
+    admission: Admission,
+    /// Number given to the latest registration under [`Admission::Every`].
+    registrations: usize,
+    /// Registrations in order with their key; `None` marks a slot retired by removal.
+    entries: Vec<Option<(usize, P)>>,
+    /// Key of each live registration mapped to its slot: the callback identity, or the
+    /// registration number under [`Admission::Every`].
     identities: HashMap<usize, usize>,
     /// Traversals sharing this collection.
     active: Arc<AtomicUsize>,
@@ -47,7 +63,17 @@ pub struct Listeners<P> {
 
 impl<P> Default for Listeners<P> {
     fn default() -> Self {
+        Self::new(Admission::Identity)
+    }
+}
+
+impl<P> Listeners<P> {
+    /// An empty collection admitting callbacks by `admission`.
+    #[must_use]
+    pub fn new(admission: Admission) -> Self {
         Self {
+            admission,
+            registrations: 0,
             entries: Vec::new(),
             identities: HashMap::new(),
             active: Arc::new(AtomicUsize::new(0)),
@@ -70,35 +96,56 @@ impl<P: Deref> Listeners<P> {
         let mut slot = 0;
         self.entries.retain(|entry| {
             visit();
-            let Some(listener) = entry else {
+            let Some((key, _)) = entry else {
                 return false;
             };
-            identities.insert(identity(listener), slot);
+            identities.insert(*key, slot);
             slot += 1;
             true
         });
     }
 
-    /// Admits `listener` unless its identity is already registered.
+    /// Admits `listener` unless identity admission already holds it.
     pub fn add(&mut self, listener: P) {
+        self.admit(listener);
+    }
+
+    /// Admits `listener` and returns its registration number under [`Admission::Every`].
+    fn admit(&mut self, listener: P) -> Option<usize> {
         self.compact();
         visit();
-        if let std::collections::hash_map::Entry::Vacant(entry) =
-            self.identities.entry(identity(&listener))
-        {
+        let (key, number) = match self.admission {
+            Admission::Identity => (identity(&listener), None),
+            Admission::Every => {
+                self.registrations += 1;
+                (self.registrations, Some(self.registrations))
+            }
+        };
+        if let std::collections::hash_map::Entry::Vacant(entry) = self.identities.entry(key) {
             entry.insert(self.entries.len());
-            self.entries.push(Some(listener));
+            self.entries.push(Some((key, listener)));
         }
+        number
     }
 
     /// Removes the registration of `listener` and returns what it owned.
     ///
     /// The caller receives the callback so it is released outside any borrow of the
-    /// collection. An identity that is not registered yields `None`.
+    /// collection. An identity that is not registered yields `None`. Under
+    /// [`Admission::Every`] only the operation [`Listeners::subscribe`] returns removes a
+    /// registration, so every identity yields `None` here.
     pub fn remove(&mut self, listener: *const P::Target) -> Option<P> {
+        match self.admission {
+            Admission::Identity => self.remove_key(listener.cast::<()>().addr()),
+            Admission::Every => None,
+        }
+    }
+
+    /// Removes the registration indexed by `key` and returns what it owned.
+    fn remove_key(&mut self, key: usize) -> Option<P> {
         visit();
-        let slot = self.identities.remove(&listener.cast::<()>().addr())?;
-        let removed = self.entries[slot].take();
+        let slot = self.identities.remove(&key)?;
+        let removed = self.entries[slot].take().map(|(_, listener)| listener);
         self.compact();
         removed
     }
@@ -137,7 +184,7 @@ impl<P: Deref> Listeners<P> {
         while let Some(entry) = self.entries.get(cursor.next) {
             cursor.next += 1;
             visit();
-            if let Some(listener) = entry {
+            if let Some((_, listener)) = entry {
                 return Some(listener);
             }
         }
@@ -148,15 +195,19 @@ impl<P: Deref> Listeners<P> {
 impl<T: ?Sized> Listeners<Rc<T>> {
     /// Adds `listener` to the shared collection.
     ///
-    /// The returned operation removes that identity and does nothing once the
-    /// registration or the collection is gone.
+    /// The returned operation removes that identity, or under [`Admission::Every`] this
+    /// one registration, and does nothing once the registration or the collection is
+    /// gone.
     pub fn subscribe(listeners: &Rc<RefCell<Self>>, listener: Rc<T>) -> impl Fn() + use<T> {
         let identity = Rc::downgrade(&listener);
         let weak = Rc::downgrade(listeners);
-        listeners.borrow_mut().add(listener);
+        let registration = listeners.borrow_mut().admit(listener);
         move || {
             if let Some(listeners) = weak.upgrade() {
-                let removed = listeners.borrow_mut().remove(identity.as_ptr());
+                let removed = match registration {
+                    Some(number) => listeners.borrow_mut().remove_key(number),
+                    None => listeners.borrow_mut().remove(identity.as_ptr()),
+                };
                 drop(removed);
             }
         }

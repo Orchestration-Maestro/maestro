@@ -1,11 +1,8 @@
 //! Controlled observations of the shared native content boundary.
 #![cfg(test)]
 use maestro_theme::BrandPresentation;
-use maestro_web::{Attachment, Input, browser::attachment_content::*, browser::timer::Timer};
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use maestro_web::{browser::attachment_content::*, browser::timer::Timer};
+use std::{cell::RefCell, rc::Rc};
 /// Presentation observer, called outside any host borrow.
 pub type Inspect = dyn Fn(&AttachmentSurface<'_>, &BrandPresentation<'_>);
 /// Operands-only conformance adapter, not a native DOM emulator.
@@ -16,12 +13,6 @@ pub struct Host {
     pub removed: RefCell<Vec<egui::Id>>,
     /// Ordered lifecycle effects for controlled dialog callers.
     pub effects: Rc<RefCell<Vec<&'static str>>>,
-    /// Next controlled animation-frame restoration.
-    pub frame: RefCell<Option<Rc<FocusTarget>>>,
-    /// Literal CSS operands passed to native measurement.
-    pub dimensions: RefCell<Vec<[String; 2]>>,
-    /// Native pending Escape observation.
-    pub escape: Cell<bool>,
     /// Next named native effect failure.
     pub failure: RefCell<Option<&'static str>>,
 }
@@ -43,9 +34,6 @@ impl Host {
             inspect: Box::new(inspect),
             removed: RefCell::default(),
             effects: Rc::default(),
-            frame: RefCell::default(),
-            dimensions: RefCell::default(),
-            escape: Cell::new(false),
             failure: RefCell::default(),
         })
     }
@@ -57,36 +45,6 @@ impl AttachmentHost for Host {
         _: maestro_web::browser::attachment_content::ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
-    }
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
-        self.effect("capture")?;
-        let effects = self.effects.clone();
-        Ok(Some(Rc::new(move || {
-            effects.borrow_mut().push("restore");
-            Ok(())
-        })))
-    }
-    fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentHostError> {
-        self.effect("schedule")?;
-        *self.frame.borrow_mut() = Some(target);
-        Ok(Timer::new(|| {}))
-    }
-    fn dialog_bounds(
-        &self,
-        _: egui::Id,
-        dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentHostError> {
-        self.effect("bounds")?;
-        self.dimensions
-            .borrow_mut()
-            .push(dimensions.map(str::to_owned));
-        Ok(egui::Rect::from_min_size(
-            egui::pos2(100., 100.),
-            egui::vec2(400., 300.),
-        ))
-    }
-    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
-        unreachable!()
     }
 
     fn reading_layout(
@@ -136,11 +94,8 @@ impl AttachmentHost for Host {
     fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
-    }
-    fn take_escape(&self) -> bool {
-        self.escape.replace(false)
     }
     fn timer(&self, _: i32, _: bool, _: Rc<dyn Fn()>) -> Result<Timer, AttachmentHostError> {
         unreachable!()
@@ -148,22 +103,4 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-}
-/// Render one input in a caller-sized parent, returning actual painted text.
-/// # Panics
-/// Panics if the controlled input cannot render.
-pub fn render(input: &mut Input, width: f32) -> Vec<String> {
-    let mut frame = crate::attachment_support::Frame::default();
-    frame.run(vec![], |ctx, i18n, presentation| {
-        let mut ui = egui::Ui::new(
-            ctx.clone(),
-            egui::Id::new("input-parent"),
-            egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(
-                egui::pos2(10., 20.),
-                egui::vec2(width, 400.),
-            )),
-        );
-        input.render(&mut ui, i18n, presentation).unwrap();
-    });
-    frame.texts()
 }

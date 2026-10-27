@@ -10,5 +10,6 @@ pub use maestro_request::messages::{
     MessageDelivery, SendMessageOptions, SendUserMessageOptions, UserMessageDelivery,
 };
 /// Host-supplied tool metadata with the shared parameter schema.
-pub type ToolInfo =
-    maestro_request::tool_info::ToolInfo<maestro_request::parameter_schema::ParameterSchema>;
+pub type ToolInfo = maestro_request::tool_info::ToolInfo<
+    maestro_request::parameter_schema::ParameterSchema<crate::schema_code::SchemaCode>,
+>;

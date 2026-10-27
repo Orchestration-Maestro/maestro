@@ -8,28 +8,28 @@ use maestro_session::CompactionResult;
 use std::rc::Rc;
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// Compacts the session context now, after stopping the running turn. Once started, the
-    /// compaction belongs to the session: dropping the returned future leaves it running, and
-    /// `abort_compaction` stops it.
+    /// Disconnects event forwarding and stops the running turn when called, then compacts
+    /// after the agent settles. The compaction belongs to the session: dropping even the
+    /// never-polled result future leaves it running, and `abort_compaction` stops it.
     ///
     /// # Errors
     /// Returns `Already compacted` or `Nothing to compact (session too small)` when the branch
     /// cannot be cut, `Compaction cancelled` when a handler or caller stopped it, the
     /// authentication or summarizer failure otherwise, or the failure when the compaction's
     /// task ended before it did.
-    pub async fn compact(
+    pub fn compact(
         self: &Rc<Self>,
         custom_instructions: Option<&str>,
-    ) -> Result<CompactionResult, DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<Output = Result<CompactionResult, DiagnosticErrorInfo>> + use<E>
+    {
         let session = Rc::clone(self);
         let custom_instructions = custom_instructions.map(str::to_owned);
-        self.start_operation(async move {
+        let result = self.start_operation(async move {
             session
                 .manual_compaction(custom_instructions.as_deref())
                 .await
-        })
-        .await
-        .map_err(thrown)?
+        });
+        async move { result.await.map_err(thrown)? }
     }
 
     /// The manual compaction the session runs, announced from start to end, with agent events

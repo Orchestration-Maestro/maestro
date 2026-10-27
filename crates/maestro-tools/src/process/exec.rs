@@ -8,7 +8,6 @@ use maestro_process::child_process::{
     CapturedChild, EXIT_STDIO_GRACE_MS, Termination, WaitOptions, wait_for_child_process,
 };
 use std::{cell::Cell, io, process::Output, time::Duration};
-use tokio::process::Command;
 
 /// How long pipes may stay open after the command exits.
 const EXIT_GRACE: Duration = Duration::from_millis(EXIT_STDIO_GRACE_MS);
@@ -56,7 +55,7 @@ pub async fn exec_command(
     if command.is_empty() {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "empty command"));
     }
-    let mut builder = Command::new(command);
+    let mut builder = maestro_process::command(command);
     builder.args(args);
     if !cwd.is_empty() {
         builder.current_dir(cwd);

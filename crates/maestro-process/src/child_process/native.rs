@@ -34,10 +34,20 @@ pub fn kill_process(pid: u32) -> io::Result<()> {
 /// Builds the native tree-kill operands with ignored standard streams.
 #[cfg(any(windows, test))]
 pub(super) fn tree_kill_command(pid: u32) -> std::process::Command {
-    use std::process::{Command, Stdio};
-    let mut command = Command::new("taskkill");
+    kill_command(pid, true)
+}
+
+/// Builds the existing native terminator for a direct process or its tree.
+#[cfg(any(windows, test))]
+fn kill_command(pid: u32, tree: bool) -> std::process::Command {
+    use std::process::Stdio;
+    let mut command = crate::command("taskkill").into_std();
+    command.arg("/F");
+    if tree {
+        command.arg("/T");
+    }
     command
-        .args(["/F", "/T", "/PID", &pid.to_string()])
+        .args(["/PID", &pid.to_string()])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -102,4 +112,74 @@ fn native_pid(pid: u32) -> io::Result<rustix::process::Pid> {
         .ok()
         .and_then(rustix::process::Pid::from_raw)
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "invalid process ID"))
+}
+
+/// Delivers a named signal to a native PID or supported process group.
+///
+/// # Errors
+/// Returns an invalid PID/name error or the original native delivery failure.
+#[cfg(unix)]
+pub fn signal_pid(pid: i32, name: Option<&str>) -> io::Result<()> {
+    let name = name.unwrap_or("SIGTERM");
+    let selected = super::exit_signal::NAMES
+        .iter()
+        .find(|(_, candidate)| *candidate == name)
+        .map(|(signal, _)| *signal)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("Unknown signal {name}"),
+            )
+        })?;
+    signal(pid.unsigned_abs(), selected, pid < 0)
+}
+
+/// Terminates only the direct Windows process with a supported termination signal.
+///
+/// # Errors
+/// Returns an invalid PID/name or the native process-termination failure.
+#[cfg(windows)]
+pub fn signal_pid(pid: i32, name: Option<&str>) -> io::Result<()> {
+    let name = name.unwrap_or("SIGTERM");
+    if !matches!(name, "SIGTERM" | "SIGKILL" | "SIGINT" | "SIGQUIT") {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Unknown signal {name}"),
+        ));
+    }
+    let pid = u32::try_from(pid)
+        .ok()
+        .filter(|pid| *pid != 0)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "process groups are unavailable",
+            )
+        })?;
+    let mut command = tokio::process::Command::from(kill_command(pid, false));
+    let options = super::SpawnSyncOptions::Capture {
+        stdout: super::OutputMode::Discard,
+        stderr: super::OutputMode::Discard,
+        input: None,
+        timeout: None,
+        max_buffer_bytes: None,
+    };
+    let output = super::spawn_sync(&mut command, options).map_err(io::Error::other)?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
+            "process termination exited with {}",
+            output.status
+        )))
+    }
+}
+
+/// Reports that this native host has no PID signalling facility.
+///
+/// # Errors
+/// Always returns the native unsupported-operation error.
+#[cfg(not(any(unix, windows)))]
+pub fn signal_pid(_pid: i32, _name: Option<&str>) -> io::Result<()> {
+    Err(io::Error::from(io::ErrorKind::Unsupported))
 }

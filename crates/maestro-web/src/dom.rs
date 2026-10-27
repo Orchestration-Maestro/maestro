@@ -19,7 +19,15 @@ pub struct DomView {
     pub pack: Rc<maestro_theme::BrandPack>,
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
+    /// Instance-local tool renderers, selected before page-wide registrations.
+    pub tool_renderers: Rc<indexmap::IndexMap<String, crate::tools::types::ToolRendererBinding>>,
 }
+/// Prepared renderer output: owned records on native targets, which have no page.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) type PreparedContent = Box<dyn Any>;
+/// Prepared renderer output: page content in the browser.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type PreparedContent = Box<dyn DomContent>;
 /// A mounted root and the native resources that live exactly as long as it.
 pub struct DomRoot {
     /// Root node the caller places.
@@ -76,6 +84,19 @@ impl MountedContent {
         parent: &Node,
         view: &DomView,
     ) -> Result<(), ToolUiError> {
+        self.show_before(content, parent, None, view)
+    }
+    /// Like [`Self::show`], but a first root is placed before `before` instead of last.
+    /// # Errors
+    /// Returns the content's failure; a failed replacement keeps the previous root.
+    #[cfg(target_arch = "wasm32")]
+    pub fn show_before(
+        &mut self,
+        content: &dyn DomContent,
+        parent: &Node,
+        before: Option<&Node>,
+        view: &DomView,
+    ) -> Result<(), ToolUiError> {
         let kind = (content as &dyn Any).type_id();
         if let Some((active, key, root)) = &self.active
             && *active == kind
@@ -86,13 +107,19 @@ impl MountedContent {
         let root = content.mount(view)?;
         match &self.active {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
-            None => parent.append_child(&root.node),
+            None => parent.insert_before(&root.node, before),
         }
-        .map_err(|e| {
-            ToolUiError::Host(crate::browser::attachment_content::browser::host_error(&e))
-        })?;
+        .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
+    }
+    /// Remove the root element from its parent and release its resources.
+    #[cfg(target_arch = "wasm32")]
+    pub fn clear(&mut self) {
+        use wasm_bindgen::JsCast as _;
+        if let Some((.., root)) = self.active.take() {
+            root.node.unchecked_ref::<web_sys::Element>().remove();
+        }
     }
 }
 /// An element property reflected onto one of its attributes.
@@ -204,9 +231,51 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("components/messages.css"));
     css.push_str(include_str!("tools/artifacts/artifact_element.css"));
     css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/html_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/console.css"));
+    css.push_str(include_str!("components/diff.css"));
     css.push_str(include_str!("dom.css"));
+    css.push_str(include_str!("dialogs/dialogs.css"));
+    css.push_str(include_str!("components/message_editor.css"));
+    css.push_str(include_str!("components/agent_interface.css"));
+    css.push_str(include_str!("chat_panel.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))
+}
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    /// Operands of the built-in element under construction, which its constructor takes.
+    static CREATING: std::cell::RefCell<Option<Box<dyn Any>>> = const { std::cell::RefCell::new(None) };
+}
+/// Create a `tag` element whose constructor can take `inputs` through [`take_creating`].
+///
+/// The constructor has no argument channel. Operands it leaves untaken are dropped, and a
+/// creation nested inside another restores the outer operands before returning.
+/// # Errors
+/// Returns the browser's creation failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn create_with<T: 'static>(
+    document: &Document,
+    tag: &str,
+    inputs: T,
+) -> Result<web_sys::Element, wasm_bindgen::JsValue> {
+    let outer = CREATING.replace(Some(Box::new(inputs)));
+    let created = document.create_element(tag);
+    let untaken = CREATING.replace(outer);
+    drop(untaken);
+    created
+}
+/// Take the operands of the element under construction when they have type `T`.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn take_creating<T: 'static>() -> Option<T> {
+    CREATING.with_borrow_mut(|slot| match slot.take()?.downcast::<T>() {
+        Ok(inputs) => Some(*inputs),
+        Err(other) => {
+            *slot = Some(other);
+            None
+        }
+    })
 }
 /// Define an autonomous element whose constructor callback lives as long as the page.
 ///
@@ -239,4 +308,69 @@ pub(crate) fn define_element<E: custom_element::CustomElement + 'static>(
     window.custom_elements().define(name, &constructor)?;
     CONSTRUCTORS.with(|all| all.borrow_mut().push(closure));
     Ok(())
+}
+/// One small catalog icon inside a span carrying `class`.
+/// # Errors
+/// Returns a missing icon or native creation failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn icon(
+    document: &Document,
+    name: &str,
+    class: &str,
+) -> Result<web_sys::Element, ToolUiError> {
+    use crate::browser::attachment_content::browser::{element, host_error};
+    let node = crate::tools::renderer_registry::header::dom::glyph(name)?;
+    let span = element(document, "span", class)?;
+    let svg = crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)
+        .map_err(|error| host_error(&error))?;
+    span.append_child(&svg)
+        .map_err(|error| host_error(&error))?;
+    Ok(span)
+}
+/// Parts of an outline glyph: element names with their attributes.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type GlyphParts<'a> = &'a [(&'a str, &'a [(&'a str, &'a str)])];
+/// A decorative stroked glyph of `size` pixels drawn from `parts` in a 24-unit box.
+/// # Errors
+/// Returns a native failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn outline_glyph(
+    document: &Document,
+    size: &str,
+    parts: GlyphParts<'_>,
+) -> Result<web_sys::Element, ToolUiError> {
+    use crate::browser::attachment_content::browser::host_error;
+    const SVG: &str = "http://www.w3.org/2000/svg";
+    let svg = document
+        .create_element_ns(Some(SVG), "svg")
+        .map_err(|e| host_error(&e))?;
+    for (name, value) in [
+        ("width", size),
+        ("height", size),
+        ("viewBox", "0 0 24 24"),
+        ("fill", "none"),
+        ("stroke", "currentColor"),
+        ("stroke-width", "2"),
+        ("aria-hidden", "true"),
+    ] {
+        svg.set_attribute(name, value).map_err(|e| host_error(&e))?;
+    }
+    for (tag, attributes) in parts {
+        let node = document
+            .create_element_ns(Some(SVG), tag)
+            .map_err(|e| host_error(&e))?;
+        for (name, value) in *attributes {
+            node.set_attribute(name, value)
+                .map_err(|e| host_error(&e))?;
+        }
+        svg.append_child(&node).map_err(|e| host_error(&e))?;
+    }
+    Ok(svg)
+}
+/// Log a failure of an update that has no visible outcome of its own.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn report(result: Result<(), ToolUiError>) {
+    if let Err(error) = result {
+        web_sys::console::error_1(&error.to_string().into());
+    }
 }

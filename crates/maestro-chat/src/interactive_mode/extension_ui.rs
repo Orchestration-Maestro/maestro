@@ -1,15 +1,84 @@
 //! The extension UI host over the retained interactive mode.
 use super::InteractiveMode;
 use maestro_app::{
-    EventError, ExtensionUIContextPort, ThemeSelection, ThemeSetResult, WorkingIndicatorOptions,
+    AutocompleteProviderFactory, EventError, ExtensionUIContextPort, ExtensionUIDialogOptions,
+    ExtensionUIFuture, NotificationType, TerminalInputHandler, ThemeSelection, ThemeSetResult,
+    UIUnsubscribe, WorkingIndicatorOptions,
 };
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
-use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
+pub(super) mod custom;
+pub(super) mod dialogs;
+pub(super) mod editor;
+pub(super) mod input;
+mod replacements;
+mod reset;
 mod widgets;
 
 impl ExtensionUIContextPort for InteractiveMode {
+    /// Shows an info status or a labelled warning or error notice.
+    ///
+    /// # Errors
+    /// Returns the original theme failure of the selected notice owner.
+    fn notify(&self, message: String, kind: Option<NotificationType>) -> Result<(), EventError> {
+        match kind {
+            Some(NotificationType::Error) => self.show_error(&message)?,
+            Some(NotificationType::Warning) => self.show_warning(&message)?,
+            None | Some(NotificationType::Info) => self.show_status(&message)?,
+        }
+        Ok(())
+    }
+
+    /// Registers a bound input handler without changing its callback identity.
+    ///
+    /// # Errors
+    /// Registration itself cannot fail; callback failures reach the terminal runtime.
+    fn on_terminal_input(
+        &self,
+        handler: TerminalInputHandler,
+    ) -> Result<UIUnsubscribe, EventError> {
+        Ok(self.extension_input.register(self, handler))
+    }
+
+    /// Shows a selector in place of the editor until it is answered, cancelled, timed
+    /// out or aborted.
+    fn select(
+        &self,
+        title: String,
+        options: Vec<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_selector(title, options, opts)
+    }
+
+    /// Asks `title` and `message` with `Yes` and `No`; only `Yes` is true.
+    fn confirm(
+        &self,
+        title: String,
+        message: String,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<bool> {
+        self.show_extension_confirm(&title, &message, opts)
+    }
+
+    /// Shows a text input in place of the editor until it is submitted, cancelled,
+    /// timed out or aborted.
+    fn input(
+        &self,
+        title: String,
+        placeholder: Option<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_input(title, placeholder.as_deref(), opts)
+    }
+
+    /// Shows a multiline editor in place of the editor until it is submitted or
+    /// cancelled.
+    fn editor(&self, title: String, prefill: Option<String>) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_editor(title, prefill)
+    }
+
     /// Updates the keyed footer status and requests a frame.
     ///
     /// # Errors
@@ -32,6 +101,32 @@ impl ExtensionUIContextPort for InteractiveMode {
         self.set_extension_widget(key, content, options)
     }
 
+    /// Replaces the footer with the extension's, or restores the built-in one for `None`.
+    ///
+    /// # Errors
+    /// Returns the original disposal or factory failure.
+    fn set_footer(&self, factory: Option<maestro_app::FooterFactory>) -> Result<(), EventError> {
+        self.set_extension_footer(factory)
+    }
+
+    /// Replaces the header with the extension's, or restores the built-in one for `None`.
+    ///
+    /// # Errors
+    /// Returns the original disposal, factory or expansion failure.
+    fn set_header(&self, factory: Option<maestro_app::ComponentFactory>) -> Result<(), EventError> {
+        self.set_extension_header(factory)
+    }
+
+    /// Shows the extension's component in place of the editor or as an overlay until it
+    /// closes or fails.
+    fn custom_component(
+        &self,
+        factory: maestro_app::CustomComponentFactory,
+        options: Option<maestro_app::CustomUIOptions>,
+    ) -> ExtensionUIFuture<()> {
+        self.show_extension_custom(&factory, options)
+    }
+
     /// Forwards the supplied text to the terminal's title setter unchanged.
     ///
     /// # Errors
@@ -46,26 +141,58 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// # Errors
     /// Returns the host's failure; the editor itself cannot fail here.
     fn paste_to_editor(&self, text: String) -> Result<(), EventError> {
-        self.editor
+        self.current_editor()
             .handle_input(&format!("\x1b[200~{text}\x1b[201~"));
         Ok(())
     }
 
-    /// Replaces the editor text with `text`, unchanged.
+    /// Replaces the current editor's text with `text`, unchanged.
     ///
     /// # Errors
-    /// Returns the host's failure; the editor itself cannot fail here.
+    /// Returns the editor's original failure.
     fn set_editor_text(&self, text: String) -> Result<(), EventError> {
-        self.editor.set_text(&text);
-        Ok(())
+        self.current_editor().try_set_text(&text)
     }
 
-    /// Returns the editor's expanded text, or its plain text when it has none.
+    /// Returns the current editor's expanded text, or its raw text when it has none.
     ///
     /// # Errors
-    /// Returns the host's failure; reading the editor cannot fail here.
+    /// Returns the editor's original failure.
     fn get_editor_text(&self) -> Result<String, EventError> {
-        Ok(self.editor.get_expanded_text())
+        self.expanded_editor_text()
+    }
+
+    /// Replaces the editor with the extension's, or restores the default for `None`.
+    ///
+    /// # Errors
+    /// Returns the original text, factory or editor failure.
+    fn set_editor_component(
+        &self,
+        factory: Option<maestro_app::EditorFactory>,
+    ) -> Result<(), EventError> {
+        self.set_custom_editor_component(factory)
+    }
+
+    /// Returns the extension editor factory, if one is set.
+    ///
+    /// # Errors
+    /// This implementation does not return errors.
+    fn get_editor_component(&self) -> Result<Option<maestro_app::EditorFactory>, EventError> {
+        Ok(self.editor_factory())
+    }
+
+    /// Retains the bound factory and rebuilds completion before returning.
+    ///
+    /// # Errors
+    /// Returns the original factory failure; the registration remains for later rebuilds.
+    fn add_autocomplete_provider(
+        &self,
+        factory: AutocompleteProviderFactory,
+    ) -> Result<(), EventError> {
+        self.autocomplete_provider_wrappers
+            .borrow_mut()
+            .push(factory);
+        self.setup_autocomplete_provider()
     }
 
     /// Returns the live view of the published theme.

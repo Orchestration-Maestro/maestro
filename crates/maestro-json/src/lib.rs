@@ -21,3 +21,9 @@ pub use json_text::{
 };
 pub use keys::{array_index, canonical_entries};
 pub use truth::{is_raw_truthy, is_truthy};
+
+/// Escape one JSON Pointer reference token, leaving ordinary characters unchanged.
+#[must_use]
+pub fn escape_pointer_token(token: &str) -> String {
+    token.replace('~', "~0").replace('/', "~1")
+}
