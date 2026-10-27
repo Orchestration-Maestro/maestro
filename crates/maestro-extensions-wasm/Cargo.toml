@@ -224,6 +224,7 @@ serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+num-traits.workspace = true
 regex.workspace = true
 ryu-js.workspace = true
 

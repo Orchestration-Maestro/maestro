@@ -15,6 +15,7 @@ use maestro_extensions_wasm::{
     ExtensionResult, Presence, Style, Text, Theme, UserBlock, UserContent,
     utils::local_time_string,
 };
+use num_traits::ToPrimitive;
 use serde_json::{Value, json};
 
 /// Whitespace as the command trims and splits it: Unicode white space except U+0085, and the
@@ -87,10 +88,11 @@ fn render(
     let mut text = format!("{prefix} {content}");
     if expanded
         && let Some(timestamp) = field("timestamp")
-            .and_then(Value::as_i64)
-            .filter(|timestamp| *timestamp != 0)
+            .and_then(Value::as_f64)
+            .filter(|timestamp| *timestamp != 0.0)
     {
-        let time = local_time_string(api, timestamp)?;
+        // Past the integer range is past the calendar too, which the host reads as invalid.
+        let time = local_time_string(api, timestamp.to_i64().unwrap_or(i64::MAX))?;
         text = format!("{text}\n{}", theme.fg("dim", &format!("  sent {time}"))?);
     }
     let background = Style::new(move |text| theme.bg("customMessageBg", text));
