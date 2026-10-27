@@ -9,10 +9,10 @@ use std::time::Duration;
 
 use chrono::{DateTime, Local, TimeZone};
 use tokio::sync::mpsc::UnboundedSender;
-use tokio::task::JoinHandle;
+use tokio::task::{JoinHandle, LocalSet};
 use tokio::time::{Instant, MissedTickBehavior, interval_at};
 
-use super::{ProcessTerminal, Shared};
+use super::{OutputPort, ProcessTerminal, Shared};
 use crate::output_errors::FailureSource;
 
 /// Cloneable byte admission into the running terminal's ordered output.
@@ -67,15 +67,58 @@ impl Write for OutputWriter {
     }
 }
 
-/// A retained standard byte writer, available before terminal startup.
-#[derive(Clone)]
-pub struct StandardOutput;
+/// A standard byte writer that follows its terminal's output lifecycle.
+///
+/// Writes join the existing admission sender while queued output runs. Before start,
+/// after stop and for synchronous destinations, they write and flush inherited stdout.
+/// A queued write or flush checks admission, not physical delivery.
+#[derive(Clone, Default)]
+pub struct StandardOutput {
+    /// Serializes foreign writes with output acquisition and final drain.
+    active: Arc<Mutex<Option<OutputWriter>>>,
+}
 impl Write for StandardOutput {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        io::stdout().write(bytes)
+        let mut active = self.active.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(writer) = active.as_mut() {
+            writer.write(bytes)
+        } else {
+            let mut stdout = io::stdout().lock();
+            stdout.write_all(bytes)?;
+            stdout.flush()?;
+            Ok(bytes.len())
+        }
     }
     fn flush(&mut self) -> io::Result<()> {
-        io::stdout().flush()
+        let mut active = self.active.lock().unwrap_or_else(PoisonError::into_inner);
+        active
+            .as_mut()
+            .map_or_else(|| io::stdout().flush(), Write::flush)
+    }
+}
+
+impl Shared {
+    /// Publishes the current admission sender before another thread can use stdout.
+    pub(super) fn open_output(self: &Rc<Self>, local: &LocalSet) -> io::Result<()> {
+        let mut active = self
+            .stdout
+            .active
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        self.output.open(local, Rc::downgrade(self))?;
+        *active = self.output.output_writer();
+        Ok(())
+    }
+
+    /// Keeps inherited writes behind the final drain and descriptor restoration.
+    pub(super) fn finish_output(&self) -> io::Result<()> {
+        let mut active = self
+            .stdout
+            .active
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        *active = None;
+        self.output.finish()
     }
 }
 

@@ -124,6 +124,7 @@ fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestr
                     agent_dir: "/controlled-agent".into(),
                 },
                 Rc::clone(&io),
+                None,
             ),
         ))))
     })
