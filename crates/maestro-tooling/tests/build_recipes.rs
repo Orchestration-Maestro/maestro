@@ -1652,6 +1652,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     };
     let mut child = process
         .nocapture()
+        .single_threaded()
         .env("MAESTRO_CAPTURE_CONTROL", "1")
         .stdin(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -1662,7 +1663,13 @@ fn assert_killed_transcript(directory: Option<&Path>) {
         .by_ref()
         .lines()
         .map(Result::unwrap)
-        .find_map(|line| line.strip_prefix("READY ").map(str::to_owned))
+        .find_map(|line| {
+            assert!(
+                !line.contains("READY ") || line.starts_with("READY "),
+                "readiness marker must start its own line: {line:?}"
+            );
+            line.strip_prefix("READY ").map(str::to_owned)
+        })
         .unwrap();
     assert!(
         Command::new("kill")
