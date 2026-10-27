@@ -24,6 +24,8 @@ compaction above a token threshold and a command that requests compaction
 immediately, `extensions/bookmark.rs` labels the newest assistant message so the
 tree view can show it, `extensions/working_message_test.rs` asks for custom
 working text and an indicator whenever a session starts,
+`extensions/dynamic_tools.rs` registers one echo tool when a session starts and
+a command that adds more echo tools while the session runs,
 `extensions/session_name.rs` builds a command that sets or shows the session's
 friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, and `extensions/send_user_message.rs` builds commands
@@ -33,7 +35,11 @@ five- and ten-second timeouts, plus a caller-owned cancellation example.
 `extensions/widget_placement.rs` requests widgets above and below the editor on
 session start.
 `extensions/status_line.rs` shows themed readiness and counted turn progress in
-the footer; its controlled run is listed in the extension index. The
+the footer; its controlled run is listed in the extension index.
+`extensions/notify.rs` sends an opt-in desktop notification on agent completion
+through OSC 777, Kitty OSC 99 or Windows PowerShell; its
+[index entry](../examples/extensions/README.md#what-the-notification-example-does)
+lists the terminal and platform prerequisites and controlled run command. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
