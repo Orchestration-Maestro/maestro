@@ -124,7 +124,7 @@ impl ExtensionWidgets for ExtensionWidgetHost {
 }
 
 /// The application manager's shared bindings and, on native targets, its reload.
-fn keybindings(manager: KeybindingsManager) -> ExtensionKeybindings {
+pub(crate) fn keybindings(manager: KeybindingsManager) -> ExtensionKeybindings {
     let shared = (*manager).clone();
     #[cfg(not(target_arch = "wasm32"))]
     let reload: Option<Rc<dyn Fn()>> = Some(Rc::new(move || manager.reload()));

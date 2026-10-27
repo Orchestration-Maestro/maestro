@@ -8,7 +8,8 @@ use maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider;
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentDisposer, ComponentFactory, CustomClose,
     CustomComponentFactory, CustomDone, CustomFactory, CustomFactoryOutcome, EditorFactoryOutcome,
-    ExtensionComponent, FooterFactory, OverlayHandleCallback, OverlayOptionsResolver,
+    ExtensionComponent, ExtensionKeybindings, FooterFactory, OverlayHandleCallback,
+    OverlayOptionsResolver,
 };
 use maestro_extensions::{
     CallbackEmitter, EventBus, EventListener, ExtensionAPI, ExtensionExecution, ExtensionUIContext,
@@ -159,7 +160,7 @@ fn families<E: ExtensionExecution>(api: &ExtensionAPI<E>, operands: &Operands) -
         editor: {
             let seen = seen.clone();
             api.ui_callback(
-                move |(tui, theme, _): (TUI, EditorTheme, KeybindingsManager), _| {
+                move |(tui, theme, _): (TUI, EditorTheme, ExtensionKeybindings), _| {
                     let editor: Rc<dyn EditorComponent<Signal = Cancellation>> =
                         Rc::new(Editor::new(&tui, theme, EditorOptions::default()));
                     mark(&seen, "editor");
@@ -200,7 +201,12 @@ fn custom_families<E: ExtensionExecution>(
         {
             let seen = seen.clone();
             api.ui_callback(
-                move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<String>),
+                move |(_, _, _, done): (
+                    TUI,
+                    LiveTheme,
+                    ExtensionKeybindings,
+                    CustomDone<String>,
+                ),
                       _| {
                     done("committed".into())?;
                     mark(&seen, "custom");
@@ -215,7 +221,7 @@ fn custom_families<E: ExtensionExecution>(
         },
         {
             api.ui_callback(
-                move |(_, _, _, close): (TUI, LiveTheme, KeybindingsManager, CustomClose), _| {
+                move |(_, _, _, close): (TUI, LiveTheme, ExtensionKeybindings, CustomClose), _| {
                     let accepted = close()?;
                     mark(&seen, format!("custom_component {accepted}"));
                     Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
@@ -230,6 +236,14 @@ fn custom_families<E: ExtensionExecution>(
     )
 }
 
+/// Toolkit defaults supplied without an application reload.
+fn toolkit_keybindings() -> ExtensionKeybindings {
+    ExtensionKeybindings {
+        manager: KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new()),
+        reload: None,
+    }
+}
+
 /// Invokes every constructed alias with the real operands.
 fn invoke_all(
     built: &Families,
@@ -240,7 +254,7 @@ fn invoke_all(
 ) {
     let theme = LiveTheme::default();
     let editor_theme = get_editor_theme(theme.clone());
-    let keys = KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new());
+    let keys = toolkit_keybindings();
     let component = built
         .component
         .call((operands.tui.clone(), theme.clone()))

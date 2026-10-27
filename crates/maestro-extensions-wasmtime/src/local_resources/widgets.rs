@@ -82,13 +82,13 @@ impl Registry {
         self.insert(Capability::Keybindings(keybindings))
     }
 
-    /// The manager behind a keybindings resource.
+    /// The application manager and its reload behind a keybindings resource.
     pub(crate) fn keybindings_manager(
         &self,
         keys: &crate::keys_reads::KeysEndpoint,
-    ) -> Result<maestro_extensions::KeybindingsManager, String> {
+    ) -> Result<maestro_extensions::widgets::ExtensionKeybindings, String> {
         match self.capability(keys.0.id).as_deref() {
-            Some(Capability::Keybindings(keys)) => Ok(keys.manager.clone()),
+            Some(Capability::Keybindings(keys)) => Ok(keys.clone()),
             _ => Err("extension keybindings resource ended".to_owned()),
         }
     }

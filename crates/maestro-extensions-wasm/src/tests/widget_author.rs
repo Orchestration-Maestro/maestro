@@ -972,7 +972,7 @@ fn keys_json(keys: &KeybindingKeys) -> Value {
 }
 
 /// The script form of bindings.
-fn bindings_json(config: &KeybindingsConfig) -> Value {
+pub(super) fn bindings_json(config: &KeybindingsConfig) -> Value {
     json!(
         config
             .iter()

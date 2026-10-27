@@ -263,7 +263,6 @@ fn extension_widget_host_builds_application_loaders_and_list_styles() {
 #[test]
 fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles() {
     use maestro_app::ExtensionWidgets;
-    use maestro_tui::KeybindingKeys;
     let (_state, live) = published::published(&colors(31, 32, 33, 34));
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
@@ -271,33 +270,7 @@ fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles()
         highlighter,
         TerminalImage::new(|_| None, || 1),
     );
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let dir = scratch.path().to_str().unwrap().to_owned();
-    let user = vec![(
-        "tui.select.up".to_owned(),
-        Some(KeybindingKeys::Single("f3".to_owned())),
-    )];
-    let keybindings = host.keybindings(user.clone(), None);
-    assert_eq!(keybindings.manager.get_user_bindings(), user);
-    assert_eq!(keybindings.manager.get_keys("tui.select.up"), ["f3"]);
-    (keybindings.reload.unwrap())();
-    assert_eq!(
-        keybindings.manager.get_user_bindings(),
-        user,
-        "no file keeps the bindings"
-    );
-    let created = host.create_keybindings(Some(dir.clone())).unwrap();
-    std::fs::write(
-        format!("{dir}/keybindings.json"),
-        r#"{"tui.select.up":"f9"}"#,
-    )
-    .unwrap();
-    (created.reload.unwrap())();
-    assert_eq!(
-        created.manager.get_keys("tui.select.up"),
-        ["f9"],
-        "reloads its file"
-    );
+    assert_application_keybindings(&host);
     let hint = host.key_hint("tui.select.up", "up").unwrap();
     assert_eq!(
         hint,
@@ -311,6 +284,65 @@ fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles()
     let theme = host.editor_theme();
     let direct = maestro_theme::get_editor_theme(live);
     assert_eq!((theme.border_color)("x"), (direct.border_color)("x"));
+}
+
+/// The supplied managers retain their own file, overrides and effective snapshots.
+fn assert_application_keybindings(host: &dyn maestro_app::ExtensionWidgets) {
+    use maestro_tui::KeybindingKeys;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_str().unwrap().to_owned();
+    let user = vec![(
+        "tui.select.up".to_owned(),
+        Some(KeybindingKeys::Single("f3".to_owned())),
+    )];
+    let keybindings = host.keybindings(user.clone(), None);
+    assert_eq!(keybindings.get_user_bindings(), user);
+    assert_eq!(keybindings.get_keys("tui.select.up"), ["f3"]);
+    keybindings.reload();
+    assert_eq!(
+        keybindings.get_user_bindings(),
+        user,
+        "no file keeps the bindings"
+    );
+    let created = host.create_keybindings(Some(dir.clone())).unwrap();
+    assert_eq!(created.get_keys("tui.select.up"), ["up"]);
+    let retained = created.clone();
+    let mut snapshot = retained.get_effective_config();
+    snapshot.clear();
+    let path = format!("{dir}/keybindings.json");
+    std::fs::write(&path, r#"{"tui.select.up":"f9"}"#).unwrap();
+    drop(created);
+    retained.reload();
+    assert_eq!(
+        retained.get_keys("tui.select.up"),
+        ["f9"],
+        "reloads its file"
+    );
+    assert!(retained.get_effective_config().contains(&(
+        "tui.select.up".into(),
+        Some(KeybindingKeys::Single("f9".into()))
+    )));
+    let explicit = host.keybindings(user, Some(path.clone()));
+    assert_eq!(
+        explicit.get_keys("tui.select.up"),
+        ["f3"],
+        "constructor is inert"
+    );
+    explicit.reload();
+    assert_eq!(explicit.get_keys("tui.select.up"), ["f9"]);
+    std::fs::write(path, r#"{"tui.select.up":[]}"#).unwrap();
+    explicit.reload();
+    assert!(explicit.get_keys("tui.select.up").is_empty());
+    assert_eq!(
+        retained.get_keys("tui.select.up"),
+        ["f9"],
+        "independent manager"
+    );
+    assert_eq!(
+        keybindings.get_keys("tui.select.up"),
+        ["f3"],
+        "pathless manager"
+    );
 }
 
 #[test]

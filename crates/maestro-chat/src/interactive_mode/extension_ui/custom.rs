@@ -1,5 +1,6 @@
 //! Extension custom views shown in place of the editor or as overlays.
 use super::super::InteractiveMode;
+use crate::components::extension_widgets::keybindings;
 use crate::whole_cell_width::whole_cell_width;
 use maestro_app::{
     CustomClose, CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, EventError,
@@ -102,7 +103,7 @@ impl InteractiveMode {
         view.release.replace(Some(Box::new(release)));
         let closing = Rc::clone(&view);
         let close: CustomClose = Rc::new(move || closing.close());
-        let keys = (*self.keybindings).clone();
+        let keys = keybindings(self.keybindings.clone());
         match factory.call((self.ui.as_ref().clone(), self.themes.theme(), keys, close)) {
             Ok(CustomFactoryOutcome::Ready(component)) => view.install(component),
             Ok(CustomFactoryOutcome::Async(building)) => {
