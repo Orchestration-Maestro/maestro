@@ -37,7 +37,15 @@ fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
         });
         return;
     }
-    for trust in ["untrusted", "trusted"] {
+    // Windows and macOS verify through the system store, which ignores SSL_CERT_FILE, so the
+    // test authority can be trusted only where the host reads that file.
+    let trusts: &[&str] = if cfg!(any(windows, target_os = "macos")) {
+        eprintln!("premise not met: this host's verifier does not read SSL_CERT_FILE");
+        &["untrusted"]
+    } else {
+        &["untrusted", "trusted"]
+    };
+    for &trust in trusts {
         let process = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .env_clear()

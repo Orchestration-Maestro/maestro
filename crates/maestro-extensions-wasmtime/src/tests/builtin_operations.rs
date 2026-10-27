@@ -1,6 +1,42 @@
 //! Built-in native tools retained and invoked by a compiled extension author.
 use serde_json::json;
 
+/// A bridge observation with every recorded virtual path spelled as recorded. Windows
+/// resolves `/virtual` on the working directory's drive with native separators; other
+/// strings, such as real scratch paths, keep the host's spelling.
+fn observation(text: &str) -> serde_json::Value {
+    let value: serde_json::Value = serde_json::from_str(text).unwrap();
+    let root = std::path::absolute("/virtual")
+        .unwrap()
+        .display()
+        .to_string();
+    if root == "/virtual" {
+        return value;
+    }
+    recorded_virtual(value, &root)
+}
+
+/// [`observation`] applied below `value`.
+fn recorded_virtual(value: serde_json::Value, root: &str) -> serde_json::Value {
+    match value {
+        serde_json::Value::String(text) => match text.strip_prefix(root) {
+            Some(rest) => json!(format!("/virtual{}", rest.replace('\\', "/"))),
+            None => json!(text),
+        },
+        serde_json::Value::Array(items) => items
+            .into_iter()
+            .map(|item| recorded_virtual(item, root))
+            .collect(),
+        serde_json::Value::Object(fields) => serde_json::Value::Object(
+            fields
+                .into_iter()
+                .map(|(key, item)| (key, recorded_virtual(item, root)))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
 /// Default wrappers retain native byte counts, unlimited search, ignore scope and path handling.
 #[test]
 fn builtin_defaults_preserve_individual_corrections() {
@@ -46,7 +82,7 @@ async fn default_results(
         runner.create_command_context(),
     )
     .await;
-    serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
+    serde_json::from_value(observation(&result.unwrap_err().to_string())).unwrap()
 }
 
 /// The actual native search observes hidden paths, nested ignores and literal glob operands.
@@ -117,8 +153,7 @@ fn builtin_owned_edit_prepares_before_execution() {
         for case in cases {
             let result =
                 (command.handler)(case["input"].to_string(), runner.create_command_context()).await;
-            let observed: serde_json::Value =
-                serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+            let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
             assert_eq!(observed, case["expected"], "{}", case["id"]);
         }
     });
@@ -251,8 +286,7 @@ async fn observe_read_failure(
         )
         .await
     };
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     assert_eq!(
         observed["error"],
         json!(native_read_failure(&request, signal, mode).await)
@@ -401,7 +435,7 @@ fn builtin_read_executable_keeps_native_metadata_without_context() {
         ).unwrap();
         let command = runner.get_command("builtin-read-executable").unwrap().command;
         let result = (command.handler)(path.to_str().unwrap().into(), runner.create_command_context()).await;
-        let observed: serde_json::Value = serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
         assert_eq!(observed, json!({"metadata":metadata,"prepares":native.prepare_arguments.is_some(),"result":expected}));
         assert_eq!(calls.get(), 0);
     });
@@ -459,8 +493,7 @@ async fn observe_read_case(
     );
     let expected = native_read_case(&request, if executable { None } else { model }).await;
     let result = (command.handler)(format!("builtin-custom-read {request}"), context).await;
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     let mut stages = vec!["access"];
     if request["detect"] == true {
         stages.push("mime");
@@ -643,8 +676,7 @@ async fn observe_image_case(
         let model = read_model(vision);
         *current.borrow_mut() = model.clone();
         release.send(()).unwrap();
-        let observed: serde_json::Value =
-            serde_json::from_str(&waiting.await.unwrap_err().to_string()).unwrap();
+        let observed: serde_json::Value = observation(&waiting.await.unwrap_err().to_string());
         let expected = native_read_case(&request, model).await;
         assert_eq!(observed["result"], expected, "{resize:?}, {vision:?}");
         let text = expected["content"][0]["text"].as_str().unwrap();
@@ -782,8 +814,7 @@ async fn observe_write(
     } else {
         work.await
     };
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     let mut calls = vec![];
     if mode != "preabort" {
         calls.push(json!(["mkdir", "/virtual/parent"]));
@@ -997,8 +1028,7 @@ async fn observe_edit_error(
         } else {
             work.await
         };
-        let observed: serde_json::Value =
-            serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+        let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
         let mut calls = vec![json!(["access", "/virtual/雪.txt"])];
         if stage != "access" {
             calls.push(json!(["read", "/virtual/雪.txt"]));
@@ -1264,8 +1294,7 @@ async fn observe_snapshot_edit(
         runner.create_command_context(),
     )
     .await;
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     let mut calls = vec![
         json!(["access", "/virtual/雪.txt"]),
         json!(["read", "/virtual/雪.txt"]),
@@ -1423,8 +1452,7 @@ async fn observe_find(
     } else {
         waiting.await
     };
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     let root = if request["args"]["path"] == "雪" {
         "/virtual/雪"
     } else {
@@ -1589,8 +1617,7 @@ async fn observe_grep(
     } else {
         waiting.await
     };
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     let mut calls = vec![json!([
         "directory",
         request["args"]["path"],
@@ -1670,7 +1697,7 @@ fn builtin_grep_uses_application_tool_services() {
             for executable in [false,true] {
                 let request=json!({"cwd":scratch.path().to_str(),"args":{"pattern":"needle","path":file},"custom":false,"directory":false,"text":"","executable":executable});
                 let response=(command.handler)(format!("builtin-custom-grep {request}"),runner.create_command_context()).await;
-                let observed:serde_json::Value=serde_json::from_str(&response.unwrap_err().to_string()).unwrap();
+                let observed:serde_json::Value=observation(&response.unwrap_err().to_string());
                 let tool=maestro_extensions::local::wrap_tool_definition(maestro_extensions::local::create_grep_tool_definition::<()>(scratch.path().display().to_string(),maestro_extensions::GrepToolOptions::default(),manager.clone()),None);
                 let expected=(tool.execute)("native-managed".into(),request["args"].clone(),None,None).await;
                 assert_managed_grep(&observed, expected, valid);
@@ -1808,8 +1835,7 @@ async fn observe_listing(
     } else {
         work.await
     };
-    let observed: serde_json::Value =
-        serde_json::from_str(&result.unwrap_err().to_string()).unwrap();
+    let observed: serde_json::Value = observation(&result.unwrap_err().to_string());
     let mut calls = vec![json!(["exists", "/virtual/雪"])];
     if request["exists"] == true && request["fail"] != "exists" {
         calls.push(json!(["stat", "/virtual/雪"]));
@@ -2169,8 +2195,7 @@ fn builtin_mutations_share_native_file_ordering() {
             assert_eq!(std::fs::read_to_string(&path).unwrap(), "alpha\nbeta\n");
             release.send(()).unwrap();
             assert_eq!(held.await.unwrap_err().to_string(), "released");
-            let actual: serde_json::Value =
-                serde_json::from_str(&mutations.await.unwrap_err().to_string()).unwrap();
+            let actual: serde_json::Value = observation(&mutations.await.unwrap_err().to_string());
             assert_eq!(
                 std::fs::read_to_string(&path).unwrap(),
                 if write {
@@ -2563,7 +2588,7 @@ async fn observe_progress(
         runner.create_command_context(),
     )
     .await;
-    serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
+    observation(&result.unwrap_err().to_string())
 }
 
 /// Split bytes, local stdout/stderr and retained artifacts share the native progress owner.
