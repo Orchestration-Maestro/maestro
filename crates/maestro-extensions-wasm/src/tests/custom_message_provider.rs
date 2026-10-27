@@ -364,3 +364,63 @@ fn check_message_request(host: &Controlled) {
         json!({"type":"text","text":"Prompt 雪🚀","cache_control":{"type":"ephemeral"}})
     );
 }
+
+/// Observes a complete request through the same stream producer and host transport.
+fn request_with_options(options: crate::StreamOptionsInput) -> ExtensionResult<Value> {
+    let host = Controlled::default();
+    host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
+    let provider = authorization(&host);
+    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
+        maestro_models::AssistantMessageEventStream::new(),
+    )));
+    super::block_on(provider.stream_custom_anthropic(
+        model(),
+        conversation(),
+        Some(options),
+        output.clone(),
+    ))?;
+    let result = super::block_on(output.result())?;
+    assert_eq!(
+        result.read().unwrap().stop_reason,
+        crate::StopReason::ToolUse
+    );
+    let observed = host.observed();
+    assert_eq!(observed.native_http.requests.len(), 1);
+    Ok(serde_json::from_slice(observed.native_http.requests[0].body.as_ref().unwrap()).unwrap())
+}
+
+#[test]
+fn custom_message_provider_raw_reasoning_matches_simple_options() -> ExtensionResult<()> {
+    let common = crate::StreamOptions {
+        api_key: Some("sk-ant-oat-fixture".into()),
+        max_tokens: Some(1234.0),
+        ..crate::StreamOptions::default()
+    };
+    let raw = crate::ProviderStreamOptions {
+        common: common.clone(),
+        extra: [
+            ("reasoning".into(), json!("high")),
+            ("thinkingBudgets".into(), json!({"high":7777})),
+            ("unrelated".into(), json!("must not be forwarded")),
+        ]
+        .into_iter()
+        .collect(),
+        ..crate::ProviderStreamOptions::default()
+    };
+    let simple = crate::SimpleStreamOptions {
+        common,
+        reasoning: Some(crate::RequestedThinkingLevel::High),
+        thinking_budgets: Some(crate::ThinkingBudgets {
+            high: Some(7777.0),
+            ..crate::ThinkingBudgets::default()
+        }),
+        ..crate::SimpleStreamOptions::default()
+    };
+    let raw = request_with_options(raw.into())?;
+    assert_eq!(
+        raw["thinking"],
+        json!({"type":"enabled","budget_tokens":7777.0})
+    );
+    assert_eq!(raw, request_with_options(simple.into())?);
+    Ok(())
+}
