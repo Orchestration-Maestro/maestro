@@ -194,13 +194,12 @@ fn assert_case(row: &Case, answer: &Answer, lines: &[String]) {
     assert_eq!(json!(requests), row.requests, "{}", row.event);
 }
 
-/// Calls every replacement decision through the shipped factory's registration.
-#[test]
-fn confirm_destructive_switch_decisions() -> Result<(), String> {
+/// Delivers supplied cases through the in-process guest event interface.
+fn native_cases(name: &str, cases: Vec<Case>) -> Result<(), String> {
     super::block_on(async {
         let (host, exports) = start::<ConfirmDestructive>().await?;
-        let key = host.observed().callback("event session_before_switch")?;
-        for row in switch_cases() {
+        let key = host.observed().callback(name)?;
+        for row in cases {
             host.observe().catalog.data.has_ui = row.has_ui;
             host.observe().readers.control(
                 &json!({"bind":{"replies":[{
@@ -232,21 +231,21 @@ fn confirm_destructive_switch_decisions() -> Result<(), String> {
             );
             assert_eq!(host.observed().live, live);
         }
-        release_all(&host, &["event session_before_switch"]);
+        release_all(
+            &host,
+            &["event session_before_switch", "event session_before_fork"],
+        );
         Ok(())
     })
 }
 
-/// Replays replacement decisions through the built shipped component.
-#[test]
-fn confirm_destructive_component_switch_decisions() -> Result<(), String> {
+/// Delivers supplied cases through the built shipped component.
+fn component_cases(name: &str, cases: Vec<Case>) -> Result<(), String> {
     let path = super::build::example_component("confirm_destructive")?;
     let mut harness =
         super::block_on(super::host::Harness::start(&path)).map_err(|e| e.to_string())?;
-    let key = harness
-        .callback("event session_before_switch")
-        .map_err(|e| e.to_string())?;
-    for row in switch_cases() {
+    let key = harness.callback(name).map_err(|e| e.to_string())?;
+    for row in cases {
         harness.observed().catalog.data.has_ui = row.has_ui;
         harness.observed().readers.control(
             &json!({"bind":{"replies":[{
@@ -281,7 +280,119 @@ fn confirm_destructive_component_switch_decisions() -> Result<(), String> {
         );
         assert_eq!(harness.observed().live, live);
     }
-    super::block_on(harness.release(key)).map_err(|e| e.to_string())?;
+    for name in ["event session_before_switch", "event session_before_fork"] {
+        let key = harness.callback(name).map_err(|e| e.to_string())?;
+        super::block_on(harness.release(key)).map_err(|e| e.to_string())?;
+    }
     assert_eq!(harness.observed().live, 0);
     Ok(())
+}
+
+/// Fork approval is exact, independent of fork position, and shows only the ID prefix.
+fn fork_dialog_cases() -> Vec<Case> {
+    let mut rows = Vec::new();
+    for (id, title, position) in [
+        ("123456789abcdef", "Fork from entry 12345678?", "at"),
+        ("short", "Fork from entry short?", "at"),
+        ("", "Fork from entry ?", "at"),
+        ("123456789abcdef", "Fork from entry 12345678?", "before"),
+    ] {
+        for decision in [
+            json!("Yes, create fork"),
+            json!("No, stay in current session"),
+            Value::Null,
+            json!("Yes, create fork please"),
+            json!("yes, create fork"),
+        ] {
+            let mut requests = vec![json!([
+                "select",
+                [
+                    title,
+                    ["Yes, create fork", "No, stay in current session"],
+                    null,
+                    null
+                ]
+            ])];
+            let result = if decision == "Yes, create fork" {
+                None
+            } else {
+                requests.push(json!(["notify", ["Fork cancelled", "Info"]]));
+                Some(json!({"cancel":true}))
+            };
+            rows.push(Case {
+                event: json!({"type":"session_before_fork","entryId":id,"position":position}),
+                entries: json!([]),
+                has_ui: true,
+                decision,
+                requests: json!(requests),
+                ended: Ended::Returned(result),
+                reject: None,
+            });
+        }
+    }
+    rows
+}
+
+/// A headless host continues; refused selectors and notifications propagate their errors.
+fn fork_cases() -> Vec<Case> {
+    let mut rows = fork_dialog_cases();
+    for position in ["at", "before"] {
+        rows.push(Case {
+            event: json!({"type":"session_before_fork","entryId":"headless","position":position}),
+            entries: json!([]),
+            has_ui: false,
+            decision: Value::Null,
+            requests: json!([]),
+            ended: Ended::Returned(None),
+            reject: None,
+        });
+    }
+    for method in ["select", "notify"] {
+        let mut requests = vec![json!([
+            "select",
+            [
+                "Fork from entry rejected?",
+                ["Yes, create fork", "No, stay in current session"],
+                null,
+                null
+            ]
+        ])];
+        if method == "notify" {
+            requests.push(json!(["notify", ["Fork cancelled", "Info"]]));
+        }
+        rows.push(Case {
+            event: json!({"type":"session_before_fork","entryId":"rejected","position":"at"}),
+            entries: json!([]),
+            has_ui: true,
+            decision: Value::Null,
+            requests: json!(requests),
+            ended: Ended::Failed("UI refused".into()),
+            reject: Some(method),
+        });
+    }
+    rows
+}
+
+/// Replacement decisions retain their exact prompts and cancellation outcomes.
+#[test]
+fn confirm_destructive_switch_decisions() -> Result<(), String> {
+    native_cases("event session_before_switch", switch_cases())
+}
+
+/// Built-component replacement decisions match the controlled native run.
+#[test]
+fn confirm_destructive_component_switch_decisions() -> Result<(), String> {
+    component_cases("event session_before_switch", switch_cases())
+}
+
+/// Forks need the exact affirmative choice unless no UI is available.
+#[test]
+fn confirm_destructive_fork_decisions() -> Result<(), String> {
+    native_cases("event session_before_fork", fork_cases())
+}
+
+/// Built-component forks preserve prompts, cancellation and host rejections.
+#[test]
+fn confirm_destructive_component_fork_decisions() -> Result<(), String> {
+    component_cases("event session_before_fork", fork_cases())
 }
