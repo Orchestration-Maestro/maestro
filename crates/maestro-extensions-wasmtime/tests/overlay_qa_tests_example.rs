@@ -725,6 +725,7 @@ fn overlay_qa_tests_edge_and_max_height_place_their_notices() {
         host.shown(2).await;
         let screen = host.screen();
         assert_eq!(corner(&screen), Some((7, 15)));
+        assert!(screen[7].contains(" Maximum height "));
         assert!(screen[16].contains("│ Row 6 of 14"));
         assert!(screen[17].trim().is_empty());
         assert!(
@@ -792,6 +793,7 @@ fn overlay_qa_tests_passive_timer_leaves_typing_with_the_controller() {
         let screen = host.screen();
         assert_eq!(corner(&screen), Some((1, 56)), "the timer is top-right");
         assert!(screen[2].contains("│ 00:00"));
+        assert!(screen[6].contains(" Typing "));
         assert!(screen[8].contains("│ Focused: true, inputs: 0"));
         assert!(screen[9].contains("│ Last input: none"));
         for key in ["h", "i", "\x7f"] {
