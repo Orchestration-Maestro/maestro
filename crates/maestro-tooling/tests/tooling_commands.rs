@@ -1192,100 +1192,9 @@ fn standalone_inputs(source: &Path, package: &Path) {
     package_inputs(package);
 }
 
-/// The shipped examples and their index page, as authors write them. Keep the list in
-/// file-name order, so a new example inserts at its own place.
-const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
-    (
-        "examples/extensions/README.md",
-        include_str!("../../../examples/extensions/README.md"),
-    ),
-    (
-        "examples/extensions/bookmark.rs",
-        include_str!("../../../examples/extensions/bookmark.rs"),
-    ),
-    (
-        "examples/extensions/file_trigger.rs",
-        include_str!("../../../examples/extensions/file_trigger.rs"),
-    ),
-    (
-        "examples/extensions/hello.rs",
-        include_str!("../../../examples/extensions/hello.rs"),
-    ),
-    (
-        "examples/extensions/hidden_thinking_label.rs",
-        include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
-    ),
-    (
-        "examples/extensions/permission_gate.rs",
-        include_str!("../../../examples/extensions/permission_gate.rs"),
-    ),
-    (
-        "examples/extensions/pirate.rs",
-        include_str!("../../../examples/extensions/pirate.rs"),
-    ),
-    (
-        "examples/extensions/prompt_customizer.rs",
-        include_str!("../../../examples/extensions/prompt_customizer.rs"),
-    ),
-    (
-        "examples/extensions/protected_paths.rs",
-        include_str!("../../../examples/extensions/protected_paths.rs"),
-    ),
-    (
-        "examples/extensions/reload_runtime.rs",
-        include_str!("../../../examples/extensions/reload_runtime.rs"),
-    ),
-    (
-        "examples/extensions/send_user_message.rs",
-        include_str!("../../../examples/extensions/send_user_message.rs"),
-    ),
-    (
-        "examples/extensions/session_name.rs",
-        include_str!("../../../examples/extensions/session_name.rs"),
-    ),
-    (
-        "examples/extensions/shutdown_command.rs",
-        include_str!("../../../examples/extensions/shutdown_command.rs"),
-    ),
-    (
-        "examples/extensions/status_line.rs",
-        include_str!("../../../examples/extensions/status_line.rs"),
-    ),
-    (
-        "examples/extensions/summarize.rs",
-        include_str!("../../../examples/extensions/summarize.rs"),
-    ),
-    (
-        "examples/extensions/system_prompt_header.rs",
-        include_str!("../../../examples/extensions/system_prompt_header.rs"),
-    ),
-    (
-        "examples/extensions/trigger_compact.rs",
-        include_str!("../../../examples/extensions/trigger_compact.rs"),
-    ),
-    (
-        "examples/extensions/widget_placement.rs",
-        include_str!("../../../examples/extensions/widget_placement.rs"),
-    ),
-    (
-        "examples/extensions/with-deps/main.rs",
-        include_str!("../../../examples/extensions/with-deps/main.rs"),
-    ),
-    (
-        "examples/extensions/working_message_test.rs",
-        include_str!("../../../examples/extensions/working_message_test.rs"),
-    ),
-];
-
-/// The example lists stay in name order, so a new example inserts at its own place instead of
-/// appending at the end of every list.
+/// The component examples stay in name order.
 #[test]
 fn shipped_example_lists_stay_in_name_order() {
-    let paths: Vec<&str> = SHIPPED_EXAMPLES.iter().map(|(path, _)| *path).collect();
-    assert!(
-        paths.is_sorted(),
-        "the shipped examples are not in file-name order: {paths:?}"
-    );
     let targets = example_targets(include_str!("../../maestro-extensions-wasm/Cargo.toml"));
     assert!(
         targets.is_sorted(),
@@ -1324,9 +1233,7 @@ fn package_inputs(package: &Path) {
     ] {
         write_input(package, name, bytes);
     }
-    for (name, bytes) in SHIPPED_EXAMPLES {
-        write_input(package, name, bytes);
-    }
+    crate::build_recipes::copy_tree(&repository_examples(), &package.join("examples"));
 }
 
 /// Assert that a viewer directory with no entries copies as an empty export directory in a fresh
@@ -1528,9 +1435,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
-    for (name, bytes) in SHIPPED_EXAMPLES {
-        assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
-    }
+    assert_example_tree(&repository_examples(), &destination.join("examples"));
     assert_empty_viewer_copy(&fixture, &source, &package);
     fs::write(
         source.join("Cargo.toml"),
@@ -1592,6 +1497,31 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     (source, package, metadata, viewer)
 }
 
+/// Locate the repository's authored examples from this crate's manifest directory.
+fn repository_examples() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples")
+}
+
+/// Assert every source file reaches the matching destination path byte for byte.
+fn assert_example_tree(source: &Path, destination: &Path) {
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let destination = destination.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            assert_example_tree(&entry.path(), &destination);
+        } else {
+            assert_eq!(
+                fs::read(&destination).unwrap_or_else(|error| {
+                    panic!("cannot read {}: {error}", destination.display())
+                }),
+                fs::read(entry.path()).unwrap(),
+                "{}",
+                destination.display()
+            );
+        }
+    }
+}
+
 #[test]
 fn maestro_package_assets_come_from_the_package_directory() {
     #[cfg(unix)]
@@ -1640,19 +1570,7 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
-    // The shipped examples reach the standalone copy byte for byte.
-    assert_eq!(
-        fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
-        include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
-    );
-    assert_eq!(
-        fs::read(destination.join("examples/extensions/status_line.rs")).unwrap(),
-        include_str!("../../../examples/extensions/status_line.rs").as_bytes()
-    );
-    assert_eq!(
-        fs::read(destination.join("examples/extensions/permission_gate.rs")).unwrap(),
-        include_str!("../../../examples/extensions/permission_gate.rs").as_bytes()
-    );
+    assert_example_tree(&repository_examples(), &destination.join("examples"));
 }
 
 #[test]
