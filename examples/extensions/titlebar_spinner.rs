@@ -17,12 +17,8 @@ const BRAILLE_FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "�
 /// The example's channel for handing periodic work to the host's event-tail executor.
 const CHANNEL: &str = "maestro.example.titlebar-spinner";
 
-// Native controlled-host tests share one module; copied components load their own support file.
-#[cfg(not(test))]
 #[path = "support/tail.rs"]
 mod tail;
-#[cfg(test)]
-use crate::tests::example_tail as tail;
 use tail::Tail;
 
 /// Reads the current name and directory, without caching either between frames.

@@ -50,9 +50,6 @@ mod event_bus_example;
 mod event_transport;
 mod event_values;
 mod example_support;
-/// Cancellable work shared by the shipped examples loaded in this test binary.
-#[path = "../../../examples/extensions/support/tail.rs"]
-pub(crate) mod example_tail;
 mod exec_records;
 mod file_trigger_example;
 pub(crate) mod file_trigger_path;

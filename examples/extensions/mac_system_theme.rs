@@ -10,12 +10,8 @@ use maestro_extensions_wasm::{
 };
 use std::{rc::Rc, time::Duration};
 
-// Native controlled-host tests share one module; copied components load their own support file.
-#[cfg(not(test))]
 #[path = "support/tail.rs"]
 mod tail;
-#[cfg(test)]
-use crate::tests::example_tail as tail;
 use tail::Tail;
 
 /// Queries appearance with literal arguments; command failures fall back to light.
