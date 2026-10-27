@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use super::change::{Change, Edit};
-use super::{Settings, SettingsManager, SettingsScope};
+use super::conversion::merge_one_level;
+use super::{Settings, SettingsErrorKind, SettingsManager, SettingsScope};
 
 /// A publisher's accepted settings document with its locks and release metadata.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -20,6 +21,20 @@ pub struct BaseSettingsLayer {
     pub source: String,
     /// When the publisher accepted this release, as supplied by the publisher.
     pub recorded_at: String,
+}
+
+impl BaseSettingsLayer {
+    /// Restores locked leaves and reports each overwritten stored value.
+    fn apply_locks(&self, settings: &mut Map<String, Value>, mut ignored: impl FnMut(&str)) {
+        for path in &self.locked {
+            let edit = Edit::dotted(path);
+            let value = edit.value_in(&self.settings.0).cloned();
+            if edit.value_in(settings) != value.as_ref() {
+                ignored(path);
+            }
+            edit.apply(settings, value);
+        }
+    }
 }
 
 impl SettingsManager {
@@ -39,6 +54,31 @@ impl SettingsManager {
         self.base_layers[SettingsScope::Project as usize]
             .as_ref()
             .or(self.base_layers[SettingsScope::Global as usize].as_ref())
+    }
+
+    /// Rereads the persisted global base layer and resolves accepted user preferences.
+    /// Project settings, project layers and runtime overrides never enter this result.
+    /// Without a base layer this equals [`Self::get_global_settings`]. Read failures
+    /// retain the accepted layer and are reported by [`Self::drain_errors`].
+    #[must_use]
+    pub fn effective_global_settings(&mut self) -> Settings {
+        match self.storage.read_base_layer(SettingsScope::Global) {
+            Ok(layer) => self.base_layers[SettingsScope::Global as usize] = layer,
+            Err(error) => self.queue.record_error(SettingsScope::Global, error),
+        }
+        let Some(layer) = self.base_layers[SettingsScope::Global as usize].as_ref() else {
+            return self.get_global_settings();
+        };
+        let mut settings = merge_one_level(layer.settings.0.clone(), self.global.settings.clone());
+        layer.apply_locks(&mut settings, |path| {
+            self.record_lock(
+                SettingsScope::Global,
+                layer,
+                path,
+                SettingsErrorKind::StoredValueIgnored,
+            );
+        });
+        Settings(settings)
     }
 
     /// Reports a lock on this literal field/key path, any ancestor or any descendant.
@@ -76,19 +116,29 @@ impl SettingsManager {
         else {
             return false;
         };
-        self.record_lock(scope, locked, "Edit refused");
+        if let Some(layer) = self.get_base_layer() {
+            self.record_lock(scope, layer, locked, SettingsErrorKind::Failure);
+        }
         true
     }
 
     /// Reports a constraint with the publisher's persisted provenance.
-    fn record_lock(&self, scope: SettingsScope, path: &str, action: &str) {
-        if let Some(layer) = self.get_base_layer() {
-            let message = format!(
-                "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
-                layer.source, layer.recorded_at
-            );
-            self.queue.record_error(scope, message.into());
-        }
+    fn record_lock(
+        &self,
+        scope: SettingsScope,
+        layer: &BaseSettingsLayer,
+        path: &str,
+        kind: SettingsErrorKind,
+    ) {
+        let action = match kind {
+            SettingsErrorKind::Failure => "Edit refused",
+            SettingsErrorKind::StoredValueIgnored => "Stored value ignored",
+        };
+        let message = format!(
+            "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
+            layer.source, layer.recorded_at
+        );
+        self.queue.record(scope, kind, message.into());
     }
 
     /// Restores locked leaves after the ordinary merges without editing raw scopes.
@@ -96,19 +146,16 @@ impl SettingsManager {
         let Some(layer) = self.get_base_layer().cloned() else {
             return;
         };
-        for path in &layer.locked {
-            let edit = Edit::dotted(path);
-            let value = edit.value_in(&layer.settings.0).cloned();
+        let mut effective = std::mem::take(&mut self.effective);
+        layer.apply_locks(&mut effective, |path| {
             let scope = if overrides_path(&self.project.settings, path) {
                 SettingsScope::Project
             } else {
                 SettingsScope::Global
             };
-            if edit.value_in(&self.effective) != value.as_ref() {
-                self.record_lock(scope, path, "Stored value ignored");
-            }
-            edit.apply(&mut self.effective, value);
-        }
+            self.record_lock(scope, &layer, path, SettingsErrorKind::StoredValueIgnored);
+        });
+        self.effective = effective;
         if self.locked_path(&["editorPaddingX"]).is_some() {
             self.effective_nan.editor_padding_x = false;
         }

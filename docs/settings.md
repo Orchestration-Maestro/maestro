@@ -91,7 +91,9 @@ Effective settings merge the base, global and project documents in that order,
 using the same one-level merge. Locked paths then take the base value; an absent
 base leaf uses the getter's engine default. Raw scope snapshots, pending edits
 and saved preferences never include the base. Stored conflicts produce diagnostics
-through `drain_errors`, without rewriting either preference file. Reload retains
+through `drain_errors`, without rewriting either preference file.
+`SettingsError::kind` distinguishes `StoredValueIgnored` diagnostics from
+`Failure` errors, including refused explicit edits. Reload retains
 the accepted layer and keeps the ordinary failed-scope rules.
 
 Setters and runtime overrides refuse a locked path before changing memory,
@@ -396,9 +398,14 @@ lowercase six-digit hex. Styles belong to each occurrence, not the token name.
 
 ### Global workspace projection and reload
 
-`maestro_daemon::settings::io` reads the supplied manager's accepted global
-settings. Workspace preferences never use project values or runtime chat
-overrides. `load_config` consumes startup global errors and returns unrelated
+`maestro_daemon::settings::io` reads the supplied manager through
+`SettingsManager::effective_global_settings`: the persisted global base layer,
+then the accepted user document, then the base locks. This operation rereads the
+global layer on startup and each existing reload; a read failure retains the
+accepted layer and reports an error. With no layer, the result equals the raw
+global snapshot. Workspace preferences never use project settings, project base
+layers or runtime chat overrides. Stored lock conflicts are nonfatal diagnostics;
+explicit refused edits remain failures. `load_config` consumes startup global errors and returns unrelated
 project errors separately. Read or parse failures emit a structured warning and
 use defaults. `reload_config` waits for queued writes before separating earlier
 errors, awaits the existing manager reload, then applies valid semantic areas.

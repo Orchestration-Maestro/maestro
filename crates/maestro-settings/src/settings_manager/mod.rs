@@ -31,8 +31,8 @@ pub use file_storage::FileSettingsStorage;
 pub use memory_storage::InMemorySettingsStorage;
 use preferences::share;
 pub use preferences::{
-    Settings, SettingsError, SettingsScope, SettingsStorage, SettingsStorageError,
-    SettingsStorageHandle, SettingsUpdate,
+    Settings, SettingsError, SettingsErrorKind, SettingsScope, SettingsStorage,
+    SettingsStorageError, SettingsStorageHandle, SettingsUpdate,
 };
 pub use records::{
     BranchSummarySettings, CompactionSettings, ImageSettings, MarkdownSettings,
