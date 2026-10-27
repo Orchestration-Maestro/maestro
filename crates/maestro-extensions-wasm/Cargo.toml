@@ -83,6 +83,11 @@ path = "../../examples/extensions/minimal_mode.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "model_status"
+path = "../../examples/extensions/model_status.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "module_location_component"
 crate-type = ["cdylib"]
 
@@ -103,6 +108,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "pirate"
 path = "../../examples/extensions/pirate.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "preset"
+path = "../../examples/extensions/preset.rs"
 crate-type = ["cdylib"]
 
 [[example]]
