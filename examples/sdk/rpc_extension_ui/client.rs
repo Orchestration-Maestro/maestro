@@ -278,7 +278,11 @@ impl Client {
         let (title, body): (String, ComponentHandle) = match method {
             Method::Select { title, options, .. } => (title, self.select(options, answer, cancel)),
             Method::Confirm { title, message, .. } => (
-                format!("{title}: {message}"),
+                if message.is_empty() {
+                    title
+                } else {
+                    format!("{title}: {message}")
+                },
                 self.select(vec!["Yes".into(), "No".into()], answer, cancel),
             ),
             Method::Input {
@@ -298,14 +302,17 @@ impl Client {
                     maestro_theme::get_editor_theme(self.theme.clone()),
                     EditorOptions::default(),
                 ));
-                if let Some(text) = prefill {
-                    editor.set_text(&text);
-                }
+                editor.set_text(prefill.as_deref().unwrap_or_default());
                 editor.set_on_submit(Some(answer));
                 (title, editor)
             }
             _ => return Err(io::Error::other("Notice queued as a dialog")),
         };
+        self.show_dialog(title, body);
+        Ok(())
+    }
+    /// Replaces the bottom chrome while forwarding focus to the actual editor or list.
+    fn show_dialog(&mut self, title: String, body: ComponentHandle) {
         let bottom = Rc::new(Container::new());
         bottom.add_child(Rc::new(Text::new(title, 0, 0, None)));
         bottom.add_child(body.clone());
@@ -317,7 +324,6 @@ impl Client {
         )));
         self.bottom = bottom;
         self.focus = body;
-        Ok(())
     }
     /// Keeps the authored eight-row selection viewport and original option values.
     fn select(
@@ -352,11 +358,62 @@ impl Client {
         }
         self.prompt.set_value(String::new());
         self.log.append(format!("You: {text}"));
-        self.command(RpcSessionCommand::Prompt {
-            message: text.into(),
-            images: None,
-            streaming_behavior: None,
-        })
+        let method = match text {
+            "/select" => Some(Method::Select {
+                title: "Pick a color".into(),
+                options: ["Red", "Green", "Blue", "Yellow"].map(String::from).into(),
+                timeout: None,
+            }),
+            "/confirm" => Some(Method::Confirm {
+                title: "Are you sure?".into(),
+                message: String::new(),
+                timeout: None,
+            }),
+            "/input" => Some(Method::Input {
+                title: "Enter your name".into(),
+                placeholder: None,
+                timeout: None,
+            }),
+            "/editor" => Some(Method::Editor {
+                title: "Edit text".into(),
+                prefill: Some("Hello, world!".into()),
+            }),
+            _ => None,
+        };
+        if let Some(method) = method {
+            self.ui(
+                RpcExtensionUIRequest {
+                    id: String::new(),
+                    method,
+                },
+                false,
+            )
+        } else {
+            self.command(RpcSessionCommand::Prompt {
+                message: text.into(),
+                images: None,
+                streaming_behavior: None,
+            })
+        }
+    }
+    /// Formats only local demonstration results; remote replies keep their shared wire shape.
+    fn local_result(method: &Method, response: &RpcExtensionUIResponse) -> io::Result<String> {
+        let (prefix, cancelled) = match method {
+            Method::Select { .. } => ("You picked: ", "Selection cancelled"),
+            Method::Confirm { .. } => {
+                return Ok(format!(
+                    "Confirmed: {}",
+                    response.confirmed.unwrap_or(false)
+                ));
+            }
+            Method::Input { .. } => ("You entered: ", "Input cancelled"),
+            Method::Editor { .. } => ("Submitted: ", "Editor cancelled"),
+            _ => return Err(io::Error::other("Notice answered as a dialog")),
+        };
+        Ok(response
+            .value
+            .as_ref()
+            .map_or_else(|| cancelled.into(), |value| format!("{prefix}{value}")))
     }
     /// Settles the active dialog once before admitting the next queued request.
     fn reply(&mut self, response: RpcExtensionUIResponse) -> io::Result<()> {
@@ -372,9 +429,7 @@ impl Client {
         } else {
             self.log.append(format!(
                 "Notification: {}",
-                response.value.unwrap_or_else(|| response
-                    .confirmed
-                    .map_or("Cancelled".into(), |value| format!("Confirmed: {value}")))
+                Self::local_result(&active.request.method, &response)?
             ));
         }
         self.next_dialog()
@@ -408,6 +463,8 @@ impl Client {
         self.log.append("RPC Chat");
         self.log
             .append("Type a message and press Enter. Esc to abort or exit. Ctrl+D to quit.");
+        self.log
+            .append("Slash commands: /select /confirm /input /editor");
         self.redraw();
         let mut tick = tokio::time::interval(Duration::from_millis(400));
         loop {
