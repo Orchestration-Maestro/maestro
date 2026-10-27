@@ -4,8 +4,7 @@ use super::{DefaultResourceLoader, overrides::apply};
 use crate::utils::lock::{read, write};
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
-    create_event_bus_for, create_extension_runtime, load_extension_from_factory,
-    load_extensions_with_runtime,
+    create_event_bus_for, load_extension_from_factory, load_extensions_with_runtime,
 };
 use maestro_models::{Execution, Local, Threaded};
 use maestro_resources::is_local_path;
@@ -117,34 +116,58 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
     /// Loads path extensions, then inline factories on the same runtime, reports conflicts
     /// and missing explicit paths, applies the override and stores the result with each
     /// extension's provenance.
-    pub(super) async fn load_extension_resources(&self, paths: Vec<String>) -> io::Result<()> {
-        let runtime = create_extension_runtime::<E>();
-        if let Some(services) = &self.options.tool_construction {
-            runtime.set_tool_construction(services.clone());
-        }
-        let auth_root = self.agent_dir.clone();
-        let models_root = self.agent_dir.clone();
-        runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
-            auth_path: Arc::new(move || {
-                Ok(crate::configuration::config::paths::get_auth_path(
-                    &auth_root,
-                ))
-            }),
-            models_path: Arc::new(move || {
-                Ok(crate::configuration::config::paths::get_models_path(
-                    &models_root,
-                ))
-            }),
-            config_values: crate::runtime::agent_session_services::native_config_values(),
-        });
-        let mut result = load_extensions_with_runtime(
-            paths,
+    pub(super) async fn load_extension_resources(
+        &self,
+        paths: Vec<String>,
+        mut result: LoadExtensionsResult<E>,
+    ) -> io::Result<()> {
+        let mut seen: std::collections::HashSet<_> = result
+            .extensions
+            .iter()
+            .map(|extension| read(extension).path.clone())
+            .collect();
+        seen.extend(result.errors.iter().map(|error| error.path.clone()));
+        let remaining = paths
+            .iter()
+            .filter(|path| !seen.contains(*path))
+            .cloned()
+            .collect();
+        let ordinary = load_extensions_with_runtime(
+            remaining,
             &self.cwd,
             &self.event_bus,
             &self.options.module_loader,
-            runtime,
+            result.runtime.clone(),
         )
         .await?;
+        result.extensions.extend(ordinary.extensions);
+        result.errors.extend(ordinary.errors);
+        let order: HashMap<_, _> = paths
+            .iter()
+            .enumerate()
+            .map(|(index, path)| (path.as_str(), index))
+            .collect();
+        result
+            .extensions
+            .sort_by_key(|extension| order.get(read(extension).path.as_str()).copied());
+        self.load_inline_factories(&mut result).await;
+        result.errors.extend(conflicts(&result));
+        for path in &self.options.additional_extension_paths {
+            if is_local_path(path) && !Path::new(&self.resolve_resource_path(path)?).exists() {
+                result.errors.push(ExtensionLoadError {
+                    path: path.clone(),
+                    error: format!("Extension path does not exist: {path}"),
+                });
+            }
+        }
+        let result = apply(self.options.extensions_override.as_ref(), result);
+        self.apply_extension_provenance(&result)?;
+        self.state.borrow_mut().extensions = Rc::new(result);
+        Ok(())
+    }
+
+    /// Runs inline factories after every path factory on the same runtime.
+    async fn load_inline_factories(&self, result: &mut LoadExtensionsResult<E>) {
         for (index, factory) in self.options.extension_factories.iter().enumerate() {
             let path = format!("<inline:{}>", index + 1);
             match load_extension_from_factory(
@@ -163,19 +186,6 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
                 }),
             }
         }
-        result.errors.extend(conflicts(&result));
-        for path in &self.options.additional_extension_paths {
-            if is_local_path(path) && !Path::new(&self.resolve_resource_path(path)?).exists() {
-                result.errors.push(ExtensionLoadError {
-                    path: path.clone(),
-                    error: format!("Extension path does not exist: {path}"),
-                });
-            }
-        }
-        let result = apply(self.options.extensions_override.as_ref(), result);
-        self.apply_extension_provenance(&result)?;
-        self.state.borrow_mut().extensions = Rc::new(result);
-        Ok(())
     }
 
     /// Gives each extension a fresh provenance record, shared with its commands and tools.

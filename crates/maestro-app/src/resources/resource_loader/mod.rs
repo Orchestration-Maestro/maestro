@@ -1,6 +1,7 @@
 //! Extensions, skills, prompt templates, themes, browser contributions, context files and
 //! system prompt files discovered for one working directory, with provenance for every resource.
 
+mod base_packages;
 mod context;
 mod discovery;
 mod extensions;
