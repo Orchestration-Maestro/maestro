@@ -486,3 +486,23 @@ fn space_invaders_resume_redraws_current_controls_without_losing_save() -> Resul
     view.finish();
     Ok(())
 }
+
+#[test]
+fn space_invaders_simultaneous_hits_keep_lives_nonnegative() -> Result<(), String> {
+    let mut state = corpus()["cases"][2]["start"].clone();
+    let bullet = state["bullets"][0].clone();
+    state["bullets"].as_array_mut().unwrap().push(bullet);
+    let view = View::new(Some(serde_json::from_value(state).unwrap()))?;
+    view.input("x")?;
+    view.component.tick(|_| 0)?;
+    view.input("\x1b")?;
+    assert_eq!(view.saves.borrow()[0]["player"]["lives"], 0);
+    assert_eq!(view.saves.borrow()[0]["gameOver"], true);
+    assert!(
+        view.render(80)?
+            .iter()
+            .any(|line| line.contains("GAME OVER!"))
+    );
+    view.finish();
+    Ok(())
+}
