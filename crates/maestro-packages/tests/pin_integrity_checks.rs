@@ -134,3 +134,42 @@ fn pin_integrity_includes_index_only_drift_and_nested_untracked_repositories() {
             .is_clean()
     );
 }
+
+#[test]
+fn reinstalled_pin_discards_dependency_generated_drift() {
+    use std::rc::Rc;
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    git(&fixture.repo.seed, &["tag", "release"]);
+    git(&fixture.repo.seed, &["push", "origin", "release"]);
+    let original = fixture.effects.run_hook.borrow().clone().unwrap();
+    *fixture.effects.run_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
+        let result = original(command, args, cwd);
+        let cwd = cwd.map(std::path::PathBuf::from);
+        let dependency = command != "git";
+        Box::pin(async move {
+            let status = result.await?;
+            if dependency {
+                let cwd = cwd.unwrap();
+                std::fs::write(cwd.join("content"), "dependency drift").unwrap();
+                std::fs::write(cwd.join("generated"), "generated").unwrap();
+            }
+            Ok(status)
+        })
+    }));
+    let source = "git:github.com/acme/tool@release";
+    fixture
+        .run(fixture.manager.restore_pin(source, None))
+        .unwrap();
+    assert_eq!(
+        std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
+        "manifest"
+    );
+    assert!(!fixture.repo.target.join("generated").exists());
+    assert!(
+        fixture
+            .run(fixture.manager.verify_pin(source, None))
+            .unwrap()
+            .is_clean()
+    );
+}
