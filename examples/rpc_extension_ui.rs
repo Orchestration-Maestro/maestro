@@ -3,31 +3,19 @@
 #[cfg(unix)]
 use serde_json::Value;
 use std::io;
-#[cfg(unix)]
-use std::io::BufRead;
-
-/// Reads one complete JSON event per physical line without splitting Unicode text.
-#[cfg(unix)]
-fn read_events_blocking(reader: impl BufRead, mut receive: impl FnMut(Value)) -> io::Result<()> {
-    for line in reader.lines() {
-        if let Ok(event) = serde_json::from_str(&line?) {
-            receive(event);
-        }
-    }
-    Ok(())
-}
 
 /// Reads the asynchronous pipe through the platform's physical-line interface.
-#[cfg(all(test, unix))]
+#[cfg(unix)]
 async fn read_events(
     reader: impl tokio::io::AsyncBufRead + Unpin,
     mut receive: impl FnMut(Value),
 ) -> io::Result<()> {
     use tokio::io::AsyncBufReadExt;
-    let _ = &mut receive;
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await? {
-        drop(line);
+        if let Ok(record) = serde_json::from_str(&line) {
+            receive(record);
+        }
     }
     Ok(())
 }
@@ -62,28 +50,34 @@ mod output_log;
 mod native {
     use super::client::Client;
     use maestro_app::{
-        configuration::config, presentation_data::keybindings::KeybindingsManager,
-        rpc_types::RpcExtensionUIResponse,
+        CapturedChild, Termination, configuration::config,
+        presentation_data::keybindings::KeybindingsManager, rpc_types::RpcExtensionUIResponse,
     };
-    use maestro_tui::tui::InputListenerResult;
-    use maestro_tui::{TUI, TerminalImage};
+    use maestro_theme::{LiveTheme, ThemeState};
+    use maestro_tui::{TUI, TerminalImage, tui::InputListenerResult};
     use maestro_tui_crossterm::{ProcessTerminal, ProcessTuiRuntime};
     use serde_json::Value;
     use std::{
         cell::RefCell,
-        io::{self, BufReader, Read},
+        io,
         os::unix::process::ExitStatusExt,
         path::PathBuf,
-        process::{Child, Command, ExitCode, ExitStatus, Stdio},
+        process::{Command, ExitCode, ExitStatus},
         rc::Rc,
-        thread,
     };
-    use tokio::sync::mpsc;
+    use tokio::{
+        io::{AsyncReadExt, BufReader},
+        process::{ChildStderr, ChildStdin, ChildStdout},
+        sync::mpsc,
+        task::JoinHandle,
+    };
 
     /// UI callbacks and the pipe reader hand work to the one conversation owner.
     pub(super) enum Action {
         /// A streamed child record.
         Record(Value),
+        /// The reader has delivered every stdout record before its end.
+        OutputClosed,
         /// An ordinary prompt or local demonstration command.
         Submit(String),
         /// The active dialog's answer, paired with its original request.
@@ -96,24 +90,11 @@ mod native {
         Failed(io::Error),
     }
 
-    /// The owned child is killed and reaped even when setup or terminal output fails.
-    struct Agent {
-        /// The process behind the RPC pipes.
-        child: Child,
-    }
-    impl Agent {
-        /// Terminates a still-running child and always reaps its status.
-        fn stop(&mut self) -> io::Result<()> {
-            if self.child.try_wait()?.is_none() {
-                self.child.kill()?;
-            }
-            self.child.wait().map(drop)
-        }
-    }
-    impl Drop for Agent {
-        fn drop(&mut self) {
-            let _ = self.stop();
-        }
+    /// Prepares the existing brand-backed styles before a child is launched.
+    fn theme() -> io::Result<LiveTheme> {
+        let themes = Rc::new(ThemeState::new(config::get_theme_directories()?));
+        themes.init_theme(None, None).map_err(io::Error::other)?;
+        Ok(themes.theme())
     }
 
     /// Routes registered exit and interrupt actions before the focused toolkit editor.
@@ -137,76 +118,90 @@ mod native {
         }))
     }
 
-    /// Hands physical stdout lines to the conversation without blocking terminal input.
-    fn read_pipe(
-        output: std::process::ChildStdout,
-        sender: mpsc::UnboundedSender<Action>,
-    ) -> thread::JoinHandle<()> {
-        thread::spawn(move || {
+    /// Leases only the output handling; lifecycle and termination stay with the process owner.
+    fn pipes(child: &mut CapturedChild) -> io::Result<(ChildStdin, ChildStdout, ChildStderr)> {
+        Ok((
+            child
+                .take_stdin()
+                .ok_or_else(|| io::Error::other("Missing child stdin"))?,
+            child
+                .take_stdout()
+                .ok_or_else(|| io::Error::other("Missing child stdout"))?,
+            child
+                .take_stderr()
+                .ok_or_else(|| io::Error::other("Missing child stderr"))?,
+        ))
+    }
+
+    /// Hands physical stdout lines to the conversation on the existing local executor.
+    fn read_pipe(output: ChildStdout, sender: mpsc::UnboundedSender<Action>) -> JoinHandle<()> {
+        tokio::task::spawn_local(async move {
             let records = sender.clone();
-            if let Err(error) = super::read_events_blocking(BufReader::new(output), |record| {
+            if let Err(error) = super::read_events(BufReader::new(output), |record| {
                 let _ = records.send(Action::Record(record));
-            }) {
+            })
+            .await
+            {
                 let _ = sender.send(Action::Failed(error));
             }
+            let _ = sender.send(Action::OutputClosed);
         })
     }
 
-    /// Runs the real terminal widgets against a caller-selected child process.
-    pub(super) async fn run_client(tui: TUI, mut command: Command) -> io::Result<ExitStatus> {
-        let mut agent = Agent {
-            child: command
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()?,
-        };
-        let input = agent
-            .child
-            .stdin
-            .take()
-            .ok_or_else(|| io::Error::other("Missing child stdin"))?;
-        let output = agent
-            .child
-            .stdout
-            .take()
-            .ok_or_else(|| io::Error::other("Missing child stdout"))?;
-        let mut errors = agent
-            .child
-            .stderr
-            .take()
-            .ok_or_else(|| io::Error::other("Missing child stderr"))?;
-        let (sender, receiver) = mpsc::unbounded_channel();
-        let mut client = Client::new(tui.clone(), input, sender.clone())?;
-        let remove = keyboard(&tui, sender.clone());
-        let reader = read_pipe(output, sender);
-        let diagnostics = thread::spawn(move || {
+    /// Collects diagnostics without blocking protocol input or terminal work.
+    fn capture_errors(mut errors: ChildStderr) -> JoinHandle<io::Result<Vec<u8>>> {
+        tokio::task::spawn_local(async move {
             let mut bytes = Vec::new();
-            errors.read_to_end(&mut bytes).map(|_| bytes)
-        });
+            errors.read_to_end(&mut bytes).await.map(|_| bytes)
+        })
+    }
+
+    /// Prints every collected diagnostic after raw-terminal cleanup, preserving read failures.
+    async fn finish_errors(task: Option<JoinHandle<io::Result<Vec<u8>>>>) -> io::Result<()> {
+        let Some(task) = task else {
+            return Ok(());
+        };
+        let bytes = task.await.map_err(io::Error::other)??;
+        if !bytes.is_empty() {
+            eprint!("{}", String::from_utf8_lossy(&bytes));
+        }
+        Ok(())
+    }
+
+    /// Runs the real terminal widgets against a caller-selected child process.
+    pub(super) async fn run_client(tui: TUI, command: Command) -> io::Result<ExitStatus> {
+        let theme = theme()?;
+        let mut command = tokio::process::Command::from(command);
+        command.kill_on_drop(true);
+        let mut child = CapturedChild::spawn_piped(&mut command)?;
+        let mut reader = None;
+        let mut errors = None;
+        let (sender, receiver) = mpsc::unbounded_channel();
+        let remove = keyboard(&tui, sender.clone());
         let result = async {
+            let (input, output, diagnostics) = pipes(&mut child)?;
+            reader = Some(read_pipe(output, sender.clone()));
+            errors = Some(capture_errors(diagnostics));
+            let mut client = Client::new(tui.clone(), input, sender, theme);
             tui.start()?;
-            client.run(&mut agent.child, receiver).await
+            client.run(&mut child, receiver).await
         }
         .await;
         remove();
+        let frame = tui.render_pending_frame();
         let stopped = tui.stop();
         tui.set_focus(None);
         tui.clear();
-        drop(client);
-        let reaped = agent.stop();
-        let read = reader
-            .join()
-            .map_err(|_| io::Error::other("RPC reader failed"));
-        let errors = diagnostics
-            .join()
-            .map_err(|_| io::Error::other("RPC stderr reader failed"))?;
-        if let Ok(bytes) = &errors
-            && !bytes.is_empty()
-        {
-            eprint!("{}", String::from_utf8_lossy(bytes));
-        }
+        let terminated = child.terminate(Termination::Terminate).await;
+        let reaped = child.wait().await;
+        let read = match reader {
+            Some(reader) => reader.await.map_err(io::Error::other),
+            None => Ok(()),
+        };
+        let errors = finish_errors(errors).await;
+        frame?;
         stopped?;
+        terminated?;
         reaped?;
         read?;
         errors?;
