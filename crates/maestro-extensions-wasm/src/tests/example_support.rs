@@ -125,6 +125,14 @@ pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
         release(key);
     }
     let expected: Vec<&str> = expected.iter().map(AsRef::as_ref).collect();
+    let names = released(host);
+    assert_eq!(names, expected, "the registrations the host received");
+    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
+}
+
+/// Releases every registration of the controlled host in the order it received them and
+/// returns their names.
+pub fn released(host: &Controlled) -> Vec<String> {
     let mut names = Vec::new();
     loop {
         let next = host.observe().next_to_release();
@@ -132,8 +140,19 @@ pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
         release(key);
         names.push(name);
     }
-    assert_eq!(names, expected, "the registrations the host received");
-    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
+    names
+}
+
+/// Releases every registration of the built component in the order the host received them and
+/// returns their names.
+///
+/// # Errors
+/// Returns the component failure that ended the walk.
+pub fn released_component(harness: &mut Harness) -> Result<Vec<String>, String> {
+    super::block_on(harness.release_all())
+        .into_iter()
+        .map(|(name, outcome)| outcome.map(|()| name).map_err(|error| error.to_string()))
+        .collect()
 }
 
 /// Runs the built component's command callback and returns its outcome; `held` keeps the

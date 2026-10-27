@@ -319,6 +319,15 @@ impl Observed {
         self.order.remove(position).map(|(_, key)| key)
     }
 
+    /// Every key registered under `name`, in registration order.
+    pub fn registrations(&self, name: &str) -> Vec<u32> {
+        self.order
+            .iter()
+            .filter(|(queued, _)| queued == name)
+            .map(|(_, key)| *key)
+            .collect()
+    }
+
     /// Takes the registration next in line for release, in registration order, then the
     /// announced event-bus tails; registrations made while earlier ones are released queue up
     /// behind them.

@@ -26,6 +26,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "event_bus"
+path = "../../examples/extensions/event_bus.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "file_trigger"
 path = "../../examples/extensions/file_trigger.rs"
 crate-type = ["cdylib"]
@@ -106,6 +111,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "shutdown_command"
 path = "../../examples/extensions/shutdown_command.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "status_line"
+path = "../../examples/extensions/status_line.rs"
 crate-type = ["cdylib"]
 
 [[example]]

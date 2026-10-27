@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
@@ -39,6 +40,7 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
@@ -71,6 +73,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- file_trigger_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- file_trigger_
@@ -92,6 +96,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -227,6 +233,21 @@ message, and the label the example retains stays the one the command chose.
 Loading the component into an application is opt-in and needs a host that enables
 the component runtime.
 
+### What the turn status line example does
+
+`session_start` sets `status-demo` to dim `Ready`. Each `turn_start` increments
+this factory's counter and shows an accent `●` followed by dim ` Turn N...`.
+`turn_end` shows a success `✓` followed by dim ` Turn N complete`. Each hook
+reads the current UI theme; the counter stays in place across session starts
+and starts at zero in a new factory instance. A host rejection returns its
+message without undoing a counted turn.
+
+Build with `<name>` set to `status_line` in the build command above. The
+controlled runs invoke the built component with supplied theme and UI answers;
+they need no provider, credentials or installation. Loading it into an
+application is opt-in and needs that application's component runtime. A UI host
+must provide footer status and theme operations to show the status.
+
 ### What the system prompt status example does
 
 On `agent_start` the example reads the prompt the host supplies at that moment
@@ -252,6 +273,23 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 
 Its controlled run, listed with the others above, calls the registered tool with
 every recorded duration text.
+
+### What the event bus example does
+
+`/emit [message]` trims its argument and sends it on the fixed `my:notification`
+channel with `"from": "/emit command"`, defaulting to `hello` when nothing is
+left. The argument is always the message: the command takes no event name, so
+`/emit other:event payload` sends that whole text to the same channel.
+
+A retained listener reports each `my:notification` payload through the current
+session context's UI as `Event from {from}: {message}` at information severity.
+The example reports one notification at session start, keeps the latest session
+context when a session is replaced, and reports nothing before the first session
+starts.
+
+Any extension can emit on the same channel with an object holding string
+`message` and `from` members; other members are ignored. Loading the component
+into an application is opt-in and needs that application's component runtime.
 
 ### What the compaction trigger example does
 
