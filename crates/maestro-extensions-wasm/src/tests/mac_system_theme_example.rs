@@ -159,8 +159,12 @@ fn changes(
         ("true", 0, false, vec!["dark", "light", "dark"]),
     ] {
         reply(host, stdout, code, killed);
-        let (entered, next) = hold(host);
+        let (command_entered, command_open) = hold(host);
         open.send(()).unwrap();
+        assert!(poll(tail).is_pending());
+        super::block_on(command_entered).unwrap();
+        let (entered, next) = hold(host);
+        command_open.send(()).unwrap();
         assert!(poll(tail).is_pending());
         super::block_on(entered).unwrap();
         assert_eq!(
@@ -182,4 +186,114 @@ fn changes(
         Some(&json!(["light"]))
     );
     next
+}
+
+/// Delivers a lifecycle event to the compiled component.
+async fn component_event(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    exports: &super::host_family::guest::Guest,
+    key: u32,
+    name: &str,
+    ctx: wasmtime::component::Resource<super::host::Ordinary>,
+) -> wasmtime::Result<()> {
+    let outcome = exports
+        .call_invoke_event(
+            accessor,
+            super::host::borrow(key),
+            super::documents::document(name).to_string(),
+            super::host_family::guest::Capabilities { ctx, signal: None },
+        )
+        .await?
+        .map_err(wasmtime::Error::msg)?;
+    let answer = Answer::of(super::host_family::delivery(outcome)).map_err(wasmtime::Error::msg)?;
+    assert_eq!(answer.ended, Ended::Returned(None));
+    Ok(())
+}
+
+/// Runs a built component's initial fallback, delayed change and cleanup with supplied effects.
+#[test]
+fn mac_system_theme_component_uses_controlled_process_and_clock() -> Result<(), String> {
+    let mut harness = super::host::Harness::example("mac_system_theme")?;
+    component_lifecycle(&mut harness)?;
+    assert!(harness.observed().bus.listeners.is_empty());
+    for (_, result) in super::block_on(harness.release_all()) {
+        result.map_err(|e| e.to_string())?;
+    }
+    assert_eq!(harness.observed().live, 0);
+    Ok(())
+}
+
+/// Drives an appearance transition while its host tail remains live.
+fn component_lifecycle(harness: &mut super::host::Harness) -> Result<(), String> {
+    let start = harness
+        .callback("event session_start")
+        .map_err(|e| e.to_string())?;
+    let shutdown = harness
+        .callback("event session_shutdown")
+        .map_err(|e| e.to_string())?;
+    let ctx = harness.ordinary("/controlled").map_err(|e| e.to_string())?;
+    let closing = harness.ordinary("/controlled").map_err(|e| e.to_string())?;
+    let exports = harness.exports.clone();
+    harness.observed().actions.error = Some("osascript unavailable".into());
+    super::block_on(harness.store.run_concurrent(async |accessor| {
+        component_event(accessor, &exports, start, "session_start", ctx).await?;
+        let (entered, open) = accessor.with(|mut a| {
+            assert_eq!(themes(&a.get().observed.transcript), [json!(["light"])]);
+            a.get().observed.actions.error = None;
+            a.get().observed.actions.value =
+                json!({"stdout":"true\n","stderr":"","code":0,"killed":false});
+            let (gate, entered, open) = super::observed::gate();
+            a.get().observed.hold_next_idle(gate);
+            (entered, open)
+        });
+        let key = accessor.with(|mut a| *a.get().observed.bus.tails.last().unwrap());
+        let tail = exports.call_invoke_tail(accessor, super::host::borrow(key));
+        let control = component_control(accessor, &exports, shutdown, closing, (entered, open));
+        super::join::alongside(tail, control)
+            .await?
+            .map_err(wasmtime::Error::msg)?;
+        Ok::<_, wasmtime::Error>(())
+    }))
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Releases one timer and command before shutting down the next pending wait.
+async fn component_control(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    exports: &super::host_family::guest::Guest,
+    shutdown: u32,
+    closing: wasmtime::component::Resource<super::host::Ordinary>,
+    waiting: (
+        tokio::sync::oneshot::Receiver<()>,
+        tokio::sync::oneshot::Sender<()>,
+    ),
+) {
+    let (entered, open) = waiting;
+    entered.await.unwrap();
+    let (gate, entered, command_open) = super::observed::gate();
+    accessor.with(|mut a| a.get().observed.hold_next_idle(gate));
+    open.send(()).unwrap();
+    entered.await.unwrap();
+    let (gate, entered, pending) = super::observed::gate();
+    accessor.with(|mut a| a.get().observed.hold_next_idle(gate));
+    command_open.send(()).unwrap();
+    entered.await.unwrap();
+    accessor.with(|mut a| {
+        assert_eq!(
+            themes(&a.get().observed.transcript),
+            [json!(["light"]), json!(["dark"])]
+        );
+        assert!(
+            a.get()
+                .observed
+                .transcript
+                .contains(&"native-wait 0 2000000000".to_owned())
+        );
+    });
+    component_event(accessor, exports, shutdown, "session_shutdown", closing)
+        .await
+        .unwrap();
+    assert!(pending.is_closed());
 }
