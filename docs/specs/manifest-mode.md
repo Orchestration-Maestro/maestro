@@ -962,7 +962,8 @@ change only with the manifest.
    session owner's single conditional rewrite, which replaces the file atomically.
    Every session append and rewrite acquires the same stable sidecar file lock
    through `maestro-lock::acquire`, with the settings owner's acquisition timeout
-   and recovery after a lock holder exits. The conditional rewrite holds that
+   and recovery after a lock holder exits. Ordinary writers hold the lock only
+   while opening, writing and closing the file. The conditional rewrite holds that
    lock across the final re-read, hash comparison and atomic replacement. The
    package reads and checks a file before requesting the rewrite; if the hash of
    those bytes differs from the locked re-read, it reads and checks again. An
@@ -1152,9 +1153,9 @@ changes nothing, and enabling it only withholds text until checked.
   process after the final hash comparison but before replacement: it waits for
   publication, then its entry survives in the rewritten file. Exercise every
   append and rewrite caller under the same exclusion. A terminated lock holder
-  does not prevent a later writer from acquiring the lock. Measure single-process
-  append delay with and without the coordination and record it in the
-  implementation pull request. A crash between writing and replacing leaves the
+  does not prevent a later writer from acquiring the lock. A plain single-process
+  append shows no visible delay: measure once with and without the coordination
+  and record the numbers in the implementation pull request. A crash between writing and replacing leaves the
   previous file whole.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
@@ -1219,8 +1220,10 @@ package owner checks a pinned Git checkout against its ref and checks out the re
 when they differ. This also corrects internal mode.
 
 A session file rewrite wrote the file in place, so a crash during the write left
-a partial session file. The session owner's single rewrite now replaces the file
-atomically, for every caller. This also corrects internal mode.
+a partial session file. Session writers also ran without file-write exclusion,
+so a rewrite could lose a concurrent append. The session owner's single rewrite
+now replaces the file atomically, and every append and rewrite coordinates
+through the same file-write exclusion. This also corrects internal mode.
 
 ## Runtime mechanics not copied
 
