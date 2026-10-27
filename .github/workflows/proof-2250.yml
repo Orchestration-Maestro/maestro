@@ -1,0 +1,11 @@
+name: Session preset landing proof
+"on":
+  push:
+    branches: [ci/2250-proof-8]
+permissions:
+  contents: read
+jobs:
+  proof:
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@a1971288fc869085aebb6c7c151b72c4fc0aa934
+    with:
+      test-event: merge_group

@@ -914,6 +914,19 @@ component in a controlled host, and `examples/extensions/README.md` holds the
 build and controlled-run commands. Reloading a running application is not part
 of that controlled run.
 
+### An input transform hook
+
+[`examples/extensions/input_transform.rs`](../../examples/extensions/input_transform.rs)
+registers `input` and bypasses extension-injected messages. It rewrites a nonempty
+`?quick <question>` as a brief-answer request, warns and handles an empty question,
+and handles `ping` and `time` with local notifications. Every other input returns
+an explicit continuation. Rewrites omit replacement images and leave the event
+unchanged.
+
+The example is opt-in and needs a component-enabled host with notification UI.
+The [example index](../../examples/extensions/README.md) gives its build and
+controlled-run commands and the time-format limit.
+
 ### A protected-paths tool-call hook
 
 [`examples/extensions/protected_paths.rs`](../../examples/extensions/protected_paths.rs)
@@ -1135,6 +1148,10 @@ edits made through any of its clones.
 See [native helpers](guest_operations.md) for synchronous terminal operations.
 
 ## Standard operating-system interfaces
+
+`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+under the host's temporary root, with mode `0700` on Unix and the default
+Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
 
 Rust standard-library environment, file and byte I/O use the host's WASI 0.2
 baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
