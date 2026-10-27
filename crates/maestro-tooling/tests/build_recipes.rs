@@ -173,6 +173,24 @@ fn maestro_test_recipes_forward_literal_arguments() {
     }
 }
 
+#[test]
+fn maestro_forwarded_arguments_stay_out_of_recipe_echo() {
+    for recipe in ["models-test", "run-source"] {
+        let workspace = Workspace::new();
+        let output = workspace
+            .command(recipe)
+            .arg("fake-secret-do-not-echo")
+            .env("MAESTRO_COMMAND_OUTPUT", "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains("controlled command stderr"), "{stderr}");
+        assert!(!stderr.contains("fake-secret-do-not-echo"), "{stderr}");
+        assert!(String::from_utf8_lossy(&output.stdout).contains("controlled command stdout"));
+    }
+}
+
 fn assert_package_build(workspace: &Workspace, prefix: &str, owner: &str) {
     for recipe in ["build", "prepublish", "clean"] {
         fs::remove_file(workspace.path().join("log")).unwrap();
