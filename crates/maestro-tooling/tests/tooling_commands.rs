@@ -3367,3 +3367,57 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
     );
     stdout(&output)
 }
+
+/// Independent source files supply their own index rows without a second inventory.
+#[test]
+fn example_index_discovers_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    fs::create_dir_all(folder.join("nested")).unwrap();
+    let readme = folder.join("README.md");
+    fs::write(
+        &readme,
+        "Before\n<!-- example-index:start -->\nold\n<!-- example-index:end -->\nAfter\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("zebra.rs"),
+        "//! Zebra | tool.\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("alpha.rs"),
+        "//! Alpha command\n//! with a continuation.\n\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
+    fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
+    let cargo = Path::new("unused-cargo");
+    assert_eq!(
+        tooling::run(&["example-index".into()], cargo, root.path()).unwrap(),
+        std::process::ExitCode::SUCCESS
+    );
+    let rendered = fs::read_to_string(&readme).unwrap();
+    assert_eq!(
+        rendered,
+        "Before\n<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `alpha.md` | Alpha usage |\n| `alpha.rs` | Alpha command with a continuation. |\n| `nested/helper.rs` | A helper. |\n| `zebra.rs` | Zebra \\| tool. |\n<!-- example-index:end -->\nAfter\n"
+    );
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_ok()
+    );
+    fs::write(folder.join("beta.rs"), "//! Beta command.\n").unwrap();
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
+}
