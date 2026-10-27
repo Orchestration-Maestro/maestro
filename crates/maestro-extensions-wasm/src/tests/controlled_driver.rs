@@ -53,6 +53,18 @@ impl ControlledDriver {
         )
         .map(drop)
     }
+    /// Starts a shipped factory with the existing controlled widget host installed.
+    pub(super) async fn example<E: Extension>() -> Result<Self, String> {
+        let driver = Self::new();
+        driver.exports().start::<E>().await?;
+        Ok(driver)
+    }
+
+    /// Publishes literal theme replies for a shipped factory's renderer.
+    pub(super) fn publish_theme(&self, palette: super::theme_host::Palette) {
+        self.host.observe().themes.publish("dark", palette);
+    }
+
     /// A driver with a fresh host.
     pub fn new() -> Self {
         let host = Controlled::default();

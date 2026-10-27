@@ -43,7 +43,12 @@ the footer; its controlled run is listed in the extension index.
 `extensions/notify.rs` sends an opt-in desktop notification on agent completion
 through OSC 777, Kitty OSC 99 or Windows PowerShell; its
 [index entry](../examples/extensions/README.md#what-the-notification-example-does)
-lists the terminal and platform prerequisites and controlled run command. The
+lists the terminal and platform prerequisites and controlled run command.
+`extensions/truncated_tool.rs` wraps ripgrep with the host's output limits,
+retains complete truncated output in a temporary file, and renders search calls
+and results. It needs a Unix component host with `rg` on its `PATH`; loading it
+is opt-in. Temporary output can contain private contents and remains until
+removed. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
