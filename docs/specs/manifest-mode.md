@@ -369,9 +369,14 @@ Stored values and explicit requests differ:
   pending edit, no file, no session history and emits no change event. An allowed
   request runs the foundation's steps in the foundation's order.
 
-The manifest package decides every governed change through the decision hook (H2).
-Every owner asks the hook before its own effect; the core enforces locked keys of
-the base layer itself (H1).
+The manifest package decides governed changes through the decision hook (H2).
+Every owner asks the hook before its own effect, except package commands, which
+run before packages load (`main.ts:431–436`). Before any package effect, they use
+the persisted base layer for the operation's scope (H1): `install` refuses when
+`packages` is locked, and `remove` refuses an identity listed in that layer's
+`packages` entries, before deleting any file (`core/package-manager.ts:991–993`).
+The package commands reuse the core's base-layer enforcement (H1); they hold no
+manifest policy logic.
 
 A lock behaves the same in every Maestro process. The settings owner enforces the
 locked keys of one base layer in agent sessions and in the workspace daemon alike;
@@ -429,7 +434,9 @@ the daemon only reads the persisted global layer, because it hosts no extensions
    selection's scope and are collected after the area roots at package precedence,
    in the same startup (H4). A missing required package refuses sessions. Removing
    a package whose identity matches a required package in the same scope is refused
-   before any file is deleted.
+   before any file is deleted. With no persisted layer, package commands retain
+   foundation behaviour; the next session start installs a removed required
+   package again. A forbidden local addition is excluded before execution (M6.4).
 6. Optional resources that fail to load are skipped with the ordinary warning. A
    required resource that fails to load refuses sessions.
 7. Themes from the manifest are offered; the manifest's `theme` value is a default
@@ -501,10 +508,27 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 A failed load uses the foundation's extension-load failure: the error is reported as
 `Failed to load extension "<path>": <message>` and the program exits with status 1
 in every mode. The message names the settings file that selects the manifest, the
-source, the problem and the fix, and no model request is made. It is never a silent
-fallback to internal mode or to an earlier copy. `--help`, `--version`, `install`,
-`remove`, `update`, `list`, `config` and settings editing work without a valid
-manifest, because they run before packages load.
+source, the problem and the fix, and no model request is made. There is no silent
+fallback to internal mode or to an earlier copy; unrepairable drift uses the last
+accepted composition with a warning (M2.5).
+
+Before failing its load at session start for a broken pinned release, the manifest
+package checks for a newer release of the same identity. If that release loads
+cleanly, it applies under the required-release rules (M11.4), including permission
+growth confirmation. Growth is compared with the last accepted composition of that
+identity; without one, the candidate's whole permission set counts as growth and
+is listed for confirmation. Without an interactive terminal, the package refuses
+a candidate with growth and reports the fix. If no candidate can be applied, the
+load fails with the fix. Checks still obey `MAESTRO_OFFLINE` and
+`update.versionCheck` (M11.2).
+
+Package commands and `config` run before packages load. They use the last
+persisted layer for their scope (H1), even when the manifest is broken; with none,
+they retain foundation behaviour. A changed selection keeps the old layer until
+the next session start refreshes it. `--version`, `list`, viewing config and
+editing unlocked settings remain available. `--help` runs after runtime creation
+but before load errors are reported (`main.ts:609–620,654–658`), so a broken
+manifest does not prevent help.
 
 Every construction of session services (start, new session, resume, fork, import,
 switching to another working directory) recomposes the manifest and refuses on
@@ -512,7 +536,8 @@ failure. `/reload` recomposes too; when recomposition fails during a reload, the
 manifest package keeps publishing the composition it accepted before, reports the
 manifest error with its fix through the extension error path, and the session keeps
 running under that composition. The manifest package keeps its last accepted
-composition in its own package state for this purpose; a start never uses it.
+composition in its own package state for reload, drift recovery and repair
+permission comparisons; a start runs on it only for unrepairable drift (M2.5).
 
 ### M10 — Visibility
 
@@ -534,7 +559,8 @@ composition in its own package state for this purpose; a start never uses it.
 
 1. `maestro update`, `--extensions` and `<source>` keep updating unpinned packages and
    skipping pinned ones; the engine self-update is unchanged. Package commands run
-   before packages load, so they never inspect the manifest.
+   before packages load and enforce the persisted base layer (M4, H1), without
+   inspecting the manifest.
 2. **Checks.** The manifest package checks the selected manifest for newer releases
    at every session start and then every `updateCheckMinutes` minutes while the
    session runs (`0`: session start only). Checks follow `update.versionCheck` and
@@ -542,9 +568,12 @@ composition in its own package state for this purpose; a start never uses it.
    shows a notice in that session; a required one says that it applies at the next
    start and that `/manifest update` applies it now.
 3. **Inspection.** A check lists the source's releases and reads the newest
-   candidate's `settings/policy.json` and `CHANGELOG.md` through the package
-   operations (H5) in the temporary package scope, without the install step; it
-   runs no lifecycle script, build step or component.
+   candidate's common `settings/policy.json`, core `core/settings/policy.json` and
+   `CHANGELOG.md` through the package operations (H5) in the temporary package
+   scope, without the install step. The two policy files are optional; their
+   `minimumRelease` values combine in area order under M4 (the higher floor wins)
+   before the check decides whether the release is required. Inspection runs no
+   lifecycle script, build step or component.
 4. **Required releases.** When the newest release's `minimumRelease` is above the
    active pin, the release is required. At the next session start it applies
    without asking unless it grows permissions; then the user is asked, and declining
@@ -571,8 +600,12 @@ composition in its own package state for this purpose; a start never uses it.
    request. A failed installation reports the real state; there is no rollback
    copy. Rejection or cancellation leaves the active files, pin and settings
    byte-identical.
-8. A pinned manifest never moves on its own outside M11.4: startup never installs a
-   newer optional release.
+8. A pinned manifest never moves on its own outside M11.4, except to repair a
+   broken pinned release at session start (M9). Repair uses a clean newer release
+   of the same identity and the same permission-growth confirmation, compared
+   against the last accepted composition of that identity. With no accepted
+   composition, the candidate's whole permission set counts as growth. Otherwise
+   startup never installs a newer optional release.
 
 ### M12 — Roles (delivered with the authored-agent consumer)
 
@@ -759,16 +792,32 @@ chain:
 
 ## Core hooks
 
-The core gains five generic hooks. None reads a manifest, knows a governed key, or
-combines areas; the manifest package does that.
+The core gains five generic hooks. None reads a manifest, knows the manifest's
+governed-key table, or combines areas; the manifest package does that.
 
 | Hook | Owner | Behaviour | Without a publisher |
 |---|---|---|---|
-| H1 Base layer | `maestro-settings` | One read-only settings document plus a set of locked key paths, below the user layer. A locked path takes the base value, and an explicit edit of it is refused. The publisher marks the layer global or project-scoped. The settings owner persists the last global layer in the configuration root for processes without packages, and offers the current layer to its publisher. | Settings behave as the foundation |
-| H2 Decision hook | `maestro-settings`, `maestro-app` operations and resource collection | One registered decider is asked before the first effect of every governed operation (M4), when stored values resolve, and during resource collection for local additions, required collisions and required entries. A refusal carries the message to show. | No decider; foundation order |
+| H1 Base layer | `maestro-settings` | One read-only settings document plus a set of locked key paths, below the user layer. A locked path takes the base value, and an explicit edit of it is refused. The publisher marks the layer global or project-scoped. The settings owner persists layers for processes without packages (see below), and offers the current layer to its publisher. | Persisted layers still apply; with none, foundation behaviour |
+| H2 Decision hook | `maestro-settings`, `maestro-app` operations and resource collection | One registered decider is asked before the first effect of governed operations (M4), when stored values resolve, and during resource collection for local additions, required collisions and required entries. Early package commands use H1's persisted layer instead. A refusal carries the message to show. | No decider; foundation order |
 | H3 Daemon view | `maestro-daemon` configuration read | The workspace daemon reads the persisted global base layer plus the user settings with locks applied, never project settings. | Today's raw user read |
 | H4 Load-time contributions | `maestro-app` resource loader | Base packages load before every other extension and keep their ordinary place in the extension list. During their load a base package may contribute package sources, base prompt inputs (base system prompt, base append text) and model files ranked before the user's. The context-file loader is unchanged. Contributed package sources install and load in the same startup. Only one package may publish H1 and H2. | Foundation single pass |
 | H5 Host operations | `maestro-app` host operations | Extends the planned settings-reader and package-root facades: read raw user and project settings, list resolved packages with identity, scope and installed path, acquire a pinned source, list a source's releases, verify a release checkout is clean and at its pinned commit and restore it when it is not, read files from a candidate in the temporary scope, write a value through the settings owner, apply package filter semantics, and parse a YAML document with the existing parser. | Unused |
+
+### Persisted base layers
+
+H1 persists the global layer in the configuration root and project-scoped layers
+in that root's state, keyed by project root, never inside the project. The
+publisher refreshes each applicable layer from the accepted composition at every
+session start and removes it when there is no selection. Each record names its
+source release and when it was recorded. Package commands read the persisted layer for their operation's scope
+before any effect; the daemon reads only the global layer (H3).
+
+With no persisted layer, commands use foundation behaviour without reading the
+`manifest` setting. After a selection change, the old layer governs until the next
+session start replaces or removes it. Refusals name the recorded release and time
+and say that starting Maestro refreshes the layer. Session-time collection is the
+backstop: forbidden local additions never execute (M6.4), and missing required
+packages install again (M6.5, H4).
 
 ### Internal-mode changes
 
@@ -810,9 +859,10 @@ package does.
   corrected Git pin check. Source parsing stays single.
 - **Catalog.** The model registry accepts an ordered list of model files; the
   existing single-file construction is the one-element case.
-- **Application operations.** Model, thinking, tool, behaviour-setting, package and
-  resource operations and the extension host ask the decision hook before their own
-  effects. Frontends render; they check nothing themselves.
+- **Application operations.** Model, thinking, tool, behaviour-setting and resource
+  operations and the extension host ask the decision hook before their own
+  effects. Early package commands enforce the persisted base layer (M4, H1).
+  Frontends render; they check nothing themselves.
 - **No new crate in the core, and no new library.** The manifest package is a
   package crate under the package crate rules.
 
@@ -829,6 +879,22 @@ package does.
   captured organization configuration is a fixture.
 - Every refused request asserts that memory, pending edits, files, session
   history and emitted events are unchanged, not only the error text.
+- Package commands: a persisted `packages` lock refuses install, and required
+  identities refuse removal in the matching scope before files or settings
+  change. Commands load no extensions. Broken manifests retain those checks;
+  refusal text names the saved release and time and how to refresh it. With no
+  layer, commands behave as the foundation; the next start excludes forbidden
+  additions and reinstalls missing required packages. A changed selection retains
+  the old layer until start replaces it; clearing the selection removes it.
+  Project layers stay in configuration-root state, keyed by project root; global
+  and project checks never use each other's layer.
+- Broken-release repair: a clean newer release of the same identity applies at
+  start; permission growth asks, and refusal or a headless run with growth stops
+  with the fix. Compare against the last accepted composition; without one, list
+  the whole candidate permission set as growth. Offline or no clean candidate
+  reports the fix. An otherwise valid pin never takes an optional release at start.
+- Required-update inspection: a floor in either common or core policy is honoured;
+  when both set a floor, the higher one wins. Absent files add no floor.
 - Inspect a candidate whose lifecycle script writes a sentinel file, then reject
   or cancel it: the sentinel never appears and the active files, pin and settings
   stay byte-identical. An approved candidate installs through the ordinary flow.
