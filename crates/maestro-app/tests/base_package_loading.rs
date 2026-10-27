@@ -37,7 +37,11 @@ fn register_collisions(
         "same".into(),
         maestro_extensions::types::ExtensionFlagOptions {
             description: Some(name.into()),
-            r#type: maestro_extensions::types::FlagType::String,
+            r#type: if name == "base" {
+                maestro_extensions::types::FlagType::Boolean
+            } else {
+                maestro_extensions::types::FlagType::String
+            },
             default: Some(maestro_app::FlagValue::String(name.into())),
         },
     )?;
@@ -619,5 +623,56 @@ fn failed_base_factories_do_not_apply_their_load_time_inputs() {
         let result = loader.get_extensions();
         assert_eq!(result.errors.len(), 1);
         assert!(result.errors[0].error.contains("factory failed"));
+    });
+}
+
+/// Explicit flag values use the first extension's declared kind, not a later base kind.
+#[test]
+fn extension_flag_values_use_the_first_registered_kind() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    package(&base, "base");
+    std::fs::create_dir_all(&agent).unwrap();
+    std::fs::create_dir_all(format!("{cwd}/.maestro/extensions")).unwrap();
+    std::fs::write(format!("{cwd}/.maestro/extensions/project.wasm"), "").unwrap();
+    on_task_set(|local| async move {
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, recording_modules(Rc::default()));
+        resources.base_package_sources = vec![base];
+        let services = maestro_app::create_agent_session_services(
+            maestro_app::CreateAgentSessionServicesOptions {
+                cwd,
+                agent_dir: Some(agent),
+                auth_storage: Some(std::sync::Arc::new(
+                    maestro_credentials::AuthStorage::in_memory(
+                        maestro_credentials::AuthStorageData::default(),
+                    ),
+                )),
+                settings_manager: None,
+                model_registry: None,
+                extension_flag_values: Some(indexmap::IndexMap::from([(
+                    "same".into(),
+                    maestro_app::FlagValue::String("chosen".into()),
+                )])),
+                resource_loader_options: resources,
+                offline: Some(true),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(services.diagnostics.is_empty());
+        assert_eq!(
+            services
+                .resource_loader
+                .get_extensions()
+                .runtime
+                .flag_values
+                .read()
+                .unwrap()["same"],
+            maestro_app::FlagValue::String("chosen".into())
+        );
     });
 }
