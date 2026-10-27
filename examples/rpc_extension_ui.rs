@@ -70,7 +70,10 @@ mod tests {
         let stage = Rc::new(Cell::new(0));
         let observed = stage.clone();
         let input = terminal.clone();
+        let effects = Rc::new(RefCell::new(Vec::new()));
+        let captured = effects.clone();
         terminal.set_tap(move |frame| {
+            captured.borrow_mut().push(frame.to_owned());
             let actions = [
                 ("RPC Chat", "hello\r"),
                 ("Dangerous command?", "\r"),
@@ -100,11 +103,12 @@ mod tests {
         let status = local.run_until(super::run_client(tui, peer)).await.unwrap();
         assert_eq!(status.code(), Some(7));
         assert_eq!(stage.get(), 6);
-        let output = terminal.writes().join("");
+        let raw = effects.borrow().join("");
+        assert!(raw.contains("\x1b]0;RPC Demo\x07"));
+        let output = maestro_app::strip_ansi(&raw).unwrap();
         for expected in [
             "first\u{2028}second",
             "controlled refusal",
-            "RPC Demo",
             "Turns: 1",
             "Loaded and ready.",
             "Editor prefilled",
