@@ -586,6 +586,28 @@ case "$line" in *'"id":"approval"'*'"value":"Allow \u001b]52;c;YWJj\u0007"'*) ;;
         });
     }
 
+    /// Command approval retains separate command lines and blank lines.
+    #[cfg(unix)]
+    #[test]
+    fn approval_dialog_preserves_multiline_command_text() {
+        run_async(async {
+            let peer = r#"
+printf '%s\n' '{"type":"extension_ui_request","id":"approval","method":"confirm","title":"Dangerous command","message":"sudo echo first\n\necho second"}'
+read -r line || exit 11
+case "$line" in *'"id":"approval"'*'"confirmed":true'*) ;; *) exit 12;; esac
+"#;
+            let case = run_case(shell(peer), vec![("Dangerous command", "\r")]).await;
+            assert!(case.status.success(), "peer status: {}", case.status);
+            assert_eq!(case.steps, 1);
+            let output = maestro_app::strip_ansi(&case.raw).unwrap();
+            let output = output.replace("\r\n", "\n");
+            assert!(
+                output.contains("Dangerous command: sudo echo first\n\necho second"),
+                "approval lost command line breaks: {output:?}"
+            );
+        });
+    }
+
     /// Model text, tool names and protocol errors are literal data, not terminal commands.
     #[cfg(unix)]
     #[test]
