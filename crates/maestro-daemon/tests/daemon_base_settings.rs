@@ -14,7 +14,7 @@ use maestro_settings::{
 use serde_json::{Value, json};
 
 /// A synthetic accepted release with caller-selected locks.
-fn layer(value: Value, locked: &[&str]) -> BaseSettingsLayer {
+pub(crate) fn layer(value: Value, locked: &[&str]) -> BaseSettingsLayer {
     BaseSettingsLayer {
         settings: serde_json::from_value(value).unwrap(),
         locked: locked.iter().map(|path| (*path).to_owned()).collect(),
