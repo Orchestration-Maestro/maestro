@@ -112,3 +112,62 @@ fn daemon_global_locks_win_for_every_governed_key_without_project_settings() {
         user.as_object().unwrap().clone()
     );
 }
+
+#[test]
+fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() {
+    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    use maestro_test_directory::Scratch;
+    let root = Scratch::new().unwrap();
+    let agent = root.path().join("agent");
+    let cwd = root.path().join("project");
+    let mut manager =
+        SettingsManager::create(cwd.to_str().unwrap(), agent.to_str().unwrap(), ".maestro");
+    let mut current = load_config(&mut manager, &agent).0.config;
+    let mut publisher =
+        SettingsManager::create(cwd.to_str().unwrap(), agent.to_str().unwrap(), ".maestro");
+    publisher.publish_base_layer(
+        SettingsScope::Global,
+        Some(layer(
+            json!({
+                "daemon":{"paneShell":"base-one"},"multiplexer":{"allowNested":true}
+            }),
+            &["multiplexer.allowNested"],
+        )),
+    );
+    block_on(publisher.flush());
+    let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
+    assert_eq!(report.status, ConfigReloadStatus::Applied);
+    assert_eq!(current.terminal.default_shell, "base-one");
+    assert!(current.experimental.allow_nested.0);
+    std::fs::write(
+        agent.join("settings.json"),
+        r#"{"multiplexer":{"allowNested":false}}"#,
+    )
+    .unwrap();
+    let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
+    assert_eq!(report.status, ConfigReloadStatus::Partial);
+    assert!(current.experimental.allow_nested.0);
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|message| message.contains("Stored value ignored"))
+    );
+    let before = current.clone();
+    std::fs::write(agent.join("base-settings.json"), "{").unwrap();
+    let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
+    assert_eq!(report.status, ConfigReloadStatus::Failed);
+    assert_eq!(current, before);
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|message| message.contains("keeping current config"))
+    );
+    publisher.publish_base_layer(SettingsScope::Global, None);
+    block_on(publisher.flush());
+    let report = block_on(reload_config(&mut manager, &mut current, &agent)).0;
+    assert_eq!(report.status, ConfigReloadStatus::Applied);
+    assert_eq!(current.terminal.default_shell, "");
+    assert!(!current.experimental.allow_nested.0);
+}
