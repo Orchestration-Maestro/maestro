@@ -22,7 +22,7 @@ use std::future::Future;
 use serde_json::{Map, Value};
 
 use change::{Change, Edit};
-use conversion::{convert, merge_one_level, parse_document};
+use conversion::{convert, parse_document};
 use maestro_json::pretty_object;
 use persistence::Queue;
 
@@ -194,10 +194,15 @@ impl SettingsManager {
         {
             return;
         }
-        self.effective_nan = self.effective_nan.unless_defined_by(&overrides.0);
+        let Settings(overrides) = overrides;
+        self.effective_nan = self.effective_nan.unless_defined_by(&overrides);
         let effective = std::mem::take(&mut self.effective);
-        self.effective = merge_one_level(effective, overrides.0);
-        self.resolve_effective();
+        self.effective = self.compose_effective_settings(
+            self.get_base_layer(),
+            effective,
+            &[(SettingsScope::Global, &overrides)],
+        );
+        self.apply_base_nan_locks();
     }
 
     /// Returns a future that completes once every write queued so far has run.
@@ -253,12 +258,16 @@ impl SettingsManager {
         let base = self
             .get_base_layer()
             .map_or_else(Map::new, |layer| layer.settings.0.clone());
-        let global = merge_one_level(base, self.global.settings.clone());
-        self.effective = merge_one_level(global, self.project.settings.clone());
-        self.effective = self.compose_effective_settings(self.get_base_layer(), Map::new(), &[]);
+        self.effective = self.compose_effective_settings(
+            self.get_base_layer(),
+            base,
+            &[
+                (SettingsScope::Global, &self.global.settings),
+                (SettingsScope::Project, &self.project.settings),
+            ],
+        );
         self.effective_nan = self.accepted_nan.unless_defined_by(&self.project.settings);
-        self.apply_base_locks();
-        self.resolve_effective();
+        self.apply_base_nan_locks();
     }
 
     /// Publishes edits to a scope immediately and queues one save of them unless

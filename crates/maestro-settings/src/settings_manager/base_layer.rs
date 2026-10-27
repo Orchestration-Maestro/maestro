@@ -22,6 +22,32 @@ pub struct BaseSettingsLayer {
     pub recorded_at: String,
 }
 
+impl BaseSettingsLayer {
+    /// Restores locked leaves and reports each overwritten stored value.
+    pub(super) fn apply_locks(
+        &self,
+        settings: &mut Map<String, Value>,
+        mut ignored: impl FnMut(&str),
+    ) {
+        for path in &self.locked {
+            let edit = Edit::dotted(path);
+            let value = edit.value_in(&self.settings.0).cloned();
+            if edit.value_in(settings) != value.as_ref() {
+                ignored(path);
+            }
+            edit.apply(settings, value);
+        }
+    }
+
+    /// Formats a constraint with this layer's accepted publisher provenance.
+    pub(super) fn lock_message(&self, path: &str, action: &str) -> String {
+        format!(
+            "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
+            self.source, self.recorded_at
+        )
+    }
+}
+
 impl SettingsManager {
     /// Replaces or removes the base layer for a scope and queues its persisted record.
     /// Raw preferences and their pending edits are unchanged. Persistence failures
@@ -86,57 +112,19 @@ impl SettingsManager {
         message.map_or(Ok(()), Err)
     }
 
-    /// Reports a constraint with the publisher's persisted provenance.
-    fn record_lock(&self, scope: SettingsScope, path: &str, action: &str) {
-        if let Some(message) = self.lock_message(path, action) {
-            self.queue.record_error(scope, message.into());
-        }
-    }
-
     /// Formats a constraint with the accepted publisher's provenance.
     fn lock_message(&self, path: &str, action: &str) -> Option<String> {
-        let layer = self.get_base_layer()?;
-        Some(format!(
-            "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
-            layer.source, layer.recorded_at
-        ))
+        self.get_base_layer()
+            .map(|layer| layer.lock_message(path, action))
     }
 
-    /// Restores locked leaves after the ordinary merges without editing raw scopes.
-    pub(super) fn apply_base_locks(&mut self) {
-        let Some(layer) = self.get_base_layer().cloned() else {
-            return;
-        };
-        for path in &layer.locked {
-            let edit = Edit::dotted(path);
-            let value = edit.value_in(&layer.settings.0).cloned();
-            let scope = if overrides_path(&self.project.settings, path) {
-                SettingsScope::Project
-            } else {
-                SettingsScope::Global
-            };
-            if edit.value_in(&self.effective) != value.as_ref() {
-                self.record_lock(scope, path, "Stored value ignored");
-            }
-            edit.apply(&mut self.effective, value);
-        }
+    /// Clears native nonfinite flags for presentation values supplied by base locks.
+    pub(super) fn apply_base_nan_locks(&mut self) {
         if self.locked_path(&["editorPaddingX"]).is_some() {
             self.effective_nan.editor_padding_x = false;
         }
         if self.locked_path(&["autocompleteMaxVisible"]).is_some() {
             self.effective_nan.autocomplete_max_visible = false;
         }
-    }
-}
-
-/// Whether the one-level merge lets this document replace a locked leaf.
-fn overrides_path(document: &Map<String, Value>, path: &str) -> bool {
-    let mut keys = path.split('.');
-    let Some(field) = keys.next().and_then(|key| document.get(key)) else {
-        return false;
-    };
-    match (field, keys.next()) {
-        (Value::Object(object), Some(key)) => object.contains_key(key),
-        _ => true,
     }
 }

@@ -74,18 +74,6 @@ impl SettingsManager {
         Ok(())
     }
 
-    /// Resolves only the merged view, reporting diagnostics outside storage locks.
-    pub(super) fn resolve_effective(&mut self) {
-        if let Some(decider) = &self.decider {
-            let mut view = Settings(std::mem::take(&mut self.effective));
-            for message in decider.resolve(&mut view) {
-                self.report_refusal(SettingsScope::Global, message);
-            }
-            self.effective = view.0;
-        }
-        self.apply_base_locks();
-    }
-
     /// Asks the publisher without changing any settings or acquiring storage locks.
     ///
     /// # Errors

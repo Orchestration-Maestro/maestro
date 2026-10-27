@@ -852,8 +852,8 @@ package resolves conflicts exactly as any other package does.
   manifest fails the load. There is no separate checker command or binary.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
   applies the base layer, then the ordinary one-level user and project merge, then
-  locked paths, then stored-value decisions, then locked paths again. There is no
-  new settings scope or change to raw scopes or the write queue. Decisions run
+  locked paths, then stored-value decisions, then locked paths again. One settings-owned
+  composition function owns this order. There is no new settings scope or change to raw scopes or the write queue. Decisions run
   outside the queue and storage locks.
 - **Packages.** The package owner gains release listing for one source and the
   corrected Git pin check. Source parsing stays single.
