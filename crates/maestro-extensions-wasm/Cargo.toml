@@ -111,6 +111,11 @@ path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "qna"
+path = "../../examples/extensions/qna.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
@@ -164,6 +169,11 @@ path = "../../examples/extensions/titlebar_spinner.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "todo"
+path = "../../examples/extensions/todo.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "tool_override"
 path = "../../examples/extensions/tool_override.rs"
 crate-type = ["cdylib"]
@@ -176,6 +186,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "trigger_compact"
 path = "../../examples/extensions/trigger_compact.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "truncated_tool"
+path = "../../examples/extensions/truncated_tool.rs"
 crate-type = ["cdylib"]
 
 [[example]]

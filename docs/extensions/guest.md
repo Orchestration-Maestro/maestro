@@ -1149,6 +1149,10 @@ See [native helpers](guest_operations.md) for synchronous terminal operations.
 
 ## Standard operating-system interfaces
 
+`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+under the host's temporary root, with mode `0700` on Unix and the default
+Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
+
 Rust standard-library environment, file and byte I/O use the host's WASI 0.2
 baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
 0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
