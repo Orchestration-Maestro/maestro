@@ -494,3 +494,98 @@ fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, ki
     drop(permission);
     std::env::set_current_dir(original).unwrap();
 }
+
+#[cfg(unix)]
+#[test]
+fn component_absolute_link_qualification() {
+    if maestro_test_process::run_alone("component_absolute_link_qualification").unwrap() {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let cwd = scratch.path().join("cwd");
+    let outside = scratch.path().join("outside Ω");
+    std::fs::create_dir(&cwd).unwrap();
+    std::fs::create_dir(&outside).unwrap();
+    let target = outside.join("bytes");
+    std::os::unix::fs::symlink(&target, cwd.join("absolute-file")).unwrap();
+    std::os::unix::fs::symlink(&outside, cwd.join("absolute-directory")).unwrap();
+    std::os::unix::fs::symlink("../outside Ω/bytes", cwd.join("relative-file")).unwrap();
+    std::os::unix::fs::symlink("../outside Ω", cwd.join("relative-directory")).unwrap();
+    std::os::unix::fs::symlink(outside.join("missing"), cwd.join("dangling")).unwrap();
+    let denied = outside.join("denied");
+    std::fs::write(&denied, b"private").unwrap();
+    let _permission = maestro_test_directory::deny(&denied, 0)
+        .unwrap()
+        .expect("qualification requires an unprivileged OS-denial control");
+    assert_eq!(
+        std::fs::read(&denied).unwrap_err().kind(),
+        std::io::ErrorKind::PermissionDenied
+    );
+    std::env::set_current_dir(&cwd).unwrap();
+    run(qualify_links(&target, &denied));
+    std::env::set_current_dir(original).unwrap();
+}
+
+/// Separates a runtime's absolute-link refusal from native permission denial.
+#[cfg(unix)]
+async fn qualify_links(target: &Path, denied: &Path) {
+    let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+    for bytes in [
+        b"first\0\xff".as_slice(),
+        b"updated\0\xfe\xce\xa9".as_slice(),
+    ] {
+        std::fs::write(target, bytes).unwrap();
+        for path in ["absolute-file", "absolute-directory/bytes"] {
+            assert_eq!(std::fs::read(path).unwrap(), bytes, "native {path}");
+        }
+        assert_eq!(
+            std::fs::read("dangling").unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
+        for generation in ["p2", "p3"] {
+            for path in [
+                target,
+                Path::new("relative-file"),
+                Path::new("relative-directory/bytes"),
+            ] {
+                let observed = host
+                    .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
+                    .await;
+                assert_eq!(
+                    observed["bytes"],
+                    json!(bytes),
+                    "{generation} {path:?}: {observed}"
+                );
+            }
+            qualify_refusals(&host, generation, denied).await;
+        }
+    }
+}
+
+/// Checks the runtime's refusal and a genuinely unreadable native target separately.
+#[cfg(unix)]
+async fn qualify_refusals(host: &Harness, generation: &str, denied: &Path) {
+    for path in ["absolute-file", "absolute-directory/bytes", "dangling"] {
+        let observed = host
+            .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
+            .await;
+        assert_eq!(
+            observed["error"], "permission-denied",
+            "{generation} {path}: {observed}"
+        );
+        if generation == "p3" {
+            assert_eq!(observed["code"], "NotPermitted", "{path}: {observed}");
+        }
+    }
+    let observed = host
+        .request(json!({"op":"file","generation":generation,"path":denied,"bytes":[]}))
+        .await;
+    assert_eq!(
+        observed["error"], "permission-denied",
+        "{generation}: {observed}"
+    );
+    if generation == "p3" {
+        assert_eq!(observed["code"], "Access", "OS denial: {observed}");
+    }
+}
