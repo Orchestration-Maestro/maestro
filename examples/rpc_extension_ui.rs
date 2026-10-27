@@ -45,6 +45,18 @@ mod client;
 #[path = "sdk/rpc_extension_ui/output_log.rs"]
 mod output_log;
 
+/// Reports the unavailable native runner while retaining its test call signature.
+#[cfg(all(test, windows))]
+async fn run_client(
+    _tui: maestro_tui::TUI,
+    _command: std::process::Command,
+) -> io::Result<std::process::ExitStatus> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "Native runner unavailable",
+    ))
+}
+
 /// Native terminal composition and the RPC conversation it retains.
 #[cfg(unix)]
 mod native {
@@ -250,7 +262,7 @@ mod native {
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
 #[allow(
     dead_code,
     reason = "Shared terminal controls also serve other scenarios."
@@ -259,11 +271,11 @@ mod native {
 mod recording_terminal;
 
 #[cfg(test)]
-#[cfg(unix)]
 mod tests {
     use super::*;
 
     /// A Unicode line separator belongs to the JSON string, not to the wire framing.
+    #[cfg(unix)]
     #[test]
     fn streamed_unicode_line_separator_arrives_as_one_event() {
         run_async(async {
@@ -299,7 +311,6 @@ mod tests {
     }
 
     /// Observations of a controlled peer and actual retained toolkit widgets.
-    #[cfg(unix)]
     struct Case {
         /// The child process's propagated status.
         status: std::process::ExitStatus,
@@ -312,7 +323,6 @@ mod tests {
     }
 
     /// Runs one pipe peer while rendered prompts drive deterministic input.
-    #[cfg(unix)]
     async fn run_case(
         peer: std::process::Command,
         steps: Vec<(&'static str, &'static str)>,
@@ -354,6 +364,25 @@ mod tests {
             steps: stage.get(),
             lifecycle: terminal.events(),
         }
+    }
+
+    /// Windows uses the same pipe conversation and retained terminal lifecycle.
+    #[cfg(windows)]
+    #[test]
+    fn windows_rpc_child_keeps_exit_status_and_terminal_lifecycle() {
+        run_async(async {
+            let mut peer = std::process::Command::new("powershell.exe");
+            peer.args(["-NoProfile", "-NonInteractive", "-Command", r#"
+[Console]::WriteLine('{"type":"extension_ui_request","id":"ready","method":"notify","message":"Windows peer ready"}')
+$line = [Console]::ReadLine()
+if ($line -notlike '*"type":"prompt"*' -or $line -notlike '*"message":"hello"*') { exit 12 }
+exit 7
+"#]);
+            let case = run_case(peer, vec![("Windows peer ready", "hello\r")]).await;
+            assert_eq!(case.status.code(), Some(7));
+            assert_eq!(case.steps, 1);
+            assert_eq!(case.lifecycle, ["start", "stop"]);
+        });
     }
 
     /// Keeps the existing pipe fixtures as ordinary shell commands.
@@ -490,6 +519,7 @@ with open(sys.argv[1], "w", encoding="utf-8") as marker:
     }
 
     /// Severity remains readable even when terminal colors are removed.
+    #[cfg(unix)]
     #[test]
     fn rpc_notifications_retain_their_severity_in_visible_text() {
         run_async(async {
@@ -509,6 +539,7 @@ with open(sys.argv[1], "w", encoding="utf-8") as marker:
     }
 
     /// The protocol carries an optional kind, independently of the message wording.
+    #[cfg(unix)]
     const NOTIFICATION_PEER: &str = r#"
 read -r line || exit 8
 printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":true}'
@@ -519,6 +550,7 @@ printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notify
 "#;
 
     /// Selected strings retain whitespace and empty values in correlated replies.
+    #[cfg(unix)]
     #[test]
     fn selection_replies_preserve_padded_and_empty_values() {
         run_async(async {
@@ -533,6 +565,7 @@ printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notify
     }
 
     /// A peer validates both the identifier and exact serialized selection value.
+    #[cfg(unix)]
     const SELECTION_PEER: &str = r#"
 printf '%s\n' '{"type":"extension_ui_request","id":"padded","method":"select","title":"Padded choice","options":[" Allow "]}'
 read -r line || exit 11
@@ -544,6 +577,7 @@ case "$line" in *'"cancelled":true'*) exit 15;; esac
 "#;
 
     /// Dialog chrome and option labels cannot execute controls before approval.
+    #[cfg(unix)]
     #[test]
     fn dialog_text_cannot_issue_clipboard_commands_before_approval() {
         run_async(async {
@@ -563,6 +597,7 @@ case "$line" in *'"id":"approval"'*'"value":"Allow \u001b]52;c;YWJj\u0007"'*) ;;
     }
 
     /// Model text, tool names and protocol errors are literal data, not terminal commands.
+    #[cfg(unix)]
     #[test]
     fn streamed_literal_text_cannot_issue_terminal_control_commands() {
         run_async(async {
@@ -580,6 +615,7 @@ case "$line" in *'"id":"approval"'*'"value":"Allow \u001b]52;c;YWJj\u0007"'*) ;;
     }
 
     /// Complete and split clipboard controls reach the same literal-text boundary.
+    #[cfg(unix)]
     const LITERAL_PEER: &str = r#"
 read -r line || exit 8
 printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":false,"error":"error \u001b]52;c;?\u0007 text"}'
