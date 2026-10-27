@@ -69,6 +69,7 @@ mod model_finite;
 mod model_hook_gates;
 mod model_signal_selection;
 
+mod tool_override_example;
 mod tui_capabilities;
 
 mod custom_ui;
@@ -85,6 +86,9 @@ fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extens
     maestro_extensions_wasmtime::artifact_factory(
         path,
         support::widgets(),
-        "installed-component-host".into(),
+        maestro_extensions_wasmtime::Installation {
+            version: "installed-component-host".into(),
+            agent_dir: "/controlled-agent".into(),
+        },
     )
 }

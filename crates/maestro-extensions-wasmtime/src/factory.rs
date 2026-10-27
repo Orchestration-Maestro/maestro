@@ -12,19 +12,28 @@ use wasmtime::{
     component::{Component, Linker},
 };
 
+/// Application-supplied facts shared by the components it loads.
+#[derive(Debug, Clone)]
+pub struct Installation {
+    /// Version of the installed application, not the component.
+    pub version: String,
+    /// Agent directory selected by the application's configuration owner.
+    pub agent_dir: String,
+}
+
 /// Creates a local factory for one authored extension component at the supplied path, whose
 /// host widgets `widgets` builds.
 ///
-/// The application supplies its installation version; components do not choose it.
+/// The application supplies its version and agent directory; components do not choose them.
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
 pub fn artifact_factory(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
-    installation_version: String,
+    installation: Installation,
 ) -> ExtensionFactory<Local> {
-    factory(path, widgets, installation_version, None, None)
+    factory(path, widgets, installation, None, None)
 }
 
 /// Creates an artifact factory whose standard output uses the supplied byte writer, and whose
@@ -37,14 +46,14 @@ pub fn artifact_factory(
 pub fn artifact_factory_with_stdout(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
-    installation_version: String,
+    installation: Installation,
     stdout: Box<dyn std::io::Write + Send>,
     terminal: bool,
 ) -> ExtensionFactory<Local> {
     factory(
         path,
         widgets,
-        installation_version,
+        installation,
         Some(crate::wasi::Output::new(stdout, terminal)),
         None,
     )
@@ -53,16 +62,16 @@ pub fn artifact_factory_with_stdout(
 /// Creates the production component factory with application-supplied native effects, whose
 /// host widgets `widgets` builds.
 ///
-/// The application supplies its installation version and the operations' original local
-/// executor. Construction performs no native launch or request; guest calls select their effects.
+/// The application supplies installation facts and the operations' original local executor.
+/// Construction performs no native launch or request; guest calls select their effects.
 #[must_use]
 pub fn artifact_factory_with_io(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
-    installation_version: String,
+    installation: Installation,
     io: Rc<dyn maestro_extensions::native_io::NativeIo>,
 ) -> ExtensionFactory<Local> {
-    factory(path, widgets, installation_version, None, Some(io))
+    factory(path, widgets, installation, None, Some(io))
 }
 
 /// Retains the original supplied widgets, output and native effects for each independently
@@ -70,7 +79,7 @@ pub fn artifact_factory_with_io(
 fn factory(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
-    installation_version: String,
+    installation: Installation,
     output: Option<crate::wasi::Output>,
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
 ) -> ExtensionFactory<Local> {
@@ -78,7 +87,7 @@ fn factory(
         let (path, widgets) = (path.clone(), widgets.clone());
         let output = output.clone();
         let io = io.clone();
-        let installation_version = installation_version.clone();
+        let installation = installation.clone();
         Box::pin(async move {
             let (pump, admission) = Pump::new(widgets);
             pump.registry().resources.borrow_mut().native_io = io;
@@ -91,9 +100,8 @@ fn factory(
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state =
-                lifecycle::State::new(endpoint, callbacks, &path, installation_version, output)
-                    .map_err(|error| error.to_string())?;
+            let state = lifecycle::State::new(endpoint, callbacks, &path, installation, output)
+                .map_err(|error| error.to_string())?;
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {

@@ -264,7 +264,10 @@ async fn load(
     let factory = maestro_extensions_wasmtime::artifact_factory_with_stdout(
         path.clone(),
         super::support::widgets_over(theme()),
-        "summary-host".into(),
+        maestro_extensions_wasmtime::Installation {
+            version: "summary-host".into(),
+            agent_dir: "/controlled-agent".into(),
+        },
         Box::new(output),
         false,
     );

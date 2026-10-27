@@ -85,6 +85,11 @@ fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
     {
         return conversation::observe(api, request);
     }
+    if request["operation"] == "config.getAgentDir" {
+        return Ok(serde_json::json!(
+            maestro_extensions_wasm::config::get_agent_dir(api)?
+        ));
+    }
     if request["operation"] == "config.VERSION" {
         return Ok(serde_json::json!(maestro_extensions_wasm::config::version(
             api

@@ -130,7 +130,10 @@ async fn growth_runner() -> (
     crate::factory::artifact_factory(
         std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap(),
         crate::tests::support::widgets(),
-        "installed-component-host".into(),
+        crate::Installation {
+            version: "installed-component-host".into(),
+            agent_dir: "/controlled-agent".into(),
+        },
     )(api)
     .await
     .unwrap();
