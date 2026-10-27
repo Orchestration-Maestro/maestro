@@ -62,7 +62,7 @@ fn callbacks() -> Rc<OAuthLoginCallbacks> {
 }
 
 /// Supplies the exact RFC verifier bytes, with no ambient entropy or clock reads.
-fn authorization(host: &Controlled) -> Rc<dyn OAuthProviderInterface> {
+fn authorization(host: &Controlled) -> Rc<oauth::CustomAnthropic> {
     Rc::new(oauth::CustomAnthropic {
         io: captured_api(host).unwrap().native_io(),
         entropy: Rc::new(|| {
@@ -147,4 +147,220 @@ fn custom_message_provider_rejects_mismatched_authorization_state() {
     let result = super::block_on(provider.login(interaction));
     assert_eq!(result.unwrap_err(), "Authorization state mismatch");
     assert!(host.observed().native_http.requests.is_empty());
+}
+
+#[path = "../../../../examples/extensions/custom-provider-anthropic/stream.rs"]
+mod stream;
+
+/// The native owner supplies the buffer; this adapter only projects its public interface.
+struct NativeStream(maestro_models::AssistantMessageEventStream);
+impl crate::EventStreamPort<crate::AssistantMessageEvent, crate::SharedAssistantMessage>
+    for NativeStream
+{
+    fn push(&self, event: crate::AssistantMessageEvent) -> ExtensionResult<()> {
+        self.0.push(event);
+        Ok(())
+    }
+    fn end(&self, result: Option<crate::SharedAssistantMessage>) -> ExtensionResult<()> {
+        self.0.end(result);
+        Ok(())
+    }
+    fn next(&self) -> crate::ExtensionFuture<'static, Option<Rc<crate::AssistantMessageEvent>>> {
+        let next = self.0.next();
+        Box::pin(async move { Ok(next.await.map(Rc::new)) })
+    }
+    fn result(&self) -> crate::ExtensionFuture<'static, Rc<crate::SharedAssistantMessage>> {
+        let result = self.0.result();
+        Box::pin(async move { Ok(Rc::new(result.await)) })
+    }
+}
+
+/// A supplied model, independent of the ambient catalog.
+fn model() -> crate::Model {
+    serde_json::from_value(json!({
+        "id":"claude-sonnet-4-5", "name":"Claude Sonnet 4.5 (Custom)",
+        "api":"custom-anthropic-api", "provider":"custom-anthropic",
+        "baseUrl":"https://api.anthropic.com", "reasoning":true, "input":["text","image"],
+        "cost":{"input":3,"output":15,"cacheRead":0.3,"cacheWrite":3.75},
+        "contextWindow":200_000,"maxTokens":64_000
+    }))
+    .unwrap()
+}
+
+/// Mixed conversation records observed at the provider request boundary.
+fn conversation() -> crate::Context {
+    serde_json::from_value(json!({
+        "systemPrompt":"Prompt 雪🚀", "tools":[{
+            "name":"write", "description":"Write a file",
+            "parameters":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}
+        }],
+        "messages":[
+            {"role":"user","content":"  ","timestamp":0},
+            {"role":"user","content":[{"type":"text","text":"Question 雪🚀"},{"type":"image","mimeType":"image/png","data":"image-data"}],"timestamp":0},
+            {"role":"assistant","api":"custom-anthropic-api","provider":"custom-anthropic","model":"claude-sonnet-4-5",
+             "content":[{"type":"text","text":" "},{"type":"thinking","thinking":"unsigned"},{"type":"thinking","thinking":"signed","thinkingSignature":"prior-signature"},
+                {"type":"toolCall","id":"call-first","name":"write","arguments":{"path":"demo"}}],
+             "usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"toolUse","timestamp":0},
+            {"role":"toolResult","toolCallId":"call-first","toolName":"write","content":[{"type":"text","text":"alpha"},{"type":"text","text":"beta"}],"isError":false,"timestamp":0},
+            {"role":"toolResult","toolCallId":"call-second","toolName":"write","content":[{"type":"image","mimeType":"image/png","data":"result-image"}],"isError":true,"timestamp":0}
+        ]
+    })).unwrap()
+}
+
+/// Provider events contain sparse wire indices and usage updates that omit prior counts.
+fn response_events() -> String {
+    let events = [
+        json!({"type":"message_start","message":{"usage":{"input_tokens":100,"output_tokens":0,"cache_read_input_tokens":10,"cache_creation_input_tokens":4}}}),
+        json!({"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}),
+        json!({"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"reason 雪"}}),
+        json!({"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"signature"}}),
+        json!({"type":"content_block_stop","index":0}),
+        json!({"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}}),
+        json!({"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"answer 🚀"}}),
+        json!({"type":"content_block_stop","index":1}),
+        json!({"type":"content_block_start","index":3,"content_block":{"type":"tool_use","id":"call-response","name":"Write","input":{}}}),
+        json!({"type":"content_block_delta","index":3,"delta":{"type":"input_json_delta","partial_json":"{\"path\":"}}),
+        json!({"type":"content_block_delta","index":3,"delta":{"type":"input_json_delta","partial_json":"\"demo\"}"}}),
+        json!({"type":"content_block_stop","index":3}),
+        json!({"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":20}}),
+        json!({"type":"message_stop"}),
+    ];
+    let mut wire = String::from("\u{feff}: heartbeat\r\n\r\n");
+    for event in events {
+        wire.push_str("data: ");
+        wire.push_str(&event.to_string());
+        wire.push_str("\r\n\r\n");
+    }
+    wire
+}
+
+#[test]
+fn custom_message_provider_converts_and_streams_through_public_host_interfaces()
+-> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_http.body =
+        Some(response_events().bytes().map(|byte| vec![byte]).collect());
+    let provider = authorization(&host);
+    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
+        maestro_models::AssistantMessageEventStream::new(),
+    )));
+    let options = crate::SimpleStreamOptions {
+        common: crate::StreamOptions {
+            api_key: Some("sk-ant-oat-fixture".into()),
+            max_tokens: Some(1234.0),
+            ..crate::StreamOptions::default()
+        },
+        reasoning: Some(crate::RequestedThinkingLevel::High),
+        ..crate::SimpleStreamOptions::default()
+    };
+    super::block_on(provider.stream_custom_anthropic(
+        model(),
+        conversation(),
+        Some(options.into()),
+        output.clone(),
+    ))?;
+    let result = super::block_on(output.result())?;
+    check_stream_result(&result);
+    check_stream_events(&output, &result)?;
+    check_message_request(&host);
+    Ok(())
+}
+
+/// Final content, complete usage and pricing come from the public result owner.
+fn check_stream_result(result: &crate::SharedAssistantMessage) {
+    let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
+    assert_eq!(
+        value["content"],
+        json!([
+            {"type":"thinking","thinking":"reason 雪","thinkingSignature":"signature"},
+            {"type":"text","text":"answer 🚀"},
+            {"type":"toolCall","id":"call-response","name":"write","arguments":{"path":"demo"}}
+        ])
+    );
+    assert_eq!(value["stopReason"], "toolUse");
+    assert_eq!(value["timestamp"], json!(10000.0));
+    assert_eq!(value["usage"]["input"], json!(100.0));
+    assert_eq!(value["usage"]["output"], json!(20.0));
+    assert_eq!(value["usage"]["cacheRead"], json!(10.0));
+    assert_eq!(value["usage"]["cacheWrite"], json!(4.0));
+    assert_eq!(value["usage"]["totalTokens"], json!(134.0));
+    assert!((value["usage"]["cost"]["total"].as_f64().unwrap() - 0.000_618).abs() < f64::EPSILON);
+}
+
+/// Every event keeps the original shared message; deltas retain their authored order.
+fn check_stream_events(
+    output: &crate::AssistantMessageEventStream,
+    result: &crate::SharedAssistantMessage,
+) -> ExtensionResult<()> {
+    let mut events = Vec::new();
+    while let Some(event) = super::block_on(output.next())? {
+        assert!(std::sync::Arc::ptr_eq(event.message(), result));
+        events.push(serde_json::to_value(&*event).unwrap());
+    }
+    assert_eq!(
+        events
+            .iter()
+            .map(|event| event["type"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        [
+            "start",
+            "thinking_start",
+            "thinking_delta",
+            "thinking_end",
+            "text_start",
+            "text_delta",
+            "text_end",
+            "toolcall_start",
+            "toolcall_delta",
+            "toolcall_delta",
+            "toolcall_end",
+            "done"
+        ]
+    );
+    assert_eq!(events[8]["contentIndex"], 2);
+    assert_eq!(events[8]["delta"], "{\"path\":");
+    assert_eq!(events[9]["delta"], "\"demo\"}");
+    Ok(())
+}
+
+/// Request conversion preserves images, adjacent results, schema constraints and subscription headers.
+fn check_message_request(host: &Controlled) {
+    let observed = host.observed();
+    assert_eq!(observed.native_http.requests.len(), 1);
+    let request = &observed.native_http.requests[0];
+    assert_eq!(request.url, "https://api.anthropic.com/v1/messages");
+    assert_eq!(request.method.as_deref(), Some("POST"));
+    assert!(
+        request
+            .headers
+            .contains(&("authorization".into(), "Bearer sk-ant-oat-fixture".into()))
+    );
+    assert!(request.headers.contains(&(
+        "user-agent".into(),
+        "claude-cli/2.1.2 (external, cli)".into()
+    )));
+    let body: Value = serde_json::from_slice(request.body.as_ref().unwrap()).unwrap();
+    assert_eq!(body["model"], "claude-sonnet-4-5");
+    assert_eq!(body["max_tokens"], json!(1234.0));
+    assert_eq!(body["stream"], true);
+    assert_eq!(
+        body["thinking"],
+        json!({"type":"enabled","budget_tokens":20480.0})
+    );
+    assert_eq!(
+        body["tools"],
+        json!([{"name":"Write","description":"Write a file","input_schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}}])
+    );
+    assert_eq!(
+        body["messages"],
+        json!([
+            {"role":"user","content":[{"type":"text","text":"Question 雪🚀"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"image-data"}}]},
+            {"role":"assistant","content":[{"type":"text","text":"unsigned"},{"type":"thinking","thinking":"signed","signature":"prior-signature"},{"type":"tool_use","id":"call-first","name":"Write","input":{"path":"demo"}}]},
+            {"role":"user","content":[{"type":"tool_result","tool_use_id":"call-first","content":"alpha\nbeta","is_error":false},{"type":"tool_result","tool_use_id":"call-second","content":[{"type":"text","text":"(see attached image)"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"result-image"}}],"is_error":true,"cache_control":{"type":"ephemeral"}}]}
+        ])
+    );
+    assert_eq!(
+        body["system"][1],
+        json!({"type":"text","text":"Prompt 雪🚀","cache_control":{"type":"ephemeral"}})
+    );
 }
