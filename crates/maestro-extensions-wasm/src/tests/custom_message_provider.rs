@@ -441,3 +441,52 @@ fn custom_message_provider_zero_limit_uses_native_default() -> ExtensionResult<(
     }
     Ok(())
 }
+
+#[test]
+fn custom_message_provider_preabort_settles_without_http() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let flag = super::controlled::Flag::default();
+    let signal = crate::component_adapter::signal(&host, host.signal(&flag));
+    flag.abort();
+    host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
+    let provider = authorization(&host);
+    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
+        maestro_models::AssistantMessageEventStream::new(),
+    )));
+    let options = crate::SimpleStreamOptions {
+        common: crate::StreamOptions {
+            api_key: Some("sk-ant-oat-fixture".into()),
+            signal: Some(signal),
+            ..crate::StreamOptions::default()
+        },
+        ..crate::SimpleStreamOptions::default()
+    };
+    super::block_on(provider.stream_custom_anthropic(
+        model(),
+        conversation(),
+        Some(options.into()),
+        output.clone(),
+    ))?;
+    let result = super::block_on(output.result())?;
+    assert_eq!(
+        result.read().unwrap().stop_reason,
+        crate::StopReason::Aborted
+    );
+    assert!(host.observed().native_http.requests.is_empty());
+    let start = super::block_on(output.next())?.unwrap();
+    let error = super::block_on(output.next())?.unwrap();
+    assert!(matches!(
+        start.as_ref(),
+        crate::AssistantMessageEvent::Start { .. }
+    ));
+    assert!(matches!(
+        error.as_ref(),
+        crate::AssistantMessageEvent::Error {
+            reason: crate::ErrorReason::Aborted,
+            ..
+        }
+    ));
+    assert!(std::sync::Arc::ptr_eq(error.message(), &result));
+    assert!(super::block_on(output.next())?.is_none());
+    Ok(())
+}
