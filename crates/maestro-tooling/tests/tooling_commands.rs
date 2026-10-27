@@ -1220,6 +1220,10 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
     ),
     (
+        "examples/extensions/input_transform.rs",
+        include_str!("../../../examples/extensions/input_transform.rs"),
+    ),
+    (
         "examples/extensions/permission_gate.rs",
         include_str!("../../../examples/extensions/permission_gate.rs"),
     ),

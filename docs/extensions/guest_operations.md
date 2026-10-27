@@ -531,3 +531,10 @@ the native authored-path policy and existing-spelling fallback order.
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
 supply this value to `artifact_factory(path, widgets, installation_version)`.
+
+## Read the host's local clock
+
+`utils::local_date_time_string(&api)` reads the host's current wall clock and local
+time zone. It returns the en-US pattern `M/D/YYYY, h:mm:ss AM`, including seconds,
+with unpadded month, day and hour fields on a twelve-hour clock. It does not select
+other locale patterns. The guest carries no time-zone data; host failures remain errors.
