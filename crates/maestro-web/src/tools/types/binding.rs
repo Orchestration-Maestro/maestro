@@ -57,54 +57,64 @@ impl ToolRendererBinding {
         drop(previous);
         self
     }
-    /// Clone the stored handle for one operand and content combination.
-    #[cfg(target_arch = "wasm32")]
-    pub(crate) fn slot<P: 'static, D: 'static, C: 'static>(
-        &self,
-    ) -> Option<Rc<dyn ToolRenderer<P, D, C>>> {
-        self.owner
-            .state::<RendererSlot<P, D, C>>()
-            .borrow()
-            .0
-            .clone()
-    }
     /// Additionally admit present JSON operands through their selected decoders.
     #[must_use]
     pub fn from_typed<P: DeserializeOwned + 'static, D: DeserializeOwned + 'static>(
         renderer: Rc<dyn ToolRenderer<P, D>>,
     ) -> Self {
-        let binding = Self::from_raw(Rc::clone(&renderer));
+        Self::typed(renderer)
+    }
+    /// Install typed and decoded views through the same content-specific slot owner.
+    fn typed<P: DeserializeOwned + 'static, D: DeserializeOwned + 'static, C: 'static>(
+        renderer: Rc<dyn ToolRenderer<P, D, C>>,
+    ) -> Self {
+        let binding = Self {
+            owner: ToolRendererState::default(),
+        }
+        .with_slot(Rc::clone(&renderer));
         let binding = if TypeId::of::<(P, D)>() == TypeId::of::<(Value, Value)>() {
             binding
         } else {
-            binding.with_raw::<Value, Value>(Rc::new(DecodedRenderer {
+            binding.with_slot::<Value, Value, C>(Rc::new(DecodedRenderer {
                 renderer: Rc::clone(&renderer),
             }))
         };
         if TypeId::of::<(P, D)>() != TypeId::of::<(JsonObject, Value)>() {
-            return binding.with_raw::<JsonObject, Value>(Rc::new(DecodedRenderer { renderer }));
+            return binding
+                .with_slot::<JsonObject, Value, C>(Rc::new(DecodedRenderer { renderer }));
         }
         binding
     }
     /// Retain an output-only callback without restricting callers' native details.
     pub(crate) fn from_details_agnostic(renderer: Rc<dyn ToolRenderer<JsonObject, ()>>) -> Self {
-        let binding = Self::from_raw(Rc::clone(&renderer));
-        binding.owner.state::<DetailsAgnostic>().borrow_mut().0 = Some(renderer);
+        Self::output_only(renderer)
+    }
+    /// Store an output-only callback in the selected content representation.
+    fn output_only<C: 'static>(renderer: Rc<dyn ToolRenderer<JsonObject, (), C>>) -> Self {
+        let binding = Self {
+            owner: ToolRendererState::default(),
+        }
+        .with_slot(Rc::clone(&renderer));
+        binding.owner.state::<DetailsAgnostic<C>>().borrow_mut().0 = Some(renderer);
         binding
     }
     /// Clone the renderer handle for these concrete operand types.
     #[must_use]
     pub fn renderer<P: 'static, D: 'static>(&self) -> Option<Rc<dyn ToolRenderer<P, D>>> {
-        let slot = self
-            .owner
-            .state::<RendererSlot<P, D, Box<dyn super::ToolContent>>>();
+        self.renderer_for::<P, D, crate::dom::PreparedContent>()
+    }
+    /// Resolve a concrete content slot, admitting arbitrary details only for output-only callbacks.
+    fn renderer_for<P: 'static, D: 'static, C: 'static>(
+        &self,
+    ) -> Option<Rc<dyn ToolRenderer<P, D, C>>> {
+        let slot = self.owner.state::<RendererSlot<P, D, C>>();
         if slot.borrow().0.is_none()
             && (TypeId::of::<P>() == TypeId::of::<JsonObject>()
                 || TypeId::of::<P>() == TypeId::of::<Value>())
         {
-            let callback = self.owner.state::<DetailsAgnostic>().borrow().0.clone();
+            let callback = self.owner.state::<DetailsAgnostic<C>>().borrow().0.clone();
             if let Some(renderer) = callback {
-                slot.borrow_mut().0 = Some(Rc::new(DetailsAdapter::<P, D> {
+                slot.borrow_mut().0 = Some(Rc::new(DetailsAdapter::<P, D, _> {
                     renderer,
                     marker: std::marker::PhantomData,
                 }));
@@ -114,19 +124,19 @@ impl ToolRendererBinding {
     }
 }
 /// JSON adapter retaining the same native renderer.
-struct DecodedRenderer<P, D> {
+struct DecodedRenderer<P, D, C> {
     /// Original typed callback.
-    renderer: Rc<dyn ToolRenderer<P, D>>,
+    renderer: Rc<dyn ToolRenderer<P, D, C>>,
 }
-impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<Value, Value>
-    for DecodedRenderer<P, D>
+impl<P: DeserializeOwned, D: DeserializeOwned, C> ToolRenderer<Value, Value, C>
+    for DecodedRenderer<P, D, C>
 {
     fn render(
         &self,
         params: Option<&Value>,
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let params = params
             .map(P::deserialize)
             .transpose()
@@ -134,15 +144,15 @@ impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<Value, Value>
         self.finish(params.as_ref(), result.as_ref(), is_streaming)
     }
 }
-impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<JsonObject, Value>
-    for DecodedRenderer<P, D>
+impl<P: DeserializeOwned, D: DeserializeOwned, C> ToolRenderer<JsonObject, Value, C>
+    for DecodedRenderer<P, D, C>
 {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let params = params
             .map(|object| {
                 let entries = object.iter().map(|(key, value)| (key.as_str(), value));
@@ -155,14 +165,14 @@ impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<JsonObject, Value>
         self.finish(params.as_ref(), result.as_ref(), is_streaming)
     }
 }
-impl<P, D: DeserializeOwned> DecodedRenderer<P, D> {
+impl<P, D: DeserializeOwned, C> DecodedRenderer<P, D, C> {
     /// Decode details and invoke the native callback for either JSON carrier.
     fn finish(
         &self,
         params: Option<&P>,
         result: Option<&ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let details = result
             .and_then(ToolResultMessageView::details)
             .map(D::deserialize)
@@ -174,22 +184,26 @@ impl<P, D: DeserializeOwned> DecodedRenderer<P, D> {
 }
 
 /// The existing typed owner also retains output-only callbacks.
-#[derive(Default)]
-struct DetailsAgnostic(Option<Rc<dyn ToolRenderer<JsonObject, ()>>>);
+struct DetailsAgnostic<C>(Option<Rc<dyn ToolRenderer<JsonObject, (), C>>>);
+impl<C> Default for DetailsAgnostic<C> {
+    fn default() -> Self {
+        Self(None)
+    }
+}
 /// One cached native-operand adapter; original message fields remain borrowed.
-struct DetailsAdapter<P, D> {
+struct DetailsAdapter<P, D, C> {
     /// Callback which never reads native details.
-    renderer: Rc<dyn ToolRenderer<JsonObject, ()>>,
+    renderer: Rc<dyn ToolRenderer<JsonObject, (), C>>,
     /// Operand types retained only in the adapter's type identity.
     marker: std::marker::PhantomData<fn(&P, &D)>,
 }
-impl<P: 'static, D> ToolRenderer<P, D> for DetailsAdapter<P, D> {
+impl<P: 'static, D, C> ToolRenderer<P, D, C> for DetailsAdapter<P, D, C> {
     fn render(
         &self,
         params: Option<&P>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let empty = JsonObject::new();
         let params = params
             .map(|params| -> Result<Option<&JsonObject>, ToolUiError> {

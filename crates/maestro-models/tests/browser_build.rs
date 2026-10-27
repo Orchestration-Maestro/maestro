@@ -2,13 +2,27 @@
 
 use std::process::Command;
 
+/// Strip host instrumentation while retaining the ordinary compiler cache.
 fn wasm_build_command() -> Command {
     let mut command = Command::new(env!("CARGO"));
-    // The wasm child build must not inherit host instrumentation.
+    if std::env::var_os("__CARGO_LLVM_COV_RUSTC_WRAPPER").is_some() {
+        if let Some(wrapper) = std::env::var_os("__CARGO_LLVM_COV_RUSTC_WRAPPER_PRE_EXISTING") {
+            command.env("RUSTC_WRAPPER", wrapper);
+        } else {
+            command.env_remove("RUSTC_WRAPPER");
+        }
+    }
+    for (key, _) in std::env::vars_os() {
+        if key
+            .to_string_lossy()
+            .starts_with("__CARGO_LLVM_COV_RUSTC_WRAPPER")
+        {
+            command.env_remove(key);
+        }
+    }
     command
         .env_remove("RUSTFLAGS")
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
-        .env_remove("RUSTC_WRAPPER")
         .env_remove("RUSTC_WORKSPACE_WRAPPER");
     command
 }

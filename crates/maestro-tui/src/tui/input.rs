@@ -10,7 +10,7 @@ use crate::images::terminal_image::CellDimensions;
 use crate::keys::{is_key_release, matches_key};
 
 use super::overlays::Focus;
-use super::{Component, ComponentHandle, FocusFlag, Focusable, TUI};
+use super::{Component, ComponentHandle, Focusable, TUI};
 
 /// What an input listener decided about one chunk of input.
 pub enum InputListenerResult {
@@ -53,9 +53,9 @@ enum CellReply {
     Size(CellDimensions),
 }
 
-/// The focus flag of `component`, when it can hold focus.
-fn focus_flag(component: &dyn Component) -> Option<&FocusFlag> {
-    component.focusable().map(Focusable::focus_flag)
+/// The focus capability of `component`.
+fn focusable(component: &dyn Component) -> Option<&dyn Focusable> {
+    component.focusable()
 }
 
 /// Reads `data` as `ESC [ 6 ; height ; width t`, the whole chunk and ASCII digits only.
@@ -106,13 +106,13 @@ impl TUI {
     /// Commits every focus change through the same flag and recipient assignment.
     pub(super) fn commit_focus(&self, focus: Focus) {
         let previous = std::mem::take(&mut self.shared.input.borrow_mut().focused);
-        if let Some(flag) = previous.component().map(AsRef::as_ref).and_then(focus_flag) {
-            flag.set(false);
+        if let Some(flag) = previous.component().map(AsRef::as_ref).and_then(focusable) {
+            flag.set_focused(false);
         }
         let component = focus.component().cloned();
         self.shared.input.borrow_mut().focused = focus;
-        if let Some(flag) = component.as_deref().and_then(focus_flag) {
-            flag.set(true);
+        if let Some(flag) = component.as_deref().and_then(focusable) {
+            flag.set_focused(true);
         }
     }
 

@@ -1,0 +1,2924 @@
+[
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u:npm:pack",
+      "description": "[u:npm:pack]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u:npm:pack",
+      "description": "[u:npm:pack]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u:npm:pack",
+      "description": "[u:npm:pack] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u:npm:@scope/pack@2",
+      "description": "[u:npm:@scope/pack@2]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u:npm:@scope/pack@2",
+      "description": "[u:npm:@scope/pack@2]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u:npm:@scope/pack@2",
+      "description": "[u:npm:@scope/pack@2] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u:git:github.com/owner/repo@main",
+      "description": "[u:git:github.com/owner/repo@main]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u:git:github.com/owner/repo@main",
+      "description": "[u:git:github.com/owner/repo@main]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u:git:github.com/owner/repo@main",
+      "description": "[u:git:github.com/owner/repo@main] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u:git:github.com/owner/repo",
+      "description": "[u:git:github.com/owner/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u:git:github.com/owner/repo",
+      "description": "[u:git:github.com/owner/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u:git:github.com/owner/repo",
+      "description": "[u:git:github.com/owner/repo] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u:git:example.org/team/repo@v1",
+      "description": "[u:git:example.org/team/repo@v1]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u:git:example.org/team/repo@v1",
+      "description": "[u:git:example.org/team/repo@v1]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u:git:example.org/team/repo@v1",
+      "description": "[u:git:example.org/team/repo@v1] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u:git:example.org/team/repo",
+      "description": "[u:git:example.org/team/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u:git:example.org/team/repo",
+      "description": "[u:git:example.org/team/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u:git:example.org/team/repo",
+      "description": "[u:git:example.org/team/repo] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "user"
+      }
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "user"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "user"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "u",
+      "description": "[u] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p:npm:pack",
+      "description": "[p:npm:pack]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p:npm:pack",
+      "description": "[p:npm:pack]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p:npm:pack",
+      "description": "[p:npm:pack] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p:npm:@scope/pack@2",
+      "description": "[p:npm:@scope/pack@2]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p:npm:@scope/pack@2",
+      "description": "[p:npm:@scope/pack@2]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p:npm:@scope/pack@2",
+      "description": "[p:npm:@scope/pack@2] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p:git:github.com/owner/repo@main",
+      "description": "[p:git:github.com/owner/repo@main]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p:git:github.com/owner/repo@main",
+      "description": "[p:git:github.com/owner/repo@main]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p:git:github.com/owner/repo@main",
+      "description": "[p:git:github.com/owner/repo@main] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p:git:github.com/owner/repo",
+      "description": "[p:git:github.com/owner/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p:git:github.com/owner/repo",
+      "description": "[p:git:github.com/owner/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p:git:github.com/owner/repo",
+      "description": "[p:git:github.com/owner/repo] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p:git:example.org/team/repo@v1",
+      "description": "[p:git:example.org/team/repo@v1]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p:git:example.org/team/repo@v1",
+      "description": "[p:git:example.org/team/repo@v1]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p:git:example.org/team/repo@v1",
+      "description": "[p:git:example.org/team/repo@v1] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p:git:example.org/team/repo",
+      "description": "[p:git:example.org/team/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p:git:example.org/team/repo",
+      "description": "[p:git:example.org/team/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p:git:example.org/team/repo",
+      "description": "[p:git:example.org/team/repo] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      }
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "p",
+      "description": "[p] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "auto",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "cli",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t:npm:pack",
+      "description": "[t:npm:pack]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t:npm:pack",
+      "description": "[t:npm:pack]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "npm:pack",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t:npm:pack",
+      "description": "[t:npm:pack] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t:npm:@scope/pack@2",
+      "description": "[t:npm:@scope/pack@2]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t:npm:@scope/pack@2",
+      "description": "[t:npm:@scope/pack@2]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": " npm:@scope/pack@2 ",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t:npm:@scope/pack@2",
+      "description": "[t:npm:@scope/pack@2] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t:git:github.com/owner/repo@main",
+      "description": "[t:git:github.com/owner/repo@main]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t:git:github.com/owner/repo@main",
+      "description": "[t:git:github.com/owner/repo@main]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:github.com/owner/repo@main",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t:git:github.com/owner/repo@main",
+      "description": "[t:git:github.com/owner/repo@main] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t:git:github.com/owner/repo",
+      "description": "[t:git:github.com/owner/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t:git:github.com/owner/repo",
+      "description": "[t:git:github.com/owner/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "https://github.com/owner/repo.git",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t:git:github.com/owner/repo",
+      "description": "[t:git:github.com/owner/repo] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t:git:example.org/team/repo@v1",
+      "description": "[t:git:example.org/team/repo@v1]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t:git:example.org/team/repo@v1",
+      "description": "[t:git:example.org/team/repo@v1]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:ssh://git@example.org/team/repo.git@v1",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t:git:example.org/team/repo@v1",
+      "description": "[t:git:example.org/team/repo@v1] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t:git:example.org/team/repo",
+      "description": "[t:git:example.org/team/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t:git:example.org/team/repo",
+      "description": "[t:git:example.org/team/repo]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "git:https://example.org/team/repo.git",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t:git:example.org/team/repo",
+      "description": "[t:git:example.org/team/repo] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "custom",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "﻿local﻿",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "temporary"
+      }
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "temporary"
+      },
+      "description": ""
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t]"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_keep_scope_git_npm_and_ecmascript_whitespace",
+    "input": {
+      "op": "description",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "temporary"
+      },
+      "description": "A description"
+    },
+    "expected": {
+      "tag": "t",
+      "description": "[t] A description"
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_preserve_missing_source_and_empty_description",
+    "input": {
+      "op": "description"
+    },
+    "expected": {}
+  },
+  {
+    "test": "autocomplete_descriptions_preserve_missing_source_and_empty_description",
+    "input": {
+      "op": "description",
+      "description": ""
+    },
+    "expected": {
+      "description": ""
+    }
+  },
+  {
+    "test": "autocomplete_descriptions_preserve_missing_source_and_empty_description",
+    "input": {
+      "op": "description",
+      "description": "plain"
+    },
+    "expected": {
+      "description": "plain"
+    }
+  },
+  {
+    "test": "autocomplete_builds_ordered_builtin_template_extension_and_enabled_skill_commands",
+    "input": {
+      "op": "base",
+      "enabled": true,
+      "templates": [
+        {
+          "name": "templ",
+          "description": "Template",
+          "argumentHint": "<input>",
+          "sourceInfo": {
+            "source": "npm:templates",
+            "scope": "user"
+          }
+        },
+        {
+          "name": "emptyhint",
+          "description": "",
+          "argumentHint": ""
+        }
+      ],
+      "extensions": [
+        {
+          "name": "addon",
+          "invocationName": "addon:2",
+          "description": "Addon",
+          "sourceInfo": {
+            "source": "git:github.com/u/repo@v1",
+            "scope": "project"
+          }
+        },
+        {
+          "name": "settings",
+          "invocationName": "settings:1",
+          "description": "excluded",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "project"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "name": "one",
+          "filePath": "/skills/one/SKILL.md",
+          "description": "Skill",
+          "sourceInfo": {
+            "source": "cli",
+            "scope": "temporary"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "settings",
+            "label": "settings",
+            "description": "Open settings menu"
+          },
+          {
+            "value": "model",
+            "label": "model",
+            "description": "Select model (opens selector UI)"
+          },
+          {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
+            "value": "scoped-models",
+            "label": "scoped-models",
+            "description": "Enable/disable models for Ctrl+P cycling"
+          },
+          {
+            "value": "export",
+            "label": "export",
+            "description": "Export session (HTML default, or specify path: .html/.jsonl)"
+          },
+          {
+            "value": "import",
+            "label": "import",
+            "description": "Import and resume a session from a JSONL file"
+          },
+          {
+            "value": "share",
+            "label": "share",
+            "description": "Share session as a secret GitHub gist"
+          },
+          {
+            "value": "copy",
+            "label": "copy",
+            "description": "Copy last agent message to clipboard"
+          },
+          {
+            "value": "name",
+            "label": "name",
+            "description": "Set session display name"
+          },
+          {
+            "value": "session",
+            "label": "session",
+            "description": "Show session info and stats"
+          },
+          {
+            "value": "changelog",
+            "label": "changelog",
+            "description": "Show changelog entries"
+          },
+          {
+            "value": "hotkeys",
+            "label": "hotkeys",
+            "description": "Show all keyboard shortcuts"
+          },
+          {
+            "value": "fork",
+            "label": "fork",
+            "description": "Create a new fork from a previous user message"
+          },
+          {
+            "value": "clone",
+            "label": "clone",
+            "description": "Duplicate the current session at the current position"
+          },
+          {
+            "value": "tree",
+            "label": "tree",
+            "description": "Navigate session tree (switch branches)"
+          },
+          {
+            "value": "login",
+            "label": "login",
+            "description": "Configure provider authentication"
+          },
+          {
+            "value": "logout",
+            "label": "logout",
+            "description": "Remove provider authentication"
+          },
+          {
+            "value": "new",
+            "label": "new",
+            "description": "Start a new session"
+          },
+          {
+            "value": "compact",
+            "label": "compact",
+            "description": "Manually compact the session context"
+          },
+          {
+            "value": "resume",
+            "label": "resume",
+            "description": "Resume a different session"
+          },
+          {
+            "value": "reload",
+            "label": "reload",
+            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+          },
+          {
+            "value": "quit",
+            "label": "quit",
+            "description": "Quit maestro"
+          },
+          {
+            "value": "templ",
+            "label": "templ",
+            "description": "<input> — [u:npm:templates] Template"
+          },
+          {
+            "value": "emptyhint",
+            "label": "emptyhint",
+            "description": "[p]"
+          },
+          {
+            "value": "addon:2",
+            "label": "addon:2",
+            "description": "[p:git:github.com/u/repo@v1] Addon"
+          },
+          {
+            "value": "skill:one",
+            "label": "skill:one",
+            "description": "[t] Skill"
+          }
+        ],
+        "prefix": "/"
+      }
+    }
+  },
+  {
+    "test": "autocomplete_builds_ordered_builtin_template_extension_and_enabled_skill_commands",
+    "input": {
+      "op": "base",
+      "enabled": false,
+      "templates": [
+        {
+          "name": "templ",
+          "description": "Template",
+          "argumentHint": "<input>",
+          "sourceInfo": {
+            "source": "npm:templates",
+            "scope": "user"
+          }
+        },
+        {
+          "name": "emptyhint",
+          "description": "",
+          "argumentHint": ""
+        }
+      ],
+      "extensions": [
+        {
+          "name": "addon",
+          "invocationName": "addon:2",
+          "description": "Addon",
+          "sourceInfo": {
+            "source": "git:github.com/u/repo@v1",
+            "scope": "project"
+          }
+        },
+        {
+          "name": "settings",
+          "invocationName": "settings:1",
+          "description": "excluded",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "project"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "name": "one",
+          "filePath": "/skills/one/SKILL.md",
+          "description": "Skill",
+          "sourceInfo": {
+            "source": "cli",
+            "scope": "temporary"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "settings",
+            "label": "settings",
+            "description": "Open settings menu"
+          },
+          {
+            "value": "model",
+            "label": "model",
+            "description": "Select model (opens selector UI)"
+          },
+          {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
+            "value": "scoped-models",
+            "label": "scoped-models",
+            "description": "Enable/disable models for Ctrl+P cycling"
+          },
+          {
+            "value": "export",
+            "label": "export",
+            "description": "Export session (HTML default, or specify path: .html/.jsonl)"
+          },
+          {
+            "value": "import",
+            "label": "import",
+            "description": "Import and resume a session from a JSONL file"
+          },
+          {
+            "value": "share",
+            "label": "share",
+            "description": "Share session as a secret GitHub gist"
+          },
+          {
+            "value": "copy",
+            "label": "copy",
+            "description": "Copy last agent message to clipboard"
+          },
+          {
+            "value": "name",
+            "label": "name",
+            "description": "Set session display name"
+          },
+          {
+            "value": "session",
+            "label": "session",
+            "description": "Show session info and stats"
+          },
+          {
+            "value": "changelog",
+            "label": "changelog",
+            "description": "Show changelog entries"
+          },
+          {
+            "value": "hotkeys",
+            "label": "hotkeys",
+            "description": "Show all keyboard shortcuts"
+          },
+          {
+            "value": "fork",
+            "label": "fork",
+            "description": "Create a new fork from a previous user message"
+          },
+          {
+            "value": "clone",
+            "label": "clone",
+            "description": "Duplicate the current session at the current position"
+          },
+          {
+            "value": "tree",
+            "label": "tree",
+            "description": "Navigate session tree (switch branches)"
+          },
+          {
+            "value": "login",
+            "label": "login",
+            "description": "Configure provider authentication"
+          },
+          {
+            "value": "logout",
+            "label": "logout",
+            "description": "Remove provider authentication"
+          },
+          {
+            "value": "new",
+            "label": "new",
+            "description": "Start a new session"
+          },
+          {
+            "value": "compact",
+            "label": "compact",
+            "description": "Manually compact the session context"
+          },
+          {
+            "value": "resume",
+            "label": "resume",
+            "description": "Resume a different session"
+          },
+          {
+            "value": "reload",
+            "label": "reload",
+            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+          },
+          {
+            "value": "quit",
+            "label": "quit",
+            "description": "Quit maestro"
+          },
+          {
+            "value": "templ",
+            "label": "templ",
+            "description": "<input> — [u:npm:templates] Template"
+          },
+          {
+            "value": "emptyhint",
+            "label": "emptyhint",
+            "description": "[p]"
+          },
+          {
+            "value": "addon:2",
+            "label": "addon:2",
+            "description": "[p:git:github.com/u/repo@v1] Addon"
+          }
+        ],
+        "prefix": "/"
+      }
+    }
+  },
+  {
+    "test": "autocomplete_skill_map_rebuild_discards_disabled_and_missing_entries",
+    "input": {
+      "op": "base",
+      "enabled": true,
+      "skills": [
+        {
+          "name": "same",
+          "filePath": "/first",
+          "description": "first"
+        },
+        {
+          "name": "same",
+          "filePath": "/last",
+          "description": "last"
+        }
+      ]
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "settings",
+            "label": "settings",
+            "description": "Open settings menu"
+          },
+          {
+            "value": "model",
+            "label": "model",
+            "description": "Select model (opens selector UI)"
+          },
+          {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
+            "value": "scoped-models",
+            "label": "scoped-models",
+            "description": "Enable/disable models for Ctrl+P cycling"
+          },
+          {
+            "value": "export",
+            "label": "export",
+            "description": "Export session (HTML default, or specify path: .html/.jsonl)"
+          },
+          {
+            "value": "import",
+            "label": "import",
+            "description": "Import and resume a session from a JSONL file"
+          },
+          {
+            "value": "share",
+            "label": "share",
+            "description": "Share session as a secret GitHub gist"
+          },
+          {
+            "value": "copy",
+            "label": "copy",
+            "description": "Copy last agent message to clipboard"
+          },
+          {
+            "value": "name",
+            "label": "name",
+            "description": "Set session display name"
+          },
+          {
+            "value": "session",
+            "label": "session",
+            "description": "Show session info and stats"
+          },
+          {
+            "value": "changelog",
+            "label": "changelog",
+            "description": "Show changelog entries"
+          },
+          {
+            "value": "hotkeys",
+            "label": "hotkeys",
+            "description": "Show all keyboard shortcuts"
+          },
+          {
+            "value": "fork",
+            "label": "fork",
+            "description": "Create a new fork from a previous user message"
+          },
+          {
+            "value": "clone",
+            "label": "clone",
+            "description": "Duplicate the current session at the current position"
+          },
+          {
+            "value": "tree",
+            "label": "tree",
+            "description": "Navigate session tree (switch branches)"
+          },
+          {
+            "value": "login",
+            "label": "login",
+            "description": "Configure provider authentication"
+          },
+          {
+            "value": "logout",
+            "label": "logout",
+            "description": "Remove provider authentication"
+          },
+          {
+            "value": "new",
+            "label": "new",
+            "description": "Start a new session"
+          },
+          {
+            "value": "compact",
+            "label": "compact",
+            "description": "Manually compact the session context"
+          },
+          {
+            "value": "resume",
+            "label": "resume",
+            "description": "Resume a different session"
+          },
+          {
+            "value": "reload",
+            "label": "reload",
+            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+          },
+          {
+            "value": "quit",
+            "label": "quit",
+            "description": "Quit maestro"
+          },
+          {
+            "value": "skill:same",
+            "label": "skill:same",
+            "description": "[p] first"
+          },
+          {
+            "value": "skill:same",
+            "label": "skill:same",
+            "description": "[p] last"
+          }
+        ],
+        "prefix": "/"
+      }
+    }
+  },
+  {
+    "test": "autocomplete_command_sources_preserve_duplicate_entries",
+    "input": {
+      "op": "base",
+      "templates": [
+        {
+          "name": "dup",
+          "description": "template"
+        }
+      ],
+      "extensions": [
+        {
+          "name": "dup",
+          "invocationName": "dup",
+          "description": "extension"
+        }
+      ],
+      "skills": []
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "settings",
+            "label": "settings",
+            "description": "Open settings menu"
+          },
+          {
+            "value": "model",
+            "label": "model",
+            "description": "Select model (opens selector UI)"
+          },
+          {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
+            "value": "scoped-models",
+            "label": "scoped-models",
+            "description": "Enable/disable models for Ctrl+P cycling"
+          },
+          {
+            "value": "export",
+            "label": "export",
+            "description": "Export session (HTML default, or specify path: .html/.jsonl)"
+          },
+          {
+            "value": "import",
+            "label": "import",
+            "description": "Import and resume a session from a JSONL file"
+          },
+          {
+            "value": "share",
+            "label": "share",
+            "description": "Share session as a secret GitHub gist"
+          },
+          {
+            "value": "copy",
+            "label": "copy",
+            "description": "Copy last agent message to clipboard"
+          },
+          {
+            "value": "name",
+            "label": "name",
+            "description": "Set session display name"
+          },
+          {
+            "value": "session",
+            "label": "session",
+            "description": "Show session info and stats"
+          },
+          {
+            "value": "changelog",
+            "label": "changelog",
+            "description": "Show changelog entries"
+          },
+          {
+            "value": "hotkeys",
+            "label": "hotkeys",
+            "description": "Show all keyboard shortcuts"
+          },
+          {
+            "value": "fork",
+            "label": "fork",
+            "description": "Create a new fork from a previous user message"
+          },
+          {
+            "value": "clone",
+            "label": "clone",
+            "description": "Duplicate the current session at the current position"
+          },
+          {
+            "value": "tree",
+            "label": "tree",
+            "description": "Navigate session tree (switch branches)"
+          },
+          {
+            "value": "login",
+            "label": "login",
+            "description": "Configure provider authentication"
+          },
+          {
+            "value": "logout",
+            "label": "logout",
+            "description": "Remove provider authentication"
+          },
+          {
+            "value": "new",
+            "label": "new",
+            "description": "Start a new session"
+          },
+          {
+            "value": "compact",
+            "label": "compact",
+            "description": "Manually compact the session context"
+          },
+          {
+            "value": "resume",
+            "label": "resume",
+            "description": "Resume a different session"
+          },
+          {
+            "value": "reload",
+            "label": "reload",
+            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+          },
+          {
+            "value": "quit",
+            "label": "quit",
+            "description": "Quit maestro"
+          },
+          {
+            "value": "dup",
+            "label": "dup",
+            "description": "[p] template"
+          },
+          {
+            "value": "dup",
+            "label": "dup",
+            "description": "[p] extension"
+          }
+        ],
+        "prefix": "/"
+      }
+    }
+  },
+  {
+    "test": "autocomplete_empty_resources_keep_builtin_commands",
+    "input": {
+      "op": "base",
+      "enabled": true
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "settings",
+            "label": "settings",
+            "description": "Open settings menu"
+          },
+          {
+            "value": "model",
+            "label": "model",
+            "description": "Select model (opens selector UI)"
+          },
+          {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
+            "value": "scoped-models",
+            "label": "scoped-models",
+            "description": "Enable/disable models for Ctrl+P cycling"
+          },
+          {
+            "value": "export",
+            "label": "export",
+            "description": "Export session (HTML default, or specify path: .html/.jsonl)"
+          },
+          {
+            "value": "import",
+            "label": "import",
+            "description": "Import and resume a session from a JSONL file"
+          },
+          {
+            "value": "share",
+            "label": "share",
+            "description": "Share session as a secret GitHub gist"
+          },
+          {
+            "value": "copy",
+            "label": "copy",
+            "description": "Copy last agent message to clipboard"
+          },
+          {
+            "value": "name",
+            "label": "name",
+            "description": "Set session display name"
+          },
+          {
+            "value": "session",
+            "label": "session",
+            "description": "Show session info and stats"
+          },
+          {
+            "value": "changelog",
+            "label": "changelog",
+            "description": "Show changelog entries"
+          },
+          {
+            "value": "hotkeys",
+            "label": "hotkeys",
+            "description": "Show all keyboard shortcuts"
+          },
+          {
+            "value": "fork",
+            "label": "fork",
+            "description": "Create a new fork from a previous user message"
+          },
+          {
+            "value": "clone",
+            "label": "clone",
+            "description": "Duplicate the current session at the current position"
+          },
+          {
+            "value": "tree",
+            "label": "tree",
+            "description": "Navigate session tree (switch branches)"
+          },
+          {
+            "value": "login",
+            "label": "login",
+            "description": "Configure provider authentication"
+          },
+          {
+            "value": "logout",
+            "label": "logout",
+            "description": "Remove provider authentication"
+          },
+          {
+            "value": "new",
+            "label": "new",
+            "description": "Start a new session"
+          },
+          {
+            "value": "compact",
+            "label": "compact",
+            "description": "Manually compact the session context"
+          },
+          {
+            "value": "resume",
+            "label": "resume",
+            "description": "Resume a different session"
+          },
+          {
+            "value": "reload",
+            "label": "reload",
+            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+          },
+          {
+            "value": "quit",
+            "label": "quit",
+            "description": "Quit maestro"
+          }
+        ],
+        "prefix": "/"
+      }
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [
+        {
+          "id": "opus",
+          "provider": "alpha"
+        }
+      ],
+      "registry": [
+        {
+          "id": "other",
+          "provider": "beta"
+        }
+      ],
+      "query": ""
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "alpha/opus",
+            "label": "opus",
+            "description": "alpha"
+          }
+        ],
+        "prefix": ""
+      }
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [
+        {
+          "id": "opus",
+          "provider": "alpha"
+        }
+      ],
+      "registry": [
+        {
+          "id": "other",
+          "provider": "beta"
+        }
+      ],
+      "query": "opus alpha"
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "alpha/opus",
+            "label": "opus",
+            "description": "alpha"
+          }
+        ],
+        "prefix": "opus alpha"
+      }
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [
+        {
+          "id": "opus",
+          "provider": "alpha"
+        }
+      ],
+      "registry": [
+        {
+          "id": "other",
+          "provider": "beta"
+        }
+      ],
+      "query": "BETA"
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [
+        {
+          "id": "opus",
+          "provider": "alpha"
+        }
+      ],
+      "registry": [
+        {
+          "id": "other",
+          "provider": "beta"
+        }
+      ],
+      "query": "no match"
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [
+        {
+          "id": "opus-fast",
+          "provider": "alpha"
+        },
+        {
+          "id": "opus",
+          "provider": "beta"
+        },
+        {
+          "id": "sonnet",
+          "provider": "alpha"
+        }
+      ],
+      "query": ""
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "alpha/opus-fast",
+            "label": "opus-fast",
+            "description": "alpha"
+          },
+          {
+            "value": "alpha/sonnet",
+            "label": "sonnet",
+            "description": "alpha"
+          },
+          {
+            "value": "beta/opus",
+            "label": "opus",
+            "description": "beta"
+          }
+        ],
+        "prefix": ""
+      }
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [
+        {
+          "id": "opus-fast",
+          "provider": "alpha"
+        },
+        {
+          "id": "opus",
+          "provider": "beta"
+        },
+        {
+          "id": "sonnet",
+          "provider": "alpha"
+        }
+      ],
+      "query": "opus alpha"
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "alpha/opus-fast",
+            "label": "opus-fast",
+            "description": "alpha"
+          }
+        ],
+        "prefix": "opus alpha"
+      }
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [
+        {
+          "id": "opus-fast",
+          "provider": "alpha"
+        },
+        {
+          "id": "opus",
+          "provider": "beta"
+        },
+        {
+          "id": "sonnet",
+          "provider": "alpha"
+        }
+      ],
+      "query": "BETA"
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "beta/opus",
+            "label": "opus",
+            "description": "beta"
+          }
+        ],
+        "prefix": "BETA"
+      }
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [
+        {
+          "id": "opus-fast",
+          "provider": "alpha"
+        },
+        {
+          "id": "opus",
+          "provider": "beta"
+        },
+        {
+          "id": "sonnet",
+          "provider": "alpha"
+        }
+      ],
+      "query": "no match"
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [],
+      "query": ""
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [],
+      "query": "opus alpha"
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [],
+      "query": "BETA"
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id",
+    "input": {
+      "op": "model",
+      "scoped": [],
+      "registry": [],
+      "query": "no match"
+    },
+    "expected": {
+      "suggestions": null
+    }
+  },
+  {
+    "test": "extension_argument_callback_receives_the_typed_prefix",
+    "input": {
+      "op": "extension-argument",
+      "query": "value"
+    },
+    "expected": {
+      "called": "value",
+      "suggestions": {
+        "items": [
+          {
+            "value": "arg",
+            "label": "Argument",
+            "description": "from callback"
+          }
+        ],
+        "prefix": "value"
+      }
+    }
+  },
+  {
+    "test": "model_completion_reads_the_session_at_request_time",
+    "input": {
+      "op": "live-model"
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "b/after",
+            "label": "after",
+            "description": "b"
+          }
+        ],
+        "prefix": "after"
+      }
+    }
+  },
+  {
+    "test": "file_completion_consumes_the_search_owner_fd_path",
+    "input": {
+      "op": "fd-route",
+      "query": "@target-unique"
+    },
+    "expected": {
+      "suggestions": {
+        "items": [
+          {
+            "value": "@target-unique.rs",
+            "label": "target-unique.rs",
+            "description": "target-unique.rs"
+          }
+        ],
+        "prefix": "@target-unique"
+      },
+      "withoutSelectedExecutable": null
+    }
+  },
+  {
+    "test": "extension_argument_callback_receives_the_typed_prefix",
+    "input": {
+      "op": "extension-argument",
+      "query": "value",
+      "outcome": "none"
+    },
+    "expected": {
+      "called": "value",
+      "suggestions": null
+    }
+  },
+  {
+    "test": "extension_argument_callback_receives_the_typed_prefix",
+    "input": {
+      "op": "extension-argument",
+      "query": "value",
+      "outcome": "empty"
+    },
+    "expected": {
+      "called": "value",
+      "suggestions": null
+    }
+  },
+  {
+    "test": "extension_argument_callback_receives_the_typed_prefix",
+    "input": {
+      "op": "extension-argument",
+      "query": "value",
+      "outcome": "reject"
+    },
+    "expected": {
+      "called": "value",
+      "error": "argument failed"
+    }
+  }
+]

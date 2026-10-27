@@ -31,98 +31,89 @@ custom renderers can retain their own shared data in the returned recipe.
 ## Page content
 
 `ToolRenderer<P, D, C>` and `ToolRenderResult<C>` take the produced content as a
-third type parameter. Its default, `Box<dyn ToolContent>`, keeps the canvas
-renderers below working unchanged while that family remains; page renderers
-produce `Box<dyn DomContent>` (see [page content](frontend.md#page-content)).
-`ToolRendererBinding::from_dom` retains a page renderer for its native operand
-types. A page binding never answers the canvas lookup and a canvas binding never
-answers the page lookup; the mismatched lookup returns the operand-type error.
+third type parameter. In the browser build its default is `Box<dyn DomContent>`
+(see [page content](frontend.md#page-content)); native builds prepare the same
+owned records for type checking and tests, with nothing to paint.
+`ToolRendererBinding::from_dom` retains a renderer that names that content type
+explicitly. `tools::dom::render_tool` is the same function as `render_tool`.
 
-In the browser build, `tools::dom::render_tool` routes the same operands through
-the same registry and JSON mode to the page renderer, or to the default page
-content. That content shows the status header, then `Input` and `Output`
-sections holding `code-block` listings. The header shows the tool icon and its
-caption. The icon takes the text color with a spinning loader while in progress,
-the success color when complete and the error color on failure. Input is
-pretty-printed JSON, and output is pretty JSON when it parses, otherwise text,
-or `(no output)` when empty. The listings receive their text base64-encoded, so
-text that happens to look like base64 still shows literally. Before parameters
-arrive the caption reads `Preparing tool...`, and while streaming empty
-parameters it reads `Preparing tool parameters...`; the result is never a custom
-card. Updating the content replaces the header and changes the existing listings
-in place, so a selection and the copy feedback survive. Callback-bearing native
-parameters and details reach a page renderer by reference, without
-serialization. The page `DefaultRenderer` also renders this content directly
-from JSON operands.
+The default content shows the status header, then `Input` and `Output` sections
+holding code listings. The header shows the tool icon and its caption. The icon
+takes the text color with a spinning loader while in progress, the success color
+when complete and the error color on failure. Input is pretty-printed JSON, and
+output is pretty JSON when it parses, otherwise text, or `(no output)` when
+empty. The listings show their text literally, so text that happens to look like
+base64 is neither decoded nor copied decoded. Before parameters arrive the caption
+reads `Preparing tool...`, and while streaming empty parameters it reads
+`Preparing tool parameters...`; the result is never a custom card. The section
+labels and the empty-output text follow the view's localization; captions stay as
+authored. Updating the content replaces the header and changes the existing
+listings in place, so a selection and the copy feedback survive; a listing that
+disappears releases its root. Callback-bearing native parameters and details
+reach a renderer by reference, without serialization. `DefaultRenderer` also
+renders this content directly from JSON operands.
 
-## Drawing a retained row
+The browser-only header module provides plain and collapsible headers, exported
+at the crate root as `render_header` and `render_collapsible_header`.
+`ToolHeaderText` accepts literal text or a mounted child. `ToolHeaderRefs` keeps
+live content and chevron references: rebinding either changes the next
+activation, and missing either makes activation a no-op. Initial expansion
+selects the chevron, not the caller's body state. Rich descendants use native
+bubbling rather than a second parent action.
 
-Keep one `ToolRenderState` per row outside the frame loop. Given the caller's
-`ui`, `host`, `i18n`, `presentation`, `highlighter`, retained `row` and containing
-`overlays` receiver:
+## Mounting a row
+
+Keep one `MountedContent` per row. Given the caller's `view` and `parent` element:
 
 ```rust,ignore
 use maestro_web::{DefaultRenderer, ToolRenderer, register_tool_renderer, render_tool};
-use maestro_web::tools::types::{ToolParams, ToolRendererBinding, ToolRenderView};
+use maestro_web::dom::MountedContent;
+use maestro_web::tools::types::{ToolParams, ToolRendererBinding};
 use std::rc::Rc;
 
 let renderer: Rc<dyn ToolRenderer<serde_json::Value>> = Rc::new(DefaultRenderer);
 register_tool_renderer("inspect", ToolRendererBinding::from_raw(renderer));
 let params = serde_json::json!({"path": "src"});
-let recipe = render_tool::<serde_json::Value, serde_json::Value>(
+let prepared = render_tool::<serde_json::Value, serde_json::Value>(
     "inspect", Some(ToolParams::json(&params)), None, false,
 )?;
-let view = ToolRenderView::new(host, i18n, presentation, highlighter, None);
-let output = recipe.render(ui, view, row);
-overlays.extend(output.overlays);
-output.response?;
+let mut row = MountedContent::default();
+row.show(prepared.content.as_ref(), &parent, &view)?;
 ```
 
-The recipe owns its content. `is_custom` tells the embedding caller whether to
-omit its ordinary outer tool card; the renderer does not draw that wrapper.
-Changing the recipe's concrete content type starts fresh widget state. Native
-placement follows the row lifetime independently of retained state aliases:
-leaving a recipe detaches its native surfaces, while aliases can keep the
-underlying owners alive. Nested placements detach with their parent.
-Row drawing takes call-scoped access to its typed state and restores it before
-returning either success or an error.
+The prepared content owns its operands. `is_custom` tells the embedding caller
+whether to omit its ordinary outer tool card; the renderer does not draw that
+wrapper. Showing content of the same type updates the root in place; a different
+content type replaces it, detaching the old root even if the caller still holds
+the node. Nested placements detach with their parent.
 
 The default renderer chooses result status before streaming status, formats
 truthy input as canonical JSON, and preserves ordered raw text output. Output
-JSON is highlighted as JSON; other output remains literal text. Its independent
-input and output listings retain their native roots while present. Tool text
-uses literal listings, without changing the public code block's encoded-input
-behavior.
+JSON is highlighted as JSON; other output remains literal text.
 
-## Headers and console output
-
-`render_header` draws the shared status icon and literal or rich caption.
-`render_collapsible_header` shares the caller's `Rc<Cell<bool>>` expansion state.
-Pending headers use the frame clock for their spinner; no timer is allocated.
-Plain captions stay muted, including when a retained collapsible header becomes
-plain. Collapsible headers use a pointer cursor, foreground hover text and an accent
-keyboard-focus outline. Labels without their own foreground inside rich captions
-inherit the containing header's hover foreground. Nested headers start their own
-foreground scope. Independently styled children, including file pills and code
-blocks, retain their colors and independent widget state.
+## Console output
 
 [`ConsoleBlock`](../../crates/maestro-web/src/components/console_block.rs) owns
 literal preformatted output, an optional error variant, and a copy control.
 Successful copies show feedback for 1500 ms; ordinary copy buttons retain their
-2000 ms interval. The console control has a 20-point height, a 16-point icon,
-12-point success text and a 4-point icon-to-text gap, with 8-point horizontal
-and 2-point vertical padding. Ordinary copy controls keep their 32-point height.
-Both use direct native clipboard writing. Message links retain
-their separate fallback policy. Actual console updates scroll the local body to
-its bottom; unchanged frames and presentation-only changes do not reset scroll.
+2000 ms interval. Both use direct native clipboard writing. Actual console
+updates scroll the local body to its bottom; unchanged content and
+presentation-only changes do not reset scroll.
+
+A console built with [`ConsoleBlock::default`](../../crates/maestro-web/src/components/console_block.rs)
+mounts as native page content: its header label and copy control sit outside a
+scrolling body holding the literal output, so the header never scrolls away. The
+first update of a root that is not on the page yet scrolls on the next frame.
+Tool cards use this page console. Only a console constructed with a host draws on
+a canvas, for the artifact bodies that still use one.
 
 ## Opened attachments
 
-User, tool and assistant rows, rich headers and expandable children return
-`ToolContentOutput`. Move its `overlays` into the containing receiver before
-checking `response`: an attachment opened earlier in a frame must survive a later
-drawing error. Keep that receiver outside row lifetimes so removing a row does not
-close its previews. Preparation still returns `Result<ToolRenderResult, ToolUiError>`.
+Returned-file tiles and user attachments open a native
+[attachment overlay](attachments.md#native-page-overlay) in the view's document.
+The overlay belongs to the page, not to the row: collapsing, updating or removing
+the row leaves an opened preview in place, and a later rendering error does not
+close it.
 
 ## Document tool cards
 
@@ -142,19 +133,22 @@ code blocks, without encoded-input detection. Returned text files decode UTF-8
 for preview while downloads preserve the original base64; malformed base64 keeps
 the download without extracted text.
 
+The card puts its header first, then a body that starts collapsed and animates its
+height over 300 ms when the header toggles it, then returned files. Updates within
+the same pending or result branch keep the body, its expansion, the listing, the
+console with its copy feedback and unchanged file tiles. Moving from pending to a
+result starts a new collapsed body, as a new branch does.
+
 ## Operation errors
 
-Preparation returns `tools::types::ToolUiError`; drawing carries it in
-`ToolContentOutput.response`.
+Preparation and mounting return `tools::types::ToolUiError`.
 Localization, shared glyph controls and native effects retain their named leaf
 variants. Reading preparation keeps a typed `ReadingUiError`, including its
 highlighter or outer-style cause; JSON and operand preparation preserve their
 existing literal messages. `Error::source` exposes each typed cause.
 
-Console output shares `components::code_block::ReadingUiError`; its outer-style
-Presentation variant retains the original I/O error. Native console and header
-factories return `AttachmentHostError`. Rust callers must update return types
-and matches when adopting the output record. The named leaf causes are preserved.
+Canvas console output shares `components::code_block::ReadingUiError`; its
+outer-style Presentation variant retains the original I/O error.
 
 ## Command, calculation and time cards
 
@@ -174,42 +168,36 @@ expansion toggle. Calculation and time put successful output in their captions
 and show errors as plain destructive text below. All three use result status
 when present and pending status otherwise, regardless of the streaming flag.
 Only fixed caption keys are translated. Selected strings remain unchanged;
-other truthy field values use the shared compact JSON display. Recipes own their
+other truthy field values use the shared compact JSON display. Prepared cards own their
 selected text. An unchanged native body survives updates; disappearing bodies
 release their owners.
 
 ## Expandable sections
 
 [`ExpandableSection`](../../crates/maestro-web/src/components/expandable_section.rs)
-captures its owned children once. Collapsing detaches their native placement
-without losing child state; reopening restores the same roots. The first render
-applies `default_expanded`. Reconnection reapplies the latest default without
-recapturing generated controls. Changing the setting alone leaves expansion
-unchanged. Dropping the section releases its children and native summary.
+holds a literal summary and the children it was built with. Mounting places each
+child once; collapsing detaches the details without losing child state, and
+expanding reinserts the same roots. Mounting applies `default_expanded`.
+`connected_callback` reapplies the latest default to a mounted root without
+recapturing anything. Changing the setting alone leaves the current expansion
+unchanged, and an update changes the summary while keeping expansion and children.
+Dropping the section releases its children.
 
 ```rust,ignore
 use maestro_web::ExpandableSection;
+use maestro_web::dom::DomContent as _;
 
-let mut section = ExpandableSection::new(host.clone(), children);
+let mut section = ExpandableSection::new(children);
 section.summary = "Details".into();
 section.default_expanded = true;
-let output = section.render(ui, view);
-overlays.extend(output.overlays);
-output.response?;
-// Reattach the same section with its original children.
-section.connected_callback();
-let output = section.render(ui, view);
-overlays.extend(output.overlays);
-output.response?;
+let root = section.mount(&view)?;
+parent.append_child(&root.node)?;
+// Reattached: apply the current default to the same children.
+section.connected_callback(&root)?;
 ```
 
-The literal summary has a leading right/down chevron, an 8-point icon gap and
-an 8-point expanded-body gap. The chevron stays centered beside wrapped summaries,
-and hovering any summary line highlights it. Native summary clicks and canvas
-activation respect the enabled, visible button and focus it; Enter and Space
-toggle the focused button. Keyboard focus is outlined and scrolled into view.
-Presentation comes from the selected brand pack, with native text and clipped
-canvas controls using the same retained host as tool rows.
+The summary is a native button with a leading right or down chevron; pointer,
+Enter and Space toggle it. Presentation comes from the selected brand pack.
 
 ## Artifact cards
 
@@ -244,16 +232,19 @@ diff. Successful get and logs cards show file content and console output,
 respectively, with a localized empty-output fallback. Edit errors retain their
 code or diff; lowercase `.html` filenames select an error console, while other
 filenames show plain error text. Non-edit errors have no disclosure or file pill.
-The ordinary outer tool card remains in use.
+The ordinary outer tool card remains in use. Its filename pills use native click
+propagation; its differences reuse the shared normalized rows and retained
+browser nodes.
 
-A filename pill captures its literal filename and panel during preparation.
+A filename pill captures its literal filename and panel during preparation, so
+changing the renderer's panel or the source arguments afterwards changes no
+prepared card.
 With a panel, its action consumes the click and opens an existing artifact;
 unknown filenames do not change selection. Without a panel, clicking the pill
 activates its containing disclosure.
-The standalone `artifact_pill` helper uses the same retained native filename
-owner. Formatted non-string fields are display-only, never artifact identities.
+The standalone `artifact_pill` helper prepares the same pill. Formatted non-string fields are display-only, never artifact identities.
 
-`components::diff::diff` accepts literal old/new text, an optional title and
+`diff` (also `components::diff::diff`) accepts literal old/new text, an optional title and
 caller-supplied native CSS classes through `DiffProps`. The retained cache
 compares the normalized title, literal classes and selected lines on every
 target. An empty title is absent. LF splitting happens after differencing and

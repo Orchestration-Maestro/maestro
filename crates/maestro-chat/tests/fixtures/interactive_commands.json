@@ -1,0 +1,1600 @@
+[
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/NEW"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/NEW"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/COMPACT"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/COMPACT"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new"
+    },
+    "expected": {
+      "route": "new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": " /new "
+    },
+    "expected": {
+      "route": "new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "﻿/new﻿"
+    },
+    "expected": {
+      "route": "new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new arg"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new arg"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new\targ"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new\targ"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/newer"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/newer"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact"
+    },
+    "expected": {
+      "route": "compact"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": " /compact "
+    },
+    "expected": {
+      "route": "compact"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact "
+    },
+    "expected": {
+      "route": "compact"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact  keep  inside "
+    },
+    "expected": {
+      "route": "compact",
+      "instructions": "keep  inside"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact ﻿"
+    },
+    "expected": {
+      "route": "compact"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact "
+    },
+    "expected": {
+      "route": "compact",
+      "instructions": ""
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact ​"
+    },
+    "expected": {
+      "route": "compact",
+      "instructions": "​"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact  keep "
+    },
+    "expected": {
+      "route": "compact",
+      "instructions": "keep"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact\targ"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/compact\targ"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact\narg"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/compact\narg"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compact arg"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/compact arg"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/compactx"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/compactx"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "ordinary"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "ordinary"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new​"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new​"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "success",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "notice",
+      "chat": [
+        "",
+        "                                                                                ",
+        " @accent@✓ New session started\u001b[39m                                                          ",
+        "                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "success",
+      "loader": true
+    },
+    "expected": {
+      "outcome": "notice",
+      "chat": [
+        "",
+        "                                                                                ",
+        " @accent@✓ New session started\u001b[39m                                                          ",
+        "                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "veto",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "kept"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "veto",
+      "loader": true
+    },
+    "expected": {
+      "outcome": "kept"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "reject",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "fatal",
+      "line": "Error: Failed to create session: controlled replacement failure"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "reject",
+      "loader": true
+    },
+    "expected": {
+      "outcome": "fatal",
+      "line": "Error: Failed to create session: controlled replacement failure"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "replay-failure",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "fatal",
+      "line": "Error: Failed to create session: tool call id is not a string"
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": "",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": false,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "custom_message"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "instructions": " keep ",
+      "reject": true,
+      "loader": true
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {}
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": null
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": "message"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": true
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": "custom_message"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": "session_info"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": "Message"
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": 0
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": true
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": {}
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  },
+  {
+    "test": "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        },
+        {
+          "type": []
+        }
+      ],
+      "reject": false,
+      "loader": false
+    },
+    "expected": {
+      "compacts": false
+    }
+  }
+]

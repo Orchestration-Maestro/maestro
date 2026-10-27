@@ -387,3 +387,91 @@ fn selected_model_keeps_the_shared_descriptor() {
         "the shared descriptor is retained rather than copied"
     );
 }
+
+#[test]
+fn model_patterns_use_cli_before_saved_settings() {
+    use crate::startup_runtime::{Fixture, run};
+    use maestro_app::ModelResolverOutput;
+    use maestro_cli::startup::main::runtime::create_runtime;
+    run(
+        "model_patterns_use_cli_before_saved_settings",
+        |local| async move {
+            for (stored, cli, expected) in [
+                (json!(["startup/first"]), Some(vec![]), vec![]),
+                (
+                    json!(["startup/first"]),
+                    Some(vec!["startup/second".into()]),
+                    vec!["second"],
+                ),
+                (json!(["startup/first"]), None, vec!["first"]),
+                (json!({}), None, vec![]),
+                (json!([]), None, vec![]),
+            ] {
+                let fixture = Fixture::new(
+                    local.clone(),
+                    startup::settings(&[("enabledModels", stored)]),
+                )
+                .await;
+                let parsed = maestro_cli::input::args::Args {
+                    models: cli,
+                    ..Default::default()
+                };
+                let created = create_runtime(
+                    &parsed,
+                    fixture.creation(),
+                    &mut ModelResolverOutput {
+                        stdout: &mut Vec::new(),
+                        stderr: &mut Vec::new(),
+                        color: false,
+                    },
+                )
+                .await
+                .unwrap();
+                assert_eq!(
+                    created
+                        .session
+                        .scoped_models()
+                        .iter()
+                        .map(|model| model.model.read().unwrap().id.clone())
+                        .collect::<Vec<_>>(),
+                    expected
+                );
+                created.session.dispose();
+            }
+            assert_mixed_patterns_fail(local).await;
+        },
+    );
+}
+
+/// Invalid stored members fail after the valid prefix reports its warnings.
+async fn assert_mixed_patterns_fail(local: std::rc::Rc<tokio::task::LocalSet>) {
+    use crate::startup_runtime::Fixture;
+    use maestro_app::ModelResolverOutput;
+    use maestro_cli::startup::main::runtime::create_runtime;
+    let fixture = Fixture::new(
+        local,
+        startup::settings(&[(
+            "enabledModels",
+            json!(["unmatched-prefix", null, "startup/first"]),
+        )]),
+    )
+    .await;
+    let mut warnings = Vec::new();
+    let result = create_runtime(
+        &startup::args(&[]),
+        fixture.creation(),
+        &mut ModelResolverOutput {
+            stdout: &mut Vec::new(),
+            stderr: &mut warnings,
+            color: false,
+        },
+    )
+    .await;
+    let Err(error) = result else {
+        panic!("mixed patterns must fail");
+    };
+    assert_eq!(error.message, "Model pattern must be a string");
+    let warnings = String::from_utf8(warnings).unwrap();
+    assert!(warnings.contains("unmatched-prefix"));
+    assert!(!warnings.contains("startup/first"));
+}

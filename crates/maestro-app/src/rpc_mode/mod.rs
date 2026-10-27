@@ -1,4 +1,4 @@
-//! The JSONL protocol server of one session runtime: it reads commands from a caller-owned
+//! The JSONL protocol server with an optional session runtime: it reads commands from a caller-owned
 //! line reader, answers through a caller-owned writer and streams the session events, the
 //! extension interface requests and the opted-in workspace events on the same output.
 //!
@@ -62,8 +62,16 @@ pub trait RpcProcessPort {
 
 /// What a connection works with besides its session runtime.
 pub struct RpcModeOptions {
-    /// The workspace command operations.
-    pub workspace: Rc<dyn WorkspaceOperations>,
+    /// Workspace command operations, absent for a session-only connection.
+    pub workspace: Option<Rc<dyn WorkspaceOperations>>,
+    /// Session facilities, absent for a workspace-only connection.
+    pub session: Option<RpcSessionOptions>,
+}
+
+/// The facilities owned by a connection serving a session.
+pub struct RpcSessionOptions {
+    /// The session runtime.
+    pub runtime: Rc<crate::runtime::agent_session_runtime::AgentSessionRuntime>,
     /// The native process facilities.
     pub process: Rc<dyn RpcProcessPort>,
     /// The live theme extensions read.

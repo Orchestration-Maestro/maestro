@@ -17,7 +17,7 @@ From `docs/specs/maestro-port.md`.
 - **Socket effect:** A replaceable model-library operation opening an owned connection for complete text messages; native upgrades are shared, while caller authentication and lifetime policy stay with their operation.
 - **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
 - **ModelRegistry:** The owner of the usable local model catalog. [Local model loading](docs/catalog.md) provides explicit-file and memory construction, overrides, shared observations, reload, request authentication, provider metadata and dynamic registration, replacement, replay and removal.
-- **Tool arguments:** The model-supplied argument object, completed from accumulated JSON before execution.
+- **Tool arguments:** The model-supplied argument value of any JSON root kind, completed from accumulated JSON before execution.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
 - **Sandbox host:** The supplied platform owner of hidden JavaScript execution; the application keeps output and download formatting. See [browser tools](docs/application/browser-tools.md#javascript-execution).
 - **Sandbox runtime provider:** A retained source of owned globals, complete injectable function source, helper descriptions and optional lifecycle/message hooks.
@@ -29,6 +29,7 @@ From `docs/specs/maestro-port.md`.
 - **AssistantMessageEventStream:** EventStream specialization retaining shared assistant-message handles.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
 - **Request records:** Shared message and model-request data describing application messages and a model invocation's descriptor, conversation, instruction inputs and observations; the shared owner is `maestro-request`, not an invocation executor or a general data container.
+- **Stream option slots:** The shared request owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases. Its `StreamOptionsInput` record preserves the supplied raw or simple variant without converting their policies; provider execution stays in models.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
 - **PKCE:** Proof Key for Code Exchange: a random verifier paired with a SHA-256 challenge of its encoded text.
@@ -39,7 +40,7 @@ From `docs/specs/maestro-port.md`.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.
-- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects. The shared signal belongs to `maestro-cancellation`; only models and the terminal toolkit may depend on this leaf with no internal dependencies.
+- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects. The shared signal belongs to `maestro-cancellation`; only models and the terminal toolkit may depend on it, and it depends only on `maestro-listeners`, which keeps each signal's synchronous abort observers.
 - **Scripted simulator:** An opt-in protocol adapter with queued responses, builders, chunking, pacing, usage/cache simulation and request-observing factories.
 
 - **Requested thinking:** The application's supplied effort choice.
@@ -112,7 +113,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Session directory:** A caller-selected or default directory used for native session files.
 - **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, in-place persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
-- **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
+- **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input. Its typed records belong to `maestro-request::auth_storage`; credentials re-exports them.
 - **Account file:** The standalone `auth.json` an account command reads and writes at the caller's relative path, distinct from the session credential store; its entries hold stored credentials.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
 - **AuthStorage:** The owner of accepted stored credentials, their ordered listing, drainable errors and per-provider persistence through a replaceable raw-text backend, plus request key selection, OAuth login and locked token refresh; the [credentials documentation](docs/credentials.md) describes them, and the provider registry and refresh operation belong to the [OAuth documentation](docs/models/oauth.md).
@@ -145,18 +146,22 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Session services:** Credentials, settings, the model catalog and reloaded resources bound to one session working directory, created before and separately from the session. See [application resources](docs/application/resources.md#session-services).
 - **Module loader:** The caller-supplied operation that turns a resolved extension path into a factory; the component runtime supplies it and the executable wires it.
 
-Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
-which keeps the supplied JSON Schema value beside the kinds its author declared for
-individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
+which keeps the supplied JSON Schema value beside declared node kinds and a generic
+executable payload. Its data-only default stays usable in model requests. Shared
+`Base`, `Refinement` and `SchemaNode` records retain local author callbacks; guest
+specializations use borrowed JSON operands on the existing callback resources. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
 re-exports it, and the model argument-validation owner is its only converter.
 Serialization writes the supplied JSON alone.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use the default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no
@@ -223,11 +228,11 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Attachment:** Application-owned original bytes, media metadata and optional derived text/preview, with browser-message conversion. See [browser attachments](docs/application/browser-attachments.md).
 - **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping, CSS string serialization, terminal escape stripping and binary-output filtering, BOM-aware lossy UTF-8 decoding and, behind its `collation` and `number-format` features, locale comparator and number-formatter preparation through one locale selector; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing); it depends on no workspace crate and its callers keep their own preprocessing, defaults, duplicate-member policy and error wording. See [JSON boundary](docs/json.md).
-- **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination, reaping, Linux pane terminals and their shared retained-front byte queue) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
+- **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination and reaping, Linux pane terminals and their shared retained-front byte queue, and native termination-signal delivery with its prepared default action) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
 - **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native, std-only test-support leaf that owns one named test's isolated execution: its checked-output operations start a libtest child and prove the child started exactly that test; argument-only invocation checks eligibility and leaves startup proof with the caller; distinct from product process execution (**Process**). It is reached only through native development dependencies of its declared callers. See the [contract](docs/specs/maestro-port.md#test-process-owner).
 - **Foundation utility:** The `maestro-path` library of lexical path operations, native component normalization and home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
 - **Directory listing:** The core leaf `maestro-listing` below layer 0, owning one directory's entries sorted by file name on every platform; resources, theme, the terminal toolkit, tools, session and the application list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
-- **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application and extensions subscribe and walk through it and keep their own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
+- **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application, extensions and cancellation subscribe and walk through it, and each keeps its own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
 - **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
 - **Dependencies:** The generated `maestro-dependencies` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
@@ -317,3 +322,10 @@ From `docs/specs/tool-additions.md`.
   models, process, terminal and workspace may use it through native development
   edges, and tests capture only through it.
   See the [contract](docs/specs/maestro-port.md#test-tracing-owner).
+
+The parameter-schema owner also owns the component metadata transport in
+`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+as `schema_transport`. Guest registration and enumeration use that same codec;
+ordinary provider and persisted JSON omit the carried schema kinds. This adds no
+crate dependency: both extension adapters already reach the request owner through
+their declared edges.

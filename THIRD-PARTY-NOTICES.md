@@ -87,7 +87,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Browser icon geometry
 
-The 27 glyph datasets in `crates/maestro-web/assets/icons.json` derive from
+The 35 glyph datasets in `crates/maestro-web/assets/icons.json` derive from
 Lucide 0.544.0.
 
 ```text
@@ -824,6 +824,9 @@ and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
+The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`
+and its tests derive from the API client under the same license. It reuses the
+shared JSONL framing and caller-supplied daemon selection.
 
 The environment vocabulary, structured events, synchronized rotating file writer
 and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,

@@ -8,6 +8,10 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
+Native waits, child processes, raw HTTP bodies and file watches are described in
+[native operations](guest_operations.md).
+Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
+
 ## Build a component
 
 ```sh
@@ -45,6 +49,12 @@ adds no callbacks to the guest table.
 Releasing a callback table entry removes that registration's ownership. Independent authored
 aliases and admitted futures can retain its captures after release. Entries leave the table
 before captures are destroyed, so a destructor may register another callback.
+
+The native executor releases each invocation's admission operands before reporting completion,
+including when a caller has stopped waiting. A component fault settles all started calls,
+including callback releases, without entering guest code or running guest destructors again.
+The Store remains alive until the last external admission ends; completed invocation records
+do not keep it alive.
 
 `CommandOptions` owns its handler and optional `get_argument_completions` callback.
 Completion receives literal argument text and returns `None`, an empty list or an ordered
@@ -90,8 +100,11 @@ completion matching.
 ## Tools
 
 `ToolDefinition` combines `ToolMetadata`, optional synchronous `prepare_arguments` and
-asynchronous `execute`. Preparation receives one JSON value and a callback-scoped `CallbackEmitter`; its returned
-value can be passed to execution. The emitter forwards synchronous emission during preparation. The adapter does not perform argument validation or schedule tools.
+asynchronous `execute`. Preparation receives `&mut Value` and a callback-scoped
+`CallbackEmitter`. In-place changes remain in the retained assistant arguments,
+including when the callback fails. The returned value is separate: the tool caller
+validates it before execution. The emitter forwards synchronous emission during
+preparation. The adapter does not perform argument validation or schedule tools.
 Execution receives the invocation ID, arguments, ordinary context and optional signal
 and progress callback. A progress callback sends one `AgentToolResult` synchronously;
 execution returns its final `AgentToolResult`. Callback failures retain their supplied messages.
@@ -104,7 +117,7 @@ For shared content and JSON conventions, see [the data boundary](#events-and-res
 `toolName`, including overrides of built-in names. Their `ToolInput` / `ToolDetails`
 carrier offers `decode::<T>()` for an on-demand typed view and `from_value()` for
 finite-checked authored replacements. Named aliases expose the built-in typed views;
-name predicates compare the name alone. Result input remains an opaque string.
+name predicates compare the name alone. Result input uses `JsonText`.
 `UserBashEventResult` may independently return custom `BashOperations` and an
 already-produced `BashResult`. Operations travel as a typed capability, outside the
 [event/result document](#events-and-results).
@@ -136,12 +149,121 @@ owners may outlive the event or execution that supplied them. Callback errors
 return to the author/caller without undoing prior output. For the signal's live
 `aborted()` state, see [live context capabilities](#live-context-and-catalog-capabilities).
 
+Registration and enumeration preserve nested parameter schemas and the kinds declared
+for their nodes. An enumerated declaration can be registered again with those kinds
+intact. Metadata transport does not validate invocation arguments; argument preparation
+and validation remain with the model argument validator. Model-server JSON limits do
+not apply to these author-supplied declarations.
+
+### Tool renderers
+
+`render_call` and `render_result` are optional and independent. Each returns a `Component`
+that the host shows in the tool's row. A call renderer gets the arguments as they stand,
+the live theme, a `ToolRenderContext` and a `CallbackEmitter`. A result renderer also gets
+a `ToolRenderResultLike` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+The rendering result contains the existing `AgentToolResult` in `result` and the independent
+`is_error` observation. Execution results are unchanged.
+
+`ToolRenderContext` holds the row's `tool_call_id`, arguments, working directory,
+`ToolRenderPhase`, expansion, image visibility and error flag. `last_component` is the
+component that the same renderer returned for the row last time. `invalidate()` asks the
+host to redraw the row. `state::<S>()` returns the row's state of type `S`. It is created
+with its default the first time it is read and shared by both renderers of the row on
+every rendering, so a value set by the call renderer is visible to the result renderer.
+The row keeps its state and previous components until the host releases the row.
+
+A native factory also lends an opaque `native_row`. Delegating to its renderer preserves
+the native environment and state while forwarding the wrapper's public row observations,
+ordinary operands and exact previous component. See [native tool operations](guest_operations.md)
+for read construction, replacement file callbacks and renderer delegation.
+
+### Executable schema nodes
+
+Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a
+schema's JSON and declared kinds. Each pointer maps to the shared `SchemaNode`:
+an optional `Base` and refinements in registration order. `Base::default()` leaves
+values unchanged, accepts them and returns no guard errors. Its conversion can
+return a replacement separately from edits to the supplied value. `None` keeps the
+operand; `Some(Value::Null)` replaces a nested member with JSON null.
+
+Guest `SchemaCallback` closures receive a borrowed `JsonView` and a
+`CallbackEmitter`. `kind` and `read` distinguish a missing member from JSON null.
+`read` and removed `splice` values admit the same nesting as tool metadata.
+`member` borrows a child; `keys`, `set`, `delete` and `splice` expose ordered object
+and array operations. An explicit `read` copies only the value the author asks
+for. Starting a callback never serializes its subtree. Dropping a child view,
+including on an error path, leaves it attached to its parent. Reassigning a local
+view does not replace an argument slot.
+
+Schema callbacks return the shared `DiagnosticErrorInfo`, preserving name,
+message, stack and code. Ordinary extension operations still use `ExtensionResult`
+and string errors. Schema code stays out of serialized metadata and provider
+JSON; decoding ordinary JSON produces no callbacks.
+
+### Foreign schema calls
+
+Enumeration keeps executable schemas from this guest, other guests and native
+callers. Bindings follow each tool, not the first tool in a listing. Each listing
+retains independent identities; keeping the received schema or registering a new
+tool with it keeps its callbacks alive. Releasing one identity does not revoke
+another. The last holder releases the originating captures through the existing
+native request pump and Store release path, not from a resource destructor.
+
+`SchemaCallback::new` and `call` remain synchronous. Same-origin callbacks keep
+their original capture identity and run locally, without host mediation. A foreign
+call follows this path:
+
+```text
+SchemaCallback::call
+  callback.schema-invoke → existing native import route
+    scoped operand wait → retained native SchemaNode
+      originating native callback or guest callback
+  import-route.schema-result → original result or structured diagnostic
+```
+
+The native node lives in the receiving guest's existing capability registry. Its
+scoped wait borrows the checker's original mutable value, including a selected
+child, so edits remain visible on success and error without a subtree copy.
+Passing an absent child to a foreign callback returns `JSON operand is absent`;
+it never substitutes JSON null. A local guest callback can still observe absence
+through `kind` and `read`.
+
+The import route returns nested same-instance calls to the guest, which runs the
+same Rust callback bodies its exports use. This supports A→B→A without entering
+an instance while it is blocked inside an import. Only the dedicated Store thread
+waits on synchronous host imports; the original native request receiver continues
+servicing requests. No synchronous callback tries to suspend through an async
+canonical import, and no additional registry or work queue is involved.
+
+This relies on Wasmtime's blocking [`func_wrap` contract][schema-sync-import],
+not on suspending a synchronous component task. Wasmtime [rejects such
+suspension][schema-sync-task] and [prevents reentry into an active stackful
+instance][schema-reentry]. These links name the pinned runtime revision. The host
+continues to install [WASI 0.2 standard-library imports][schema-wasi] alongside its
+native-async component exports; the foreign-call route requires no WASI polling
+or new WASI interface.
+
+The original facade's activity guard runs before entering a guest-origin schema.
+Unload or reload leaves an already-admitted callback running to completion, but
+later calls return that origin's stale-runtime message without guest entry.
+Ordinary extension results and string-error APIs are unchanged.
+
+[schema-sync-import]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/linker.rs#L675-L683
+[schema-sync-task]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L2728-L2736
+[schema-reentry]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L784-L793
+[schema-wasi]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasi/src/p2/mod.rs#L314-L324
+
 ## Event channels
 
 `api.events()` returns the supplied host's `EventBus`. Ordinary code awaits
 `bus.emit(channel, data)`; a synchronous listener uses its borrowed `CallbackEmitter`.
 Both forward literal channels and JSON payloads without trimming or sorting.
 See [shared event-bus scheduling](event_bus.md) for the host's delivery rules.
+The component adapter preserves the emission-time listener snapshot in registration order.
+Same-instance listeners run locally, interleaved with synchronously acknowledged host segments;
+nested emission takes a fresh snapshot. Each listener has its own callback-return and tail boundary.
+The internal component exports are async-typed, but author callbacks and `CallbackEmitter::emit`
+remain synchronous; no `.await` is added to author code.
 
 `bus.on(channel, listener)` returns an explicitly invoked `Subscription`.
 Dropping its facade does not unsubscribe; call `unsubscribe()` to forward removal.
@@ -162,6 +284,11 @@ Ordinary and command contexts expose `session_manager()`, which acquires the cur
 bound `ReadonlySessionManager` on each call. Its thirteen queries forward the host's
 strings, optional records and ordered lists without guest-side trimming, sorting or
 path resolution. Entry records use [the existing data boundary](#events-and-results).
+The `data` in custom entries and `details` in compaction, branch-summary and custom-message
+entries use `JsonText`. It holds compact JSON text while the wire carries the JSON value,
+including objects and arrays. It preserves key order and number values; missing and null
+remain distinct. Borrow it as `&str`, or convert owned text with `.into()`. Authored text
+must be valid JSON when serialized. The same conversion applies to entries in events.
 
 `get_tree()` returns independently owned `SessionTreeNode` handles. Read a node's
 `entry()`, `children()`, `label()` or `label_timestamp()` to traverse the captured tree;
@@ -260,7 +387,7 @@ the guest does not discover resources or build the prompt.
 | `session_before_fork` | `SessionBeforeForkResult` | `cancel?`, `skipConversationRestore?` |
 | `session_before_compact` | `SessionBeforeCompactResult` | `cancel?`, `compaction?` |
 | `session_before_tree` | `SessionBeforeTreeResult` | `cancel?`, `summary?`, `customInstructions?`, `replaceInstructions?`, `label?` |
-| `before_provider_request` | `BeforeProviderRequestEventResult` | a string holding the replacement request |
+| `before_provider_request` | `BeforeProviderRequestEventResult` | the replacement JSON value, held as `JsonText` |
 | `input` | `InputEventResult` | `action` is `continue`, `handled` or `transform`; a transform has `text` and `images?` |
 
 Returned `compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`.
@@ -287,6 +414,13 @@ the delivery is refused.
 contexts inherit these methods. Getter and action failures are recoverable
 `ExtensionResult` errors; the guest does not implement host shutdown or queue policy.
 
+`AbortSignal::subscribe(listener)` registers a listener the host runs once, on the
+thread that owns the extension, when the signal is aborted. An abort that comes before the
+subscription is not replayed, so read `aborted()` as well. The returned `Subscription`
+removes the listener when you call `unsubscribe()`; dropping it does not. The listener
+receives a `CallbackEmitter` and may subscribe or unsubscribe other listeners while it
+runs.
+
 `ExtensionUIContext`, `ModelRegistry` and `AbortSignal` retain their acquired host
 resource independently of the context. Cloning shares the owner; its final alias
 drops that resource. A later acquisition can return a different resource. Whether
@@ -301,6 +435,84 @@ operation for the supplied descriptor, without checking catalog membership.
 present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
+`ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
+`get_provider_auth_status`, `get_provider_display_name`, `is_using_oauth`,
+`register_provider`, `unregister_provider` and `get_api_key_for_provider` to the
+same host catalog. Models and provider data are checked for nonfinite numbers
+before the call; `AuthStatus` and `AuthSource` are the
+[shared credential records](../records.md#credential-records).
+
+`ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
+copied credentials. Its `AuthStorage` handle can outlive the creating callback.
+Reads, runtime key overrides, stored credential changes, reload, logout and error
+draining reach that same owner. `get_api_key` uses its original credential-command
+effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
+remain in `drain_errors` rather than rolling back accepted state.
+
+A stale registration facade does not invalidate credentials acquired earlier.
+Malformed host input and nonfinite authored numbers fail before provider or
+credential mutation; another valid resource remains callable. Rejections preserve
+the host's supplied error text.
+
+The guest currently acquires credentials from a catalog or wraps a supplied
+`AuthStoragePort`. `AuthStorage::create(&api, path)` and
+`ModelRegistry::create(&api, auth_storage, path)` accept independent optional file
+paths. Omitted paths use lazy defaults supplied by the application before factory
+loading. Both `in_memory` constructors avoid file access; catalogs retain the
+supplied credential owner rather than copying its current records.
+
+`AuthStorage::from_storage(&api, backend)` retains an authored `AuthStorageBackend`.
+Its synchronous and awaited methods receive a borrowed native update. `None`
+leaves stored text unchanged; `Some("")` writes empty text. The awaited update can
+remain pending without blocking the host's local executor. Backend failures keep
+the native accepted-state and drainable-error behavior.
+
+`set_fallback_resolver` retains the supplied callback until replacement or final
+release. It returns absent, empty and nonempty keys distinctly and preserves the
+callback's error text. Backend and fallback callbacks may call back into the same
+host, including from synchronous credential and catalog metadata reads. Callback
+resources stay typed; their identities are never placed in JSON. Callable provider
+stream and OAuth fields remain separate from the provider data record.
+
+### Native OAuth providers
+
+`AuthStorage::get_oauth_providers()` returns callable native implementations in
+registration order. Each retained `OAuthProviderInterface` exposes its literal
+`id`, login `name` and optional `uses_callback_server` value. An absent value is
+not changed to false. Removing a provider from the native registry does not
+replace an already retained implementation; its final guest alias releases it.
+
+`get_api_key` and `modify_models` are synchronous. `refresh_token` awaits the
+native token exchange without adding an expiry decision or persisting the
+returned credentials. Its future retains the provider after the initiating
+handler and facade are released. `modify_models` returns `None` when the provider has no
+modifier. The guest forwards complete credentials and model descriptors,
+including open credential fields, and rejects authored nonfinite numbers before
+encoding them. Provider failures retain their messages.
+
+`login` returns an owned future over the same native provider. Supply
+`Rc<OAuthLoginCallbacks>` with synchronous `on_auth` and optional `on_progress`
+notifications, an awaited `on_prompt`, and optional awaited manual-code and
+selection callbacks. An absent selection callback differs from a supplied
+callback returning `None` on cancel. Prompt records keep supplied text, optional
+fields and choice order. Callback failures retain their messages, and synchronous
+notifications may call back into the host before returning.
+
+The optional caller signal follows live cancellation, including a prior abort.
+Native callback aliases retain the interaction and its signal binding after the
+initiating login future ends; the final native release drops their captures.
+Pending input does not block other host requests. These methods reuse the native
+OAuth implementations; provider methods do not store login credentials.
+
+`AuthStorage::login(provider_id, callbacks)` instead delegates authorization and
+persistence to the retained native credential owner. It returns an owned future,
+so dropping the initiating facade does not end the operation. Successful login
+accepts the complete OAuth record and persists it through the original backend;
+other provider records stay unchanged. Unknown providers and interaction failures
+return their original messages. As with `AuthStorage::set`, persistence failures
+leave accepted state available and are reported by `drain_errors`, not as a failed
+login.
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
@@ -308,39 +520,9 @@ usage whose two estimates are unknown.
 
 ## Retained UI requests
 
-`ExtensionUIContext` sends eight synchronous requests to the installed host and
-returns its rejection as a recoverable `ExtensionResult` error:
-
-| Method | Request |
-| --- | --- |
-| `notify` | A literal message with an optional `NotificationType`. |
-| `set_status` | Text for one status key, or that key's clearing. |
-| `set_working_message` | Literal working text, or the host default. |
-| `set_working_visible` | Show or hide the working loader row. |
-| `set_working_indicator` | `WorkingIndicatorOptions` with independent optional `frames` and `interval_ms`, or the host default. |
-| `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
-| `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
-| `set_title` | A literal terminal title. |
-
-The four option types are generated from the same interface file and re-exported at
-the author root. `None` and a present empty value stay different requests. The text
-methods forward what the caller supplied, so `Some("")` is an empty string the host
-keeps, while `None` means what its method says: `set_status` clears that key's text,
-`set_widget` removes the keyed widget, and `set_working_message`,
-`set_working_indicator` and `set_hidden_thinking_label` ask the host to restore its
-own default. `notify` without a severity leaves the notification's kind to the host.
-Inside the option records, an absent `placement` or an absent `frames` or
-`interval_ms` member stays absent, so the host applies its own default. Literal text
-crosses unchanged, including whitespace, Unicode and styling bytes. Indicator frames
-are supplied verbatim and `interval_ms` crosses as `f64` without serialization,
-clamping or a guest timer. An empty frame list hides the indicator while `None`
-restores the animated default; both the animation and the placement defaults stay
-with the host.
-
-A request borrows its text and lines only for the synchronous call; the host owns
-anything it retains. Clones of the facade share the acquired resource, so a handle
-kept past its callback keeps reading that resource, and a second acquisition stays
-independent. Widget factories remain outside this interface.
+[Guest UI](guest_ui.md) describes `ExtensionUIContext` requests, the widget, header and
+footer factories, themes, terminal input and dialogs, and lists each UI resource with
+its native counterpart.
 
 The component example's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction
@@ -361,7 +543,30 @@ records without sorting or deduplication. `set_active_tools` forwards the reques
 names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) and
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
-opaque schema and details text.
+schema and details text with semantic JSON serialization.
+
+## Provider registration
+
+`ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
+host, and `unregister_provider` sends a name. `ProviderConfig` and
+`ProviderModelConfig` use the [shared provider records](../records.md#provider-registration-records).
+`ProviderConfig` specializes its callback slot with the guest's `ProviderCallbacks`.
+Serialized metadata carries data only. Set `callbacks.oauth` to `Some(Rc<dyn OAuthProviderInterface>)` to register
+an authored OAuth implementation through the same API or catalog operation. The
+registration name supplies its installed identifier; its login label and optional
+callback-server value remain as authored. The native catalog retains the actual
+guest implementation, including independently owned login and refresh futures,
+synchronous computed keys and optional model transformation. Login receives the
+original native interaction through retained capabilities, preserving callback
+presence, synchronous notifications, awaited input and live cancellation. The guest
+may keep the callback record or an input future after login ends; its last alias
+releases the original native captures. Pending input leaves the host available,
+and synchronous native notifications may reenter the same guest implementation.
+
+Absent fields are omitted; empty strings, lists and maps and
+`false` are sent as written, header, model and input order is kept, and signed zero
+survives. A nonfinite number fails with the finite-number error before the host
+sees the call. Queuing during loading, validation and replacement stay host policy.
 
 ## Model selection and action errors
 
@@ -373,12 +578,39 @@ persistence remain host policy. Host rejections, including loading and stale-con
 messages, remain recoverable `ExtensionResult` errors (inside the future for model
 selection).
 
+## Explicit execution
+
+`ExtensionAPI::exec(command, args, options)` runs a program with ordered literal
+arguments. No shell is involved, so quotes, globs, `$` and `;` reach the program
+unchanged, and stdin is closed. The future resolves to an `ExecResult` with separate
+`stdout` and `stderr` text, the exit `code` and `killed`. A program that cannot start
+yields empty streams and code 1. A program ended by a signal it did not get from the
+caller has code 0 and `killed` false. An empty command or an operand the operating system
+rejects is an error, as are host and stale-context rejections.
+
+`ExecOptions` has three optional fields:
+
+| Field | Effect |
+| --- | --- |
+| `cwd` | Working directory. Absent uses the directory the extension was loaded with; an empty string uses the host process directory. |
+| `timeout` | Milliseconds before termination. Zero or a negative value sets no deadline; a value too large for a native duration never expires, and a positive value below one nanosecond expires at once. |
+| `signal` | Any `AbortSignal`, including one backed by your own `SignalPort`. An abort before or during the run terminates the program and sets `killed`. |
+
+The host keeps validation, process supervision and termination escalation: a
+program that ignores termination is killed five seconds later. The guest bridges a
+supplied signal to the host for each run and removes its listener when the run
+settles, whatever the outcome, or when the run's future is dropped, so other
+listeners on the same signal and later runs keep working. Returned shell operations
+can pass their supplied signal to `exec` and still observe an abort after their event
+handler returned.
+
 ## Compaction admission and notifications
 
 `ExtensionContext::compact` is inherited by command and replacement command views.
 It returns admission before its optional completion or error notification.
 [`CompactOptions`](../../crates/maestro-extensions-wasm/src/types/context.rs) carries
-optional literal instructions, `on_complete` and `on_error`. Completion receives
+optional literal instructions, `on_complete` and `on_error`. Absent options remain
+distinct from present options with every field empty. Completion receives
 `CompactionResult`; error receives the supplied message. A callback failure returns
 to the host, which decides whether to invoke the error callback.
 
@@ -418,12 +650,14 @@ Other extension-assigned Infinity or NaN fails encoding with
 `extension wrote a non-finite number (Infinity or NaN)`; the independent callback
 failure or other encoded part is retained. Numeric-looking text remains text.
 
-The request body of `before_provider_request`, its replacement, tool-execution notification arguments and
-partial/final notification results, and application-message or compaction `details` are opaque text
-carried as a string. The adapter never parses or reformats it, so
-duplicate keys, spacing, exponents and any nesting depth reach the handler as authored. A
-replacement `null` is text and differs from returning no result; `details` text `null` differs
-from `details` null.
+The request body of `before_provider_request`, its replacement, tool-execution arguments
+and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
+Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+cross the component interface as JSON string literals in both directions.
+Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
+Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
+from returning no result. Optional details retain missing and null as distinct states.
 
 The event's `type` tag must be a JSON string, not a single-property object. The reason fields
 of resource discovery, session start, session switch and session shutdown, the fork position
@@ -489,8 +723,9 @@ an `ExtensionCommandContext`, which adds `wait_for_idle`, `new_session`, `fork`,
 methods, which the rustdoc examples check at compile time.
 
 `new_session` accepts optional `setup` and `with_session` callbacks; `fork` and
-`switch_session` accept an optional `with_session`. Tree navigation and reload have
-no replacement continuation. Setup receives a
+`switch_session` accept an optional `with_session`. Absent options remain distinct
+from present empty options, even when no callback is supplied. Tree navigation and
+reload have no replacement continuation. Setup receives a
 writable [`SessionManager`](../../crates/maestro-extensions-wasm/src/session_manager.rs);
 ordinary contexts still expose a reader. When the host invokes the continuation, it
 supplies a `ReplacedSessionContext` while the operation is pending. The
@@ -865,4 +1100,29 @@ input defaults to a no-op and the release preference defaults to false. Renderin
 the supplied width; successful rendering returns the author's ordered lines. Returned errors remain errors.
 
 Cloned themes retain the supplied host owner independently of renderer registration.
-Theme is currently opaque: styling methods and widget composition are not exposed here.
+Each `Theme` method sends one synchronous request to that owner. The owner keeps the palette
+and the style algorithms, so every call reads its current state:
+
+| Method | Answer |
+| --- | --- |
+| `name`, `source_path` | The theme name and file path, or `None`. |
+| `source_info`, `set_source_info` | Reads, replaces or clears the theme's `SourceInfo`. |
+| `fg`, `bg` | Text wrapped in a named foreground or background color that restores only that color. |
+| `bold`, `italic`, `underline`, `inverse`, `strikethrough` | Text with that one style and its own closing escape. |
+| `get_fg_ansi`, `get_bg_ansi` | The escape that selects a named color. |
+| `get_color_mode` | The `ColorMode`: `Truecolor` or `Color256`. |
+
+The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
+owner's message. A theme kept past its renderer call observes later theme changes and provenance
+edits made through any of its clones.
+
+See [native helpers](guest_operations.md) for synchronous terminal operations.
+
+## Standard operating-system interfaces
+
+Rust standard-library environment, file and byte I/O use the host's WASI 0.2
+baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
+0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
+and `wit_stream` byte-stream construction. Both generations use the same host
+context; neither introduces an extension-specific permission list. See
+[component operating environment](host_io.md) for access and platform limits.

@@ -429,7 +429,7 @@ fn deferred_shell_result_flushes_before_the_next_prompt() {
             crate::support::session_harness::ScriptedShell::output("waiting", Some(0.0));
         let options = maestro_app::agent_session::BashRunOptions {
             exclude_from_context: None,
-            operations: Some(std::sync::Arc::new(operations)),
+            operations: Some(Rc::new(operations)),
         };
         let shell = h.session.execute_bash("echo waiting", None, options).await;
         let pending = h.session.has_pending_bash_messages();

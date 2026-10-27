@@ -43,7 +43,7 @@ pub struct TextArtifact {
     /// Original content.
     content: String,
     /// Native effects owner.
-    host: Rc<dyn AttachmentHost>,
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Independent surface identity.
     id: egui::Id,
     /// Prepared body and mounted node.
@@ -71,9 +71,24 @@ impl TextArtifact {
         artifact
     }
 
+    /// Whether retained effects were supplied at construction.
+    #[cfg(target_arch = "wasm32")]
+    pub(super) fn is_retained(&self) -> bool {
+        self.host.is_some()
+    }
+    /// Create a host-free source listing under its fixed family policy.
+    pub(super) fn page_profile(profile: SourceProfile) -> Self {
+        let mut source = Self::default();
+        source.profile = profile;
+        source
+    }
     /// Start with empty filename and content using the supplied native host.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Create source storage without requiring retained surface effects.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             filename: String::new(),
             profile: SourceProfile::Text,
@@ -156,17 +171,33 @@ impl TextArtifact {
             _ => "text/plain",
         }
     }
+    /// Localized title keys owned by this source family.
+    fn titles(&self) -> (&'static str, &'static str) {
+        match self.profile {
+            SourceProfile::Text => ("Copy", "Download"),
+            SourceProfile::Markdown => ("Copy Markdown", "Download Markdown"),
+            SourceProfile::Svg => ("Copy SVG", "Download SVG"),
+        }
+    }
+    /// Prepare highlighting before borrowing any mounted node state.
+    fn highlighted(
+        &self,
+        highlighter: &dyn maestro_theme::SyntaxHighlighter,
+        language: Option<&str>,
+    ) -> Option<String> {
+        language.and_then(|language| {
+            maestro_theme::highlight_html(highlighter, &self.content, Some(language))
+                .ok()
+                .flatten()
+        })
+    }
     /// Prepare outside the state borrow so the caller's engine may call out safely.
     fn prepare(&mut self, view: ArtifactView<'_>) {
         if !self.changed {
             return;
         }
         let language = self.language();
-        let html = language.and_then(|language| {
-            maestro_theme::highlight_html(view.highlighter, &self.content, Some(language))
-                .ok()
-                .flatten()
-        });
+        let html = self.highlighted(view.highlighter, language);
         let mut body = self.body.borrow_mut();
         body.language = language;
         body.text.clone_from(&self.content);
@@ -178,6 +209,12 @@ impl TextArtifact {
         self.changed = false;
     }
     super::retained::artifact_reading!(body);
+}
+impl Default for TextArtifact {
+    /// Empty host-free source content.
+    fn default() -> Self {
+        Self::with_host(None)
+    }
 }
 impl ArtifactElement for TextArtifact {
     fn filename(&self) -> &str {
@@ -197,15 +234,7 @@ impl ArtifactElement for TextArtifact {
         self.content = content;
         self.repaint();
     }
-    fn set_visibility(
-        &mut self,
-        visible: bool,
-        modal: Option<egui::Id>,
-    ) -> Result<(), ArtifactUiError> {
-        self.host
-            .set_retained_visibility(self.id, visible, modal)
-            .map_err(ArtifactUiError::Host)
-    }
+    super::retained::artifact_visibility!();
     fn get_header_buttons(
         &mut self,
         ui: &mut egui::Ui,
@@ -213,35 +242,27 @@ impl ArtifactElement for TextArtifact {
     ) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         if self.copy.is_none() {
-            self.copy = Some(CopyButton::new(Rc::clone(&self.host), view.i18n)?);
+            self.copy = Some(CopyButton::new(
+                Rc::clone(super::retained::host(self.host.as_ref())?),
+                view.i18n,
+            )?);
         }
+        let titles = self.titles();
         if let Some(copy) = &mut self.copy {
             if self.copy_changed {
                 copy.text.clone_from(&self.content);
                 self.copy_changed = false;
             }
-            copy.title = view.i18n.text(match self.profile {
-                SourceProfile::Text => "Copy",
-                SourceProfile::Markdown => "Copy Markdown",
-                SourceProfile::Svg => "Copy SVG",
-            })?;
+            copy.title = view.i18n.text(titles.0)?;
             copy.render(ui, view.i18n, view.presentation)
                 .map_err(ArtifactUiError::localized_control)?;
         }
         download_button::draw_titled(
             ui,
             view,
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             &self.filename,
-            (
-                self.mime(),
-                self.content.as_bytes(),
-                match self.profile {
-                    SourceProfile::Text => "Download",
-                    SourceProfile::Markdown => "Download Markdown",
-                    SourceProfile::Svg => "Download SVG",
-                },
-            ),
+            (self.mime(), self.content.as_bytes(), titles.1),
         )
     }
     fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
@@ -252,7 +273,7 @@ impl ArtifactElement for TextArtifact {
             .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
             .1;
         attachment_content::reading::present(
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             ui,
             (self.id, rect, None),
             &reading,
@@ -264,8 +285,15 @@ impl ArtifactElement for TextArtifact {
 }
 impl Drop for TextArtifact {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
     }
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use browser::source_nodes;
+
+#[cfg(target_arch = "wasm32")]
+mod dom;

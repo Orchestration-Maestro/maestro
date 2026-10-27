@@ -1140,7 +1140,7 @@ fn handler_registration_and_removal_match_supported_signals() {
         vec![TerminationSignal::Terminate]
     };
     assert_eq!(
-        super::signals::signals_for_host(),
+        maestro_app::signals_for_host(),
         expected,
         "termination everywhere and a hangup off Windows"
     );

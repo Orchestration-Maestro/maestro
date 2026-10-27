@@ -46,7 +46,7 @@ fn echo_result(params: Value, name: &str, prefix: &str) -> ExtensionResult<Agent
             "{prefix}{}",
             params.message
         )))],
-        details: Presence::Present(json!({"tool":name,"prefix":prefix}).to_string()),
+        details: Presence::Present(json!({"tool":name,"prefix":prefix}).to_string().into()),
         terminate: Presence::Missing,
     })
 }
@@ -84,6 +84,8 @@ fn register_echo_tool(
             execution_mode: Presence::Missing,
         },
         prepare_arguments: None,
+        render_call: None,
+        render_result: None,
         execute: Rc::new(move |_, params, _, _, _| {
             Box::pin(std::future::ready(echo_result(
                 params,

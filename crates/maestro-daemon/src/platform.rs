@@ -29,7 +29,7 @@ pub fn show_desktop_notification(title: &str, body: Option<&str>) -> std::io::Re
     if std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none() {
         return Ok(false);
     }
-    let mut command = tokio::process::Command::new("notify-send");
+    let mut command = maestro_process::command("notify-send");
     command.arg("--").arg(title);
     if let Some(body) = body.filter(|body| !body.is_empty()) {
         command.arg(body);

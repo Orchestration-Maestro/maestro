@@ -121,13 +121,15 @@ const STDIO_SCRIPT: &str =
     r#"printf '<%s>' "$@"; echo out-$0; echo err-$0 >&2; read -r line; echo "stdin:$line"; pwd -P"#;
 
 /// Runs the three launches of the stdio test inside the child process.
-fn stdio_launches(root: &Path) {
+fn stdio_launches(root: &Path, supplied: bool) {
     let taken = Rc::new(Cell::new(false));
     let query = taken.clone();
-    let operations: Box<dyn PackageOperations> = Box::new(NativePackageOperations::new(
-        Rc::new(move || query.get()),
-        &Rc::new(tokio::task::LocalSet::new()),
-    ));
+    let query: Rc<dyn Fn() -> bool> = Rc::new(move || query.get());
+    let operations: Box<dyn PackageOperations> = Box::new(if supplied {
+        NativePackageOperations::with_spawn(query, |_| panic!("stdio must not admit workers"))
+    } else {
+        NativePackageOperations::new(query, &Rc::new(tokio::task::LocalSet::new()))
+    });
     let runtime = runtime();
     let launch = |name: &str, cwd: Option<&str>| {
         let args = ["-c", STDIO_SCRIPT, name, "x  y", "z"].map(str::to_owned);
@@ -143,8 +145,16 @@ fn stdio_launches(root: &Path) {
 
 #[test]
 fn native_stdio_obeys_live_takeover_and_literal_arguments() {
+    stdio_scenario(
+        "native_stdio_obeys_live_takeover_and_literal_arguments",
+        false,
+    );
+}
+
+/// Drives the same native stream routes through either admission constructor.
+fn stdio_scenario(test: &str, supplied: bool) {
     if let Some(root) = std::env::var_os(STDIO_CHILD) {
-        stdio_launches(Path::new(&root));
+        stdio_launches(Path::new(&root), supplied);
         return;
     }
     let root = Scratch::new().unwrap();
@@ -159,7 +169,7 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
         .create_new(true)
         .open(&out)
         .unwrap();
-    let status = TestProcess::current("native_stdio_obeys_live_takeover_and_literal_arguments")
+    let status = TestProcess::current(test)
         .unwrap()
         .nocapture()
         .env(STDIO_CHILD, root.path())
@@ -340,4 +350,130 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
         .unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert!(!error.to_string().contains("failed with code"));
+}
+
+#[test]
+fn native_package_spawn_keeps_admission_and_output_routes() {
+    stdio_scenario(
+        "native_package_spawn_keeps_admission_and_output_routes",
+        true,
+    );
+    let admitted = Rc::new(Cell::new(0));
+    let seen = admitted.clone();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let target = local.clone();
+    let operations = NativePackageOperations::with_spawn(Rc::new(|| false), move |work| {
+        seen.set(seen.get() + 1);
+        drop(target.spawn_local(work));
+        Ok(())
+    });
+    let (send, receive) = tokio::sync::oneshot::channel();
+    operations
+        .spawn(Box::pin(async move {
+            send.send(()).unwrap();
+        }))
+        .unwrap();
+    assert_eq!(admitted.get(), 1);
+    runtime().block_on(local.run_until(async {
+        receive.await.unwrap();
+    }));
+    assert_supplied_capture_routes();
+}
+
+#[test]
+fn native_package_spawn_preserves_local_set_release_error() {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
+    let (send, receive) = tokio::sync::oneshot::channel();
+    operations
+        .spawn(Box::pin(async move {
+            send.send(()).unwrap();
+        }))
+        .unwrap();
+    runtime().block_on(local.run_until(async {
+        receive.await.unwrap();
+    }));
+    assert_eq!(Rc::strong_count(&local), 1);
+    drop(local);
+    assert_eq!(
+        operations
+            .spawn(Box::pin(async {}))
+            .unwrap_err()
+            .to_string(),
+        "package runtime is no longer available"
+    );
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let weak = Rc::downgrade(&local);
+    let supplied = NativePackageOperations::with_spawn(Rc::new(|| false), move |work| {
+        let local = weak
+            .upgrade()
+            .ok_or_else(|| std::io::Error::other("package runtime is no longer available"))?;
+        drop(local.spawn_local(work));
+        Ok(())
+    });
+    let (send, receive) = tokio::sync::oneshot::channel();
+    supplied
+        .spawn(Box::pin(async move {
+            send.send(()).unwrap();
+        }))
+        .unwrap();
+    runtime().block_on(local.run_until(async {
+        receive.await.unwrap();
+    }));
+    drop(local);
+    assert_eq!(
+        supplied.spawn(Box::pin(async {})).unwrap_err().to_string(),
+        "package runtime is no longer available"
+    );
+}
+
+/// Checks unchanged native capture operands beside an admission error.
+fn assert_supplied_capture_routes() {
+    let denied = NativePackageOperations::with_spawn(
+        Rc::new(|| panic!("capture must not query output routing")),
+        |_| Err(std::io::Error::from_raw_os_error(13)),
+    );
+    assert_eq!(
+        denied.spawn(Box::pin(async {})).unwrap_err().raw_os_error(),
+        Some(13)
+    );
+    let output = denied
+        .run_command_sync(
+            "/bin/sh",
+            &["-c".into(), "printf sync; printf err >&2; exit 7".into()],
+        )
+        .unwrap();
+    assert_eq!(
+        (
+            output.status,
+            output.stdout.as_str(),
+            output.stderr.as_str()
+        ),
+        (Some(7), "sync", "err")
+    );
+    let root = Scratch::new().unwrap();
+    let cwd = root.path().to_str().unwrap();
+    let output = runtime()
+        .block_on(denied.run_command_capture(
+            "/bin/sh",
+            &[
+                "-c".into(),
+                "printf '%s|%s|' \"$MAESTRO_CAPTURE_VALUE\" \"$1\"; pwd -P".into(),
+                "sh".into(),
+                "literal argument".into(),
+            ],
+            maestro_packages::CommandCaptureOptions {
+                cwd: Some(cwd),
+                timeout: None,
+                env: &[("MAESTRO_CAPTURE_VALUE", "overlaid")],
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        output,
+        format!(
+            "overlaid|literal argument|{}",
+            root.path().canonicalize().unwrap().display()
+        )
+    );
 }

@@ -1,6 +1,6 @@
 //! Native generic file artifact body and independent header in a real document.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{body, view};
+use crate::contributions_support::{body, select, view};
 use crate::native_simple_artifacts_support::{Decoded, GuidanceExpected, corpus};
 use crate::session_download_browser::Fixture;
 use crate::session_header_support::{Event, Host};
@@ -27,13 +27,6 @@ fn artifact(filename: &str, content: &str, host: &Rc<Host>) -> GenericArtifact {
     artifact.set_filename(filename.to_owned());
     artifact.set_content(content.to_owned());
     artifact
-}
-/// One descendant of `node`, panicking by selector when it is absent.
-fn select(node: &Node, query: &str) -> Element {
-    node.unchecked_ref::<Element>()
-        .query_selector(query)
-        .unwrap()
-        .unwrap_or_else(|| panic!("missing {query}"))
 }
 /// The header control button of `root`.
 fn button(root: &DomRoot) -> HtmlElement {

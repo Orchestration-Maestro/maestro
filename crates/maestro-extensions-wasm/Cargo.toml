@@ -17,6 +17,10 @@ path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "context_bridge"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dynamic_tools"
 path = "../../examples/extensions/dynamic_tools.rs"
 crate-type = ["cdylib"]
@@ -27,8 +31,28 @@ path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "helper_capabilities"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hidden_thinking_label"
 path = "../../examples/extensions/hidden_thinking_label.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "hook_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "local_shell_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "module_location_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "native_io_component"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -49,6 +73,14 @@ crate-type = ["cdylib"]
 [[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "resource_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "resource_component_reloaded"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -77,6 +109,10 @@ path = "../../examples/extensions/trigger_compact.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "wasi_capabilities"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "with_deps"
 path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
@@ -92,16 +128,17 @@ indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }
 maestro-entry = { path = "../maestro-entry" }
 maestro-request = { path = "../maestro-request" }
-wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "std", "inter-task-wakeup"] }
+wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "async-spawn", "std", "inter-task-wakeup"] }
 serde.workspace = true
-serde_json = { workspace = true, features = ["raw_value"] }
+serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
 regex.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-wasmtime = { version = "=49.0.4", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache"] }
-wasmtime-wasi = { version = "=49.0.4", default-features = false, features = ["p2"] }
+maestro-models = { path = "../maestro-models" }
+wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache"] }
+wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["p2", "p3"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

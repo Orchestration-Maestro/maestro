@@ -4,7 +4,6 @@ use maestro_process::child_process::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
 use std::io;
-use tokio::process::Command;
 
 /// Execute one search, draining both pipes before publishing successful stdout.
 pub(super) async fn run(
@@ -15,7 +14,7 @@ pub(super) async fn run(
     if signal.is_aborted() {
         return Err(cancelled());
     }
-    let mut child = CapturedChild::spawn(Command::new(executable).args(args))?;
+    let mut child = CapturedChild::spawn(maestro_process::command(executable).args(args))?;
     let kill = async {
         signal.cancelled().await;
         Termination::Kill

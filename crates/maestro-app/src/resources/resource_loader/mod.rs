@@ -126,6 +126,8 @@ pub struct ResourceLoaderOptions<E: ExtensionExecution = Threaded> {
     pub module_loader: ModuleLoader<E>,
     /// The bus shared by extensions; absent means the execution family's default bus.
     pub event_bus: Option<EventBusController<E>>,
+    /// Existing application tool services available during extension construction.
+    pub tool_construction: Option<maestro_extensions::ToolConstruction>,
     /// Extension sources loaded before configured ones.
     pub additional_extension_paths: Vec<String>,
     /// Skill paths loaded after discovered ones.
@@ -168,6 +170,7 @@ impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
             local,
             module_loader,
             event_bus: None,
+            tool_construction: None,
             additional_extension_paths: Vec::new(),
             additional_skill_paths: Vec::new(),
             additional_prompt_template_paths: Vec::new(),

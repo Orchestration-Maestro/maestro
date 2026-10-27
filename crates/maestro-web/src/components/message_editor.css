@@ -1,0 +1,102 @@
+.maestro-editor {
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  background: var(--maestro-color-panel);
+  color: var(--maestro-color-text);
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-editor:focus-within {
+  border-color: var(--maestro-color-accent);
+}
+.maestro-editor.maestro-editor-dragging {
+  border: 2px solid var(--maestro-color-accent);
+}
+.maestro-editor-drop {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--maestro-radii-panel);
+  background: var(--maestro-color-panel);
+  color: var(--maestro-color-accent);
+  font-weight: 500;
+  pointer-events: none;
+}
+.maestro-editor-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.5rem;
+}
+.maestro-editor-text {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 1lh;
+  max-height: 200px;
+  padding: 1rem;
+  overflow-y: auto;
+  border: 0;
+  background: transparent;
+  color: var(--maestro-color-text);
+  font: inherit;
+  font-size: var(--maestro-type-body-size);
+  line-height: var(--maestro-type-body-line-height);
+  field-sizing: content;
+  outline: none;
+  resize: none;
+}
+.maestro-editor-text::placeholder {
+  color: var(--maestro-color-muted);
+}
+.maestro-editor-picker {
+  display: none;
+}
+.maestro-editor-bar, .maestro-editor-group {
+  display: flex;
+  align-items: center;
+}
+.maestro-editor-bar {
+  justify-content: space-between;
+  padding: 0 0.5rem 0.5rem;
+}
+.maestro-editor-group {
+  gap: 0.5rem;
+  min-width: 0;
+}
+.maestro-editor-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--maestro-color-muted);
+}
+.maestro-editor-spinner svg {
+  animation: maestro-spin 1s linear infinite;
+}
+.maestro-editor-send-glyph {
+  display: inline-flex;
+  transform: rotate(-45deg);
+}
+.maestro-editor-level {
+  width: auto;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.maestro-button.maestro-editor-model {
+  min-width: 0;
+  height: 2rem;
+  font-size: 0.75rem;
+}
+.maestro-editor-model-id {
+  overflow: hidden;
+  margin-left: 0.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,5 +1,6 @@
 //! Conversion through the declared positions of a sequence.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::convert_member;
@@ -12,11 +13,17 @@ pub(crate) fn from_tuple<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let values = value.as_array_mut()?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(values) = value.as_array_mut() else {
+        return Ok(None);
+    };
+    let mut result = Ok(());
     coercion::positions(view.raw, values, |member, item| {
         let item = Node::Leaf(converter.document.view(item));
-        convert_member(converter, &item, member);
+        if result.is_ok() {
+            result = convert_member(converter, &item, member);
+        }
     });
-    None
+    result?;
+    Ok(None)
 }

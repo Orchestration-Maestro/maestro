@@ -68,6 +68,10 @@ replaces inheritance; omission reads fresh native entries and prepends the calle
 binary directory when absent from the first case-insensitive PATH entry. On
 Windows, native insertion selects the first UTF-16-sorted spelling of each
 Unicode-uppercase key identity; the supplied environment map stays unchanged.
+`ShellEnv` keeps optional native values: `Some(value)` sets a value, including an
+empty string, while `None` leaves the key observable to hooks and supplied
+operations but omits it from process creation. Key selection precedes omission,
+so an unset Windows key does not expose another spelling of that same key.
 
 `signal` is optional; `timeout` is optional positive seconds, with no default.
 Zero, negative and unrepresentable durations arm no timer. Abort and timeout request
@@ -159,7 +163,7 @@ newline before the input command. Each call builds fresh environment operands,
 then `spawn_hook` may replace the complete command, directory and environment;
 a hook error returns before progress or execution. `BashToolInput::timeout` is
 optional numeric seconds forwarded unchanged to the selected operation, as is
-the optional cancellation signal; supplied operations own those policies.
+the optional cancellation signal; supplied operations own those policies once started.
 
 An observer receives an empty-content update synchronously before the execution
 future is returned, after a successful hook. While accumulation succeeds, the first
@@ -167,6 +171,9 @@ data callback publishes a snapshot immediately; later callbacks coalesce until 1
 emission, or flush on settlement. Data updates carry one text block and present
 details, even when empty. Without an observer there is no progress timer.
 After settlement the execution releases its observer and pending timer.
+After the initial update, an already-aborted signal returns `Command aborted`
+without entering either the local or supplied backend. An observer that aborts
+that signal synchronously also prevents backend entry.
 
 Output bytes are not sanitized. The [streaming accumulator](tools-read.md#native-streaming)
 owns decoding, tail selection and raw artifacts. On successful accumulation the tool
@@ -238,8 +245,11 @@ let result = (tool.execute)("call".into(), serde_json::json!({
 
 The [caller-local factories](tools.md#caller-local-construction) select
 `BashOperations<Local>` and local spawn hooks without changing command preparation
-or progress ordering. `BashExecOptions` borrows the selected raw callable; both
-native operation implementations share one driver. The process leaf's
+or progress ordering. Store operations with the family's shared pointer:
+`E::Shared<<E as BashExecution>::Operations>` uses `Rc` for local operations and
+`Arc` with `Send + Sync` bounds for threaded operations.
+`BashExecOptions` borrows the selected raw callable; both native operation
+implementations share one driver. The process leaf's
 `wait_for_child_process_with_sink` accepts a mandatory borrowed sink without
 `Send`, sharing capture, descriptor delivery and termination with the existing
 `wait_for_child_process` interface. Its default `None` calls remain inferable.

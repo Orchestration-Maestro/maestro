@@ -85,10 +85,11 @@ fn conversation_streams_order_text_and_thinking_blocks() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn conversation_streams_accumulate_and_finalize_tool_calls() -> TestResult {
-    crate::runtime::run(corpus::rows(
-        "conversation_streams_accumulate_and_finalize_tool_calls",
-    ))
+fn conversation_arguments_keep_encoded_root_shapes() -> TestResult {
+    crate::runtime::run(async {
+        corpus::rows("conversation_arguments_keep_encoded_root_shapes").await?;
+        corpus::recorded_roots().await
+    })
 }
 
 #[cfg(not(target_arch = "wasm32"))]

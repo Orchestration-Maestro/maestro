@@ -2,8 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 use maestro_daemon::{
     api::event_hub::EventHub,

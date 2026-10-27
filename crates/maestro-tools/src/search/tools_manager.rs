@@ -11,7 +11,6 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
-use tokio::process::Command;
 
 /// Deadline of the release lookup, response body included.
 const NETWORK_TIMEOUT: Duration = Duration::from_millis(10_000);
@@ -372,7 +371,7 @@ fn get(url: String, headers: &[(&str, &str)]) -> HttpRequest {
 
 /// Whether `name --version` starts, whatever its exit status.
 async fn command_exists(name: &str) -> bool {
-    let mut command = Command::new(name);
+    let mut command = maestro_process::command(name);
     command.arg("--version").kill_on_drop(true);
     let Ok(mut child) = CapturedChild::spawn(&mut command) else {
         return false;
@@ -445,7 +444,7 @@ async fn extract_tar(asset: &str, archive: &str, dir: &str) -> io::Result<()> {
             source,
         })
     };
-    let mut command = Command::new("tar");
+    let mut command = maestro_process::command("tar");
     command.args(["xzf", archive, "-C", dir]).kill_on_drop(true);
     let mut child = CapturedChild::spawn(&mut command).map_err(context)?;
     let output = wait_for_child_process(

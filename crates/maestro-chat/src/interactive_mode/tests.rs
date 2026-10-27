@@ -1,9 +1,23 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod authentication;
+mod autocomplete;
 mod bash;
+mod bindings;
+mod commands;
+mod debug;
 mod events;
+mod extension_custom;
+mod extension_editors;
+mod extension_replacements;
+mod extension_reset;
 mod extension_ui;
 mod extension_widgets;
+mod extensions;
+mod hotkeys;
+mod info;
+mod lifecycle;
+mod models;
 #[allow(
     dead_code,
     unused_imports,
@@ -11,50 +25,65 @@ mod extension_widgets;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod navigation;
 mod notices;
+mod progress;
 mod prompts;
 mod queues;
+mod reload;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod settings;
+mod share;
 mod suspend;
+mod thinking;
 mod transcript;
 mod transfer;
 mod typed;
 
-use crate::{InteractiveMode, InteractiveModeOptions};
+use crate::interactive_mode::bash::component_address;
+use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
 // The controlled host, disposable directory and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
     manual_runtime::ManualRuntime, native_child as child, published,
     recording_terminal::RecordingTerminal,
 };
+use maestro_app::agent_session::PromptOptions;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::{
-    FooterOperations, NativeFooterOperations,
+    FooterFileStats, FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
-    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
-    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
-    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, AuthStorage, ContextFile, CreateAgentSessionRuntimeFactory,
+    DefaultEventBus, Extension, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader,
+    SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
+    load_extension_from_factory, strip_ansi,
 };
+use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
 use maestro_test_process::TestProcess;
-use maestro_theme::{Theme, ThemeColor, ThemeState};
+use maestro_theme::{
+    Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
+};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, autocomplete,
+    EditorComponent, Text, autocomplete as tui_autocomplete,
 };
 use serde::{Deserialize, de::DeserializeOwned};
+use serde_json::json;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::VecDeque,
+    error::Error,
     future::Future,
     io,
     path::Path,
     pin::Pin,
     rc::Rc,
     sync::{Arc, LazyLock, RwLock},
+    time::Duration,
 };
 
 /// The package-directory environment key the installation reads.
@@ -66,11 +95,11 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 
 /// Runs `body` in a fresh single-test child whose working directory is a disposable root
 /// and whose package directory is `package` inside it, returning its standard error.
-pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) -> Vec<u8> {
+pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path)) -> Vec<u8> {
     if maestro_test_process::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
         let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
-        body(Path::new(&directory), Path::new(&package));
+        on_tasks(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
     let scratch = child::Scratch::new();
@@ -95,7 +124,7 @@ pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) -> V
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
-fn isolated(test: &str, body: impl FnOnce(&Path)) {
+fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
     isolated_case(test, "child", &[], body);
 }
 
@@ -109,7 +138,7 @@ pub(super) fn isolated_case(
     test: &str,
     case: &str,
     envs: &[(&str, &str)],
-    body: impl FnOnce(&Path),
+    body: impl AsyncFnOnce(&Path),
 ) {
     if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
         assert!(
@@ -128,13 +157,13 @@ pub(super) fn isolated_output(
     case: &str,
     envs: &[(&str, &str)],
     setup: &str,
-    body: impl FnOnce(&Path),
+    body: impl AsyncFnOnce(&Path),
 ) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-            body(Path::new(&directory));
+            on_tasks(body(Path::new(&directory)));
         }
         return None;
     }
@@ -158,7 +187,7 @@ pub(super) fn isolated_output(
         .unwrap()
         .env_clear()
         .case(case)
-        .shell_setup(setup)
+        .shell_setup("/bin/bash", setup)
         .temp_dir(root.join("tmp"))
         .nocapture()
         .single_threaded()
@@ -168,6 +197,9 @@ pub(super) fn isolated_output(
         .expect("child starts");
     Some(output)
 }
+
+/// A controlled replacement for one resource reload.
+type ReloadOperation = Box<dyn Fn() -> Pin<Box<dyn Future<Output = io::Result<()>>>>>;
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
 /// successive prompt templates, context files and loaded extensions, and changing the
@@ -189,6 +221,8 @@ pub(super) struct ForwardingLoader {
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
     /// The getters read, in order.
     pub(super) calls: RefCell<Vec<&'static str>>,
+    /// A controlled reload operation, when supplied by a witness.
+    pub(super) on_reload: RefCell<Option<ReloadOperation>>,
 }
 
 /// The diagnostics a loader reports beside its skills, prompt templates and themes.
@@ -268,6 +302,7 @@ impl ForwardingLoader {
             extensions: extensions
                 .or_else(|| loaded.then(|| Rc::new(load(paths, errors, &commands)))),
             calls: RefCell::default(),
+            on_reload: RefCell::default(),
         }
     }
 }
@@ -383,6 +418,10 @@ impl ResourceLoader<Local> for ForwardingLoader {
         self.inner.extend_resources(paths)
     }
     fn reload(&self) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+        self.calls.borrow_mut().push("reload");
+        if let Some(reload) = self.on_reload.borrow().as_ref() {
+            return reload();
+        }
         self.inner.reload()
     }
 }
@@ -416,6 +455,15 @@ pub(super) struct World {
 /// Builds the inputs of one mode, letting `configure` change settings and the theme
 /// selected while the loader's themes are read.
 pub(super) struct Setup {
+    /// The startup offline selection supplied by session services.
+    pub(super) offline: Option<bool>,
+    /// Supplied terminal ports for native or failing producer witnesses.
+    pub(super) terminal: Option<(
+        maestro_tui::tui::TerminalHandle,
+        Rc<dyn maestro_tui::tui::TuiRuntime>,
+    )>,
+    /// Controlled native effects, with no real process exit by default.
+    pub(super) lifecycle: Rc<dyn super::lifecycle::LifecycleEffects>,
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
     /// Changes the settings before construction.
@@ -432,12 +480,16 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Overrides the default replacement-session factory when supplied.
+    pub(super) create: Option<CreateAgentSessionRuntimeFactory>,
     /// Starts each replacement with fresh services instead of reusing the current ones.
     pub(super) replacing: bool,
     /// Creates the session history under a file in this directory when supplied.
     pub(super) session_history: Option<std::path::PathBuf>,
     /// The directories the theme registry reads, when it records themes on disk.
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
+    /// Further inline extensions beside `extension`, each under the path given.
+    pub(super) further: Vec<(String, ExtensionFactory<Local>)>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
     /// The loaded extensions by path and provenance; the default loader's when these,
@@ -451,11 +503,16 @@ pub(super) struct Setup {
     pub(super) diagnostics: LoadedDiagnostics,
     /// The watch, timer and Git effects the mode uses; the native ones when absent.
     pub(super) watcher: Option<Rc<dyn FooterOperations>>,
+    /// The stored credentials the session is built over, in memory when absent.
+    pub(super) auth: Option<Arc<AuthStorage>>,
 }
 
 impl Default for Setup {
     fn default() -> Self {
         Self {
+            offline: None,
+            terminal: None,
+            lifecycle: Rc::new(lifecycle::Effects::default()),
             options: InteractiveModeOptions::default(),
             configure: Box::new(|_| {}),
             select: None,
@@ -465,45 +522,62 @@ impl Default for Setup {
             prompts: Vec::new(),
             directories: None,
             extension: None,
+            create: None,
             replacing: false,
             session_history: None,
+            further: Vec::new(),
             themes: Vec::new(),
             extensions: Vec::new(),
             errors: Vec::new(),
             commands: Vec::new(),
             diagnostics: LoadedDiagnostics::default(),
             watcher: None,
+            auth: None,
         }
     }
 }
 
-/// Loads `factory` as the session's only extension; its initialization must finish at once.
-fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
+/// Loads `factory` and then `further` as the session's extensions; their initialization
+/// must finish at once.
+fn loaded(
+    cwd: &str,
+    factory: ExtensionFactory<Local>,
+    further: Vec<(String, ExtensionFactory<Local>)>,
+) -> Rc<LoadExtensionsResult<Local>> {
     let local = Rc::new(tokio::task::LocalSet::new());
     let bus = <Local as DefaultEventBus>::default_event_bus(&local);
-    loaded_on_bus(cwd, factory, bus.for_extension())
+    loaded_on_bus(cwd, factory, &bus.for_extension(), further)
 }
 
-/// Loads one synchronous-ready extension on the supplied shared event bus.
+/// Loads synchronous-ready extensions on the supplied shared event bus.
 fn loaded_on_bus(
     cwd: &str,
     factory: ExtensionFactory<Local>,
-    bus: maestro_app::EventBus<Local>,
+    bus: &maestro_app::EventBus<Local>,
+    further: Vec<(String, ExtensionFactory<Local>)>,
 ) -> Rc<LoadExtensionsResult<Local>> {
     let runtime = create_extension_runtime::<Local>();
-    let loading = std::pin::pin!(load_extension_from_factory(
-        factory,
-        cwd.to_owned(),
-        bus,
-        Rc::clone(&runtime),
-        None,
-    ));
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
-        panic!("the inline extension initializes at once");
-    };
+    let mut extensions = Vec::new();
+    for (path, factory) in std::iter::once((None, factory)).chain(
+        further
+            .into_iter()
+            .map(|(path, factory)| (Some(path), factory)),
+    ) {
+        let loading = std::pin::pin!(load_extension_from_factory(
+            factory,
+            cwd.to_owned(),
+            bus.clone(),
+            Rc::clone(&runtime),
+            path,
+        ));
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
+            panic!("the inline extension initializes at once");
+        };
+        extensions.push(owner.unwrap());
+    }
     Rc::new(LoadExtensionsResult {
-        extensions: vec![owner.unwrap()],
+        extensions,
         errors: Vec::new(),
         runtime,
     })
@@ -527,14 +601,14 @@ impl Setup {
             commands: self.commands,
             diagnostics: self.diagnostics,
         };
-        let extensions = self.extension.map(|factory| loaded(&cwd, factory));
+        let extensions = self.extension.map(|init| loaded(&cwd, init, self.further));
         let history = self
             .session_history
             .as_ref()
             .map(|d| d.to_str().unwrap().to_owned());
-        let result = session::session_over(
+        let mut result = session::session_with_auth(
             &cwd,
-            None,
+            self.auth,
             move |inner| {
                 let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
                 *created.borrow_mut() = Some(Rc::clone(&loader));
@@ -542,14 +616,14 @@ impl Setup {
             },
             history.as_deref(),
         );
+        select_offline(&mut result, self.offline);
         let settings = Rc::clone(result.session.settings_manager());
         prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
-        let services = Rc::clone(&result.services);
-        let host = Rc::new(AgentSessionRuntime::new(
-            result,
-            create(services, self.replacing),
-        ));
+        let create = self
+            .create
+            .unwrap_or_else(|| create(Rc::clone(&result.services), self.replacing));
+        let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
         let themes = registry(self.directories);
@@ -557,20 +631,36 @@ impl Setup {
         let mode = InteractiveMode::new(
             Rc::clone(&host),
             self.options,
-            (terminal.handle(), runtime.handle()),
+            self.terminal
+                .unwrap_or_else(|| (terminal.handle(), runtime.handle())),
             Rc::clone(&themes),
             self.watcher
                 .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local))),
         )
         .unwrap();
         World {
-            mode,
+            mode: lifecycle::replace_effects(mode, self.lifecycle),
             terminal,
             runtime,
             themes,
             host,
             loader,
         }
+    }
+}
+
+/// Initializes the presentation before settling its first frame.
+pub(super) async fn start(world: &World) {
+    world.mode.init().await.unwrap();
+}
+
+/// Applies an explicit startup selection before any runtime aliases the services.
+fn select_offline(
+    result: &mut maestro_app::CreateAgentSessionRuntimeResult,
+    offline: Option<bool>,
+) {
+    if let Some(offline) = offline {
+        Rc::get_mut(&mut result.services).unwrap().offline = Some(offline);
     }
 }
 
@@ -607,14 +697,29 @@ fn create(
         } else {
             session::over(&options.cwd, &services)
         };
+        // The replacement serves the session manager the runtime opened for it.
+        std::mem::swap(
+            &mut *replacement.session.session_manager().borrow_mut(),
+            &mut *options.session_manager.borrow_mut(),
+        );
         Box::pin(async { Ok(replacement) })
     })
 }
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
-fn started(directory: &Path) -> World {
-    let world = Setup::default().build(directory);
-    world.mode.init().unwrap();
+async fn started(directory: &Path) -> World {
+    started_with(directory, None).await
+}
+
+/// Builds a mode over `auth`, or over an empty in-memory store, and initializes it,
+/// settling the first frame.
+pub(super) async fn started_with(directory: &Path, auth: Option<Arc<AuthStorage>>) -> World {
+    let world = Setup {
+        auth,
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -625,6 +730,10 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
     for (marker, role) in [
         ("@border@", ThemeColor::Border),
         ("@accent@", ThemeColor::Accent),
+        ("@border@", ThemeColor::Border),
+        ("@borderMuted@", ThemeColor::BorderMuted),
+        ("@text@", ThemeColor::Text),
+        ("@userMessageText@", ThemeColor::UserMessageText),
         ("@dim@", ThemeColor::Dim),
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
@@ -774,7 +883,7 @@ pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
 fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<Input, Expected>(
                 FIXTURES,
                 "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
@@ -803,7 +912,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world).await;
                 let theme = world.themes.theme().get().unwrap();
                 let expected = painted(&theme, &before);
                 assert_eq!(
@@ -821,7 +930,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
 fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<Input, Expected>(
                 FIXTURES,
                 "startup_notices_keep_labels_styles_padding_and_redraw",
@@ -831,7 +940,7 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
                 else {
                     panic!("a notice case");
                 };
-                let world = started(directory);
+                let world = started(directory).await;
                 assert_eq!(world.runtime.pending(), 0);
                 match kind {
                     NoticeKind::Error => world.mode.show_error(&text),
@@ -854,7 +963,7 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
 fn clear_editor_changes_text_and_requests_a_frame() {
     isolated(
         "clear_editor_changes_text_and_requests_a_frame",
-        |directory| {
+        async |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
                 <[_; 1]>::try_from(cases::<Input, Expected>(
                     FIXTURES,
@@ -865,7 +974,7 @@ fn clear_editor_changes_text_and_requests_a_frame() {
             else {
                 panic!("one clear case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.editor.add_to_history("remembered");
             world.mode.editor.set_text("draft");
             world.runtime.settle().unwrap();
@@ -886,12 +995,15 @@ impl AutocompleteProvider for Numbered {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: autocomplete::CursorPosition,
-        _options: autocomplete::CompletionOptions<'a, Self::Signal>,
+        _cursor: tui_autocomplete::CursorPosition,
+        _options: tui_autocomplete::CompletionOptions<'a, Self::Signal>,
     ) -> Pin<
         Box<
             dyn Future<
-                    Output = Result<Option<AutocompleteSuggestions>, autocomplete::CompletionError>,
+                    Output = Result<
+                        Option<AutocompleteSuggestions>,
+                        tui_autocomplete::CompletionError,
+                    >,
                 > + 'a,
         >,
     > {
@@ -912,11 +1024,11 @@ impl AutocompleteProvider for Numbered {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: autocomplete::CursorPosition,
+        _cursor: tui_autocomplete::CursorPosition,
         item: &AutocompleteItem,
         _prefix: &str,
-    ) -> autocomplete::CompletionResult {
-        autocomplete::CompletionResult {
+    ) -> tui_autocomplete::CompletionResult {
+        tui_autocomplete::CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),
@@ -925,13 +1037,13 @@ impl AutocompleteProvider for Numbered {
 }
 
 /// The candidate rows the mode's editor shows with `maximum` configured.
-fn visible_candidates(directory: &Path, maximum: f64) -> usize {
+async fn visible_candidates(directory: &Path, maximum: f64) -> usize {
     let world = Setup {
         configure: Box::new(move |settings| settings.set_autocomplete_max_visible(maximum)),
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world).await;
     world
         .mode
         .editor
@@ -943,13 +1055,13 @@ fn visible_candidates(directory: &Path, maximum: f64) -> usize {
 }
 
 /// The leading spaces of the editor's text row with `padding` configured.
-fn editor_indent(directory: &Path, padding: f64) -> usize {
+async fn editor_indent(directory: &Path, padding: f64) -> usize {
     let world = Setup {
         configure: Box::new(move |settings| settings.set_editor_padding_x(padding)),
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world).await;
     world.mode.editor.set_text("typed");
     let rows = world.mode.editor.render(40);
     let row = rows.iter().find(|row| row.contains("typed")).unwrap();
@@ -960,7 +1072,7 @@ fn editor_indent(directory: &Path, padding: f64) -> usize {
 fn startup_constructor_forwards_each_display_setting() {
     isolated(
         "startup_constructor_forwards_each_display_setting",
-        |directory| {
+        async |directory| {
             for (cursor, shrink) in [(true, false), (false, true)] {
                 let world = Setup {
                     configure: Box::new(move |settings| {
@@ -972,7 +1084,7 @@ fn startup_constructor_forwards_each_display_setting() {
                 .build(directory);
                 assert_eq!(world.mode.ui.get_show_hardware_cursor(), cursor);
                 assert_eq!(world.mode.ui.get_clear_on_shrink(), shrink);
-                world.mode.init().unwrap();
+                start(&world).await;
                 world.runtime.settle().unwrap();
                 world.mode.show_error("tall").unwrap();
                 world.runtime.settle().unwrap();
@@ -982,15 +1094,15 @@ fn startup_constructor_forwards_each_display_setting() {
                 world.runtime.settle().unwrap();
                 assert_eq!(world.mode.ui.full_redraws() > redraws, shrink);
             }
-            let indents: Vec<_> = [0.0, 1.0, 2.0]
-                .into_iter()
-                .map(|padding| editor_indent(directory, padding))
-                .collect();
+            let mut indents = Vec::new();
+            for padding in [0.0, 1.0, 2.0] {
+                indents.push(editor_indent(directory, padding).await);
+            }
             assert_eq!(indents, [0, 1, 2]);
-            let visible: Vec<_> = [3.0, 5.0, 20.0]
-                .into_iter()
-                .map(|maximum| visible_candidates(directory, maximum))
-                .collect();
+            let mut visible = Vec::new();
+            for maximum in [3.0, 5.0, 20.0] {
+                visible.push(visible_candidates(directory, maximum).await);
+            }
             assert_eq!(visible, [3, 5, 20]);
             for enabled in [true, false] {
                 let world = Setup {
@@ -998,7 +1110,7 @@ fn startup_constructor_forwards_each_display_setting() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world).await;
                 let footer = world.mode.footer.render(120).join("\n");
                 assert_eq!(footer.contains("(auto)"), enabled);
             }
@@ -1010,7 +1122,7 @@ fn startup_constructor_forwards_each_display_setting() {
 fn startup_constructor_registers_themes_before_selection() {
     isolated(
         "startup_constructor_registers_themes_before_selection",
-        |directory| {
+        async |directory| {
             let world = Setup::default().build(directory);
             let published = world.themes.theme().get().unwrap();
             assert!(Rc::ptr_eq(&published, &world.themes.theme().get().unwrap()));
@@ -1035,47 +1147,50 @@ fn startup_constructor_registers_themes_before_selection() {
 
 #[test]
 fn startup_layout_focus_and_start_happen_once() {
-    isolated("startup_layout_focus_and_start_happen_once", |directory| {
-        let world = started(directory);
-        let mode = &world.mode;
-        let expected: Vec<Rc<dyn Component>> = vec![
-            mode.header_container.clone(),
-            mode.chat_container.clone(),
-            mode.pending_messages_container.clone(),
-            mode.status_container.clone(),
-            mode.widget_container_above.clone(),
-            mode.editor_container.clone(),
-            mode.widget_container_below.clone(),
-            mode.footer.clone(),
-        ];
-        let same = |children: &[Rc<dyn Component>]| {
-            children.len() == expected.len()
-                && children.iter().zip(&expected).all(|(child, expected)| {
-                    std::ptr::addr_eq(Rc::as_ptr(child), Rc::as_ptr(expected))
-                })
-        };
-        assert!(same(&mode.ui.children().borrow()));
-        assert_eq!(mode.widget_container_above.render(80), [""]);
-        assert!(mode.widget_container_below.render(80).is_empty());
-        world.terminal.send_input("x");
-        assert_eq!(mode.editor.get_text(), "x");
-        mode.init().unwrap();
-        assert!(same(&mode.ui.children().borrow()));
-        assert_eq!(world.terminal.events(), ["start"]);
-        assert_eq!(mode.header_container.children().borrow().len(), 3);
-    });
+    isolated(
+        "startup_layout_focus_and_start_happen_once",
+        async |directory| {
+            let world = started(directory).await;
+            let mode = &world.mode;
+            let expected: Vec<Rc<dyn Component>> = vec![
+                mode.header_container.clone(),
+                mode.chat_container.clone(),
+                mode.pending_messages_container.clone(),
+                mode.status_container.clone(),
+                mode.widget_container_above.clone(),
+                mode.editor_container.clone(),
+                mode.widget_container_below.clone(),
+                mode.footer.clone(),
+            ];
+            let same = |children: &[Rc<dyn Component>]| {
+                children.len() == expected.len()
+                    && children.iter().zip(&expected).all(|(child, expected)| {
+                        std::ptr::addr_eq(Rc::as_ptr(child), Rc::as_ptr(expected))
+                    })
+            };
+            assert!(same(&mode.ui.children().borrow()));
+            assert_eq!(mode.widget_container_above.render(80), [""]);
+            assert!(mode.widget_container_below.render(80).is_empty());
+            world.terminal.send_input("x");
+            assert_eq!(mode.editor.get_text(), "x");
+            mode.init().await.unwrap();
+            assert!(same(&mode.ui.children().borrow()));
+            assert_eq!(world.terminal.events(), ["start"]);
+            assert_eq!(mode.header_container.children().borrow().len(), 3);
+        },
+    );
 }
 
 #[test]
 fn startup_failed_terminal_start_does_not_mark_initialized() {
     isolated(
         "startup_failed_terminal_start_does_not_mark_initialized",
-        |directory| {
+        async |directory| {
             let world = Setup::default().build(directory);
             world
                 .terminal
                 .set_hide_error(Some(io::ErrorKind::BrokenPipe));
-            let error = world.mode.init().unwrap_err();
+            let error = world.mode.init().await.unwrap_err();
             assert_eq!(
                 error.downcast_ref::<io::Error>().unwrap().kind(),
                 io::ErrorKind::BrokenPipe
@@ -1089,8 +1204,8 @@ fn startup_failed_terminal_start_does_not_mark_initialized() {
 fn startup_theme_and_branch_notifications_request_fresh_frames() {
     isolated(
         "startup_theme_and_branch_notifications_request_fresh_frames",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let header = world.mode.header_container.render(80);
             let footer = world.mode.footer.render(80);
             world.themes.set_theme_instance(light()).unwrap();
@@ -1115,7 +1230,7 @@ fn startup_theme_and_branch_notifications_request_fresh_frames() {
 fn startup_callback_registration_does_not_retain_the_mode() {
     isolated(
         "startup_callback_registration_does_not_retain_the_mode",
-        |directory| {
+        async |directory| {
             let World {
                 mode,
                 terminal,
@@ -1123,7 +1238,7 @@ fn startup_callback_registration_does_not_retain_the_mode() {
                 themes,
                 host,
                 loader,
-            } = started(directory);
+            } = started(directory).await;
             let provider = mode.footer_data_provider.clone();
             let weak = Rc::downgrade(&mode);
             drop(mode);
@@ -1132,6 +1247,603 @@ fn startup_callback_registration_does_not_retain_the_mode() {
             provider.set_cwd(directory.join("gone").to_str().unwrap().to_owned());
             assert_eq!(runtime.pending(), 0);
             drop((terminal, host, loader));
+        },
+    );
+}
+
+use super::bash::ShellOperations;
+
+/// The failures the mode's work reported.
+pub(super) type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
+
+/// Runs the work the mode handed its terminal runtime beside `body`, collecting the
+/// failures that work reported.
+pub(super) async fn driving<T>(
+    world: &World,
+    body: impl Future<Output = T>,
+) -> (T, Vec<Box<dyn Error>>) {
+    let runtime = world.runtime.clone();
+    let finished = Rc::new(Cell::new(false));
+    let errors: Failures = Rc::default();
+    let driver = {
+        let finished = Rc::clone(&finished);
+        let errors = Rc::clone(&errors);
+        tokio::task::spawn_local(async move { drive(&runtime, &finished, &errors).await })
+    };
+    let value = body.await;
+    finished.set(true);
+    driver.await.unwrap();
+    let errors = Rc::try_unwrap(errors).unwrap().into_inner();
+    (value, errors)
+}
+
+/// Drives the mode's futures until the caller reports it is done.
+async fn drive(runtime: &ManualRuntime, finished: &Rc<Cell<bool>>, errors: &Failures) {
+    loop {
+        dispatch(runtime, errors);
+        if finished.get() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+/// Hands every future the mode admitted to the task set running beside the caller.
+fn dispatch(runtime: &ManualRuntime, errors: &Failures) {
+    for future in runtime.take_futures() {
+        let errors = Rc::clone(errors);
+        tokio::task::spawn_local(async move { await_work(future, &errors).await });
+    }
+}
+
+/// Awaits one future the mode admitted, recording its failure.
+async fn await_work(future: maestro_tui::tui::LocalFuture, errors: &Failures) {
+    if let Err(error) = future.await {
+        errors.borrow_mut().push(error);
+    }
+}
+
+/// Runs `body` inside a current-thread runtime and task set, where the mode's work and the
+/// session's own tasks make progress.
+pub(super) fn on_tasks<T>(body: impl Future<Output = T>) -> T {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, body)
+}
+
+/// Submits `text` through the editor's installed submission.
+pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
+    mode.editor.on_submit().unwrap()(text);
+}
+
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
+///
+/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
+/// caller runs it: such work, like a running shell command's output, can end only after the
+/// caller's later steps.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    let mut work = runtime.take_futures();
+    let command = work.pop().expect("the input handed over its work");
+    for earlier in work {
+        maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
+    }
+    command.await.err().into_iter().collect()
+}
+
+/// Waits until `path` exists, yielding so the work that creates it runs.
+pub(super) async fn until_exists(path: &Path) {
+    for _ in 0..10_000 {
+        if path.exists() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("{} appeared", path.display());
+}
+
+/// Waits until no shell row is producing output and the transcript holds `rows` children.
+pub(super) async fn until_complete(world: &World, rows: usize) {
+    for _ in 0..10_000 {
+        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!(
+        "the shell command completed: active={} rows={}",
+        active(world).is_some(),
+        world.mode.chat_container.children().borrow().len()
+    );
+}
+
+/// The shell row that is still producing output, when one is attached.
+pub(super) fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
+    world.mode.active_shell.borrow().clone()
+}
+
+/// Writes an executable shell script answering every command with `body`.
+pub(super) fn scripted(directory: &Path, name: &str, body: &str) -> String {
+    use std::os::unix::fs::PermissionsExt;
+    let path = directory.join(name);
+    std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    path.to_str().unwrap().to_owned()
+}
+
+/// A response the controlled provider left open.
+pub(super) struct Held {
+    /// The open response.
+    pub(super) stream: AssistantMessageEventStream,
+    /// The turn's cancellation.
+    pub(super) signal: Cancellation,
+}
+
+impl Held {
+    /// How many times the turn was stopped.
+    pub(super) fn aborts(&self) -> usize {
+        usize::from(self.signal.is_aborted())
+    }
+}
+
+/// A finished answer of the controlled provider.
+pub(super) fn answer() -> Arc<RwLock<AssistantMessage>> {
+    Arc::new(RwLock::new(AssistantMessage {
+        content: Vec::new(),
+        api: "unknown".into(),
+        provider: "unknown".into(),
+        model: "unknown".into(),
+        response_model: None,
+        response_id: None,
+        diagnostics: None,
+        usage: Usage::default(),
+        stop_reason: StopReason::Stop,
+        error_message: None,
+        timestamp: 0.0,
+    }))
+}
+
+/// Points the session's provider at an open response: the next prompt receives it and the
+/// receiver yields it with its cancellation; a later prompt answers at once.
+fn held_response(world: &World) -> tokio::sync::oneshot::Receiver<Held> {
+    let session = world.mode.runtime_host.session();
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("unknown", "key");
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let sender = RefCell::new(Some(sender));
+    *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, options, _| {
+        let stream = AssistantMessageEventStream::new();
+        match sender.borrow_mut().take() {
+            Some(sender) => drop(sender.send(Held {
+                stream: stream.clone(),
+                signal: options.common.signal.unwrap(),
+            })),
+            None => stream.end(Some(answer())),
+        }
+        Box::pin(std::future::ready(Ok(stream)))
+    }));
+    receiver
+}
+
+/// Runs `body` on the started `world` while its session streams a response the controlled
+/// provider holds open, giving it that response; then ends the response and waits for the
+/// prompt to settle.
+pub(super) async fn with_held_response<T>(world: &World, body: impl AsyncFnOnce(&Held) -> T) -> T {
+    let session = world.mode.runtime_host.session();
+    let receiver = held_response(world);
+    let prompted = Rc::clone(&session);
+    let run =
+        tokio::task::spawn_local(
+            async move { prompted.prompt("run", PromptOptions::default()).await },
+        );
+    let held = receiver.await.unwrap();
+    assert!(session.is_streaming());
+    let value = body(&held).await;
+    held.stream.end(Some(answer()));
+    run.await.unwrap().unwrap();
+    value
+}
+
+/// Awaits `body` on the started `world` while its session streams a response
+/// the controlled provider holds open; the response ends afterwards.
+pub(super) async fn streaming<T>(world: &World, body: impl AsyncFnOnce(&World, &Held) -> T) -> T {
+    with_held_response(world, async |held| {
+        world.mode.chat_container.clear();
+        body(world, held).await
+    })
+    .await
+}
+
+/// Runs `body` on the started `world` inside the caller's task set while its session
+/// streams a response the controlled provider holds open, handing `body` the response's
+/// cancellation; the response ends afterwards.
+pub(super) async fn holding<T, F>(world: &World, body: impl FnOnce(Cancellation) -> F) -> T
+where
+    F: Future<Output = T>,
+{
+    with_held_response(world, async |held| body(held.signal.clone()).await).await
+}
+
+/// The editor's top border row as the recorder's painted probe glyph describes it.
+pub(super) fn border_row(world: &World, recorded: &str) -> String {
+    let theme = world.themes.theme().get().unwrap();
+    roles(&theme, &recorded.replace('━', "─")).repeat(80)
+}
+
+/// The editor's rendered top border row.
+pub(super) fn rendered_border(world: &World) -> String {
+    world.mode.editor.render(80).swap_remove(0)
+}
+
+/// Selects `level` on the session as its agent state, whatever the model supports.
+pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
+    world
+        .host
+        .session()
+        .agent()
+        .state()
+        .write()
+        .unwrap()
+        .thinking_level = level;
+}
+
+/// A started mode whose shell prints an output-only marker for the command it runs.
+pub(super) async fn echoing_shell(directory: &Path) -> World {
+    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    bash::shelling(directory, &script).await
+}
+
+/// Submits `count` shell commands while the response streams, awaiting each command it
+/// admits so its row settles.
+pub(super) async fn start_shells(world: &World, count: usize) {
+    for index in 0..count {
+        submit(&world.mode, &format!("!mark{index}"));
+        for command in world.runtime.take_futures() {
+            command.await.expect("the shell command completes");
+        }
+        assert_eq!(
+            world.mode.pending_shells.borrow().len(),
+            index + 1,
+            "shell row {index} settles"
+        );
+    }
+}
+
+/// The positions of `rows` among the transcript's children, in the order they occur.
+pub(super) fn transcript_positions(
+    world: &World,
+    rows: &[Rc<BashExecutionComponent>],
+) -> Vec<usize> {
+    let children = world.mode.chat_container.children();
+    let addresses: Vec<usize> = children.borrow().iter().map(component_address).collect();
+    rows.iter()
+        .filter_map(|row| {
+            let address = component_address(row);
+            addresses.iter().position(|shown| *shown == address)
+        })
+        .collect()
+}
+
+mod dispatch;
+
+/// Footer and theme-watch effects where only the theme watches are observed.
+#[derive(Default)]
+struct Watched {
+    /// Whether each theme watch is still open, in creation order.
+    open: RefCell<Vec<Rc<Cell<bool>>>>,
+    /// The listener of each theme watch, in creation order.
+    listeners: RefCell<Vec<WatchListener>>,
+    /// The debounced reload the latest watch timer holds.
+    reload: WatchReload,
+}
+
+impl Watched {
+    /// Deliver `changed` to the latest watch's listener, as the watched directory would.
+    fn announce(&self, changed: Option<&str>) {
+        let listener = self
+            .listeners
+            .borrow()
+            .last()
+            .cloned()
+            .expect("a theme watch is open");
+        listener(changed.map(str::to_owned));
+    }
+
+    /// Run the reload the latest watch timer retained, as the debounce would.
+    fn reload(&self) {
+        let reload = self.reload.borrow_mut().take();
+        if let Some(reload) = reload {
+            reload();
+        }
+    }
+}
+
+/// One open theme watch.
+struct Handle {
+    /// Set once the watch closes.
+    closed: Rc<Cell<bool>>,
+}
+
+/// The listener of one open theme watch.
+type WatchListener = Rc<dyn Fn(Option<String>)>;
+
+impl ThemeWatcher for Handle {
+    fn close(&mut self) -> io::Result<()> {
+        self.closed.set(true);
+        Ok(())
+    }
+}
+
+impl Drop for Handle {
+    fn drop(&mut self) {
+        self.closed.set(true);
+    }
+}
+
+/// The debounced reload a theme watch timer retains.
+type WatchReload = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
+
+/// A scheduled theme reload, kept until its watch is cancelled or the test runs it.
+struct Pending {
+    /// The reload this timer owns.
+    reload: WatchReload,
+}
+
+impl ThemeReloadTimer for Pending {
+    fn cancel(&mut self) {
+        self.reload.borrow_mut().take();
+    }
+}
+
+impl ThemeWatchOperations for Watched {
+    fn watch(
+        &self,
+        _path: &str,
+        listener: WatchListener,
+        _on_error: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn ThemeWatcher>> {
+        let closed = Rc::new(Cell::new(false));
+        self.open.borrow_mut().push(Rc::clone(&closed));
+        self.listeners.borrow_mut().push(listener);
+        Ok(Box::new(Handle { closed }))
+    }
+
+    fn schedule(&self, _delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn ThemeReloadTimer> {
+        *self.reload.borrow_mut() = Some(callback);
+        Box::new(Pending {
+            reload: Rc::clone(&self.reload),
+        })
+    }
+}
+
+impl FooterOperations for Watched {
+    fn symbolic_ref_async(
+        &self,
+        _repo_dir: &str,
+        callback: Box<dyn FnOnce(io::Result<Option<String>>)>,
+    ) {
+        callback(Ok(None));
+    }
+
+    fn watch_file(
+        &self,
+        _path: &str,
+        _interval: Duration,
+        _listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
+    ) -> Box<dyn ThemeWatcher> {
+        Box::new(Handle {
+            closed: Rc::new(Cell::new(false)),
+        })
+    }
+
+    fn symbolic_ref_sync(&self, _repo_dir: &str) -> io::Result<Option<String>> {
+        Ok(None)
+    }
+}
+
+/// A mode whose selected custom theme is watched through `watched`, which must first see
+/// one open watch.
+fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
+    let custom = directory.join("themes");
+    std::fs::create_dir_all(&custom).unwrap();
+    // The watcher only needs the entry's file; the registered theme answers the load.
+    std::fs::write(custom.join("watched.json"), "{}").unwrap();
+    Setup {
+        configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
+        themes: vec![published::named(1, Some("watched"))],
+        directories: Some(maestro_theme::ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: custom.to_str().unwrap().to_owned(),
+        }),
+        watcher: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
+        ..Setup::default()
+    }
+    .build(directory)
+}
+
+#[test]
+fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
+    isolated(
+        "fatal_runtime_error_writes_its_notice_before_stopping_the_terminal",
+        async |directory| {
+            for pending in [0, 262_144, 262_145] {
+                let watched = Rc::new(Watched::default());
+                let world = watching(directory, &watched);
+                start(&world).await;
+                world.runtime.settle().unwrap();
+                assert_eq!(watched.open.borrow().len(), 1);
+                assert!(!watched.open.borrow()[0].get());
+                world.terminal.set_pending_output_bytes(pending);
+                world.terminal.clear_writes();
+                world.mode.report_fatal_runtime_error(
+                    "Failed to create session",
+                    &io::Error::other("boom"),
+                );
+                let theme = world.themes.theme().get().unwrap();
+                let notice = theme
+                    .fg(&ThemeColor::Error, "Error: Failed to create session: boom")
+                    .unwrap();
+                let rows = world.mode.chat_container.render(100);
+                assert!(
+                    rows.iter().any(|row| row.contains(&notice)),
+                    "the failure notice: {rows:?}"
+                );
+                let writes = world.terminal.writes();
+                let notice_index = writes
+                    .iter()
+                    .position(|write| {
+                        strip_ansi(write)
+                            .unwrap()
+                            .contains("Error: Failed to create session: boom")
+                    })
+                    .unwrap_or_else(|| {
+                        panic!("the failure notice reached the terminal at {pending}: {writes:?}")
+                    });
+                let restore_index = writes
+                    .iter()
+                    .position(|write| write.contains("\x1b[?25h"))
+                    .expect("the cursor is shown");
+                assert!(
+                    notice_index < restore_index,
+                    "the notice precedes the restore at {pending}: {writes:?}"
+                );
+                assert!(watched.open.borrow()[0].get(), "the theme watch closes");
+                assert_eq!(world.terminal.events(), ["start", "stop"]);
+            }
+        },
+    );
+}
+
+#[test]
+fn fatal_runtime_error_ends_the_process_with_failure_status() {
+    let test = "fatal_runtime_error_ends_the_process_with_failure_status";
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        if selection.runs_case("fatal") {
+            let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
+            let world = Setup::default().build(Path::new(&directory));
+            println!("\nPROBE fatal body started");
+            world
+                .mode
+                .handle_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
+        }
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let output = TestProcess::current(test)
+        .unwrap()
+        .case("fatal")
+        .current_dir(scratch.0.path())
+        .env(&*ENV_AGENT_DIR, scratch.0.path())
+        .nocapture()
+        .output()
+        .unwrap();
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("PROBE fatal body started"),
+        "the child reached the fatal call: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert_eq!(output.status.code(), Some(1));
+}
+
+/// Seeds retained rows, queued text and an active stream from the replaced session.
+fn seed_replaced_session(world: &World) {
+    let stale =
+        crate::ToolExecutionComponent::new(transcript::tool_params(world, "stale")).unwrap();
+    world
+        .mode
+        .pending_tools
+        .borrow_mut()
+        .insert("stale".to_owned(), Rc::new(stale));
+    world
+        .mode
+        .chat_container
+        .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+    world
+        .mode
+        .pending_messages_container
+        .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+    world.mode.compaction_queued_messages.borrow_mut().push(
+        super::queues::CompactionQueuedMessage {
+            text: "STALE QUEUE".to_owned(),
+            mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+        },
+    );
+    events::dispatch(
+        world,
+        maestro_app::AgentEvent::MessageStart {
+            message: transcript::message(transcript::assistant(
+                &json!([{"type": "text", "text": "STALE STREAM"}]),
+                "stop",
+                None,
+            )),
+        },
+    );
+    assert!(world.mode.streaming.borrow().is_some());
+}
+
+#[test]
+fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
+    isolated(
+        "current_session_state_rendering_clears_stale_rows_and_replays_the_session",
+        async |directory| {
+            let world = started(directory).await;
+            let session = world.host.session();
+            let mut manager = session.session_manager().borrow_mut();
+            manager
+                .append_message(transcript::user_record("REPLAYED"))
+                .unwrap();
+            manager
+                .append_message(transcript::assistant(
+                    &json!([transcript::call("call", "unknown_tool")]),
+                    "toolUse",
+                    None,
+                ))
+                .unwrap();
+            drop(manager);
+            seed_replaced_session(&world);
+            let shell = Rc::new(BashExecutionComponent::new(
+                "old".to_owned(),
+                maestro_tui::TUI::clone(&world.mode.ui),
+                world.themes.theme(),
+                false,
+            ));
+            world
+                .mode
+                .pending_shells
+                .borrow_mut()
+                .push(Rc::clone(&shell));
+            *world.mode.active_shell.borrow_mut() = Some(shell);
+            world.mode.render_current_session_state().unwrap();
+            assert_eq!(
+                (
+                    world.mode.compaction_queued_messages.borrow().is_empty(),
+                    world.mode.streaming.borrow().is_none(),
+                    world.mode.pending_shells.borrow().is_empty(),
+                    active(&world).is_none(),
+                ),
+                (true, true, true, true),
+                "the replaced session's queued input, stream and shell rows are discarded"
+            );
+            let rows = world.mode.chat_container.render(100);
+            assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");
+            assert!(rows.iter().any(|row| row.contains("REPLAYED")), "{rows:?}");
+            assert!(
+                world
+                    .mode
+                    .pending_messages_container
+                    .children()
+                    .borrow()
+                    .is_empty()
+            );
+            let pending: Vec<_> = world.mode.pending_tools.borrow().keys().cloned().collect();
+            assert_eq!(pending, ["call"]);
+            maestro_tui::tui::InputHandler::handle_input(world.mode.editor.as_ref(), "\x1b[A");
+            assert_eq!(world.mode.editor.get_text(), "REPLAYED");
         },
     );
 }

@@ -41,7 +41,8 @@ mod tests {
             let (schema, kinds) = operands(width);
             let document =
                 crate::arguments::validation::authored::schema_view::Document::new(&schema, &kinds);
-            let converter = Context::new(&document);
+            let code = crate::arguments::validation::check::Code::default();
+            let converter = Context::new(&document, &code);
             let left = instantiate(&converter, converter.document.view(&schema[0]));
             MEMBER_LOOKUPS.with(|count| count.set(0));
             assert!(extends_object(&left, &left));

@@ -684,3 +684,67 @@ pub fn native_dialog(
     )
     .unwrap()
 }
+
+/// Construct the real startup component in its supplied containing writer.
+pub fn startup_host() -> (
+    TUI,
+    RecordingTerminal,
+    maestro_app::presentation_data::input_selectors::ExtensionSelectorFactory,
+) {
+    use super::{manual_runtime, published, recording_terminal};
+    use maestro_app::presentation_data::input_selectors::{
+        ExtensionSelectorFactory, PresentedSelector,
+    };
+    use maestro_theme::LiveTheme;
+    let keys = KeybindingsManager::new(
+        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+        vec![],
+    );
+    keys.set_user_bindings(vec![
+        (
+            "tui.select.down".into(),
+            Some(maestro_tui::KeybindingKeys::Single("ctrl+n".into())),
+        ),
+        (
+            "tui.select.confirm".into(),
+            Some(maestro_tui::KeybindingKeys::Single("ctrl+y".into())),
+        ),
+        (
+            "tui.select.cancel".into(),
+            Some(maestro_tui::KeybindingKeys::Single("ctrl+x".into())),
+        ),
+    ]);
+    set_keybindings(keys);
+    let runtime = Rc::new(manual_runtime::ManualRuntime::new());
+    let terminal = recording_terminal::RecordingTerminal::new(80, 24);
+    let ui = TUI::new(
+        terminal.handle(),
+        runtime.handle(),
+        TerminalImage::default(),
+        Some(false),
+    );
+    let live = LiveTheme::from_theme(published::theme(0));
+    let actual_runtime = runtime;
+    let factory: ExtensionSelectorFactory = Rc::new(move |request| {
+        let component = Rc::new(
+            ExtensionSelectorComponent::new(
+                request.title,
+                request.options,
+                request.on_select,
+                request.on_cancel,
+                ExtensionSelectorOptions {
+                    tui: Some(request.tui),
+                    timeout: None,
+                    runtime: actual_runtime.clone(),
+                    theme: live.clone(),
+                },
+            )
+            .unwrap(),
+        );
+        Ok(PresentedSelector {
+            component: component.clone(),
+            focus: component,
+        })
+    });
+    (ui, terminal, factory)
+}

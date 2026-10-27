@@ -13,7 +13,7 @@ impl NativePackageOperations {
         overrides: &[(&str, &str)],
         cwd: Option<&'a str>,
     ) -> maestro_process::LaunchContext<'a, Vec<(String, String)>> {
-        let inherited = std::env::vars_os()
+        let inherited = maestro_process::environment()
             .map(|(key, value)| {
                 (
                     key.to_string_lossy().into_owned(),

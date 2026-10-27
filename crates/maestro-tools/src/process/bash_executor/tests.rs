@@ -56,7 +56,7 @@ fn direct_spill_io_errors_are_returned() {
             })),
             ..Output::default()
         };
-        let written = output.store("output".into(), &mut None);
+        let written = output.store::<dyn FnMut(&str)>("output".into(), &mut None);
         let closed = close_artifact(output.writer.take());
         assert!(dropped.load(Ordering::SeqCst));
         if fail_write {
