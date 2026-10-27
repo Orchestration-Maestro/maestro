@@ -178,6 +178,15 @@ fn messages_normalize_tool_ids() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn messages_replay_argument_root_defaults() -> TestResult {
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_replay_argument_root_defaults",
+    ))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn messages_group_tool_results() -> TestResult {
     crate::runtime::run(messages::assert_rows(
         FIXTURE,

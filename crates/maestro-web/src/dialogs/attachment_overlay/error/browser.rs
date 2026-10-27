@@ -11,6 +11,35 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
     text: &Rc<RefCell<Text>>,
     padded: bool,
 ) -> Result<ReadingRoot, AttachmentHostError> {
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        commit: None,
+        owner: None,
+        element: root(document, text, padded)?,
+        slots: vec![],
+    })
+}
+/// Build a literal error root without a retained-placement wrapper.
+pub(in crate::dialogs::attachment_overlay) fn root(
+    document: &web_sys::Document,
+    text: &Rc<RefCell<Text>>,
+    padded: bool,
+) -> Result<web_sys::Element, AttachmentHostError> {
+    let (root, nodes) = nodes(document, padded)?;
+    text.borrow_mut().nodes = Some(nodes);
+    {
+        let text = text.borrow();
+        sync_text(text.nodes.as_ref(), &text.values);
+    }
+    Ok(root)
+}
+
+/// Build literal error nodes independently of retained placement.
+pub(crate) fn nodes(
+    document: &web_sys::Document,
+    padded: bool,
+) -> Result<(web_sys::Element, [web_sys::Element; 2]), AttachmentHostError> {
     let create = |tag| document.create_element(tag).map_err(|e| host_error(&e));
     let root = create("section")?;
     root.set_attribute(
@@ -31,17 +60,5 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
         panel.append_child(node).map_err(|e| host_error(&e))?;
     }
     root.append_child(&panel).map_err(|e| host_error(&e))?;
-    text.borrow_mut().nodes = Some(nodes);
-    {
-        let text = text.borrow();
-        sync_text(text.nodes.as_ref(), &text.values);
-    }
-    Ok(ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        commit: None,
-        owner: None,
-        element: root,
-        slots: vec![],
-    })
+    Ok((root, nodes))
 }

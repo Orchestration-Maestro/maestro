@@ -1,12 +1,6 @@
 //! Selectable line differences using the application's borrowed change runs.
-use crate::{
-    browser::attachment_content::{
-        self, AttachmentHost, ReadingContent,
-        reading::controlled::{ControlledReading, ReadingHeight},
-    },
-    tools::types::{ToolContent, ToolContentOutput, ToolRenderView},
-};
-use maestro_app::{Change, ToolRendererState, diff_lines};
+use crate::dom::PreparedContent;
+use maestro_app::{Change, diff_lines};
 use std::rc::Rc;
 
 /// Literal operands for a line difference view.
@@ -23,7 +17,6 @@ pub struct DiffProps {
 /// Browser count projection and retained native nodes.
 #[cfg(target_arch = "wasm32")]
 mod browser;
-
 /// Selected line content used by retained equality and browser projection.
 #[derive(PartialEq, Eq)]
 struct Row {
@@ -65,82 +58,15 @@ fn normalize(props: DiffProps) -> Normalized {
 
 /// Prepare a bordered native line difference with a locally scrolling body.
 #[must_use]
-pub fn diff(props: DiffProps) -> Box<dyn ToolContent> {
+pub fn diff(props: DiffProps) -> PreparedContent {
     Box::new(DiffContent(Rc::new(normalize(props))))
 }
-/// Immutable recipe; native roots belong to each rendered row.
+/// Immutable recipe; native roots belong to each mounted root.
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    allow(
+        dead_code,
+        reason = "native targets prepare records only the browser mounts"
+    )
+)]
 struct DiffContent(Rc<Normalized>);
-/// Native publication lifetime for a single diff.
-struct Retained {
-    /// Platform which owns the mounted surface.
-    host: Rc<dyn AttachmentHost>,
-    /// Stable surface identity.
-    id: egui::Id,
-    /// Last successfully published operands and factory.
-    shown: Option<(Rc<Normalized>, Rc<ReadingContent>)>,
-}
-impl Drop for Retained {
-    fn drop(&mut self) {
-        self.host.remove(self.id);
-    }
-}
-impl ToolContent for DiffContent {
-    fn render(
-        &self,
-        ui: &mut egui::Ui,
-        view: ToolRenderView<'_>,
-        state: &ToolRendererState,
-    ) -> ToolContentOutput {
-        let slot = state.state::<Option<Retained>>();
-        let mut retained = slot.borrow_mut().take().unwrap_or_else(|| Retained {
-            host: Rc::clone(view.host),
-            id: attachment_content::identity(),
-            shown: None,
-        });
-        let changed = retained
-            .shown
-            .as_ref()
-            .is_none_or(|(lines, _)| **lines != *self.0);
-        let content = retained
-            .shown
-            .as_ref()
-            .filter(|_| !changed)
-            .map_or_else(|| content(&self.0), |(_, content)| Rc::clone(content));
-        let response = ControlledReading {
-            intrinsic_width: false,
-            height: ReadingHeight::Flow,
-            host: retained.host.as_ref(),
-            id: retained.id,
-            content: &content,
-            sizes: &[],
-            modal: view.modal,
-            presentation: view.presentation,
-        }
-        .draw(ui)
-        .map(|layout| layout.response)
-        .map_err(Into::into);
-        if response.is_ok() {
-            retained.shown = Some((Rc::clone(&self.0), content));
-        }
-        drop(slot.replace(Some(retained)));
-        ToolContentOutput {
-            response,
-            overlays: Vec::new(),
-        }
-    }
-}
-/// Build an owned literal native factory without retaining a mounted owner.
-fn content(lines: &Rc<Normalized>) -> Rc<ReadingContent> {
-    #[cfg(target_arch = "wasm32")]
-    {
-        let lines = Rc::new(browser::prepare(Rc::clone(lines)));
-        Rc::new(ReadingContent {
-            mount: Rc::new(move |document| browser::mount(document, &lines)),
-        })
-    }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let _ = lines;
-        Rc::new(ReadingContent {})
-    }
-}

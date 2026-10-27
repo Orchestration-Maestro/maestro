@@ -6,11 +6,11 @@ use std::{
 };
 
 /// A task's remaining work.
-pub(crate) type LocalTask = Pin<Box<dyn Future<Output = ()>>>;
+pub type LocalTask = Pin<Box<dyn Future<Output = ()>>>;
 
 /// Polls `task` once now, so its synchronous part runs before this returns, and hands it
 /// to `spawn` when it has more to do; the facility polls it again with its own waker.
-pub(crate) fn start_now(mut task: LocalTask, spawn: impl FnOnce(LocalTask)) {
+pub fn start_now(mut task: LocalTask, spawn: impl FnOnce(LocalTask)) {
     if task
         .as_mut()
         .poll(&mut Context::from_waker(Waker::noop()))

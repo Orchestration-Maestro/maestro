@@ -98,9 +98,9 @@ Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtim
 
 Event payloads and results cross the existing generic native-async export as plain JSON beside their typed capability envelope. Use the shared records' existing serde_json representation, not duplicate guest models or a second serializer format. Finite floating-point numbers roundtrip exactly, including signed zero. Ordinary host serialization turns nonfinite numbers into null; this does not promise that null decodes into a required number. An extension writing Infinity or NaN receives a clear error before its edited event or result is encoded. This explicit error is the accepted difference from retaining the nonfinite value until serialization. No bit-encoded numbers, numeric transport wrappers or compatibility decoder are permitted. Shared records retain their existing optional-field semantics without added Presence wrappers; unshared event fields still preserve their meaningful missing/null distinctions. Preserve separate event-edit and callback-result outcomes when either fails.
 
-Use Wasmtime/wasmtime-wasi 49.0.4 and the Rust SDK bindings for one WebAssembly component system. The application extension world uses WASI 0.3 native async, with WASI 0.2 interfaces needed by Rust standard-library basics. Support an authoring language when its toolchain emits the required component contract. Rust is the initial qualified authoring path; JavaScript/TypeScript authoring is unavailable until its tooling supports that contract. Do not add a polling workaround, a separate legacy source loader, a second host or an out-of-process extension protocol. Runtime JIT is allowed; install/use never invokes Rust/Cargo compilation.
+Use Wasmtime/wasmtime-wasi at unmodified upstream commit `ffff2e2db24a291f02429f123aba1631fa8eea67` and the Rust SDK bindings for one WebAssembly component system. Replace this temporary Git pin with the first published release containing its queued-event delivery fix. The application extension world uses WASI 0.3 native async, with WASI 0.2 interfaces needed by Rust standard-library basics. Support an authoring language when its toolchain emits the required component contract. Rust is the initial qualified authoring path; JavaScript/TypeScript authoring is unavailable until its tooling supports that contract. Do not add a polling workaround, a separate legacy source loader, a second host or an out-of-process extension protocol. Runtime JIT is allowed; install/use never invokes Rust/Cargo compilation.
 
-The component SDK preserves every host capability: ordered live events/hooks, transforming and cancelling operations, tool schemas/validation/progress/results, commands and command-only context methods, flags, shortcuts, providers/OAuth/streams, source discovery, session queries/entries, messaging, exec/network/files, live getters, themes, renderers, custom editor/components, focusable overlays, status/footer/header/widgets and reload. UI render/input/invalidate calls remain synchronous where their callers require it; asynchronous work uses native async and owned resources, not JSON-only replies. UI-entering interactive execution and its synchronous callbacks share the caller-owned local executor. Independent native I/O and the default embedding SDK retain thread-safe execution; this adds no scheduler or runtime setting. Use shape A capability interfaces and typed resources; register handlers one by one so the host retains per-handler semantics. Messages, entries, provider payloads and tool arguments use session JSON losslessly. The domain owns registration records, bound actions and owned context handles. ExtensionRuntime is the shared action/provider record; application callbacks supply host operations. Only the Wasmtime adapter owns its engine/linker/bindings, one actor per generation on a multi-thread Tokio runtime, stream pipes and trap diagnostics. The guest owns one canonical WIT source checked against host code generation. Network operations use the WIT http interface backed by host reqwest, not a second WASI HTTP library. The shared interface hides runtime-library types.
+The component SDK preserves every host capability: ordered live events/hooks, transforming and cancelling operations, tool schemas/validation/progress/results, commands and command-only context methods, flags, shortcuts, providers/OAuth/streams, source discovery, session queries/entries, messaging, exec/network/files, live getters, themes, renderers, custom editor/components, focusable overlays, status/footer/header/widgets and reload. UI render/input/invalidate calls remain synchronous where their callers require it; asynchronous work uses native async and owned resources, not JSON-only replies. UI-entering interactive execution and its synchronous callbacks share the caller-owned local executor. Independent native I/O and the default embedding SDK retain thread-safe execution; this adds no scheduler or runtime setting. Use shape A capability interfaces and typed resources; register handlers one by one so the host retains per-handler semantics. Messages, entries, provider payloads and tool arguments use session JSON losslessly. The domain owns the existing ExtensionRuntime action record, factory facade and local contexts. Only the Wasmtime adapter owns its engine/linker/bindings, one component instance per extension, stream pipes and trap diagnostics. Typed requests connect its thread-safe Store to the caller's local domain/UI owners; synchronous callbacks pump requests on the original local receiver. Callback emission retains the bus's emit-time listener snapshot in registration order. The guest invokes its own listeners locally and waits for each consecutive host-listener segment through a synchronous import before continuing; nested emissions repeat that walk. Each own listener keeps an independent native callback frame, error destination and tail boundary. Foreign instances retain the callback-return delivery rule. Internal callback exports are async-typed so synchronous host requests may wait on the dedicated Store thread; guest author callbacks and callback emission remain synchronous. This adds no second receiver or Store lifecycle. The guest owns one canonical WIT source checked against host code generation. Optional command and compaction options retain absence separately from a present empty record across that interface; model reads return owned values. Network operations use the WIT http interface backed by host reqwest, not a second WASI HTTP library. The shared interface hides runtime-library types.
 
 Extensions receive the user's full effective permissions through host operations. Add no capability grants, restriction policy, fuel, memory limits or deadlines. Preserve registration-specific collision behavior: same-extension replacement, cross-extension rules and individually diagnosed provider failures; there is no whole-owner atomic validation policy. Hooks iterate current collections in load/registration order. Presence of UI does not imply every mode implements the same methods, and every disposal/reload does not automatically settle dialogs.
 
@@ -159,6 +159,16 @@ The model library owns replaceable, library-type-free WebSocket effects beside i
 Provide the browser's named stores, metadata/indexes, settings/provider keys/custom providers, session listing/deletion, quota/persistence request behavior and artifact reconstruction through IndexedDB. Preserve all supported local-server discovery, authentication/proxy URL handling, key dialogs/tests and provider settings. Browser server discovery is not the excluded newer core catalog-refresh feature.
 
 Accept the established URL/File/Blob/buffer inputs and text/image/PDF/DOCX/PPTX/XLSX/XLS formats. Preserve original bytes, MIME/name/size, extraction wrappers/order/whitespace, previews, cancellation and errors. PDF attachments use owned text-show traversal with registry hayro-interpret 0.8.0 font decoding and hayro 0.8.0 page rendering for the first-page preview; PDF artifacts render all pages at the defined scale with cleanup. Keep application wrappers, fit-160px preview and 1.5 artifact/overlay scales, errors and cleanup exact. PDF extraction and rasterization retain the approved native engine’s text segmentation, Type3 text, bidirectional ordering and font-rendering differences; application wrapping, page order, scales, failure categories and owned cleanup remain exact. Do not use pdf-extract. DOCX preview preserves pagination, fonts, headers, footers and notes. Spreadsheet preview preserves sheets, formatted cells, styles and tab switching. HTML/SVG/image/Markdown/text/code artifacts preserve preview/source/download and safe rendering behavior. Browser Markdown also preserves inline and display math for dollar and backslash delimiters, HTML math layout/fonts, parse-error spans and fallback text. Use katex-rs 0.3.0 beside the Markdown consumer with output="html", throwOnError=false and delimiter-specific displayMode. Ship matching KaTeX 0.18.5 CSS/fonts as hashed data through the DOM. Reuse the reference math inputs for named checks of complete expressions, inline errors and browser layout. Formulas match the reference's glyphs, layout and tooltip content. Internal markup, class names, element structure and byte or pixel identity may differ only where not user-visible. A visible difference is a defect to fix in the owning Rust implementation, not an accepted result. Fix defects in the application wrapper before landing; do not add MathML, auto-render extensions or math behavior to terminal/export paths that never invoke it. Libraries must qualify these contracts; extraction-only substitutes do not satisfy document preview.
+
+The application owns browser attachment values and their live shared handles.
+User messages, runtime attachment lists, tiles, overlays, document previews and
+downloads retain the same `Arc<RwLock<Attachment>>` members. Removing a parent
+collection does not detach or freeze a retained member. Model projection and
+runtime publication snapshot values at their existing boundaries; release all
+collection and member guards before invoking caller-supplied value adapters.
+Serialization keeps plain attachment objects, optional fields, order and repeated
+members, without persisting pointer identity or introducing a second record schema.
+Assistant rows retain the application's existing shared assistant-message handle.
 
 Shared XLSX formula displacement belongs solely to the application's existing
 `browser::ssf::read::formulas` module. Classify maximal runs between operator
@@ -324,7 +334,7 @@ from the optional foundation utility described below.
 |---|---|---|---|
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
-| `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
+| `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
@@ -352,12 +362,12 @@ from the optional foundation utility described below.
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
-| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners` | 1 |
-| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
+| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners`, `maestro-json` | 1 |
+| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-request`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listing` | 1 |
-| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process` | 1 |
+| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources` | 2 |
@@ -371,7 +381,7 @@ from the optional foundation utility described below.
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
-| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
+| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
 `maestro-cli` is a command-line frontend, not an interactive view. Its `config_selector`
 module is only the wrapper that runs a chat-owned configuration view through a
@@ -380,6 +390,12 @@ check accepts that one module declaration at `src/input/mod.rs` and rejects widg
 declarations or the same module anywhere else in the crate.
 
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
+
+`maestro-tools::BashExecution::Operations` selects the retained shell operation
+bounds. Local operations may retain caller-local state; threaded operations retain
+`Send + Sync`. Holders use `E::Shared<E::Operations>`: `Rc` for local operations
+and `Arc` for threaded operations. Both families borrow their original output
+sink only during execution and share the existing native driver.
 
 `maestro-models` serves FTP proxy script sources with its own native client inside the
 existing source loader; no crate gains an FTP dependency and
@@ -391,8 +407,9 @@ command so a credential never reaches a diagnostic, and the loader keeps the
 modification/cache decision. FTPS, uploads, active FTP and public client options are not
 part of that caller.
 
-`maestro-cancellation` owns cooperative cancellation below layer 0, with no
-internal dependencies. Only models and the terminal toolkit may depend on it.
+`maestro-cancellation` owns cooperative cancellation below layer 0. Its only
+internal dependency is `maestro-listeners`, which keeps the synchronous abort
+observers of each signal. Only models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
@@ -419,7 +436,9 @@ summaries enable it. User-authored Markdown leaves it disabled.
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 Tool renderer field selection reuses `maestro-json` for JSON truth and selected-value
 display. Callers keep field lookup and defaults; the leaf borrows truthy strings and
-writes other truthy values with its compact JSON writer.
+writes other truthy values with its compact JSON writer. `maestro-agent` reuses that
+leaf's truth classification for the falsy reconstructed tool-call argument roots its
+proxy stream falls back from; the edge carries no other coupling.
 
 `maestro-request` defines shared message and model-request records: model
 descriptors, messages, content, usage, stream events and diagnostics, plus
@@ -432,10 +451,33 @@ existing `Presence<T>` optional-field wrapper, and the custom-message renderer
 option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and the guest. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared
-optional-field helper; `Presence<T>` stays single-source here. Existing models and resources public paths re-export their moved records. Provider
+optional-field helper; `Presence<T>` stays single-source here. Its `oauth` module owns
+`OAuthCredentials`, `OAuthPrompt`, `OAuthAuthInfo`, `OAuthSelectOption` and
+`OAuthSelectPrompt`, re-exported by models and the guest. Its `auth_storage`
+module owns `ApiKeyCredential`,
+`AuthCredential`, `AuthStorageData`, `AuthSource` and `AuthStatus` with their
+serialization; models and credentials re-export them, and parsing, stored-record
+construction, locking, key selection and persistence stay with credentials. Its
+`provider_config` module owns `ProviderConfig<C>` and `ProviderModelConfig`; the
+catalog specializes `C` with its callable provider operations, the guest leaves it
+empty, and validation, replay and registration stay with the catalog.
+Existing models, resources and credentials public paths re-export their moved records. Provider
 invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general
 shared-types container.
+
+Shared invocation options also live in `maestro-request::types`: `ThinkingBudgets`,
+`CacheRetention`, `Transport`, `ProviderResponse`, `StreamOptions`,
+`ProviderStreamOptions`, `SimpleStreamOptions` and `StreamOptionsInput<C, O, T>`.
+The input enum preserves the original raw or simple variant, parametrizing only
+common options, opaque objects and tool choice; native and guest aliases retain
+their own capability types. It borrows the common options without converting
+between the variants. `StreamOptionSlots` selects the signal, payload hook,
+response hook and fetch representations without operations.
+Native aliases specialize the fetch slot so unannotated SDK constructors still
+coerce transport closures; they retain execution-family identity and defaults. Guest aliases
+retain local capabilities. Provider execution, opaque native objects and tool
+choice behavior stay in models.
 
 `maestro-resources` owns the package manifest reader (the `maestro` member of `package.json`),
 extension entry resolution and the project configuration directory name `.maestro`. A
@@ -454,6 +496,16 @@ paths, which re-export the moved declarations. The keyed live map reuses
 `maestro-listeners::Listeners` for insertion-order traversal. Replacement keeps
 position; removal returns ownership for release outside collection borrows.
 Clones retain one collection, and active walks observe edits until exhaustion.
+
+The replaceable editor contract `EditorComponent` belongs to the toolkit with its
+optional operations and their fallible forms, which delegate to the plain operations
+unless a component-backed editor reports its own failure. The application capability
+of a replacement editor (`CustomEditorComponent`), the editor factory result
+(`EditorFactoryOutcome`) and the shared action map (`ActionHandlers`) belong to
+`maestro-extensions::types::ui`, because extension editor factories return them. The
+application re-exports them; the chat frontend's `CustomEditor` implements the
+capability and keeps the action map alias at its existing path. Extension components
+carry their optional disposal, expansion and overlay width in the same owner.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.
@@ -517,8 +569,11 @@ name decoding and any further ordering.
 It owns one job: retaining callbacks in live registration order. A callback is
 admitted once per identity, so registering a live one again keeps its first
 position, while removing and re-registering it moves it to the last position.
-Traversal sees the collection as it is at each step. Models, the terminal
-toolkit, the agent, the application and the extension runtime may depend on it.
+A caller may instead admit every registration as its own entry, as an
+event-emitter listener list keeps them; each removal operation then removes its
+own registration. Traversal sees the collection as it is at each step. Models,
+the terminal toolkit, the agent, the application, the extension runtime, the
+terminal adapter and the cancellation leaf may depend on it.
 Each caller keeps its own borrowing, locking, delivery and settlement policy:
 the leaf holds no lock, runs no callback under its own borrow and returns removed
 ownership to the caller. Its storage is a flat ordered list plus an identity
@@ -545,8 +600,10 @@ truncation, artifact files, presentation, result mapping and user-facing errors 
 with their feature owners. The process leaf also owns the retained-front byte queue
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
-keep descriptor readiness, lifecycle and error-reporting policy.
-It also owns the current process's native signal effects: the default action a
+keep descriptor readiness, lifecycle and error-reporting policy. It owns native
+termination-signal subscription and idempotent removal; a native mode supplies the
+callback and keeps its exit policy. No frontend subscribes to native signals
+itself. It also owns the current process's native signal effects: the default action a
 prepared termination signal or interrupt takes, the job-control stop of the process
 group and the observation of its continuation. Callers keep when to prepare, restore,
 stop and resume.
@@ -614,6 +671,13 @@ toolkit/text dependency, or make the scenario harness a development target.
 `maestro-extensions` to `maestro-credentials`, declared for native targets only,
 lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
+The native component adapter (`maestro-extensions-wasmtime`) may depend on
+`maestro-catalog`, `maestro-credentials`, `maestro-models`, `maestro-session`,
+`maestro-theme` and `maestro-tui` as native-only development dependencies. Its composition tests
+reuse the extension test support to build real catalogs, credentials, messages,
+sessions and themes. The toolkit edge supplies the real terminal and UI to observe
+component-factory width synchronously; it adds no new production layer crossing.
+These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
@@ -625,6 +689,13 @@ provider; it permits no normal or build dependency on models.
 `maestro-cli` to `maestro-listeners`, declared as a non-optional native development
 dependency, supplies retained registration snapshots for the controlled print adapter.
 It permits no normal or build dependency on the listener leaf.
+`maestro-chat` to `maestro-tui-crossterm`, declared for native targets only and
+without optionality, lets the interactive mode's composed witness drive a real
+native terminal; it permits no normal or build dependency on the adapter and does
+not make the interactive frontend a terminal owner.
+`maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
+non-optional development dependency, lets component tests pass retained schema
+callbacks to the native argument validator. It permits no normal or build edge.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -643,14 +714,17 @@ that calls this same entry. The test-process leaf does not depend on process.
 
 ### Test process owner
 
-`maestro-test-process` is a dedicated, unpublished, native, std-only test-support
-leaf that starts one named libtest child and proves the child started exactly that
-test. It has no workspace dependencies except the native feature unifier and one
-native development edge to the disposable directory owner for its own child
-fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
+`maestro-test-process` is a dedicated, unpublished, native test-support leaf
+that starts one named libtest child and proves the child started exactly that
+test. On Unix it runs caller-supplied setup text in the interpreter the caller
+names by absolute path, so it carries no shell lookup, and it uses no external
+crate. It has no workspace dependencies except the native feature unifier and
+one native development edge to the disposable directory owner for its own child
+fixtures, and it is excluded from the foundation utility permission. Its only
+incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
-from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
 and `maestro-tui-crossterm`; a
@@ -678,9 +752,10 @@ temporary directory unless its case sets one.
 exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
-dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
+dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
+`maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
@@ -785,10 +860,10 @@ cycle rules apply, and the required-toolkit rule keeps `maestro-text` out of it.
 
 ### Workspace daemon
 
-The workspace daemon is core design. The executable always wires the daemon,
-and the multiplexer: it requires direct application and multiplexer dependencies,
-with daemon operations reached through
-`maestro-app`. There is no Cargo feature, optional dependency or separate install.
+The workspace daemon is core design. The executable requires a direct application
+dependency, with daemon operations reached through `maestro-app`. A direct
+multiplexer dependency is permitted when its launcher is wired, not required for
+command-line startup. There is no Cargo feature, optional dependency or separate install.
 Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
 builds already exclude native process crates. Every frontend calls `maestro-app`.
 
@@ -810,8 +885,13 @@ exact wire bytes, fields, omission/null rules and results. Workspace commands ar
 `maestro-protocol` owns the generic request and response envelopes, the workspace records and
 their schema; `maestro-app::rpc_types` owns the session records and the composed command
 family; `maestro-json::jsonl` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
-runner: it serves a local session runtime over a caller's line reader and writer and returns
-how the connection ended. `maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
+runner: it serves workspace operations and an optional local session over a caller's line
+reader and writer, returning how the connection ended. `RpcModeOptions` groups session-only
+facilities in `Option<RpcSessionOptions>`: runtime, process signals, theme and export effects.
+A session-free connection creates no UI or session binding and registers no session signals;
+session commands return a correlated refusal asking the caller to open in a session. A supplied
+session keeps its binding, rebind, event subscription and disposal lifecycle.
+`maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
 a channel of the same protocol and version. Plain JSONL clients need no new header, handshake or
 version member, and receive no unsolicited startup record or binary bytes.
 
@@ -890,7 +970,22 @@ The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.
 
+JSON Pointer token escaping belongs to `maestro-json::escape_pointer_token`;
+brand diagnostics and guest JSON member views reuse it.
+
 Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`.
+`ParameterSchema<C = ()>` keeps executable annotations in its generic payload;
+the default payload stays data-only. The shared `Base`, `Refinement` and
+`SchemaNode` records own conversion, guard and ordered refinement callbacks.
+The request-owned `SchemaCallback` retains shared captures and compares callback
+identity. A defaulted callable type keeps the native signature; the guest adapter
+delegates capture ownership while supplying its borrowed operand signature.
+Native callbacks receive a mutable JSON value. The guest
+specializes those records with borrowed JSON views and its existing callback
+resource; it does not declare another schema record or callback registry.
+`Tool<C = ()>` retains that payload, while ordinary request contexts keep the
+data-only default. Explicit data projection strips executable annotations without
+running them. Serialization never writes code, and deserialization never rebuilds it.
 The record keeps the supplied JSON Schema value and, beside it, the kinds its author
 declared for individual nodes, keyed by JSON pointer; a node without an entry is plain
 and is never converted as an authored node. `SchemaKind` names the extensible kinds the
@@ -905,14 +1000,28 @@ context or a projection shared between kinds. Serialization writes the supplied 
 alone: providers, persisted JSON
 and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
 text. The guest carries the declared kinds only inside its opaque internal registration
-and enumeration transport; its WIT and callback identities do not change.
+and enumeration transport. Executable nodes use invocation-local JSON resources
+and independently retained identities in the existing callback table. Same-origin
+guest enumeration keeps the original callbacks and captures, with bindings per
+tool. Foreign guest and native schemas retain live callbacks through the receiving
+guest's existing native capability registry. Synchronous invocation uses the existing
+native import route and scoped operand wait, preserving edits and structured schema
+errors without copying the operand. Nested calls into the receiving instance run
+locally through that route, including A→B→A. Final release uses the existing pumps;
+an unloaded origin rejects later entry while already-admitted calls finish.
+An absent child view passed to a foreign callback returns a clear error rather than
+substituting null. See [foreign schema calls](../extensions/guest.md#foreign-schema-calls)
+for the owning path and pinned runtime contracts. Ordinary result and string APIs
+are unchanged.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no
@@ -945,3 +1054,10 @@ JSON-owned and the Presence adaptation belongs beside the shared records. Fork
 position stays entry-owned. One event inventory supplies author unions and the
 guest data adapter. Resources, cancellation, finite-number checks, stream snapshots
 and encoding stay adapter-owned.
+
+The parameter-schema owner also owns the component metadata transport in
+`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+as `schema_transport`. Guest registration and enumeration use that same codec;
+ordinary provider and persisted JSON omit the carried schema kinds. This adds no
+crate dependency: both extension adapters already reach the request owner through
+their declared edges.

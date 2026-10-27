@@ -403,7 +403,12 @@ impl maestro_tools::BashOperations<maestro_models::Local> for ShellOps {
                 .env
                 .unwrap()
                 .iter()
-                .map(|(k, v)| (k.to_str().unwrap().to_owned(), json!(v.to_str().unwrap())))
+                .map(|(k, v)| {
+                    (
+                        k.to_str().unwrap().to_owned(),
+                        json!(v.as_ref().unwrap().to_str().unwrap()),
+                    )
+                })
                 .collect::<serde_json::Map<_, _>>();
             self.calls.lock().unwrap().push(json!([
                 "operation",
@@ -453,7 +458,7 @@ fn local_bash_progress_keeps_prefix_and_settlement() {
             "/original".into(),
             String::new(),
             maestro_tools::local::BashToolOptions {
-                operations: Some(Arc::new(ShellOps {
+                operations: Some(Rc::new(ShellOps {
                     outcome: outcome.into(),
                     calls: calls.clone(),
                     updates: updates.clone(),
@@ -539,7 +544,7 @@ fn local_bash_progress_uses_existing_throttle_and_decoder() {
             tokio::time::pause();
             tokio::time::advance(std::time::Duration::from_millis(input.times[0])).await;
             let (send,chunks)=tokio::sync::mpsc::unbounded_channel();
-            let definition=maestro_tools::local::create_bash_tool_definition::<()>("/work".into(),String::new(),maestro_tools::local::BashToolOptions{operations:Some(Arc::new(ChannelOps{chunks:std::sync::Mutex::new(Some(chunks))})),..Default::default()});
+            let definition=maestro_tools::local::create_bash_tool_definition::<()>("/work".into(),String::new(),maestro_tools::local::BashToolOptions{operations:Some(Rc::new(ChannelOps{chunks:std::sync::Mutex::new(Some(chunks))})),..Default::default()});
             let updates=Rc::new(RefCell::new(Vec::new()));let values=updates.clone();
             let mut future=(definition.execute)("id".into(),maestro_tools::BashToolInput{command:"literal".into(),timeout:None},None,Some(Rc::new(move |r|values.borrow_mut().push(result_value(r)))),None);
             send.send(input.chunks[0].clone()).unwrap();send.send(input.chunks[1].clone()).unwrap();
@@ -979,7 +984,7 @@ fn selected_spawn_hook(
         context.command = "selected".into();
         context.cwd = "/selected".into();
         context.env.clear();
-        context.env.insert("SELECTED".into(), "yes".into());
+        context.env.insert("SELECTED".into(), Some("yes".into()));
         Ok(context)
     })
 }

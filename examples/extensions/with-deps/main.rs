@@ -61,6 +61,8 @@ fn parse_duration(duration: &str, pattern: &Regex) -> ExtensionResult<f64> {
 fn duration_tool() -> ExtensionResult<ToolDefinition> {
     let pattern = Regex::new(GRAMMAR).map_err(|error| error.to_string())?;
     Ok(ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: ToolMetadata {
             name: "parse_duration".into(),
             label: "Parse Duration".into(),
@@ -92,7 +94,7 @@ fn duration_tool() -> ExtensionResult<ToolDefinition> {
                         "{} = {rendered} milliseconds",
                         params.duration
                     )))],
-                    details: Presence::Present(json!({}).to_string()),
+                    details: Presence::Present(json!({}).to_string().into()),
                     terminate: Presence::Missing,
                 })
             })

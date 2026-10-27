@@ -4,6 +4,12 @@
 ordered headers, selects request keys, logs in to OAuth providers, refreshes
 expired OAuth tokens and formats login guidance.
 
+The typed credential and status records (`ApiKeyCredential`, `AuthCredential`,
+`AuthStorageData`, `AuthSource`, `AuthStatus` and `OAuthCredentials`) are defined
+in `maestro-request` and re-exported here unchanged, so extensions use the same
+types. Their ordinary serialization uses the stored field names and the snake-case
+source names; it is not the stored-file writer, which stays with `AuthStorage`.
+
 ## Stored credentials
 
 `AuthStorage` accepts the stored records when it is created, on `reload` and when a
@@ -141,3 +147,35 @@ path joining belongs to [maestro-path](../crates/maestro-path/src/lib.rs).
 See the [crate example](../crates/maestro-credentials/README.md) for a controlled
 adapter. Browser callers supply their own operations; the native adapter is absent
 from browser builds.
+
+## Extension credential handles
+
+A guest acquires `AuthStorage` through `ModelRegistry::auth_storage()` or wraps a
+supplied `AuthStoragePort`. Clones share the acquired owner, independently of the
+context or catalog handle. Stored reads and changes, runtime overrides, reload,
+logout, authentication metadata and drainable errors use the native credential
+algorithms above. Key resolution retains the original owner and command effects
+until it settles. Host and record-decoding failures are recoverable
+`ExtensionResult` errors; persistence failures still drain from the owner.
+
+Guest `create` and `in_memory` constructors use the host selected by the supplied
+`ExtensionAPI`. An omitted file path uses the application's lazy default;
+`in_memory` performs no file I/O. `from_storage` retains the author's raw-text
+backend and lends it the native update for the duration of the call. Synchronous
+and awaited updates preserve no replacement versus an empty replacement and
+propagate the original error. A pending update retains its native borrow and
+selected backend until settlement.
+
+`set_fallback_resolver` replaces the retained resolver without changing an already
+selected invocation. Synchronous metadata reads return the callback's actual value
+before returning to their caller. Native constructors and backend algorithms are
+unchanged. Component-backed native callbacks run on their creating local pump;
+they are not an off-thread credential backend. The registration facade does not
+retain the bound session catalog. Acquired catalog and credential handles retain
+their owners; resolver captures release after their final owner and selected
+invocations end.
+
+A rejected constructor leaves its selected file untouched. Catalog construction
+rejects credentials from another host before resolving the model path. Rejected
+backend or resolver admission releases its captures without retiring a sibling
+credential resource.

@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_type::from_type;
@@ -18,24 +19,28 @@ pub(crate) fn from_union<'a>(
     alternatives: &[Rc<Node<'a>>],
     source: Option<View<'a>>,
     value: &mut Value,
-) -> Option<Value> {
-    if matches_any(converter, alternatives, value) {
-        return None;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    if matches_any(converter, alternatives, value)? {
+        return Ok(None);
     }
+    let mut candidates = Vec::with_capacity(alternatives.len());
     for alternative in alternatives {
         let mut candidate = value.clone();
-        if let Some(replacement) = from_type(converter, alternative, &mut candidate) {
+        if let Some(replacement) = from_type(converter, alternative, &mut candidate)? {
             candidate = replacement;
         }
+        candidates.push(candidate);
+    }
+    for mut candidate in candidates {
         let selected = match source {
-            Some(view) => authored::accepts(converter, &Node::Leaf(view), &candidate),
-            None => matches_any(converter, alternatives, &candidate),
+            Some(view) => authored::accepts(converter, &Node::Leaf(view), &mut candidate)?,
+            None => matches_any(converter, alternatives, &mut candidate)?,
         };
         if selected {
-            return Some(candidate);
+            return Ok(Some(candidate));
         }
     }
-    None
+    Ok(None)
 }
 
 /// Convert through the alternatives an authored union declares.
@@ -43,9 +48,11 @@ pub(crate) fn from_union_view<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let alternatives: Vec<Rc<Node<'a>>> = view
-        .children("anyOf")?
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(children) = view.children("anyOf") else {
+        return Ok(None);
+    };
+    let alternatives: Vec<Rc<Node<'a>>> = children
         .into_iter()
         .map(|alternative| Rc::new(Node::Leaf(alternative)))
         .collect();
@@ -53,8 +60,15 @@ pub(crate) fn from_union_view<'a>(
 }
 
 /// Whether any alternative accepts the supplied value.
-fn matches_any(converter: &Context<'_>, alternatives: &[Rc<Node<'_>>], value: &Value) -> bool {
-    alternatives
-        .iter()
-        .any(|alternative| authored::accepts(converter, alternative, value))
+fn matches_any(
+    converter: &Context<'_>,
+    alternatives: &[Rc<Node<'_>>],
+    value: &mut Value,
+) -> Result<bool, DiagnosticErrorInfo> {
+    for alternative in alternatives {
+        if authored::accepts(converter, alternative, value)? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }

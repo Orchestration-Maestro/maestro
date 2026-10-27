@@ -15,7 +15,7 @@ pub use theme::{
 };
 pub use theme::{LiveTheme, ThemeChangeResult, ThemeExportColors, ansi256_to_hex, is_light_theme};
 pub use theme::{SyntaxHighlighter, SyntaxSpan, SyntectHighlighter, get_language_from_path};
-pub use theme::{ThemeDirectories, ThemeInfo, ThemeState, load_theme_from_path};
+pub use theme::{ThemeDirectories, ThemeInfo, ThemeState, load_theme_from_path, supports_color};
 pub use theme::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher};
 pub use theme::{get_editor_theme, get_markdown_theme, get_select_list_theme};
 

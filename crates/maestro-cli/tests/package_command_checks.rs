@@ -708,7 +708,9 @@ fn self_update_uses_global_command_without_lookup() {
 
 #[test]
 fn self_update_defaults_missing_release_identity() {
-    let harness = Harness::new(Some(json!({})), None);
+    let mut harness = Harness::new(Some(json!({})), None);
+    harness.origin = "https://controlled.invalid".into();
+    harness.release(200, &json!({"version":"999.0.0"}).to_string());
     assert!(harness.run(&["update", "--self"]));
     assert_eq!(harness.runs().len(), 1);
     assert!(
@@ -717,6 +719,14 @@ fn self_update_defaults_missing_release_identity() {
         harness.runs()
     );
     assert!(harness.stdout.text().contains("Updated maestro\n"));
+    assert_eq!(
+        harness
+            .release_requests
+            .load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    assert!(harness.stderr.text().is_empty());
+    assert_eq!(harness.exit_code.get(), None);
 }
 
 #[test]
@@ -760,6 +770,14 @@ fn renamed_release_runs_ordered_replacement() {
         harness.stdout.text()
     );
     assert!(harness.stdout.text().ends_with("Updated maestro\n"));
+    assert_eq!(
+        harness
+            .release_requests
+            .load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    assert!(harness.stderr.text().is_empty());
+    assert_eq!(harness.exit_code.get(), None);
 }
 
 #[test]
@@ -936,4 +954,37 @@ fn package_runtime_types_preserve_settings_domains() {
     let absent = Harness::new(Some(json!({ "npmCommand": [] })), None);
     assert!(absent.run(&["update", "--self"]));
     assert_eq!(absent.runs().len(), 1);
+}
+
+#[test]
+fn self_update_install_failure_keeps_nonzero_status() {
+    let mut harness = Harness::new(Some(json!({"npmCommand":["npm","--global"]})), None);
+    harness.origin = "https://controlled.invalid".into();
+    harness.release(
+        200,
+        &json!({"version":"999.0.0", "packageName":"maestro-next"}).to_string(),
+    );
+    harness
+        .state
+        .updates
+        .steps
+        .borrow_mut()
+        .extend([maestro_cli_step(0), maestro_cli_step(23)]);
+    assert!(harness.run(&["update", "--self"]));
+    assert_eq!(
+        harness.runs(),
+        [
+            "npm --global uninstall -g maestro",
+            "npm --global install -g maestro-next"
+        ]
+    );
+    assert!(harness.stderr.text().contains("exited with code 23"));
+    assert_eq!(harness.exit_code.get(), Some(1));
+    assert!(!harness.stdout.text().contains("Updated maestro"));
+    assert_eq!(
+        harness
+            .release_requests
+            .load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
 }

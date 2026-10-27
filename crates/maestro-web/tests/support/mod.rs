@@ -63,13 +63,6 @@ pub(crate) use crate::brand;
 #[cfg(target_arch = "wasm32")]
 pub mod reading_paint;
 
-/// Shared projection for native reading consumers.
-#[cfg(target_arch = "wasm32")]
-pub mod reading_view;
-
-/// Shared empty-effects assertion for text-only tool and message fixtures.
-pub mod tool_output;
-
 /// Shared recorded tool operands.
 pub mod tool_input;
 

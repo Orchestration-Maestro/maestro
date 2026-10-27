@@ -137,3 +137,135 @@ async fn registration_and_enumeration(driver: &mut impl Driver) -> Result<(), St
 fn guest_registration_and_enumeration_keep_schema_origin() -> Result<(), String> {
     on_both_adapters!(registration_and_enumeration)
 }
+
+/// One recorded invocation paired with a declaration of the same name.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NestedInvocation {
+    /// Declaration identity.
+    id: String,
+    /// Original invocation arguments.
+    arguments_json: String,
+    /// Prepared value, also returned as opaque tool details by the route witness.
+    expected_json: String,
+}
+
+/// Read the matching invocation rows, rejecting missing, extra or reordered cases.
+fn nested_invocations() -> Vec<NestedInvocation> {
+    let declarations = super::author::nested_schema_fixture::cases().unwrap();
+    let invocations: Vec<NestedInvocation> =
+        serde_json::from_str(include_str!("nested_schema_invocations.json")).unwrap();
+    for (declaration, invocation) in declarations.iter().zip(&invocations) {
+        assert_eq!(declaration.id, invocation.id);
+    }
+    assert_eq!(declarations.len(), invocations.len());
+    invocations
+}
+
+/// Register and relay one complete declaration through the actual author facade.
+async fn relay_nested(driver: &mut impl Driver, case: &NestedInvocation) -> Result<(), String> {
+    use super::author::nested_schema_fixture::{parameters, value};
+    let details = &case.expected_json;
+    let mut config = json!({"metadata":{
+        "name":"nested", "label":"Nested", "description":"", "parameters":{}
+    }, "prepare":false,"result":{"content":[],"details":details},"corpusCase":case.id});
+    driver
+        .run_plain_command("capture", &format!("tools {config}"))
+        .await?;
+    let first = driver.tools().last().unwrap().clone();
+    let parsed = value(&first)?;
+    let expected = parameters(&case.id)?;
+    assert_eq!(&parsed["parameters"], expected.as_json());
+    assert_eq!(parsed["schemaKinds"], json!(expected.conversions()));
+    let mut listed = parsed.clone();
+    listed["sourceInfo"] =
+        json!({"path":"/author","source":"custom","scope":"temporary","origin":"top-level"});
+    let listing = json!([listed]).to_string();
+    let request = json!({"method":"control","input":{"raw":listing}});
+    driver
+        .run_plain_command("capture", &format!("action {request}"))
+        .await?;
+    config.as_object_mut().unwrap().shift_remove("corpusCase");
+    config["metadata"]["name"] = json!("relayed");
+    config["relay"] = json!(true);
+    driver
+        .run_plain_command("capture", &format!("tools {config}"))
+        .await?;
+    let second = driver.tools().last().unwrap().clone();
+    let relayed = value(&second)?;
+    assert_eq!(relayed["parameters"], parsed["parameters"]);
+    assert_eq!(relayed["schemaKinds"], parsed["schemaKinds"]);
+    let result = invoke_nested(driver, case).await?;
+    println!(
+        "ACCOUNTING {}",
+        json!({"id":case.id,
+        "wrapper": first.len() - parsed["parameters"].to_string().len() - parsed["schemaKinds"].to_string().len(),
+        "schema":parsed["parameters"].to_string().len(), "kinds":parsed["schemaKinds"].to_string().len(),
+        "registration":first.len(), "enumeration":listing.len(), "reregistration":second.len(),
+        "invocation_input":case.arguments_json.len(), "invocation_output":result.len()})
+    );
+    assert!(driver.release("tool nested").await);
+    assert!(driver.release("tool relayed").await);
+    Ok(())
+}
+
+/// Execute the re-registered callback and observe only this invocation's transcript.
+async fn invoke_nested(
+    driver: &mut impl Driver,
+    case: &NestedInvocation,
+) -> Result<String, String> {
+    use super::author::nested_schema_fixture::value;
+    let before = driver.transcript().len();
+    let result = driver
+        .tool(super::scenario::ToolRun {
+            name: "relayed",
+            id: "nested-call",
+            params: &case.arguments_json,
+            signal: None,
+            update: false,
+            held: false,
+        })
+        .await?;
+    assert_eq!(value(&result)?["details"], json!(case.expected_json));
+    let transcript = driver.transcript();
+    let execution = transcript[before..]
+        .iter()
+        .find_map(|line| line.strip_prefix("entry execution "))
+        .unwrap();
+    assert_eq!(value(execution)?["args"], value(&case.arguments_json)?);
+    Ok(result)
+}
+
+/// Both adapters retain every complete declaration and release each callback owner.
+async fn nested_relay(driver: &mut impl Driver) -> Result<(), String> {
+    for case in nested_invocations() {
+        relay_nested(driver, &case).await?;
+    }
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0);
+    Ok(())
+}
+
+/// Nested declarations survive registration, enumeration, reuse and execution on both routes.
+#[test]
+fn nested_declarations_register_and_relay_on_both_adapters() -> Result<(), String> {
+    on_both_adapters!(nested_relay)
+}
+
+/// Every Base method survives the generated retention and enumeration route.
+#[test]
+fn guest_base_methods_keep_results_edits_and_errors() {
+    super::component_driver::schema_qualification::base_methods();
+}
+
+/// Stacked checks and their independent message factories retain every slot.
+#[test]
+fn guest_stacked_refinements_keep_each_check_and_error() {
+    super::component_driver::schema_qualification::stacked_refinements();
+}
+
+/// Borrowed JSON operands preserve all value kinds and cleanup on callback failures.
+#[test]
+fn guest_json_operands_cover_values_members_and_failure_cleanup() {
+    super::component_driver::schema_qualification::json_operands();
+}

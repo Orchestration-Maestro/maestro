@@ -243,3 +243,85 @@ fn constructor(
         requests,
     )
 }
+/// Generic rows print a retained call's complete argument value as two-space JSON.
+pub fn argument_roots() {
+    let _guard = REGISTRY
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _restore = Restore(get_keybindings());
+    keys(vec!["ctrl+o".into()]);
+    for (arguments, printed) in [
+        (serde_json::json!(null), vec!["null"]),
+        (serde_json::json!(false), vec!["false"]),
+        (serde_json::json!(0), vec!["0"]),
+        (serde_json::json!(""), vec![r#""""#]),
+        (serde_json::json!([]), vec!["[]"]),
+        (
+            serde_json::json!(["a", [1, {"k": null}]]),
+            vec![
+                "[",
+                r#"  "a","#,
+                "  [",
+                "    1,",
+                "    {",
+                r#"      "k": null"#,
+                "    }",
+                "  ]",
+                "]",
+            ],
+        ),
+        (serde_json::json!({}), vec!["{}"]),
+        (
+            serde_json::json!({"z": 1, "a": [false]}),
+            vec!["{", r#"  "z": 1,"#, r#"  "a": ["#, "    false", "  ]", "}"],
+        ),
+    ] {
+        argument_root(&arguments, &printed);
+    }
+}
+/// Render one retained call's row before and after a result, comparing every styled line.
+fn argument_root(arguments: &serde_json::Value, printed: &[&str]) {
+    let call: maestro_app::ToolCall = serde_json::from_value(serde_json::json!({
+        "type": "toolCall", "id": "tool-1", "name": "custom_tool", "arguments": arguments,
+    }))
+    .unwrap();
+    let runtime = manual_runtime::ManualRuntime::new();
+    let (mut params, _) = params(&default_input(), &runtime);
+    params.args = Some(call.arguments.clone());
+    let component = ToolExecutionComponent::new(params).unwrap();
+    let row = |bg: u8, text: &str| format!("\x1b[48;5;{bg}m {text:<39}\x1b[49m");
+    let frame = |bg: u8, output: Option<&str>| {
+        let mut lines = vec![String::new(), row(bg, "")];
+        lines.push(format!(
+            "\x1b[48;5;{bg}m \x1b[38;5;1m\x1b[1mcustom_tool\x1b[22m\x1b[39m{:<28}\x1b[49m",
+            ""
+        ));
+        lines.push(row(bg, ""));
+        lines.extend(printed.iter().map(|text| row(bg, text)));
+        lines.extend(output.map(|text| row(bg, text)));
+        lines.push(row(bg, ""));
+        lines
+    };
+    let label = call.arguments.to_string();
+    assert_eq!(
+        component.try_render(40).unwrap(),
+        frame(13, None),
+        "{label}"
+    );
+    let done = maestro_app::UserBlock::Text(maestro_app::TextContent::new("done".into()));
+    component
+        .update_result(
+            maestro_chat::ToolExecutionResult {
+                content: vec![done],
+                details: None,
+                is_error: false,
+            },
+            false,
+        )
+        .unwrap();
+    assert_eq!(
+        component.try_render(40).unwrap(),
+        frame(14, Some("done")),
+        "{label}"
+    );
+}

@@ -3,7 +3,7 @@
 use super::InteractiveMode;
 use maestro_app::configuration::config::{APP_NAME, VERSION};
 use maestro_theme::{Theme, ThemeColor, ThemeError};
-use maestro_tui::{Component, EditorComponent, Spacer, Text};
+use maestro_tui::{Component, Spacer, Text};
 use std::{error::Error, rc::Rc};
 
 #[cfg(test)]
@@ -11,9 +11,11 @@ use std::{error::Error, rc::Rc};
 mod tests;
 
 impl InteractiveMode {
-    /// Empties the editor and schedules a frame.
+    /// Empties the editor and schedules a frame, or reports its original write failure.
     pub fn clear_editor(&self) {
-        self.editor.set_text("");
+        if let Err(error) = self.current_editor().try_set_text("") {
+            return self.report(Err(error));
+        }
         self.ui.request_render(false);
     }
 
@@ -37,13 +39,18 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's colour.
-    fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
-        let text = self.themes.theme().get()?.fg(color, text)?;
+    pub(super) fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
+        self.add_text(self.themes.theme().get()?.fg(color, text)?, 0);
+        Ok(())
+    }
+
+    /// Appends a spacer and one text, padded by one column and `padding_y` rows, then
+    /// schedules a frame.
+    pub(super) fn add_text(&self, text: String, padding_y: usize) {
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.chat_container
-            .add_child(Rc::new(Text::new(text, 1, 0, None)));
+            .add_child(Rc::new(Text::new(text, 1, padding_y, None)));
         self.ui.request_render(false);
-        Ok(())
     }
 
     /// Adds the startup help to the header container: nothing when startup is quiet
@@ -54,8 +61,10 @@ impl InteractiveMode {
     pub(super) fn build_header(&self) -> Result<(), Box<dyn Error>> {
         let session = self.runtime_host.session();
         if !self.options.verbose && session.settings_manager().borrow().get_quiet_startup() {
-            self.header_container
-                .add_child(Rc::new(Text::new(String::new(), 0, 0, None)));
+            let header: Rc<dyn Component> = Rc::new(Text::new(String::new(), 0, 0, None));
+            self.built_in_header
+                .replace(Some(header.clone() as Rc<dyn Component>));
+            self.header_container.add_child(header);
             return Ok(());
         }
         let live = self.themes.theme();

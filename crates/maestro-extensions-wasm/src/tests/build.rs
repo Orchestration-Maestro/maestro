@@ -4,7 +4,7 @@ use std::process::Command;
 use std::sync::OnceLock;
 
 use wasmtime::component::Component;
-use wasmtime::{Cache, CacheConfig, Config, Engine};
+use wasmtime::{Cache, Config, Engine};
 
 /// Build target of author components.
 const TARGET: &str = "wasm32-wasip2";
@@ -18,15 +18,21 @@ const TARGET: &str = "wasm32-wasip2";
 /// Returns the build's failure, which names the target to install when it is missing.
 pub fn author_component() -> Result<&'static Path, String> {
     static BUILT: OnceLock<Result<PathBuf, String>> = OnceLock::new();
-    BUILT.get_or_init(build).as_deref().map_err(Clone::clone)
+    BUILT
+        .get_or_init(|| component("author_component", "MAESTRO_AUTHOR_COMPONENT"))
+        .as_deref()
+        .map_err(Clone::clone)
 }
 
-/// Runs the author build and finds the artifact it reports.
-fn build() -> Result<PathBuf, String> {
-    if let Some(path) = std::env::var_os("MAESTRO_AUTHOR_COMPONENT") {
+/// Builds a named author example, unless its artifact is supplied by the environment.
+///
+/// # Errors
+/// Returns build failure or a diagnostic when Cargo reports no component artifact.
+pub fn component(example: &str, environment: &str) -> Result<PathBuf, String> {
+    if let Some(path) = std::env::var_os(environment) {
         return Ok(PathBuf::from(path));
     }
-    example_component("author_component")
+    example_component(example)
 }
 
 /// Builds one registered example and finds the component artifact it reports.
@@ -63,16 +69,14 @@ pub fn example_component(name: &str) -> Result<PathBuf, String> {
         .ok_or_else(|| "the build reported no component".to_owned())
 }
 
-/// Compiles the component with the test host's engine, caching the result beside the artifact.
+/// Compiles the component with the test host's engine and optional user cache.
 ///
 /// # Errors
-/// Returns Wasmtime's failure to configure the cache or to compile the component.
+/// Returns Wasmtime's failure to configure the engine or to compile the component.
 pub fn compile(path: &Path) -> wasmtime::Result<(Engine, Component)> {
     let mut config = Config::new();
     config.wasm_component_model_async(true);
-    let mut cache = CacheConfig::new();
-    cache.with_directory(path.with_extension("wasmtime-cache"));
-    config.cache(Some(Cache::new(cache)?));
+    config.cache(Cache::from_file(None).ok());
     let engine = Engine::new(&config)?;
     let component = Component::from_file(&engine, path)?;
     Ok((engine, component))

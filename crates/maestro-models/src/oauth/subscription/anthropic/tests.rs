@@ -697,6 +697,9 @@ struct Interaction {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl crate::OAuthLoginCallbacks for Interaction {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, self.manual.lock().unwrap().is_some(), true)
+    }
     fn on_auth(&self, _: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
         self.phase("auth")
     }

@@ -1,7 +1,6 @@
 //! Repair of JSON string literals and parsing of streamed JSON values.
 use std::fmt::Write;
 
-use crate::JsonObject;
 use serde_json::Value;
 
 use crate::providers::json_text::{MAX_NESTING, json_value, raw_json};
@@ -353,11 +352,8 @@ fn partial(input: &str) -> Option<serde_json::Value> {
     }
 }
 
-/// Parse streamed argument text into the object of a tool call; any other value becomes empty.
+/// Parse streamed argument text into the complete value it spells, else an empty object.
 #[must_use]
-pub fn parsed_arguments(partial: &str) -> JsonObject {
-    match parse_streaming_json(Some(partial)) {
-        Value::Object(arguments) => arguments,
-        _ => JsonObject::new(),
-    }
+pub fn parsed_arguments(partial: &str) -> Value {
+    parse_streaming_json(Some(partial))
 }

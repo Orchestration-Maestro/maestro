@@ -1,0 +1,394 @@
+[
+  {
+    "kind": "start",
+    "input": null,
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": null
+    }
+  },
+  {
+    "kind": "start",
+    "input": false,
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": false
+    }
+  },
+  {
+    "kind": "start",
+    "input": true,
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": true
+    }
+  },
+  {
+    "kind": "start",
+    "input": 0,
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": 0
+    }
+  },
+  {
+    "kind": "start",
+    "input": 42,
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": 42
+    }
+  },
+  {
+    "kind": "start",
+    "input": -3.5,
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": -3.5
+    }
+  },
+  {
+    "kind": "start",
+    "input": "",
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": ""
+    }
+  },
+  {
+    "kind": "start",
+    "input": "text",
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": "text"
+    }
+  },
+  {
+    "kind": "start",
+    "input": [],
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": []
+    }
+  },
+  {
+    "kind": "start",
+    "input": [
+      1,
+      1
+    ],
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "kind": "start",
+    "input": {},
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": {}
+    }
+  },
+  {
+    "kind": "start",
+    "input": {
+      "2": 2,
+      "10": 10,
+      "z": 1,
+      "a": [
+        false,
+        null
+      ]
+    },
+    "expected": {
+      "type": "tool_execution_start",
+      "toolName": "inspect",
+      "args": {
+        "2": 2,
+        "10": 10,
+        "z": 1,
+        "a": [
+          false,
+          null
+        ]
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": null,
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": null,
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": false,
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": false,
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": true,
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": true,
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": 0,
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": 0,
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": 42,
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": 42,
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": -3.5,
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": -3.5,
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": "",
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": "",
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": "text",
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": "text",
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": [],
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": [],
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": [
+      1,
+      1
+    ],
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": [
+        1,
+        1
+      ],
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": {},
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": {},
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "update",
+    "input": {
+      "2": 2,
+      "10": 10,
+      "z": 1,
+      "a": [
+        false,
+        null
+      ]
+    },
+    "expected": {
+      "type": "tool_execution_update",
+      "toolName": "inspect",
+      "args": {
+        "2": 2,
+        "10": 10,
+        "z": 1,
+        "a": [
+          false,
+          null
+        ]
+      },
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "progress"
+          }
+        ],
+        "details": {
+          "kept": true
+        }
+      }
+    }
+  }
+]

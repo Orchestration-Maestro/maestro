@@ -26,38 +26,63 @@ macro_rules! on_both_adapters {
 }
 
 pub(crate) mod action_host;
+mod advanced_ui;
 mod agent_events;
 mod application_messages;
-mod author;
+pub(crate) mod author;
+mod authored_editor;
+mod authored_streams;
 mod basic_ui;
 mod bookmark_example;
 mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
+mod completion_contract;
 mod component_driver;
 mod context_catalog;
-mod controlled;
+pub(crate) mod controlled;
 mod controlled_driver;
 mod documents;
 mod event_transport;
 mod event_values;
 mod example_support;
+mod exec_records;
 mod finite_records;
+pub(crate) mod stream_host;
+mod tui_ui;
 #[macro_use]
 mod fixtures;
+pub(crate) mod custom_host;
+pub(crate) mod editor_component;
+mod editor_driver;
+pub(crate) mod editor_host;
+mod editor_ui;
+mod foreign_host;
 mod guest_family;
 mod hello_example;
 mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
+mod host_widgets;
 mod join;
+mod json_payloads;
 mod model_status_example;
+mod model_streams;
+pub(crate) mod native_http_host;
+mod native_io;
+pub(crate) mod native_io_host;
+pub(crate) mod native_watch_host;
 mod observed;
+pub(crate) mod overlay_host;
 mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
+mod provider_catalog;
+mod provider_component;
+mod provider_composition;
+pub(crate) mod provider_host;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
@@ -69,6 +94,7 @@ pub(crate) mod renderer_host;
 mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
+pub(crate) mod schema_host;
 mod selection_events;
 mod send_user_message_example;
 mod session_actions;
@@ -85,14 +111,24 @@ mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
+mod signal_callbacks;
 mod stream_events;
 mod system_prompt_header_example;
+pub(crate) mod theme_host;
 mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;
 pub(crate) mod ui_host;
+pub(crate) mod widget_component;
+mod widget_controlled;
+pub(crate) mod widget_editors;
+pub(crate) mod widget_host;
+pub(crate) mod widget_keys;
+pub(crate) mod widget_lists;
 mod with_deps_example;
 mod working_message_example;
+mod writer_controlled;
+mod writer_ui;
 
 use std::future::Future;
 
@@ -104,7 +140,7 @@ use controlled_driver::ControlledDriver;
 use scenario::{Decision, Driver, EXPECTED};
 
 /// Runs a future to completion on a current-thread runtime.
-fn block_on<T>(future: impl Future<Output = T>) -> T {
+pub(crate) fn block_on<T>(future: impl Future<Output = T>) -> T {
     match tokio::runtime::Builder::new_current_thread().build() {
         Ok(runtime) => runtime.block_on(future),
         Err(error) => panic!("cannot build a runtime: {error}"),
@@ -365,6 +401,8 @@ struct Contract {
     replacement_signatures: Vec<Signature>,
     /// Retained UI requests.
     ui_signatures: Vec<Signature>,
+    /// Awaited model hooks and independently retained selected cancellation.
+    model_hook_signatures: Vec<Signature>,
 }
 
 /// Reads the contract of the built component.
@@ -418,6 +456,7 @@ fn contract() -> Result<Contract, String> {
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
         renderer_signatures: renderer_signatures(&engine, &host, &guest)?,
         shell_signatures: shell_signatures(&engine, &host, &guest)?,
+        model_hook_signatures: model_hook_signatures(&engine, &host, &guest)?,
         event_params,
         event_results,
     })
@@ -439,7 +478,7 @@ fn assert_typed_event_export(contract: &Contract) {
         contract.event_results,
         [concat!(
             "result<record {event: result<option<string>, string>, ",
-            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<bash-operations>>}, string>"
+            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<callback>>}, string>"
         )],
         "the event export answers with independent event, decision and operations channels or a refusal"
     );
@@ -510,8 +549,20 @@ fn assert_catalog_imports(contract: &Contract) {
         .flat_map(|resource| context_methods.map(|method| format!("[method]{resource}.{method}")))
         .collect::<Vec<_>>();
     expected.extend(
-        ["get-all", "get-available", "find"]
-            .map(|method| format!("[method]model-registry.{method}")),
+        [
+            "get-all",
+            "get-available",
+            "find",
+            "refresh",
+            "get-error",
+            "has-configured-auth",
+            "get-provider-auth-status",
+            "get-provider-display-name",
+            "is-using-oauth",
+            "register-provider",
+            "unregister-provider",
+        ]
+        .map(|method| format!("[method]model-registry.{method}")),
     );
     expected.sort_unstable();
     let actual = names(&contract.imports, false)
@@ -541,21 +592,11 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_async_exports(&contract);
     assert_eq!(
         names(&contract.exports, false),
-        [
-            "[method]component-view.handle-input",
-            "[method]component-view.invalidate",
-            "[method]component-view.render",
-            "[method]component-view.wants-key-release",
-            "invoke-compaction-complete",
-            "invoke-compaction-error",
-            "invoke-listener",
-            "invoke-prepare",
-            "invoke-renderer",
-            "release"
-        ],
-        "component methods, preparation and release stay synchronous"
+        ["describe-schema", "release", "retain-schema"],
+        "describe, retain and release only touch guest callback storage"
     );
     assert_shell_contract(&contract);
+    assert_model_hook_contract(&contract);
     assert_renderer_contract(&contract);
     assert_typed_event_export(&contract);
     assert_reader_imports(&contract);
@@ -565,25 +606,59 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_setup_contract(&contract);
     assert_replacement_contract(&contract);
     assert_ui_contract(&contract);
+    assert_async_imports(&contract);
+    assert_interface_contract(&contract);
+    Ok(())
+}
+
+/// Checks every asynchronous host import the guest calls.
+fn assert_async_imports(contract: &Contract) {
     assert_eq!(
         names(&contract.imports, true),
         [
+            "[method]auth-lock-update.update-async",
+            "[method]auth-storage.get-api-key",
+            "[method]auth-storage.login",
+            "[method]builtin-tool.execute",
+            "[method]child-process.wait",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
             "[method]command-context.reload",
             "[method]command-context.switch-session",
             "[method]command-context.wait-for-idle",
+            "[method]completion-provider.get-suggestions",
+            "[method]extension-ui-context.confirm",
+            "[method]extension-ui-context.custom",
+            "[method]extension-ui-context.editor",
+            "[method]extension-ui-context.input",
+            "[method]extension-ui-context.select",
+            "[method]file-mutation.wait",
+            "[method]local-bash-operations.exec",
             "[method]model-registry.get-api-key-and-headers",
+            "[method]model-registry.get-api-key-for-provider",
+            "[method]oauth-interaction.input",
+            "[method]oauth-provider.login",
+            "[method]oauth-provider.refresh-token",
+            "[method]provider-controls.invoke",
+            "[method]readable.read",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
-            "callback-emit",
+            "[method]response.json",
+            "[method]response.text",
+            "[method]widget.drain-input",
+            "[method]writable.end",
+            "[method]writable.write",
+            "call",
             "event-emit",
+            "fetch",
+            "get-all-tools",
+            "register-tool",
             "set-model",
+            "sleep",
+            "spawn",
         ]
     );
-    assert_interface_contract(&contract);
-    Ok(())
 }
 
 /// Reads the retained UI request signatures of the built component.
@@ -616,7 +691,7 @@ fn ui_signatures(
 
 /// The retained UI resource is borrowed while its requests stay synchronous and typed.
 fn assert_ui_contract(contract: &Contract) {
-    let unit = vec!["result<_, string>".to_owned()];
+    let unit = vec!["own<import-route>".to_owned()];
     let self_ = "self: borrow<extension-ui-context>".to_owned();
     let params = [
         vec![
@@ -652,7 +727,7 @@ fn assert_ui_contract(contract: &Contract) {
         assert_eq!(actual, &expected, "retained UI request {index} parameters");
         assert_eq!(
             results, &unit,
-            "retained UI request {index} stays synchronous"
+            "retained UI request {index} stays synchronous through its route"
         );
     }
 }
@@ -729,11 +804,12 @@ fn assert_action_contract(contract: &Contract) {
         "get-session-name",
         "set-label",
         "get-active-tools",
-        "get-all-tools",
         "set-active-tools",
         "get-commands",
         "get-thinking-level",
         "set-thinking-level",
+        "register-provider",
+        "unregister-provider",
         "[method]context.compact",
         "[method]command-context.compact",
     ] {
@@ -760,11 +836,24 @@ fn assert_interface_contract(contract: &Contract) {
         outside.is_empty(),
         "only the author world and WASI interfaces are imported: {outside:?}"
     );
-    let wasi = contract
+    let wasi: Vec<_> = contract
         .interfaces
         .iter()
-        .filter(|name| name.starts_with("wasi:"));
-    assert!(wasi.clone().count() > 0 && wasi.into_iter().all(|name| name.contains("@0.2.")));
+        .filter(|name| name.starts_with("wasi:"))
+        .collect();
+    assert!(
+        wasi.iter().any(|name| name.contains("@0.2.")),
+        "standard-library baseline remains available"
+    );
+    assert!(
+        wasi.iter().any(|name| name.contains("@0.3.")),
+        "native asynchronous standard imports are available"
+    );
+    assert!(
+        wasi.iter()
+            .all(|name| name.contains("@0.2.") || name.contains("@0.3.")),
+        "only supported standard generations: {wasi:?}"
+    );
 }
 
 /// Expected parameter/result sequences for the action wire.
@@ -772,30 +861,30 @@ fn expected_action_signatures() -> [Signature; 7] {
     [
         (
             vec!["message: string", "options: option<string>"],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec!["content: string", "options: option<string>"],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (vec!["model: string"], vec!["result<bool, string>"]),
         (
             vec![
                 "self: borrow<context>",
-                "custom-instructions: option<string>",
+                "options: option<record {custom-instructions: option<string>}>",
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec![
                 "self: borrow<command-context>",
-                "custom-instructions: option<string>",
+                "options: option<record {custom-instructions: option<string>}>",
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec![
@@ -859,7 +948,7 @@ fn assert_setup_contract(contract: &Contract) {
         (
             vec![
                 "self: borrow<command-context>",
-                "data: record {parent-session: option<string>}",
+                "data: option<record {parent-session: option<string>}>",
                 "setup: option<borrow<callback>>",
                 "with-session: option<borrow<callback>>",
             ],
@@ -916,7 +1005,7 @@ fn assert_replacement_contract(contract: &Contract) {
         vec![
             "self: borrow<command-context>",
             "path: string",
-            "with-session: option<borrow<callback>>",
+            "options: option<record {with-session: option<borrow<callback>>}>",
         ],
         vec!["self: borrow<command-context>"],
         vec![
@@ -952,16 +1041,16 @@ fn renderer_signatures(
     [
         (host, "register-message-renderer"),
         (guest, "invoke-renderer"),
-        (guest, "[method]component-view.render"),
-        (guest, "[method]component-view.handle-input"),
-        (guest, "[method]component-view.wants-key-release"),
-        (guest, "[method]component-view.invalidate"),
+        (guest, "component-render"),
+        (guest, "component-handle-input"),
+        (guest, "component-wants-key-release"),
+        (guest, "component-invalidate"),
     ]
     .into_iter()
     .map(|(interface, name)| signature(engine, interface, name, &declared))
     .collect()
 }
-/// Checks actual guest resource methods, not just the free-function inventory.
+/// Checks the renderer and the retained-component exports keyed by callback identity.
 fn assert_renderer_contract(contract: &Contract) {
     let expected = [
         (
@@ -974,11 +1063,11 @@ fn assert_renderer_contract(contract: &Contract) {
                 "request: record {message: string, expanded: bool, theme: own<theme>}",
                 "emitter: borrow<callback-emitter>",
             ],
-            vec!["result<option<own<component-view>>, string>"],
+            vec!["result<option<own<callback>>, string>"],
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "width: u32",
                 "emitter: borrow<callback-emitter>",
             ],
@@ -986,7 +1075,7 @@ fn assert_renderer_contract(contract: &Contract) {
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "data: string",
                 "emitter: borrow<callback-emitter>",
             ],
@@ -994,14 +1083,14 @@ fn assert_renderer_contract(contract: &Contract) {
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "emitter: borrow<callback-emitter>",
             ],
             vec!["result<bool, string>"],
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "emitter: borrow<callback-emitter>",
             ],
             vec!["result<_, string>"],
@@ -1032,13 +1121,10 @@ fn shell_signatures(
 ) -> Result<Vec<Signature>, String> {
     let mut declared = resources(engine, host);
     declared.extend(resources(engine, guest));
-    [
-        (guest, "[method]bash-operations.exec"),
-        (host, "[method]bash-output.on-data"),
-    ]
-    .into_iter()
-    .map(|(interface, name)| signature(engine, interface, name, &declared))
-    .collect()
+    [(guest, "bash-exec"), (host, "[method]bash-output.on-data")]
+        .into_iter()
+        .map(|(interface, name)| signature(engine, interface, name, &declared))
+        .collect()
 }
 /// Owned output and optional signal coexist with literal numeric/environment operands.
 fn assert_shell_contract(contract: &Contract) {
@@ -1048,7 +1134,7 @@ fn assert_shell_contract(contract: &Contract) {
             .contains(&("[method]bash-output.on-data".into(), false))
     );
     let expected = [
-        (vec!["self: borrow<bash-operations>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
+        (vec!["handler: borrow<callback>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
         (vec!["self: borrow<bash-output>","data: list<u8>"],vec!["result<_, string>"])
     ].map(|(params,results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(),results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
     assert_eq!(contract.shell_signatures, expected);
@@ -1059,19 +1145,93 @@ fn assert_async_exports(contract: &Contract) {
     assert_eq!(
         names(&contract.exports, true),
         [
-            "[method]bash-operations.exec",
+            "bash-exec",
+            "component-focused",
+            "component-handle-input",
+            "component-invalidate",
+            "component-render",
+            "component-set-focused",
+            "component-wants-key-release",
+            "invoke-abort",
+            "invoke-assistant",
+            "invoke-auth-backend",
+            "invoke-auth-fallback",
+            "invoke-autocomplete",
+            "invoke-autocomplete-factory",
+            "invoke-branch-change",
             "invoke-command",
+            "invoke-compaction-complete",
+            "invoke-compaction-error",
             "invoke-completion",
+            "invoke-component-factory",
+            "invoke-custom-factory",
+            "invoke-custom-future",
+            "invoke-dispose",
+            "invoke-edit",
+            "invoke-editor",
+            "invoke-editor-factory",
             "invoke-event",
+            "invoke-find",
+            "invoke-grep",
+            "invoke-highlight",
+            "invoke-listener",
+            "invoke-ls",
+            "invoke-model-hook",
+            "invoke-oauth-callback",
+            "invoke-prepare",
+            "invoke-provider",
+            "invoke-read",
+            "invoke-renderer",
+            "invoke-schema",
+            "invoke-set-expanded",
             "invoke-setup",
             "invoke-shortcut",
+            "invoke-stream",
+            "invoke-style",
             "invoke-tail",
+            "invoke-terminal-input",
             "invoke-tool",
+            "invoke-tool-render",
+            "invoke-watch",
+            "invoke-widget",
             "invoke-with-session",
+            "invoke-write",
             "start"
         ],
         "every event, command and pending call is native async"
     );
 }
 
+/// Inspect the actual awaited hook export and synchronous cancellation-retention method.
+fn model_hook_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+    guest: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    [
+        (guest, "invoke-model-hook"),
+        (host, "[method]abort-signal.retain"),
+    ]
+    .into_iter()
+    .map(|(interface, name)| signature(engine, interface, name, &resources(engine, host)))
+    .collect()
+}
+
+/// Selected signals and their local binding owners cross as resources, never JSON identifiers.
+fn assert_model_hook_contract(contract: &Contract) {
+    assert!(
+        contract
+            .imports
+            .contains(&("[method]abort-signal.retain".into(), false))
+    );
+    let expected = [
+        (vec!["handler: borrow<callback>","phase: enum {payload, response}","data: string","model: string","signal: option<own<abort-signal>>"],vec!["result<record {data: string, signal: option<own<abort-signal>>, owner: option<own<callback>>}, string>"]),
+        (vec!["self: borrow<abort-signal>"],vec!["own<abort-signal>"]),
+    ].map(|(params,results)|(params.into_iter().map(str::to_owned).collect::<Vec<_>>(),results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
+    assert_eq!(contract.model_hook_signatures, expected);
+}
+
 mod tool_record_views;
+
+mod credential_host;
+mod native_helpers;
