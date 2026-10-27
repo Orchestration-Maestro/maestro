@@ -105,6 +105,8 @@ pub struct Observed {
     pub compactions: usize,
     /// Ordinary action controls.
     pub actions: super::action_host::Bank,
+    /// Host helper operations and their literal encoded operands.
+    pub helper_calls: Vec<(String, String)>,
     /// Registration transport observations and supplied flag replies.
     pub registrations: super::registration_host::Bank,
     /// Event-channel observations.

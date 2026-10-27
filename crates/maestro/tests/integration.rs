@@ -5,6 +5,7 @@ mod component_stdout;
 mod entry_routes;
 mod model_streams;
 mod native_io;
+mod qna_example;
 mod startup_modes;
 mod support;
 pub mod tools_example;
