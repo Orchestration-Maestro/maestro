@@ -555,3 +555,62 @@ fn one_base_package_can_publish_from_multiple_entrypoints() {
         );
     });
 }
+
+/// Offers inputs before returning the controlled factory failure.
+fn failing_contributor(payload: serde_json::Value) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let result = api
+            .contribute_load_time(payload.clone())
+            .and_then(|()| Err("factory failed".into()));
+        Box::pin(async move { result })
+    })
+}
+
+/// A failed base factory cannot install sources or persist a layer it offered earlier.
+#[test]
+fn failed_base_factories_do_not_apply_their_load_time_inputs() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let base = format!("{root}/base");
+    let extra = format!("{root}/extra");
+    for dir in [&agent, &cwd] {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    package(&base, "base");
+    package(&extra, "extra");
+    let payload = json!({"packageSources":[{"source":extra,"scope":"user"}], "baseSystemPrompt":"failed",
+        "baseLayers":[{"scope":"user","layer":{"settings":{"theme":"failed"},"locked":[],"source":"failed","recorded_at":"now"}}]});
+    on_task_set(|local| async move {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let seen = Rc::clone(&calls);
+        let modules: ModuleLoader<Local> = Rc::new(move |path: &str| {
+            let initialize = if path.ends_with("base.wasm") {
+                failing_contributor(payload.clone())
+            } else {
+                recording_factory("extra".into(), Rc::clone(&seen))
+            };
+            Box::pin(async move { Ok(Some(initialize)) })
+        });
+        let settings = Rc::new(RefCell::new(maestro_settings::SettingsManager::in_memory(
+            maestro_settings::Settings::default(),
+        )));
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, modules);
+        resources.base_package_sources = vec![base];
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: Some(Rc::clone(&settings)),
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert!(settings.borrow().get_base_layer().is_none());
+        assert!(loader.get_system_prompt().is_none());
+        assert!(calls.borrow().is_empty());
+        let result = loader.get_extensions();
+        assert_eq!(result.errors.len(), 1);
+        assert!(result.errors[0].error.contains("factory failed"));
+    });
+}
