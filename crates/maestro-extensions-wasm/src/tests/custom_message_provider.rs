@@ -424,3 +424,20 @@ fn custom_message_provider_raw_reasoning_matches_simple_options() -> ExtensionRe
     assert_eq!(raw, request_with_options(simple.into())?);
     Ok(())
 }
+
+#[test]
+fn custom_message_provider_zero_limit_uses_native_default() -> ExtensionResult<()> {
+    for limit in [0.0, -0.0] {
+        let options = crate::ProviderStreamOptions {
+            common: crate::StreamOptions {
+                api_key: Some("sk-ant-oat-fixture".into()),
+                max_tokens: Some(limit),
+                ..crate::StreamOptions::default()
+            },
+            ..crate::ProviderStreamOptions::default()
+        };
+        let request = request_with_options(options.into())?;
+        assert_eq!(request["max_tokens"], json!(21_333.0));
+    }
+    Ok(())
+}
