@@ -1,7 +1,7 @@
 //! Conversation conversion and HTTP parameters for the custom message protocol.
 use maestro_extensions_wasm::{
     AssistantContent, Context, ExtensionResult, Message, Model, RequestedThinkingLevel,
-    StreamOptionsInput, ToolResultMessage, UserBlock, UserContent, http::Request,
+    StreamOptionsInput, ThinkingBudgets, ToolResultMessage, UserBlock, UserContent, http::Request,
 };
 use serde_json::{Value, json};
 
@@ -43,7 +43,7 @@ pub fn wire_tool_name(name: &str) -> String {
 /// Builds one HTTP attempt without introducing a second retry owner.
 ///
 /// # Errors
-/// Returns serialization failures from the supplied parameter schema.
+/// Returns schema serialization failures or malformed raw reasoning controls.
 pub fn build(
     model: &Model,
     context: &Context,
@@ -73,7 +73,7 @@ pub fn build(
         }).collect::<ExtensionResult<_>>()?);
     }
     if model.reasoning
-        && let Some(thinking) = thinking(options)
+        && let Some(thinking) = thinking(options)?
     {
         body["thinking"] = thinking;
     }
@@ -128,14 +128,42 @@ fn system(prompt: Option<&str>, subscribed: bool) -> Vec<Value> {
     blocks
 }
 
+/// Raw and simple invocations share the same reasoning field types.
+fn thinking(options: Option<&StreamOptionsInput>) -> ExtensionResult<Option<Value>> {
+    match options {
+        Some(StreamOptionsInput::Simple(options)) => Ok(thinking_budget(
+            options.reasoning,
+            options.thinking_budgets.as_ref(),
+        )),
+        Some(StreamOptionsInput::Raw(options)) => {
+            let level = serde_json::from_value::<Option<RequestedThinkingLevel>>(
+                options
+                    .extra
+                    .get("reasoning")
+                    .cloned()
+                    .unwrap_or(Value::Null),
+            )
+            .map_err(|error| format!("Invalid reasoning: {error}"))?;
+            let budgets = serde_json::from_value::<Option<ThinkingBudgets>>(
+                options
+                    .extra
+                    .get("thinkingBudgets")
+                    .cloned()
+                    .unwrap_or(Value::Null),
+            )
+            .map_err(|error| format!("Invalid thinkingBudgets: {error}"))?;
+            Ok(thinking_budget(level, budgets.as_ref()))
+        }
+        None => Ok(None),
+    }
+}
+
 /// Reasoning uses the authored effort budgets when the caller supplies none.
-fn thinking(options: Option<&StreamOptionsInput>) -> Option<Value> {
-    let StreamOptionsInput::Simple(options) = options? else {
-        return None;
-    };
-    let level = options.reasoning?;
-    let budgets = options.thinking_budgets.as_ref();
-    let budget = match level {
+fn thinking_budget(
+    level: Option<RequestedThinkingLevel>,
+    budgets: Option<&ThinkingBudgets>,
+) -> Option<Value> {
+    let budget = match level? {
         RequestedThinkingLevel::Minimal => budgets.and_then(|b| b.minimal).unwrap_or(1024.0),
         RequestedThinkingLevel::Low => budgets.and_then(|b| b.low).unwrap_or(4096.0),
         RequestedThinkingLevel::Medium => budgets.and_then(|b| b.medium).unwrap_or(10_240.0),
