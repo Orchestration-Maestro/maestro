@@ -314,3 +314,74 @@ fn assert_conflict_winners(runner: &maestro_app::ExtensionRunner<Local>) {
         ]
     );
 }
+
+/// Both base factories try to publish an independently labelled settings layer.
+fn publishing_modules() -> ModuleLoader<Local> {
+    Rc::new(|path: &str| {
+        let name = std::path::Path::new(path)
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_owned();
+        let initialize: ExtensionFactory<Local> = Rc::new(move |api| {
+            let layer = maestro_settings::BaseSettingsLayer {
+                settings: maestro_settings::Settings(
+                    serde_json::from_value(json!({"theme":name})).unwrap(),
+                ),
+                locked: ["theme".into()].into_iter().collect(),
+                source: name.clone(),
+                recorded_at: "2026-10-27T00:00:00Z".into(),
+            };
+            let result =
+                api.contribute_load_time(json!({"baseLayers":[{"scope":"user","layer":layer}]}));
+            Box::pin(async move { result })
+        });
+        Box::pin(async move { Ok(Some(initialize)) })
+    })
+}
+
+/// A second publisher is diagnosed without replacing the first accepted layer.
+#[test]
+fn second_base_layer_publisher_is_reported_without_application() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().to_string_lossy();
+    let agent = format!("{root}/agent");
+    let cwd = format!("{root}/project");
+    let one = format!("{root}/one");
+    let two = format!("{root}/two");
+    for dir in [&agent, &cwd] {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    package(&one, "one");
+    package(&two, "two");
+    on_task_set(|local| async move {
+        let settings = Rc::new(RefCell::new(maestro_settings::SettingsManager::in_memory(
+            maestro_settings::Settings::default(),
+        )));
+        let mut resources: ResourceLoaderOptions<Local> =
+            ResourceLoaderOptions::new(local, publishing_modules());
+        resources.base_package_sources = vec![one, two];
+        let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+            cwd,
+            agent_dir: agent,
+            settings_manager: Some(Rc::clone(&settings)),
+            resources,
+        });
+        loader.reload().await.unwrap();
+        assert_eq!(settings.borrow().get_base_layer().unwrap().source, "one");
+        assert_eq!(settings.borrow().get_theme().as_deref(), Some("one"));
+        assert_eq!(
+            settings.borrow().get_global_settings().0,
+            serde_json::Map::new()
+        );
+        let result = loader.get_extensions();
+        assert_eq!(result.errors.len(), 1);
+        assert!(result.errors[0].path.ends_with("two.wasm"));
+        assert!(result.errors[0].error.contains("one.wasm"));
+        assert!(result.errors[0].error.contains("publisher"));
+        loader.reload().await.unwrap();
+        assert_eq!(loader.get_extensions().errors.len(), 1);
+        assert_eq!(settings.borrow().get_base_layer().unwrap().source, "one");
+    });
+}
