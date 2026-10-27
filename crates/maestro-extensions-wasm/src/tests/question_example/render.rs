@@ -116,6 +116,12 @@ async fn exercise(driver: &mut impl Driver) -> Result<(), String> {
             expected
         );
     }
+    fallback(driver).await?;
+    driver.release_all().await;
+    Ok(())
+}
+/// Absent and falsey details show the first text block rather than cancellation.
+async fn fallback(driver: &mut impl Driver) -> Result<(), String> {
     assert_eq!(
         paint(
             driver,
@@ -130,7 +136,18 @@ async fn exercise(driver: &mut impl Driver) -> Result<(), String> {
         paint(driver, "result", Value::Null, &json!({"content":[]})).await?,
         "text  0 0|200"
     );
-    driver.release_all().await;
+    for details in [Value::Null, json!(false), json!(0), json!("")] {
+        assert_eq!(
+            paint(
+                driver,
+                "result",
+                Value::Null,
+                &json!({"content":[{"type":"text","text":"fallback"}],"details":details})
+            )
+            .await?,
+            "text fallback 0 0|200"
+        );
+    }
     Ok(())
 }
 #[test]
