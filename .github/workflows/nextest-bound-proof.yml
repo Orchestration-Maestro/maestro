@@ -36,8 +36,9 @@ jobs:
           if test "$STATE" = before; then
             test "$status" = 0
             grep -E 'PASS.*nextest_terminates_and_names_overlong_test' proof.log
-            echo 'RED: the deadline assertion below fails without the config change'
-            if grep -E 'TIMEOUT.*nextest_terminates_and_names_overlong_test' proof.log; then exit 1; fi
+            echo 'RED: require nextest to time out and name the overlong test'
+            test "$status" = 100
+            grep -E 'TIMEOUT.*nextest_terminates_and_names_overlong_test' proof.log
           else
             test "$status" = 100
             grep -E 'TIMEOUT.*nextest_terminates_and_names_overlong_test' proof.log
