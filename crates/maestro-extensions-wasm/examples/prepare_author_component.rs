@@ -66,6 +66,11 @@ fn main() -> Result<(), String> {
 }
 
 /// Resolves a pinned development tool before tests replace their search PATH.
+///
+/// # Errors
+///
+/// Returns an error if mise cannot resolve the tool, its output is not UTF-8,
+/// or the returned path is not absolute or does not name a file.
 fn pinned_search_tool(name: &str) -> Result<String, String> {
     let output = std::process::Command::new("mise")
         .args(["which", name])
