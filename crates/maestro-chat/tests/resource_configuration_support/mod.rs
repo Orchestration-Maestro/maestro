@@ -18,13 +18,6 @@ pub fn group(name: &str) {
             return;
         }
         std::env::set_current_dir("/tmp").unwrap();
-        // These groups record patterns made relative to the spelling `/tmp`; a host whose `/tmp`
-        // reads back under another name makes them relative to that name instead.
-        let read_back = std::env::current_dir().unwrap();
-        if CWD_SPELLED.contains(&name) && read_back != std::path::Path::new("/tmp") {
-            eprintln!("{name} needs `/tmp` to read back as itself, not {read_back:?}");
-            return;
-        }
     }
     let _guard = super::keybindings::bindings_guard();
     let windows = name == "resource_windows_paths_keep_authored_relative_patterns";
@@ -42,6 +35,14 @@ pub fn group(name: &str) {
     let rows = super::selector::load(source);
     assert_eq!(rows.len(), if windows { 4 } else { 152 });
     for (input, expected) in super::selector::cases::<Input, Expected>(rows, owners, name) {
+        #[cfg(unix)]
+        if CWD_SPELLED.contains(&name)
+            && needs_recorded_cwd(&input)
+            && std::env::current_dir().unwrap() != std::path::Path::new("/tmp")
+        {
+            eprintln!("{name}: only this relative-operand row needs `/tmp` to read back as itself");
+            continue;
+        }
         if name.starts_with("malformed_") {
             qualify_adapters(&input.settings);
         }
@@ -62,6 +63,26 @@ fn absolute_resource_patterns_do_not_depend_on_temporary_directory_spelling() {
     .next()
     .unwrap();
     replay(input, &expected);
+}
+
+/// Identify relative path operands in the groups recorded from `/tmp`.
+#[cfg(unix)]
+fn needs_recorded_cwd(input: &Input) -> bool {
+    input
+        .resolved
+        .extensions
+        .iter()
+        .chain(&input.resolved.skills)
+        .chain(&input.resolved.prompts)
+        .chain(&input.resolved.themes)
+        .any(|resource| {
+            !std::path::Path::new(&resource.path).is_absolute()
+                || resource
+                    .metadata
+                    .base_dir
+                    .as_ref()
+                    .is_some_and(|base| !std::path::Path::new(base).is_absolute())
+        })
 }
 
 /// Replays each operation against its own complete independent observation.

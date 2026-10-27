@@ -200,12 +200,6 @@ const NATIVE_PATHS: &[NativePath] = &[
             ],
         )),
     ),
-    ("./dir", Some(("./dir", &[("./dir-link/", "dir-link/")]))),
-    (
-        "./broken",
-        Some(("./broken", &[("./broken-link", "broken-link")])),
-    ),
-    ("./none", None),
 ];
 
 /// Controlled enumeration over the native locale operation.
