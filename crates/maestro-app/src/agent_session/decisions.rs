@@ -8,12 +8,32 @@ use maestro_settings::{DecisionRequest, PreparedSettingsEdit, SettingsChange, Se
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 
-/// Distinguishes an admitted-operation refusal from a later storage or listener failure.
-pub(super) const REFUSAL_NAME: &str = "ConfigurationRefusal";
+/// Separates admission refusals from failures after selection starts.
+pub(super) enum SelectionError {
+    /// Admission refused before any selection effects.
+    Refused(String),
+    /// A credential, persistence or notification operation failed.
+    Failed(DiagnosticErrorInfo),
+}
+
+impl From<DiagnosticErrorInfo> for SelectionError {
+    fn from(error: DiagnosticErrorInfo) -> Self {
+        Self::Failed(error)
+    }
+}
+
+impl From<SelectionError> for DiagnosticErrorInfo {
+    fn from(error: SelectionError) -> Self {
+        match error {
+            SelectionError::Refused(message) => refusal(message),
+            SelectionError::Failed(error) => error,
+        }
+    }
+}
 
 /// A refused operation in the existing diagnostic representation.
 fn refusal(message: String) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo::new(Some(REFUSAL_NAME.into()), message)
+    DiagnosticErrorInfo::new(Some("ConfigurationRefusal".into()), message)
 }
 
 /// A derived top-level preference value.
@@ -30,28 +50,35 @@ impl<E: ExtensionExecution> AgentSession<E> {
         &self,
         model: &Arc<RwLock<Model>>,
         requested: &ModelThinkingLevel,
-    ) -> Result<PreparedSettingsEdit, DiagnosticErrorInfo> {
-        let model = read(model);
+    ) -> Result<PreparedSettingsEdit, SelectionError> {
+        let (provider, id, reasoning, effective) = {
+            let model = read(model);
+            (
+                model.provider.clone(),
+                model.id.clone(),
+                model.reasoning,
+                clamp_thinking_level(&model, requested.clone()),
+            )
+        };
         let mut changes = vec![
-            preference("defaultProvider", json!(model.provider)),
-            preference("defaultModel", json!(model.id)),
+            preference("defaultProvider", json!(provider)),
+            preference("defaultModel", json!(id)),
         ];
-        let effective = clamp_thinking_level(&model, requested.clone());
         let settings = self.settings_manager.borrow();
         if !settings.is_key_path_locked("defaultThinkingLevel", &[]) {
-            changes.extend(self.thinking_preferences(&effective, model.reasoning));
+            changes.extend(self.thinking_preferences(&effective, reasoning));
         }
         let saved = saved_level(requested);
         let request = DecisionRequest::Model {
-            provider: &model.provider,
-            model_id: &model.id,
+            provider: &provider,
+            model_id: &id,
             thinking_level: saved.as_str(),
         };
         settings
             .prepare_operation(&request, SettingsScope::Global, changes)
             .map_err(|message| {
                 settings.report_refusal(SettingsScope::Global, message.clone());
-                refusal(message)
+                SelectionError::Refused(message)
             })
     }
 

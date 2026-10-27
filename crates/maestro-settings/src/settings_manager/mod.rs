@@ -68,6 +68,16 @@ struct NotANumber {
 }
 
 impl NotANumber {
+    /// Retains typed results only where composition kept their JSON null representation.
+    fn retaining_nulls(&self, document: &Map<String, Value>) -> Self {
+        Self {
+            editor_padding_x: self.editor_padding_x
+                && document.get("editorPaddingX") == Some(&Value::Null),
+            autocomplete_max_visible: self.autocomplete_max_visible
+                && document.get("autocompleteMaxVisible") == Some(&Value::Null),
+        }
+    }
+
     /// The results that a document does not define itself.
     fn unless_defined_by(&self, document: &Map<String, Value>) -> Self {
         Self {
@@ -202,6 +212,7 @@ impl SettingsManager {
             effective,
             &[(SettingsScope::Global, &overrides)],
         );
+        self.effective_nan = self.effective_nan.retaining_nulls(&self.effective);
         self.apply_base_nan_locks();
     }
 
@@ -267,6 +278,7 @@ impl SettingsManager {
             ],
         );
         self.effective_nan = self.accepted_nan.unless_defined_by(&self.project.settings);
+        self.effective_nan = self.effective_nan.retaining_nulls(&self.effective);
         self.apply_base_nan_locks();
     }
 

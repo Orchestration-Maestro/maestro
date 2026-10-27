@@ -1,5 +1,8 @@
 //! Model, thinking-level and queue-mode selection.
-use super::{AgentSession, AgentSessionEvent, CycleDirection, ModelCycleResult, state::thrown};
+use super::{
+    AgentSession, AgentSessionEvent, CycleDirection, ModelCycleResult, decisions::SelectionError,
+    state::thrown,
+};
 use crate::utils::lock::{read, write};
 use maestro_agent::QueueMode;
 use maestro_catalog::DEFAULT_THINKING_LEVEL;
@@ -29,6 +32,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Returns `No API key for <provider>/<id>` without changes when the model has no
     /// configured credentials, or a credential, recording or listener failure.
     pub async fn set_model(&self, model: Arc<RwLock<Model>>) -> Result<(), DiagnosticErrorInfo> {
+        self.set_model_checked(model).await.map_err(Into::into)
+    }
+
+    /// Selects a model while keeping admission refusals distinct from operation failures.
+    pub(super) async fn set_model_checked(
+        &self,
+        model: Arc<RwLock<Model>>,
+    ) -> Result<(), SelectionError> {
         if !self
             .model_registry
             .has_configured_auth(&model)
@@ -38,7 +49,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Err(DiagnosticErrorInfo::error(format!(
                 "No API key for {}/{}",
                 model.provider, model.id
-            )));
+            ))
+            .into());
         }
         let previous = self.model();
         let level = self.thinking_level_for_model_switch(None);
@@ -46,6 +58,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.apply_model(&model, level, edits)?;
         self.emit_model_select(model, previous, ModelSelectSource::Set)
             .await
+            .map_err(Into::into)
     }
 
     /// Selects `model`, records it and its provider, then applies `level` clamped to it.
@@ -97,7 +110,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         let (model, explicit) = candidates.swap_remove(next);
         let level = self.thinking_level_for_model_switch(explicit);
-        let edits = self.prepare_model_selection(&model, &level)?;
+        let edits = self
+            .prepare_model_selection(&model, &level)
+            .map_err(DiagnosticErrorInfo::from)?;
         self.apply_model(&model, level, edits)?;
         self.emit_model_select(Arc::clone(&model), current, ModelSelectSource::Cycle)
             .await?;
