@@ -63,7 +63,7 @@ fn restore(host: &mut Harness, name: &str, branch: &Value) -> Result<(), String>
     } else {
         json!({"type":name,"newLeafId":"new","oldLeafId":"old"})
     };
-    super::block_on(host.store.run_concurrent(async |accessor| {
+    let outcome = super::block_on(host.store.run_concurrent(async |accessor| {
         exports
             .call_invoke_event(
                 accessor,
@@ -75,7 +75,10 @@ fn restore(host: &mut Harness, name: &str, branch: &Value) -> Result<(), String>
     }))
     .map_err(|e| e.to_string())?
     .map_err(|e| e.to_string())??;
-    Ok(())
+    match outcome.decision {
+        super::host_family::guest::Decision::Failed(error) => Err(error),
+        super::host_family::guest::Decision::Returned(result) => result.map(|_| ()),
+    }
 }
 
 /// An ordinary custom save on the current branch, not an observation of private game state.
