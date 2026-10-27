@@ -28,10 +28,12 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
@@ -40,6 +42,9 @@ inserts at its own place instead of appending at the end of each list.
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
+| `snake.rs` | A `/snake` custom view with arrow/WASD controls, 100 ms ticks and saved games in session entries. |
+| `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
+| `snake/render.rs` | The bordered Snake board and input hints. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
@@ -75,6 +80,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- dynamic_tools_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- file_trigger_
@@ -84,6 +91,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -98,6 +107,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- snake_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- status_line_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -216,6 +227,24 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+
+### What the notification example does
+
+Build with `--example notify` using the command above. Loading the component is
+opt-in and needs a native component-enabled host with inherited environment and
+stdout. On every `agent_end` it sends `Maestro` / `Ready for input`. A nonempty
+`WT_SESSION` selects `powershell.exe` (including from WSL); otherwise a nonempty
+`KITTY_WINDOW_ID` selects Kitty's two-part OSC 99 notification. Other environments
+use OSC 777, supported by Ghostty, iTerm2, WezTerm and rxvt-unicode. The terminal
+must permit desktop notifications. Windows needs `powershell.exe` on PATH and
+Windows toast support; the callback waits for that command to finish.
+
+Notification text cannot inject OSC fields or control sequences, and PowerShell
+apostrophes are quoted before the Windows DOM creates XML text nodes. The
+controlled `notify_` tests capture terminal bytes and supply child-process
+results: they send no desktop notifications and need no provider or credentials.
+The example registers no command and adds no built-in notification setting.
+
 ### What the permission gate does
 
 `tool_call` leaves non-bash tools and commands outside its three patterns alone.
@@ -348,6 +377,23 @@ the built component with a supplied wall clock, so it needs no provider and no
 installation; loading the component into an application is opt-in and needs
 that application's component runtime.
 
+### What the dynamic tools example does
+
+`session_start` registers one `echo_session` tool, and `/add-echo-tool
+<tool_name>` registers further echo tools while the session runs. The argument is
+trimmed and lowercased, then admitted only when it holds ASCII letters, digits
+and underscores, so `/add-echo-tool Shared_9` registers `shared_9`. Each tool
+echoes its message behind `[<name>] ` and returns the name and prefix as details,
+and a name that is already registered answers `Tool already registered: <name>`
+instead of replacing the first tool.
+
+The names belong to the factory instance, so two loaded copies register apart.
+A name stays registered when the host refuses its registration, and a host
+refusal ends the command with the host's message. The controlled run replays
+every recorded sequence against the built component and needs no provider and no
+installation; loading the component into an application is opt-in and needs that
+application's component runtime.
+
 ### What the runtime reload command does
 
 `/reload-runtime` awaits the reload request its command context supplies and
@@ -427,6 +473,26 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the Snake game does
+
+Build with `--example snake`, then load the component into a component-enabled
+interactive host with custom UI, keyboard helpers, native waits and a WASI random
+source. Loading and playing are opt-in; no model, provider or network is needed.
+Run `/snake` to open the 40 by 15 board. Arrow keys or WASD steer; each food is
+worth 10 points. Escape saves the current game in a `snake-save` session entry
+and closes the view. Q closes it and clears the save. A restored game starts
+paused: any key except Escape or Q resumes it; those two keys close it without
+changing the saved game. After a collision, R or Space restarts with the high
+score retained. The newest save is read from the whole session, not only the
+current branch. A finished saved game starts a new game with its high score.
+
+The controlled `snake_` runs use the built component with supplied terminal
+input, random bytes, history and tick completions. Closing the view cancels its
+pending native wait and removes its event listener. The example never writes a
+file directly; saving and clearing append ordinary session entries through the
+host. Narrow views show fewer columns without changing the game's collision
+boundaries.
 
 ### What the audited read override does
 

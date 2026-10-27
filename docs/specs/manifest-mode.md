@@ -1,8 +1,11 @@
 # Manifest mode
 
-This specification defines manifest mode. The foundation changes are recorded in
-[Amendment to the foundation specification](#amendment-to-the-foundation-specification),
-and the terms in [Glossary](#glossary) are also defined in [the glossary](../../CONTEXT.md).
+This specification defines manifest mode and the authored artifacts it shares with
+ordinary local use. Changes to other specifications are recorded in
+[Amendment to other specifications](#amendment-to-other-specifications), and the
+terms in [Glossary](#glossary) are also defined in [the glossary](../../CONTEXT.md).
+The placement is recorded in the
+[manifest placement decision](../adr/manifest-extension-placement.md).
 
 ## Purpose and authority
 
@@ -11,19 +14,26 @@ Maestro runs in one of two modes, chosen by settings.
 - **Internal mode** is the [foundation specification](maestro-port.md), unchanged.
   It applies whenever settings name no manifest. Nothing in this document adds a
   read, a file, a network call, a printed line, a setting effect or a wire field to
-  internal mode, except the one corrected package defect listed under
-  [Corrected reference defect](#corrected-reference-defect).
+  internal mode, except the items listed under
+  [Internal-mode changes](#internal-mode-changes).
 - **Manifest mode** applies when settings name a manifest: an organization's
   innersource configuration, published as a pinned package release. The manifest
   supplies a layer for every agent-facing item, and it may lock, bound or require
   values. Users and projects keep personal changes within those constraints.
 
-Everything in manifest mode is an owner-approved difference with no reference
-source, listed in [Differences with no reference source](#differences-with-no-reference-source).
-Delivery, installation, update, settings layering, resource loading, model
-selection and session construction reuse the foundation owners; manifest mode
-composes them differently and adds one policy owner. It adds no crate, no crate
-edge, no loader, no settings scope and no new trait.
+Manifest mode is a capability of the default-on `maestro-manifest` base package,
+a package crate in this workspace released with Maestro. The core holds no
+manifest code. It gains five generic hooks (H1 to H5, see
+[Core hooks](#core-hooks)) that any package may use, and the manifest package is
+their first user. Every manifest-mode behaviour is an owner-approved difference
+with no reference source, listed in
+[Differences with no reference source](#differences-with-no-reference-source).
+
+The same **authored artifacts** work without a manifest. A user or a project
+defines settings, system prompts, context files, instructions, roles, skills,
+prompt templates, workflows, extensions, themes and models in local files, and the
+manifest is one optional source of the same artifact kinds. Each kind has one format that is valid in both
+places ([M14](#m14--authored-artifacts)).
 
 Manifest mode is native-only. The browser application has no package installer and
 stays in internal mode.
@@ -32,25 +42,36 @@ stays in internal mode.
 
 An organization wants every developer's agent to start from the same reviewed
 configuration: system prompt, persona, instructions, skills, prompt templates,
-extensions, models, thinking levels, tools and agent-behaviour settings. Teams own
-parts of that configuration and change it by pull request. Some values must not be
-changed locally (an approved model list, a privacy setting, mandatory standards),
-while developers still personalise everything else and try local extensions without
-a pull request. Today each developer configures Maestro by hand, nothing is
-enforced, and nothing tells a developer which configuration is active.
+workflows, extensions, models, thinking levels, tools and agent-behaviour settings.
+Teams own parts of that configuration and change it by pull request. Some values
+must not be changed locally (an approved model list, a privacy setting, mandatory
+standards), while developers still personalise everything else and try new
+artifacts locally before proposing them. Urgent fixes must reach running laptops
+quickly, and a bad release must be reversible. Today each developer configures
+Maestro by hand, nothing is enforced, nothing tells a developer which configuration
+is active, and Maestro cannot explain the organization's configuration when asked.
 
 ## Solution
 
 Settings name one manifest release, for example
-`"manifest": "git:github.com/org/maestro-manifests@v1.4.0"`. Maestro installs that
-release the way it installs packages, reads its areas, and builds the session from
-five layers: engine defaults, the manifest, the user, the project and the run. The
-manifest's policy decides which local changes are allowed. A broken manifest stops
-agent sessions with the exact fix. `maestro update` proposes newer manifest
-releases and never moves a pin silently. The interactive startup shows which
-manifest is active, and settings views mark locked values.
+`"manifest": "git:github.com/org/maestro-manifests@v1.4.0"`. The manifest package
+installs that release with the ordinary package installer, reads its areas and
+publishes a base settings layer and its policy through the core hooks. The session
+is built from five layers: engine defaults, the manifest, the user, the project and
+the run. The policy decides which local changes are allowed, and every governed
+change is checked before it has any effect. Teams ship capabilities: one package
+per team area, bundling roles, skills, instructions, prompt templates and
+workflows. A broken manifest makes the manifest package fail its load, which stops
+agent sessions with the exact fix. `/manifest update` moves the pin forward or back,
+a release can declare a minimum that every laptop takes at its next session start,
+and running sessions check for new releases at an interval the organization sets.
+The interactive startup and `/manifest status` show which manifest is active, and
+Maestro's own documentation describes every manifest artifact, so the agent can
+answer questions about it.
 
 ## User stories
+
+### Selection and delivery
 
 1. As an organization administrator, I want to publish one manifest release, so that every developer who names it gets the same agent configuration.
 2. As a team lead, I want the project's `.maestro/settings.json` to name the manifest release, so that the whole team uses it and changes it by pull request.
@@ -62,46 +83,94 @@ manifest is active, and settings views mark locked values.
 8. As a developer with a broken manifest, I want `--help`, `--version`, `maestro install`, `maestro update`, `maestro list`, `maestro config` and settings editing to keep working, so that I can repair the setup from Maestro itself.
 9. As an administrator, I want to lock the manifest selection itself, so that a project cannot point developers at another configuration.
 10. As a team lead, I want to bump the project's manifest pin by pull request and have every teammate's next start use the new release, so that adoption needs no manual reinstall.
-11. As a developer, I want `maestro update` to show a newer manifest release and what changed, so that I decide when to adopt it.
-12. As a developer, I want to opt into applying manifest releases without a prompt, so that I stay current without extra steps.
-13. As a security reviewer, I want any release that grows permissions to ask before it applies, even with automatic application on, so that new tools, wider bounds or removed locks are never adopted silently.
-14. As a developer, I want ordinary package updates to keep working unchanged in manifest mode, so that my own packages update as before.
-15. As an administrator, I want the manifest to supply the base system prompt, so that every agent starts from the organization's prompt.
-16. As an administrator, I want the main agent's persona appended to the system prompt, so that its behaviour is consistent.
-17. As a developer, I want my own `SYSTEM.md`, `APPEND_SYSTEM.md` and prompt flags to keep working when the manifest does not lock them.
-18. As an administrator, I want to lock the system prompt or the appended prompt, so that local files and flags cannot replace them.
-19. As a standards owner, I want standards instructions always loaded, so that `--no-context-files` cannot drop them.
-20. As a developer, I want my project's `AGENTS.md` and ancestor context files loaded after the manifest's instructions, so that repository guidance still applies.
-21. As a team, I want to ship skills, prompt templates, extensions and themes in the manifest, so that developers get them without installing packages.
-22. As a developer, I want to add my own skills, templates and extensions and to shadow optional manifest ones, so that I can personalise and experiment.
-23. As an administrator, I want required resources that cannot be disabled, shadowed or dropped by discovery flags, so that mandatory capabilities stay active.
-24. As an administrator, I want to forbid local extensions, skills, prompt templates or packages, so that only reviewed code and instructions run.
-25. As a developer, I want `maestro config` to toggle optional manifest resources with the same filters I use for packages, so that I control my working set.
-26. As an administrator, I want the manifest to declare packages that every developer gets, so that shared packages need no per-developer install.
-27. As an administrator, I want to supply custom providers and models in the manifest, so that developers reach the organization's endpoints.
-28. As a security reviewer, I want manifest provider keys to be environment or command references, never literal secrets, so that no secret is published in the manifest.
-29. As a developer, I want my own `models.json` to add providers and partially override manifest models without losing their other fields, unless providers are locked.
-30. As an administrator, I want an allowed set of models, so that every selection path (default, flags, `/model`, cycling, RPC, extensions, SDK and resumed sessions) stays inside it.
-31. As an administrator, I want a default thinking level with a minimum and a maximum, so that developers may raise thinking up to the maximum but not beyond it.
-32. As a developer, I want a stored default outside the policy resolved to an allowed value with a diagnostic, so that an old setting never blocks my start.
-33. As a developer, I want an explicit request outside the policy refused with the lock or bound that forbids it, so that I know why it failed.
-34. As a developer resuming a session, I want a recorded model outside the policy replaced by the policy's choice with the usual fallback message, so that edited session files cannot bypass the policy.
-35. As an administrator, I want to lock or bound agent-behaviour settings (transport, steering, follow-up, compaction, branch summary, retry, skill commands, image resizing, thinking budgets), so that agent behaviour and spend are governed.
-36. As a privacy officer, I want to force image blocking and disable install telemetry, so that no environment variable or setting turns them back on.
-37. As a developer, I want presentation, keybindings, machine paths, credentials and my theme choice to stay mine, so that the manifest never governs my terminal or secrets.
-38. As an administrator, I want the main agent's tools limited by the manifest's role definition, so that developers can drop tools but never add tools beyond it.
-39. As an administrator, I want local extensions unable to replace a locked prompt, activate forbidden tools, register providers under a provider lock or change model and thinking outside the policy.
-40. As a developer, I want `/reload` to pick up manifest and settings changes, and to keep my current configuration with an error when the new manifest is broken.
-41. As a developer switching to a project that names another manifest, I want the new session built from that project's manifest, so that each project gets its own configuration.
-42. As a developer, I want the interactive startup to show the active manifest source, its release and the settings file that names it, so that I know which configuration is in force.
-43. As a developer, I want `/settings` and `maestro config` to mark manifest-set and locked values, and never offer an edit the policy would refuse.
-44. As an RPC or JSON client author, I want the protocol unchanged, so that clients keep working in both modes.
-45. As an SDK author, I want internal-mode construction and every injectable component unchanged, so that embedding programs behave as before.
-46. As a team, I want to select the language and team areas a project uses, so that developers load only the instructions and resources relevant to them.
-47. As an administrator, I want team areas to add or narrow but never loosen the organization's constraints, so that a team package cannot unlock a value.
-48. As a role author, I want manifest roles with model, thinking and tool limits for authored agents, so that delegated agents follow the same policy (delivered with the authored-agent consumer).
-49. As a developer, I want to raise a role's thinking or choose its model within the manifest's bounds through my settings, so that I tune roles without editing the manifest (delivered with the authored-agent consumer).
-50. As an administrator, I want the manifest to supply MCP servers that local gateway options cannot drop, with credentials kept local (delivered with the MCP base package).
+11. As an administrator, I want any edit to the installed release, or to an installed instruction copy, repaired at every start with a notice, so that nobody can silently turn the organization's prompt, policy or instructions into something else.
+
+### Updates
+
+12. As a developer, I want `/manifest status` to show the active release, the newest release and what changed, so that I decide when to adopt it.
+13. As a developer, I want to opt into applying manifest releases without a prompt, so that I stay current without extra steps.
+14. As a security reviewer, I want any release change that grows permissions to ask before it applies, even with automatic application on, so that new tools, wider bounds or removed locks are never adopted silently.
+15. As a developer, I want ordinary package updates and `maestro update` to keep working unchanged in manifest mode, so that my own packages update as before.
+16. As an administrator, I want a release to declare a minimum release, so that an urgent fix reaches every laptop at its next session start.
+17. As an administrator, I want running sessions to check for new releases at an interval I set, so that long-running sessions hear about a fix without a restart.
+18. As a developer, I want `/manifest update <version>` to move to any release of the same manifest, older or newer, so that I can roll back a bad release.
+19. As an administrator, I want a rollback never to go below the minimum release, so that a known-bad release cannot come back.
+
+### Prompts and instructions
+
+20. As an administrator, I want the manifest to supply the base system prompt, so that every agent starts from the organization's prompt.
+21. As an administrator, I want the main agent's persona appended to the system prompt, so that its behaviour is consistent.
+22. As a developer, I want my own `SYSTEM.md`, `APPEND_SYSTEM.md` and prompt flags to keep working when the manifest does not lock them.
+23. As an administrator, I want to lock the system prompt or the appended prompt, so that local files and flags cannot replace them.
+24. As a standards owner, I want standards instructions always applied, so that no local file, flag or setting can drop them (settled with the rules system).
+25. As a developer, I want my project's `AGENTS.md` and ancestor context files to keep loading as before, so that repository guidance still applies.
+26. As a developer, I want to pick instruction files from the manifest and have them copied into my `.maestro/instructions/`, so that I install only the guidance I need.
+
+### Resources, packages and capabilities
+
+27. As a team, I want to ship skills, prompt templates, extensions, themes and workflows in the manifest, so that developers get them without installing packages.
+28. As a developer, I want to add my own skills, templates, workflows and extensions and to shadow optional manifest ones, so that I can personalise and experiment.
+29. As an administrator, I want required resources that cannot be disabled, shadowed or dropped by discovery flags, so that mandatory capabilities stay active.
+30. As an administrator, I want to forbid local extensions, skills, prompt templates, packages, workspace actions or browser contributions, so that only reviewed code and instructions run.
+31. As a developer, I want `maestro config` to toggle optional manifest resources with the same filters I use for packages, so that I control my working set.
+32. As an administrator, I want the manifest to declare packages that every developer gets, so that shared packages need no per-developer install.
+33. As a team, I want my area to be one capability that bundles roles, skills, instructions, prompt templates and workflows, so that a developer selects it by name.
+34. As an organization, I want capability folders grouped the way our source-hosting organization is grouped, so that folder ownership and access follow our existing teams.
+35. As a developer, I want to pin any package to any version and take single items from it with the ordinary filters, so that I can hold one skill or workflow at a known version.
+
+### Models, thinking and tools
+
+36. As an administrator, I want to supply custom providers and models in the manifest, so that developers reach the organization's endpoints.
+37. As a security reviewer, I want manifest provider keys to be environment or command references, never literal secrets, so that no secret is published in the manifest.
+38. As a developer, I want my own `models.json` to add providers and partially override manifest models without losing their other fields, unless providers are locked.
+39. As an administrator, I want an allowed set of models, so that every selection path (default, flags, `/model`, cycling, RPC, extensions, SDK and resumed sessions) stays inside it.
+40. As an administrator, I want a default thinking level with a minimum and a maximum, so that developers may raise thinking up to the maximum but not beyond it.
+41. As a developer, I want a stored default outside the policy resolved to an allowed value with a diagnostic, so that an old setting never blocks my start.
+42. As a developer, I want an explicit request outside the policy refused before anything changes, with the lock or bound that forbids it, so that I know why it failed.
+43. As a developer resuming a session, I want a recorded model outside the policy replaced by the policy's choice with the usual fallback message, so that edited session files cannot bypass the policy.
+44. As an administrator, I want to lock or bound agent-behaviour settings (transport, steering, follow-up, compaction, branch summary, retry, skill commands, image resizing, thinking budgets), so that agent behaviour and spend are governed.
+45. As a privacy officer, I want to force image blocking and disable install telemetry, so that no environment variable or setting turns them back on.
+46. As a developer, I want presentation, keybindings, machine paths, credentials and my theme choice to stay mine, so that the manifest never governs my terminal or secrets.
+47. As an administrator, I want the main agent's tools limited by the manifest's role definition, so that developers can drop tools but never add tools beyond it.
+48. As an administrator, I want local extensions unable to replace a locked prompt, activate forbidden tools, register providers under a provider lock or change model and thinking outside the policy.
+
+### Workspace daemon
+
+49. As an administrator, I want workspace settings that run commands or reach the network to obey the manifest's locks in the workspace daemon too, so that a lock holds in every Maestro process.
+50. As a developer, I want project settings never to change the shared workspace daemon, so that one project cannot change every workspace.
+
+### Workflows
+
+51. As a developer, I want to write a workflow as one YAML file in my configuration root or project, so that I can run a multi-step agent process without a manifest.
+52. As a team, I want the same workflow file to work unchanged in a capability, so that a local workflow becomes a team workflow by pull request.
+53. As a developer, I want the manifest to provide the reference chains (implement and review, implement, scout and plan) as workflows, so that I start with working examples.
+54. As a developer, I want to ask Maestro to write or change a workflow and have it check the file, so that I never need to learn the format first.
+55. As an administrator, I want to require a workflow and everything it references, so that a project cannot replace its roles or prompts.
+56. As a workflow author, I want literal text to stay fixed and positional arguments to be supplied per run, so that I decide what a run may change.
+57. As a developer, I want a failed step to stop the workflow and say which step failed, so that later steps never run on bad input.
+
+### Visibility, catalog and documentation
+
+58. As a developer, I want the interactive startup to show the active manifest source, its release and the settings file that names it, so that I know which configuration is in force.
+59. As a developer, I want `/settings` and `maestro config` to mark manifest-set and locked values, and never offer an edit the policy would refuse.
+60. As an RPC or JSON client author, I want the protocol unchanged, so that clients keep working in both modes.
+61. As an SDK author, I want internal-mode construction and every injectable component unchanged, so that embedding programs behave as before.
+62. As a developer, I want to browse the manifest's capabilities, roles, workflows, instructions and policy in the browser catalog, with each entry's source, lock state and owning team, so that I can find what my organization offers.
+63. As a developer, I want to ask Maestro about any part of the manifest and get an answer from its documentation, so that I never have to read the repository to understand it.
+64. As a manifest author, I want documentation for every artifact kind, at the same level as Maestro's own documentation, so that contributors write correct files.
+65. As a manifest maintainer, I want pull-request checks that load the release the same way a session does, so that a broken release never gets tagged.
+66. As a manifest author, I want a published schema for every artifact kind, checked before I can commit and again in required CI, so that a malformed file never reaches the main branch.
+67. As a developer, I want the catalog to show every manifest entry as a card with its relations, its dependency graph and its owning team, so that I can see who owns what and what depends on it.
+
+### Reload, switching and roles
+
+68. As a developer, I want `/reload` to pick up manifest and settings changes, and to keep my current configuration with an error when the new manifest is broken.
+69. As a developer switching to a project that names another manifest, I want the new session built from that project's manifest, so that each project gets its own configuration.
+70. As a team, I want to select the language areas and capabilities a project uses, so that developers load only what is relevant to them.
+71. As an administrator, I want language areas and capabilities to add or narrow but never loosen the organization's constraints, so that a team cannot unlock a value.
+72. As a role author, I want manifest roles with model, thinking and tool limits for authored agents, so that delegated agents follow the same policy (delivered with the authored-agent consumer).
+73. As a developer, I want to raise a role's thinking or choose its model within the manifest's bounds through my settings, so that I tune roles without editing the manifest (delivered with the authored-agent consumer).
+74. As an administrator, I want the manifest to supply MCP servers that local gateway options cannot drop, with credentials kept local (delivered with the MCP base package).
 
 ## Behaviour contract
 
@@ -113,21 +182,20 @@ manifest is active, and settings views mark locked values.
    the package source grammar and its parser.
 2. An absent key, an empty string or an object with an empty `source` means internal
    mode.
-3. The source must be pinned in the package sense: an npm source with a version, or a
-   Git source with a ref. A local path, an unpinned source or a wrong-typed value is
-   an invalid selection (M9).
-4. The selection is read from the raw user and project settings files, before any
-   manifest loads. With one value, that value is used. With two values naming the
-   same identity, the project value is used (the ordinary project-wins order).
-   With two values naming different identities, the user's manifest is loaded
-   first: if it locks `manifest`, the project value is ignored with a diagnostic;
-   otherwise the project value is used. If the user's manifest cannot be loaded in
-   that case, the selection is broken (M9).
-5. Identity follows package identity: npm package name, or Git repository URL
-   without its ref.
+3. The source must be a Git source pinned to a ref (a tag or a commit), so that every
+   start can verify the release (M2.5). An npm source, a local path, an unpinned
+   source or a wrong-typed value is an invalid selection (M9).
+4. The manifest package reads the selection from the raw user and project settings
+   documents through the settings readers (H5), before any manifest loads. With one
+   value, that value is used. With two values naming the same identity, the project
+   value is used (the ordinary project-wins order). With two values naming different
+   identities, the user's manifest is loaded first: if it locks `manifest`, the
+   project value is ignored with a diagnostic; otherwise the project value is used.
+   If the user's manifest cannot be loaded in that case, the selection is broken (M9).
+5. Identity follows package identity: the Git repository URL without its ref.
 6. A lock on `manifest` fixes the identity. Changing the identity or removing the
    value through Maestro is refused. Changing the version of the same identity is
-   allowed only through the update apply route (M11).
+   allowed only through `/manifest update` (M11).
 7. The manifest installs in the scope of the settings file that names it: user
    scope for the user file, project scope for the project file. The selected
    `manifest` value is never written into `packages`.
@@ -137,21 +205,33 @@ manifest is active, and settings views mark locked values.
 ### M2 — Delivery and acquisition
 
 1. Acquisition is ordinary package acquisition for the selected source and scope,
-   with the package owner's progress, offline handling, configured npm and Git
-   commands, and installation paths. There is no second downloader, cache or
-   updater.
-2. A missing release installs at start. With `MAESTRO_OFFLINE`, or when installation
-   fails, the release stays missing and agent sessions refuse (M9).
-3. A pinned npm release whose installed version differs from the pin is reinstalled
-   (existing behaviour). A pinned Git release whose checkout is not at its ref is
-   checked out at the ref (corrected defect). A pin change made by a pull request
-   therefore takes effect at the next start.
+   requested by the manifest package through the package operations (H5), with the
+   package owner's progress, offline handling, configured npm and Git commands, and
+   installation paths. There is no second downloader, cache or updater.
+2. A missing release installs while the manifest package loads. With
+   `MAESTRO_OFFLINE`, or when installation fails, the release stays missing and the
+   manifest package fails its load (M9).
+3. A pinned Git release whose checkout is not at its ref is checked out at the ref
+   (corrected defect). A pin change made by a pull request therefore takes effect at
+   the next start.
 4. A release that is installed but contains no resources is valid; absence of
    files is not a missing release.
+5. **Integrity.** At every session start the manifest package checks that the
+   release checkout is clean and at its pinned commit: the working tree matches the
+   commit, with no modified, added, deleted or untracked files, and the checked-out
+   commit is the one the ref names. When the checkout has drifted, the package
+   restores it to the pinned commit with the package owner's Git commands through
+   the package operations (H5), then shows `Manifest release restored: <release>`
+   with the files it reset or removed. Drift never stops a session: when the
+   pinned commit cannot be restored from the checkout, the release is installed
+   again (M2.2); when that is impossible too, for example offline, the session runs
+   on the manifest package's last accepted composition (M9) with a warning naming
+   the drift, and the next start repairs it. An edit to the organization's files is
+   therefore never kept and never silent.
 
 ### M3 — Layout and reading
 
-The manifest is read as areas, found by location. The engine reads no area
+The manifest is read as areas, found by location. Maestro reads no area
 descriptor; ownership records in a manifest repository are repository data.
 
 | Area | Location | Loaded |
@@ -160,15 +240,16 @@ descriptor; ownership records in a manifest repository are repository data.
 | Standards | `standards/<domain>/` | always, every domain, in directory-name order |
 | Core | `core/` | always |
 | Languages | `languages/<name>/` | when listed in `manifestAreas`, in list order |
-| Team packages | `packages/<name>/` | when listed in `manifestAreas`, in list order, after languages |
+| Capabilities | `capabilities/<group>/<name>/` | when listed in `manifestAreas`, in list order, after languages |
 
 Every area may contain:
 
 | Content | Meaning |
 |---|---|
 | `skills/`, `prompts/`, `extensions/`, `themes/`, or a package-manifest `maestro` key | Package resources, read by the package collector (M6) |
-| `instructions/*.md` | Context instructions, in file-name order (M5) |
+| `instructions/*.instructions.md` | Instruction files with `applyTo` frontmatter, offered for installation (M5.3) |
 | `agents/*.md` | Role definitions in the authored-agent frontmatter format: `name`, `description`, `tools`, `model`, plus `thinking`; the body is the role prompt |
+| `workflows/*.yaml` | Workflows ([M15](#m15--workflows)) |
 | `settings/settings.json` | A settings layer using the ordinary settings keys (M4) |
 | `settings/policy.json` | Policy (M4) |
 
@@ -176,12 +257,16 @@ Only the core area may contain `SYSTEM.md` (base system prompt), the role named
 `maestro` (the main agent's persona and tools), `llm/models.json` (model file in the
 ordinary models format) and `backends/mcp/mcp.json` (MCP servers, M13).
 
-`manifestAreas` is a list of `languages/<name>` and `packages/<name>` entries. Its
-value resolves like any setting: the manifest's common, standards and core
-settings give the default, then user, then project. A listed area that does not
-exist, an entry with another prefix, or a `manifestAreas` or `manifest` value or
-constraint inside a language or team-package area makes the manifest invalid.
-Duplicate entries load once.
+A capability is one package: its folder holds a `package.json` and its own
+resources ([M16](#m16--capabilities-and-ownership)). `<group>` and `<name>` are
+lowercase, hyphenated and at most 64 characters each.
+
+`manifestAreas` is a list of `languages/<name>` and `capabilities/<group>/<name>`
+entries. Its value resolves like any setting: the manifest's common, standards and
+core settings give the default, then user, then project. A listed area that does
+not exist, an entry with another prefix, or a `manifestAreas`, `manifest`,
+`minimumRelease` or `updateCheckMinutes` value or constraint inside a language area
+or capability makes the manifest invalid. Duplicate entries load once.
 
 Settings layers combine in area order with the ordinary one-level merge. The
 manifest's settings must not set the resource path keys `extensions`, `skills`,
@@ -193,7 +278,8 @@ are the manifest's required packages (M6).
 Resolution order, lowest to highest: engine defaults; manifest (areas in M3 order);
 user; project; run (flags and SDK options); runtime changes. Raw user and project
 settings stay raw: the manifest layer is never written into them, and their
-snapshots, unknown members, pending edits and reload behaviour are unchanged.
+snapshots, unknown members, pending edits and reload behaviour are unchanged. The
+manifest layer and its locked keys reach the settings owner as the base layer (H1).
 
 `settings/policy.json` (all members optional; an unknown member makes the manifest
 invalid):
@@ -206,14 +292,17 @@ invalid):
     "retry.maxRetries": { "max": 5 }
   },
   "models": ["anthropic/claude-*", "openai/gpt-6.1-sol"],
-  "required": ["core/skills/review", "standards/security/instructions/secrets.md"],
+  "required": ["core/skills/review", "core/workflows/secure-release.yaml"],
   "roles": {
     "coder": {
       "locked": ["model"],
       "bounds": { "thinking": { "min": "high", "max": "xhigh" } },
       "models": ["anthropic/*"]
     }
-  }
+  },
+  "credentialHeaders": ["X-Org-Token"],
+  "minimumRelease": "1.5.1",
+  "updateCheckMinutes": 30
 }
 ```
 
@@ -222,9 +311,11 @@ invalid):
 | `locked` | L | Each entry is a settings key path (dotted for nested members) or one of the lock names `systemPrompt`, `appendSystemPrompt`, `providers`. The locked value is the manifest's settings value, or the engine default when the manifest sets none; a `manifest` lock fixes the manifest's own identity (M1). |
 | `bounds` | B | `min` and/or `max` for numeric keys and for thinking levels (order: off < minimal < low < medium < high < xhigh). |
 | `models` | B (allowed set) | Model patterns in the `enabledModels` syntax. Every model selection must match. |
-| `required` | A | Paths relative to the release root. A resource at or under a required path is required. Standards-area instructions are always required. |
+| `required` | A | Paths relative to the release root. A resource at or under a required path is required. A required workflow also requires its references (M15). How required instructions stay present is settled with the rules system. |
 | `roles` | L/B per role | `locked` (`model`, `thinking`, `tools`), `bounds.thinking`, `models` for one role (M12). |
 | `credentialHeaders` | Credential classification | Header names added to the default credential list (M7); additions from every selected area combine. |
+| `minimumRelease` | Release floor | The lowest release a laptop may run (M11). A release version; Git tags compare as semantic versions after an optional leading `v`. Common and core areas only. |
+| `updateCheckMinutes` | Check interval | Minutes between release checks in a running session (M11). A non-negative integer; default 30; `0` checks at session start only. Common and core areas only. |
 
 Governed keys and what the manifest may do with them:
 
@@ -237,26 +328,34 @@ Governed keys and what the manifest may do with them:
 | `transport`, `steeringMode`, `followUpMode`, `enableSkillCommands`, `images.autoResize` | lock; default |
 | `compaction.{enabled,reserveTokens,keepRecentTokens}`, `branchSummary.{reserveTokens,skipPrompt}`, `retry.{enabled,maxRetries,baseDelayMs}`, `retry.provider.{timeoutMs,maxRetries,maxRetryDelayMs}` | lock; bound (numeric members only); default |
 | `images.blockImages`, `enableInstallTelemetry` | lock (normally to `true` and `false`); default |
-| `packages`, `extensions`, `skills`, `prompts` | lock (no local additions); require entries |
+| `packages`, `extensions`, `skills`, `prompts`, `actions`, `contributions` | lock (no local additions); require entries |
 | `manifest`, `manifestAreas`, `manifestAutoUpdate` | lock; default (`manifestAreas`, `manifestAutoUpdate`) |
 | `multiplexer.tabBarRight` | lock; default |
 | `multiplexer.allowNested` | lock; default |
 | `daemon.resumeAgentsOnRestore` | lock; default |
 | `daemon.detectionCatalogCheck` | lock; default |
 | `multiplexer.remote.manageSshConfig` | lock; default |
+| `update.versionCheck` | lock; default |
+| `update.channel` | lock; default |
 | `theme`, `themes`, `shellCommandPrefix` | default only |
 | every other key (presentation, keybindings, machine paths, session directory, changelog state, credentials) | nothing: user-only |
 
-Core invariants are compiled in: a lock or bound on a default-only or user-only key,
-on an unknown key, or a bound on a non-numeric, non-thinking key makes the manifest
-invalid.
+`actions` and `contributions` are governed once their resource kinds are collected.
+Workflows and roles have no lock on local additions: a local
+workflow runs every step through the ordinary model, tool and role policy, so it
+gains no power the user lacks.
+
+Invariants: a lock or bound on a default-only or user-only key, on an unknown key,
+or a bound on a non-numeric, non-thinking key makes the manifest invalid. The
+manifest package holds the governed-key table; the core holds none.
 
 Combining areas, in area order: locks join, and a later area that sets a different
 value for a key an earlier area locked, or locks it with a different value, makes
 the manifest invalid. Minimums take the largest, maximums the smallest, allowed
 model sets intersect, required paths join. A combined bound with minimum above
 maximum, or a manifest settings value outside its own combined constraints, makes
-the manifest invalid. Team areas can therefore only add or narrow.
+the manifest invalid. Language areas and capabilities can therefore only add or
+narrow.
 
 Stored values and explicit requests differ:
 
@@ -264,42 +363,62 @@ Stored values and explicit requests differ:
   the manifest value; a bounded value is clamped to the bound; a model outside
   `models` is replaced by the manifest default when it is allowed, otherwise by the
   first available model, in catalog order, matching the earliest pattern that
-  matches any available model. Each produces a
-  diagnostic through the channel that reports settings load errors. The stored
-  file is never rewritten by a read.
+  matches any available model. Each produces a diagnostic through the channel that
+  reports settings load errors. The stored file is never rewritten by a read.
 - **Explicit requests** (setters, settings edits, flags, SDK options, RPC commands,
-  `/model`, cycling, extension calls, environment overrides of governed values) that
-  a lock, bound, allowed set or required entry forbids are refused with a message
+  `/model`, cycling, extension calls, environment overrides of governed values,
+  package install and remove, resource toggles) that a lock, bound, allowed set or
+  required entry forbids are refused before their first effect, with a message
   naming the constraint and the manifest. A refused request changes no memory, no
-  pending edit, no file, no session history and emits no change event.
+  pending edit, no file, no session history and emits no change event. An allowed
+  request runs the foundation's steps in the foundation's order.
 
-The policy check has one owner, the settings owner. Every other owner asks it before
-its own effect.
+The manifest package decides governed changes through the decision hook (H2).
+Every owner asks the hook before its own effect, except package commands, which
+run before packages load (`main.ts:431–436`). Before any package effect, they use
+the persisted base layer for the operation's scope (H1): `install` refuses when
+`packages` is locked, and `remove` refuses an identity listed in that layer's
+`packages` entries, before deleting any file (`core/package-manager.ts:991–993`).
+The package commands reuse the core's base-layer enforcement (H1); they hold no
+manifest policy logic.
+
+A lock behaves the same in every Maestro process. The settings owner enforces the
+locked keys of one base layer in agent sessions and in the workspace daemon alike;
+the daemon only reads the persisted global layer, because it hosts no extensions
+(H1, H3).
 
 ### M5 — Prompts and instructions
 
 1. **Base system prompt.** Candidates, highest first: explicit (flag or SDK option or
    SDK override callback), project `SYSTEM.md`, user `SYSTEM.md`, manifest
-   `core/SYSTEM.md`, engine default. A custom prompt still replaces the default
+   `core/SYSTEM.md`, engine default. The manifest package contributes its candidate
+   as a base prompt input (H4). A custom prompt still replaces the default
    documentation block. Under a `systemPrompt` lock, local files are ignored with a
    diagnostic and an explicit replacement is refused.
 2. **Appended prompt.** The manifest append (the body of the core `maestro` role) is
    always first, followed by the ordinary choice: every explicit append in order,
    otherwise the discovered `APPEND_SYSTEM.md`. Under an `appendSystemPrompt` lock,
    local append files are ignored with a diagnostic and explicit appends are refused.
-3. **Instructions.** Manifest instructions come first, in area order and file-name
-   order, followed by the ordinary global and root-to-cwd context files with their
-   filename aliases and first-readable rule. `--no-context-files` drops the ordinary
-   files and optional manifest instructions, never required ones. All selected
-   instruction files load; `applyTo` metadata is not interpreted.
+3. **Instructions.** An area's `instructions/*.instructions.md` files are offered,
+   not loaded. `/manifest install <name>` copies the chosen file into
+   `~/.maestro/agent/instructions/`, or with `-l` into the project's
+   `.maestro/instructions/`, the same scopes as package installation. The manifest
+   package records, in its own package state, the release commit and the file
+   digest each copy came from. At every session start a copy whose content no
+   longer matches its release file is refreshed from the release and listed in the
+   same restore notice (M2.5); when a newer release changes an installed file, the
+   copy is updated with it. Loading
+   instruction files, `applyTo` and always-apply rules belong to the rules system
+   ([Out of scope](#out-of-scope)); the context-file loader and `--no-context-files`
+   keep their foundation meaning here.
 4. Date, cwd, skills block, tool snippets and guidelines keep their existing
    assembly.
 
 ### M6 — Resources and packages
 
-1. Each selected area root enters ordinary package collection as a package-origin
-   source with the selection's source string and scope, so manifest resources rank
-   below project and user resources. Their base directory is the release root, so
+1. Each selected area root is contributed as a package-origin source with the
+   selection's source string and scope (H4), so manifest resources rank below
+   project and user resources. Their base directory is the release root, so
    filters and `maestro config` patterns are relative to the release root.
 2. The selection's object filters apply with the ordinary filter semantics. A filter
    that disables a required resource is ignored with a diagnostic; `maestro config`
@@ -309,15 +428,19 @@ its own effect.
    `--no-prompt-templates`, `--no-extensions`, `--no-themes`) and SDK override
    callbacks never remove a required resource; a required resource missing after
    overrides refuses construction.
-4. A lock on `extensions`, `skills`, `prompts` or `packages` stops local additions of
-   that kind: settings entries and automatic user and project folders are ignored
-   with a diagnostic, and explicit flags (`-e`, `--skill`, `--prompt-template`) refuse
-   the run. Forbidden local components are excluded before they execute.
+4. A lock on `extensions`, `skills`, `prompts`, `packages`, `actions` or
+   `contributions` stops local additions of that kind: settings entries and
+   automatic user and project folders are ignored with a diagnostic, and explicit
+   flags (`-e`, `--skill`, `--prompt-template`) refuse the run. Forbidden local
+   components are excluded before they execute, because base packages load first
+   (H4).
 5. The manifest's `packages` entries are required packages. They install in the
-   selection's scope and are collected after the area roots at package precedence.
-   A missing required package refuses sessions. Removing a package whose identity
-   matches a required package in the same scope is refused before any file is
-   deleted.
+   selection's scope and are collected after the area roots at package precedence,
+   in the same startup (H4). A missing required package refuses sessions. Removing
+   a package whose identity matches a required package in the same scope is refused
+   before any file is deleted. With no persisted layer, package commands retain
+   foundation behaviour; the next session start installs a removed required
+   package again. A forbidden local addition is excluded before execution (M6.4).
 6. Optional resources that fail to load are skipped with the ordinary warning. A
    required resource that fails to load refuses sessions.
 7. Themes from the manifest are offered; the manifest's `theme` value is a default
@@ -325,13 +448,13 @@ its own effect.
 
 ### M7 — Models and thinking
 
-1. **Model files.** The manifest `core/llm/models.json` is read before the user's
-   `models.json` with the same parser. A user entry that partially overrides a
-   manifest provider or model keeps every manifest field it does not set; a user
-   model with the same provider and ID replaces the manifest model. Refresh and
-   dynamic provider removal restore the correct underlying layers. Under a
-   `providers` lock the user file is ignored with a diagnostic and extension
-   provider registration is refused.
+1. **Model files.** The manifest `core/llm/models.json` is contributed as a model
+   file read before the user's `models.json` with the same parser (H4). A user entry
+   that partially overrides a manifest provider or model keeps every manifest field
+   it does not set; a user model with the same provider and ID replaces the manifest
+   model. Refresh and dynamic provider removal restore the correct underlying
+   layers. Under a `providers` lock the user file is ignored with a diagnostic and
+   extension provider registration is refused. There is no project models file.
 2. A manifest `apiKey` or credential-header value must be a command (`!…`) or an
    environment variable name (upper-case letters, digits, underscores); any other
    value in those positions makes the manifest invalid. Credential header names
@@ -377,27 +500,48 @@ its own effect.
 | Case | Behaviour |
 |---|---|
 | No manifest named | Internal mode |
-| Invalid selection (not pinned, local, wrong type) | Agent sessions refuse |
-| Release missing and not installable (offline, network, authentication) | Agent sessions refuse |
-| Invalid manifest: malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, literal secret, invalid `manifestAreas` | Agent sessions refuse |
+| Invalid selection (not pinned, local, wrong type) | The manifest package fails its load; agent sessions refuse |
+| Release missing and not installable (offline, network, authentication) | The manifest package fails its load; agent sessions refuse |
+| Invalid manifest: malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
 | Missing required package, or a required resource that fails to load | Agent sessions refuse |
 | Optional resource that fails to load | Skipped with the ordinary warning |
 | A kind absent from the manifest | No manifest layer for that kind; engine defaults apply |
 | Stored value conflicting with policy | Resolved as in M4 with a diagnostic |
 | Explicit request conflicting with policy | Refused as in M4 |
 
-A refusal names the settings file that selects the manifest, the source, the
-problem and the fix, and no model request is made. It is never a silent fallback to
-internal mode or to an earlier copy. `--help`, `--version`, `install`, `remove`,
-`update`, `list`, `config` and settings editing work without a valid manifest. JSON
-and RPC report a refusal through their existing error forms.
+A failed load uses the foundation's extension-load failure: the error is reported as
+`Failed to load extension "<path>": <message>` and the program exits with status 1
+in every mode. The message names the settings file that selects the manifest, the
+source, the problem and the fix, and no model request is made. There is no silent
+fallback to internal mode or to an earlier copy; unrepairable drift uses the last
+accepted composition with a warning (M2.5).
+
+Before failing its load at session start for a broken pinned release, the manifest
+package checks for a newer release of the same identity. If that release loads
+cleanly, it applies under the required-release rules (M11.4), including permission
+growth confirmation. Growth is compared with the last accepted composition of that
+identity; without one, the candidate's whole permission set counts as growth and
+is listed for confirmation. Without an interactive terminal, the package refuses
+a candidate with growth and reports the fix. If no candidate can be applied, the
+load fails with the fix. Checks still obey `MAESTRO_OFFLINE` and
+`update.versionCheck` (M11.2).
+
+Package commands and `config` run before packages load. They use the last
+persisted layer for their scope (H1), even when the manifest is broken; with none,
+they retain foundation behaviour. A changed selection keeps the old layer until
+the next session start refreshes it. `--version`, `list`, viewing config and
+editing unlocked settings remain available. `--help` runs after runtime creation
+but before load errors are reported (`main.ts:609–620,654–658`), so a broken
+manifest does not prevent help.
 
 Every construction of session services (start, new session, resume, fork, import,
 switching to another working directory) recomposes the manifest and refuses on
-failure through the ordinary construction failure path. `/reload` recomposes too;
-when recomposition fails, the session keeps its current composition and reports the
-manifest error with its fix, the same way a failed settings scope keeps its
-accepted values on reload.
+failure. `/reload` recomposes too; when recomposition fails during a reload, the
+manifest package keeps publishing the composition it accepted before, reports the
+manifest error with its fix through the extension error path, and the session keeps
+running under that composition. The manifest package keeps its last accepted
+composition in its own package state for reload, drift recovery and repair
+permission comparisons; a start runs on it only for unrepairable drift (M2.5).
 
 ### M10 — Visibility
 
@@ -410,42 +554,69 @@ accepted values on reload.
    resources, and offer no edit the policy would refuse.
 5. Refusal and diagnostic messages name the lock, bound, allowed set or required
    entry and the manifest.
-6. RPC and JSON output gain no fields.
+6. `/manifest status` shows the active release, the settings file that selects it,
+   the newest known release, the minimum release, and the changelog entries between
+   the active and newest releases read from the candidate's `CHANGELOG.md`.
+7. RPC and JSON output gain no fields.
 
 ### M11 — Updates
 
 1. `maestro update`, `--extensions` and `<source>` keep updating unpinned packages and
-   skipping pinned ones; the engine self-update is unchanged. Anyone may run them.
-2. In manifest mode, interactive startup also checks the selected manifest for a
-   newer release and only notifies, alongside the ordinary package update notice.
-3. `maestro update` (without `--self` alone) also looks for a newer release of the
-   selected manifest. It shows the current and newer release, the changed manifest
-   files and every permission growth.
-4. A permission growth is any change that adds a tool to a role, widens `models` or a
-   bound, removes a lock or a required entry, or adds an extension or an MCP server.
-   It is computed by composing the current and the candidate release and comparing
-   them.
-5. Inspection only fetches and reads the candidate's files, manifest and requested
-   permissions in the temporary package scope. It reuses the package owner's fetch
-   and checkout steps without their install step; it runs no lifecycle script,
-   build step or component. Normal installation, including lifecycle steps, runs
-   through ordinary acquisition only after approval. Rejection or cancellation
-   leaves the active files, pin and settings byte-identical.
-6. By default the newer release is applied only after the user confirms. With
-   `manifestAutoUpdate: true` it applies without asking unless it grows permissions,
-   which always asks. Without an interactive terminal a release is proposed, never
-   applied.
-7. Applying writes the new pin, same identity, into the settings file that holds the
-   selection, then installs it through M2. For a project file, the team commits the
-   change by pull request. A failed installation reports the real state; there is
-   no rollback copy.
-8. A pinned manifest never moves on its own: startup never installs a newer release.
+   skipping pinned ones; the engine self-update is unchanged. Package commands run
+   before packages load and enforce the persisted base layer (M4, H1), without
+   inspecting the manifest.
+2. **Checks.** The manifest package checks the selected manifest for newer releases
+   at every session start and then every `updateCheckMinutes` minutes while the
+   session runs (`0`: session start only). Checks follow `update.versionCheck` and
+   `MAESTRO_OFFLINE`; offline keeps the current pin with a warning. A newer release
+   shows a notice in that session; a required one says that it applies at the next
+   start and that `/manifest update` applies it now.
+3. **Inspection.** A check lists the source's releases and reads the newest
+   candidate's common `settings/policy.json`, core `core/settings/policy.json` and
+   `CHANGELOG.md` through the package operations (H5) in the temporary package
+   scope, without the install step. The two policy files are optional; their
+   `minimumRelease` values combine in area order under M4 (the higher floor wins)
+   before the check decides whether the release is required. Inspection runs no
+   lifecycle script, build step or component.
+4. **Required releases.** When the newest release's `minimumRelease` is above the
+   active pin, the release is required. At the next session start it applies
+   without asking unless it grows permissions; then the user is asked, and declining
+   makes the manifest package fail its load with the fix. Without an interactive
+   terminal a required release without permission growth applies; one with growth
+   refuses with the fix.
+5. **Permission growth** is any change that adds a tool to a role, widens `models`
+   or a bound, removes a lock or a required entry, or adds an extension, a package
+   or an MCP server. It is computed by composing the current and the candidate
+   release and comparing them. A rollback can grow permissions, and is checked the
+   same way.
+6. **`/manifest update [version]`.** Without a version it takes the newest release;
+   with one it moves to that release of the same identity, older or newer, never
+   below the newest known `minimumRelease`. It shows the current and target release,
+   the changed manifest files, the changelog entries and every permission growth,
+   and applies only after the user confirms. With `manifestAutoUpdate: true` an
+   optional newer release applies without asking unless it grows permissions. In
+   print mode, `maestro -p "/manifest update <version>"` applies a release without
+   permission growth and refuses one with growth. The command works under a
+   `manifest` lock, because it keeps the identity.
+7. **Applying** writes the new pin, same identity, into the settings file that holds
+   the selection through the settings owner (H5), installs it through M2 and
+   reloads the session. For a project file, the team commits the change by pull
+   request. A failed installation reports the real state; there is no rollback
+   copy. Rejection or cancellation leaves the active files, pin and settings
+   byte-identical.
+8. A pinned manifest never moves on its own outside M11.4, except to repair a
+   broken pinned release at session start (M9). Repair uses a clean newer release
+   of the same identity and the same permission-growth confirmation, compared
+   against the last accepted composition of that identity. With no accepted
+   composition, the candidate's whole permission set counts as growth. Otherwise
+   startup never installs a newer optional release.
 
 ### M12 — Roles (delivered with the authored-agent consumer)
 
-1. Manifest role files are discovered below the user and project agent folders;
-   user and project roles shadow optional manifest roles by name; required roles
-   cannot be shadowed.
+1. Roles are discovered by the subagents package from the user's `agents/` folder,
+   the nearest project `agents/` folder and the selected manifest areas. User and
+   project roles shadow optional manifest roles by name; required roles cannot be
+   shadowed. Project roles keep the reference's confirmation before they run.
 2. A role's `model`, `thinking` and `tools` come from its frontmatter, constrained by
    `roles.<role>` in the policy. `tools` is always narrow-only.
 3. The user setting `roles.<role>.model` and `roles.<role>.thinking` override a
@@ -461,84 +632,324 @@ the gateway's lowest configuration source. Local servers and their credentials s
 local. Exclusive or explicit gateway configuration options cannot drop a required
 manifest server.
 
+### M14 — Authored artifacts
+
+Each artifact kind has one format. `U` is the configuration root
+(`~/.maestro/agent` by default), `Pj` is the project's `.maestro` folder and `A` is a
+selected manifest area.
+
+| Artifact kind | Format | Local | Manifest | Read by |
+|---|---|---|---|---|
+| Settings | ordinary settings JSON | `U/settings.json`, `Pj/settings.json` | `A/settings/settings.json` | settings owner |
+| Policy | `policy.json` (M4) | none | `A/settings/policy.json` | manifest package |
+| System prompt | Markdown | `U/SYSTEM.md`, `Pj/SYSTEM.md` | `core/SYSTEM.md` | resource loader |
+| Appended prompt | Markdown | `U/APPEND_SYSTEM.md`, `Pj/APPEND_SYSTEM.md` | body of `core/agents/maestro.md` | resource loader |
+| Instructions | Markdown with `applyTo` frontmatter | `U/instructions/`, `Pj/instructions/` (installed copies) | `A/instructions/*.instructions.md` | rules system; installed by the manifest package |
+| Context file | Markdown | `U/AGENTS.md` or `CLAUDE.md`, root-to-cwd `AGENTS.md`/`CLAUDE.md` | none | resource loader |
+| Role | Markdown with `name`, `description`, `tools`, `model`, `thinking` frontmatter | `U/agents/*.md`, nearest project `agents/` | `A/agents/*.md` | subagents package |
+| Skill | `SKILL.md` with frontmatter | `U/skills/`, `Pj/skills/` and the existing aliases | `A/skills/` | resource loader |
+| Prompt template | Markdown with frontmatter and argument expansion | `U/prompts/`, `Pj/prompts/` | `A/prompts/` | resource loader |
+| Workflow | `maestro.workflow/v1` YAML (M15) | `U/workflows/*.yaml`, `Pj/workflows/*.yaml` | `A/workflows/*.yaml` | workflow runner |
+| Extension | built component plus package manifest | `U/extensions/`, `Pj/extensions/`, packages | `A/extensions/` | resource loader |
+| Theme | theme JSON | `U/themes/`, `Pj/themes/` | `A/themes/` | resource loader |
+| Models | `models.json` | `U/models.json` | `core/llm/models.json` | model registry |
+
+Credentials, keybindings, sessions, caches, sockets and other runtime state stay
+local and have no manifest form. A file moves between a local folder and a manifest
+area without edits. Shadowing replaces a whole definition by name; there is no
+field-wise merge of roles or workflows.
+
+### M15 — Workflows
+
+A workflow is a named, ordered or parallel run of steps, written as one YAML file.
+It runs on the workflow runner that ships by default with Maestro's subagent
+capability; this specification defines the file the runner accepts and where its
+files come from. The file has the same shape locally and in a manifest area.
+
+```yaml
+apiVersion: maestro.workflow/v1
+kind: Workflow
+name: implement-and-review
+description: Worker implements, reviewer reviews, worker applies feedback
+chain:
+  - agent: worker
+    task: "Implement: $@"
+  - agent: reviewer
+    task: "Review the implementation from the previous step: {previous}"
+  - agent: worker
+    task: "Apply the feedback from this review: {previous}"
+```
+
+1. **Members.** `apiVersion` (`maestro.workflow/v1`), `kind` (`Workflow`), `name`
+   (lowercase, hyphenated, at most 64 characters, equal to the file stem),
+   `description`, optional `agentScope` (`user`, `project` or `both`; default
+   `user`) and exactly one of `chain` or `tasks`. Unknown members, a wrong
+   `apiVersion` or `kind`, a name that differs from the stem, both or neither of
+   `chain` and `tasks`, or an empty step list make the file invalid.
+2. **Agent steps** take the reference subagent tool's item shape: `agent` (a role
+   name), `task` and an optional `cwd`. `chain` runs its steps in order; `tasks`
+   runs them in parallel with the reference's limits of eight tasks and four at a
+   time, and returns every result.
+3. **Text.** In a chain, `{previous}` in a step's text is replaced by the previous
+   step's final output, as the reference chain does. The workflow's run arguments
+   expand in step text with the prompt-template rules (`$1`, `$@`, `$ARGUMENTS`,
+   `${@:N}`, `${@:N:L}`). There is no other expression language. Literal text is
+   fixed by the file; arguments are supplied per run.
+4. **Added step kinds.** A chain step may instead be `command: [program, arg, …]`, a
+   literal argument vector run without a shell, whose output is its standard output
+   and which fails on a non-zero exit; or `ask: <message>`, whose output is the
+   user's typed answer and which fails when the user cancels or no interactive
+   terminal exists. Both expand `{previous}` and arguments in each string.
+5. **Failure.** A failed, cancelled or refused step stops the run with
+   `Workflow stopped at step <n> (<step>): <message>`; later steps never run. The
+   run's output is the last step's output.
+6. **Discovery and precedence.** Workflows come from the selected manifest areas
+   in area order, then the user's `workflows/`, then the project's `workflows/`. A
+   later definition with the same name replaces an earlier one, except that a
+   required manifest workflow cannot be shadowed. Project workflows that name project roles keep the
+   reference's confirmation before project roles run.
+7. **Required workflows.** A required workflow's roles, prompt files and other
+   referenced files resolve only from its own release; local definitions with the
+   same names do not apply to it.
+8. **Running.** The runner lets a user run, list and show workflows with their
+   sources, and lets the agent check a workflow file, so a user can ask Maestro to
+   write, check and run one. Chains and parallel tasks use the subagent tool's own
+   loop: `{previous}` passing, the parallel limits and stop-on-failure.
+9. **Defaults.** The manifest provides the reference's three chains as workflow
+   files in its core area, with the reference's roles: `implement-and-review`
+   (worker, reviewer, worker), `implement` (scout, planner, worker) and
+   `scout-and-plan` (scout, planner). No package bundles workflow files.
+10. YAML is parsed by Maestro's existing YAML parser; the runner adds no YAML
+    library.
+
+### M16 — Capabilities and ownership
+
+1. A capability is one package inside a manifest release, at
+   `capabilities/<group>/<name>/`, with its own `package.json` and resources. It is
+   selected by `capabilities/<group>/<name>` in `manifestAreas`.
+2. The group and name follow the organization's own structure. An organization
+   whose source-hosting teams are grouped by area may use that grouping as
+   `<group>` and the team as `<name>`.
+3. Ownership is repository data. The release's `.github/CODEOWNERS` gives each group
+   folder, each capability folder and every other path its owning team. Sessions
+   never read it; the catalog does (M17).
+4. A capability that needs its own release cycle is published as its own package
+   and listed in the manifest's `packages` with a pin. Capabilities inside the
+   release share the release's version.
+5. Any package can be pinned to any version with the ordinary source grammar, and
+   single items are taken from a pinned package with the ordinary package filters.
+   Filters for package-owned kinds (`workflows`, `agents`) are read
+   by the owning package and applied with the package owner's filter semantics
+   through a host-backed call (H5).
+
+### M17 — Catalog data (delivered with the catalog)
+
+1. **Blueprints.** The manifest package declares one catalog blueprint per artifact
+   kind, as data: manifest release, capability group, capability, policy, role,
+   workflow, instruction, alongside the existing package, skill and prompt kinds.
+   A blueprint lists the entry's properties (name, description, source area,
+   release, required, locked, modified locally) and its relations.
+2. **Relations.** A release requires packages and contains areas; a capability
+   group contains capabilities; a capability provides skills, prompts, roles,
+   instructions and workflows; a workflow uses roles and prompts; a policy locks,
+   bounds or requires entries; every entry is owned by a team.
+3. **Ownership.** Every entry's owning team comes from the release's `CODEOWNERS`,
+   applied the way the source host applies it: the last matching pattern wins.
+   An entry with no matching pattern shows as unowned.
+4. **Views.** Each entry gets a card with its properties, owner and relations; the
+   catalog draws the dependency graph from the relations, so a team sees what its
+   capability provides and what depends on it.
+5. Locked entries are read-only in the catalog, and edits go through their owners.
+   The catalog reads the installed release when a page opens and keeps no copy.
+
+### M18 — Documentation
+
+1. Maestro's documentation gains `docs/manifest.md` (selection, areas, policy,
+   updates, failure and repair, the governed-key table, instructions) and
+   `docs/workflows.md` (the workflow format, the defaults and how to ask Maestro to
+   write one).
+2. The agent finds them through skills, the reference's own route for
+   on-demand knowledge: the manifest package ships a `manifest` skill and the
+   workflow runner a `workflows` skill. Each names its document; in manifest mode
+   the `manifest` skill also names the active release's `docs/` folder. The
+   system prompt's documentation list is unchanged.
+3. Each manifest release documents itself: a `README.md` and one page per artifact
+   kind under `docs/`.
+
+### M19 — Schemas and checks
+
+1. **One schema per artifact kind.** The manifest package publishes a JSON Schema
+   for `settings/policy.json`, the workflow file, role and instruction frontmatter
+   and a capability's `package.json`. The schemas are generated from the same Rust
+   types the package uses to read those files, so the published rules and the
+   loading rules cannot drift. Generation uses `schemars` and validation uses
+   `jsonschema`, both already pinned in the workspace. YAML and frontmatter are
+   converted to their JSON value before validation.
+2. **In the manifest repository.** The generated schemas live under `schemas/`. A
+   pre-commit hook validates every artifact against them, so a malformed file
+   cannot be committed. A required pull-request check runs the same validation,
+   fails when the committed schemas differ from freshly generated ones, and loads
+   the release with Maestro (`maestro -p "/manifest status"` on the pull request's
+   commit), so a malformed or broken release cannot merge.
+3. **Tests.** Every schema has fixtures that must pass and fixtures that must fail,
+   covering each member, each wrong JSON kind and each unknown member.
+
+## Core hooks
+
+The core gains five generic hooks. None reads a manifest, knows the manifest's
+governed-key table, or combines areas; the manifest package does that.
+
+| Hook | Owner | Behaviour | Without a publisher |
+|---|---|---|---|
+| H1 Base layer | `maestro-settings` | One read-only settings document plus a set of locked key paths, below the user layer. A locked path takes the base value, and an explicit edit of it is refused. The publisher marks the layer global or project-scoped. The settings owner persists layers for processes without packages (see below), and offers the current layer to its publisher. | Persisted layers still apply; with none, foundation behaviour |
+| H2 Decision hook | `maestro-settings`, `maestro-app` operations and resource collection | One registered decider is asked before the first effect of governed operations (M4), when stored values resolve, and during resource collection for local additions, required collisions and required entries. Early package commands use H1's persisted layer instead. A refusal carries the message to show. | No decider; foundation order |
+| H3 Daemon view | `maestro-daemon` configuration read | The workspace daemon reads the persisted global base layer plus the user settings with locks applied, never project settings. | Today's raw user read |
+| H4 Load-time contributions | `maestro-app` resource loader | Base packages load before every other extension and keep their ordinary place in the extension list. During their load a base package may contribute package sources, base prompt inputs (base system prompt, base append text) and model files ranked before the user's. The context-file loader is unchanged. Contributed package sources install and load in the same startup. Only one package may publish H1 and H2. | Foundation single pass |
+| H5 Host operations | `maestro-app` host operations | Extends the planned settings-reader and package-root facades: read raw user and project settings, list resolved packages with identity, scope and installed path, acquire a pinned source, list a source's releases, verify a release checkout is clean and at its pinned commit and restore it when it is not, read files from a candidate in the temporary scope, write a value through the settings owner, apply package filter semantics, and parse a YAML document with the existing parser. | Unused |
+
+### Persisted base layers
+
+H1 persists the global layer in the configuration root and project-scoped layers
+in that root's state, keyed by project root, never inside the project. The
+publisher refreshes each applicable layer from the accepted composition at every
+session start and removes it when there is no selection. Each record names its
+source release and when it was recorded. Package commands read the persisted layer for their operation's scope
+before any effect; the daemon reads only the global layer (H3).
+
+With no persisted layer, commands use foundation behaviour without reading the
+`manifest` setting. After a selection change, the old layer governs until the next
+session start replaces or removes it. Refusals name the recorded release and time
+and say that starting Maestro refreshes the layer. Session-time collection is the
+backstop: forbidden local additions never execute (M6.4), and missing required
+packages install again (M6.5, H4).
+
+### Internal-mode changes
+
+Base packages load before other extensions (H4). Base packages are Maestro
+additions. They keep their ordinary place in the extension list as the lowest
+package source, and the list keeps the reference's order: command-line extensions
+first, then project, user and package resources by precedence
+(`core/resource-loader.ts:395-399`, `core/package-manager.ts:162-177,2314`). The
+order of every other extension is therefore unchanged, and conflicts resolve from
+that list as in the reference: the first registration wins for tools and flags
+(`core/extensions/runner.ts:374-383,397-406`), the later one for shortcuts
+(`runner.ts:449-455`), and duplicate commands get numbered names in list order
+(`runner.ts:520-545`). A base package resolves conflicts exactly as any other
+package does.
+
 ## Implementation decisions
 
-- **Composition, not a second system.** The application's session-services
-  constructor reads the selection once. Without a selection it runs the existing
-  construction. With one, it supplies the manifest through the existing seams: the
-  resource loader's prompt, append and context inputs and override hooks; the
-  package collector's sources; the settings manager's read-only base layer and
-  policy; the model registry's ordered model files; and the session's selection and
-  tool operations.
-- **Manifest reader.** A private, native-only module of `maestro-app` owns
-  selection, acquisition requests, area reading and the records it produces. Its
-  records are concrete types; no trait.
-- **Policy owner.** `maestro-settings` owns policy decoding, combination, stored-value
-  resolution and edit refusal, as one concrete record built once per services
-  construction and held by those services. It owns no resource scanning and no
-  model catalog. Model patterns are matched by the catalog's existing matcher at
-  the application boundary; settings gains no catalog dependency.
-- **Settings base layer.** The settings manager holds an optional read-only base
-  layer and policy. Every rebuild (construction, reload, overrides, edits) applies
-  base, then the ordinary one-level user and project merge, then policy resolution.
-  There is no new settings scope and no change to raw scopes or the write queue.
-- **Packages.** The package owner gains a source operation that validates a pinned
-  source, an installed-root acquisition operation reused by ordinary resolution and
-  manifest selection, collection of supplied roots in the same accumulator, the
-  corrected Git pin check, and newest-release discovery for one pinned source.
-  Source parsing stays single.
+- **Placement.** The core holds only H1 to H5. This workspace gains one default-on
+  base package, a package crate released with Maestro like the other base packages
+  ([packages](packages.md#base-packages)): `maestro-manifest` (selection,
+  acquisition, area reading, prompt composition, instruction installation, policy
+  decoding and combination, decisions, `/manifest`, release checks, catalog
+  kinds). No core crate depends on it. Workflow files run on the runner of Maestro's subagent
+  capability; roles stay with `maestro-subagents`; MCP servers stay with
+  `maestro-mcp`. Authored content, including instructions and the default
+  workflows, lives in manifests, not in packages.
+- **Packages talk through existing routes.** The manifest package shares its
+  selected area roots and required paths with the subagent capability (roles and
+  workflow runner) over the extension event bus. No package copies another's
+  parsing, matching or paths.
+- **Validation is loading.** The manifest package validates while it loads; a broken
+  manifest fails the load. There is no separate checker command or binary.
+- **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
+  applies the base layer, then the ordinary one-level user and project merge, then
+  locked paths, then stored-value decisions. There is no new settings scope and no
+  change to raw scopes or the write queue. Decisions run outside the queue and
+  storage locks.
+- **Packages.** The package owner gains release listing for one source and the
+  corrected Git pin check. Source parsing stays single.
 - **Catalog.** The model registry accepts an ordered list of model files; the
   existing single-file construction is the one-element case.
-- **Application operations.** Model, thinking, tool, behaviour-setting and extension
-  host operations ask the policy before their own effects. Frontends render; they
-  check nothing themselves.
-- **No crate, edge or dependency is added.** The reader uses the application's
-  existing JSON, path and frontmatter owners.
+- **Application operations.** Model, thinking, tool, behaviour-setting and resource
+  operations and the extension host ask the decision hook before their own
+  effects. Early package commands enforce the persisted base layer (M4, H1).
+  Frontends render; they check nothing themselves.
+- **No new crate in the core, and no new library.** The manifest package is a
+  package crate under the package crate rules.
 
 ## Testing decisions
 
-- Test external behaviour at the owning public interface: settings policy through
-  the settings manager; manifest reading and composition through the application's
-  services and SDK construction; package acquisition through controlled package
-  operations; catalog layers through the model registry; startup and selectors
-  through the chat frontend's existing harnesses.
+- Test external behaviour at the highest seam. First: session construction through
+  the SDK with temporary configuration and project folders and a local release
+  fixture, observing effective settings, loaded resources, prompts, models and
+  refusal text. Then: the settings manager for H1, H2 and persistence; application
+  operations for refusal before effect; the extension host contract for H4 and H5;
+  each package through the real host.
 - Use synthetic current-format manifest fixtures checked into the tests, with
-  every policy class, area kind and failure case. No private or captured
-  organization configuration is a fixture.
+  every policy class, area kind, workflow form and failure case. No private or
+  captured organization configuration is a fixture.
 - Every refused request asserts that memory, pending edits, files, session
   history and emitted events are unchanged, not only the error text.
+- Package commands: a persisted `packages` lock refuses install, and required
+  identities refuse removal in the matching scope before files or settings
+  change. Commands load no extensions. Broken manifests retain those checks;
+  refusal text names the saved release and time and how to refresh it. With no
+  layer, commands behave as the foundation; the next start excludes forbidden
+  additions and reinstalls missing required packages. A changed selection retains
+  the old layer until start replaces it; clearing the selection removes it.
+  Project layers stay in configuration-root state, keyed by project root; global
+  and project checks never use each other's layer.
+- Broken-release repair: a clean newer release of the same identity applies at
+  start; permission growth asks, and refusal or a headless run with growth stops
+  with the fix. Compare against the last accepted composition; without one, list
+  the whole candidate permission set as growth. Offline or no clean candidate
+  reports the fix. An otherwise valid pin never takes an optional release at start.
+- Required-update inspection: a floor in either common or core policy is honoured;
+  when both set a floor, the higher one wins. Absent files add no floor.
 - Inspect a candidate whose lifecycle script writes a sentinel file, then reject
   or cancel it: the sentinel never appears and the active files, pin and settings
   stay byte-identical. An approved candidate installs through the ordinary flow.
 - Manifest model-file tests accept a literal non-credential header, reject literal
   API keys and credential headers (including mixed-case names and policy-added
   names), and accept environment or command references in credential positions.
+- Workflow runs use the reference's faux provider for agent steps; command steps run
+  real programs in a temporary folder.
+- Integrity: a modified, deleted or untracked file in the release checkout, and a
+  checkout moved off its pinned commit, are each restored at start and listed in
+  the notice; an edited instruction copy is refreshed; a clean checkout loads with
+  no notice; a pinned commit that cannot be restored is installed again, and offline
+  the session runs on the last accepted composition with a warning.
+- Schemas: generated schemas equal the committed ones, and every fixture passes or
+  fails as marked.
 - Internal-mode equality is tested: with no selection, resources, prompt, model,
   tools, settings writes and JSON/RPC output equal the foundation behaviour, and no
   manifest path is read.
 - Prior art: settings behaviour and reload tests, configured-source and pinned
   package checks, resource-loader precedence cases, catalog composition and
-  provider lifecycle tests, startup listing and selector tests.
+  provider lifecycle tests, startup listing and selector tests, extension host
+  controlled tests.
 
 ## Differences with no reference source
 
-Each item is an owner-approved manifest-mode difference.
+Each item is an owner-approved difference.
 
 1. The `manifest` setting, its self-lock and the user-first reading of a locked
    selection.
 2. The manifest layer between engine defaults and user settings, and the areas and
-   their order.
+   their order, including capabilities.
 3. The `manifestAreas` setting.
-4. `settings/policy.json`: locks, bounds, the model allowed set, required entries
-   and role constraints, and the lock names `systemPrompt`, `appendSystemPrompt` and
-   `providers`.
-5. Stored-value resolution and explicit-request refusal.
+4. `settings/policy.json`: locks, bounds, the model allowed set, required entries,
+   role constraints, credential headers, the minimum release and the check
+   interval, and the lock names `systemPrompt`, `appendSystemPrompt` and `providers`.
+5. Stored-value resolution and refusal of explicit requests before their effects.
 6. Refusing agent sessions on a broken manifest.
-7. The `[Manifest]` startup section and the lock markers in settings views.
-8. Newer-release proposals for the pinned manifest, permission-growth confirmation
-   and the `manifestAutoUpdate` setting.
+7. The `[Manifest]` startup section, `/manifest status` and the lock markers in
+   settings views.
+8. Release checks at session start and on an interval, required releases,
+   `/manifest update [version]`, permission-growth confirmation and the
+   `manifestAutoUpdate` setting.
 9. The `thinking` role field and the `roles.<role>.{model,thinking}` user setting.
 10. Literal-secret rejection in manifest model files.
+11. Installing manifest instruction files into the local instruction folders.
+12. The `maestro.workflow/v1` file and its `command` and `ask` steps.
+13. The core hooks H1 to H5 and loading base packages first.
+14. The manifest's catalog blueprints, relations and CODEOWNERS ownership.
+15. Git-only manifest sources and the release integrity repair at every start.
+16. Generated JSON Schemas for artifact kinds and their pre-commit and pull-request
+    checks.
 
 ## Corrected reference defect
 
@@ -551,22 +962,31 @@ when they differ. This also corrects internal mode.
 
 ## Runtime mechanics not copied
 
-No manifest file watcher, polling interval, timer, daemon, cache, transaction or
-rollback is added. Network timeout and worker counts stay the package owner's.
-Lock-file leases, promise scheduling and engine error formats are not reproduced;
-existing Rust owners keep their ordering and accepted-write semantics.
+No manifest file watcher, daemon poll, cache, transaction or rollback copy is added.
+Release checks run inside sessions with the host's sleep, at the policy's interval.
+Network timeout and worker counts stay the package owner's. Lock-file leases,
+promise scheduling and engine error formats are not reproduced; existing Rust
+owners keep their ordering and accepted-write semantics.
 
 ## Out of scope
 
-- Administrator-only switches, system-wide configuration stores, signed releases
-  and a last-valid copy.
-- Detection of edits to installed manifest files; configuration authority is not a
-  sandbox. Relocating the configuration root, editing settings files, older or
-  modified programs, SDK programs supplying their own components, and local
-  administrators remain outside it.
-- An `applyTo` path filter, presets as an engine concept, area descriptors read by
-  the engine, workflows, handoffs, policy hooks, quality profiles, bootstrap and
-  `maestro init`.
+- Administrator-only switches, system-wide configuration stores, signed releases,
+  and a last-valid copy used at start for anything other than unrepairable drift
+  (M2.5).
+- A sandbox. The integrity check (M2.5) repairs edits to the installed release;
+  relocating the configuration root, editing settings files, older or modified
+  programs, SDK programs supplying their own components, and local administrators
+  remain outside configuration authority.
+- Per-capability refs inside one release and per-file versions.
+- Live push of releases to running sessions, and reloading a session on its own.
+- Presets as an engine concept, area descriptors read by Maestro, handoffs, policy hooks, quality profiles, evaluations, knowledge
+  sources, bootstrap and `maestro init`, until a package reads them.
+- Bounded `loop` workflow steps and nested workflows, until a later delivery
+  registers them.
+- The rules system that loads instruction files (always-apply rules, a listed
+  rulebook read on demand, `applyTo` and stream rules) and how required manifest
+  instructions stay present. It is specified separately; this specification only
+  supplies and installs the files.
 - New RPC or JSON fields.
 - Manifest mode in the browser application.
 
@@ -580,29 +1000,43 @@ Add to `CONTEXT.md`:
   resources.
 - **Internal mode:** Running without a manifest; foundation behaviour.
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
+- **Manifest package:** The default-on base package that selects, installs, reads
+  and enforces a manifest through the core hooks.
 - **Manifest area:** One folder of a manifest (common, standard, core, language or
-  team package) whose content enters the manifest layer in a fixed order.
-- **Policy:** The combined locks, bounds, allowed models, required entries and role
-  constraints of a manifest; the settings owner decides every governed change.
+  capability) whose content enters the manifest layer in a fixed order.
+- **Capability:** A manifest area that is one package bundling a team's roles,
+  skills, instructions, prompt templates and workflows, selected by name.
+- **Capability group:** The folder that groups capabilities, usually after the
+  organization's team structure.
+- **Authored artifact:** A file a user, project or manifest writes to configure or
+  drive Maestro, such as a role, skill or workflow; distinct from a browser
+  artifact.
+- **Artifact kind:** The type of an authored artifact, with one format valid
+  locally and in a manifest.
+- **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
+  file.
+- **Base layer:** A read-only settings document with locked keys, published by a
+  package below the user layer.
+- **Blueprint:** The catalog's description of one artifact kind: its properties
+  and the relations its entries have.
+- **Policy:** The combined locks, bounds, allowed models, required entries, role
+  constraints and release rules of a manifest; the manifest package decides every
+  governed change.
 - **Lock:** A policy entry fixing a value that local layers cannot change.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.
+- **Minimum release:** The lowest manifest release a session may run; a release
+  below it is updated at the next session start.
 - **Permission growth:** A manifest release change that adds role tools, widens
-  allowed models or a bound, removes a lock or required entry, or adds an extension
-  or MCP server.
+  allowed models or a bound, removes a lock or required entry, or adds an
+  extension, package or MCP server.
 
-Replace the sentence "Manifest governance and settings value locks are later
-scope, not active foundation concepts." with "Manifest mode is specified in
-[manifest mode](manifest-mode.md)."
+## Amendment to other specifications
 
-## Amendment to the foundation specification
+The foundation specification, `docs/specs/maestro-port.md`, is unchanged. It
+already states that internal mode has no manifest, origins or locked values, and
+points here.
 
-In `docs/specs/maestro-port.md`:
-
-1. R03: replace "No mandatory manifest, origins or locked values are active in this
-   phase." with "Internal mode has no manifest, origins or locked values; [manifest
-   mode](manifest-mode.md) adds them only when settings name a manifest."
-2. Completion and explicit later scope: replace "governed manifest/init/settings
-   locks" with "`maestro init`", and add "Manifest mode and its settings locks are
-   specified in [manifest mode](manifest-mode.md)."
+`docs/specs/packages.md`, under Base packages, gains that base packages load before
+other extensions and may publish the base layer and decision hook (H1, H2, H4).
