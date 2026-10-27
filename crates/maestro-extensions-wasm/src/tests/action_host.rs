@@ -29,6 +29,14 @@ impl Bank {
             .clone()
             .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
     }
+    /// Selects an exact operand-specific helper reply, falling back to the operation reply.
+    pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
+        self.check()?;
+        let key = format!("{operation} {data}");
+        self.value
+            .get(&key)
+            .map_or_else(|| self.record_for(operation), |value| Ok(value.to_string()))
+    }
     /// Supply raw selected record input without changing decoder policy.
     pub fn record(&self) -> Result<String, String> {
         self.check()?;

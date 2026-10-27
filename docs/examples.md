@@ -29,9 +29,11 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages, and
 `extensions/widget_placement.rs` requests widgets above and below the editor on
-session start.
-`extensions/status_line.rs` shows themed readiness and counted turn progress in
-the footer; its controlled run is listed in the extension index. The
+session start. `extensions/questionnaire.rs` asks one or more questions through
+a tabbed view with selectable options and an inline editor; its support modules
+are indexed beside it. `extensions/status_line.rs` shows themed readiness and
+counted turn progress in the footer; its controlled run is listed in the
+extension index. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

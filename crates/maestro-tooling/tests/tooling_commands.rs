@@ -1232,6 +1232,18 @@ const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../../examples/extensions/protected_paths.rs"),
     ),
     (
+        "examples/extensions/questionnaire.rs",
+        include_str!("../../../examples/extensions/questionnaire.rs"),
+    ),
+    (
+        "examples/extensions/questionnaire/interface.rs",
+        include_str!("../../../examples/extensions/questionnaire/interface.rs"),
+    ),
+    (
+        "examples/extensions/questionnaire/rendering.rs",
+        include_str!("../../../examples/extensions/questionnaire/rendering.rs"),
+    ),
+    (
         "examples/extensions/reload_runtime.rs",
         include_str!("../../../examples/extensions/reload_runtime.rs"),
     ),
@@ -1637,6 +1649,7 @@ fn maestro_package_assets_come_from_the_package_directory() {
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
     // The shipped examples reach the standalone copy byte for byte.
+    assert_questionnaire_copy(&destination);
     assert_eq!(
         fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
         include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
@@ -1649,6 +1662,29 @@ fn maestro_package_assets_come_from_the_package_directory() {
         fs::read(destination.join("examples/extensions/permission_gate.rs")).unwrap(),
         include_str!("../../../examples/extensions/permission_gate.rs").as_bytes()
     );
+}
+
+/// The standalone package retains every questionnaire module byte for byte.
+fn assert_questionnaire_copy(destination: &Path) {
+    for (path, source) in [
+        (
+            "questionnaire.rs",
+            include_str!("../../../examples/extensions/questionnaire.rs"),
+        ),
+        (
+            "questionnaire/interface.rs",
+            include_str!("../../../examples/extensions/questionnaire/interface.rs"),
+        ),
+        (
+            "questionnaire/rendering.rs",
+            include_str!("../../../examples/extensions/questionnaire/rendering.rs"),
+        ),
+    ] {
+        assert_eq!(
+            fs::read(destination.join("examples/extensions").join(path)).unwrap(),
+            source.as_bytes()
+        );
+    }
 }
 
 #[test]

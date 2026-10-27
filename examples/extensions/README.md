@@ -35,6 +35,9 @@ inserts at its own place instead of appending at the end of each list.
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `questionnaire.rs` | A `questionnaire` tool with question tabs, selectable options, an inline editor and answer summaries. |
+| `questionnaire/interface.rs` | Retained navigation, answers and host-backed editor for the questionnaire. |
+| `questionnaire/rendering.rs` | Questionnaire frames and tool-call/result summaries. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
@@ -86,6 +89,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- questionnaire_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -374,3 +379,31 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+
+### What the questionnaire does
+
+The `questionnaire` tool asks one or more questions supplied by the caller. A
+single question submits as soon as the user selects an option or writes an
+answer. Multiple questions use tabs: Tab and the arrow keys switch questions,
+Up/Down select an option, and Enter confirms. The Submit tab stays open until
+every question has an answer. Answers can be revised without changing their
+original insertion order.
+
+Each question offers `Type something.` unless `allowOther` is false. That choice
+opens the host's multiline editor. Enter saves the answer after trimming the
+shared whitespace set (including U+FEFF, excluding U+0085); a blank answer becomes
+`(no response)`. Escape in the editor discards its text and returns to the
+options. Elsewhere Escape cancels
+the questionnaire and keeps any partial answers in the result details. A
+question with no options and `allowOther: false` cannot be answered; Escape still
+cancels it. The tool returns an error result without UI or without questions.
+
+Build with `--example questionnaire` using the command above. The controlled
+`questionnaire_` runs execute the in-process adapter and built component with
+supplied terminal input, theme replies and text-helper replies. They compare
+frames and complete results
+with recorded reference executions. They use no provider, credentials, real
+terminal or installation. Loading the component is opt-in and needs a
+component-enabled interactive host with custom UI, editor and native text/key
+helpers. The example stores no session entries and writes no files.
