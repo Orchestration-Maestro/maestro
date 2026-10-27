@@ -70,8 +70,28 @@ pub(super) async fn search(
 /// Build native glob operands without validating or rewriting basename syntax.
 fn command(program: &str, root: &str, pattern: &str, limit: f64) -> Command {
     let mut command = maestro_process::command(program);
-    command.args([
-        "--glob",
+    command.args(arguments(root, pattern, limit, cfg!(windows)));
+    command
+}
+
+/// The fd operands of one search. A pattern naming a directory is matched against the full
+/// path. fd matches that path in its native spelling, so on Windows (`windows`) the glob is
+/// passed as the regex fd itself compiles from it, with every `/` matching either separator.
+fn arguments(root: &str, pattern: &str, limit: f64, windows: bool) -> Vec<String> {
+    let full_path = pattern.contains('/');
+    let pattern = if full_path && !pattern.starts_with('/') && !pattern.starts_with("**/") {
+        format!("**/{pattern}")
+    } else {
+        pattern.to_owned()
+    };
+    let regex = if full_path && windows {
+        either_separator(&pattern)
+    } else {
+        None
+    };
+    let mode = if regex.is_some() { "--regex" } else { "--glob" };
+    let mut arguments: Vec<String> = [
+        mode,
         "--color=never",
         "--hidden",
         "--no-require-git",
@@ -80,16 +100,20 @@ fn command(program: &str, root: &str, pattern: &str, limit: f64) -> Command {
         "--print0",
         "--exclude",
         ".git",
-    ]);
-    let full_path = pattern.contains('/');
-    let pattern = if full_path && !pattern.starts_with('/') && !pattern.starts_with("**/") {
-        format!("**/{pattern}")
-    } else {
-        pattern.to_owned()
-    };
+    ]
+    .map(str::to_owned)
+    .into();
     if full_path {
-        command.arg("--full-path");
+        arguments.push("--full-path".to_owned());
     }
-    command.args(["--", &pattern, root]);
-    command
+    arguments.extend(["--".to_owned(), regex.unwrap_or(pattern), root.to_owned()]);
+    arguments
 }
+
+/// The regex fd compiles from `glob` on Windows; `None` keeps fd's own glob matching.
+fn either_separator(_glob: &str) -> Option<String> {
+    None
+}
+
+#[cfg(test)]
+mod tests;
