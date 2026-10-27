@@ -524,3 +524,48 @@ fn qna_uses_live_configured_model_after_loader_opens() {
         assert_eq!(request.join().unwrap()["model"], "extraction-case");
     });
 }
+
+#[test]
+fn qna_uses_current_ui_after_extraction() {
+    run(async |session| {
+        let (base, request) = completion("Q: Current UI?\nA: ", "stop", None);
+        provider(&session, &base).await;
+        append(
+            &session,
+            "stop",
+            &json!([{"type":"text", "text":"Question?"}]),
+        );
+        let old = loader_ui(false);
+        old.editor.set_text("old draft");
+        let current = loader_ui(false);
+        let rebound = current.clone();
+        let changing = Rc::downgrade(&session);
+        old.on_loader.replace(Some(Box::new(move || {
+            changing
+                .upgrade()
+                .unwrap()
+                .extension_runner()
+                .set_ui_context(Some(ExtensionUIContext::new(rebound)));
+        })));
+        bind(&session, old.clone()).await;
+        command(&session).await;
+        request.join().unwrap();
+        assert_eq!(old.editor.get_text(), "old draft");
+        assert_eq!(
+            *old.ui.requests.borrow(),
+            [json!(["loader"]), json!(["disposed"])]
+        );
+        assert_eq!(current.editor.get_text(), "Q: Current UI?\nA: ");
+        assert_eq!(
+            *current.ui.requests.borrow(),
+            [
+                json!(["editor", "Q: Current UI?\nA: "]),
+                json!([
+                    "notify",
+                    "Questions loaded. Edit and submit when ready.",
+                    "Some(Info)"
+                ])
+            ]
+        );
+    });
+}
