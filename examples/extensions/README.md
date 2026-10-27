@@ -84,10 +84,10 @@ the workspace integration-test conventions.
 | `session_name.rs` | A command that sets or shows the session's friendly name. |
 | `shutdown_command.md` | Shutdown command |
 | `shutdown_command.rs` | A quit command and two tools that ask the host to shut down. |
-| `snake/game.rs` | Snake positions, food and the state stored in session entries. |
-| `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
 | `snake.md` | Snake |
 | `snake.rs` | Play Snake in a custom terminal view, saving a paused game in session entries. |
+| `snake/game.rs` | Snake positions, food and the state stored in session entries. |
+| `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
 | `system_prompt_header.md` | System prompt header |
@@ -102,8 +102,8 @@ the workspace integration-test conventions.
 | `trigger_compact.rs` | A turn hook that requests compaction above a usage threshold and a command that requests it immediately. |
 | `widget_placement.md` | Widget placement |
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
-| `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
 | `with-deps.md` | With deps |
+| `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->

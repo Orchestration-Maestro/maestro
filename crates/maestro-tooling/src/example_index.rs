@@ -41,7 +41,7 @@ fn render(folder: &Path, before: &str) -> io::Result<String> {
         .ok_or_else(|| io::Error::other("missing example index end marker"))?;
     let mut files = Vec::new();
     collect(folder, &mut files)?;
-    files.sort();
+    files.sort_by_cached_key(|path| path.to_string_lossy().replace('\\', "/"));
     let mut result = format!("{prefix}{START}\n| File | Provides |\n| --- | --- |\n");
     for file in files {
         let relative = file.strip_prefix(folder).map_err(io::Error::other)?;
