@@ -54,6 +54,8 @@ inserts at its own place instead of appending at the end of each list.
 | `snake/game.rs` | Positions, food sampling and the persisted game state for `snake.rs`. |
 | `snake/render.rs` | The bordered Snake board and input hints. |
 | `ssh.rs` | Opt-in remote read, write, edit, bash and user-shell operations through SSH, with local tools when unset. |
+| `ssh/operations.rs` | Remote file and shell effects supplied to the native tool factories. |
+| `ssh/transport.rs` | Literal SSH child operands and concurrent raw-byte pipe transfer. |
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
