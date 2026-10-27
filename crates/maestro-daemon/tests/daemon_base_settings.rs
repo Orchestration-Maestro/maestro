@@ -525,3 +525,59 @@ fn daemon_first_reload_retains_startup_area_document() {
         vec![TabBarRightEntryConfig::Hostname {}]
     );
 }
+
+#[test]
+fn daemon_runtime_rejected_documents_do_not_replace_accepted_areas() {
+    use crate::config_support::{fixture, put};
+    let (mut app, mut manager, storage) = fixture();
+    put(
+        &*storage,
+        r#"{"multiplexer":{"mouseCapture":false},"daemon":{"headlessCols":100}}"#,
+    );
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    put(
+        &*storage,
+        r#"{"multiplexer":{"sidebarMinWidth":50,"sidebarMaxWidth":30},"daemon":{"headlessCols":0}}"#,
+    );
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    storage.write_base_layer(SettingsScope::Global, Some(&layer(
+        json!({"multiplexer":{"tabBarRight":[{"type":"hostname"}]},"daemon":{"headlessRows":47}}),
+        &["multiplexer.tabBarRight", "daemon.headlessRows"],
+    ))).unwrap();
+    put(
+        &*storage,
+        r#"{"multiplexer":{"sidebarWidth":"bad"},"daemon":{"headlessCols":"bad"}}"#,
+    );
+    let (report, errors) = block_on(app.reload_config(&mut manager, Path::new(".")));
+    assert!(errors.is_empty());
+    assert!(!report.diagnostics.is_empty());
+    assert!(!app.config.ui.mouse_capture.0);
+    assert_eq!(
+        app.config.ui.tab_bar_right,
+        vec![TabBarRightEntryConfig::Hostname {}]
+    );
+    assert_eq!(app.config.server.headless_cols, 100);
+    assert_eq!(app.config.server.headless_rows, 47);
+}
+
+#[test]
+fn daemon_no_layer_rejected_ui_does_not_reset_scroll() {
+    use crate::config_support::{fixture, put};
+    let (mut app, mut manager, storage) = fixture();
+    put(&*storage, "{}");
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    app.state.agent_panel_scroll = 7;
+    put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    assert_eq!(app.state.agent_panel_scroll, 7);
+}
+
+#[test]
+fn daemon_typed_constructor_retains_ui_on_first_invalid_no_layer_reload() {
+    use crate::config_support::{fixture, put};
+    let (mut app, mut manager, storage) = fixture();
+    app.config.ui.mouse_capture.0 = false;
+    put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    assert!(!app.config.ui.mouse_capture.0);
+}
