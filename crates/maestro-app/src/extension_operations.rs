@@ -42,6 +42,11 @@ impl ExtensionOperations {
                     Ok(Value::Object(raw.0))
                 }
                 HostOperation::ResolvePackages => owners.resolve_packages().await,
+                HostOperation::Acquire(source, scope) => owners
+                    .packages
+                    .install(&source, Some(installed_scope(scope)))
+                    .await
+                    .map(|()| Value::Null),
                 _ => Err(std::io::Error::other(
                     "Extension package operations are not configured",
                 )),
@@ -68,5 +73,13 @@ impl ExtensionOperations {
                 })
                 .collect(),
         ))
+    }
+}
+
+/// Converts installed scope without admitting temporary or caller-selected targets.
+fn installed_scope(scope: OperationScope) -> maestro_packages::InstalledSourceScope {
+    match scope {
+        OperationScope::User => maestro_packages::InstalledSourceScope::User,
+        OperationScope::Project => maestro_packages::InstalledSourceScope::Project,
     }
 }
