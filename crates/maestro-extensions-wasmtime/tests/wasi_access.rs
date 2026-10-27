@@ -447,6 +447,12 @@ fn component_windows_roots_reach_a_share_working_directory() {
     let paths = [
         format!(r"{share}\sibling Ω space\file Ω name").into(),
         format!(r"\\?\UNC\{}\sibling Ω space\file Ω name", &share[2..]).into(),
+        format!(
+            r"\\LOCALHOST\{}${}\sibling Ω space\file Ω name",
+            local[..1].to_ascii_lowercase(),
+            &local[2..]
+        )
+        .into(),
         r"..\sibling Ω space\file Ω name".into(),
     ];
     run(root_paths(&paths, &target));
