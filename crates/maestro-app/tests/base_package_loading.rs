@@ -389,6 +389,13 @@ fn second_base_layer_publisher_is_reported_without_application() {
 /// Session services read contributed model files below the user's file in the same startup.
 #[test]
 fn session_services_apply_contributed_models_before_user_models() {
+    if maestro_test_process::run_alone(
+        "session_services_apply_contributed_models_before_user_models",
+    )
+    .unwrap()
+    {
+        return;
+    }
     let scratch = Scratch::new().unwrap();
     let root = scratch.path().to_string_lossy();
     let agent = format!("{root}/agent");
@@ -561,7 +568,7 @@ fn failing_contributor(payload: serde_json::Value) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let result = api
             .contribute_load_time(payload.clone())
-            .and_then(|()| Err("factory failed".into()));
+            .and(Err("factory failed".into()));
         Box::pin(async move { result })
     })
 }

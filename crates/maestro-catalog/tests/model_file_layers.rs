@@ -27,6 +27,11 @@ fn assert_layers(registry: &ModelRegistry) {
 /// Refresh and removal of a dynamic override restore the same composed file layers.
 #[test]
 fn ordered_model_files_preserve_partial_overrides_and_replace_custom_definitions() {
+    if crate::isolation::isolated(
+        "ordered_model_files_preserve_partial_overrides_and_replace_custom_definitions",
+    ) {
+        return;
+    }
     let scratch = Scratch::new().unwrap();
     let mut paths = Vec::new();
     for (name, text) in [
