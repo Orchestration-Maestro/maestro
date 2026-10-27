@@ -345,7 +345,7 @@ Governed keys and what the manifest may do with them:
 | `transport`, `steeringMode`, `followUpMode`, `enableSkillCommands`, `images.autoResize` | lock; default |
 | `compaction.{enabled,reserveTokens,keepRecentTokens}`, `branchSummary.{reserveTokens,skipPrompt}`, `retry.{enabled,maxRetries,baseDelayMs}`, `retry.provider.{timeoutMs,maxRetries,maxRetryDelayMs}` | lock; bound (numeric members only); default |
 | `images.blockImages`, `enableInstallTelemetry` | lock (normally to `true` and `false`); default |
-| `holdAssistantText` | lock; default (locked to `true` whenever a guard rule targets `agent-output`, M20.7) |
+| `holdUncheckedText` | lock; default (locked to `true` whenever a guard rule targets `agent-output` or `tool-output`, M20.7) |
 | `packages`, `extensions`, `skills`, `prompts`, `actions`, `contributions` | lock (no local additions); require entries |
 | `manifest`, `manifestAreas`, `manifestAutoUpdate` | lock; default (`manifestAreas`, `manifestAutoUpdate`) |
 | `multiplexer.tabBarRight` | lock; default |
@@ -849,7 +849,7 @@ change only with the manifest.
    | `regex` | A regular expression in the syntax of the workspace's `regex` crate. Matching takes linear time in the text's length. Inline flags such as `(?i)` and `(?m)` set case and line behaviour; look-around and back-references do not exist in this syntax |
    | `action` | `block`, `confirm`, `redact` or `warn` (item 4) |
    | `appliesTo` | A non-empty list of targets (item 3) |
-   | `examples` | `match`, a non-empty list of strings the expression must match, and `noMatch`, a list of strings it must not match |
+   | `examples` | `match`, a non-empty list of strings the expression must match, and `noMatch`, a non-empty list of strings it must not match |
 
    An unknown or missing member, a duplicate `id`, an expression that does not
    compile, an action that does not allow one of the rule's targets, or an example
@@ -863,7 +863,7 @@ change only with the manifest.
    |---|---|---|
    | `command` | The `command` argument of the `bash` tool, and the user's `!` and `!!` shell commands | Before the command runs |
    | `path` | The `path` argument of the `write` and `edit` tools, as given | Before the tool runs |
-   | `tool-output` | Each text block of a tool result, and every string in its details, such as an edit's diff | Before the result reaches the model or the session file |
+   | `tool-output` | Each text block of a tool result, and every string in its details, such as an edit's diff | Before the completed result reaches the model, the screen or the session file; partial results are withheld (item 7) |
    | `agent-output` | Each text block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
    | `prompt` | Each text block of a user message from every route: typed prompts, steering and follow-up messages, SDK and RPC prompts, after prompt-template and skill expansion | When the message ends, before it is saved or sent |
 
@@ -877,11 +877,15 @@ change only with the manifest.
    and session-before-tree hooks, through which an extension supplies the summary.
    When any rule targets `tool-output`, `agent-output` or `prompt`, the guard
    supplies it: it checks the messages to summarize with their targets' rules and
-   any previous summary with `agent-output` rules, generates the summary from the
-   checked text with the compaction-generation host operation, checks the result
-   with `agent-output` rules and returns it. This covers manual and automatic
+   any previous summary with `agent-output` rules, and checks custom instructions
+   from `/compact` or branch summarization with `prompt` rules. It generates the
+   summary from the checked text with the compaction-generation host operation,
+   checks the result with `agent-output` rules and returns it. This covers manual and automatic
    compaction, split-turn summaries and branch summaries. Because guards run last
    (item 6), the guard's summary replaces a summary an earlier extension supplied.
+   If generation or checking fails, the guard returns `cancel: true` with the
+   failure as the reason instead of throwing. No unchecked fallback summary is
+   generated, saved or shown.
 
 4. **Actions.** Each rule names its own action. The manifest's files set the usual
    choices: `confirm` for destructive commands, `block` for protected paths,
@@ -924,17 +928,19 @@ change only with the manifest.
    (M8.5); guards check what the agent and the user send through Maestro.
 7. **Saved sessions and streams.** Session files keep what the guards return:
    redacted text, withheld results and withheld responses. When any rule targets
-   `agent-output`, the manifest package sets the `holdAssistantText` setting to
-   `true` in its base layer and locks it (H1). While the setting is `true`, the
+   `agent-output` or `tool-output`, the manifest package sets `holdUncheckedText`
+   to `true` in its base layer and locks it (H1). While the setting is `true`, the
    session sends no unchecked assistant text in any listener payload: text deltas,
    message-start payloads (including a completed reply when no start event
    arrived), message snapshots and nested model-event snapshots are all covered.
    Each reply's text reaches the interactive view, JSON and RPC event streams and
    SDK listeners only when its message ends, after the guards have checked it.
-   Thinking and tool progress still stream, with assistant text omitted from
-   their accompanying snapshots. Emitted snapshots do not share unchecked mutable
-   text with listeners. `/settings` shows the setting as locked, like any locked
-   value.
+   Thinking and tool status events still stream, with assistant text omitted from
+   their accompanying snapshots. Partial tool-result content and details are
+   withheld from progress events; listeners receive the completed result only
+   after the guards have checked it. Emitted snapshots do not share unchecked
+   mutable text or details with listeners. `/settings` shows the setting as locked,
+   like any locked value.
    With the setting `false`, the default, streaming is unchanged.
 8. **Limits.** The output of the user's `!` and `!!` commands is saved as produced
    and checked only when a later agent request carries it (item 3). Guards do not
@@ -942,7 +948,7 @@ change only with the manifest.
 
 ## Core hooks
 
-The core gains five generic hooks and one generic setting, `holdAssistantText`
+The core gains five generic hooks and one generic setting, `holdUncheckedText`
 (M20.7). None reads a manifest, knows the manifest's governed-key table, or
 combines areas; the manifest package does that.
 
@@ -981,9 +987,12 @@ as in the reference: the first registration wins for tools and flags, the later
 one for shortcuts, and duplicate commands get numbered names in list order. A base
 package resolves conflicts exactly as any other package does.
 
+Without a manifest, `holdUncheckedText` may still be set explicitly: its default
+changes nothing, and enabling it only withholds text until checked.
+
 ## Implementation decisions
 
-- **Placement.** The core holds only H1 to H5 and the `holdAssistantText` setting.
+- **Placement.** The core holds only H1 to H5 and the `holdUncheckedText` setting.
   This workspace gains one default-on base package, a package crate released with
   Maestro like the other base packages ([packages](packages.md#base-packages)):
   `maestro-manifest` (selection, acquisition, area reading, prompt composition,
@@ -1006,9 +1015,11 @@ package resolves conflicts exactly as any other package does.
   and session-before-tree hooks: the guard supplies each summary, generated from
   checked text with the compaction-generation host operation, so the context and
   message-end hooks keep their existing coverage. Expressions compile with the
-  workspace's existing `regex` crate. `holdAssistantText` is read in exactly one
+  workspace's existing `regex` crate. `holdUncheckedText` is read in exactly one
   place, the agent session's listener emission boundary for every event that
-  carries assistant text, not only message updates. The interactive view, JSON
+  carries assistant text or partial tool-result content or details, not only
+  message updates. That boundary withholds partial results rather than checking
+  progress snapshots with guard rules. The interactive view, JSON
   and RPC modes and SDK listeners all read that emission, so none withholds text
   itself. No other package matches guard rules; a package that reacts to guarded
   work builds on the manifest package's behaviour instead of matching again.
@@ -1079,19 +1090,27 @@ package resolves conflicts exactly as any other package does.
   prompt template, each redacted in the session file and in the faux provider's
   request. An earlier extension that edits a tool call's arguments has the edited
   arguments checked. A failing example, an expression that does not compile, a
-  duplicate id and `confirm` on a text target each fail the load. With
-  `holdAssistantText` set to `true`, no unchecked assistant text reaches the
-  interactive, JSON, RPC or SDK listeners in any payload: test text deltas,
+  duplicate id, an empty `noMatch` list and `confirm` on a text target each fail the
+  load. With `holdUncheckedText` set to `true`, no unchecked assistant text or
+  partial tool output (content or details) reaches the interactive, JSON, RPC or
+  SDK listeners in any payload: test text deltas,
   a terminal-only response whose message start carries the completed reply, and
   thinking and tool-call updates whose snapshots also contain text. Thinking
-  and tool progress still arrive; message end delivers only the checked text.
+  and tool status events still arrive; message end delivers only the checked text,
+  and the completed tool result contains only checked content and details. Include
+  a partial tool result with `SIN 046-454-286` in both its text and details.
   With `false`, the events are byte-identical to today's.
 - Summary guards: resume a session saved before manifest selection with personal
   data in user, assistant and tool messages and in a previous summary. Manual and
   automatic compaction, including split-turn summaries, and branch summaries send
   only checked text to the faux provider. A summary response that matches a rule
   is checked before the guard returns it, and the guard's summary replaces one an
-  earlier extension supplied. Existing session-file bytes stay unchanged.
+  earlier extension supplied. `/compact SIN 046-454-286` and branch-summary
+  instructions containing the same text are checked with prompt rules before
+  reaching the provider. A guard generation failure (including a provider timeout)
+  or check failure returns `cancel: true` with its reason, without throwing; no
+  unchecked fallback is generated, saved or emitted. Test both summary routes.
+  Existing session-file bytes stay unchanged.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -1139,8 +1158,9 @@ Each item is a deliberate difference from the reference.
     redaction, and the personal-data and prompt-injection families. Confirming
     destructive commands and refusing protected paths follow the reference's
     example extensions, with their patterns taken from the manifest instead of the
-    code. The `holdAssistantText` setting, which sends replies only when their
-    message ends.
+    code. The `holdUncheckedText` setting, which withholds assistant text and
+    partial tool-result content and details until the completed message or result
+    has been checked, while status events still flow.
 
 ## Corrected reference defect
 
