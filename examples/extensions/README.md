@@ -36,7 +36,10 @@ own files, not in this page or `docs/examples.md`.
 
 Cargo needs an explicit target for each out-of-package component. Those manifest
 blocks and the tracked table remain shared edits; alphabetical neighbours can
-still conflict. Regenerate the table after merging another example.
+still conflict. Regenerate the table after merging another example. Examples
+with additional native-runner tests also need an explicit alphabetical module
+entry in `crates/maestro-extensions-wasmtime/tests/integration.rs`, as required by
+the workspace integration-test conventions.
 
 ## Examples
 
@@ -53,6 +56,8 @@ still conflict. Regenerate the table after merging another example.
 | `event_bus.rs` | A command that emits events for other extensions, and a listener that reports them. |
 | `file_trigger.md` | File trigger |
 | `file_trigger.rs` | An opt-in file watcher that sends external triggers to the conversation. |
+| `git_checkpoint.md` | Git checkpoint |
+| `git_checkpoint.rs` | Opt-in Git stash checkpoints for restoring code when forking a conversation. |
 | `hello.md` | Hello |
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
