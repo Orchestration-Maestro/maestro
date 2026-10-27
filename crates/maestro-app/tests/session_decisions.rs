@@ -241,3 +241,75 @@ fn locked_thinking_default_survives_model_capability_clamp() {
         }
     });
 }
+
+/// A host callback verifies it can acquire the target model exclusively.
+struct ModelLockProbe(Arc<std::sync::RwLock<maestro_models::Model>>);
+impl SettingsDecider for ModelLockProbe {
+    fn decide(&self, request: &DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(request, DecisionRequest::Model { .. }) {
+            assert!(
+                self.0.try_write().is_ok(),
+                "model lock held across host callback"
+            );
+        }
+        Ok(())
+    }
+}
+
+/// Admission callbacks receive a snapshot, not a live model guard.
+#[test]
+fn model_decider_can_acquire_target_write_lock() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let target = h.model("think");
+        h.session
+            .settings_manager()
+            .borrow_mut()
+            .register_decider(Arc::new(ModelLockProbe(Arc::clone(&target))))
+            .unwrap();
+        h.session.set_model(target).await.unwrap();
+    });
+}
+
+/// Authored diagnostic names never turn a post-selection failure into a refusal.
+#[test]
+fn extension_selection_propagates_listener_failure_named_configuration_refusal() {
+    use maestro_extensions::ModelSelectEvent;
+    use maestro_models::DiagnosticErrorInfo;
+    use std::{cell::RefCell, rc::Rc};
+    on_task_set(|_| async {
+        let slot = Rc::new(RefCell::new(None));
+        let kept = Rc::clone(&slot);
+        let h = harness(HarnessOptions {
+            factories: vec![Rc::new(move |api| {
+                api.on::<ModelSelectEvent, ()>(
+                    "model_select".into(),
+                    Rc::new(|_, _| {
+                        Box::pin(std::future::ready(Err("selection handler failed".into())))
+                    }),
+                )
+                .unwrap();
+                *kept.borrow_mut() = Some(api);
+                Box::pin(std::future::ready(Ok(())))
+            })],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let _unsubscribe = h.runner().on_error(Rc::new(|_| {
+            Err(Box::new(DiagnosticErrorInfo::new(
+                Some("ConfigurationRefusal".into()),
+                "listener failed",
+            )))
+        }));
+        let before = history(&h.session);
+        let api = slot.borrow_mut().take().unwrap();
+        let result = api.set_model(h.model("think")).unwrap().await;
+        let error = result.unwrap_err();
+        assert_eq!(error.to_string(), "listener failed");
+        assert_eq!(
+            model_view(&h.session.model()),
+            model_view(&h.model("think"))
+        );
+        assert_ne!(history(&h.session), before);
+    });
+}
