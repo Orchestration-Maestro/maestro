@@ -1,6 +1,7 @@
 """Check the subprocess example without credentials or a model server."""
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -8,6 +9,22 @@ import unittest
 from pathlib import Path
 
 CLIENT = Path(__file__).with_name("rpc.py")
+
+
+class RpcGuideTests(unittest.TestCase):
+    def test_streaming_guide_uses_rpc_updates_and_message_end_completion(self):
+        guide = (CLIENT.parents[2] / "docs/rpc.md").read_text(encoding="utf-8")
+        section = guide.split("## Render a streamed answer\n", 1)[1].split("## Events", 1)[0]
+        table = section.split("| Inner event |", 1)[1].split("\n\n", 1)[0]
+        rows = "\n".join(row.split("|")[1] for row in table.splitlines()[2:])
+        self.assertEqual(
+            set(re.findall(r"`([a-z_]+)`", rows)),
+            {"text_start", "text_delta", "text_end", "thinking_start", "thinking_delta",
+             "thinking_end", "toolcall_start", "toolcall_delta", "toolcall_end"},
+        )
+        for field in ["message_end.message.stopReason", "error", "aborted", "toolUse", "agent_end"]:
+            self.assertIn(f"`{field}`", section)
+        self.assertNotRegex(section, r"`(?:done|error)`\s+with")
 
 
 class RpcExampleTests(unittest.TestCase):
