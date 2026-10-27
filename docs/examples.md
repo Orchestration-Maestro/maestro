@@ -29,7 +29,9 @@ friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, and `extensions/send_user_message.rs` builds commands
 that send ordinary, steering, follow-up and two-block user messages.
 `extensions/timed_confirm.rs` builds confirmation and selection commands with
-five- and ten-second timeouts, plus a caller-owned cancellation example. The
+five- and ten-second timeouts, plus a caller-owned cancellation example.
+`extensions/widget_placement.rs` requests widgets above and below the editor on
+session start. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
