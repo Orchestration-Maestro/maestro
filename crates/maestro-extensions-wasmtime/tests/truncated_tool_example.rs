@@ -1,11 +1,93 @@
 //! The shipped search tool through the production loader, process and filesystem owners.
 #![cfg(test)]
+#![cfg(unix)]
 use maestro_extensions::{ExtensionRunner, Local};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
-use std::{fmt::Write as _, path::Path, rc::Rc, sync::RwLock};
+use std::{
+    collections::BTreeMap,
+    fmt::Write as _,
+    os::unix::fs::PermissionsExt as _,
+    path::{Path, PathBuf},
+    rc::Rc,
+    sync::RwLock,
+};
 
 use super::extension_guide::cargo as component_build;
+
+/// Component path inherited by the checked child, so it need not build with a cleared environment.
+const COMPONENT: &str = "MAESTRO_TRUNCATED_TOOL_COMPONENT";
+
+/// Returns supplied process streams and status without interpreting search operands.
+const SEARCH_PROCESS: &str = r#"#!/usr/bin/python3
+import json, os, sys
+from pathlib import Path
+root = Path(__file__).parent
+(root / "invocation.json").write_text(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd()}))
+sys.stdout.buffer.write((root / "stdout").read_bytes())
+sys.stderr.buffer.write((root / "stderr").read_bytes())
+sys.exit(int((root / "code").read_text()))
+"#;
+
+/// Runs each process fixture on a checked child PATH, independent of installed search tools.
+fn isolated(name: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return false;
+    }
+    let directory = Scratch::new().unwrap();
+    let executable = directory.path().join("rg");
+    std::fs::write(&executable, SEARCH_PROCESS).unwrap();
+    std::fs::set_permissions(executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let component = component_build::component(
+        Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../maestro-extensions-wasm"
+        )),
+        &["--example", "truncated_tool"],
+        "truncated_tool",
+    )
+    .unwrap();
+    let environment = BTreeMap::from([
+        (
+            "PATH",
+            format!(
+                "{}:{}",
+                directory.path().display(),
+                std::env::var("PATH").unwrap()
+            ),
+        ),
+        (COMPONENT, component.to_str().unwrap().to_owned()),
+    ]);
+    maestro_test_process::run_per_environment(name, [()], |()| environment.clone())
+        .unwrap()
+        .is_none()
+}
+
+/// Resolves a fixture file beside the executable at the front of the checked child PATH.
+fn process_file(name: &str) -> PathBuf {
+    std::env::split_paths(&std::env::var_os("PATH").unwrap())
+        .next()
+        .unwrap()
+        .join(name)
+}
+
+/// Supplies one complete process outcome independently of the process working directory.
+fn supply(stdout: &str, stderr: &str, code: i32) {
+    for (name, content) in [
+        ("stdout", stdout),
+        ("stderr", stderr),
+        ("code", &code.to_string()),
+    ] {
+        std::fs::write(process_file(name), content).unwrap();
+    }
+}
+
+/// Checks literal operands and the actual native process working directory.
+fn assert_process(root: &Scratch, argv: &[&str]) {
+    let observed: Value =
+        serde_json::from_slice(&std::fs::read(process_file("invocation.json")).unwrap()).unwrap();
+    assert_eq!(observed, json!({"argv":argv,"cwd":root.path()}));
+}
 
 /// Runs a component invocation on the host's local executor.
 fn run(action: impl std::future::Future<Output = ()>) {
@@ -16,23 +98,14 @@ fn run(action: impl std::future::Future<Output = ()>) {
     tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
-/// Builds the one shipped copy and loads its registered tool over real native owners.
+/// Loads the prebuilt shipped copy over real native owners.
 async fn loaded(cwd: &Path) -> Rc<ExtensionRunner<Local>> {
-    let path = component_build::component(
-        Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../maestro-extensions-wasm"
-        )),
-        &["--example", "truncated_tool"],
-        "truncated_tool",
-    )
-    .unwrap();
+    let path = std::env::var(COMPONENT).unwrap();
     let runtime = maestro_extensions::create_extension_runtime::<Local>();
     let bus = maestro_extensions::create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no background work")),
         Rc::new(|error| panic!("{error}")),
     );
-    let path = path.to_str().unwrap().to_owned();
     let owner = maestro_extensions::load_extension_from_factory(
         crate::artifact(path.clone()),
         cwd.to_str().unwrap().into(),
@@ -64,36 +137,37 @@ async fn search(runner: &Rc<ExtensionRunner<Local>>, args: Value) -> Result<Valu
 
 #[test]
 fn truncated_tool_component_reports_no_matches_and_search_errors() {
+    if isolated("truncated_tool_component_reports_no_matches_and_search_errors") {
+        return;
+    }
     run(async {
         let root = Scratch::new().unwrap();
-        std::fs::write(root.path().join("input.txt"), "haystack\n").unwrap();
+        supply("", "", 1);
         let runner = loaded(root.path()).await;
         assert_eq!(
             search(&runner, json!({"pattern":"needle"})).await.unwrap(),
             json!({"content":[{"type":"text","text":"No matches found"}],
                 "details":{"pattern":"needle","matchCount":0}})
         );
+        assert_process(
+            &root,
+            &["--line-number", "--color=never", "--", "needle", "."],
+        );
+        supply("", "regex parse error: controlled error", 2);
         let error = search(&runner, json!({"pattern":"["})).await.unwrap_err();
-        assert!(error.starts_with("ripgrep failed:"), "{error}");
-        assert!(error.contains("regex parse error"), "{error}");
+        assert_eq!(error, "ripgrep failed: regex parse error: controlled error");
+        assert_process(&root, &["--line-number", "--color=never", "--", "[", "."]);
     });
 }
 
 #[test]
 fn truncated_tool_component_preserves_literal_search_operands_and_output() {
+    if isolated("truncated_tool_component_preserves_literal_search_operands_and_output") {
+        return;
+    }
     run(async {
         let root = Scratch::new().unwrap();
-        std::fs::create_dir(root.path().join("space dir")).unwrap();
-        std::fs::write(
-            root.path().join("space dir/match me.txt"),
-            "-needle;touch escaped\n",
-        )
-        .unwrap();
-        std::fs::write(
-            root.path().join("space dir/ignored.rs"),
-            "-needle;touch escaped\n",
-        )
-        .unwrap();
+        supply("space dir/match me.txt:1:-needle;touch escaped\n", "", 0);
         let runner = loaded(root.path()).await;
         let args = json!({"pattern":"-needle;touch escaped","path":"space dir","glob":"*.txt"});
         let result = search(&runner, args).await.unwrap();
@@ -102,6 +176,18 @@ fn truncated_tool_component_preserves_literal_search_operands_and_output() {
             json!({"content":[{"type":"text","text":
             "space dir/match me.txt:1:-needle;touch escaped\n"}],"details":{
             "pattern":"-needle;touch escaped","path":"space dir","glob":"*.txt","matchCount":1}})
+        );
+        assert_process(
+            &root,
+            &[
+                "--line-number",
+                "--color=never",
+                "--glob",
+                "*.txt",
+                "--",
+                "-needle;touch escaped",
+                "space dir",
+            ],
         );
         assert!(!root.path().join("escaped").exists());
     });
@@ -189,20 +275,24 @@ fn truncation_cases() -> [TruncationCase; 3] {
 
 #[test]
 fn truncated_tool_component_limits_lines_and_bytes_and_retains_full_output() {
+    if isolated("truncated_tool_component_limits_lines_and_bytes_and_retains_full_output") {
+        return;
+    }
     run(async {
         let root = Scratch::new().unwrap();
         let runner = loaded(root.path()).await;
         for (name, input, count, limit, lines, total, bytes, total_bytes, notice) in
             truncation_cases()
         {
-            std::fs::write(root.path().join(name), &input).unwrap();
             let mut full = String::new();
             for (line, text) in input.lines().enumerate() {
                 writeln!(full, "{}:{text}", line + 1).unwrap();
             }
+            supply(&full, "", 0);
             let result = search(&runner, json!({"pattern":".","path":name}))
                 .await
                 .unwrap();
+            assert_process(&root, &["--line-number", "--color=never", "--", ".", name]);
             let path = assert_artifact(&result, &full);
             assert_eq!(result["details"]["matchCount"], count);
             let truncation = &result["details"]["truncation"];
