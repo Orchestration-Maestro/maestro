@@ -4623,6 +4623,7 @@ dependencies = [
  "num-traits",
  "owo-colors",
  "regex",
+ "regex-syntax",
  "rustix",
  "ryu-js",
  "serde",

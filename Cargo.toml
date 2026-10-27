@@ -6,6 +6,7 @@ resolver = "3"
 globset = { version = "=0.4.20", default-features = false }
 percent-encoding = "=2.3.2"
 regex = "=1.13.1"
+regex-syntax = { version = "=0.8.11", default-features = false, features = ["std"] }
 maestro-text = { path = "crates/maestro-text" }
 maestro-listeners = { path = "crates/maestro-listeners" }
 interprocess = { version = "=2.4.2", default-features = false }
