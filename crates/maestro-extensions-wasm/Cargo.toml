@@ -51,6 +51,11 @@ name = "native_io_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "permission_gate"
+path = "../../examples/extensions/permission_gate.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "pirate"
 path = "../../examples/extensions/pirate.rs"
 crate-type = ["cdylib"]
