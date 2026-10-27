@@ -168,6 +168,9 @@ fn usage_counts_local_calendar_days_across_dst() {
         "usage_counts_local_calendar_days_across_dst",
         &[("TZ", ZONE)],
         |base| {
+            if !maestro_test_process::local_zone_follows_tz() {
+                return;
+            }
             let noon = Totals {
                 input: 1.0,
                 output: 0.0,

@@ -225,6 +225,10 @@ pub fn run_suggestions(cases: &[SuggestionCase]) {
         AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
     };
     for case in cases {
+        if cfg!(windows) && case.lines.iter().any(|line| line.contains('\\')) {
+            // A recorded `\` is literal text on POSIX hosts and a separator on Windows.
+            continue;
+        }
         let files = Files {
             entries: case.files.entries.to_vec(),
             stat: case.files.stat.to_vec(),
@@ -270,14 +274,17 @@ pub fn run_suggestions(cases: &[SuggestionCase]) {
             "{}",
             case.id
         );
-        let expected: Vec<Vec<String>> = case
-            .calls
-            .iter()
-            .map(|call| call.iter().map(|s| (*s).into()).collect())
-            .collect();
         let observed = recorded_trace(&trace.borrow());
-        assert_eq!(observed, expected, "{}", case.id);
+        assert_eq!(observed, recorded_calls(case), "{}", case.id);
     }
+}
+
+/// The calls a case records, as owned strings.
+fn recorded_calls(case: &SuggestionCase) -> Vec<Vec<String>> {
+    case.calls
+        .iter()
+        .map(|call| call.iter().map(|s| (*s).into()).collect())
+        .collect()
 }
 
 /// The trace as the recording spells it: Windows joins the recorded POSIX base natively,

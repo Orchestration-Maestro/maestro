@@ -331,7 +331,7 @@ fn read_path_variants_reach_the_existing_path_owner() {
     for authored in ["./first.txt", "first.txt", "first.txt"] {
         let variant = native.resolve_path(authored).unwrap();
         let leaf = format!("{}first.txt", std::path::MAIN_SEPARATOR);
-        assert!(variant.ends_with(&leaf), "{authored}: {variant}");
+        assert!(variant.ends_with(&leaf), "{authored}");
     }
 }
 

@@ -181,7 +181,8 @@ fn write_resolves_paths_before_filesystem_work() {
         None,
     ))
     .unwrap();
-    assert_eq!(ops.calls()[1][1], format!("{}/shot PM.png", dir.text()));
+    let written = std::path::Path::new(&dir.text()).join("shot PM.png");
+    assert_eq!(ops.calls()[1][1], written.to_str().unwrap());
 }
 
 #[test]
