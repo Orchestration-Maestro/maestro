@@ -11,6 +11,12 @@ assert args[args.index("--tools") + 1] == "read,ls", args
 with open(args[args.index("--append-system-prompt") + 1], encoding="utf-8") as prompt:
     role = prompt.read()
 assert role == "Private role prompt", role
+if args[-1] == "Task: cancel":
+    import signal
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    print(json.dumps({"type":"message_end","message":{"role":"assistant","content":[{"type":"text","text":"ready"}]}}), flush=True)
+    signal.sigwait({signal.SIGTERM})
+    sys.exit(0)
 if args[-1] == "Task: fail":
     sys.stderr.write("controlled failure")
     sys.exit(7)

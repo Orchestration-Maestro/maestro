@@ -2,8 +2,10 @@
 #![cfg(test)]
 
 use crate::support::Root;
+mod cancellation;
 mod errors;
 mod render;
+mod trust;
 use maestro_app::AgentSession;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
@@ -30,12 +32,27 @@ async fn loaded(root: &Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSessio
 
 /// Invokes the registered definition through the application's tool wrapper.
 async fn execute(session: &Rc<AgentSession>, args: Value) -> Value {
-    let registered = session.get_tool_definition("subagent").unwrap();
-    let tool = maestro_app::wrap_registered_tool(&registered, session.extension_runner());
-    let result = (tool.execute)("delegated".into(), args, None, None)
-        .await
+    invoked(session, args, None, None).await.unwrap()
+}
+
+/// Retains the public invocation's independent signal and progress capabilities.
+async fn invoked(
+    session: &Rc<AgentSession>,
+    args: Value,
+    signal: Option<maestro_app::Cancellation>,
+    update: Option<maestro_app::AgentToolUpdateCallback<Value, maestro_app::Local>>,
+) -> Result<Value, String> {
+    let runner = session.extension_runner();
+    let registered = runner
+        .get_all_registered_tools()
+        .into_iter()
+        .find(|tool| tool.definition.name() == "subagent")
         .unwrap();
-    serde_json::to_value(result).unwrap()
+    let tool = maestro_app::wrap_registered_tool(&registered, runner);
+    (tool.execute)("delegated".into(), args, signal, update)
+        .await
+        .map(|result| serde_json::to_value(result).unwrap())
+        .map_err(|error| error.to_string())
 }
 
 /// Runs the real application effects on their retained caller-owned executor.
@@ -100,7 +117,7 @@ fn subagent_discovery_refreshes_scopes_and_nearest_project_shadowing() {
 
 /// Starts a selected test in its own environment, keeping its child script private.
 #[cfg(unix)]
-fn child_fixture(test: &str) -> Option<Scratch> {
+fn child_fixture(test: &str, component: Option<&Path>) -> Option<Scratch> {
     use std::os::unix::fs::PermissionsExt;
     if maestro_test_process::selection().is_child() {
         return None;
@@ -115,6 +132,7 @@ fn child_fixture(test: &str) -> Option<Scratch> {
         .case("*")
         .env("MAESTRO_BIN_PATH", &program)
         .env("TMPDIR", root.path().join("tmp"))
+        .envs(component.map(|path| ("MAESTRO_NATIVE_IO_COMPONENT", path)))
         .nocapture()
         .status()
         .unwrap();
@@ -174,8 +192,11 @@ async fn modes(runner: &Rc<AgentSession>, root: &Path) {
 #[test]
 #[cfg(unix)]
 fn subagent_invocation_modes_preserve_child_output_and_usage() {
-    if child_fixture("subagent_example::subagent_invocation_modes_preserve_child_output_and_usage")
-        .is_some()
+    if child_fixture(
+        "subagent_example::subagent_invocation_modes_preserve_child_output_and_usage",
+        None,
+    )
+    .is_some()
     {
         return;
     }
@@ -189,4 +210,10 @@ fn subagent_invocation_modes_preserve_child_output_and_usage() {
             modes(&session, root.scratch.path()).await;
         })
     });
+}
+
+/// Writes the complete controlled role for the selected discovery source.
+fn controlled_role(root: &Root, directory: &str) {
+    std::fs::create_dir_all(root.path(directory)).unwrap();
+    std::fs::write(root.path(directory).join("role.md"), "---\nname: role\ndescription: Controlled child\nmodel: controlled-model\ntools: read, ls\n---\nPrivate role prompt\n").unwrap();
 }

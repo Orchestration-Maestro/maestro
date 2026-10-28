@@ -68,6 +68,7 @@ async fn child_failures(session: &Rc<AgentSession>) {
 fn subagent_failures_keep_diagnostics_and_stop_the_chain() {
     if child_fixture(
         "subagent_example::errors::subagent_failures_keep_diagnostics_and_stop_the_chain",
+        None,
     )
     .is_some()
     {
