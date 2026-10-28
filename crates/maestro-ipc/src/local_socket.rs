@@ -1,7 +1,8 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
 use rustix::io::Errno;
-use rustix::net::{AddressFamily, SocketAddrUnix, SocketFlags, SocketType, connect, socket_with};
+use rustix::net::{SocketAddrUnix, connect};
+use socket2::{Domain, Socket, Type};
 use std::fs;
 use std::io;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
@@ -52,12 +53,7 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// Returns path or connection errors, or timed-out while the accept queue stays full.
 pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
     let address = SocketAddrUnix::new(path)?;
-    let fd = socket_with(
-        AddressFamily::UNIX,
-        SocketType::STREAM,
-        SocketFlags::NONBLOCK,
-        None,
-    )?;
+    let fd = nonblocking_local_socket()?;
     loop {
         match connect(&fd, &address) {
             Ok(()) | Err(Errno::ISCONN) => break,
@@ -73,6 +69,13 @@ pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<
     let stream = std::os::unix::net::UnixStream::from(fd);
     stream.set_nonblocking(false)?;
     Ok(LocalStream::UdSocket(stream.into()))
+}
+
+/// Create a nonblocking Unix stream descriptor protected from exec inheritance.
+fn nonblocking_local_socket() -> io::Result<std::os::fd::OwnedFd> {
+    let socket = Socket::new(Domain::UNIX, Type::STREAM, None)?;
+    socket.set_nonblocking(true)?;
+    Ok(socket.into())
 }
 
 /// Bind without unlinking a name when the listener is dropped.
