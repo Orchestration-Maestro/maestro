@@ -31,7 +31,23 @@ impl ExtensionUIContextPort for Ui {
 
 /// Loads the compiled shipped artifact on the real runner without model operations.
 async fn loaded(cwd: &str) -> (ExtensionRunner<Local>, Rc<Ui>) {
-    let path = std::env::var("MAESTRO_INLINE_BASH_COMPONENT").expect("nextest component setup");
+    static COMPONENT: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    let path = COMPONENT.get_or_init(|| {
+        std::env::var("MAESTRO_INLINE_BASH_COMPONENT").unwrap_or_else(|_| {
+            super::extension_guide::cargo::component(
+                std::path::Path::new(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../maestro-extensions-wasm"
+                )),
+                &["--example", "inline_bash"],
+                "inline_bash",
+            )
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_owned()
+        })
+    });
     let runtime = create_extension_runtime::<Local>();
     let bus = create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no background work")),
@@ -42,7 +58,7 @@ async fn loaded(cwd: &str) -> (ExtensionRunner<Local>, Rc<Ui>) {
         cwd.into(),
         bus.for_extension(),
         runtime.clone(),
-        Some(path),
+        Some(path.clone()),
     )
     .await
     .unwrap();

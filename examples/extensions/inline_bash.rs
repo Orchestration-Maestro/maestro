@@ -23,6 +23,9 @@ fn expression(fragment: &str) -> Option<(&str, &str)> {
 }
 
 /// Executes one command and retains its full replacement beside its notification preview.
+///
+/// # Errors
+/// Returns host whitespace-classification failures when trimming command output.
 async fn expand(api: &ExtensionAPI, command: &str) -> ExtensionResult<(String, String)> {
     let args = ["-c".into(), command.into()];
     let executed = api
@@ -66,6 +69,9 @@ async fn expand(api: &ExtensionAPI, command: &str) -> ExtensionResult<(String, S
 }
 
 /// Expands original input fragments without rescanning command output.
+///
+/// # Errors
+/// Returns host whitespace-classification, UI availability and notification failures.
 async fn input(
     api: &ExtensionAPI,
     event: &mut ExtensionEvent,
@@ -114,6 +120,9 @@ async fn input(
 }
 
 /// Registers the input hook through the supplied host.
+///
+/// # Errors
+/// The returned future reports input-handler registration failures.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
