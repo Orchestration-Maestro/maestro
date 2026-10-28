@@ -604,6 +604,7 @@ fn native_probe_preserves_cwd_and_environment_order() {
     assert_eq!(std::env::var_os(KEY), before);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workspace_skill_path_resolves_the_shipped_safety_guide() {
     let root = if cfg!(windows) {

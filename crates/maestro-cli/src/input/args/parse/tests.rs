@@ -1,4 +1,5 @@
 //! Chat metadata stays aligned with the consuming parser.
+#![cfg(not(target_arch = "wasm32"))]
 
 use std::collections::BTreeSet;
 

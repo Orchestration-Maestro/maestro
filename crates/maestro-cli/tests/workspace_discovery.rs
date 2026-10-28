@@ -1,4 +1,5 @@
 //! Effect-free workspace command discovery.
+#![cfg(not(target_arch = "wasm32"))]
 #![cfg(test)]
 
 use maestro_cli::workspace_commands::spec::command;
