@@ -166,7 +166,8 @@ with `pane_not_found` and `pane not found` when there is no such pane.
   nothing.
 - `pane.process_info` returns the shell's process id and the members of the foreground
   process group with their names, command lines and working directories. A pane without
-  a live process fails with `pane_not_found`.
+  a live process fails with `pane_not_found`, and a process observation that fails
+  answers `internal_error`.
 
 A created workspace or tab publishes `layout_updated` after its created records.
 
