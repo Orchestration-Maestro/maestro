@@ -14,10 +14,25 @@ executable. `RpcModeOptions::session` groups the runtime, signal registration, t
 export facilities. Without a session, a supplied workspace handler still runs and session
 commands return a correlated refusal asking the caller to open in a session.
 
-The writer receives each record as an `RpcLine`, already framed, and
-`rpc_mode::stdout_output` writes those lines to standard output. `maestro_rpc::run_rpc_mode` is its
+The writer receives each record as an `RpcLine`, already framed. An `RpcOutput` built with
+`RpcOutput::synchronous` writes each line before the write call returns, and
+`rpc_mode::stdout_output` is that output on standard output. `maestro_rpc::run_rpc_mode` is its
 standard-stream adapter: it reserves standard output for protocol records, serves the
 runtime and exits with the connection's code.
+
+`RpcOutput::new` takes an asynchronous writer instead. Lines queue in the order the connection
+admits them, and one task writes them. With a stall timeout, a write or flush that makes no
+progress for that long fails the connection. Each write that takes bytes starts a new budget,
+so a slow reader that keeps reading is not cut off. A workspace operation receives a
+write-completion receiver. It settles once the whole response line was written and flushed, or
+once that attempt failed. It disconnects if the response is dropped before any attempt, and it
+says nothing about whether the peer read the line. After a write fails, the connection admits
+no further lines, so no frame follows a partial one.
+
+When the input of a connection without a session ends, the workspace operations still waiting
+are dropped and get no response. Responses already queued are still written, and a write that
+fails after the connection ended becomes its result. Commands still running when the runner
+returns, or when the caller drops it, are dropped with it.
 
 ## Start a connection
 
