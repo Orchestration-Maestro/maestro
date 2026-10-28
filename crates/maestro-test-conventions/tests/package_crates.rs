@@ -222,15 +222,34 @@ fn package_export_aliases_cannot_create_a_second_export_set() {
     let workspace = Workspace::new();
     package(&workspace, "maestro-subagents", "");
     workspace.list(&[("maestro-subagents", "package")]);
-    for import in [
-        "use maestro_extensions_wasm::export_extension as guest;",
-        "use maestro_extensions_wasm::{export_extension as guest};",
+    for (import, call) in [
+        (
+            "use maestro_extensions_wasm::export_extension as guest;",
+            "guest",
+        ),
+        (
+            "use maestro_extensions_wasm::{export_extension as guest};",
+            "guest",
+        ),
+        (
+            "use maestro_extensions_wasm::r#export_extension as guest;",
+            "guest",
+        ),
+        (
+            "use maestro_extensions_wasm::{export_extension as r#guest};",
+            "guest",
+        ),
+        ("", "maestro_extensions_wasm::r#export_extension"),
+        (
+            "use maestro_extensions_wasm::export_extension as first; use first as guest;",
+            "guest",
+        ),
     ] {
         support::source(
             &workspace,
             "maestro-subagents",
             "src/lib.rs",
-            &format!("pub fn factory() {{}}\n{import}\nguest!(factory);\n"),
+            &format!("pub fn factory() {{}}\n{import}\n{call}!(factory);\n"),
         );
         assert!(
             check_workspace(workspace.root.path())
@@ -286,4 +305,28 @@ fn package_factories_follow_the_actual_library_target() {
         "pub fn factory() {}\n",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn package_factory_names_follow_raw_identifier_semantics() {
+    let workspace = Workspace::new();
+    package(&workspace, "maestro-subagents", "");
+    workspace.list(&[("maestro-subagents", "package")]);
+    support::source(
+        &workspace,
+        "maestro-subagents",
+        "src/registration.rs",
+        "pub fn register() {}
+",
+    );
+    for source in [
+        "pub fn r#factory() {}
+",
+        "mod registration;
+pub use registration::register as r#factory;
+",
+    ] {
+        support::source(&workspace, "maestro-subagents", "src/lib.rs", source);
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    }
 }

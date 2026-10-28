@@ -1,7 +1,7 @@
 //! Guest-only package edges and single-export component layout.
 
 use std::{collections::BTreeSet, path::Path};
-use syn::visit::Visit;
+use syn::{ext::IdentExt, visit::Visit};
 
 use cargo_metadata::{CrateType, Metadata, TargetKind};
 use proc_macro2::{TokenStream, TokenTree};
@@ -95,9 +95,9 @@ fn check_exports(member: &Member, library: &Path) -> Result<(), String> {
         }
         let mut names = ImportNames::default();
         names.visit_file(syntax);
-        names.exports.insert("export_extension".into());
+        let names = names.export_names();
         let mut found = ExportCalls {
-            names: &names.exports,
+            names: &names,
             count: 0,
         };
         found.visit_file(syntax);
@@ -120,18 +120,18 @@ fn check_exports(member: &Member, library: &Path) -> Result<(), String> {
 }
 
 /// Counts literal macro invocations without interpreting comments or strings.
-fn exports(tokens: TokenStream, names: &BTreeSet<String>) -> usize {
+fn nested_exports(tokens: TokenStream, names: &BTreeSet<String>) -> usize {
     let tokens: Vec<_> = tokens.into_iter().collect();
     let mut count = 0;
     for (index, token) in tokens.iter().enumerate() {
         match token {
             TokenTree::Ident(name)
-                if names.contains(&name.to_string())
+                if names.contains(&name.unraw().to_string())
                     && matches!(tokens.get(index + 1), Some(TokenTree::Punct(mark)) if mark.as_char() == '!') =>
             {
                 count += 1;
             }
-            TokenTree::Group(group) => count += exports(group.stream(), names),
+            TokenTree::Group(group) => count += nested_exports(group.stream(), names),
             _ => {}
         }
     }
@@ -142,7 +142,7 @@ fn exports(tokens: TokenStream, names: &BTreeSet<String>) -> usize {
 fn public_factory(item: &syn::Item) -> bool {
     match item {
         syn::Item::Fn(item) => {
-            item.sig.ident == "factory" && matches!(item.vis, syn::Visibility::Public(_))
+            item.sig.ident.unraw() == "factory" && matches!(item.vis, syn::Visibility::Public(_))
         }
         syn::Item::Use(item) if matches!(item.vis, syn::Visibility::Public(_)) => {
             let mut names = Vec::new();
@@ -162,28 +162,41 @@ fn imports(tree: &syn::UseTree, names: &mut Vec<(String, String)>) {
                 imports(tree, names);
             }
         }
-        syn::UseTree::Name(name) => names.push((name.ident.to_string(), name.ident.to_string())),
-        syn::UseTree::Rename(name) => names.push((name.ident.to_string(), name.rename.to_string())),
+        syn::UseTree::Name(name) => names.push((
+            name.ident.unraw().to_string(),
+            name.ident.unraw().to_string(),
+        )),
+        syn::UseTree::Rename(name) => names.push((
+            name.ident.unraw().to_string(),
+            name.rename.unraw().to_string(),
+        )),
         syn::UseTree::Glob(_) => {}
     }
 }
 
-/// File-wide macro import aliases used by the bounded export scan.
+/// File-wide macro imports used by the bounded export scan.
 #[derive(Default)]
 struct ImportNames {
-    /// Names that invoke the extension export macro.
-    exports: BTreeSet<String>,
+    /// Original and locally exposed names, including chained renames.
+    imports: Vec<(String, String)>,
+}
+impl ImportNames {
+    /// Resolves explicit renames until no additional export name is exposed.
+    fn export_names(&self) -> BTreeSet<String> {
+        let mut names = BTreeSet::from(["export_extension".into()]);
+        let mut previous = 0;
+        while previous != names.len() {
+            previous = names.len();
+            for (original, exposed) in &self.imports {
+                names.extend(names.contains(original).then(|| exposed.clone()));
+            }
+        }
+        names
+    }
 }
 impl<'ast> Visit<'ast> for ImportNames {
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        let mut names = Vec::new();
-        imports(&item.tree, &mut names);
-        self.exports.extend(
-            names
-                .into_iter()
-                .filter(|(original, _)| original == "export_extension")
-                .map(|(_, exposed)| exposed),
-        );
+        imports(&item.tree, &mut self.imports);
     }
 }
 
@@ -205,10 +218,10 @@ impl<'ast> Visit<'ast> for ExportCalls<'_> {
             .path
             .segments
             .last()
-            .is_some_and(|segment| self.names.contains(&segment.ident.to_string()))
+            .is_some_and(|segment| self.names.contains(&segment.ident.unraw().to_string()))
         {
             self.count += 1;
         }
-        self.count += exports(invocation.tokens.clone(), self.names);
+        self.count += nested_exports(invocation.tokens.clone(), self.names);
     }
 }
