@@ -66,6 +66,8 @@ resolving conflicts, then regenerate the table.
 | `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |
 | `bookmark.rs` | Entry bookmarks: commands that label session entries, so that the tree view can find the important points of a conversation again. |
+| `border_status_editor.md` | Border status editor |
+| `border_status_editor.rs` | Shows the model, thinking level, context use, working directory and Git branch on the editor's borders, in place of the footer and the working row. |
 | `built_in_tool_renderer.md` | Built-in tool renderer |
 | `built_in_tool_renderer.rs` | Compact displays for the original read, bash, edit and write tools. |
 | `commands.md` | Commands |

@@ -41,6 +41,8 @@ pub struct Bank {
     pub unreleased: Vec<u32>,
     /// Registration rejection.
     pub registration_error: Option<String>,
+    /// Holds asynchronous emissions before their listeners run.
+    pub emission_holds: std::collections::VecDeque<super::observed::Hold>,
     /// Emission rejection.
     pub emission_error: Option<String>,
     /// Removal rejection.

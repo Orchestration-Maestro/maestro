@@ -5,6 +5,7 @@ mod abort_observers;
 mod asynchronous_reentry;
 mod auto_commit_on_exit_example;
 mod bash_spawn_hook_example;
+mod border_status_editor_example;
 mod built_in_tool_renderer;
 mod canonical_api;
 mod canonical_callbacks;
