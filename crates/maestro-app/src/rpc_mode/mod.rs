@@ -50,7 +50,8 @@ pub trait WorkspaceOperations {
 /// Native process facilities of the server.
 pub trait RpcProcessPort {
     /// Delivers each termination signal to `callback`; the returned operation stops the
-    /// delivery and makes a later signal take its native default action.
+    /// delivery, and a later signal takes its native default action once no other
+    /// registration is live.
     ///
     /// # Errors
     /// Returns the native registration failure.

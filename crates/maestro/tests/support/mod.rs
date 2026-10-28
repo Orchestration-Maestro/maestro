@@ -1,4 +1,4 @@
-//! Disposable configuration and a cleared executable environment.
+//! Disposable configuration, a cleared executable environment and the shipped theme.
 use maestro_test_directory::Scratch;
 use std::{
     path::Path,
@@ -165,3 +165,16 @@ pub fn widgets() -> std::rc::Rc<dyn maestro_app::ExtensionWidgets> {
 
 /// SDK construction for compiled extension witnesses.
 pub mod session;
+
+/// A prepared shipped theme for loader decoration, editor styling and the example renderers.
+pub fn theme() -> maestro_theme::LiveTheme {
+    let theme = maestro_theme::load_theme_from_path(
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../maestro-theme/assets/theme/dark.json"
+        ),
+        Some(maestro_theme::ColorMode::Truecolor),
+    )
+    .unwrap();
+    maestro_theme::LiveTheme::from_theme(std::rc::Rc::new(theme))
+}
