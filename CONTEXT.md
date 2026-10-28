@@ -327,6 +327,11 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 From `docs/specs/packages.md`.
 
+- **Package crate:** A guest-only reusable `rlib` exposing `factory`, with one
+  component export in `src/component.rs`. Its `component` example builds as a
+  `cdylib`. Packages may use the guest API, shared request/entry/tool/JSON records
+  and other packages; core and dedicated crates cannot depend on packages.
+
 - **Skill pack:** a content-only package of skills and the shared reference files they read; Maestro's own is
   `maestro-skills`.
 - **Type-only skill:** a skill marked `disable-model-invocation: true`; it stays out of the model's skill list and
