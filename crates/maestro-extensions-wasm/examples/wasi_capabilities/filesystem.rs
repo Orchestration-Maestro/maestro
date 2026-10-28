@@ -23,13 +23,38 @@ pub(super) async fn operate(request: &Value, path: &str) -> Result<Value, String
     let bytes: Vec<u8> =
         serde_json::from_value(request["bytes"].clone()).map_err(|error| error.to_string())?;
     if request["generation"] == "p2" {
-        let result = ordinary(path, &bytes, write);
+        let result = match request["action"].as_str() {
+            Some("unlink") => std::fs::remove_file(path).map(|()| Vec::new()),
+            Some("exclusive") => std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+                .map(|_| Vec::new()),
+            _ => ordinary(path, &bytes, write),
+        };
         Ok(result.map_or_else(
             |error| json!({"error":ordinary_error(&error)}),
             |bytes| json!({"bytes":bytes}),
         ))
     } else {
-        let result = asynchronous(path, bytes, write).await;
+        let result = match request["action"].as_str() {
+            Some("unlink") => {
+                let (root, name) = below_root(path).map_err(|error| format!("{error:?}"))?;
+                root.unlink_file_at(name).await.map(|()| Vec::new())
+            }
+            Some("exclusive") => {
+                let (root, name) = below_root(path).map_err(|error| format!("{error:?}"))?;
+                root.open_at(
+                    PathFlags::SYMLINK_FOLLOW,
+                    name,
+                    OpenFlags::CREATE | OpenFlags::EXCLUSIVE,
+                    DescriptorFlags::WRITE,
+                )
+                .await
+                .map(|_| Vec::new())
+            }
+            _ => asynchronous(path, bytes, write).await,
+        };
         Ok(result.map_or_else(
             |error| json!({"error":asynchronous_error(&error),"code":format!("{error:?}")}),
             |bytes| json!({"bytes":bytes}),

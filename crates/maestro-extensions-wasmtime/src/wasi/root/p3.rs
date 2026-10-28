@@ -361,3 +361,6 @@ impl HostDescriptorWithStore<State> for Root {
         result
     }
 }
+
+#[cfg(test)]
+mod tests;

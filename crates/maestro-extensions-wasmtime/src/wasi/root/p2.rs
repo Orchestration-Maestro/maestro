@@ -342,3 +342,6 @@ impl HostDescriptor for View<'_> {
         result
     }
 }
+
+#[cfg(test)]
+mod tests;

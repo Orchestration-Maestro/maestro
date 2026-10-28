@@ -861,3 +861,64 @@ fn assert_link(observed: &serde_json::Value, target: &Path, case: &str) {
         "{case}: {observed}"
     );
 }
+
+/// A terminal dot must not turn a rejected path into removal of its preceding file.
+#[test]
+fn component_unlink_preserves_terminal_dot() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let victim = scratch.path().join(generation);
+            std::fs::write(&victim, b"keep").unwrap();
+            let path = format!("{}/.", victim.display());
+            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"bytes":[],"action":"unlink"})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert_eq!(std::fs::read(&victim).unwrap(), b"keep");
+        }
+    });
+}
+
+/// Exclusive creation rejects an existing link without creating its missing target.
+#[cfg(unix)]
+#[test]
+fn component_exclusive_creation_rejects_dangling_link() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let target = scratch.path().join(format!("{generation}-missing"));
+            let link = scratch.path().join(generation);
+            std::os::unix::fs::symlink(&target, &link).unwrap();
+            let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[],"action":"exclusive"})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert!(!target.exists(), "{generation} created the link target");
+        }
+    });
+}
+
+/// A native non-Unicode target must never be redirected to a lossy sibling.
+#[cfg(unix)]
+#[test]
+fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join(OsStr::from_bytes(b"raw\xff"));
+    let neighbor = scratch.path().join("raw�");
+    std::fs::write(&target, b"native").unwrap();
+    std::fs::write(&neighbor, b"neighbor").unwrap();
+    let link = scratch.path().join("alias");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[120],"write":true})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            if generation == "p3" {
+                assert_eq!(observed["code"], "ErrorCode::IllegalByteSequence");
+            }
+            assert_eq!(std::fs::read(&neighbor).unwrap(), b"neighbor");
+            assert_eq!(std::fs::read(&target).unwrap(), b"native");
+        }
+    });
+}
