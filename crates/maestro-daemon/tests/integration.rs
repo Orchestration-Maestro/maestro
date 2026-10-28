@@ -4,6 +4,7 @@
 #[cfg(target_os = "linux")]
 mod config_support;
 mod daemon_actions;
+mod daemon_api;
 mod daemon_capture;
 mod daemon_client;
 mod daemon_config;

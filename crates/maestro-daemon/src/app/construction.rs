@@ -10,8 +10,11 @@ use crate::{
     terminal::runtime_registry::TerminalRuntimeRegistry,
     terminal_theme::{HostAppearance, TerminalTheme},
 };
-use maestro_detection::manifest::ManifestCache;
-use maestro_process::pty::{PtySetupEntry, PtySize, foreground::ProcessDetectionMode};
+/// The detection snapshot type of [`PaneLaunchInputs::manifests`].
+pub use maestro_detection::manifest::ManifestCache;
+use maestro_process::pty::PtySize;
+/// The child-setup entry and process detection policy of [`PaneLaunchInputs`].
+pub use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
 use maestro_workspace::layout::PaneId;
 use std::{
     collections::HashMap,

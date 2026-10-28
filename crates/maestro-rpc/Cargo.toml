@@ -8,10 +8,11 @@ repository.workspace = true
 
 [dependencies]
 maestro-app = { path = "../maestro-app" }
-tokio = { version = "=1.53.3", default-features = false, features = ["io-std", "rt", "signal"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["io-std", "macros", "rt", "signal", "sync", "time"] }
 
 [dev-dependencies]
 serde_json.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["io-util", "macros", "rt", "sync", "test-util", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

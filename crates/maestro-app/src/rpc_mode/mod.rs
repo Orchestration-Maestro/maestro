@@ -6,11 +6,13 @@
 //! adapter performs the exit.
 mod commands;
 mod connection;
+mod daemon;
 mod lifecycle;
 mod output;
 mod ui;
 
 pub use connection::{JsonlLineReader, RpcInput, RpcLineReader, run_rpc_connection};
+pub use daemon::DaemonWorkspaceOperations;
 pub use output::{RpcLine, RpcOutput, RpcRecord, stdout_output};
 
 use crate::rpc_types::{workspace, workspace_schema};

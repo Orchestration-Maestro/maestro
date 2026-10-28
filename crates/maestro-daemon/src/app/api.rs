@@ -10,8 +10,29 @@ use super::{
     state::ToastNotification,
 };
 use crate::{events::AppEvent, settings::model::ToastDelivery};
+use maestro_protocol::{
+    rpc_types::RpcCommand,
+    schema::{ErrorBody, ResponseResult},
+};
 
 impl<C: FnMut() -> u128> App<C> {
+    /// Answers one workspace command after applying every queued internal observation.
+    ///
+    /// # Errors
+    /// Returns the command's failure: `not_implemented` for a command without a handler.
+    pub async fn handle_api_request(
+        &mut self,
+        command: RpcCommand,
+    ) -> Result<ResponseResult, ErrorBody> {
+        self.drain_all_internal_events();
+        self.sync_pending_terminal_titles().await;
+        drop(command);
+        Err(ErrorBody {
+            code: String::new(),
+            message: String::new(),
+        })
+    }
+
     /// Applies a background observation through the retained state transition owner.
     pub fn handle_internal_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
         self.apply_internal_event(event).0

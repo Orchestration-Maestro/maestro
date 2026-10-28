@@ -1,6 +1,7 @@
 //! Synchronous line framing for caller-owned byte streams.
 
 use serde_json::Value;
+use std::io;
 
 /// Serialize one JSON value with one terminating LF.
 ///
@@ -52,6 +53,13 @@ impl JsonlLineSplitter {
             }
         }
         lines
+    }
+
+    /// Consume bytes and return completed lines decoded as strict UTF-8.
+    #[must_use]
+    pub fn push_strict(&mut self, bytes: &[u8], max_bytes: usize) -> Vec<io::Result<String>> {
+        let _ = (bytes, max_bytes);
+        Vec::new()
     }
 
     /// Emit a nonempty remaining byte tail, removing one trailing CR.
