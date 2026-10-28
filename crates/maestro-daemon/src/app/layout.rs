@@ -220,7 +220,7 @@ fn layout_rect(rect: Rect) -> PaneLayoutRect {
 }
 
 /// Converts a protocol direction to the navigation direction.
-fn navigation_direction(direction: PaneDirection) -> NavDirection {
+pub(crate) fn navigation_direction(direction: PaneDirection) -> NavDirection {
     match direction {
         PaneDirection::Left => NavDirection::Left,
         PaneDirection::Right => NavDirection::Right,

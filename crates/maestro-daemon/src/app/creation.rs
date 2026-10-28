@@ -7,7 +7,10 @@ use crate::{
     terminal::state::TerminalState,
 };
 use maestro_protocol::schema::{ErrorBody, WorkspaceCreateParams};
-use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_number};
+use maestro_workspace::{
+    layout::PaneId,
+    workspace::{public_pane_id_for_number, public_tab_id_for_number},
+};
 use std::{collections::HashMap, io, path::PathBuf};
 
 /// Expands only an exact `~` or a leading `~/` (`~\` on Windows), joining the rest as a
@@ -189,7 +192,7 @@ impl<C: FnMut() -> u128> App<C> {
                 })?;
         self.terminal_runtimes.insert(terminal.id.clone(), runtime);
         self.state.terminals.insert(terminal.id.clone(), terminal);
-        self.state.pane_id_aliases.remove(&pane.raw());
+        self.state.remove_alias_shadowed_by_new_pane(pane);
         let index = self.state.topology.workspaces.len() - 1;
         crate::workspace::admit_git_identity(
             &mut self.state.topology.workspaces[index],
@@ -233,7 +236,7 @@ impl<C: FnMut() -> u128> App<C> {
             .ok_or_else(|| io::Error::other("workspace disappeared"))??;
         self.terminal_runtimes.insert(terminal.id.clone(), runtime);
         self.state.terminals.insert(terminal.id.clone(), terminal);
-        self.state.pane_id_aliases.remove(&pane.raw());
+        self.state.remove_alias_shadowed_by_new_pane(pane);
         Ok(self.state.topology.workspaces[workspace].tabs.len() - 1)
     }
 
@@ -265,11 +268,30 @@ impl<C: FnMut() -> u128> App<C> {
 
     /// The live directory of the focused pane of `index`, else its terminal's last known one.
     async fn focused_pane_cwd_in_workspace(&self, index: usize) -> Option<PathBuf> {
-        let workspace = self.state.topology.workspaces.get(index)?;
-        let terminal = workspace
-            .tabs
-            .get(workspace.active_tab)
-            .and_then(|tab| tab.terminal_id(tab.layout.focused()))?;
+        let pane = self
+            .state
+            .topology
+            .workspaces
+            .get(index)?
+            .focused_pane_id()?;
+        self.pane_cwd_in_workspace(index, pane).await
+    }
+
+    /// The directory a pane split off `pane` of `workspace` starts in: that pane's directory
+    /// under the configured policy.
+    pub(super) async fn new_pane_cwd(&self, workspace: usize, pane: PaneId) -> PathBuf {
+        let follow = self.pane_cwd_in_workspace(workspace, pane).await;
+        resolve_new_terminal_cwd(&self.config.terminal.new_cwd, follow)
+    }
+
+    /// The live directory of `pane` in `workspace`, else its terminal's last known one.
+    async fn pane_cwd_in_workspace(&self, workspace: usize, pane: PaneId) -> Option<PathBuf> {
+        let terminal = self
+            .state
+            .topology
+            .workspaces
+            .get(workspace)?
+            .terminal_id(pane)?;
         if let Some(runtime) = self.terminal_runtimes.get(terminal)
             && let Some(cwd) = runtime.follow_cwd().await
         {
@@ -284,7 +306,7 @@ impl<C: FnMut() -> u128> App<C> {
 
 /// Spawns the root process of a new tab with this pane's managed identity and the caller's
 /// extra environment, returning its terminal record and runtime.
-fn spawn_root(
+pub(super) fn spawn_root(
     runtime_config: crate::pane::runtime::PaneRuntimeConfig,
     config: &crate::settings::model::Config,
     cwd: PathBuf,

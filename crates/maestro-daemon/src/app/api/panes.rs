@@ -1,4 +1,12 @@
-//! Pane topology commands: list, current, get, focus, layout, process info and neighbours.
+//! Pane commands: list, current, get, focus, layout, process info and neighbours here, and
+//! split, resize, swap, zoom, move and close in the child modules.
+
+mod close;
+mod move_pane;
+mod resize;
+mod split;
+mod swap;
+mod zoom;
 
 use super::{
     super::App,
@@ -76,6 +84,12 @@ impl<C: FnMut() -> u128> App<C> {
             RpcCommand::PaneNeighbor(params) => self.handle_pane_neighbor(&params),
             RpcCommand::PaneEdges(params) => self.handle_pane_edges(&params),
             RpcCommand::PaneFocusDirection(params) => self.handle_pane_focus_direction(&params),
+            RpcCommand::PaneSplit(params) => self.handle_pane_split(params).await,
+            RpcCommand::PaneResize(params) => self.handle_pane_resize(&params),
+            RpcCommand::PaneSwap(params) => self.handle_pane_swap(&params),
+            RpcCommand::PaneMove(params) => self.handle_pane_move(params).await,
+            RpcCommand::PaneZoom(params) => self.handle_pane_zoom(&params),
+            RpcCommand::PaneClose(target) => self.handle_pane_close(&target.pane_id).await,
             _ => Err(api_error("not_implemented", "method not implemented yet")),
         }
     }
@@ -253,33 +267,53 @@ impl<C: FnMut() -> u128> App<C> {
     fn optional_pane(&self, pane_id: Option<&str>) -> Result<(usize, PaneId), ErrorBody> {
         match pane_id {
             Some(id) => self.state.parse_pane_id(id),
-            None => self.state.active.and_then(|workspace| {
-                let pane = self
-                    .state
-                    .topology
-                    .workspaces
-                    .get(workspace)?
-                    .focused_pane_id()?;
-                Some((workspace, pane))
-            }),
+            None => self
+                .state
+                .active
+                .and_then(|workspace| self.focused_pane(workspace)),
         }
         .ok_or_else(pane_unresolved)
+    }
+
+    /// The focused pane of a workspace, with the workspace.
+    fn focused_pane(&self, workspace: usize) -> Option<(usize, PaneId)> {
+        let pane = self
+            .state
+            .topology
+            .workspaces
+            .get(workspace)?
+            .focused_pane_id()?;
+        Some((workspace, pane))
     }
 
     /// Resolves an optional pane target together with the tab that holds it.
     fn located_pane(&self, pane_id: Option<&str>) -> Result<Located, ErrorBody> {
         let (workspace, pane) = self.optional_pane(pane_id)?;
-        let tab = self.state.topology.workspaces[workspace]
-            .find_tab_index_for_pane(pane)
-            .ok_or_else(|| {
-                pane_not_found(
-                    &self
-                        .state
-                        .public_pane_id(workspace, pane)
-                        .unwrap_or_default(),
-                )
-            })?;
-        Ok(Located {
+        self.locate(workspace, pane).ok_or_else(|| {
+            pane_not_found(
+                &self
+                    .state
+                    .public_pane_id(workspace, pane)
+                    .unwrap_or_default(),
+            )
+        })
+    }
+
+    /// Locates a pane named by any accepted spelling, if it is live in a tab.
+    fn locate_by_handle(&self, id: &str) -> Option<Located> {
+        let (workspace, pane) = self.state.parse_pane_id(id)?;
+        self.locate(workspace, pane)
+    }
+
+    /// Locates a live pane in its tab.
+    fn locate(&self, workspace: usize, pane: PaneId) -> Option<Located> {
+        let tab = self
+            .state
+            .topology
+            .workspaces
+            .get(workspace)?
+            .find_tab_index_for_pane(pane)?;
+        Some(Located {
             workspace,
             tab,
             pane,
@@ -295,7 +329,12 @@ impl<C: FnMut() -> u128> App<C> {
 
     /// The layout of the located pane's tab.
     fn tab_layout(&self, at: Located) -> Result<PaneLayoutSnapshot, ErrorBody> {
-        self.pane_layout_snapshot(at.workspace, at.tab)
+        self.layout_at(at.workspace, at.tab)
+    }
+
+    /// The layout of the tab at a workspace and tab position.
+    fn layout_at(&self, workspace: usize, tab: usize) -> Result<PaneLayoutSnapshot, ErrorBody> {
+        self.pane_layout_snapshot(workspace, tab)
             .ok_or_else(|| api_error("pane_layout_unavailable", "pane layout unavailable"))
     }
 

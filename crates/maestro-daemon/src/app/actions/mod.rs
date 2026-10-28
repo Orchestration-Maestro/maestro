@@ -19,6 +19,7 @@ pub use notifications::{
 };
 pub use relocate::PaneMoveRecovery;
 pub use state_update::{AgentRelease, CompletionPolicy, PaneStateUpdate, pane_agent_status};
+pub use zoom::PaneZoomOutcome;
 
 use maestro_workspace::{layout::PaneId, workspace::Workspace};
 

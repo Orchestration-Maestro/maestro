@@ -59,6 +59,25 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         Some((workspace, tab))
     }
 
+    /// Remembers `previous` for last-pane navigation unless `pane` of `workspace` is that focus.
+    pub fn record_pane_focus_change(
+        &mut self,
+        previous: Option<PaneFocusTarget>,
+        workspace: usize,
+        pane: PaneId,
+    ) {
+        let Some(workspace) = self.topology.workspaces.get(workspace) else {
+            return;
+        };
+        let target = PaneFocusTarget {
+            workspace_id: workspace.id.clone(),
+            pane_id: pane,
+        };
+        if previous.as_ref() != Some(&target) {
+            self.previous_pane_focus = previous;
+        }
+    }
+
     /// Focuses a live pane across workspace and tab boundaries.
     pub fn focus_pane_in_workspace(&mut self, workspace: usize, pane: PaneId) -> bool {
         let Some(target) = self.topology.workspaces.get(workspace) else {
