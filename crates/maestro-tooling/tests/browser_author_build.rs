@@ -181,6 +181,20 @@ fn browser_compile_watch_starts_no_server() {
 }
 
 #[test]
+fn browser_cached_sources_keep_unchanged_timestamps() {
+    let modified = || {
+        let browser = Browser::cached();
+        [
+            browser.fixture("src/main.rs"),
+            browser.path("crates/maestro-web/src/lib.rs"),
+        ]
+        .map(|path| fs::metadata(path).unwrap().modified().unwrap())
+    };
+    let before = modified();
+    assert_eq!(modified(), before);
+}
+
+#[test]
 fn browser_check_repairs_formatting() {
     let browser = Browser::cached();
     browser.workspace_sources();
