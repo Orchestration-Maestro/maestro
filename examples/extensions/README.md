@@ -168,6 +168,8 @@ resolving conflicts, then regenerate the table.
 | `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
+| `structured_output.md` | Structured output |
+| `structured_output.rs` | A final structured answer returned by a terminating tool. |
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
