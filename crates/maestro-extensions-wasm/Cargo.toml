@@ -209,6 +209,11 @@ name = "resource_component_reloaded"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "sandbox"
+path = "../../examples/extensions/sandbox/main.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "send_user_message"
 path = "../../examples/extensions/send_user_message.rs"
 crate-type = ["cdylib"]

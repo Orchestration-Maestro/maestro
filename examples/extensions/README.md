@@ -120,6 +120,8 @@ resolving conflicts, then regenerate the table.
 | `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
+| `sandbox.md` | Sandboxed bash |
+| `sandbox/main.rs` | An opt-in filesystem and network sandbox for bash commands. |
 | `send_user_message.md` | Send user message |
 | `send_user_message.rs` | User-message delivery: commands that send ordinary, steering, follow-up and structured messages, so a user can reach the agent from an extension. |
 | `session_name.md` | Session name |
