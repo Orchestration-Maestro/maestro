@@ -9,7 +9,9 @@ use maestro_extensions::{
 use maestro_session::SessionManager;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
-use std::{cell::RefCell, path::Path, process::Command, rc::Rc, sync::RwLock};
+use std::{cell::RefCell, process::Command, rc::Rc, sync::RwLock};
+
+use super::example_process::{git, isolated, run};
 
 /// Notifications in arrival order.
 #[derive(Default)]
@@ -154,32 +156,6 @@ impl Harness {
     }
 }
 
-/// Runs Git only inside an exclusively owned disposable directory.
-fn git(path: &Path, args: &[&str]) -> String {
-    let output = Command::new("git")
-        .current_dir(path)
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .args(args)
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{args:?}: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    String::from_utf8(output.stdout).unwrap()
-}
-
-/// Runs native process futures on their caller-owned local executor.
-fn run(action: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
-}
-
 /// The notification for one successful commit.
 fn committed(message: &str) -> Vec<Value> {
     vec![json!([
@@ -192,6 +168,9 @@ fn committed(message: &str) -> Vec<Value> {
 /// A directory outside any repository and a clean checkout are left as they are.
 #[test]
 fn auto_commit_on_exit_component_skips_clean_and_non_repository_exits() {
+    if isolated("auto_commit_on_exit_component_skips_clean_and_non_repository_exits") {
+        return;
+    }
     run(async {
         let outside = Harness::new(false).await;
         assert!(
@@ -218,6 +197,9 @@ fn auto_commit_on_exit_component_skips_clean_and_non_repository_exits() {
 /// The newest reply's first text line titles the commit, cut to fifty characters.
 #[test]
 fn auto_commit_on_exit_component_titles_commit_with_newest_reply() {
+    if isolated("auto_commit_on_exit_component_titles_commit_with_newest_reply") {
+        return;
+    }
     run(async {
         let h = Harness::new(true).await;
         h.reply(&json!([{"type":"text","text":"An older reply"}]));
@@ -253,6 +235,9 @@ fn auto_commit_on_exit_component_titles_commit_with_newest_reply() {
 /// Without reply text the commit takes the fallback title, and a headless exit stays silent.
 #[test]
 fn auto_commit_on_exit_component_falls_back_without_reply_text() {
+    if isolated("auto_commit_on_exit_component_falls_back_without_reply_text") {
+        return;
+    }
     run(async {
         let h = Harness::new(true).await;
         let fallback = "[maestro] Session changes";
@@ -281,6 +266,9 @@ fn auto_commit_on_exit_component_falls_back_without_reply_text() {
 /// A failed commit announces nothing and leaves the staged changes for the reader.
 #[test]
 fn auto_commit_on_exit_component_stays_silent_when_commit_fails() {
+    if isolated("auto_commit_on_exit_component_stays_silent_when_commit_fails") {
+        return;
+    }
     run(async {
         let h = Harness::new(true).await;
         for (key, value) in [

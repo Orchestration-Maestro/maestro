@@ -50,6 +50,9 @@ mod wasi_support;
 mod session;
 mod support;
 
+#[path = "support/example_process.rs"]
+mod example_process;
+
 #[path = "../../maestro-extensions/tests/support/model.rs"]
 mod model_support;
 
