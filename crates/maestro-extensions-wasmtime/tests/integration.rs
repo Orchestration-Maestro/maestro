@@ -19,6 +19,7 @@ mod completion_providers;
 mod component_events;
 mod component_loading;
 mod components;
+mod doom_overlay_files;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
