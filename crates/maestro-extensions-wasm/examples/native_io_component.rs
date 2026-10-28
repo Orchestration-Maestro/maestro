@@ -1,5 +1,5 @@
 //! Exercises native operations through the ordinary author facade.
-// Tests receive this component's path in MAESTRO_NATIVE_IO_COMPONENT.
+// maestro-component: MAESTRO_NATIVE_IO_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

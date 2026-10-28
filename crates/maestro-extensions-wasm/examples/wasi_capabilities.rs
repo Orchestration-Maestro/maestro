@@ -1,5 +1,5 @@
 //! A real authored extension exercising standard interfaces alongside the canonical host.
-// Tests receive this component's path in MAESTRO_WASI_COMPONENT.
+// maestro-component: MAESTRO_WASI_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

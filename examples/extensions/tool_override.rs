@@ -1,5 +1,5 @@
 //! An opt-in read override with access records and illustrative sensitive-path checks.
-// Tests receive this component's path in MAESTRO_TOOL_OVERRIDE_COMPONENT.
+// maestro-component: MAESTRO_TOOL_OVERRIDE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

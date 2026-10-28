@@ -25,23 +25,25 @@ steps.
 2. Add usage and controlled-run commands in a same-name Markdown page.
 3. Add `src/tests/<name>_example.rs` in `maestro-extensions-wasm`. The build
    script discovers these files; do not add a `mod` line to `src/tests.rs`.
-4. If a test reads the built component from its environment, add one line
-   after the `//!` paragraph:
-   `// Tests receive this component's path in MAESTRO_<NAME>_COMPONENT.`
-   Each variable names one example. Nextest's setup builds every marked example
-   and exports its variable.
+4. For a prepared test component, add
+   `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening docs. The
+   file stem names its Cargo target. Native executable test modules use the
+   `<name>_example` suffix so the setup filter selects them automatically.
 5. Run `just example-index`, then run the example's controlled tests.
 
 `just example-index` also generates the `[[example]]` targets in
-`crates/maestro-extensions-wasm/Cargo.toml` and the component table in
-`crates/maestro-extensions-wasm/examples/prepare_author_component.rs`; do not
-edit either by hand. `just example-index-check` fails when one is stale or a
-marker is malformed or repeated.
+`crates/maestro-extensions-wasm/Cargo.toml`; do not edit them by hand.
+`just example-index-check` fails when the index or targets are stale.
+Component preparation reads the source markers at run time. Each variable names
+one example; the shared author and context variables are reserved.
 
 The table below is generated from each Rust file's opening documentation and
 Markdown page's heading. Do not edit its rows by hand. `just example-index-check`
 checks that it is current. Keep descriptions and run commands in the example's
 own files, not in this page or `docs/examples.md`.
+
+The component setup reads source markers at run time; it has no shared example
+list. See [adding an example](../../docs/examples.md).
 
 Cargo needs an explicit target for each out-of-package component. Those manifest
 blocks and the tracked table remain shared edits; alphabetical neighbours can
@@ -57,6 +59,8 @@ resolving conflicts, then regenerate the table.
 <!-- example-index:start -->
 | File | Provides |
 | --- | --- |
+| `auto_commit_on_exit.md` | Auto-commit on exit |
+| `auto_commit_on_exit.rs` | Opt-in commit of a changed Git working tree when the session shuts down, titled with the first line of the newest assistant reply. |
 | `bash_spawn_hook.md` | Bash spawn hook |
 | `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |
@@ -150,6 +154,12 @@ resolving conflicts, then regenerate the table.
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
+| `tic_tac_toe.md` | Tic-tac-toe |
+| `tic_tac_toe.rs` | Play tic-tac-toe through a command and sequential atomic tools. |
+| `tic_tac_toe/game.rs` | Board snapshots shared by the tools and session reconstruction. |
+| `tic_tac_toe/prompt.rs` | Turn instructions added only while the interactive game is active. |
+| `tic_tac_toe/render.rs` | Themed boards, move banners and final-game banners. |
+| `tic_tac_toe/ui.rs` | The human's private cursor and the retained interactive game view. |
 | `timed_confirm.md` | Timed confirm |
 | `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |

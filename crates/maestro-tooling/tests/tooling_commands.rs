@@ -3316,6 +3316,7 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     let sources = [
         "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
         "crates/maestro-extensions-wasm/src/tests/build.rs",
+        "crates/maestro-tooling/src/example_files.rs",
         "crates/maestro-extensions-wasm/Cargo.toml",
         "Cargo.lock",
     ];
@@ -3421,7 +3422,7 @@ fn example_index_discovers_independent_additions() {
     assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
 }
 
-/// Write a checkout whose three generated regions hold stale text between their markers.
+/// Write a checkout with stale generated regions and an untouched preparation program.
 fn example_checkout(root: &Path) {
     let folder = root.join("examples/extensions");
     let local = root.join("crates/maestro-extensions-wasm/examples");
@@ -3453,19 +3454,19 @@ fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::Exit
     tooling::run(&args, Path::new("unused-cargo"), root)
 }
 
-/// Example sources supply their own manifest targets and prepared components.
+/// Example sources supply manifest targets without rewriting runtime preparation.
 #[test]
-fn example_index_renders_targets_and_components() {
+fn example_index_renders_targets() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let folder = root.path().join("examples/extensions");
     let local = root.path().join("crates/maestro-extensions-wasm/examples");
     example_checkout(root.path());
     fs::create_dir_all(folder.join("with-deps")).unwrap();
     fs::create_dir_all(folder.join("zebra")).unwrap();
-    let marker = "// Tests receive this component's path in";
+    let marker = "// maestro-component:";
     fs::write(
         folder.join("zebra.rs"),
-        format!("//! Zebra.\n{marker} MAESTRO_ZEBRA_COMPONENT.\n"),
+        format!("//! Zebra.\n{marker} MAESTRO_ZEBRA_COMPONENT\n"),
     )
     .unwrap();
     fs::write(folder.join("zebra/view.rs"), "//! Zebra view.\n").unwrap();
@@ -3473,12 +3474,12 @@ fn example_index_renders_targets_and_components() {
     fs::write(folder.join("alpha.md"), "# Alpha usage\n").unwrap();
     fs::write(
         folder.join("with-deps/main.rs"),
-        format!("//! Dependencies.\n{marker} MAESTRO_DEPS_COMPONENT.\n"),
+        format!("//! Dependencies.\n{marker} MAESTRO_DEPS_COMPONENT\n"),
     )
     .unwrap();
     fs::write(
         local.join("bridge.rs"),
-        format!("//! Bridge.\n{marker} MAESTRO_CONTEXT_COMPONENT.\nfn f() {{}}\n"),
+        format!("//! Bridge.\n{marker} MAESTRO_CONTEXT_COMPONENT\nfn f() {{}}\n"),
     )
     .unwrap();
     fs::write(local.join("plain.rs"), "//! Plain.\n").unwrap();
@@ -3497,15 +3498,9 @@ fn example_index_renders_targets_and_components() {
     );
     assert_eq!(
         rendered.1,
-        "//! Prepare.\n// example-index:start\n/// Each prepared example and the variable that hands its component path to the tests.\nconst COMPONENTS: &[(&str, &str)] = &[\n    (\"bridge\", \"MAESTRO_CONTEXT_COMPONENT\"),\n    (\"with_deps\", \"MAESTRO_DEPS_COMPONENT\"),\n    (\"zebra\", \"MAESTRO_ZEBRA_COMPONENT\"),\n];\n// example-index:end\nfn main() {}\n"
+        "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n"
     );
     example_index(root.path(), true).unwrap();
-    fs::write(
-        local.join("plain.rs"),
-        format!("//! Plain.\n{marker} MAESTRO_PLAIN_COMPONENT.\n"),
-    )
-    .unwrap();
-    assert!(example_index(root.path(), true).is_err());
     fs::write(local.join("plain.rs"), "//! Plain.\n").unwrap();
     fs::write(local.join("added.rs"), "//! Added.\n").unwrap();
     assert!(example_index(root.path(), true).is_err());
@@ -3516,35 +3511,6 @@ fn example_index_renders_targets_and_components() {
         ),
         rendered
     );
-}
-
-/// A malformed marker, two markers in one source, one variable in two sources and the shared
-/// author's variable are rejected.
-#[test]
-fn example_index_rejects_malformed_and_duplicate_markers() {
-    let marker = "// Tests receive this component's path in";
-    for sources in [
-        vec![("alpha.rs", format!("{marker} alpha.\n"))],
-        vec![("alpha.rs", format!("{marker} MAESTRO_COMPONENT.\n"))],
-        vec![(
-            "alpha.rs",
-            format!("{marker} MAESTRO_A_COMPONENT.\n{marker} MAESTRO_B_COMPONENT.\n"),
-        )],
-        vec![
-            ("alpha.rs", format!("{marker} MAESTRO_A_COMPONENT.\n")),
-            ("beta.rs", format!("{marker} MAESTRO_A_COMPONENT.\n")),
-        ],
-        vec![("alpha.rs", format!("{marker} MAESTRO_AUTHOR_COMPONENT.\n"))],
-    ] {
-        let root = maestro_test_directory::Scratch::new().unwrap();
-        example_checkout(root.path());
-        let folder = root.path().join("examples/extensions");
-        for (name, text) in &sources {
-            fs::write(folder.join(name), format!("//! Example.\n{text}")).unwrap();
-        }
-        let error = example_index(root.path(), false).unwrap_err().to_string();
-        assert!(error.contains("marker"), "{sources:?}: {error}");
-    }
 }
 
 /// The tracked repository index is exactly the table rendered from its files.
@@ -3627,4 +3593,161 @@ fn example_test_modules_resolve_nested_modules() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(Command::new(executable).status().unwrap().success());
+}
+
+/// A source-only addition supplies its build target, environment and setup selection.
+#[test]
+fn example_components_discover_source_only_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::create_dir(root.path().join("helpers")).unwrap();
+    fs::write(root.path().join("helpers/unmarked.rs"), "//! Helper.\n").unwrap();
+    let prepare = || {
+        let mut builds = Vec::new();
+        let entries = tooling::example_files::prepare(root.path(), |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        })
+        .unwrap();
+        (builds, entries)
+    };
+    assert_eq!(prepare(), (Vec::new(), String::new()));
+    fs::write(
+        root.path().join("fixture_example.rs"),
+        "//! Fixture.\n// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+    )
+    .unwrap();
+    assert_eq!(
+        prepare(),
+        (
+            vec![(
+                "fixture_example".to_owned(),
+                "MAESTRO_FIXTURE_COMPONENT".to_owned()
+            )],
+            "MAESTRO_FIXTURE_COMPONENT=/components/fixture_example.wasm\n".to_owned()
+        )
+    );
+    let config: toml::Value =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let filter = config["profile"]["default"]["scripts"][0]["filter"]
+        .as_str()
+        .unwrap();
+    assert!(filter.contains("test(/_example::/)"), "{filter}");
+    assert!(!filter.contains("qna_example::"), "{filter}");
+}
+
+/// Invalid environment markers never reach the component builder.
+#[test]
+fn example_components_reject_invalid_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for variable in [
+        "OTHER_FIXTURE_COMPONENT",
+        "MAESTRO_FIXTURE",
+        "MAESTRO_fixture_COMPONENT",
+        "MAESTRO_FIXTURE=VALUE_COMPONENT",
+        "MAESTRO_FIXTURE COMPONENT",
+    ] {
+        fs::write(
+            root.path().join("fixture.rs"),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+        let mut builds = Vec::new();
+        let error = tooling::example_files::prepare(root.path(), |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from("/components/fixture.wasm"))
+        })
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("invalid component variable: {variable}")
+        );
+        assert!(builds.is_empty(), "{builds:?}");
+    }
+}
+
+/// A repeated variable is rejected before its second build, even across files.
+#[test]
+fn example_components_reject_duplicate_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["first", "second"] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error = tooling::example_files::prepare(root.path(), |name, environment| {
+        builds.push((name.to_owned(), environment.to_owned()));
+        Ok(PathBuf::from(format!("/components/{name}.wasm")))
+    })
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+    );
+    assert_eq!(
+        builds,
+        [("first".to_owned(), "MAESTRO_FIXTURE_COMPONENT".to_owned())]
+    );
+}
+
+/// Builder failures retain their error and stop preparation before later targets.
+#[test]
+fn example_components_propagate_builder_failure() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for (name, variable) in [
+        ("first", "MAESTRO_FIRST_COMPONENT"),
+        ("second", "MAESTRO_SECOND_COMPONENT"),
+        ("third", "MAESTRO_THIRD_COMPONENT"),
+    ] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error = tooling::example_files::prepare(root.path(), |name, environment| {
+        builds.push((name.to_owned(), environment.to_owned()));
+        if name == "second" {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "fixture build refused",
+            ))
+        } else {
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        }
+    })
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(error.to_string(), "fixture build refused");
+    assert_eq!(
+        builds,
+        [
+            ("first".to_owned(), "MAESTRO_FIRST_COMPONENT".to_owned()),
+            ("second".to_owned(), "MAESTRO_SECOND_COMPONENT".to_owned()),
+        ]
+    );
+}
+
+/// Fixed exports cannot be replaced by a source marker or reach the builder.
+#[test]
+fn example_components_reject_reserved_variables() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for variable in ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"] {
+        fs::write(
+            root.path().join("fixture.rs"),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+        let error = tooling::example_files::prepare(root.path(), |_, _| {
+            panic!("reserved variable reached the builder")
+        })
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("duplicate component variable: {variable}")
+        );
+    }
 }

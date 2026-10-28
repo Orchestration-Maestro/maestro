@@ -1,24 +1,18 @@
-//! Render the extension index, the component crate's example targets and its prepared
-//! components from the example sources.
+//! Render the extension index and the component crate's example targets from source files.
 
-use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::fmt::Write;
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::ExitCode;
+
+use super::example_files;
 
 /// Markers around the README table.
 const README: [&str; 2] = ["<!-- example-index:start -->", "<!-- example-index:end -->"];
 /// Markers around the manifest's example targets.
 const MANIFEST: [&str; 2] = ["# example-index:start", "# example-index:end"];
-/// Markers around the preparation program's component table.
-const COMPONENTS: [&str; 2] = ["// example-index:start", "// example-index:end"];
-/// Opening words of a component marker, which a malformed marker shares.
-const MARKER_OPENING: &str = "// Tests receive";
-/// The line through which an example asks the tests for its built component, before the variable.
-const MARKER: &str = "// Tests receive this component's path in ";
 /// The crate that builds every example as a component.
 const CRATE: &str = "crates/maestro-extensions-wasm";
 /// The crate's native preparation program, the one crate example that is not a component.
@@ -30,8 +24,6 @@ struct Target {
     name: String,
     /// Manifest path of a shipped example; crate examples use Cargo's default location.
     path: Option<String>,
-    /// Root source file, which may carry the component marker.
-    source: PathBuf,
 }
 
 /// Refresh the generated regions, or check them without changing files.
@@ -48,11 +40,6 @@ pub fn run(args: &[OsString], checkout: &Path) -> io::Result<ExitCode> {
             checkout.join(CRATE).join("Cargo.toml"),
             MANIFEST,
             manifest(&targets),
-        ),
-        (
-            local.join(format!("{PREPARATION}.rs")),
-            COMPONENTS,
-            components(&targets)?,
         ),
     ];
     let mut changed = Vec::new();
@@ -88,9 +75,7 @@ fn splice(path: &Path, before: &str, [start, end]: [&str; 2], body: &str) -> io:
 
 /// Render the README table rows from every documented file.
 fn table(folder: &Path) -> io::Result<String> {
-    let mut files = Vec::new();
-    collect(folder, &mut files)?;
-    files.sort_by_cached_key(|path| path.to_string_lossy().replace('\\', "/"));
+    let files = example_files::collect(folder)?;
     let mut result = String::from("| File | Provides |\n| --- | --- |\n");
     for file in files {
         let relative = file.strip_prefix(folder).map_err(io::Error::other)?;
@@ -99,20 +84,6 @@ fn table(folder: &Path) -> io::Result<String> {
         writeln!(result, "| `{name}` | {summary} |").map_err(io::Error::other)?;
     }
     Ok(result)
-}
-
-/// Gather documented files recursively, including helpers and usage pages.
-fn collect(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
-    for entry in fs::read_dir(folder)? {
-        let entry = entry?;
-        let kind = entry.file_type()?;
-        if kind.is_dir() {
-            collect(&entry.path(), files)?;
-        } else if kind.is_file() && entry.file_name() != "README.md" {
-            files.push(entry.path());
-        }
-    }
-    Ok(())
 }
 
 /// Read the initial Rust documentation paragraph or Markdown page heading.
@@ -160,7 +131,6 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
             targets.push(Target {
                 name,
                 path: Some(format!("../../examples/extensions/{source}")),
-                source: folder.join(&source),
             });
         }
     }
@@ -172,7 +142,6 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
                 targets.push(Target {
                     name: stem.to_owned(),
                     path: None,
-                    source: entry.path(),
                 });
             }
             _ => {}
@@ -206,63 +175,4 @@ fn manifest(targets: &[Target]) -> String {
         })
         .collect();
     tables.join("\n")
-}
-
-/// Render the table of marked examples and the variables that carry their component paths.
-fn components(targets: &[Target]) -> io::Result<String> {
-    let mut result = String::from(
-        "/// Each prepared example and the variable that hands its component path to the tests.\nconst COMPONENTS: &[(&str, &str)] = &[\n",
-    );
-    let mut variables = BTreeSet::from([String::from("MAESTRO_AUTHOR_COMPONENT")]);
-    for target in targets {
-        let Some(variable) = variable(&target.source)? else {
-            continue;
-        };
-        if !variables.insert(variable.clone()) {
-            return Err(io::Error::other(format!(
-                "two component markers name {variable}"
-            )));
-        }
-        writeln!(result, "    (\"{}\", \"{variable}\"),", target.name).map_err(io::Error::other)?;
-    }
-    result.push_str("];\n");
-    Ok(result)
-}
-
-/// Read the one component marker of a source, if it has one.
-fn variable(source: &Path) -> io::Result<Option<String>> {
-    let text = fs::read_to_string(source)?;
-    let mut found = None;
-    for line in text.lines().filter(|line| line.starts_with(MARKER_OPENING)) {
-        let variable = line
-            .strip_prefix(MARKER)
-            .and_then(|rest| rest.strip_suffix('.'))
-            .filter(|variable| well_formed(variable))
-            .ok_or_else(|| {
-                io::Error::other(format!(
-                    "{}: malformed component marker; write `{MARKER}MAESTRO_<NAME>_COMPONENT.`",
-                    source.display()
-                ))
-            })?;
-        if found.replace(variable.to_owned()).is_some() {
-            return Err(io::Error::other(format!(
-                "{} has two component markers",
-                source.display()
-            )));
-        }
-    }
-    Ok(found)
-}
-
-/// Whether a variable is `MAESTRO_<NAME>_COMPONENT` with a nonempty uppercase name.
-fn well_formed(variable: &str) -> bool {
-    variable
-        .strip_prefix("MAESTRO_")
-        .and_then(|rest| rest.strip_suffix("_COMPONENT"))
-        .is_some_and(|name| {
-            !name.is_empty()
-                && name
-                    .bytes()
-                    .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit() || byte == b'_')
-        })
 }
