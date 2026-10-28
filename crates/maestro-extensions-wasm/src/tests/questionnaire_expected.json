@@ -1,0 +1,2290 @@
+{
+  "rows": [
+    {
+      "group": "headless",
+      "name": "headless",
+      "ui": false,
+      "questions": [],
+      "inputs": [],
+      "frames": [],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Error: UI not available (running in non-interactive mode)"
+          }
+        ],
+        "details": {
+          "questions": [],
+          "answers": [],
+          "cancelled": true
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>0 questions",
+      "rendered": "<warning>Cancelled"
+    },
+    {
+      "group": "headless",
+      "name": "empty",
+      "ui": true,
+      "questions": [],
+      "inputs": [],
+      "frames": [],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Error: No questions provided"
+          }
+        ],
+        "details": {
+          "questions": [],
+          "answers": [],
+          "cancelled": true
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>0 questions",
+      "rendered": "<warning>Cancelled"
+    },
+    {
+      "group": "metadata",
+      "name": "metadata",
+      "ui": true,
+      "questions": [
+        {
+          "id": "meta",
+          "label": "",
+          "prompt": "Metadata?",
+          "note": "question",
+          "options": [
+            {
+              "value": "a",
+              "label": "A",
+              "note": "choice"
+            }
+          ],
+          "allowOther": false
+        }
+      ],
+      "inputs": [
+        "enter"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Metadata?",
+          "",
+          "clip|20|<accent>> <accent>1. A",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Metadata?",
+          "",
+          "clip|20|<accent>> <accent>1. A",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Q1: user selected: 1. A"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "meta",
+              "label": "Q1",
+              "prompt": "Metadata?",
+              "note": "question",
+              "options": [
+                {
+                  "value": "a",
+                  "label": "A",
+                  "note": "choice"
+                }
+              ],
+              "allowOther": false
+            }
+          ],
+          "answers": [
+            {
+              "id": "meta",
+              "value": "a",
+              "label": "A",
+              "wasCustom": false,
+              "index": 1
+            }
+          ],
+          "cancelled": false
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>1 question<dim> (clip|40|meta)",
+      "rendered": "<success>✓ <accent>meta: 1. A"
+    },
+    {
+      "group": "selected",
+      "name": "single",
+      "ui": true,
+      "questions": [
+        {
+          "id": "scope",
+          "prompt": "Scope?",
+          "options": [
+            {
+              "value": "a",
+              "label": "Alpha",
+              "description": "First"
+            },
+            {
+              "value": "b",
+              "label": "Beta"
+            }
+          ]
+        }
+      ],
+      "inputs": [
+        "up",
+        "down",
+        "enter"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "clip|20|     <muted>First",
+          "clip|20|  <text>2. Beta",
+          "clip|20|  <text>3. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "clip|20|     <muted>First",
+          "clip|20|  <text>2. Beta",
+          "clip|20|  <text>3. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|  <text>1. Alpha",
+          "clip|20|     <muted>First",
+          "clip|20|<accent>> <accent>2. Beta",
+          "clip|20|  <text>3. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|  <text>1. Alpha",
+          "clip|20|     <muted>First",
+          "clip|20|<accent>> <accent>2. Beta",
+          "clip|20|  <text>3. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Q1: user selected: 2. Beta"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "scope",
+              "prompt": "Scope?",
+              "options": [
+                {
+                  "value": "a",
+                  "label": "Alpha",
+                  "description": "First"
+                },
+                {
+                  "value": "b",
+                  "label": "Beta"
+                }
+              ],
+              "label": "Q1",
+              "allowOther": true
+            }
+          ],
+          "answers": [
+            {
+              "id": "scope",
+              "value": "b",
+              "label": "Beta",
+              "wasCustom": false,
+              "index": 2
+            }
+          ],
+          "cancelled": false
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>1 question<dim> (clip|40|scope)",
+      "rendered": "<success>✓ <accent>scope: 2. Beta"
+    },
+    {
+      "group": "custom",
+      "name": "custom",
+      "ui": true,
+      "questions": [
+        {
+          "id": "scope",
+          "label": "Scope",
+          "prompt": "Scope?",
+          "options": []
+        }
+      ],
+      "inputs": [
+        "enter",
+        "discard",
+        "escape",
+        "enter",
+        " ﻿Blue﻿ ",
+        "enter"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| discard",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20|  ﻿Blue﻿ ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Scope: user wrote: Blue"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "scope",
+              "label": "Scope",
+              "prompt": "Scope?",
+              "options": [],
+              "allowOther": true
+            }
+          ],
+          "answers": [
+            {
+              "id": "scope",
+              "value": "Blue",
+              "label": "Blue",
+              "wasCustom": true
+            }
+          ],
+          "cancelled": false
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>1 question<dim> (clip|40|Scope)",
+      "rendered": "<success>✓ <accent>scope: <muted>(wrote) Blue"
+    },
+    {
+      "group": "custom",
+      "name": "blank",
+      "ui": true,
+      "questions": [
+        {
+          "id": "empty",
+          "prompt": "Text?",
+          "options": []
+        }
+      ],
+      "inputs": [
+        "enter",
+        " ﻿\t",
+        "enter"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Text?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Text?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Text?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20|  ﻿\t",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> Text?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Q1: user wrote: (no response)"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "empty",
+              "prompt": "Text?",
+              "options": [],
+              "label": "Q1",
+              "allowOther": true
+            }
+          ],
+          "answers": [
+            {
+              "id": "empty",
+              "value": "(no response)",
+              "label": "(no response)",
+              "wasCustom": true
+            }
+          ],
+          "cancelled": false
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>1 question<dim> (clip|40|empty)",
+      "rendered": "<success>✓ <accent>empty: <muted>(wrote) (no response)"
+    },
+    {
+      "group": "tabs",
+      "name": "multi",
+      "ui": true,
+      "questions": [
+        {
+          "id": "scope",
+          "label": "Scope",
+          "prompt": "Scope?",
+          "options": [
+            {
+              "value": "a",
+              "label": "Alpha"
+            }
+          ],
+          "allowOther": false
+        },
+        {
+          "id": "priority",
+          "prompt": "Priority?",
+          "options": [
+            {
+              "value": "h",
+              "label": "High"
+            }
+          ]
+        }
+      ],
+      "inputs": [
+        "left",
+        "enter",
+        "tab",
+        "right",
+        "shift+tab",
+        "down",
+        "down",
+        "enter",
+        "down",
+        "enter",
+        " ﻿Custom﻿ ",
+        "enter",
+        "left",
+        "left",
+        "enter",
+        "down",
+        "enter",
+        "Revised",
+        "enter",
+        "enter"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Scope  <muted> □ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "",
+          "clip|20|<warning> Unanswered: Scope, Q2",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Scope  <muted> □ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "",
+          "clip|20|<warning> Unanswered: Scope, Q2",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|  <text>1. High",
+          "clip|20|<accent>> <accent>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|  <text>1. High",
+          "clip|20|<accent>> <accent>2. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|  <text>1. High",
+          "clip|20|<accent>> <accent>2. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20|  ﻿Custom﻿ ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "clip|20|<muted> Scope: <text>Alpha",
+          "clip|20|<muted> Q2: <text>(wrote) Custom",
+          "",
+          "clip|20|<success> Press Enter to submit",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> ■ Scope  <success> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|  <text>1. High",
+          "clip|20|<accent>> <accent>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|  <text>1. High",
+          "clip|20|<accent>> <accent>2. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| ",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|  <text>1. High",
+          "clip|20|<accent>> <accent>2. Type something. ✎",
+          "",
+          "clip|20|<muted> Your answer:",
+          "clip|20| <accent>edit|18",
+          "clip|20| Revised",
+          "",
+          "clip|20|<dim> Enter to submit • Esc to cancel",
+          "",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "clip|20|<muted> Scope: <text>Alpha",
+          "clip|20|<muted> Q2: <text>(wrote) Revised",
+          "",
+          "clip|20|<success> Press Enter to submit",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "clip|20|<muted> Scope: <text>Alpha",
+          "clip|20|<muted> Q2: <text>(wrote) Revised",
+          "",
+          "clip|20|<success> Press Enter to submit",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Scope: user selected: 1. Alpha\nQ2: user wrote: Revised"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "scope",
+              "label": "Scope",
+              "prompt": "Scope?",
+              "options": [
+                {
+                  "value": "a",
+                  "label": "Alpha"
+                }
+              ],
+              "allowOther": false
+            },
+            {
+              "id": "priority",
+              "prompt": "Priority?",
+              "options": [
+                {
+                  "value": "h",
+                  "label": "High"
+                }
+              ],
+              "label": "Q2",
+              "allowOther": true
+            }
+          ],
+          "answers": [
+            {
+              "id": "scope",
+              "value": "a",
+              "label": "Alpha",
+              "wasCustom": false,
+              "index": 1
+            },
+            {
+              "id": "priority",
+              "value": "Revised",
+              "label": "Revised",
+              "wasCustom": true
+            }
+          ],
+          "cancelled": false
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>2 questions<dim> (clip|40|Scope, priority)",
+      "rendered": "<success>✓ <accent>scope: 1. Alpha\n<success>✓ <accent>priority: <muted>(wrote) Revised"
+    },
+    {
+      "group": "tabs",
+      "name": "answer-order",
+      "ui": true,
+      "questions": [
+        {
+          "id": "scope",
+          "label": "Scope",
+          "prompt": "Scope?",
+          "options": [
+            {
+              "value": "a",
+              "label": "Alpha"
+            }
+          ],
+          "allowOther": false
+        },
+        {
+          "id": "priority",
+          "prompt": "Priority?",
+          "options": [
+            {
+              "value": "h",
+              "label": "High"
+            }
+          ]
+        }
+      ],
+      "inputs": [
+        "right",
+        "enter",
+        "left",
+        "left",
+        "enter",
+        "right",
+        "enter"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "clip|20|<muted> Q2: <text>High",
+          "",
+          "clip|20|<warning> Unanswered: Scope",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Scope  <selectedBg><text> ■ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Scope  <success> ■ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Scope?",
+          "",
+          "clip|20|<accent>> <accent>1. Alpha",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+          "",
+          "clip|20|<text> Priority?",
+          "",
+          "clip|20|<accent>> <accent>1. High",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "clip|20|<muted> Scope: <text>Alpha",
+          "clip|20|<muted> Q2: <text>High",
+          "",
+          "clip|20|<success> Press Enter to submit",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "clip|20|<muted> Scope: <text>Alpha",
+          "clip|20|<muted> Q2: <text>High",
+          "",
+          "clip|20|<success> Press Enter to submit",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Q2: user selected: 1. High\nScope: user selected: 1. Alpha"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "scope",
+              "label": "Scope",
+              "prompt": "Scope?",
+              "options": [
+                {
+                  "value": "a",
+                  "label": "Alpha"
+                }
+              ],
+              "allowOther": false
+            },
+            {
+              "id": "priority",
+              "prompt": "Priority?",
+              "options": [
+                {
+                  "value": "h",
+                  "label": "High"
+                }
+              ],
+              "label": "Q2",
+              "allowOther": true
+            }
+          ],
+          "answers": [
+            {
+              "id": "priority",
+              "value": "h",
+              "label": "High",
+              "wasCustom": false,
+              "index": 1
+            },
+            {
+              "id": "scope",
+              "value": "a",
+              "label": "Alpha",
+              "wasCustom": false,
+              "index": 1
+            }
+          ],
+          "cancelled": false
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>2 questions<dim> (clip|40|Scope, priority)",
+      "rendered": "<success>✓ <accent>priority: 1. High\n<success>✓ <accent>scope: 1. Alpha"
+    },
+    {
+      "group": "cancel",
+      "name": "partial",
+      "ui": true,
+      "questions": [
+        {
+          "id": "a",
+          "prompt": "First?",
+          "options": [
+            {
+              "value": "x",
+              "label": "X"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "prompt": "Second?",
+          "options": [],
+          "allowOther": false
+        }
+      ],
+      "inputs": [
+        "enter",
+        "escape"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Q1  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> First?",
+          "",
+          "clip|20|<accent>> <accent>1. X",
+          "clip|20|  <text>2. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Q1  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Second?",
+          "",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <success> ■ Q1  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> Second?",
+          "",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "User cancelled the questionnaire"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "a",
+              "prompt": "First?",
+              "options": [
+                {
+                  "value": "x",
+                  "label": "X"
+                }
+              ],
+              "label": "Q1",
+              "allowOther": true
+            },
+            {
+              "id": "b",
+              "prompt": "Second?",
+              "options": [],
+              "allowOther": false,
+              "label": "Q2"
+            }
+          ],
+          "answers": [
+            {
+              "id": "a",
+              "value": "x",
+              "label": "X",
+              "wasCustom": false,
+              "index": 1
+            }
+          ],
+          "cancelled": true
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>2 questions<dim> (clip|40|a, b)",
+      "rendered": "<warning>Cancelled"
+    },
+    {
+      "group": "cancel",
+      "name": "submit-cancel",
+      "ui": true,
+      "questions": [
+        {
+          "id": "a",
+          "prompt": "First?",
+          "options": []
+        },
+        {
+          "id": "b",
+          "prompt": "Second?",
+          "options": []
+        }
+      ],
+      "inputs": [
+        "left",
+        "escape"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <selectedBg><text> □ Q1  <muted> □ Q2  <dim> ✓ Submit  →",
+          "",
+          "clip|20|<text> First?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Q1  <muted> □ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "",
+          "clip|20|<warning> Unanswered: Q1, Q2",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20| ← <muted> □ Q1  <muted> □ Q2  <selectedBg><text> ✓ Submit  →",
+          "",
+          "clip|20|<accent><bold> Ready to submit",
+          "",
+          "",
+          "clip|20|<warning> Unanswered: Q1, Q2",
+          "",
+          "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "User cancelled the questionnaire"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "a",
+              "prompt": "First?",
+              "options": [],
+              "label": "Q1",
+              "allowOther": true
+            },
+            {
+              "id": "b",
+              "prompt": "Second?",
+              "options": [],
+              "label": "Q2",
+              "allowOther": true
+            }
+          ],
+          "answers": [],
+          "cancelled": true
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>2 questions<dim> (clip|40|a, b)",
+      "rendered": "<warning>Cancelled"
+    },
+    {
+      "group": "cancel",
+      "name": "single-cancel",
+      "ui": true,
+      "questions": [
+        {
+          "id": "a",
+          "prompt": "First?",
+          "options": []
+        }
+      ],
+      "inputs": [
+        "escape"
+      ],
+      "frames": [
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> First?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ],
+        [
+          "clip|20|<accent>────────────────────",
+          "clip|20|<text> First?",
+          "",
+          "clip|20|<accent>> <accent>1. Type something.",
+          "",
+          "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+          "clip|20|<accent>────────────────────"
+        ]
+      ],
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "User cancelled the questionnaire"
+          }
+        ],
+        "details": {
+          "questions": [
+            {
+              "id": "a",
+              "prompt": "First?",
+              "options": [],
+              "label": "Q1",
+              "allowOther": true
+            }
+          ],
+          "answers": [],
+          "cancelled": true
+        }
+      },
+      "call": "<toolTitle><bold>questionnaire <muted>1 question<dim> (clip|40|a)",
+      "rendered": "<warning>Cancelled"
+    }
+  ],
+  "replies": {
+    "truncate_to_width [\"<accent>────────────────────\",20,\"...\",false]": "clip|20|<accent>────────────────────",
+    "truncate_to_width [\"<text> Metadata?\",20,\"...\",false]": "clip|20|<text> Metadata?",
+    "truncate_to_width [\"<accent>> <accent>1. A\",20,\"...\",false]": "clip|20|<accent>> <accent>1. A",
+    "truncate_to_width [\"<dim> ↑↓ navigate • Enter select • Esc cancel\",20,\"...\",false]": "clip|20|<dim> ↑↓ navigate • Enter select • Esc cancel",
+    "truncate_to_width [\"meta\",40,\"...\",false]": "clip|40|meta",
+    "truncate_to_width [\"<text> Scope?\",20,\"...\",false]": "clip|20|<text> Scope?",
+    "truncate_to_width [\"<accent>> <accent>1. Alpha\",20,\"...\",false]": "clip|20|<accent>> <accent>1. Alpha",
+    "truncate_to_width [\"     <muted>First\",20,\"...\",false]": "clip|20|     <muted>First",
+    "truncate_to_width [\"  <text>2. Beta\",20,\"...\",false]": "clip|20|  <text>2. Beta",
+    "truncate_to_width [\"  <text>3. Type something.\",20,\"...\",false]": "clip|20|  <text>3. Type something.",
+    "truncate_to_width [\"  <text>1. Alpha\",20,\"...\",false]": "clip|20|  <text>1. Alpha",
+    "truncate_to_width [\"<accent>> <accent>2. Beta\",20,\"...\",false]": "clip|20|<accent>> <accent>2. Beta",
+    "truncate_to_width [\"scope\",40,\"...\",false]": "clip|40|scope",
+    "truncate_to_width [\"<accent>> <accent>1. Type something.\",20,\"...\",false]": "clip|20|<accent>> <accent>1. Type something.",
+    "truncate_to_width [\"<accent>> <accent>1. Type something. ✎\",20,\"...\",false]": "clip|20|<accent>> <accent>1. Type something. ✎",
+    "truncate_to_width [\"<muted> Your answer:\",20,\"...\",false]": "clip|20|<muted> Your answer:",
+    "truncate_to_width [\" <accent>edit|18\",20,\"...\",false]": "clip|20| <accent>edit|18",
+    "truncate_to_width [\" \",20,\"...\",false]": "clip|20| ",
+    "truncate_to_width [\"<dim> Enter to submit • Esc to cancel\",20,\"...\",false]": "clip|20|<dim> Enter to submit • Esc to cancel",
+    "truncate_to_width [\" discard\",20,\"...\",false]": "clip|20| discard",
+    "truncate_to_width [\"  ﻿Blue﻿ \",20,\"...\",false]": "clip|20|  ﻿Blue﻿ ",
+    "truncate_to_width [\"Scope\",40,\"...\",false]": "clip|40|Scope",
+    "truncate_to_width [\"<text> Text?\",20,\"...\",false]": "clip|20|<text> Text?",
+    "truncate_to_width [\"  ﻿\\t\",20,\"...\",false]": "clip|20|  ﻿\t",
+    "truncate_to_width [\"empty\",40,\"...\",false]": "clip|40|empty",
+    "truncate_to_width [\" ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <selectedBg><text> □ Scope  <muted> □ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\"<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel\",20,\"...\",false]": "clip|20|<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel",
+    "truncate_to_width [\" ← <muted> □ Scope  <muted> □ Q2  <selectedBg><text> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <muted> □ Scope  <muted> □ Q2  <selectedBg><text> ✓ Submit  →",
+    "truncate_to_width [\"<accent><bold> Ready to submit\",20,\"...\",false]": "clip|20|<accent><bold> Ready to submit",
+    "truncate_to_width [\"<warning> Unanswered: Scope, Q2\",20,\"...\",false]": "clip|20|<warning> Unanswered: Scope, Q2",
+    "truncate_to_width [\" ← <muted> □ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <muted> □ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\"<text> Priority?\",20,\"...\",false]": "clip|20|<text> Priority?",
+    "truncate_to_width [\"<accent>> <accent>1. High\",20,\"...\",false]": "clip|20|<accent>> <accent>1. High",
+    "truncate_to_width [\"  <text>2. Type something.\",20,\"...\",false]": "clip|20|  <text>2. Type something.",
+    "truncate_to_width [\" ← <success> ■ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <success> ■ Scope  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\"  <text>1. High\",20,\"...\",false]": "clip|20|  <text>1. High",
+    "truncate_to_width [\"<accent>> <accent>2. Type something.\",20,\"...\",false]": "clip|20|<accent>> <accent>2. Type something.",
+    "truncate_to_width [\"<accent>> <accent>2. Type something. ✎\",20,\"...\",false]": "clip|20|<accent>> <accent>2. Type something. ✎",
+    "truncate_to_width [\"  ﻿Custom﻿ \",20,\"...\",false]": "clip|20|  ﻿Custom﻿ ",
+    "truncate_to_width [\" ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <success> ■ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+    "truncate_to_width [\"<muted> Scope: <text>Alpha\",20,\"...\",false]": "clip|20|<muted> Scope: <text>Alpha",
+    "truncate_to_width [\"<muted> Q2: <text>(wrote) Custom\",20,\"...\",false]": "clip|20|<muted> Q2: <text>(wrote) Custom",
+    "truncate_to_width [\"<success> Press Enter to submit\",20,\"...\",false]": "clip|20|<success> Press Enter to submit",
+    "truncate_to_width [\" ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <success> ■ Scope  <selectedBg><text> ■ Q2  <success> ✓ Submit  →",
+    "truncate_to_width [\" ← <selectedBg><text> ■ Scope  <success> ■ Q2  <success> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <selectedBg><text> ■ Scope  <success> ■ Q2  <success> ✓ Submit  →",
+    "truncate_to_width [\" Revised\",20,\"...\",false]": "clip|20| Revised",
+    "truncate_to_width [\"<muted> Q2: <text>(wrote) Revised\",20,\"...\",false]": "clip|20|<muted> Q2: <text>(wrote) Revised",
+    "truncate_to_width [\"Scope, priority\",40,\"...\",false]": "clip|40|Scope, priority",
+    "truncate_to_width [\" ← <muted> □ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <muted> □ Scope  <success> ■ Q2  <selectedBg><text> ✓ Submit  →",
+    "truncate_to_width [\"<muted> Q2: <text>High\",20,\"...\",false]": "clip|20|<muted> Q2: <text>High",
+    "truncate_to_width [\"<warning> Unanswered: Scope\",20,\"...\",false]": "clip|20|<warning> Unanswered: Scope",
+    "truncate_to_width [\" ← <muted> □ Scope  <selectedBg><text> ■ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <muted> □ Scope  <selectedBg><text> ■ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\" ← <selectedBg><text> □ Scope  <success> ■ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <selectedBg><text> □ Scope  <success> ■ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\" ← <selectedBg><text> □ Q1  <muted> □ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <selectedBg><text> □ Q1  <muted> □ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\"<text> First?\",20,\"...\",false]": "clip|20|<text> First?",
+    "truncate_to_width [\"<accent>> <accent>1. X\",20,\"...\",false]": "clip|20|<accent>> <accent>1. X",
+    "truncate_to_width [\" ← <success> ■ Q1  <selectedBg><text> □ Q2  <dim> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <success> ■ Q1  <selectedBg><text> □ Q2  <dim> ✓ Submit  →",
+    "truncate_to_width [\"<text> Second?\",20,\"...\",false]": "clip|20|<text> Second?",
+    "truncate_to_width [\"a, b\",40,\"...\",false]": "clip|40|a, b",
+    "truncate_to_width [\" ← <muted> □ Q1  <muted> □ Q2  <selectedBg><text> ✓ Submit  →\",20,\"...\",false]": "clip|20| ← <muted> □ Q1  <muted> □ Q2  <selectedBg><text> ✓ Submit  →",
+    "truncate_to_width [\"<warning> Unanswered: Q1, Q2\",20,\"...\",false]": "clip|20|<warning> Unanswered: Q1, Q2",
+    "truncate_to_width [\"a\",40,\"...\",false]": "clip|40|a",
+    "keys.matches_key [\"enter\",\"escape\"]": false,
+    "keys.matches_key [\"enter\",\"tab\"]": false,
+    "keys.matches_key [\"enter\",\"right\"]": false,
+    "keys.matches_key [\"enter\",\"left\"]": false,
+    "keys.matches_key [\"enter\",\"up\"]": false,
+    "keys.matches_key [\"enter\",\"down\"]": false,
+    "keys.matches_key [\"enter\",\"enter\"]": true,
+    "keys.matches_key [\"enter\",\"shift+tab\"]": false,
+    "keys.matches_key [\"up\",\"escape\"]": false,
+    "keys.matches_key [\"up\",\"tab\"]": false,
+    "keys.matches_key [\"up\",\"right\"]": false,
+    "keys.matches_key [\"up\",\"left\"]": false,
+    "keys.matches_key [\"up\",\"up\"]": true,
+    "keys.matches_key [\"up\",\"down\"]": false,
+    "keys.matches_key [\"up\",\"enter\"]": false,
+    "keys.matches_key [\"up\",\"shift+tab\"]": false,
+    "keys.matches_key [\"down\",\"escape\"]": false,
+    "keys.matches_key [\"down\",\"tab\"]": false,
+    "keys.matches_key [\"down\",\"right\"]": false,
+    "keys.matches_key [\"down\",\"left\"]": false,
+    "keys.matches_key [\"down\",\"up\"]": false,
+    "keys.matches_key [\"down\",\"down\"]": true,
+    "keys.matches_key [\"down\",\"enter\"]": false,
+    "keys.matches_key [\"down\",\"shift+tab\"]": false,
+    "keys.matches_key [\"discard\",\"escape\"]": false,
+    "keys.matches_key [\"discard\",\"tab\"]": false,
+    "keys.matches_key [\"discard\",\"right\"]": false,
+    "keys.matches_key [\"discard\",\"left\"]": false,
+    "keys.matches_key [\"discard\",\"up\"]": false,
+    "keys.matches_key [\"discard\",\"down\"]": false,
+    "keys.matches_key [\"discard\",\"enter\"]": false,
+    "keys.matches_key [\"discard\",\"shift+tab\"]": false,
+    "keys.matches_key [\"escape\",\"escape\"]": true,
+    "keys.matches_key [\"escape\",\"tab\"]": false,
+    "keys.matches_key [\"escape\",\"right\"]": false,
+    "keys.matches_key [\"escape\",\"left\"]": false,
+    "keys.matches_key [\"escape\",\"up\"]": false,
+    "keys.matches_key [\"escape\",\"down\"]": false,
+    "keys.matches_key [\"escape\",\"enter\"]": false,
+    "keys.matches_key [\"escape\",\"shift+tab\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"escape\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"tab\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"right\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"left\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"up\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"down\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"enter\"]": false,
+    "keys.matches_key [\" ﻿Blue﻿ \",\"shift+tab\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"escape\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"tab\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"right\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"left\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"up\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"down\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"enter\"]": false,
+    "keys.matches_key [\" ﻿\\t\",\"shift+tab\"]": false,
+    "keys.matches_key [\"left\",\"escape\"]": false,
+    "keys.matches_key [\"left\",\"tab\"]": false,
+    "keys.matches_key [\"left\",\"right\"]": false,
+    "keys.matches_key [\"left\",\"left\"]": true,
+    "keys.matches_key [\"left\",\"up\"]": false,
+    "keys.matches_key [\"left\",\"down\"]": false,
+    "keys.matches_key [\"left\",\"enter\"]": false,
+    "keys.matches_key [\"left\",\"shift+tab\"]": false,
+    "keys.matches_key [\"tab\",\"escape\"]": false,
+    "keys.matches_key [\"tab\",\"tab\"]": true,
+    "keys.matches_key [\"tab\",\"right\"]": false,
+    "keys.matches_key [\"tab\",\"left\"]": false,
+    "keys.matches_key [\"tab\",\"up\"]": false,
+    "keys.matches_key [\"tab\",\"down\"]": false,
+    "keys.matches_key [\"tab\",\"enter\"]": false,
+    "keys.matches_key [\"tab\",\"shift+tab\"]": false,
+    "keys.matches_key [\"right\",\"escape\"]": false,
+    "keys.matches_key [\"right\",\"tab\"]": false,
+    "keys.matches_key [\"right\",\"right\"]": true,
+    "keys.matches_key [\"right\",\"left\"]": false,
+    "keys.matches_key [\"right\",\"up\"]": false,
+    "keys.matches_key [\"right\",\"down\"]": false,
+    "keys.matches_key [\"right\",\"enter\"]": false,
+    "keys.matches_key [\"right\",\"shift+tab\"]": false,
+    "keys.matches_key [\"shift+tab\",\"escape\"]": false,
+    "keys.matches_key [\"shift+tab\",\"tab\"]": false,
+    "keys.matches_key [\"shift+tab\",\"right\"]": false,
+    "keys.matches_key [\"shift+tab\",\"left\"]": false,
+    "keys.matches_key [\"shift+tab\",\"up\"]": false,
+    "keys.matches_key [\"shift+tab\",\"down\"]": false,
+    "keys.matches_key [\"shift+tab\",\"enter\"]": false,
+    "keys.matches_key [\"shift+tab\",\"shift+tab\"]": true,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"escape\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"tab\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"right\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"left\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"up\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"down\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"enter\"]": false,
+    "keys.matches_key [\" ﻿Custom﻿ \",\"shift+tab\"]": false,
+    "keys.matches_key [\"Revised\",\"escape\"]": false,
+    "keys.matches_key [\"Revised\",\"tab\"]": false,
+    "keys.matches_key [\"Revised\",\"right\"]": false,
+    "keys.matches_key [\"Revised\",\"left\"]": false,
+    "keys.matches_key [\"Revised\",\"up\"]": false,
+    "keys.matches_key [\"Revised\",\"down\"]": false,
+    "keys.matches_key [\"Revised\",\"enter\"]": false,
+    "keys.matches_key [\"Revised\",\"shift+tab\"]": false,
+    "is_whitespace_char [\"e\"]": false,
+    "is_whitespace_char [\"n\"]": false,
+    "is_whitespace_char [\"t\"]": false,
+    "is_whitespace_char [\"r\"]": false,
+    "is_whitespace_char [\"u\"]": false,
+    "is_whitespace_char [\"p\"]": false,
+    "is_whitespace_char [\"d\"]": false,
+    "is_whitespace_char [\"o\"]": false,
+    "is_whitespace_char [\"w\"]": false,
+    "is_whitespace_char [\"i\"]": false,
+    "is_whitespace_char [\"s\"]": false,
+    "is_whitespace_char [\"c\"]": false,
+    "is_whitespace_char [\"a\"]": false,
+    "is_whitespace_char [\" \"]": true,
+    "is_whitespace_char [\"﻿\"]": true,
+    "is_whitespace_char [\"B\"]": false,
+    "is_whitespace_char [\"l\"]": false,
+    "is_whitespace_char [\"\"]": false,
+    "is_whitespace_char [\"\\t\"]": true,
+    "is_whitespace_char [\"f\"]": false,
+    "is_whitespace_char [\"b\"]": false,
+    "is_whitespace_char [\"g\"]": false,
+    "is_whitespace_char [\"h\"]": false,
+    "is_whitespace_char [\"+\"]": false,
+    "is_whitespace_char [\"C\"]": false,
+    "is_whitespace_char [\"m\"]": false,
+    "is_whitespace_char [\"R\"]": false,
+    "is_whitespace_char [\"v\"]": false
+  },
+  "themes": [
+    {
+      "method": "bold",
+      "operands": [
+        "questionnaire "
+      ],
+      "answer": {
+        "ok": "<bold>questionnaire "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "toolTitle",
+        "<bold>questionnaire "
+      ],
+      "answer": {
+        "ok": "<toolTitle><bold>questionnaire "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        "0 questions"
+      ],
+      "answer": {
+        "ok": "<muted>0 questions"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "warning",
+        "Cancelled"
+      ],
+      "answer": {
+        "ok": "<warning>Cancelled"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "────────────────────"
+      ],
+      "answer": {
+        "ok": "<accent>────────────────────"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " Metadata?"
+      ],
+      "answer": {
+        "ok": "<text> Metadata?"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "> "
+      ],
+      "answer": {
+        "ok": "<accent>> "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "1. A"
+      ],
+      "answer": {
+        "ok": "<accent>1. A"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " ↑↓ navigate • Enter select • Esc cancel"
+      ],
+      "answer": {
+        "ok": "<dim> ↑↓ navigate • Enter select • Esc cancel"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        "1 question"
+      ],
+      "answer": {
+        "ok": "<muted>1 question"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|meta)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|meta)"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "success",
+        "✓ "
+      ],
+      "answer": {
+        "ok": "<success>✓ "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "meta"
+      ],
+      "answer": {
+        "ok": "<accent>meta"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " Scope?"
+      ],
+      "answer": {
+        "ok": "<text> Scope?"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "1. Alpha"
+      ],
+      "answer": {
+        "ok": "<accent>1. Alpha"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        "First"
+      ],
+      "answer": {
+        "ok": "<muted>First"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "2. Beta"
+      ],
+      "answer": {
+        "ok": "<text>2. Beta"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "3. Type something."
+      ],
+      "answer": {
+        "ok": "<text>3. Type something."
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "1. Alpha"
+      ],
+      "answer": {
+        "ok": "<text>1. Alpha"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "2. Beta"
+      ],
+      "answer": {
+        "ok": "<accent>2. Beta"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|scope)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|scope)"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "scope"
+      ],
+      "answer": {
+        "ok": "<accent>scope"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "1. Type something."
+      ],
+      "answer": {
+        "ok": "<accent>1. Type something."
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "1. Type something. ✎"
+      ],
+      "answer": {
+        "ok": "<accent>1. Type something. ✎"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        " Your answer:"
+      ],
+      "answer": {
+        "ok": "<muted> Your answer:"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "edit|18"
+      ],
+      "answer": {
+        "ok": "<accent>edit|18"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " Enter to submit • Esc to cancel"
+      ],
+      "answer": {
+        "ok": "<dim> Enter to submit • Esc to cancel"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|Scope)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|Scope)"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        "(wrote) "
+      ],
+      "answer": {
+        "ok": "<muted>(wrote) "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " Text?"
+      ],
+      "answer": {
+        "ok": "<text> Text?"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|empty)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|empty)"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "empty"
+      ],
+      "answer": {
+        "ok": "<accent>empty"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " □ Scope "
+      ],
+      "answer": {
+        "ok": "<text> □ Scope "
+      }
+    },
+    {
+      "method": "bg",
+      "operands": [
+        "selectedBg",
+        "<text> □ Scope "
+      ],
+      "answer": {
+        "ok": "<selectedBg><text> □ Scope "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        " □ Q2 "
+      ],
+      "answer": {
+        "ok": "<muted> □ Q2 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " ✓ Submit "
+      ],
+      "answer": {
+        "ok": "<dim> ✓ Submit "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel"
+      ],
+      "answer": {
+        "ok": "<dim> Tab/←→ navigate • ↑↓ select • Enter confirm • Esc cancel"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        " □ Scope "
+      ],
+      "answer": {
+        "ok": "<muted> □ Scope "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " ✓ Submit "
+      ],
+      "answer": {
+        "ok": "<text> ✓ Submit "
+      }
+    },
+    {
+      "method": "bg",
+      "operands": [
+        "selectedBg",
+        "<text> ✓ Submit "
+      ],
+      "answer": {
+        "ok": "<selectedBg><text> ✓ Submit "
+      }
+    },
+    {
+      "method": "bold",
+      "operands": [
+        " Ready to submit"
+      ],
+      "answer": {
+        "ok": "<bold> Ready to submit"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "<bold> Ready to submit"
+      ],
+      "answer": {
+        "ok": "<accent><bold> Ready to submit"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "warning",
+        " Unanswered: Scope, Q2"
+      ],
+      "answer": {
+        "ok": "<warning> Unanswered: Scope, Q2"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " □ Q2 "
+      ],
+      "answer": {
+        "ok": "<text> □ Q2 "
+      }
+    },
+    {
+      "method": "bg",
+      "operands": [
+        "selectedBg",
+        "<text> □ Q2 "
+      ],
+      "answer": {
+        "ok": "<selectedBg><text> □ Q2 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " Priority?"
+      ],
+      "answer": {
+        "ok": "<text> Priority?"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "1. High"
+      ],
+      "answer": {
+        "ok": "<accent>1. High"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "2. Type something."
+      ],
+      "answer": {
+        "ok": "<text>2. Type something."
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "success",
+        " ■ Scope "
+      ],
+      "answer": {
+        "ok": "<success> ■ Scope "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "1. High"
+      ],
+      "answer": {
+        "ok": "<text>1. High"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "2. Type something."
+      ],
+      "answer": {
+        "ok": "<accent>2. Type something."
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "2. Type something. ✎"
+      ],
+      "answer": {
+        "ok": "<accent>2. Type something. ✎"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "success",
+        " ■ Q2 "
+      ],
+      "answer": {
+        "ok": "<success> ■ Q2 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        " Scope: "
+      ],
+      "answer": {
+        "ok": "<muted> Scope: "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "Alpha"
+      ],
+      "answer": {
+        "ok": "<text>Alpha"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        " Q2: "
+      ],
+      "answer": {
+        "ok": "<muted> Q2: "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "(wrote) Custom"
+      ],
+      "answer": {
+        "ok": "<text>(wrote) Custom"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "success",
+        " Press Enter to submit"
+      ],
+      "answer": {
+        "ok": "<success> Press Enter to submit"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " ■ Q2 "
+      ],
+      "answer": {
+        "ok": "<text> ■ Q2 "
+      }
+    },
+    {
+      "method": "bg",
+      "operands": [
+        "selectedBg",
+        "<text> ■ Q2 "
+      ],
+      "answer": {
+        "ok": "<selectedBg><text> ■ Q2 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "success",
+        " ✓ Submit "
+      ],
+      "answer": {
+        "ok": "<success> ✓ Submit "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " ■ Scope "
+      ],
+      "answer": {
+        "ok": "<text> ■ Scope "
+      }
+    },
+    {
+      "method": "bg",
+      "operands": [
+        "selectedBg",
+        "<text> ■ Scope "
+      ],
+      "answer": {
+        "ok": "<selectedBg><text> ■ Scope "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "(wrote) Revised"
+      ],
+      "answer": {
+        "ok": "<text>(wrote) Revised"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        "2 questions"
+      ],
+      "answer": {
+        "ok": "<muted>2 questions"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|Scope, priority)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|Scope, priority)"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "priority"
+      ],
+      "answer": {
+        "ok": "<accent>priority"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        "High"
+      ],
+      "answer": {
+        "ok": "<text>High"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "warning",
+        " Unanswered: Scope"
+      ],
+      "answer": {
+        "ok": "<warning> Unanswered: Scope"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " □ Q1 "
+      ],
+      "answer": {
+        "ok": "<text> □ Q1 "
+      }
+    },
+    {
+      "method": "bg",
+      "operands": [
+        "selectedBg",
+        "<text> □ Q1 "
+      ],
+      "answer": {
+        "ok": "<selectedBg><text> □ Q1 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " First?"
+      ],
+      "answer": {
+        "ok": "<text> First?"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "accent",
+        "1. X"
+      ],
+      "answer": {
+        "ok": "<accent>1. X"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "success",
+        " ■ Q1 "
+      ],
+      "answer": {
+        "ok": "<success> ■ Q1 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "text",
+        " Second?"
+      ],
+      "answer": {
+        "ok": "<text> Second?"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|a, b)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|a, b)"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "muted",
+        " □ Q1 "
+      ],
+      "answer": {
+        "ok": "<muted> □ Q1 "
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "warning",
+        " Unanswered: Q1, Q2"
+      ],
+      "answer": {
+        "ok": "<warning> Unanswered: Q1, Q2"
+      }
+    },
+    {
+      "method": "fg",
+      "operands": [
+        "dim",
+        " (clip|40|a)"
+      ],
+      "answer": {
+        "ok": "<dim> (clip|40|a)"
+      }
+    }
+  ]
+}
