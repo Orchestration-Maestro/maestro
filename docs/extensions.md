@@ -10,6 +10,8 @@ call, inspect or block tool calls, change the assembled prompt, manage session
 history, add a provider, or offer dialogs and terminal components. The
 [working examples](../examples/extensions/README.md) show the patterns available in the shipped examples. Start with
 [`hello.rs`](../examples/extensions/hello.rs), which registers one greeting tool.
+For terminal views, follow [component authoring and recipes](extensions/components.md)
+to connect host widgets, input, focus and cleanup.
 
 Extensions run with the user's access. They inherit environment variables and
 standard streams, can use the network, and can read and write through
