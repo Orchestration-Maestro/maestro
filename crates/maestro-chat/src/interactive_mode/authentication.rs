@@ -54,7 +54,7 @@ impl InteractiveMode {
     /// The stored credentials as choices, ordered by display name under the current locale.
     ///
     /// # Errors
-    /// Returns the collator's failure to read the locale environment.
+    /// Returns the failure to construct the collator for the selected locale.
     pub(super) fn logout_provider_options(
         &self,
     ) -> Result<Vec<AuthSelectorProvider>, Box<dyn Error>> {
@@ -95,7 +95,9 @@ impl InteractiveMode {
     /// The removal and everything after it, without presenting a failure.
     ///
     /// # Errors
-    /// Returns the catalog refresh or availability failure.
+    /// Returns the catalog refresh failure or the failure to show the success text. A
+    /// catalog that cannot say which providers are available is not a failure: the
+    /// footer count becomes zero.
     fn apply_logout(&self, option: &AuthSelectorProvider) -> Result<(), Box<dyn Error>> {
         let session = self.runtime_host.session();
         let registry = session.model_registry();
@@ -133,7 +135,8 @@ fn logout_selection(
 /// `options` in a stable order of display names under the current locale.
 ///
 /// # Errors
-/// Returns the collator's failure to read the locale environment.
+/// Returns the failure to construct the collator for the selected locale; reading the
+/// locale environment cannot fail.
 fn sorted_by_name(
     mut options: Vec<AuthSelectorProvider>,
 ) -> Result<Vec<AuthSelectorProvider>, Box<dyn Error>> {

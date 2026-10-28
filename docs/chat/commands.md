@@ -650,8 +650,10 @@ A catalog refresh failure shows `Error: Logout failed: <error>` and keeps the
 removal already made; nothing is put back. When the catalog cannot say which
 providers are available, the footer count becomes zero and the removal still
 reports its success. A credential file that cannot be written keeps the removal
-in memory, leaves the file as it was and stays a store diagnostic for its own
-readers instead of becoming a logout failure.
+in memory and stays a store diagnostic for its own readers instead of becoming a
+logout failure. The file is replaced by a truncating write followed by a permission
+change, so its previous bytes survive only when the write is refused before it
+starts; a failure part-way through can leave the file shortened.
 
 ## Subscription billing notice
 
