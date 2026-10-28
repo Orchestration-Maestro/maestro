@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod bash_spawn_hook_example;
 mod border_status_editor_example;
 mod built_in_tool_renderer;
 mod canonical_api;
@@ -40,7 +41,6 @@ mod retained_contexts;
 mod startup;
 mod summarize_example;
 mod synchronous_reentry;
-mod truncated_tool_example;
 mod wasi_access;
 mod wasi_network;
 mod wasi_output;
