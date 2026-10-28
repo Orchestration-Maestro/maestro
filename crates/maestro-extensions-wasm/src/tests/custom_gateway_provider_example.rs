@@ -309,6 +309,19 @@ fn custom_gateway_provider_direct_access_is_requested_once_per_twenty_five_minut
 }
 
 #[test]
+fn custom_gateway_provider_direct_access_follows_the_supplied_credential() {
+    let Fixture { host, provider, .. } = fixture();
+    for (index, credential) in ["account-a", "account-b", "account-a"].into_iter().enumerate() {
+        let token = format!("direct-{index}");
+        respond(&host, 200, &granted(&token));
+        let granted = super::block_on(provider.get_direct_access_token(credential)).unwrap();
+        assert_eq!(granted.token, token);
+        assert_eq!(host.observed().native_http.requests.len(), index + 1);
+        assert_eq!(request(&host, index).2[0].1, format!("Bearer {credential}"));
+    }
+}
+
+#[test]
 fn custom_gateway_provider_new_credentials_expire_the_direct_access_token() {
     let Fixture { host, provider, .. } = fixture();
     respond(&host, 200, &granted("direct-1"));

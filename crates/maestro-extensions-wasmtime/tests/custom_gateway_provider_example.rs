@@ -108,10 +108,10 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
         if self.thinking {
             content.insert(0, AssistantContent::Thinking(faux_thinking("greeting")));
         }
-        let message = Arc::new(RwLock::new(faux_assistant_message(
-            content,
-            FauxAssistantMessageOptions::default(),
-        )));
+        let message = Arc::new(RwLock::new(AssistantMessage {
+            api: call.model.api,
+            ..faux_assistant_message(content, FauxAssistantMessageOptions::default())
+        }));
         for event in scripted(&message, self.thinking) {
             stream.push(event);
         }
@@ -470,14 +470,14 @@ fn custom_gateway_provider_registers_the_reference_models_and_sign_in() {
 
 /// The protocol call that carried one routed request, checked against its table row.
 fn assert_delegated(call: &Value, row: &Row) {
-    let (id, .., api, base_url) = *row;
+    let (id, .., base_url) = *row;
     assert_eq!(
         (
             call["model"]["id"].as_str(),
             call["model"]["api"].as_str(),
             call["model"]["baseUrl"].as_str()
         ),
-        (Some(id), Some(api), Some(base_url))
+        (Some(id), Some("gitlab-duo-api"), Some(base_url))
     );
     assert_eq!(call["model"]["provider"], "gitlab-duo");
     assert_eq!(call["common"]["apiKey"], "gitlab-duo");
@@ -536,6 +536,14 @@ fn custom_gateway_provider_routes_each_model_through_direct_access() {
                 types(&events),
                 ["start", "text_start", "text_delta", "text_end", "done"]
             );
+            for event in &events {
+                let message = event
+                    .get("partial")
+                    .or_else(|| event.get("message"))
+                    .unwrap();
+                assert_eq!(message["api"], "gitlab-duo-api", "{}", row.0);
+            }
+            assert_eq!(result["api"], "gitlab-duo-api");
             assert_eq!(result["stopReason"], "stop");
             assert_eq!(
                 result["content"],
