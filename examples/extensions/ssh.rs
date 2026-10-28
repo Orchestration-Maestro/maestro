@@ -146,6 +146,9 @@ fn on_event(
 }
 
 /// Registers remote coding tools, a flag and session hooks through the supplied host.
+///
+/// # Errors
+/// Returns an error if the host rejects flag, tool or event-handler registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

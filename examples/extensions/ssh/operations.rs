@@ -22,6 +22,9 @@ pub(super) struct Remote {
 
 impl Remote {
     /// Maps a complete host directory prefix to the remote directory’s POSIX spelling.
+    ///
+    /// # Errors
+    /// Returns an error if host path resolution fails or returns an invalid response.
     fn path(&self, path: &str) -> ExtensionResult<String> {
         let local_cwd = path_utils::resolve(&self.api, &[&self.local_cwd])?;
         let local_path = path_utils::resolve(&self.api, &[path])?;
