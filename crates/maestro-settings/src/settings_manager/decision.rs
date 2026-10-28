@@ -141,7 +141,7 @@ impl SettingsManager {
 }
 
 /// An admitted preference edit whose effects may follow other owner effects.
-/// Only the preparing manager should apply it, before another explicit operation.
+/// Only the preparing manager should apply it.
 pub struct PreparedSettingsEdit {
     /// The scope checked before the operation started.
     scope: SettingsScope,
@@ -155,11 +155,25 @@ impl PreparedSettingsEdit {
     /// # Errors
     /// Returns an error if the scope or key differs from the admitted list.
     pub fn with_recomputed_list(
-        self,
-        _scope: SettingsScope,
-        _path: &[&str],
-        _entries: Vec<Value>,
+        mut self,
+        scope: SettingsScope,
+        path: &[&str],
+        entries: Vec<Value>,
     ) -> Result<Self, String> {
+        let [change] = self.changes.as_slice() else {
+            return Err("Recomputed list requires one admitted list edit".into());
+        };
+        let admitted = change.requested();
+        if self.scope != scope
+            || change.components() != path
+            || !matches!(admitted.value, Some(Value::Array(_)))
+        {
+            return Err("Recomputed list must retain its admitted key and scope".into());
+        }
+        self.changes = vec![super::Change::from_requested(SettingsChange {
+            path: admitted.path,
+            value: Some(Value::Array(entries)),
+        })];
         Ok(self)
     }
 

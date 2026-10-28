@@ -5,52 +5,21 @@ use super::{
 use maestro_settings::{DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsScope};
 use std::io;
 
-/// The admitted package-list change, including its unchanged-checkout behaviour.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum SourceEditEffect {
-    /// No preference change was needed.
-    Unchanged,
-    /// The source was not configured before acquisition.
-    Addition,
-    /// A configured source would receive a new pin.
-    Replacement,
-    /// Configured source entries would be removed.
-    Removal,
-}
-
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Separates additions from pin replacements before acquisition can report no change.
-    fn source_edit_effect(
-        &self,
-        source: &str,
-        scope: InstalledSourceScope,
-        remove: bool,
-    ) -> io::Result<SourceEditEffect> {
-        if remove {
-            return Ok(SourceEditEffect::Removal);
-        }
-        Ok(
-            if self
-                .source_addition(source, scope, SourceAcquisition::CurrentGit)?
-                .is_some()
-            {
-                SourceEditEffect::Addition
-            } else {
-                SourceEditEffect::Replacement
-            },
-        )
-    }
-
     /// Stages exact edits only when admission is installed, preserving ordinary late reads.
     pub(super) fn prepare_source_edit(
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
         remove: bool,
-    ) -> io::Result<Option<(PreparedSettingsEdit, SourceEditEffect)>> {
+    ) -> io::Result<Option<PreparedSettingsEdit>> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         {
-            let settings = self.options.settings_manager.borrow();
+            let settings = self
+                .options
+                .settings_manager
+                .try_borrow()
+                .map_err(io::Error::other)?;
             let layer = match scope {
                 InstalledSourceScope::User => settings.get_global_base_layer(),
                 InstalledSourceScope::Project => settings.get_base_layer(),
@@ -60,32 +29,21 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             }
         }
         self.check_package_operation(source, Some(scope), remove)?;
-        let entries = if remove {
-            self.source_removal(source, scope)?
-        } else {
-            self.source_addition(source, scope, SourceAcquisition::Prepared)?
-        };
-        let effect = if entries.is_some() {
-            self.source_edit_effect(source, scope, remove)?
-        } else {
-            SourceEditEffect::Unchanged
-        };
-        let changes = entries.map_or_else(Vec::new, |entries| {
-            vec![SettingsChange {
-                path: vec!["packages".into()],
-                value: Some(serde_json::Value::Array(
-                    entries
-                        .into_iter()
-                        .map(maestro_settings::PackageSource::into_value)
-                        .collect(),
-                )),
-            }]
-        });
+        let changes = vec![SettingsChange {
+            path: vec!["packages".into()],
+            value: Some(serde_json::Value::Array(
+                self.source_edit_entries(source, scope, remove)?,
+            )),
+        }];
         let scope = match scope {
             InstalledSourceScope::User => SettingsScope::Global,
             InstalledSourceScope::Project => SettingsScope::Project,
         };
-        let settings = self.options.settings_manager.borrow();
+        let settings = self
+            .options
+            .settings_manager
+            .try_borrow()
+            .map_err(io::Error::other)?;
         let request = DecisionRequest::SettingsEdit {
             scope,
             changes: &changes,
@@ -96,11 +54,71 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 settings.report_refusal(scope, message.clone());
                 io::Error::new(io::ErrorKind::PermissionDenied, message)
             })?;
-        Ok(Some((edit, effect)))
+        Ok(Some(edit))
     }
 }
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Captures the intended list even when the source delta is already satisfied.
+    fn source_edit_entries(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+        remove: bool,
+    ) -> io::Result<Vec<serde_json::Value>> {
+        let entries = if remove {
+            self.source_removal(source, scope)?
+        } else {
+            self.source_addition(source, scope, SourceAcquisition::Prepared)?
+        };
+        entries.map_or_else(
+            || super::configuration::packages(self.snapshot(scope)?),
+            |entries| {
+                Ok(entries
+                    .into_iter()
+                    .map(maestro_settings::PackageSource::into_value)
+                    .collect())
+            },
+        )
+    }
+
+    /// Publishes the recomputed list for the already-admitted source delta.
+    pub(super) fn publish_source_edit(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+        edit: PreparedSettingsEdit,
+        acquisition: Option<SourceAcquisition>,
+    ) -> io::Result<bool> {
+        let entries = match acquisition {
+            Some(acquisition) => self.source_addition(source, scope, acquisition)?,
+            None => self.source_removal(source, scope)?,
+        };
+        let Some(entries) = entries else {
+            return Ok(false);
+        };
+        let scope = match scope {
+            InstalledSourceScope::User => SettingsScope::Global,
+            InstalledSourceScope::Project => SettingsScope::Project,
+        };
+        let edit = edit
+            .with_recomputed_list(
+                scope,
+                &["packages"],
+                entries
+                    .into_iter()
+                    .map(maestro_settings::PackageSource::into_value)
+                    .collect(),
+            )
+            .map_err(io::Error::other)?;
+        self.options
+            .settings_manager
+            .try_borrow_mut()
+            .map_err(io::Error::other)?
+            .apply_prepared_edit(edit);
+        Ok(true)
+    }
+
     /// Admits package intent against its scoped publisher and persisted required sources.
     pub(super) fn check_package_operation(
         &self,
@@ -109,7 +127,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         remove: bool,
     ) -> io::Result<()> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
-        let settings = self.options.settings_manager.borrow();
+        let settings = self
+            .options
+            .settings_manager
+            .try_borrow()
+            .map_err(io::Error::other)?;
         let (raw_scope, layer) = match scope {
             InstalledSourceScope::User => (SettingsScope::Global, settings.get_global_base_layer()),
             InstalledSourceScope::Project => (SettingsScope::Project, settings.get_base_layer()),

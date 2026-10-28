@@ -1,7 +1,6 @@
 //! Source dispatch for explicit install and removal, and settings edits after success.
 use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations, ProgressAction,
-    decisions::SourceEditEffect,
     sources::{self, Source},
 };
 use std::{io, path::Path};
@@ -21,7 +20,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
-        prepared: Option<(maestro_settings::PreparedSettingsEdit, SourceEditEffect)>,
+        prepared: Option<maestro_settings::PreparedSettingsEdit>,
     ) -> io::Result<SourceAcquisition> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         if prepared.is_none() {
@@ -43,14 +42,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 }
             })
             .await?;
-        if let Some((edit, effect)) = prepared
-            && (acquisition != SourceAcquisition::CurrentGit
-                || effect != SourceEditEffect::Replacement)
-        {
-            self.options
-                .settings_manager
-                .borrow_mut()
-                .apply_prepared_edit(edit);
+        if let Some(edit) = prepared {
+            self.publish_source_edit(source, scope, edit, Some(acquisition))?;
         }
         Ok(acquisition)
     }
@@ -71,8 +64,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
-        prepared: Option<(maestro_settings::PreparedSettingsEdit, SourceEditEffect)>,
-    ) -> io::Result<()> {
+        prepared: Option<maestro_settings::PreparedSettingsEdit>,
+    ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         if prepared.is_none() {
             self.check_package_operation(source, Some(scope), true)?;
@@ -87,13 +80,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             }
         })
         .await?;
-        if let Some((edit, _)) = prepared {
-            self.options
-                .settings_manager
-                .borrow_mut()
-                .apply_prepared_edit(edit);
+        if let Some(edit) = prepared {
+            self.publish_source_edit(source, scope, edit, None)
+        } else {
+            Ok(false)
         }
-        Ok(())
     }
     /// Installs, then adds the source to the selected scope's settings.
     pub(super) async fn acquire_and_persist(
@@ -117,10 +108,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
         let prepared = self.prepare_source_edit(source, scope, true)?;
-        let modified = prepared
-            .as_ref()
-            .map(|(_, effect)| *effect != SourceEditEffect::Unchanged);
-        self.release(source, scope, prepared).await?;
-        modified.map_or_else(|| self.remove_source(source, scope), Ok)
+        let admitted = prepared.is_some();
+        let modified = self.release(source, scope, prepared).await?;
+        if admitted {
+            Ok(modified)
+        } else {
+            self.remove_source(source, scope)
+        }
     }
 }
