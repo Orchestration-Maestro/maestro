@@ -34,17 +34,9 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         if index >= self.topology.workspaces.len() {
             return;
         }
+        let (active, selected) = self.selection_identities();
         self.topology.workspaces.remove(index);
-        let len = self.topology.workspaces.len();
-        if len == 0 {
-            self.active = None;
-            self.selected = 0;
-            return;
-        }
-        self.active = self
-            .active
-            .map(|active| position_after_removal(active, index, len));
-        self.selected = position_after_removal(self.selected, index, len);
+        self.restore_workspace_selection_after_removal(active.as_deref(), selected.as_deref());
     }
 
     /// Puts a pane back where a refused move took it from: as a new tab of its workspace,
@@ -95,23 +87,9 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         let mut workspace = self.topology.workspaces.remove(index);
         workspace.id = recovery.workspace_id;
         workspace.worktree_space = recovery.worktree_space;
+        let (active, selected) = self.selection_identities();
         let at = recovery.workspace.min(self.topology.workspaces.len());
-        self.active = self
-            .active
-            .map(|active| if active >= at { active + 1 } else { active });
-        if self.selected >= at && !self.topology.workspaces.is_empty() {
-            self.selected += 1;
-        }
         self.topology.workspaces.insert(at, workspace);
-    }
-}
-
-/// Where a position in a list of `len` entries lands after the entry at `removed` is taken
-/// out: entries after it move up, and the removed entry's position goes to its successor.
-fn position_after_removal(position: usize, removed: usize, len: usize) -> usize {
-    match position.cmp(&removed) {
-        std::cmp::Ordering::Less => position,
-        std::cmp::Ordering::Equal => removed.min(len - 1),
-        std::cmp::Ordering::Greater => position - 1,
+        self.restore_workspace_selection(active.as_deref(), selected.as_deref());
     }
 }

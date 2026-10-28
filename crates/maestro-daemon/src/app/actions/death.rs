@@ -34,32 +34,29 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         self.pane_id_aliases.retain(|_, alias| *alias != pane);
         self.public_pane_id_aliases
             .retain(|_, alias| *alias != pane);
-        let active = self
-            .active
-            .and_then(|index| self.topology.workspaces.get(index))
-            .map(|workspace| workspace.id.clone());
-        let selected = self
-            .topology
-            .workspaces
-            .get(self.selected)
-            .map(|workspace| workspace.id.clone());
+        let (active, selected) = self.selection_identities();
         if self.topology.workspaces[index].remove_pane(pane) {
             self.topology.workspaces.remove(index);
-            self.restore_focus_after_pane_death(active.as_deref(), selected.as_deref());
+            self.restore_workspace_selection_after_removal(active.as_deref(), selected.as_deref());
+            if self.topology.workspaces.is_empty() && self.mode == Mode::Terminal {
+                self.mode = Mode::Navigate;
+            }
         }
         self.remove_unattached_terminal_ids(terminals);
         self.session_dirty = true;
     }
 
-    /// Restores live identities, falling back to clamped previous positions.
-    fn restore_focus_after_pane_death(&mut self, active: Option<&str>, selected: Option<&str>) {
+    /// Restores live identities after a workspace left the list, falling back to clamped
+    /// previous positions.
+    pub(crate) fn restore_workspace_selection_after_removal(
+        &mut self,
+        active: Option<&str>,
+        selected: Option<&str>,
+    ) {
         let workspaces = &self.topology.workspaces;
         if workspaces.is_empty() {
             self.active = None;
             self.selected = 0;
-            if self.mode == Mode::Terminal {
-                self.mode = Mode::Navigate;
-            }
             return;
         }
         self.active = active
