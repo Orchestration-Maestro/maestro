@@ -3334,9 +3334,8 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
 
 /// Inputs whose edits invalidate the prepared component builder.
 #[cfg(unix)]
-const AUTHOR_SETUP_SOURCES: [&str; 7] = [
+const AUTHOR_SETUP_SOURCES: [&str; 6] = [
     "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
-    "crates/maestro-extensions-wasm/src/tests/build.rs",
     "crates/maestro-extensions-wasm/src/tests/build/components.rs",
     "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
     "crates/maestro-tooling/src/example_files.rs",
@@ -3358,6 +3357,10 @@ fn author_setup_sources(root: &Path, profile: &Path) -> std::time::SystemTime {
             .set_modified(earlier)
             .unwrap();
     }
+    fs::File::create(root.join("crates/maestro-extensions-wasm/src/tests/build.rs"))
+        .unwrap()
+        .set_modified(earlier)
+        .unwrap();
     earlier
 }
 
@@ -3388,6 +3391,17 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
         assert!(run().starts_with("cargo run "), "{source}");
         file.set_modified(earlier).unwrap();
     }
+    let host = "crates/maestro-extensions-wasm/src/tests/build.rs";
+    write_input(root, host, "host-only compilation");
+    fs::File::open(root.join(host))
+        .unwrap()
+        .set_modified(SystemTime::now() + Duration::from_secs(60))
+        .unwrap();
+    assert_eq!(
+        run(),
+        "example\n",
+        "host compilation is not a preparation input"
+    );
     fs::remove_file(&example).unwrap();
     assert!(run().starts_with("cargo run "));
 }
