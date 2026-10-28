@@ -2,7 +2,9 @@
 #![cfg(test)]
 use maestro_app::{ExtensionRunner, Local};
 use serde_json::{Value, json};
-use std::{path::Path, rc::Rc};
+#[cfg(unix)]
+use std::path::Path;
+use std::rc::Rc;
 
 mod resolution_failure;
 
@@ -134,8 +136,10 @@ fn fixture(name: &str) -> std::path::PathBuf {
 }
 
 /// Records lifecycle UI requests without requiring a terminal.
+#[cfg(unix)]
 #[derive(Default)]
 struct Ui(std::cell::RefCell<Vec<Value>>);
+#[cfg(unix)]
 impl maestro_app::ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {
         let theme = maestro_theme::load_theme_from_path(
@@ -163,6 +167,7 @@ impl maestro_app::ExtensionUIContextPort for Ui {
 }
 
 /// Resolves the flag only when the real session-start callback runs.
+#[cfg(unix)]
 async fn start(runner: &ExtensionRunner<Local>, value: &str) {
     runner.set_flag_value("ssh".into(), maestro_app::FlagValue::String(value.into()));
     runner
@@ -229,6 +234,7 @@ async fn remote_files(runner: &Rc<ExtensionRunner<Local>>, local: &Path) {
 }
 
 /// User shell operations retain streaming, numeric exit, cancellation and source deadlines.
+#[cfg(unix)]
 async fn remote_shell(runner: &Rc<ExtensionRunner<Local>>, cwd: &Path) {
     use maestro_app::{BashExecOptions, BashOperations, BashResult, UserBashEvent};
     assert_eq!(
@@ -301,6 +307,7 @@ async fn remote_only_shell(operations: &dyn maestro_app::BashOperations<Local>, 
 }
 
 /// Cancels a live child on its output and supplies an immediately ready native deadline.
+#[cfg(unix)]
 async fn shell_interruptions(operations: &dyn maestro_app::BashOperations<Local>, cwd: &str) {
     use maestro_app::{BashExecOptions, Cancellation};
     let signal = Cancellation::new();
@@ -337,6 +344,7 @@ async fn shell_interruptions(operations: &dyn maestro_app::BashOperations<Local>
 }
 
 /// Checks the exact session notification and the themed status content.
+#[cfg(unix)]
 fn assert_status(ui: &Ui, remote: &Path) {
     let observations = ui.0.borrow();
     assert_eq!(observations[0][1], "ssh");
@@ -357,6 +365,7 @@ fn assert_status(ui: &Ui, remote: &Path) {
 }
 
 /// The assembled prompt changes only its first matching working-directory line.
+#[cfg(unix)]
 async fn remote_prompt(runner: &ExtensionRunner<Local>, local: &Path, remote: &Path) {
     let original = format!("Current working directory: {}", local.display());
     let prompt = format!("{original}\n{original}");
