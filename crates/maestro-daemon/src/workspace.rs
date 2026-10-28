@@ -40,7 +40,8 @@ pub fn display_name_from_terminals<S: std::hash::BuildHasher>(
 /// Admit native repository metadata once after successful workspace creation.
 pub(crate) fn admit_git_identity(workspace: &mut Workspace, home: Option<&std::path::Path>) {
     use crate::git::discovery::{
-        automatic_workspace_label, fallback_label_from_cwd, git_branch, git_space_metadata,
+        automatic_workspace_label, canonicalize_best_effort_path, fallback_label_from_cwd,
+        git_branch, git_space_metadata,
     };
     let cwd = &workspace.identity_cwd;
     let space = git_space_metadata(cwd);
@@ -50,7 +51,7 @@ pub(crate) fn admit_git_identity(workspace: &mut Workspace, home: Option<&std::p
     );
     workspace.cached_git_status_key = space.as_ref().map_or_else(
         || cwd.clone(),
-        |space| std::fs::canonicalize(&space.repo_root).unwrap_or_else(|_| space.repo_root.clone()),
+        |space| canonicalize_best_effort_path(&space.repo_root),
     );
     workspace.cached_git_branch = git_branch(cwd);
     workspace.cached_git_space = space;
