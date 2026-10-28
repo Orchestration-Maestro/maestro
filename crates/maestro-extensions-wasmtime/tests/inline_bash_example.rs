@@ -116,3 +116,44 @@ fn inline_bash_expands_quoted_commands_in_the_session_directory() {
         assert_eq!(transform.text, "!{printf same} / same");
     });
 }
+
+/// Whole-line shell input stays untouched; malformed expressions do not start a child.
+#[test]
+fn inline_bash_preserves_whole_line_commands_and_expands_without_ui() {
+    run(async {
+        let root = Scratch::new().unwrap();
+        let (runner, ui) = loaded(root.path().to_str().unwrap()).await;
+        for text in [
+            "!echo !{touch sentinel}",
+            "\u{feff}\t !echo !{touch sentinel}",
+            "plain input",
+            "",
+            "!{}",
+            "before !{printf unfinished",
+        ] {
+            assert!(
+                matches!(input(&runner, text).await, InputEventResult::Continue),
+                "{text}"
+            );
+        }
+        assert!(!root.path().join("sentinel").exists());
+        assert!(ui.0.borrow().is_empty());
+        runner.set_ui_context(None);
+        for source in [
+            InputSource::Interactive,
+            InputSource::Rpc,
+            InputSource::Extension,
+        ] {
+            let result = runner
+                .emit_input("!{printf headless}", &mut Presence::Missing, source)
+                .await
+                .unwrap();
+            let InputEventResult::Transform(transform) = result else {
+                panic!("expected expanded input")
+            };
+            assert_eq!(transform.text, "headless");
+            assert_eq!(transform.images, Presence::Missing);
+        }
+        assert!(ui.0.borrow().is_empty());
+    });
+}
