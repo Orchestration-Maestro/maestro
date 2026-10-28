@@ -202,7 +202,7 @@ percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
 rustc-hash = { version = "2.1.3" }
-rustix = { version = "1.1.5", features = ["event", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
+rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
@@ -253,7 +253,7 @@ percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
 rustc-hash = { version = "2.1.3" }
-rustix = { version = "1.1.5", features = ["event", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
+rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
