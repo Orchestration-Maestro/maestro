@@ -7,28 +7,13 @@
 
 use maestro_extensions_wasm::{
     ExecOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, ExtensionResult, InputEventResult, InputTransform, NotificationType, utils,
+    ExtensionFuture, ExtensionResult, InputEventResult, InputTransform, NotificationType,
 };
 use std::rc::Rc;
 
-/// Trims edges using the host's whitespace classification.
-fn trim<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
-    let mut start = 0;
-    for (index, ch) in text.char_indices() {
-        if !utils::is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        start = index + ch.len_utf8();
-    }
-    let mut end = text.len();
-    for ch in text[start..].chars().rev() {
-        if !utils::is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        end -= ch.len_utf8();
-    }
-    Ok(&text[start..end])
-}
+#[path = "support/trim.rs"]
+mod trim;
+use trim::trim;
 
 /// Reads a nonempty expression ending at this original fragment's closing brace.
 fn expression(fragment: &str) -> Option<(&str, &str)> {

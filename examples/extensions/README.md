@@ -141,6 +141,7 @@ resolving conflicts, then regenerate the table.
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
+| `support/trim.rs` | Example-local trimming through the host's shared whitespace classification. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `tic_tac_toe.md` | Tic-tac-toe |

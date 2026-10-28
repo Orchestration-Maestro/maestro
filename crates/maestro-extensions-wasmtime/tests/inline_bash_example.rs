@@ -1,6 +1,7 @@
 //! Inline expansions through the shipped component, native execution and a disposable cwd.
 #![cfg(test)]
 #![cfg(unix)]
+use super::wasi_support::run;
 use maestro_extensions::{
     ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory,
@@ -56,15 +57,6 @@ async fn loaded(cwd: &str) -> (ExtensionRunner<Local>, Rc<Ui>) {
     let ui = Rc::new(Ui::default());
     runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
     (runner, ui)
-}
-
-/// Runs local component callbacks on a caller-owned executor.
-fn run(action: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// Observes the runner's public input result and verifies attachment preservation.

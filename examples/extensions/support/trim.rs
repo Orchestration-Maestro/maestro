@@ -10,7 +10,18 @@ use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
 ///
 /// # Errors
 /// Returns the host's whitespace-classification failure.
-pub fn trim<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
-    maestro_extensions_wasm::utils::is_whitespace_char(api, text)?;
+pub fn trim<'a>(api: &ExtensionAPI, mut text: &'a str) -> ExtensionResult<&'a str> {
+    while let Some(ch) = text.chars().next() {
+        if !maestro_extensions_wasm::utils::is_whitespace_char(api, &ch.to_string())? {
+            break;
+        }
+        text = &text[ch.len_utf8()..];
+    }
+    while let Some(ch) = text.chars().next_back() {
+        if !maestro_extensions_wasm::utils::is_whitespace_char(api, &ch.to_string())? {
+            break;
+        }
+        text = &text[..text.len() - ch.len_utf8()];
+    }
     Ok(text)
 }
