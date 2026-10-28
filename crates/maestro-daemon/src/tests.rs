@@ -17,6 +17,7 @@ thread_local! {
 }
 
 /// Counts a workspace resolution or reorder visit without affecting production builds.
+#[cfg(target_os = "linux")]
 pub(crate) fn record_workspace_work() {
     WORKSPACE_WORK.set(WORKSPACE_WORK.get() + 1);
 }
