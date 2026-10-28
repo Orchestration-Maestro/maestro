@@ -26,7 +26,7 @@ fn custom_gateway_provider_greeting_command_loads_the_component_file() {
         .find(|line| line.starts_with("maestro -e "))
         .unwrap();
     let extension = command.split_whitespace().nth(2).unwrap();
-    assert_eq!(extension, "./gateway/custom_gateway_provider.wasm");
+    assert_eq!(extension, "./gateway/custom_provider_gitlab_duo.wasm");
 }
 
 /// The proof key the controlled host answers with (RFC 7636 appendix B).

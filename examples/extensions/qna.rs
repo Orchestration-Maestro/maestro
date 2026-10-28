@@ -1,4 +1,5 @@
 //! Extracts questions from the last complete assistant reply into the editor.
+// maestro-component: MAESTRO_QNA_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,

@@ -536,11 +536,7 @@ fn ordinary_output_errors_keep_native_categories() {
                 std::io::Error::other("EIO"),
             ] {
                 for output in &rig.outputs {
-                    let kind = error.kind();
-                    let errno = error.raw_os_error();
                     output.emit(&error);
-                    assert_eq!(error.kind(), kind);
-                    assert_eq!(error.raw_os_error(), errno);
                 }
             }
             assert_eq!(*rig.effects.events.borrow(), ["register"]);

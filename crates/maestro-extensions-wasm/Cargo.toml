@@ -6,7 +6,8 @@ license.workspace = true
 repository.workspace = true
 description = "Author-side contract for native-async extension components."
 
-# Keep these targets in name order, so a new example inserts at its own place.
+# `just example-index` renders these targets from the example sources.
+# example-index:start
 [[example]]
 name = "author_component"
 crate-type = ["cdylib"]
@@ -56,13 +57,13 @@ path = "../../examples/extensions/custom_footer.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "custom_gateway_provider"
-path = "../../examples/extensions/custom-provider-gitlab-duo/main.rs"
+name = "custom_header"
+path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "custom_header"
-path = "../../examples/extensions/custom_header.rs"
+name = "custom_provider_gitlab_duo"
+path = "../../examples/extensions/custom-provider-gitlab-duo/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -124,6 +125,11 @@ path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "interactive_shell"
+path = "../../examples/extensions/interactive_shell.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "local_shell_component"
 crate-type = ["cdylib"]
 
@@ -140,6 +146,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "minimal_mode"
 path = "../../examples/extensions/minimal_mode.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "modal_editor"
+path = "../../examples/extensions/modal_editor.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -181,6 +192,11 @@ path = "../../examples/extensions/preset.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "project_rules"
+path = "../../examples/extensions/project_rules.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "prompt_customizer"
 path = "../../examples/extensions/prompt_customizer.rs"
 crate-type = ["cdylib"]
@@ -188,6 +204,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "protected_paths"
 path = "../../examples/extensions/protected_paths.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "provider_payload"
+path = "../../examples/extensions/provider_payload.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -203,6 +224,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "questionnaire"
 path = "../../examples/extensions/questionnaire.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "rainbow_editor"
+path = "../../examples/extensions/rainbow_editor.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -316,6 +342,7 @@ crate-type = ["cdylib"]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
+# example-index:end
 
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }
@@ -328,6 +355,7 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+maestro-listing = { path = "../maestro-listing" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
 regex.workspace = true

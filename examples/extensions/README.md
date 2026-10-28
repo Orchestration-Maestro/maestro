@@ -25,14 +25,26 @@ steps.
 2. Add usage and controlled-run commands in a same-name Markdown page.
 3. Add `src/tests/<name>_example.rs` in `maestro-extensions-wasm`. The build
    script discovers these files; do not add a `mod` line to `src/tests.rs`.
-4. Add a `[[example]]` block to that crate's manifest in alphabetical order,
-   with the source path and `crate-type = ["cdylib"]`.
+4. For a prepared test component, add
+   `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening docs. The
+   file stem names its Cargo target; `<dir>/main.rs` uses the directory name with
+   hyphens replaced by underscores. Native executable test modules use the
+   `<name>_example` suffix so the setup filter selects them automatically.
 5. Run `just example-index`, then run the example's controlled tests.
+
+`just example-index` also generates the `[[example]]` targets in
+`crates/maestro-extensions-wasm/Cargo.toml`; do not edit them by hand.
+`just example-index-check` fails when the index or targets are stale.
+Component preparation reads the source markers at run time. Each variable names
+one example; the shared author and context variables are reserved.
 
 The table below is generated from each Rust file's opening documentation and
 Markdown page's heading. Do not edit its rows by hand. `just example-index-check`
 checks that it is current. Keep descriptions and run commands in the example's
 own files, not in this page or `docs/examples.md`.
+
+The component setup reads source markers at run time; it has no shared example
+list. See [adding an example](../../docs/examples.md).
 
 Cargo needs an explicit target for each out-of-package component. Those manifest
 blocks and the tracked table remain shared edits; alphabetical neighbours can
@@ -92,12 +104,16 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `interactive_shell.md` | Interactive shell |
+| `interactive_shell.rs` | Opt-in interactive user shell commands with full terminal access. |
 | `mac_system_theme.md` | Mac system theme |
 | `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
 | `message_renderer.md` | Message renderer |
 | `message_renderer.rs` | A `/status` command posts status notes, and the renderer it registers draws each one: the level in its theme color over the custom message background, and the host's local send time once the message is expanded. |
 | `minimal_mode.md` | Minimal mode |
 | `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
+| `modal_editor.md` | Modal editor |
+| `modal_editor.rs` | A modal editor in the style of vi. |
 | `model_status.md` | Model status |
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
@@ -112,10 +128,14 @@ resolving conflicts, then regenerate the table.
 | `preset.rs` | Named model, thinking, tool and prompt configurations selected for one session. |
 | `preset/config.rs` | Layered preset files read through the host's authored-path helpers. |
 | `preset/selector.rs` | Themed preset selection through the host's retained list and container widgets. |
+| `project_rules.md` | Project rules |
+| `project_rules.rs` | Lists the project's rule files in the system prompt. |
 | `prompt_customizer.md` | Prompt customizer |
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
+| `provider_payload.md` | Provider payload |
+| `provider_payload.rs` | Opt-in logging of provider request payloads and response status and headers. |
 | `qna.md` | Qna |
 | `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
 | `question.md` | Question |
@@ -126,6 +146,8 @@ resolving conflicts, then regenerate the table.
 | `questionnaire.rs` | A questionnaire tool with selectable options and inline custom answers. |
 | `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
 | `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
+| `rainbow_editor.md` | Rainbow editor |
+| `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |

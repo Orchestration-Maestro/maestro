@@ -1,4 +1,5 @@
 //! A provider for GitLab Duo's Claude and GPT models, with GitLab sign-in and requests delegated to the built-in protocols.
+// maestro-component: MAESTRO_GATEWAY_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,

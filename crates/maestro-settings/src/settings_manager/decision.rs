@@ -160,7 +160,7 @@ impl SettingsManager {
             .into_iter()
             .map(super::Change::from_requested)
             .collect();
-        self.check_changes(&changes)?;
+        self.check_changes(scope, &changes)?;
         Ok(PreparedSettingsEdit { scope, changes })
     }
 

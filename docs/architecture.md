@@ -127,8 +127,9 @@ may depend directly on it.
 
 The [shared filesystem effect contract](specs/maestro-port.md#crates-and-delivery-order)
 declares `maestro-watch` and `maestro-lock` as core leaves below layer 0, including
-when their implementations are absent. Neither may depend on a workspace crate,
-including `maestro-path`. Only theme/application may consume watch; only
+when their implementations are absent. Watch has no workspace dependency; lock
+may use the optional `maestro-path` utility without changing its leaf status.
+Only theme/application may consume watch; only
 settings/credentials/workspace may consume lock. Watch creation/close, injected watch/timer
 interfaces and native notifications belong to watch; bounded synchronous
 contention acquisition of caller-opened files and atomic byte replacement belong
@@ -152,7 +153,9 @@ The listing leaf `maestro-listing` is declared core below layer 0 with no worksp
 dependencies, including `maestro-path`. It owns directory listing: one directory's
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
 tools and session may depend on it, on native targets; they keep kind filtering,
-name decoding and any further ordering.
+name decoding and any further ordering. Guest-authoring examples may use it through
+a portable development dependency from `maestro-extensions-wasm`, never a normal
+or build dependency.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
@@ -162,9 +165,10 @@ workspace dependencies. It owns one job: retaining callbacks in live registratio
 order, admitting one per identity and returning removed ownership to the caller.
 Models, the toolkit, the agent, the application and the extension runtime may
 depend on it and keep their own borrowing, locking, delivery and settlement
-policy. Retired registrations are reclaimed while no traversal runs, so one
-removal costs expected constant work and clearing every registration costs work
-proportional to their number.
+policy. Retired registrations are reclaimed once no traversal runs and at least
+half the slots are retired, so removal costs expected constant work amortized over
+the removals and clearing every registration costs work proportional to their
+number. While a traversal runs, retired slots stay until it ends.
 
 ## Authored paths and the foundation utility
 

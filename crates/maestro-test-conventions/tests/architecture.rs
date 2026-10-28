@@ -1867,6 +1867,30 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
+fn guest_listing_example_edge_is_portable_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-listing"]);
+    for kind in [
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\" }}"));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
+    }
+    for (kind, extra) in DECLARATIONS {
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\"{extra} }}"));
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(
+                "forbidden production dependency: maestro-extensions-wasm -> maestro-listing"
+                    .into()
+            ),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
 fn native_component_fixture_edges_are_development_only() {
     for dependency in [
         "maestro-catalog",
@@ -3474,4 +3498,10 @@ fn guest_schema_validation_edge_is_native_development_only() {
         caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
+}
+
+/// Native link traversal can be shared without adding an effect owner or a dependency cycle.
+#[test]
+fn final_link_consumers_may_use_the_path_utility() {
+    native_consumers_may_declare_the_utility(&["maestro-lock", "maestro-extensions-wasmtime"]);
 }

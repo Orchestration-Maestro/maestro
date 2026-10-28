@@ -22,17 +22,17 @@ no network and no credentials.
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
-  -p maestro-extensions-wasm --example custom_gateway_provider \
+  -p maestro-extensions-wasm --example custom_provider_gitlab_duo \
   --target wasm32-wasip2 --release
 ```
 
 ## Run a greeting probe
 
-Put the built `custom_gateway_provider.wasm` in a directory, for example
+Put the built `custom_provider_gitlab_duo.wasm` in a directory, for example
 `./gateway/`, then load the component file in print mode:
 
 ```sh
-maestro -e ./gateway/custom_gateway_provider.wasm --model gitlab-duo/claude-sonnet-4-5-20250929 \
+maestro -e ./gateway/custom_provider_gitlab_duo.wasm --model gitlab-duo/claude-sonnet-4-5-20250929 \
   --mode json -p "Say hello in exactly 3 words."
 ```
 

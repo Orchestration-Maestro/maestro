@@ -563,11 +563,6 @@ may keep the callback record or an input future after login ends; its last alias
 releases the original native captures. Pending input leaves the host available,
 and synchronous native notifications may reenter the same guest implementation.
 
-An authored login that uses a proof key calls `generate_pkce(&api)`. The host draws
-32 secure random bytes and returns a `Pkce` record: the verifier is their unpadded
-URL-safe Base64 and the challenge is that text's SHA-256 digest in the same encoding.
-Entropy failure returns the host's error. The guest links no hashing or encoding crate.
-
 Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
@@ -1007,9 +1002,9 @@ Each admitted name becomes an `Echo <name>` tool whose description names its
 prefix, and whose execution answers `<prefix><message>` with the registered name
 and prefix as details. The factory keeps one set of admitted names, inserts a
 name before asking the host to register it, and keeps that name when the request
-fails, so a retry reports `Tool already registered: <name>` rather than replacing
-the tool the first call registered. It never asks whether the host reports UI
-availability before requesting a notification.
+fails. A refused request admits no tool, so a retry reports
+`Tool already registered: <name>` without asking the host again. It never asks
+whether the host reports UI availability before requesting a notification.
 
 It is opt-in like the other shipped extensions: its crate's tests replay the
 recorded sequences through the built component in a controlled host, and

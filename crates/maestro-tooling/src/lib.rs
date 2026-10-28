@@ -18,6 +18,9 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Source-owned example discovery and component preparation.
+pub mod example_files;
+
 /// Derived extension documentation table.
 mod example_index;
 /// Filesystem watching and Cargo compilation dispatch.
