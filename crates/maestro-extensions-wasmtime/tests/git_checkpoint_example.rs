@@ -169,12 +169,11 @@ impl Harness {
     }
 }
 
-/// Runs Git only inside an exclusively owned disposable repository.
+/// Runs Git only inside an exclusively owned disposable repository, with the environment
+/// the example's own Git commands inherit.
 fn git(path: &Path, args: &[&str]) -> String {
     let output = Command::new("git")
         .current_dir(path)
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .args(args)
         .output()
         .unwrap();
@@ -202,6 +201,23 @@ fn selection() -> Value {
         "Restore code state?",
         ["Yes, restore code to that point", "No, keep current code"]
     ])
+}
+
+/// The example's Git commands see the disposable repository's own configuration alone.
+#[test]
+fn git_checkpoint_component_reads_only_repository_configuration() {
+    run(async {
+        let h = Harness::new().await;
+        let scopes = git(
+            h.root.path(),
+            &["config", "--list", "--show-scope", "--show-origin"],
+        );
+        eprintln!("{scopes}");
+        assert!(
+            scopes.lines().all(|line| line.starts_with("local\t")),
+            "{scopes}"
+        );
+    });
 }
 
 /// Captures replace per-entry objects and restore the selected tracked-file contents.
