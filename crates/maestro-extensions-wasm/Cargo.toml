@@ -219,6 +219,11 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "timed_confirm"
+path = "../../examples/extensions/timed_confirm.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "titlebar_spinner"
 path = "../../examples/extensions/titlebar_spinner.rs"
 crate-type = ["cdylib"]

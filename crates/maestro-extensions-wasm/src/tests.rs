@@ -28,6 +28,7 @@ macro_rules! on_both_adapters {
 include!(concat!(env!("OUT_DIR"), "/example_tests.rs"));
 example_tests!();
 
+mod abort_controller;
 pub(crate) mod action_host;
 mod advanced_ui;
 mod agent_events;

@@ -124,6 +124,8 @@ resolving conflicts, then regenerate the table.
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
+| `timed_confirm.md` | Timed confirm |
+| `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |
 | `titlebar_spinner.rs` | Animates the terminal title while the agent works, restoring it when work stops. |
 | `todo.md` | Todo |
