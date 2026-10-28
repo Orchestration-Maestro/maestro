@@ -19,6 +19,13 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
             &maestro_tools::path_utils::expand_path(&path).map_err(|error| error.to_string())?,
         );
     }
+    if operation == "paths.shorten_path" {
+        let (path,): (String,) = decode(data)?;
+        return encode(
+            &maestro_tools::output::render_utils::shorten_path(Some(&path))
+                .map_err(|error| error.to_string())?,
+        );
+    }
     if operation == "paths.guest_path" {
         let (path,): (String,) = decode(data)?;
         return encode(&guest_path(&path));
