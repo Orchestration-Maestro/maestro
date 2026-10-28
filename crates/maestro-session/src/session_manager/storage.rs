@@ -7,6 +7,7 @@ use std::{fs, io, path::Path};
 /// Returns the newly observed bytes on a mismatch so the caller can check again.
 /// A missing session has the digest of empty bytes. Success returns `None`.
 /// The stable sidecar stays locked from the final read through atomic publication.
+/// Existing targets must allow a writable open, including their native ACL checks.
 /// A parent-directory sync failure after publication does not fail the write.
 ///
 /// # Errors
@@ -20,6 +21,11 @@ pub fn rewrite_session_file(
         let current = read(path)?;
         if Sha256::digest(&current).as_slice() != expected {
             return Ok(Some(current));
+        }
+        match fs::OpenOptions::new().write(true).open(path) {
+            Ok(file) => drop(file),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+            Err(error) => return Err(error),
         }
         maestro_lock::replace(
             Path::new(path),
