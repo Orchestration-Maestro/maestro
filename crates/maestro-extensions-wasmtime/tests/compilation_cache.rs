@@ -39,8 +39,31 @@ fn cached_compile(path: &Path) -> usize {
     config.wasm_component_model_async(true);
     config.cache(Some(cache.clone()));
     let engine = Engine::new(&config).unwrap();
+    let started = std::time::Instant::now();
     Component::from_file(&engine, path).unwrap();
+    eprintln!(
+        "component compile: {} {:?}, hits={}, misses={}",
+        path.display(),
+        started.elapsed(),
+        cache.cache_hits(),
+        cache.cache_misses()
+    );
     cache.cache_hits()
+}
+
+#[test]
+fn prepared_components_hit_compilation_cache() {
+    for variable in [
+        "MAESTRO_CONTEXT_COMPONENT",
+        "MAESTRO_HOOK_COMPONENT",
+        "MAESTRO_GIT_CHECKPOINT_COMPONENT",
+    ] {
+        let path = std::env::var_os(variable).unwrap();
+        assert!(
+            cached_compile(Path::new(&path)) > 0,
+            "cold component: {variable}"
+        );
+    }
 }
 
 #[test]
