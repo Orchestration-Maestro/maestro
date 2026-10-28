@@ -96,7 +96,10 @@ fn first_assistant_end(events: &[String]) -> usize {
 /// Fails when any of `events` carries `text`.
 fn assert_none_carry(events: &[String], text: &str) {
     for event in events {
-        assert!(!event.contains(text), "{text} reached a listener in {event}");
+        assert!(
+            !event.contains(text),
+            "{text} reached a listener in {event}"
+        );
     }
 }
 
@@ -305,7 +308,11 @@ fn listeners_hear_the_agent_events_unchanged_while_nothing_is_held() {
                 }
             })));
             prompt_to_end(&h, "hello", PromptOptions::default()).await;
-            assert!(kinds(&agent.borrow()).iter().any(|kind| kind.contains("text_delta")));
+            assert!(
+                kinds(&agent.borrow())
+                    .iter()
+                    .any(|kind| kind.contains("text_delta"))
+            );
             assert_eq!(*agent.borrow(), *session.borrow());
         }
     });

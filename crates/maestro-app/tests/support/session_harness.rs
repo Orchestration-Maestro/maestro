@@ -1916,7 +1916,10 @@ fn stream_blocks(stream: &maestro_models::AssistantMessageEventStream, message: 
 }
 
 /// Pushes the terminal event of `message`: its completion, or its failure.
-fn stream_terminal(stream: &maestro_models::AssistantMessageEventStream, message: AssistantMessage) {
+fn stream_terminal(
+    stream: &maestro_models::AssistantMessageEventStream,
+    message: AssistantMessage,
+) {
     use maestro_models::AssistantMessageEvent as Event;
     let failed = matches!(message.stop_reason, StopReason::Error | StopReason::Aborted);
     let reason = message.stop_reason.clone();
