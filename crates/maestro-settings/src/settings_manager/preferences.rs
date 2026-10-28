@@ -54,9 +54,20 @@ pub type SettingsStorageError = Box<dyn std::error::Error + Send + Sync>;
 /// stored text alone, or a failure.
 pub type SettingsUpdate = Result<Option<String>, SettingsStorageError>;
 
-/// A failure attributed to the scope whose load or save produced it.
+/// Distinguishes settings failures from accepted stored-value resolutions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SettingsErrorKind {
+    /// A read, parse, write or explicit edit failure.
+    Failure,
+    /// A stored preference was resolved by a base lock or the registered decider.
+    StoredValueIgnored,
+}
+
+/// A failure or diagnostic attributed to its settings scope.
 #[derive(Debug)]
 pub struct SettingsError {
+    /// Whether this reports a failure or a resolved stored conflict.
+    pub kind: SettingsErrorKind,
     /// The scope whose operation failed.
     pub scope: SettingsScope,
     /// The underlying parser, I/O or adapter failure.

@@ -5,7 +5,7 @@ use crate::settings::model::{
     AgentPanelSortConfig, ConfigReloadReport, ConfigReloadStatus, StatusIndicatorStyle,
     ToastDelivery,
 };
-use maestro_settings::{SettingsError, SettingsManager, SettingsScope};
+use maestro_settings::{SettingsError, SettingsErrorKind, SettingsManager, SettingsScope};
 use serde_json::{Value, json};
 use std::{
     path::Path,
@@ -141,10 +141,9 @@ impl<C: FnMut() -> u128> App<C> {
         manager.set_global_key_paths("multiplexer", edits);
         manager.flush().await;
         let mut errors = manager.drain_errors();
-        if let Some(error) = errors
-            .iter()
-            .find(|error| error.scope == SettingsScope::Global)
-        {
+        if let Some(error) = errors.iter().find(|error| {
+            error.scope == SettingsScope::Global && error.kind == SettingsErrorKind::Failure
+        }) {
             tracing::warn!(%error.error, context, "failed to save workspace preferences");
             let diagnostic = format!("failed to save {context}: {}", error.error);
             self.state.config_diagnostic = Some(diagnostic.clone());
