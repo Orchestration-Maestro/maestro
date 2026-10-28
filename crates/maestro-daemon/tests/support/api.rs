@@ -3,7 +3,9 @@
 use super::{launch::launch_inputs, manifest_cache, populate_terminals, runtime::block_on};
 use maestro_daemon::{
     api::event_hub::EventHub, app::App, paths::DaemonPaths, settings::model::Config,
+    terminal::state::DetectedStateUpdate,
 };
+use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
@@ -16,7 +18,7 @@ use maestro_workspace::{
     workspace::WorktreeSpaceMembership,
 };
 use serde_json::Value;
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 /// Daemon owner with a deterministic identity clock.
 pub type TestApp = App<fn() -> u128>;
@@ -106,6 +108,42 @@ pub fn join_group(app: &mut TestApp, index: usize, key: &str, linked: bool) {
         checkout_path: format!("/repo-{index}").into(),
         is_linked_worktree: linked,
     });
+}
+
+/// Records that fallback detection saw `agent` in `state` on the first pane of the first workspace.
+pub fn detect(app: &mut TestApp, agent: Agent, state: AgentState) {
+    let terminal = app.state.topology.workspaces[0]
+        .terminal_id(root_pane(app, 0))
+        .unwrap()
+        .clone();
+    app.state
+        .terminals
+        .get_mut(&terminal)
+        .unwrap()
+        .set_detected_state_with_screen_signals_at(
+            DetectedStateUpdate {
+                agent: Some(agent),
+                fallback_state: state,
+                visible: AgentVisibility::default(),
+                process_exited: false,
+            },
+            Instant::now(),
+        );
+}
+
+/// Gives the first pane of the first workspace a recognized Pi process whose fallback state is
+/// `state`.
+pub fn pilot(app: &mut TestApp, state: AgentState) {
+    let terminal = app.state.topology.workspaces[0]
+        .terminal_id(root_pane(app, 0))
+        .unwrap()
+        .clone();
+    app.state
+        .terminals
+        .get_mut(&terminal)
+        .unwrap()
+        .set_detected_agent_process_at(Agent::Pi, Instant::now());
+    detect(app, Agent::Pi, state);
 }
 
 /// The root pane of the first tab of the workspace at `workspace`.
@@ -202,6 +240,12 @@ pub async fn run_in_pane(
         .send_bytes(script.as_bytes().to_vec())
         .await
         .unwrap();
+    wait_for_line(app, terminal, marker).await
+}
+
+/// The visible text of `terminal` once a line starts with `marker`.
+pub async fn wait_for_line(app: &TestApp, terminal: &TerminalId, marker: &str) -> String {
+    let runtime = app.terminal_runtimes.get(terminal).unwrap();
     loop {
         let _ = app.launch.render_dirty.take();
         let text = runtime.visible_text();

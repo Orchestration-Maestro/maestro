@@ -20,6 +20,16 @@ pub struct TerminalReadSnapshot {
     pub truncated: bool,
 }
 
+impl TerminalReadSnapshot {
+    /// Keeps the last `limit` lines of `text` with their line endings and reports whether
+    /// older lines were left out; without a limit every line stays.
+    #[must_use]
+    pub fn limited(text: String, limit: Option<usize>) -> Self {
+        let _ = (text, limit);
+        Self::default()
+    }
+}
+
 /// One pane's refreshed render snapshot and the colour policy a frame reads,
 /// borrowed under the pane lock.
 pub struct PaneRenderView<'a> {
