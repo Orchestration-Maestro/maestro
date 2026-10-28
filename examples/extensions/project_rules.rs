@@ -21,6 +21,9 @@ use maestro_extensions_wasm::{
 const RULES_DIR: &str = ".claude/rules";
 
 /// Collects the Markdown files below `dir`, folder by folder in name order, each path led by `prefix`.
+///
+/// # Errors
+/// Returns an error if metadata or directory entries cannot be read, except for missing paths.
 fn find_markdown_files(dir: &Path, prefix: &str, found: &mut Vec<String>) -> io::Result<()> {
     match std::fs::metadata(dir) {
         Err(error)
@@ -71,6 +74,10 @@ fn append_rules(rules: &[String], event: &ExtensionEvent) -> Option<ExtensionEve
 }
 
 /// Scans the rule folder again, keeps what it finds and announces a nonempty result.
+///
+/// # Errors
+/// Returns an error if the host cannot resolve the working directory, read the rule folder,
+/// access the UI or send the notification.
 fn scan(
     api: &ExtensionAPI,
     ctx: &ExtensionContext,
@@ -91,6 +98,9 @@ fn scan(
 }
 
 /// Registers the session-start scan and the prompt hook that share one rule list.
+///
+/// # Errors
+/// The returned future fails if the host rejects either handler registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
