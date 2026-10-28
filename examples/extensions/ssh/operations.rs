@@ -26,24 +26,20 @@ impl Remote {
         let windows = !self.local_cwd.starts_with('/')
             && (self.local_cwd.starts_with("\\\\")
                 || self.local_cwd.as_bytes().get(1) == Some(&b':'));
-        let separators: &[char] = if windows { &['/', '\\'] } else { &['/'] };
-        path.strip_prefix(self.local_cwd.trim_end_matches(separators))
-            .filter(|suffix| {
-                suffix.is_empty()
-                    || suffix.starts_with('/')
-                    || (windows && suffix.starts_with('\\'))
-            })
-            .map_or_else(
-                || path.to_owned(),
-                |suffix| {
-                    let suffix = if windows {
-                        suffix.replace('\\', "/")
-                    } else {
-                        suffix.to_owned()
-                    };
-                    format!("{}{suffix}", self.cwd)
-                },
-            )
+        let local_cwd = if windows {
+            self.local_cwd.replace('\\', "/")
+        } else {
+            self.local_cwd.clone()
+        };
+        let local_path = if windows {
+            path.replace('\\', "/")
+        } else {
+            path.to_owned()
+        };
+        local_path
+            .strip_prefix(local_cwd.trim_end_matches('/'))
+            .filter(|suffix| suffix.is_empty() || suffix.starts_with('/'))
+            .map_or_else(|| path.to_owned(), |suffix| format!("{}{suffix}", self.cwd))
     }
 
     /// Carries child diagnostics through the tool owner's structured error interface.
