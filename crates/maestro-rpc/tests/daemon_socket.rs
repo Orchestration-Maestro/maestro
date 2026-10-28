@@ -719,3 +719,103 @@ fn server_startup_announces_only_bound_resources() {
         }
     }
 }
+
+/// Runs a client that requests stop while the real server runs until its own shutdown.
+fn stopped_by_client<T: Send + 'static>(
+    paths: &DaemonPaths,
+    client: impl FnOnce(PathBuf) -> T + Send + 'static,
+) -> T {
+    let socket = PathBuf::from(paths.api_socket_path());
+    local(false, async {
+        let mut app = daemon(&socket);
+        let mut server = pin!(run_server(&mut app, paths, std::future::pending()));
+        assert!(
+            server
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()))
+                .is_pending()
+        );
+        let client = tokio::task::spawn_blocking(move || client(socket));
+        let (ended, client) = tokio::join!(server, client);
+        ended.unwrap();
+        client.unwrap()
+    })
+}
+
+/// A stop through the socket receives its complete response before the daemon ends.
+#[test]
+fn socket_stop_drains_its_response_before_shutdown() {
+    let root = Scratch::new().unwrap();
+    let paths = root_paths(root.path());
+    local(false, async {
+        let socket = PathBuf::from(paths.api_socket_path());
+        let mut app = daemon(&socket);
+        let mut server = pin!(run_server(&mut app, &paths, std::future::pending()));
+        assert!(
+            server
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()))
+                .is_pending()
+        );
+        let (started, writing) = oneshot::channel();
+        let (resume, resumed) = std::sync::mpsc::channel();
+        let client = tokio::task::spawn_blocking(move || {
+            let id = "s".repeat(900_000);
+            let mut stream = UnixStream::connect(socket).unwrap();
+            writeln!(stream, "{{\"id\":\"{id}\",\"type\":\"server.stop\"}}").unwrap();
+            let mut first = [0];
+            stream.read_exact(&mut first).unwrap();
+            started.send(()).unwrap();
+            resumed.recv().unwrap();
+            let mut rest = String::new();
+            BufReader::new(stream).read_line(&mut rest).unwrap();
+            let line = format!("{}{rest}", char::from(first[0]));
+            let reply: RpcResponse = serde_json::from_str(&line).unwrap();
+            assert_eq!(
+                reply,
+                response(&id, "server.stop", Ok(ResponseResult::Ok {}))
+            );
+        });
+        tokio::select! {
+            ended = &mut server => panic!("server ended before draining: {ended:?}"),
+            started = writing => started.unwrap(),
+        }
+        let polled = server
+            .as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()));
+        // Release the reader even when the server has incorrectly ended.
+        resume.send(()).unwrap();
+        assert!(
+            polled.is_pending(),
+            "server ended with its response stalled: {polled:?}"
+        );
+        let (ended, client) = tokio::join!(server, client);
+        ended.unwrap();
+        client.unwrap();
+    });
+}
+
+/// A peer that refuses reads still leaves the actual broken-pipe result in its receipt,
+/// without producing a connection-level warning for the expected disconnect.
+#[test]
+fn socket_closed_peer_preserves_failed_write_receipt() {
+    let Logged::Child(root) = logged("socket_closed_peer_preserves_failed_write_receipt") else {
+        return;
+    };
+    let paths = root_paths(&root);
+    let stream = stopped_by_client(&paths, |socket| {
+        let mut stream = UnixStream::connect(socket).unwrap();
+        stream.shutdown(std::net::Shutdown::Read).unwrap();
+        stream
+            .write_all(b"{\"id\":\"closed\",\"type\":\"server.stop\"}\n")
+            .unwrap();
+        stream
+    });
+    drop(stream);
+    let log = std::fs::read_to_string(paths.log_path("daemon")).unwrap();
+    logged_line(
+        &log,
+        &["api request failed", "request_id=\"closed\"", "Broken pipe"],
+    );
+    assert!(!log.contains("api connection failed"), "{log}");
+}

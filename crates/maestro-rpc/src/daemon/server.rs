@@ -98,7 +98,15 @@ async fn serve_connection(stream: AsyncLocalStream, operations: Rc<dyn Workspace
         session: None,
     };
     let output = RpcOutput::new(PeerClosed(output), Some(STREAM_WRITE_TIMEOUT));
-    let served = run_rpc_connection(Box::new(Admission::new(input)), output, options).await;
+    let served = run_rpc_connection(
+        Box::new(Admission::new(
+            input,
+            Instant::now() + INITIAL_REQUEST_TIMEOUT,
+        )),
+        output,
+        options,
+    )
+    .await;
     if let Err(error) = served
         && !is_connection_closed_error(&error)
     {
@@ -117,7 +125,7 @@ pub(super) struct Admission<R> {
 
 impl<R> Admission<R> {
     /// Admits a connection reading from `reader`; the first line's deadline starts now.
-    pub(super) fn new(reader: R) -> Self {
+    pub(super) fn new(reader: R, _deadline: Instant) -> Self {
         Self {
             lines: JsonlLineReader::strict(reader, MAX_REQUEST_BYTES),
             deadline: Some(Instant::now() + INITIAL_REQUEST_TIMEOUT),
