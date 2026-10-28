@@ -13,6 +13,13 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn call_host_operation(
+        &self,
+        operation: crate::bindings::maestro::extension::host::HostOperation,
+    ) -> crate::ExtensionFuture<'_, serde_json::Value> {
+        self.0.call_host_operation(operation)
+    }
+
     fn create_coding_tools(
         &self,
         cwd: String,

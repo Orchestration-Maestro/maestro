@@ -4,6 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
+use crate::bindings::maestro::extension::host::{HostOperation, OperationScope};
 use crate::{ExtensionAPI, ExtensionFuture};
 use serde_json::Value;
 
@@ -22,15 +23,13 @@ impl SettingsManager {
     /// Reads the raw user document, including unknown and wrong-typed values.
     #[must_use]
     pub fn get_global_settings(&self) -> ExtensionFuture<'_, Value> {
-        let api = self.api.clone();
-        Box::pin(async move {
-            drop(api);
-            Err("Extension host operations are not configured".into())
-        })
+        self.api
+            .call_host_operation(HostOperation::ReadSettings(OperationScope::User))
     }
     /// Reads the raw project document without merging the user document.
     #[must_use]
     pub fn get_project_settings(&self) -> ExtensionFuture<'_, Value> {
-        self.get_global_settings()
+        self.api
+            .call_host_operation(HostOperation::ReadSettings(OperationScope::Project))
     }
 }

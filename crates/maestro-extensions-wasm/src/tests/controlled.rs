@@ -604,6 +604,12 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    fn call_host_operation(
+        &self,
+        _: crate::bindings::maestro::extension::host::HostOperation,
+    ) -> ExtensionFuture<'_, serde_json::Value> {
+        Box::pin(async { Err("host operations require the production host".into()) })
+    }
     type Watcher = super::native_watch_host::Watcher;
     fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
         watch.close();
