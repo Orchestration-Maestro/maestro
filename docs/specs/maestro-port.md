@@ -665,6 +665,11 @@ member's layer. The crate is the sole exception to member `serde_json` inheritan
 the workspace precision declaration and lint inheritance still apply to it.
 Never hand-edit its generated manifest section.
 
+The guest authoring crate (`maestro-extensions-wasm`) has a portable external
+development edge on `sha2 =0.11.0`, with defaults disabled, for the opt-in DOOM
+example's pinned shareware checksum. It adds no normal SDK dependency or internal
+crate edge and does not change the guest's layer.
+
 The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
 terminal scenario harness remains forbidden from importing text.

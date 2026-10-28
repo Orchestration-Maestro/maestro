@@ -5,10 +5,14 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, http::Request, tools::path_utils};
-use std::io::Write;
+use sha2::{Digest, Sha256};
+use std::{fmt::Write as _, io::Write};
 
 /// Shareware data downloaded only when no local candidate exists.
-const WAD_URL: &str = "https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad";
+const WAD_URL: &str = "https://raw.githubusercontent.com/Daivuk/PureDOOM/355cfbd16fac119718879239336ee2ea408886bd/doom1.wad";
+
+/// Official shareware v1.9 bytes expected from the pinned mirror.
+const WAD_SHA256: &str = "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771";
 
 /// Finds a custom file, or the first module, working-directory or home candidate.
 /// # Errors
@@ -68,6 +72,9 @@ pub async fn ensure_wad_file(api: &ExtensionAPI, cwd: &str) -> ExtensionResult<S
     if bytes.is_empty() {
         return Err("The WAD response is empty".into());
     }
+    if !matches_checksum(&bytes, WAD_SHA256) {
+        return Err("The downloaded WAD checksum does not match shareware v1.9".into());
+    }
     let path = bundled_wad(api)?;
     write_cache(&path_utils::guest_path(api, &path)?, &bytes)?;
     Ok(path)
@@ -101,10 +108,15 @@ fn write_cache(path: &str, bytes: &[u8]) -> ExtensionResult<()> {
     Ok(())
 }
 
-/// Compares synthetic bytes with the expected digest.
-#[cfg(test)]
-fn matches_checksum(_: &[u8], _: &str) -> bool {
-    false
+/// Accepts only the complete expected SHA-256 digest.
+fn matches_checksum(bytes: &[u8], expected: &str) -> bool {
+    let mut actual = String::with_capacity(64);
+    for byte in Sha256::digest(bytes) {
+        if write!(&mut actual, "{byte:02x}").is_err() {
+            return false;
+        }
+    }
+    actual == expected
 }
 
 #[cfg(test)]
