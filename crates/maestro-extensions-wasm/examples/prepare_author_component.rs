@@ -29,15 +29,15 @@ fn main() -> Result<(), String> {
     let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
     let file_trigger = build::component("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT")?;
     let checkpoint = build::component("git_checkpoint", "MAESTRO_GIT_CHECKPOINT_COMPONENT")?;
+    let auto_commit_env = "MAESTRO_AUTO_COMMIT_ON_EXIT_COMPONENT";
+    let auto_commit = build::component("auto_commit_on_exit", auto_commit_env)?;
     let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
     let wasi = build::component("wasi_capabilities", "MAESTRO_WASI_COMPONENT")?;
     let helpers = build::component("helper_capabilities", "MAESTRO_HELPER_COMPONENT")?;
     let hooks = build::component("hook_component", "MAESTRO_HOOK_COMPONENT")?;
     let resources = build::component("resource_component", "MAESTRO_RESOURCE_COMPONENT")?;
-    let reloaded = build::component(
-        "resource_component_reloaded",
-        "MAESTRO_RESOURCE_RELOADED_COMPONENT",
-    )?;
+    let reload_env = "MAESTRO_RESOURCE_RELOADED_COMPONENT";
+    let reloaded = build::component("resource_component_reloaded", reload_env)?;
     let ssh = build::component("ssh", "MAESTRO_SSH_COMPONENT")?;
     let truncated_tool = build::component("truncated_tool", "MAESTRO_TRUNCATED_TOOL_COMPONENT")?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
@@ -46,7 +46,7 @@ fn main() -> Result<(), String> {
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
                  MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_SUMMARIZE_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_TIC_TAC_TOE_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n\
-                 MAESTRO_TRUNCATED_TOOL_COMPONENT={}\nMAESTRO_SSH_COMPONENT={}\n",
+                 MAESTRO_TRUNCATED_TOOL_COMPONENT={}\nMAESTRO_AUTO_COMMIT_ON_EXIT_COMPONENT={}\nMAESTRO_SSH_COMPONENT={}\n",
                 path.display(),
                 context.display(),
                 shell.display(),
@@ -67,6 +67,7 @@ fn main() -> Result<(), String> {
                 game.display(),
                 bash_spawn_hook.display(),
                 truncated_tool.display(),
+                auto_commit.display(),
                 ssh.display()
             ),
         )
