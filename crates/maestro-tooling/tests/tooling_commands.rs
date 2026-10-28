@@ -3332,6 +3332,35 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
     );
 }
 
+/// Inputs whose edits invalidate the prepared component builder.
+#[cfg(unix)]
+const AUTHOR_SETUP_SOURCES: [&str; 7] = [
+    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/src/tests/build.rs",
+    "crates/maestro-extensions-wasm/src/tests/build/components.rs",
+    "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
+    "crates/maestro-tooling/src/example_files.rs",
+    "crates/maestro-extensions-wasm/Cargo.toml",
+    "Cargo.lock",
+];
+
+/// Create source inputs older than the controlled preparation executable.
+#[cfg(unix)]
+fn author_setup_sources(root: &Path, profile: &Path) -> std::time::SystemTime {
+    let earlier = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
+    fs::create_dir_all(profile.join("deps")).unwrap();
+    fs::create_dir_all(profile.join("examples")).unwrap();
+    for source in AUTHOR_SETUP_SOURCES {
+        let path = root.join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::File::create(path)
+            .unwrap()
+            .set_modified(earlier)
+            .unwrap();
+    }
+    earlier
+}
+
 /// Run the test build's author preparation only while it is newer than its sources.
 #[cfg(unix)]
 #[test]
@@ -3341,26 +3370,7 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     let profile = root.join("target/debug");
-    fs::create_dir_all(profile.join("deps")).unwrap();
-    fs::create_dir_all(profile.join("examples")).unwrap();
-    let sources = [
-        "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
-        "crates/maestro-extensions-wasm/src/tests/build.rs",
-        "crates/maestro-extensions-wasm/src/tests/build/components.rs",
-        "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
-        "crates/maestro-tooling/src/example_files.rs",
-        "crates/maestro-extensions-wasm/Cargo.toml",
-        "Cargo.lock",
-    ];
-    let earlier = SystemTime::now() - Duration::from_secs(3600);
-    for source in sources {
-        let path = root.join(source);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::File::create(path)
-            .unwrap()
-            .set_modified(earlier)
-            .unwrap();
-    }
+    let earlier = author_setup_sources(root, &profile);
     let example = profile.join("examples/prepare_author_component");
     for (path, name) in [(&example, "example"), (&root.join("cargo"), "cargo")] {
         fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
@@ -3368,7 +3378,7 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     }
     let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
-    for source in sources {
+    for source in AUTHOR_SETUP_SOURCES {
         let file = fs::File::options()
             .write(true)
             .open(root.join(source))
@@ -3385,22 +3395,106 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
 fn run_author_setup(root: &Path, profile: &Path) -> String {
-    let output = Command::new("sh")
-        .arg(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
-        )
-        .current_dir(root)
-        .env("NEXTEST_LD_LIBRARY_PATH", profile)
-        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
-        .env("CARGO", root.join("cargo"))
-        .output()
-        .unwrap();
+    let output = author_setup_command(root, profile).output().unwrap();
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
     stdout(&output)
+}
+
+/// Configure the real setup launcher against controlled artifacts.
+#[cfg(unix)]
+fn author_setup_command(root: &Path, profile: &Path) -> Command {
+    let mut command = Command::new("sh");
+    command
+        .arg(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
+        )
+        .current_dir(root)
+        .env("NEXTEST_LD_LIBRARY_PATH", profile)
+        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
+        .env("CARGO", root.join("cargo"));
+    command
+}
+
+/// Publish literal paths once and observe which component each consuming warm step selects.
+#[cfg(unix)]
+fn author_cache_fixture(root: &Path, profile: &Path) {
+    author_setup_sources(root, profile);
+    for (name, target, script) in [
+        (
+            "builder",
+            profile.join("examples/prepare_author_component"),
+            "#!/bin/sh\nprintf '%s\\n' build >> \"$MAESTRO_SETUP_BUILDS\"\nprintf '%s\\n' \"MAESTRO_CONTEXT_COMPONENT=context literal ' 東京\" MAESTRO_HOOK_COMPONENT=hook MAESTRO_GIT_CHECKPOINT_COMPONENT=git > \"$NEXTEST_ENV\"\n",
+        ),
+        (
+            "warmer",
+            profile.join("deps/integration-controlled"),
+            "#!/bin/sh\nif [ \"$1\" = --list ]; then printf '%s: test\\n' \"$3\"; exit 0; fi\n[ \"$MAESTRO_CONTEXT_COMPONENT\" = \"context literal ' 東京\" ] || exit 19\nprintf '%s\\n' \"${MAESTRO_WARM_COMPONENT-unset}\" >> \"$MAESTRO_SETUP_CALLS\"\n",
+        ),
+    ] {
+        write_input(root, name, script);
+        crate::recipe_support::install_executable(&root.join(name), &target);
+    }
+}
+
+/// A shard warms only its selected consumer families and never reruns the builder.
+#[cfg(unix)]
+#[test]
+fn author_setup_warms_only_selected_components() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let profile = root.join("target/debug");
+    author_cache_fixture(root, &profile);
+    let calls = root.join("calls");
+    let run = |component: Option<&str>| {
+        let mut command = author_setup_command(root, &profile);
+        command
+            .env("NEXTEST_ENV", root.join("setup.env"))
+            .env("NEXTEST_RUN_ID", "controlled-cache")
+            .env("MAESTRO_SETUP_BUILDS", root.join("builds"))
+            .env("MAESTRO_SETUP_CALLS", &calls);
+        if let Some(component) = component {
+            command.arg(component);
+        }
+        command.output().unwrap()
+    };
+    let built = run(None);
+    assert!(
+        built.status.success(),
+        "{}",
+        String::from_utf8_lossy(&built.stderr)
+    );
+    assert!(
+        !calls.exists(),
+        "component building must not warm an unrelated namespace"
+    );
+    for component in [
+        "MAESTRO_CONTEXT_COMPONENT",
+        "MAESTRO_HOOK_COMPONENT",
+        "MAESTRO_GIT_CHECKPOINT_COMPONENT",
+    ] {
+        let output = run(Some(component));
+        assert!(
+            output.status.success(),
+            "{component}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    assert_eq!(
+        fs::read_to_string(calls).unwrap(),
+        "MAESTRO_CONTEXT_COMPONENT\nMAESTRO_HOOK_COMPONENT\nMAESTRO_GIT_CHECKPOINT_COMPONENT\n"
+    );
+    assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
+    let missing = author_setup_command(root, &profile)
+        .arg("MAESTRO_CONTEXT_COMPONENT")
+        .env("NEXTEST_RUN_ID", "missing")
+        .output()
+        .unwrap();
+    assert!(!missing.status.success());
+    assert!(String::from_utf8_lossy(&missing.stderr).contains("prepared component paths"));
 }
 
 /// Independent source files supply their own index rows without a second inventory.
