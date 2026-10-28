@@ -91,11 +91,14 @@ struct Protocol {
     /// Whether the reply carries a reasoning block first.
     thinking: bool,
 }
-impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>>
+/// Exercise both supported invocation families through the same controlled protocol.
+macro_rules! protocol {
+    ($family:ty) => {
+impl<O: Into<StreamOptionsInput<$family>>> Invoke<$family, ProviderCall<$family, O>>
     for Protocol
 {
     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
-    fn invoke(&self, call: ProviderCall<E, O>) -> Self::Return {
+    fn invoke(&self, call: ProviderCall<$family, O>) -> Self::Return {
         let Some(StreamOptionsInput::Simple(options)) = call.options.map(Into::into) else {
             panic!("the gateway delegates through the simple route");
         };
@@ -109,15 +112,26 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
             content.insert(0, AssistantContent::Thinking(faux_thinking("greeting")));
         }
         let message = Arc::new(RwLock::new(AssistantMessage {
-            api: call.model.api,
+            api: call.model.api.clone(),
             ..faux_assistant_message(content, FauxAssistantMessageOptions::default())
         }));
-        for event in scripted(&message, self.thinking) {
-            stream.push(event);
-        }
+        let output = stream.clone();
+        let events = scripted(&message, self.thinking);
+        <$family>::submit(Box::pin(async move {
+            if let Some(hook) = options.common.on_payload {
+                hook(PayloadHookInput { payload: json!({}), signal: None }, Arc::new(call.model)).await.unwrap();
+            }
+            for event in events {
+                output.push(event);
+            }
+        }), call.submit, |_| panic!("the caller supplies admission"))?;
         Ok(stream)
     }
 }
+    };
+}
+protocol!(Local);
+protocol!(Threaded);
 
 /// The ordered events a protocol emits for one reply, all sharing the live message.
 fn scripted(message: &SharedAssistantMessage, thinking: bool) -> Vec<AssistantMessageEvent> {
@@ -525,7 +539,15 @@ fn custom_gateway_provider_routes_each_model_through_direct_access() {
         let harness = Harness::new(false).await;
         harness.reply(200, &granted());
         for row in &TABLE {
-            let (events, result) = harness.stream(row.0, keyed(Some("glpat-user"))).await;
+            let seen = Rc::new(RefCell::new(Vec::new()));
+            let observed = seen.clone();
+            let mut options = keyed(Some("glpat-user"));
+            options.common.on_payload = Some(Rc::new(move |input, model| {
+                observed.borrow_mut().push(model.api.clone());
+                Box::pin(std::future::ready(Ok(input)))
+            }));
+            let (events, result) = harness.stream(row.0, options).await;
+            assert_eq!(*seen.borrow(), ["gitlab-duo-api"], "{}", row.0);
             let protocol = if row.5 == "anthropic-messages" {
                 &harness.anthropic
             } else {
