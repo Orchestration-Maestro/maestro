@@ -1515,3 +1515,49 @@ fn direct_package_operations_ask_decider_before_effects() {
         assert!(fixture.phases().is_empty());
     }
 }
+
+/// Allows requests while retaining their order for comparison with progress events.
+struct AllowPackageEdit;
+impl maestro_settings::SettingsDecider for AllowPackageEdit {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+/// A current checkout keeps an existing pin but still admits a previously unconfigured source.
+#[test]
+fn admitted_current_git_checkout_preserves_addition_and_pin_semantics() {
+    for configured in [false, true] {
+        let initial = if configured {
+            json!({"packages":["git:github.com/user/repo#kept"]})
+        } else {
+            json!({})
+        };
+        let fixture = Fixture::new(&initial);
+        native_support::write(fixture.agent("git/github.com/user/repo/kept"), "contents");
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+        block_on(
+            fixture
+                .manager
+                .install_and_persist("git:github.com/user/repo", None),
+        )
+        .unwrap();
+        assert_eq!(
+            stored(&fixture),
+            if configured {
+                json!(["git:github.com/user/repo#kept"])
+            } else {
+                json!(["git:github.com/user/repo"])
+            }
+        );
+        assert!(fixture.calls().is_empty());
+        assert_eq!(
+            sandbox::read(fixture.agent("git/github.com/user/repo/kept")),
+            "contents"
+        );
+    }
+}
