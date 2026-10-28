@@ -7,9 +7,10 @@ use maestro_daemon::{
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
-    schema::{ErrorBody, ResponseResult},
+    schema::{ErrorBody, ResponseResult, SplitDirection},
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
+use maestro_workspace::layout::{PaneId, SplitRequest};
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -54,6 +55,49 @@ pub fn add_workspaces(app: &mut TestApp, cwds: &[&str]) {
     }
 }
 
+/// Splits `target` in the workspace at `workspace` without a process or a focus change.
+pub fn split_pane(
+    app: &mut TestApp,
+    workspace: usize,
+    target: PaneId,
+    direction: SplitDirection,
+) -> PaneId {
+    let (pane, ()) = app
+        .state
+        .topology
+        .split_pane_with_runtime(
+            workspace,
+            SplitRequest {
+                target,
+                direction,
+                ratio: None,
+                focus_new_pane: false,
+            },
+            |_, _| Ok(()),
+        )
+        .unwrap()
+        .unwrap();
+    populate_terminals(&mut app.state);
+    pane
+}
+
+/// Adds a tab without a process to the workspace at `workspace` and returns its root pane.
+pub fn add_tab(app: &mut TestApp, workspace: usize) -> PaneId {
+    let (pane, ()) = app
+        .state
+        .topology
+        .create_tab_with_runtime(workspace, |_, _| Ok(()))
+        .unwrap()
+        .unwrap();
+    populate_terminals(&mut app.state);
+    pane
+}
+
+/// The root pane of the first tab of the workspace at `workspace`.
+pub fn root_pane(app: &TestApp, workspace: usize) -> PaneId {
+    app.state.topology.workspaces[workspace].tabs[0].root_pane
+}
+
 /// Paths below an agent directory nothing reads or writes.
 pub fn untouched_paths() -> DaemonPaths {
     DaemonPaths::new("/nonexistent-maestro-agent-dir", None).unwrap()
@@ -72,8 +116,14 @@ pub fn command(wire: Value) -> RpcCommand {
 
 /// Answers the wire-form `command` through the daemon's handler.
 pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
+    block_on(answer(app, wire))
+}
+
+/// Answers the wire-form `wire` from inside a running test runtime.
+pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
-    block_on(app.handle_api_request(command(wire), &mut settings, &untouched_paths()))
+    app.handle_api_request(command(wire), &mut settings, &untouched_paths())
+        .await
 }
 
 /// The failure with `code` and `message`.

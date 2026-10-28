@@ -1,5 +1,6 @@
 //! Workspace topology behaviour.
 #![cfg(test)]
+mod borders;
 mod git;
 mod identity;
 mod layout;

@@ -733,3 +733,28 @@ fn assert_restored_negative_extent(direction: SplitDirection, expected: (u16, u1
     let first = restored.panes(Rect::new(0, 0, 5, 6))[0].rect;
     assert_eq!((first.width, first.height), expected);
 }
+
+#[test]
+fn spans_overlap_only_when_they_share_a_cell() {
+    assert!(ranges_overlap(0, 4, 3, 4));
+    assert!(ranges_overlap(3, 4, 0, 4));
+    assert!(ranges_overlap(2, 1, 0, 8));
+    assert!(ranges_overlap(0, 8, 2, 1));
+}
+
+#[test]
+fn spans_that_only_touch_or_lie_apart_do_not_overlap() {
+    assert!(!ranges_overlap(0, 4, 4, 4));
+    assert!(!ranges_overlap(4, 4, 0, 4));
+    assert!(!ranges_overlap(0, 4, 9, 2));
+    assert!(!ranges_overlap(9, 2, 0, 4));
+}
+
+#[test]
+fn spans_ending_past_the_coordinate_limit_saturate() {
+    let top = u16::MAX;
+    assert!(ranges_overlap(top - 1, 10, top - 3, 3));
+    assert!(ranges_overlap(top - 3, 3, top - 1, 10));
+    assert!(!ranges_overlap(top - 1, 10, top - 3, 2));
+    assert!(!ranges_overlap(top - 3, 2, top - 1, 10));
+}

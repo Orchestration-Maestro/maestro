@@ -772,6 +772,9 @@ in `crates/maestro-daemon/src/app/` derive from the application modules under th
 same license. The workspace, tab, launch environment, notification, manifest and
 metadata command handlers in `app/api/` and `app/api_helpers.rs` derive from the
 application API modules, with typed results instead of encoded response text.
+The pane geometry with chrome, layout snapshots and pane topology handlers in
+`app/layout.rs` and `app/api/panes.rs` derive from the application API and interface
+modules, with one view-area owner instead of a view field.
 The API socket server and server mode in `crates/maestro-rpc/src/daemon/`
 and the daemon request adapter in `crates/maestro-app/src/rpc_mode/daemon.rs` derive
 from the API server and headless server modules. Changes include the shared

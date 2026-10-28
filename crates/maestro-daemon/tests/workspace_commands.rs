@@ -1,13 +1,12 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, daemon_with_workspaces, events_after, failure, request,
+    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, request,
     with_live_daemon, workspace_ids,
 };
 use maestro_daemon::app::state::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_protocol::events::EventData;
-use maestro_protocol::rpc_types::RpcCommand;
 use maestro_protocol::schema::{ResponseResult, WorkspaceInfo};
 use maestro_workspace::workspace::WorktreeSpaceMembership;
 use serde_json::json;
@@ -364,17 +363,6 @@ fn created(
     }
 }
 
-/// Answers `wire` through the handler from inside a running test runtime.
-async fn answer(
-    app: &mut TestApp,
-    wire: serde_json::Value,
-) -> Result<ResponseResult, maestro_protocol::schema::ErrorBody> {
-    let command: RpcCommand = crate::support::api::command(wire);
-    let mut settings = crate::support::api::settings();
-    let paths = crate::support::api::untouched_paths();
-    app.handle_api_request(command, &mut settings, &paths).await
-}
-
 #[test]
 fn daemon_workspace_create_response_includes_initial_tab_and_root_pane() {
     with_live_daemon(
@@ -411,6 +399,9 @@ fn daemon_workspace_create_response_includes_initial_tab_and_root_pane() {
                     EventData::WorkspaceCreated { workspace },
                     EventData::TabCreated { tab },
                     EventData::PaneCreated { pane: root_pane },
+                    EventData::LayoutUpdated {
+                        layout: app.pane_layout_snapshot(0, 0).unwrap()
+                    },
                 ]
             );
             let unfocused = answer(app, json!({"type": "workspace.create", "focus": false})).await;

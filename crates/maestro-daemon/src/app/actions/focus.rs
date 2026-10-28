@@ -85,6 +85,23 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         true
     }
 
+    /// Marks every pane of the active tab seen.
+    pub fn mark_active_tab_seen(&mut self) {
+        let active = self
+            .active
+            .and_then(|index| self.topology.workspaces.get_mut(index));
+        if let Some(workspace) = active {
+            // Reselecting the active tab marks its panes seen and changes nothing else.
+            workspace.switch_tab(workspace.active_tab);
+        }
+    }
+
+    /// Returns to terminal input after a focus change, keeping copy context only on its pane.
+    pub fn settle_terminal_mode_after_focus(&mut self) {
+        self.mode = Mode::Terminal;
+        self.sync_copy_mode_with_focus();
+    }
+
     /// Toggles focus to the previous live pane, discarding stale history.
     pub fn last_pane(&mut self) {
         let Some(target) = self.previous_pane_focus.as_ref() else {

@@ -22,6 +22,9 @@ pub mod terminal_targets;
 /// Shared launch inputs and daemon construction.
 pub mod construction;
 
+/// Pane geometry served from tile cells, the view area and pane chrome.
+pub mod layout;
+
 use crate::terminal::runtime_registry::TerminalRuntimeRegistry;
 use state::DaemonState;
 

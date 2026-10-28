@@ -960,6 +960,13 @@ fn socket_tab_records_round_trip() {
             ("w1:p2", "w1:t2")
         );
         assert!(tab.focused);
+        let panes = json!({"type": "pane.list", "workspace_id": "w1"});
+        let Ok(ResponseResult::PaneList { panes }) = call(&socket, panes) else {
+            panic!("expected a pane list")
+        };
+        assert!(panes.iter().any(|pane| {
+            pane.pane_id == root_pane.pane_id && pane.terminal_id == root_pane.terminal_id
+        }));
         let list = json!({"type": "tab.list", "workspace_id": "w1"});
         let listed = tabs_of(call(&socket, list));
         assert_eq!(tab_ids(&listed), ["w1:t1", "w1:t2"]);
@@ -975,6 +982,55 @@ fn socket_tab_records_round_trip() {
         assert_eq!(call(&socket, close), Ok(ResponseResult::Ok {}));
         let left = tabs_of(call(&socket, json!({"type": "tab.list"})));
         assert_eq!(tab_ids(&left), ["w1:t1"]);
+    });
+}
+
+/// Through `run_server`, a live pane answers the topology reads with typed records.
+#[test]
+fn socket_pane_records_round_trip() {
+    served_live("socket_pane_records_round_trip", |socket| {
+        let created = call(&socket, json!({"type": "workspace.create"}));
+        let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
+            panic!("expected a created workspace: {created:?}")
+        };
+        let pane = root_pane.pane_id.as_str();
+        let get = call(&socket, json!({"type": "pane.get", "pane_id": pane}));
+        let Ok(ResponseResult::PaneInfo { pane: got }) = get else {
+            panic!("expected a pane: {get:?}")
+        };
+        assert_eq!(got.terminal_id, root_pane.terminal_id);
+        let current = call(&socket, json!({"type": "pane.current"}));
+        let Ok(ResponseResult::PaneCurrent { pane: current }) = current else {
+            panic!("expected the current pane: {current:?}")
+        };
+        assert_eq!((current.pane_id.as_str(), current.focused), (pane, true));
+        let layout = call(&socket, json!({"type": "pane.layout", "pane_id": pane}));
+        let Ok(ResponseResult::PaneLayout { layout }) = layout else {
+            panic!("expected a layout: {layout:?}")
+        };
+        assert_eq!(layout.focused_pane_id, pane);
+        assert_eq!((layout.panes.len(), layout.splits.len()), (1, 0));
+        let info = call(
+            &socket,
+            json!({"type": "pane.process_info", "pane_id": pane}),
+        );
+        let Ok(ResponseResult::PaneProcessInfo { process_info }) = info else {
+            panic!("expected process info: {info:?}")
+        };
+        assert_eq!(process_info.pane_id, pane);
+        assert!(process_info.shell_pid.is_some());
+        let edges = call(&socket, json!({"type": "pane.edges", "pane_id": pane}));
+        let Ok(ResponseResult::PaneEdges { edges }) = edges else {
+            panic!("expected edges: {edges:?}")
+        };
+        assert!(edges.left && edges.right && edges.up && edges.down.0);
+        let toward = json!({"type": "pane.neighbor", "pane_id": pane, "direction": "left"});
+        let Ok(ResponseResult::PaneNeighbor { neighbor }) = call(&socket, toward) else {
+            panic!("expected a neighbour")
+        };
+        assert_eq!(neighbor.neighbor_pane_id, None);
+        let focus = call(&socket, json!({"type": "pane.focus", "pane_id": pane}));
+        assert!(matches!(focus, Ok(ResponseResult::PaneInfo { .. })));
     });
 }
 
