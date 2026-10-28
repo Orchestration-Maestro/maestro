@@ -3626,3 +3626,46 @@ fn example_test_modules_resolve_nested_modules() {
     );
     assert!(Command::new(executable).status().unwrap().success());
 }
+
+/// Support files describe themselves through authored Markdown or theme metadata.
+#[test]
+fn example_index_reads_support_metadata() {
+    for (name, text, expected) in [
+        (
+            "SKILL.md",
+            "---\nname: demo\ndescription: >-\n  Loaded skill\n  description\n---\n# Skill\n",
+            Some("Loaded skill description"),
+        ),
+        (
+            "dynamic.md",
+            "---\ndescription: 'Prompt | description'\n---\nSummarize.\n",
+            Some("Prompt \\| description"),
+        ),
+        (
+            "dynamic.json",
+            r#"{"name":"dynamic-resources"}"#,
+            Some("dynamic-resources"),
+        ),
+        ("missing.md", "---\nname: demo\n---\nBody\n", None),
+        ("invalid.md", "---\ndescription: [\n---\nBody\n", None),
+        ("invalid.json", "{", None),
+        ("unnamed.json", r#"{"name":42}"#, None),
+    ] {
+        let root = maestro_test_directory::Scratch::new().unwrap();
+        example_checkout(root.path());
+        let folder = root.path().join("examples/extensions");
+        fs::write(folder.join(name), text).unwrap();
+        let result = example_index(root.path(), false);
+        if let Some(description) = expected {
+            result.unwrap();
+            let index = fs::read_to_string(folder.join("README.md")).unwrap();
+            assert!(
+                index.contains(&format!("| `{name}` | {description} |")),
+                "{index}"
+            );
+            example_index(root.path(), true).unwrap();
+        } else {
+            assert!(result.is_err(), "{name}");
+        }
+    }
+}
