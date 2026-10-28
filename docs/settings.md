@@ -763,3 +763,15 @@ of only `multiplexer.*` actions. See [keybinding reset](keybindings.md#reset-mul
 for backup naming, preserved entries and failure handling. Saved settings and
 keybinding files remain strict JSON; annotated defaults are documentation, not a
 replacement file format.
+
+## Workspace defaults output
+
+The command-line `workspace_commands::settings::run_defaults` presenter writes the
+workspace settings owner's `DEFAULTS_TEXT` unchanged. It reads no settings file
+and starts no daemon. The command grammar is `maestro settings defaults`, with no
+extra arguments; invalid usage returns 2 before writing defaults.
+
+The output is annotated JSONC for reading. Do not replace `settings.json` with it:
+saved settings remain strict JSON. Copy the selected values without comments into
+your settings document. Executable dispatch is separate from this presenter; see
+[workspace command discovery](workspace-commands.md).

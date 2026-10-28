@@ -57,17 +57,22 @@ fn present_reset(
     Ok(0)
 }
 
-#[cfg(test)]
-mod tests;
-
 /// Print annotated workspace defaults without loading user settings.
 ///
 /// # Errors
 /// Returns output failures unchanged.
 pub fn run_defaults(
-    _args: &[String],
-    _stdout: &mut dyn Write,
-    _stderr: &mut dyn Write,
+    args: &[String],
+    stdout: &mut dyn Write,
+    stderr: &mut dyn Write,
 ) -> io::Result<i32> {
-    Ok(2)
+    if !args.is_empty() {
+        writeln!(stderr, "usage: maestro settings defaults")?;
+        return Ok(2);
+    }
+    stdout.write_all(maestro_app::daemon::settings::DEFAULTS_TEXT.as_bytes())?;
+    Ok(0)
 }
+
+#[cfg(test)]
+mod tests;

@@ -753,6 +753,13 @@ configuration reset command under the same license. It validates the JSON
 object, preserves non-multiplexer actions and uses the shared atomic publisher
 instead of rewriting the source file in place.
 
+Command metadata and completion normalization in
+`crates/maestro-cli/src/workspace_commands/spec/` and
+`crates/maestro-cli/src/completion.rs`, and the shipped workspace skill in
+`docs/skills/workspace/SKILL.md`, derive from the command-line and skill modules
+under the same license. Command grammar uses Maestro's chat inputs and unified
+daemon noun; completion output is buffered before writing to the caller.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
