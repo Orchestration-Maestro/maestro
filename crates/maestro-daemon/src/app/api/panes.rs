@@ -34,11 +34,11 @@ use maestro_workspace::layout::PaneId;
 
 /// Where a resolved pane lives: its workspace, tab and identity.
 #[derive(Clone, Copy)]
-struct Located {
+pub(super) struct Located {
     /// Workspace display position.
-    workspace: usize,
+    pub(super) workspace: usize,
     /// Tab display position within the workspace.
-    tab: usize,
+    pub(super) tab: usize,
     /// Pane identity allocated by the topology.
     pane: PaneId,
 }
@@ -321,7 +321,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Locates a pane named by any accepted spelling, if it is live in a tab.
-    fn locate_by_handle(&self, id: &str) -> Option<Located> {
+    pub(super) fn locate_by_handle(&self, id: &str) -> Option<Located> {
         let (workspace, pane) = self.state.parse_pane_id(id)?;
         self.locate(workspace, pane)
     }

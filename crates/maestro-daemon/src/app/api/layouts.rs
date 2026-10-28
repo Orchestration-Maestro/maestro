@@ -70,12 +70,7 @@ impl<C: FnMut() -> u128> App<C> {
         match (tab_id, pane_id) {
             (Some(_), Some(_)) => None,
             (Some(id), None) => self.state.parse_tab_id(id),
-            (None, Some(id)) => {
-                let (workspace, pane) = self.state.parse_pane_id(id)?;
-                let tab =
-                    self.state.topology.workspaces[workspace].find_tab_index_for_pane(pane)?;
-                Some((workspace, tab))
-            }
+            (None, Some(id)) => self.locate_by_handle(id).map(|at| (at.workspace, at.tab)),
             (None, None) => {
                 let workspace = self.state.active?;
                 Some((
