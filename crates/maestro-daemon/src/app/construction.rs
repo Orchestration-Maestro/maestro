@@ -6,7 +6,7 @@ use crate::{
     events::AppEvent,
     pane::runtime::{AgentDetection, PaneRuntimeConfig},
     render_signal::RenderSignal,
-    settings::model::Config,
+    settings::{io::AcceptedAreas, model::Config},
     terminal::runtime_registry::TerminalRuntimeRegistry,
     terminal_theme::{HostAppearance, TerminalTheme},
 };
@@ -83,6 +83,20 @@ impl PaneLaunchInputs {
 }
 
 impl<C: FnMut() -> u128> App<C> {
+    /// Constructs from loaded preferences whenever a loaded result is available.
+    /// Retains the loader's accepted documents for the first subsequent reload.
+    pub fn from_loaded(
+        loaded: &crate::settings::model::LoadedConfig,
+        clock: C,
+        launch: PaneLaunchInputs,
+        event_rx: mpsc::Receiver<AppEvent>,
+        event_hub: EventHub,
+    ) -> Self {
+        let mut app = Self::new(&loaded.config, clock, launch, event_rx, event_hub);
+        app.accepted_config_areas.clone_from(&loaded.accepted_areas);
+        app
+    }
+
     /// Constructs one daemon owner from accepted preferences and supplied runtime adapters.
     pub fn new(
         config: &Config,
@@ -113,6 +127,7 @@ impl<C: FnMut() -> u128> App<C> {
             tab_bar_status: super::tab_bar_status::TabBarStatus::default(),
             state: DaemonState::new(config, clock, Arc::clone(&launch.manifests)),
             config: accepted.clone(),
+            accepted_config_areas: AcceptedAreas::default(),
             launch,
             terminal_runtimes: TerminalRuntimeRegistry::new(),
             event_hub,

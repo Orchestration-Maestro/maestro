@@ -412,8 +412,9 @@ impl Connection {
         }
     }
 
-    /// Writes `record` as one line; a failed write ends the connection with that failure,
-    /// and the caller receives a failure of the same kind and message.
+    /// Writes `record` immediately for synchronous output, or queues it for asynchronous output.
+    /// Serialization, admission and synchronous write failures are returned and end the
+    /// connection; asynchronous write failures end the connection later.
     pub(super) fn write(self: &Rc<Self>, record: RpcRecord<'_>) -> io::Result<()> {
         self.send(record, None)
     }

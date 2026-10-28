@@ -696,6 +696,38 @@ the repository group. Display operations read admitted labels without repeating
 filesystem discovery. Root-terminal metadata can select a newer admitted label
 without changing the workspace's retained fallback directory.
 
+## Git and worktrees
+
+### Branch tracking configuration
+
+`maestro-workspace::workspace::git::config::read_branch_config` reads the remote and
+merge reference of a branch. Files apply in Git's order: the user files the caller
+supplies, then the repository file in the shared metadata directory, then the checkout's
+`config.worktree` when the repository file turns on `extensions.worktreeConfig`. The
+extension is read from the repository file alone, as Git does, and its last value wins.
+`ConfigEnvironment::from_variables` builds the user list from `XDG_CONFIG_HOME` and the
+home directory; the reader itself reads no environment variable.
+
+Includes apply where they appear. A file already being read is not entered again inside
+itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
+`gitdir/i`, `onbranch` and `hasconfig:remote.*.url`. A `hasconfig` include is skipped when
+it, or a file it includes, sets a remote URL, and URLs set in the worktree file never
+satisfy the condition. For `gitdir`, `gitdir/i` and `onbranch` patterns, `*` and `?`
+stop at `/`, `**` crosses it and a trailing `/` means everything below. URL conditions
+allow wildcards across `/`. Matching takes time proportional to the pattern length
+times the text length.
+
+The fetch refspecs of the tracked remote map the merge reference to its local tracking
+reference. A remote of `.` tracks the merge reference itself, a remote without refspecs
+uses `+refs/heads/*:refs/remotes/<remote>/*`, and a negative refspec removes no mapping
+because it only filters what a fetch downloads.
+
+A read keeps what it saw of each file. `ConfigRead::is_current` turns false after an
+edit, a newly created include, a retargeted symbolic link or a file that could not be
+read, so a cache built on the read is rebuilt on the next refresh. The bare-layout and
+reftable checks of repository discovery use the same line syntax: the last assignment in
+a plain section wins and quoted values lose their quotes.
+
 ## Retained tab-bar status
 
 `App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,

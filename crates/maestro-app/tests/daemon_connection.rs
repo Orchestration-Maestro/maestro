@@ -332,6 +332,34 @@ fn runner_cancel_releases_pending_operation() {
     });
 }
 
+/// Dropping the runner during EOF draining releases the blocked writer and drops its
+/// unacknowledged response rather than detaching the writer task.
+#[test]
+fn runner_cancel_during_eof_drain_releases_output() {
+    on_paused_task_set(|_| async {
+        let recorder = Recorder::new();
+        let valve = Valve::default();
+        let output = Rc::downgrade(&valve.0);
+        let (mut input, mut runner) = connect(&recorder, valve, None);
+        input
+            .write_all(b"{\"id\":\"a\",\"type\":\"ping\"}\n")
+            .await
+            .unwrap();
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(runner.as_mut().poll(&mut context).is_pending());
+        let mut completions = recorder.completions(1).await;
+        drop(input);
+        assert!(runner.as_mut().poll(&mut context).is_pending());
+        until_idle().await;
+        assert!(output.upgrade().unwrap().borrow().waiting.is_some());
+        assert_eq!(settled(&mut completions[0]), None);
+        drop(runner);
+        until_idle().await;
+        assert!(output.upgrade().is_none(), "the output was released");
+        assert_eq!(settled(&mut completions[0]), Some(false));
+    });
+}
+
 /// A response whose write makes no progress is not acknowledged when admitted; at the stall
 /// timeout its write fails, it is acknowledged as attempted and the connection ends with the
 /// write's failure.

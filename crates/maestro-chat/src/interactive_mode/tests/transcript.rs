@@ -79,9 +79,6 @@ struct Transcript {
     /// The saved hidden-thinking preference.
     #[serde(default)]
     hidden: Option<bool>,
-    /// Registered-definition lookups.
-    #[serde(default)]
-    lookups: Option<usize>,
 }
 
 /// The recorded corpus.
@@ -221,6 +218,53 @@ fn transcript_expansion_reaches_active_header_and_expandable_rows() {
             observe(&world, &expected, 0);
         }
     });
+}
+
+/// Replays the stored `record` alone and checks that expanding the transcript changes what
+/// its row paints.
+fn assert_expansion_changes(test: &str, record: Value) {
+    isolated(test, async |directory| {
+        let world = recorded(directory, Setup::default());
+        frames(&world);
+        replay(&world, vec![record]);
+        let collapsed = world.mode.chat_container.render(100);
+        world.mode.set_tools_expanded(true).unwrap();
+        assert_ne!(
+            world.mode.chat_container.render(100),
+            collapsed,
+            "expanding leaves the row as it was"
+        );
+    });
+}
+
+#[test]
+fn transcript_expansion_reaches_shell_runs() {
+    let output = (1..=30)
+        .map(|line| format!("line {line}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_expansion_changes(
+        "transcript_expansion_reaches_shell_runs",
+        json!({"role": "bashExecution", "command": "seq 30", "output": output,
+            "exitCode": 0, "cancelled": false, "truncated": false, "timestamp": 0}),
+    );
+}
+
+#[test]
+fn transcript_expansion_reaches_compaction_summaries() {
+    assert_expansion_changes(
+        "transcript_expansion_reaches_compaction_summaries",
+        json!({"role": "compactionSummary", "summary": "COMPACTION_BODY",
+            "tokensBefore": 1234, "timestamp": 0}),
+    );
+}
+
+#[test]
+fn transcript_expansion_reaches_skill_rows() {
+    assert_expansion_changes(
+        "transcript_expansion_reaches_skill_rows",
+        user_record("<skill name=\"review\" location=\"/work/SKILL.md\">\nSKILL_BODY\n</skill>"),
+    );
 }
 
 /// The transcript slot the walk renderers edit, filled once the mode exists.
@@ -741,7 +785,7 @@ pub(super) fn call(id: &str, name: &str) -> Value {
 }
 
 /// A stored result of call `id` with one text block.
-fn result(id: &str) -> Value {
+pub(super) fn result(id: &str) -> Value {
     json!({"role": "toolResult", "toolCallId": id, "toolName": "unknown_tool",
         "content": [{"type": "text", "text": "HISTORICAL_RESULT"}], "isError": false,
         "timestamp": 0})
@@ -901,6 +945,28 @@ fn painted_border(role: &str) -> String {
     segment.repeat(20)
 }
 
+/// The recorded palette with every foreground index moved, so each role paints another colour.
+fn shifted_palette() -> Rc<Theme> {
+    let palette = corpus().palette;
+    let foreground = palette
+        .foreground
+        .into_iter()
+        .map(|(role, index)| (ThemeColor::Named(role), ColorValue::Index(index + 100)));
+    let background = palette
+        .background
+        .into_iter()
+        .map(|(role, index)| (ThemeBg::Named(role), ColorValue::Index(index)));
+    Rc::new(
+        Theme::new(
+            foreground,
+            background,
+            ColorMode::Truecolor,
+            ThemeOptions::default(),
+        )
+        .unwrap(),
+    )
+}
+
 /// The top border painted the way a recorded row paints `BORDER`.
 fn bordered(row: &str) -> String {
     row.replace("BORDER", "─").repeat(20)
@@ -1043,9 +1109,12 @@ fn transcript_footer_refresh_selects_the_current_mode_border() {
         for (input, expected) in cases::<BorderInput, Bordered>(test) {
             assert_eq!(input.op, "border");
             let world = recorded(directory, Setup::default());
-            let level = serde_json::from_value(Value::String(input.level.clone())).unwrap();
+            // Starting the mode installs the callback that follows the published theme.
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let level = || serde_json::from_value(Value::String(input.level.clone())).unwrap();
             let session = world.host.session();
-            session.state().write().unwrap().thinking_level = level;
+            session.state().write().unwrap().thinking_level = level();
             world.mode.is_bash_mode.set(input.bash);
             frames(&world);
             world.mode.update_editor_border_color().unwrap();
@@ -1054,6 +1123,25 @@ fn transcript_footer_refresh_selects_the_current_mode_border() {
             assert_eq!(frames(&world), expected.renders);
             world.themes.set_theme_instance(palette()).unwrap();
             assert_eq!(border(&world), bordered(&row));
+            // Another palette recolours the same selection through the callback alone.
+            let recorded_border = border(&world);
+            world.themes.set_theme_instance(shifted_palette()).unwrap();
+            let shifted = border(&world);
+            assert_ne!(shifted, recorded_border, "the border keeps the old palette");
+            let reference = recorded(directory, Setup::default());
+            let session = reference.host.session();
+            session.state().write().unwrap().thinking_level = level();
+            reference.mode.is_bash_mode.set(input.bash);
+            reference
+                .themes
+                .set_theme_instance(shifted_palette())
+                .unwrap();
+            reference.mode.update_editor_border_color().unwrap();
+            assert_eq!(
+                shifted,
+                border(&reference),
+                "the border follows the new palette"
+            );
         }
     });
 }
@@ -1282,8 +1370,7 @@ fn transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup() {
     let test = "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup";
     isolated(test, async |directory| {
         for (input, expected) in cases::<LookupInput, Transcript>(test) {
-            // The row reads the registered definition once, where it is constructed.
-            assert_eq!((input.op.as_str(), expected.lookups), ("lookup", Some(1)));
+            assert_eq!(input.op, "lookup");
             let mut registered = tool(&input.name);
             match input.r#override.as_str() {
                 "call" => registered.render_call = Some(Rc::new(|_, _, _| Ok(text("CUSTOM_CALL")))),
@@ -1510,7 +1597,8 @@ fn transcript_recorded_assistant_keeps_the_existing_paint_owner() {
 }
 
 /// Renderer calls of `count` replayed call and result pairs, before and after expansion,
-/// with the transcript's row count.
+/// with the transcript's row count. The calls are the only work this counts: a collection
+/// walk that is quadratic in the rows would not show in them.
 fn replay_work(directory: &Path, count: usize) -> (usize, usize, usize) {
     let calls = Rc::new(Cell::new(0));
     let mut counted = tool("counted");
@@ -1546,9 +1634,9 @@ fn replay_work(directory: &Path, count: usize) -> (usize, usize, usize) {
 }
 
 #[test]
-fn transcript_replay_and_expansion_keep_linear_work() {
+fn transcript_replay_and_expansion_bound_renderer_calls() {
     isolated(
-        "transcript_replay_and_expansion_keep_linear_work",
+        "transcript_replay_and_expansion_bound_renderer_calls",
         async |directory| {
             let work: Vec<_> = [16, 32, 64]
                 .into_iter()
@@ -1561,10 +1649,6 @@ fn transcript_replay_and_expansion_keep_linear_work() {
                 assert!(next_replay <= 2 * replay, "{work:?}");
                 assert!(next_expand <= 2 * expand, "{work:?}");
             }
-            // Rescanning the whole transcript for every result grows faster than this bound.
-            let rescan = |rows: usize| (1..=rows / 2).map(|pairs| 2 * pairs).sum::<usize>();
-            let (_, _, rows) = work[0];
-            assert!(rescan(2 * rows) > 2 * rescan(rows));
         },
     );
 }

@@ -1800,6 +1800,14 @@ impl Scripted {
             ..Self::default()
         }
     }
+
+    /// A call of the tool named `echo` with `text`.
+    pub fn echo_call(text: &str) -> Self {
+        Self {
+            tool_calls: vec![("echo".into(), json!({"text": text}))],
+            ..Self::default()
+        }
+    }
 }
 
 /// The requests the scripted stream received, in order.

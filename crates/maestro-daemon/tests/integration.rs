@@ -5,6 +5,8 @@
 mod config_support;
 mod daemon_actions;
 mod daemon_api;
+mod daemon_base_settings;
+mod daemon_base_settings_save;
 mod daemon_capture;
 mod daemon_client;
 mod daemon_config;
