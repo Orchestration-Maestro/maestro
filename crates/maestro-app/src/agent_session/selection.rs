@@ -236,10 +236,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns the publisher's refusal before changing live delivery or preferences.
     pub fn set_steering_mode(&self, mode: QueueMode) -> Result<(), DiagnosticErrorInfo> {
+        let edit = self.prepare_behaviour("steeringMode", delivery_mode(mode).into())?;
         self.agent.set_steering_mode(mode);
-        self.settings_manager
-            .borrow_mut()
-            .set_steering_mode(delivery_mode(mode));
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
         Ok(())
     }
 
@@ -248,10 +247,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns the publisher's refusal before changing live delivery or preferences.
     pub fn set_follow_up_mode(&self, mode: QueueMode) -> Result<(), DiagnosticErrorInfo> {
+        let edit = self.prepare_behaviour("followUpMode", delivery_mode(mode).into())?;
         self.agent.set_follow_up_mode(mode);
-        self.settings_manager
-            .borrow_mut()
-            .set_follow_up_mode(delivery_mode(mode));
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
         Ok(())
     }
 

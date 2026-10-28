@@ -45,6 +45,30 @@ fn preference(field: &str, value: serde_json::Value) -> SettingsChange {
 }
 
 impl<E: ExtensionExecution> AgentSession<E> {
+    /// Admits one behaviour preference before its live agent effect.
+    pub(super) fn prepare_behaviour(
+        &self,
+        field: &str,
+        value: serde_json::Value,
+    ) -> Result<PreparedSettingsEdit, DiagnosticErrorInfo> {
+        let settings = self.settings_manager.borrow();
+        let changes = vec![preference(field, value)];
+        let scope = SettingsScope::Global;
+        settings
+            .prepare_operation(
+                &DecisionRequest::SettingsEdit {
+                    scope,
+                    changes: &changes,
+                },
+                scope,
+                changes.clone(),
+            )
+            .map_err(|message| {
+                settings.report_refusal(scope, message.clone());
+                refusal(message)
+            })
+    }
+
     /// Admits a model and its derived saves before the first active-state change.
     pub(super) fn prepare_model_selection(
         &self,
