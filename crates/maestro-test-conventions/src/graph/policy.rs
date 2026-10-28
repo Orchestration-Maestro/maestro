@@ -334,9 +334,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
 
 /// Whether the policy permits this internal development edge between the two crates.
 pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
-    [DEVELOPMENT, NATIVE_DEVELOPMENT]
-        .iter()
-        .any(|edges| edges.contains(&(from, to)))
+    DEVELOPMENT.contains(&(from, to)) || NATIVE_DEVELOPMENT.contains(&(from, to))
 }
 
 /// Foundation utility that native crates may use beyond their table row.
@@ -359,6 +357,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
+    "maestro-lock",
     "maestro-models",
     "maestro-packages",
     "maestro-process",

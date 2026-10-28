@@ -283,7 +283,7 @@ to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
 and the native, non-optional dev-dependencies
-of the twenty-five declared callers on `maestro-test-process`, the owner of
+of the twenty-six declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build

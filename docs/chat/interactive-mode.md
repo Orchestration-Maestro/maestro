@@ -30,8 +30,9 @@ and publishes them as the toolkit's registry. The footer metadata watches the
 session's working directory. Last, the themes the session's resource loader has
 loaded are registered and the configured `theme` is selected, so a loaded theme
 wins over a shipped one with the same name. The setting is read after the loader
-answers. A failure to read the bindings, build the footer's collator or load the
-fallback theme is returned. The constructed mode installs its rebinding and its
+answers. An unreadable or malformed bindings file is skipped and the default
+bindings apply; a failure to find the agent directory, build the footer's collator
+or load the fallback theme is returned. The constructed mode installs its rebinding and its
 [extension UI reset](extension-ui.md#session-replacement) on the runtime, both
 holding the mode weakly.
 

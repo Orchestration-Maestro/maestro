@@ -48,8 +48,12 @@ resolving conflicts, then regenerate the table.
 <!-- example-index:start -->
 | File | Provides |
 | --- | --- |
+| `bash_spawn_hook.md` | Bash spawn hook |
+| `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |
 | `bookmark.rs` | Entry bookmarks: commands that label session entries, so that the tree view can find the important points of a conversation again. |
+| `built_in_tool_renderer.md` | Built-in tool renderer |
+| `built_in_tool_renderer.rs` | Compact displays for the original read, bash, edit and write tools. |
 | `commands.md` | Commands |
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
 | `confirm_destructive.md` | Confirm destructive |
@@ -68,6 +72,8 @@ resolving conflicts, then regenerate the table.
 | `file_trigger.rs` | An opt-in file watcher that sends external triggers to the conversation. |
 | `git_checkpoint.md` | Git checkpoint |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints for restoring code when forking a conversation. |
+| `github_issue_autocomplete.md` | GitHub issue autocomplete |
+| `github_issue_autocomplete.rs` | Opt-in issue completion backed by the GitHub CLI and the current editor provider. |
 | `handoff.md` | Handoff |
 | `handoff.rs` | Generates an editable prompt from the current branch for a new, parent-linked session. |
 | `hello.md` | Hello |
@@ -76,6 +82,12 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `mac_system_theme.md` | Mac system theme |
+| `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
+| `message_renderer.md` | Message renderer |
+| `message_renderer.rs` | A `/status` command posts status notes, and the renderer it registers draws each one: the level in its theme color over the custom message background, and the host's local send time once the message is expanded. |
+| `minimal_mode.md` | Minimal mode |
+| `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
 | `model_status.md` | Model status |
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
@@ -98,6 +110,14 @@ resolving conflicts, then regenerate the table.
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
 | `qna.md` | Qna |
 | `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
+| `question.md` | Question |
+| `question.rs` | An opt-in single-question tool with an inline custom answer. |
+| `question/render.rs` | Compact call and result rows using the host's unpadded text widget. |
+| `question/view.rs` | Retained option navigation with the host's multiline editor. |
+| `questionnaire.md` | Questionnaire |
+| `questionnaire.rs` | A questionnaire tool with selectable options and inline custom answers. |
+| `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
+| `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |
@@ -110,12 +130,19 @@ resolving conflicts, then regenerate the table.
 | `snake.rs` | Play Snake in a custom terminal view, saving a paused game in session entries. |
 | `snake/game.rs` | Snake positions, food and the state stored in session entries. |
 | `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
+| `space_invaders.md` | Space invaders |
+| `space_invaders.rs` | Play Space Invaders in a custom terminal view with session-entry saves. |
+| `space_invaders/game.rs` | Retained game records and one deterministic simulation tick. |
+| `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
+| `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
+| `timed_confirm.md` | Timed confirm |
+| `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |
 | `titlebar_spinner.rs` | Animates the terminal title while the agent works, restoring it when work stops. |
 | `todo.md` | Todo |

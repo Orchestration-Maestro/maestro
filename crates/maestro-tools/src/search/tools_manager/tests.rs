@@ -493,16 +493,6 @@ async fn installs(name: &str) {
         return;
     }
     for row in cases::<Install>(name) {
-        let empty = row.download.as_ref().and_then(|d| d.text.as_deref()) == Some("");
-        if cfg!(windows) && empty && row.os != "windows" {
-            // The system `tar` on Windows reads an empty tarball download as an empty archive
-            // rather than refusing it.
-            eprintln!(
-                "premise not met: this host's tar accepts an empty archive ({})",
-                row.id
-            );
-            continue;
-        }
         let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
         // A host `tar` that accepts an empty archive reaches the binary check instead of the
         // recorded extraction failure.

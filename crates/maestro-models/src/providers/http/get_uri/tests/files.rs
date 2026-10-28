@@ -73,7 +73,8 @@ async fn permission_failure(path: &std::path::Path, uri: &url::Url, fetch: &crat
 #[test]
 fn pac_source_errors_keep_not_found_distinct() {
     crate::tests::runtime::run(async {
-        let path = std::env::temp_dir().join(format!("maestro-missing-pac-{}", std::process::id()));
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch.path().join("missing.pac");
         assert!(!path.exists());
         let file = url::Url::from_file_path(&path).unwrap();
         let fetch = configured_fetch(Route::default());
@@ -95,9 +96,6 @@ fn pac_source_errors_keep_not_found_distinct() {
                 error.to_string(),
                 "File does not exist at the specified endpoint"
             );
-        }
-        if let Some(link) = link {
-            std::fs::remove_file(link).unwrap();
         }
         assert_eq!(peer.await.unwrap().len(), 1);
     });
