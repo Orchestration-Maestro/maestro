@@ -49,6 +49,90 @@ fn compiled_factory_reads_raw_settings_and_reloads() {
     });
 }
 
+#[test]
+fn compiled_factory_resolves_acquires_and_restores_packages() {
+    if !selection().is_child() {
+        let output =
+            TestProcess::current("compiled_factory_resolves_acquires_and_restores_packages")
+                .unwrap()
+                .case("packages")
+                .env("MAESTRO_HOST_OPERATIONS_REQUEST", "packages")
+                .output()
+                .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let root = crate::support::Root::new();
+    let user_settings = json!({"packages": ["./empty"]});
+    write_settings(&root, &user_settings, &json!({}));
+    let empty = root.path("agent/empty");
+    std::fs::create_dir(&empty).unwrap();
+    std::fs::write(empty.join("package.json"), r#"{"maestro":{}}"#).unwrap();
+    let user = root.path("agent/git/example.test/team/repo");
+    let project = root.path(&format!(
+        "project/{}/git/example.test/team/repo",
+        maestro_app::configuration::config::CONFIG_DIR_NAME
+    ));
+    let user_pin = git_fixture::pinned_repository(&user);
+    let project_pin = git_fixture::pinned_repository(&project);
+    let head = git_fixture::git(&user, &["rev-parse", "HEAD"]);
+    std::fs::write(user.join("content"), "dirty").unwrap();
+    std::fs::write(user.join("untracked"), "untracked").unwrap();
+    let source = "https://example.test/team/repo@pin";
+    let observed = observe_once(&root);
+    assert_eq!(
+        observed,
+        vec![json!([
+            {"ok": [{"source": "./empty", "identity": format!("local:{}", empty.display()), "scope": "user", "installedPath": empty}]},
+            {"ok": null},
+            {"ok": [{"source": source, "identity": "git:example.test/team/repo", "scope": "project", "installedPath": project}]},
+            {"ok": {"expectedCommit": user_pin, "headCommit": head, "changedPaths": ["content", "untracked"], "clean": false}},
+            {"ok": null},
+            {"ok": {"expectedCommit": user_pin, "headCommit": user_pin, "changedPaths": [], "clean": true}},
+            {"err": "Integrity requires a pinned Git source"},
+        ])]
+    );
+    assert_eq!(
+        git_fixture::git(&project, &["rev-parse", "HEAD"]),
+        project_pin
+    );
+    assert_eq!(
+        std::fs::read_to_string(user.join("content")).unwrap(),
+        "pinned"
+    );
+    assert!(!user.join("untracked").exists());
+    let written = std::fs::read_to_string(root.path("agent/settings.json")).unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(&written).unwrap(),
+        user_settings
+    );
+}
+
+#[path = "../../maestro-app/tests/host_operations_support/mod.rs"]
+mod git_fixture;
+
+/// Loads the compiled factory once, offline, and returns what it emitted.
+fn observe_once(root: &crate::support::Root) -> Vec<Value> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, async {
+        let observed = Rc::new(RefCell::new(Vec::<Value>::new()));
+        let (loader, _) = recorded_loader(root, local.clone(), observed.clone());
+        loader.reload().await.unwrap();
+        let extensions = loader.get_extensions();
+        assert!(extensions.errors.is_empty(), "{:?}", extensions.errors);
+        observed.take()
+    })
+}
+
 /// Seeds both actual settings files without merging their documents.
 fn write_settings(root: &crate::support::Root, global: &Value, project: &Value) {
     std::fs::write(root.path("agent/settings.json"), global.to_string()).unwrap();
@@ -87,6 +171,7 @@ fn recorded_loader(
     let mut resources =
         ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
     resources.event_bus = Some(bus);
+    resources.offline = Some(true);
     resources
         .extension_factories
         .push(maestro_extensions_wasmtime::artifact_factory(
