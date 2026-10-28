@@ -1,15 +1,15 @@
 # Auto-commit on exit
 
 When the session shuts down, the extension runs `git status --porcelain` in the
-host's working directory. A failed status, as outside a repository, or empty
-output leaves the directory alone. Otherwise it stages everything with
-`git add -A`, including untracked files, and commits with `git commit -m`.
+host's working directory. If the status fails, as it does outside a repository,
+or prints nothing, the directory is left alone. Otherwise it stages everything
+with `git add -A`, including untracked files, and commits with `git commit -m`.
 
 The message is `[maestro] ` followed by the first line of the newest assistant
-reply in the session. That line comes from the reply's first text block; a
-reply without text, a session without a reply and an empty first line all use
-`Session changes`. A line longer than 50 characters keeps its first 50 and
-ends with `...`. After a successful commit, a host with a UI shows
+reply in the session, taken from that reply's first text block. When the newest
+reply has no text, the session has no reply, or the first line is empty, the
+title is `Session changes`. A line longer than 50 characters keeps its first 50
+and ends with `...`. After a successful commit, a host with a UI shows
 `Committed on exit: <message>`. A failed commit shows nothing and leaves the
 changes staged.
 
