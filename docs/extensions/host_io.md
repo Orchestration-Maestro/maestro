@@ -72,8 +72,7 @@ passes paths through the root. A directory that a 0.3 caller opens itself
 keeps the standard rules for paths below it, so an absolute link there is
 refused; pass the whole path through the root instead. WASI paths are strings: a
 followed link whose final native name is not UTF-8 returns `illegal-byte-sequence`
-rather than opening a replacement-character spelling. Atomic saves and file modes remain
-undelivered. Final application-mode output routing remains separate from these
+rather than opening a replacement-character spelling. Atomic saves and modes use the native-I/O capability described below. Final application-mode output routing remains separate from these
 host capabilities.
 
 ## Link checks
@@ -133,3 +132,56 @@ new files. The guest forwards operands without implementing a save algorithm.
 The application selects final-link policy and reports native errors; a committed
 save's directory-sync warning is separate from a precommit failure. Permission
 bits are native Unix observations, not a Windows POSIX or ACL guarantee.
+
+### Author example
+
+```rust,ignore
+let io = api.native_io();
+io.create_dir(&private_directory, 0o700)?;
+if let Some(warning) = io.save_file(&private_file, b"\0\xff", 0o600)? {
+    // The bytes are committed; report the durability warning without retrying.
+    eprintln!("{warning}");
+}
+let mode = io.file_mode(&private_file)?;
+io.set_file_mode(&private_file, mode & 0o777)?;
+```
+
+Pass authored native paths directly to these methods, including Windows paths;
+`guest_path` is only for guest standard-library calls. Save accepts empty or
+binary byte slices. Existing native permissions win over the creation mode.
+New Unix temporary siblings are never more permissive than the requested mode;
+publication does not expose a permissive intermediate destination. Saves follow
+final links, including relative links and dangling targets, and retain the link
+entry. The lock owner's forty-link bound and native parent-creation behavior
+apply. A directory is created recursively with native creation/umask semantics;
+existing directories are not chmodded. Mode reads include the Unix file-type
+bits, as native metadata does. Mode changes follow links.
+
+Errors retain their native diagnostic text across the component boundary.
+`Err` from save precedes publication; `Ok(Some(warning))` means publication
+succeeded but directory durability could not be confirmed. Do not retry that
+write as though it failed. Directory creation and mode operations return their
+native errors. Non-Unix mode reads/changes return unsupported. On Windows save
+uses the native lock owner's permission preservation and owner-write/read-only
+mapping for a missing file; requested directory modes do not configure ACLs.
+No POSIX privacy guarantee is made there.
+
+### Native file checks
+
+The authored `native-files` component command is loaded through ordinary native
+startup and dispatch, then checked with native filesystem observations on Linux:
+
+| Operation | Observation |
+| --- | --- |
+| New binary 0600 file, empty rewrite of a 0640 file | Exact bytes and requested/preserved modes |
+| 0700 directory, mode read and change to 0750 | Native metadata matches |
+| 255-byte ASCII leaf | Exact saved bytes |
+| Relative final link to existing or dangling target | Link retained; target bytes and mode match |
+| Non-directory parent or genuinely unwritable parent | Native error; original bytes/mode unchanged; no stray sibling |
+
+The real-denial case uses a directory the test process cannot write; a privileged
+host reports that this premise cannot be exercised. The lock owner's secure
+creation tests check the temporary file's permissions before publication under
+permissive and restrictive Unix umasks. The extension path delegates directly to
+that owner rather than duplicating its algorithm. Windows and macOS execution
+of these new extension operations has not been separately qualified.

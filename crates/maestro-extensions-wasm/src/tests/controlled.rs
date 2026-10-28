@@ -708,6 +708,19 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    fn save_file(&self, _path: &str, _bytes: &[u8], _mode: u32) -> Result<Option<String>, String> {
+        Err("native files require the production host".into())
+    }
+    fn file_mode(&self, _path: &str) -> Result<u32, String> {
+        Err("native files require the production host".into())
+    }
+    fn set_file_mode(&self, _path: &str, _mode: u32) -> Result<(), String> {
+        Err("native files require the production host".into())
+    }
+    fn create_dir(&self, _path: &str, _mode: u32) -> Result<(), String> {
+        Err("native files require the production host".into())
+    }
+
     type Watcher = super::native_watch_host::Watcher;
     fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
         watch.close();

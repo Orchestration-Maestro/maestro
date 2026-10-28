@@ -1047,6 +1047,23 @@ impl host::Host for State {
         }))
     }
 
+    fn save_file(
+        &mut self,
+        _path: String,
+        _bytes: Vec<u8>,
+        _mode: u32,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(Err("native files require the production host".into()))
+    }
+    fn file_mode(&mut self, _path: String) -> wasmtime::Result<Result<u32, String>> {
+        Ok(Err("native files require the production host".into()))
+    }
+    fn set_file_mode(&mut self, _path: String, _mode: u32) -> wasmtime::Result<Result<(), String>> {
+        Ok(Err("native files require the production host".into()))
+    }
+    fn create_dir(&mut self, _path: String, _mode: u32) -> wasmtime::Result<Result<(), String>> {
+        Ok(Err("native files require the production host".into()))
+    }
     fn watch(
         &mut self,
         _path: String,
