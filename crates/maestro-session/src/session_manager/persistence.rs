@@ -229,11 +229,13 @@ impl SessionManager {
 
 /// Append bytes to a native file, creating it when absent.
 pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
-    fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)?
-        .write_all(bytes)
+    super::storage::with_write_lock(path, || {
+        fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)?
+            .write_all(bytes)
+    })
 }
 
 /// Read message roles only until the first assistant is encountered.
