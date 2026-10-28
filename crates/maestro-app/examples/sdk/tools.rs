@@ -10,8 +10,29 @@ fn main() -> Result<(), Error> {
 
 /// Create sessions with four explicit tool selections.
 async fn run(sample: Sample) -> Result<Value, Error> {
-    let _options = sample.options()?;
-    Ok(json!([]))
+    let project = sample.root.path().join("project");
+    std::fs::create_dir(&project)?;
+    let mut selections = Vec::new();
+    for (names, cwd) in [
+        (vec!["read", "grep", "find", "ls"], sample.root.path()),
+        (vec!["read", "bash", "grep"], sample.root.path()),
+        (vec!["read", "bash", "edit", "write"], project.as_path()),
+        (vec!["read", "bash", "grep"], project.as_path()),
+    ] {
+        let mut options = sample.options()?;
+        options.cwd = Some(cwd.display().to_string());
+        options.session_manager = Some(std::rc::Rc::new(std::cell::RefCell::new(
+            maestro_app::SessionManager::in_memory(cwd.to_str())?,
+        )));
+        options.tools = Some(names.into_iter().map(str::to_owned).collect());
+        let created = maestro_app::create_agent_session(options).await?;
+        let context = created.session.extension_runner().create_context();
+        selections.push(json!({
+            "tools": created.session.get_active_tool_names(), "cwd": context.cwd()?,
+        }));
+        created.session.dispose();
+    }
+    Ok(json!(selections))
 }
 
 #[cfg(test)]

@@ -12,7 +12,7 @@ use std::{cell::RefCell, future::Future, rc::Rc, sync::Arc};
 use tokio::task::LocalSet;
 
 /// Errors returned by sample setup or public SDK operations.
-pub type Error = Box<dyn std::error::Error>;
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
 
 /// The real file tree, model script and local executor retained for one sample.
 pub struct Sample {
