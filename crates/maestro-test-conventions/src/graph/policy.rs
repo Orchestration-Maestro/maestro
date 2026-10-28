@@ -465,7 +465,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
         && !matches!(
             name,
             "maestro-watch"
-                | "maestro-lock"
                 | "maestro-process"
                 | "maestro-listing"
                 | "maestro-pattern"
@@ -473,7 +472,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"
-                | "maestro-extensions-wasmtime"
                 | "maestro-test-terminal"
                 | "maestro-text"
                 | "maestro-json"

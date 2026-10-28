@@ -45,34 +45,38 @@ fn cancelled_placement_reclaims_at_both_store_boundaries() {
                 .0;
             store
                 .run_concurrent(async |store| {
-                    let rooted = store.with_getter::<Root>(State::root_view);
-                    for iteration in 0..64 {
-                        let (sent, received) = tokio::sync::oneshot::channel();
-                        let mut operation = Box::pin(async {
-                            let placed =
-                                place(&rooted, Resource::new_borrow(fd.rep()), ".".into(), false)
-                                    .await
-                                    .unwrap();
-                            sent.send(()).unwrap();
-                            std::future::pending::<()>().await;
-                            drop(placed);
-                        });
-                        match select(received, &mut operation).await {
-                            Either::Left((ready, _)) => ready.unwrap(),
-                            Either::Right(_) => panic!("operation must remain pending"),
-                        }
-                        drop(operation);
-                        let count = store.with(|mut access| {
-                            if iteration % 2 == 0 {
-                                access.data_mut().root_view().fs.table.len()
-                            } else {
-                                access.data_mut().ctx().table.len()
-                            }
-                        });
-                        assert_eq!(count, 1);
-                    }
+                    observe_cancellations(store, fd.rep()).await;
                 })
                 .await
                 .unwrap();
         });
+}
+
+/// Cancels after insertion and alternates the two real table-access boundaries.
+async fn observe_cancellations(store: &Accessor<State>, fd: u32) {
+    let rooted = store.with_getter::<Root>(State::root_view);
+    for iteration in 0..64 {
+        let (sent, received) = tokio::sync::oneshot::channel();
+        let mut operation = Box::pin(async {
+            let placed = place(&rooted, Resource::new_borrow(fd), ".".into(), false)
+                .await
+                .unwrap();
+            sent.send(()).unwrap();
+            std::future::pending::<()>().await;
+            drop(placed);
+        });
+        match select(received, &mut operation).await {
+            Either::Left((ready, _)) => ready.unwrap(),
+            Either::Right(_) => panic!("operation must remain pending"),
+        }
+        drop(operation);
+        let count = store.with(|mut access| {
+            if iteration % 2 == 0 {
+                access.data_mut().root_view().fs.table.len()
+            } else {
+                access.data_mut().ctx().table.len()
+            }
+        });
+        assert_eq!(count, 1);
+    }
 }
