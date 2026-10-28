@@ -753,11 +753,12 @@ async fn probe(harness: &Harness, arguments: &[&str]) -> Result<Vec<String>, Str
             available.join(", ")
         ));
     };
-    let ResolvedRequestAuth::Ok {
-        api_key: Some(api_key),
-        ..
-    } = harness.registry.get_api_key_and_headers(&model).await
-    else {
+    let stored = harness
+        .registry
+        .auth_storage()
+        .get_api_key("gitlab-duo", false, &**harness.registry.config_values())
+        .await;
+    let Ok(Some(api_key)) = stored else {
         return Err("No gitlab-duo credentials. Run /login gitlab-duo first.".into());
     };
     let options = SimpleStreamOptions {
