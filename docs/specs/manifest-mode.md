@@ -1249,12 +1249,13 @@ changes nothing, and enabling it only withholds text until checked.
 - Guards come only from the manifest: a `guards` entry in `locked` makes the
   manifest invalid, and no settings key, environment variable or local file adds,
   removes or disables a rule.
-- Presentation locks: with `theme`, `themes`, `shellCommandPrefix` and one other
+- Presentation locks: with `theme`, `shellCommandPrefix` and one other
   presentation key locked, a stored user value is replaced by the manifest's with
   a diagnostic and the file is unchanged, `/settings` and a setter refuse a
-  different value before any change, and `themes` also ignores local theme
-  folders and refuses `--theme` with the run. Unlocked keys of the same kind stay
-  free.
+  different value before any change. Unlocked keys of the same kind stay free.
+- Theme resource lock: with `themes` locked, local theme folders are ignored with
+  a diagnostic and `--theme` refuses the run. No manifest `themes` value is set;
+  unlocked, local themes load.
 - Keybinding lock: with one action locked, the user's `keybindings.json` entry for
   it is ignored with a diagnostic while the entry for another action applies, an
   SDK or extension rebind of the locked action is refused with no change, and the
