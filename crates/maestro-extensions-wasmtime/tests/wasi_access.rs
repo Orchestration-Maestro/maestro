@@ -892,6 +892,14 @@ fn component_exclusive_creation_rejects_dangling_link() {
             std::os::unix::fs::symlink(&target, &link).unwrap();
             let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[],"action":"exclusive"})).await;
             assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert_eq!(
+                observed["error"],
+                if generation == "p2" {
+                    "AlreadyExists"
+                } else {
+                    "ErrorCode::Exist"
+                }
+            );
             assert!(!target.exists(), "{generation} created the link target");
         }
     });
