@@ -1,6 +1,6 @@
 //! A controlled agent loop: plain user entries, standard history conversion and
 //! queued model responses, shared with other crates' loop tests.
-use maestro_agent::{AgentLoopConfig, AgentLoopOptions, AgentMessage};
+use maestro_agent::{AgentLoopConfig, AgentLoopOptions, AgentMessage, CustomAgentMessages};
 use maestro_models::{
     AssistantMessageEventStream, Context, JsonObject, Message, Model, ProviderObjects,
     SharedAssistantMessage, SimpleStreamOptions, UserContent, UserMessage,
@@ -10,13 +10,18 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-/// Construct a shared user entry.
+/// Construct a shared user entry of a conversation whose custom entries are `C`.
 #[must_use]
-pub fn user(text: &str) -> AgentMessage {
+pub fn typed_user<C: CustomAgentMessages>(text: &str) -> AgentMessage<C> {
     AgentMessage::User(Arc::new(RwLock::new(UserMessage {
         content: UserContent::Text(text.into()),
         timestamp: 1.0,
     })))
+}
+/// Construct a shared user entry.
+#[must_use]
+pub fn user(text: &str) -> AgentMessage {
+    typed_user(text)
 }
 /// Convert ordinary records at the model boundary for `model`.
 ///

@@ -10,8 +10,8 @@ pub struct NativeRpcProcess;
 
 #[cfg(unix)]
 impl RpcProcessPort for NativeRpcProcess {
-    /// Delivers each signal until stopped; once stopped, a later signal takes its native
-    /// default action, even while shutdown blocks.
+    /// Delivers each signal until stopped; once the last live registration is stopped, a
+    /// later signal takes its native default action, even while shutdown blocks.
     fn register_signals(
         &self,
         callback: Rc<dyn Fn(TerminationSignal)>,

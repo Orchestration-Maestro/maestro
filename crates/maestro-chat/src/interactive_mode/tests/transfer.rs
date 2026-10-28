@@ -1,10 +1,14 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::bindings::{Retiring, installed, renaming_replacements};
+use super::transcript::{registering, text, tool};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
-use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
+use maestro_app::{
+    ExtensionFactory, Local, NativeExportOperations, ReadonlySessionManager, SessionManager,
+    ToolRenderEnvironment,
+};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
 use serde::Deserialize;
@@ -147,9 +151,19 @@ async fn exportable(directory: &Path) -> World {
 /// A started mode over `directory` whose session is published and whose theme registry
 /// reads the shipped documents the bundle package carries.
 pub(super) async fn themed(directory: &Path, package: &Path) -> World {
+    themed_with(directory, package, None).await
+}
+
+/// [`themed`] over a session that also loads `extension`.
+async fn themed_with(
+    directory: &Path,
+    package: &Path,
+    extension: Option<ExtensionFactory<Local>>,
+) -> World {
     let directories = themes(package);
     let world = Setup {
         directories: Some(directories),
+        extension,
         ..Setup::default()
     }
     .build(directory);
@@ -298,21 +312,40 @@ fn transfer_export_errors_are_recoverable_and_keep_the_exact_prefix() {
                 template_dir: template_dir.to_str().unwrap(),
                 theme: &world.themes,
             };
+            let html = |authored: &str| {
+                session
+                    .export_to_html(
+                        Some(authored),
+                        &operations,
+                        Rc::clone(&world.mode.tool_environment),
+                    )
+                    .unwrap_err()
+            };
             for (text, authored, jsonl) in [
                 ("/export blocked/one.jsonl", "blocked/one.jsonl", true),
                 ("/export blocked/one.html", "blocked/one.html", false),
+                // A slash after the suffix is not the suffix: this selects HTML.
+                (
+                    "/export blocked/notes.jsonl/",
+                    "blocked/notes.jsonl/",
+                    false,
+                ),
             ] {
                 let diagnostic = if jsonl {
                     session.export_to_jsonl(Some(authored)).unwrap_err()
                 } else {
-                    session
-                        .export_to_html(
-                            Some(authored),
-                            &operations,
-                            Rc::clone(&world.mode.tool_environment),
-                        )
-                        .unwrap_err()
+                    html(authored)
                 };
+                if authored.ends_with('/') {
+                    assert_ne!(
+                        diagnostic.to_string(),
+                        session
+                            .export_to_jsonl(Some(authored))
+                            .unwrap_err()
+                            .to_string(),
+                        "the two routes tell {authored} apart"
+                    );
+                }
                 submit(&world.mode, text);
                 let message = format!("Error: Failed to export session: {diagnostic}");
                 assert_last_row(&world, &ThemeColor::Error, &message, text);
@@ -392,12 +425,16 @@ fn transfer_submit_clears_after_export_failure_without_consuming_input() {
             let world = exportable(directory).await;
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&world.mode);
-            submit(&world.mode, "/export blocked/lost.jsonl");
+            // The text is typed and submitted with Enter, as a person would.
+            world.mode.editor.set_text("/export blocked/lost.jsonl");
+            world.terminal.send_input("\r");
             assert_last_row_holds(&world, "Error: Failed to export session: ", "a failure");
+            assert_eq!(world.mode.editor.get_text(), "", "a failed command clears");
             assert_eq!(poll(&mut waiter), None);
             assert!(world.mode.on_input_callback.borrow().is_some());
-            // The same waiting input receives a later ordinary submission.
-            submit(&world.mode, " later text ");
+            // The same waiting input receives a later ordinary submission, sent the same way.
+            world.mode.editor.set_text(" later text ");
+            world.terminal.send_input("\r");
             assert_eq!(poll(&mut waiter).as_deref(), Some("later text"));
             assert_eq!(recalled(&world.mode.editor), ["later text"]);
         },
@@ -443,13 +480,53 @@ fn transfer_jsonl_command_writes_current_branch_with_original_path() {
     );
 }
 
+/// An extension registering the tool `probe`, whose call row names the README path of the
+/// environment that renders it.
+fn probing() -> ExtensionFactory<Local> {
+    let mut probe = tool("probe");
+    probe.render_call = Some(Rc::new(|_, _, context| {
+        Ok(text(&format!("README={}", context.environment.readme_path)))
+    }));
+    registering(vec![probe])
+}
+
+/// Appends a call of `probe` and its result to the current branch of `world`'s session.
+fn call_probe(world: &World) {
+    let session = world.host.session();
+    let mut manager = session.session_manager().borrow_mut();
+    manager
+        .append_message(json!({"role": "assistant",
+            "content": [{"type": "toolCall", "id": "probe-1", "name": "probe", "arguments": {}}],
+            "api": "controlled", "provider": "controlled", "model": "controlled",
+            "stopReason": "toolUse", "timestamp": 4}))
+        .unwrap();
+    manager
+        .append_message(json!({"role": "toolResult", "toolCallId": "probe-1",
+            "toolName": "probe", "content": [{"type": "text", "text": "done"}],
+            "isError": false, "timestamp": 5}))
+        .unwrap();
+}
+
+/// A render environment like the mode's, apart from the README path it names.
+fn elsewhere(world: &World) -> Rc<ToolRenderEnvironment> {
+    let own = &world.mode.tool_environment;
+    Rc::new(ToolRenderEnvironment {
+        runtime: Rc::clone(&own.runtime),
+        readme_path: "/elsewhere/README.md".to_owned(),
+        live_theme: own.live_theme.clone(),
+        highlighter: Rc::clone(&own.highlighter),
+        terminal_image: own.terminal_image.clone(),
+    })
+}
+
 #[test]
 fn transfer_html_command_uses_native_assets_and_the_current_session_environment() {
     isolated_package(
         "transfer_html_command_uses_native_assets_and_the_current_session_environment",
         async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package).await;
+            let world = themed_with(directory, package, Some(probing())).await;
+            call_probe(&world);
             submit(&world.mode, "/export page.html");
             assert_last_row(
                 &world,
@@ -481,10 +558,31 @@ fn transfer_html_command_uses_native_assets_and_the_current_session_environment(
                 document,
                 "the mode's document differs from the owner's"
             );
-            // The document carries the colours of the theme document the settings name.
+            // The probe's row names the environment it rendered through, so a document built
+            // through another environment differs from the mode's.
+            let foreign = world
+                .host
+                .session()
+                .export_to_html(
+                    Some(&format!("{}/foreign.html", cwd())),
+                    &operations,
+                    elsewhere(&world),
+                )
+                .unwrap();
+            assert_ne!(
+                std::fs::read_to_string(&foreign).unwrap(),
+                document,
+                "the mode's document ignores the environment its rows render through"
+            );
+            // The document carries the colours of the theme document the settings name: the
+            // dark document's accent, not the light one's.
             assert!(
-                document.contains("--accent: #"),
+                document.contains("--accent: #D9A066;"),
                 "the document lacks the selected theme's accent"
+            );
+            assert!(
+                !document.contains("--accent: #2A1F1A;"),
+                "the document carries the other theme's accent"
             );
         },
     );

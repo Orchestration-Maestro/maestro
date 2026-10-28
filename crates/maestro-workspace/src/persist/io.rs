@@ -28,6 +28,7 @@ fn save_json_to_path<T: serde::Serialize>(path: &Path, snapshot: &T) -> io::Resu
         &bytes,
         Replace {
             through_symlinks: true,
+            ..Replace::default()
         },
     )?;
     Ok(())

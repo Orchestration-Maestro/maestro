@@ -260,8 +260,9 @@ impl InteractiveMode {
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
-    /// Returns a failure of lifecycle registration, the managed binary directory, the
-    /// header's theme colours, terminal start, session binding, replay or catalog refresh.
+    /// Returns a failure to register the termination or output-error handlers, or a failure
+    /// of the managed binary directory, the header's theme colours, terminal start, session
+    /// binding, replay or catalog refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());

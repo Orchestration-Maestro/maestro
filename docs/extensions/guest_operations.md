@@ -511,6 +511,13 @@ order. YAML parsing remains entirely native.
 native parser causes and coordinates. Ordinary text is not trimmed; a present
 header selects the native trimmed body and newline normalization.
 
+`frontmatter::parse_yaml(&api, content)` reads one complete YAML document through
+the same native parser. It returns `FrontmatterValue` directly, retains empty/null
+roots and authored mapping order, and accepts scalar and sequence roots. Numbers
+retain signed zero, NaN and infinities without JSON conversion. Multiple documents
+are rejected with native causes and source coordinates. Header extraction and
+null-to-empty-map normalization apply only to `parse_frontmatter`.
+
 ### Conversation and output
 
 `convert_to_llm` delegates application-message projection to the native session
@@ -535,6 +542,10 @@ with the host platform's path rules. It reduces `.` and `..` segments and
 trailing separators without filesystem lookup, Unicode-space replacement or
 `~`/`@` expansion.
 
+`tools::path_utils::guest_path(&api, path)` spells a native host path the way the
+component's standard library opens it. Windows drive and share paths change,
+Unix paths do not; see [the operating environment](host_io.md).
+
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
 supply an `Installation { version, agent_dir }` to
@@ -552,3 +563,7 @@ host's selected locale. The host selects the first present `LC_ALL`,
 `LC_MESSAGES`, or `LANG` value and uses the [local date-time formatter](../text.md#local-dates-and-times).
 A missing environment, `C`, or `POSIX` selects en-US. The guest carries no
 time-zone data; host failures remain errors.
+
+`utils::local_time_string(&api, timestamp)` formats an instant, given in milliseconds
+since the Unix epoch, as the host's local time in the en-US twelve-hour form,
+`h:mm:ss AM`. An instant outside the host's calendar reads as `Invalid Date`.

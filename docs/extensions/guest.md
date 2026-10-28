@@ -651,9 +651,10 @@ Other extension-assigned Infinity or NaN fails encoding with
 failure or other encoded part is retained. Numeric-looking text remains text.
 
 The request body of `before_provider_request`, its replacement, tool-execution arguments
-and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+and results, tool-result input and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
-Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+Tool schemas are `maestro_request::parameter_schema::ParameterSchema` values inside the
+tool metadata, not quoted JSON documents. Thinking levels
 cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
 Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
@@ -1001,9 +1002,9 @@ Each admitted name becomes an `Echo <name>` tool whose description names its
 prefix, and whose execution answers `<prefix><message>` with the registered name
 and prefix as details. The factory keeps one set of admitted names, inserts a
 name before asking the host to register it, and keeps that name when the request
-fails, so a retry reports `Tool already registered: <name>` rather than replacing
-the tool the first call registered. It never asks whether the host reports UI
-availability before requesting a notification.
+fails. A refused request admits no tool, so a retry reports
+`Tool already registered: <name>` without asking the host again. It never asks
+whether the host reports UI availability before requesting a notification.
 
 It is opt-in like the other shipped extensions: its crate's tests replay the
 recorded sequences through the built component in a controlled host, and
@@ -1047,7 +1048,7 @@ sends user messages the way a user types them. `/ask` sends an ordinary message,
 which starts a turn, and reports `Agent is busy. Use /steer or /followup
 instead.` while the agent is working. `/steer` sends an ordinary message while
 idle and a steering message while the agent is working, so that message reaches
-the request in flight. `/followup` sends an ordinary message while idle and
+the next model request. `/followup` sends an ordinary message while idle and
 otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
 it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
 respond concisely.`, so the second instruction arrives with the request.

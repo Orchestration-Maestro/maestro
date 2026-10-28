@@ -35,6 +35,20 @@ impl Output {
             }
         })
     }
+    /// Registers `handler` with the native producer through `native` and with this output,
+    /// and returns the one removal that runs both, the native one first.
+    fn attach(
+        &self,
+        native: impl FnOnce(OutputErrorHandler) -> Box<dyn Fn()>,
+        handler: OutputErrorHandler,
+    ) -> Box<dyn Fn()> {
+        let native = native(Rc::clone(&handler));
+        let controlled = self.register(handler);
+        Box::new(move || {
+            native();
+            controlled();
+        })
+    }
     /// Whether a callback is still registered.
     pub(super) fn registered(&self) -> bool {
         self.0.borrow().is_some()
@@ -118,12 +132,8 @@ impl Terminal for TerminalPort {
         self.inner.set_progress(active)
     }
     fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
-        let native = self.inner.on_output_error(Rc::clone(&handler));
-        let controlled = self.output.register(handler);
-        Box::new(move || {
-            native();
-            controlled();
-        })
+        self.output
+            .attach(|native| self.inner.on_output_error(native), handler)
     }
 }
 
@@ -157,11 +167,7 @@ impl TuiRuntime for RuntimePort {
         self.inner.write_log(path, text)
     }
     fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
-        let native = self.inner.on_output_error(Rc::clone(&handler));
-        let controlled = self.output.register(handler);
-        Box::new(move || {
-            native();
-            controlled();
-        })
+        self.output
+            .attach(|native| self.inner.on_output_error(native), handler)
     }
 }
