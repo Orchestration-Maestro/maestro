@@ -1,4 +1,5 @@
 //! A final structured answer returned by a terminating tool.
+// maestro-component: MAESTRO_STRUCTURED_OUTPUT_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

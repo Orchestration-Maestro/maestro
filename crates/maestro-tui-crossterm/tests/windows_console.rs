@@ -8,38 +8,20 @@
 #![cfg(windows)]
 
 use std::cell::Cell;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::future::Future;
-use std::os::windows::process::CommandExt;
 use std::pin::pin;
-use std::process::{Command, Output, Stdio};
+use std::process::Stdio;
 use std::rc::Rc;
 use std::task::{Context, Waker};
 use std::time::Duration;
 
 use crossterm_winapi::{Console, ConsoleMode, Handle, HandleType, ScreenBuffer, WindowPositions};
-use maestro_test_process::TestProcess;
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
 use maestro_tui_crossterm::terminal::wait_for_input;
 use tokio::runtime::Builder;
 use tokio::task::LocalSet;
-
-/// Names the role of this process: absent in the test itself, `host` on the new console and
-/// `scenario` in the copy that runs the scenario.
-const ROLE: &str = "MAESTRO_TERMINAL_TEST_CONSOLE";
-
-/// The full name of the test, passed to the copies.
-const TEST: &str = "MAESTRO_TERMINAL_TEST_CONSOLE_NAME";
-
-/// Makes standard input of the scenario the null device instead of the console.
-const NULL_INPUT: &str = "MAESTRO_TERMINAL_TEST_NULL_INPUT";
-
-/// What a scenario writes to standard error when it finished.
-const DONE: &str = "console scenario finished";
-
-/// Gives a child process a console of its own.
-const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
 
 /// The input modes raw mode turns off.
 const COOKED: u32 = 0x0001 | 0x0002 | 0x0004;
@@ -56,64 +38,26 @@ const VT_PROCESSING: u32 = 0x0004;
 /// Runs `scenario` with a fresh console as standard input and output, or with the null
 /// device as standard input when `null_input` is set.
 fn on_console(test: &str, null_input: bool, scenario: impl FnOnce()) {
-    match std::env::var(ROLE).as_deref() {
-        Ok("scenario") => {
-            scenario();
-            eprintln!("{DONE}");
-        }
-        Ok("host") => {
-            let name = std::env::var(TEST).unwrap();
-            let console = |name| OpenOptions::new().read(true).write(true).open(name);
-            let input: Stdio = if std::env::var_os(NULL_INPUT).is_some() {
+    maestro_test_process::on_console(
+        test,
+        |command| {
+            let console = |name| {
+                OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(name)
+                    .unwrap()
+            };
+            let input: Stdio = if null_input {
                 Stdio::null()
             } else {
-                console("CONIN$").unwrap().into()
+                console("CONIN$").into()
             };
-            let output: File = console("CONOUT$").unwrap();
-            let child = copy(&name, "scenario", |command| {
-                command.stdin(input).stdout(output)
-            });
-            eprint!("{}", String::from_utf8_lossy(&child.stderr));
-            assert!(child.status.success(), "the scenario failed");
-        }
-        _ => {
-            let name = TestProcess::current(test).unwrap().name().to_owned();
-            let host = copy(&name, "host", |command| {
-                if null_input {
-                    command.env(NULL_INPUT, "1");
-                }
-                command
-                    .creation_flags(CREATE_NEW_CONSOLE)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-            });
-            let report = String::from_utf8_lossy(&host.stderr);
-            assert!(
-                host.status.success(),
-                "{test} failed on its console:\n{report}"
-            );
-            assert!(report.contains(DONE), "{test} did not run:\n{report}");
-        }
-    }
-}
-
-/// Runs this test executable as `role` for the test `name`, with standard error captured and
-/// `configure` choosing the rest.
-fn copy(name: &str, role: &str, configure: impl FnOnce(&mut Command) -> &mut Command) -> Output {
-    TestProcess::named(name)
-        .unwrap()
-        .nocapture()
-        .single_threaded()
-        .invoke_with(|arguments| {
-            let mut command = Command::new(std::env::current_exe()?);
-            command
-                .args(arguments)
-                .env(ROLE, role)
-                .env(TEST, name)
-                .stderr(Stdio::piped());
-            configure(&mut command).output()
-        })
-        .unwrap()
+            command.stdin(input).stdout(console("CONOUT$"))
+        },
+        scenario,
+    )
+    .unwrap();
 }
 
 /// The console mode of the standard handle `kind`.
