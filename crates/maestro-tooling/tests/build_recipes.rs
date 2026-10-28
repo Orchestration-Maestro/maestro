@@ -815,10 +815,18 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
+    let docs = workspace.path().join("docs/resources");
+    copy_tree(&source.join("../../docs/resources"), &docs);
     for owner in [
-        "maestro-test-process",
-        "maestro-test-directory",
+        "maestro-json",
+        "maestro-listing",
         "maestro-path",
+        "maestro-pattern",
+        "maestro-request",
+        "maestro-resources",
+        "maestro-test-directory",
+        "maestro-test-process",
+        "maestro-text",
     ] {
         let dependency = workspace.path().join("crates").join(owner);
         copy_tree(
