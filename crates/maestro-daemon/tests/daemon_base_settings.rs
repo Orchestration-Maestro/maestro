@@ -696,3 +696,57 @@ fn daemon_area_recovery_resolves_stored_values_and_restores_locks_after_decider(
     assert!(!current.config.update.manifest_check);
     assert_eq!(current.config.update.channel, UpdateChannelConfig::Stable);
 }
+
+/// Reports a successful resolution without rejecting the supplied preferences.
+struct ResolutionDiagnostic;
+
+impl maestro_settings::SettingsDecider for ResolutionDiagnostic {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn resolve(&self, _: &mut maestro_settings::Settings) -> Vec<String> {
+        vec!["stored preferences resolved".into()]
+    }
+}
+
+/// A successful resolution keeps valid startup preferences and reports its message.
+#[test]
+fn daemon_startup_resolution_diagnostic_preserves_user_preferences() {
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| {
+            Ok(Some(r#"{"daemon":{"paneShell":"user-shell"}}"#.into()))
+        })
+        .unwrap();
+    let mut manager = SettingsManager::from_storage(storage);
+    manager
+        .register_decider(Arc::new(ResolutionDiagnostic))
+        .unwrap();
+    let (loaded, errors) = load_config(&mut manager, Path::new("."));
+    assert!(errors.is_empty());
+    assert_eq!(loaded.config.terminal.default_shell, "user-shell");
+    assert_eq!(loaded.diagnostics, vec!["stored preferences resolved"]);
+}
+
+/// A successful resolution is a diagnostic rather than a failed live reload.
+#[test]
+fn daemon_reload_resolution_diagnostic_applies_user_preferences() {
+    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    let mut current = load_config(&mut manager, Path::new(".")).0;
+    manager
+        .register_decider(Arc::new(ResolutionDiagnostic))
+        .unwrap();
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| {
+            Ok(Some(r#"{"daemon":{"paneShell":"user-shell"}}"#.into()))
+        })
+        .unwrap();
+    let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
+    assert!(errors.is_empty());
+    assert_eq!(report.status, ConfigReloadStatus::Partial);
+    assert_eq!(current.config.terminal.default_shell, "user-shell");
+    assert_eq!(report.diagnostics, vec!["stored preferences resolved"]);
+}
