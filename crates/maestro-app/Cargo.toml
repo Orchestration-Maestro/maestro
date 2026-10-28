@@ -136,6 +136,11 @@ path = "examples/sdk/minimal.rs"
 test = true
 
 [[example]]
+name = "skills"
+path = "examples/sdk/skills.rs"
+test = true
+
+[[example]]
 name = "tools"
 path = "examples/sdk/tools.rs"
 test = true
