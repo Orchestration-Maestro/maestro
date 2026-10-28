@@ -4,6 +4,8 @@ use maestro_app::{ExtensionRunner, Local};
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc};
 
+mod resolution_failure;
+
 /// Runs on the same local executor the application's native resources retain.
 fn run<F: Future<Output = ()>>(action: impl FnOnce(Rc<tokio::task::LocalSet>) -> F) {
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -80,7 +82,7 @@ fn ssh_unset_keeps_original_local_coding_tools() {
 
 /// A checked child replaces only SSH; its remote shell works in disposable files.
 #[cfg(unix)]
-fn isolated() -> bool {
+fn isolated(name: &str) -> bool {
     use std::{collections::BTreeMap, os::unix::fs::PermissionsExt as _};
     if maestro_test_process::selection().is_child() {
         return false;
@@ -114,13 +116,9 @@ os.execv('/bin/bash', ['bash', '-c', sys.argv[3]])
             std::env::var("MAESTRO_SSH_COMPONENT").unwrap(),
         ),
     ]);
-    maestro_test_process::run_per_environment(
-        "ssh_enabled_routes_coding_tools_shell_and_session_context",
-        [()],
-        |()| environment.clone(),
-    )
-    .unwrap()
-    .is_none()
+    maestro_test_process::run_per_environment(name, [()], |()| environment.clone())
+        .unwrap()
+        .is_none()
 }
 
 /// The fixture root is the first directory of the checked child's supplied PATH.
@@ -353,7 +351,7 @@ async fn remote_prompt(runner: &ExtensionRunner<Local>, local: &Path, remote: &P
 #[cfg(unix)]
 #[test]
 fn ssh_enabled_routes_coding_tools_shell_and_session_context() {
-    if isolated() {
+    if isolated("ssh_enabled_routes_coding_tools_shell_and_session_context") {
         return;
     }
     run(|executor| async move {
