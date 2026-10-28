@@ -2,7 +2,7 @@
 //! socket it bound.
 use maestro_app::LineTooLarge;
 use maestro_app::daemon::api::socket::{
-    AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, AsyncSendHalf, SocketFileIdentity,
+    AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketFileIdentity,
     bind_async_local_listener, is_connection_closed_error, prepare_socket_path,
     remove_socket_file_if_owned, restrict_socket_permissions, socket_file_identity,
     split_async_stream,
@@ -12,9 +12,8 @@ use maestro_app::rpc_mode::{
 };
 use maestro_app::{RpcModeOptions, run_rpc_connection};
 use std::path::{Path, PathBuf};
-use std::task::{Context, Poll};
 use std::{convert::Infallible, future::Future, io, pin::Pin, rc::Rc, time::Duration};
-use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io::AsyncRead;
 use tokio::time::Instant;
 
 /// The owner-only mode of the API socket.
@@ -68,8 +67,9 @@ impl Server {
                 Ok(stream) => stream,
                 Err(failure) => break failure,
             };
+            let deadline = Instant::now() + INITIAL_REQUEST_TIMEOUT;
             while connections.try_join_next().is_some() {}
-            connections.spawn_local(serve_connection(stream, Rc::clone(&operations)));
+            connections.spawn_local(serve_connection(stream, Rc::clone(&operations), deadline));
         };
         tracing::error!(err = %failure, "api listener accept failed");
         std::future::pending().await
@@ -91,14 +91,19 @@ impl Drop for Server {
 }
 
 /// Serves one connection until it ends; a failure other than the peer closing is logged.
-async fn serve_connection(stream: AsyncLocalStream, operations: Rc<dyn WorkspaceOperations>) {
+async fn serve_connection(
+    stream: AsyncLocalStream,
+    operations: Rc<dyn WorkspaceOperations>,
+    deadline: Instant,
+) {
     let (input, output) = split_async_stream(stream);
     let options = RpcModeOptions {
         workspace: Some(operations),
         session: None,
     };
-    let output = RpcOutput::new(PeerClosed(output), Some(STREAM_WRITE_TIMEOUT));
-    let served = run_rpc_connection(Box::new(Admission::new(input)), output, options).await;
+    let output = RpcOutput::new(output, Some(STREAM_WRITE_TIMEOUT));
+    let served =
+        run_rpc_connection(Box::new(Admission::new(input, deadline)), output, options).await;
     if let Err(error) = served
         && !is_connection_closed_error(&error)
     {
@@ -116,11 +121,11 @@ pub(super) struct Admission<R> {
 }
 
 impl<R> Admission<R> {
-    /// Admits a connection reading from `reader`; the first line's deadline starts now.
-    pub(super) fn new(reader: R) -> Self {
+    /// Admits a connection reading from `reader` with its acceptance-based `deadline`.
+    pub(super) fn new(reader: R, deadline: Instant) -> Self {
         Self {
             lines: JsonlLineReader::strict(reader, MAX_REQUEST_BYTES),
-            deadline: Some(Instant::now() + INITIAL_REQUEST_TIMEOUT),
+            deadline: Some(deadline),
         }
     }
 }
@@ -169,38 +174,6 @@ fn oversized(error: io::Error) -> io::Error {
         return io::Error::new(io::ErrorKind::InvalidData, "api request line is too large");
     }
     error
-}
-
-/// A connection's sending half that counts a write to a closed peer as done: the peer no
-/// longer reads, so nothing it could receive is lost.
-struct PeerClosed(AsyncSendHalf);
-
-impl AsyncWrite for PeerClosed {
-    fn poll_write(
-        mut self: Pin<&mut Self>,
-        context: &mut Context<'_>,
-        bytes: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        let written = Pin::new(&mut self.0).poll_write(context, bytes);
-        written.map(|written| tolerated(written, bytes.len()))
-    }
-
-    fn poll_flush(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<io::Result<()>> {
-        let flushed = Pin::new(&mut self.0).poll_flush(context);
-        flushed.map(|flushed| tolerated(flushed, ()))
-    }
-
-    fn poll_shutdown(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.0).poll_shutdown(context)
-    }
-}
-
-/// `result`, or `done` when it failed because the peer closed the connection.
-fn tolerated<T>(result: io::Result<T>, done: T) -> io::Result<T> {
-    match result {
-        Err(error) if is_connection_closed_error(&error) => Ok(done),
-        result => result,
-    }
 }
 
 #[cfg(test)]
