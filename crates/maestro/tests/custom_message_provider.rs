@@ -222,3 +222,70 @@ fn custom_message_provider_registers_models_and_streams_with_api_key() {
         );
     });
 }
+
+/// The session, not the authored transport, retries transient provider errors.
+async fn session_retries(session: &Rc<AgentSession>, status: u16) {
+    let server = Server::new(vec![
+        (
+            status,
+            json!({"error":{"message":"controlled failure"}}).to_string(),
+        ),
+        (200, text_response()),
+    ])
+    .await;
+    let descriptor = model(session, &server.base);
+    session
+        .set_model(std::sync::Arc::new(std::sync::RwLock::new(descriptor)))
+        .await
+        .unwrap();
+    session.settings_manager().borrow_mut().apply_overrides(
+        serde_json::from_value(json!({
+            "retry":{"enabled":true,"maxRetries":1,"baseDelayMs":0}
+        }))
+        .unwrap(),
+    );
+    let events = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let captured = Rc::clone(&events);
+    let unsubscribe = session.subscribe(Rc::new(move |event| {
+        if matches!(
+            event,
+            maestro_app::AgentSessionEvent::AutoRetryStart { .. }
+                | maestro_app::AgentSessionEvent::AutoRetryEnd { .. }
+        ) {
+            captured
+                .borrow_mut()
+                .push(serde_json::to_value(event).unwrap());
+        }
+    }));
+    session
+        .prompt("controlled retry", maestro_app::PromptOptions::default())
+        .await
+        .unwrap();
+    unsubscribe();
+    let requests = server.requests().await;
+    let events = events.borrow();
+    assert_eq!(requests.len(), 2);
+    assert_eq!(requests[0].1["messages"], requests[1].1["messages"]);
+    assert_eq!(events.len(), 2);
+    assert_eq!(events[0]["type"], "auto_retry_start");
+    assert!(
+        events[0]["errorMessage"]
+            .as_str()
+            .unwrap()
+            .contains(&format!("HTTP {status}")),
+        "{events:?}"
+    );
+    assert_eq!(events[0]["attempt"], 1);
+    assert_eq!(events[1]["type"], "auto_retry_end");
+    assert_eq!(events[1]["success"], true);
+}
+
+#[test]
+fn custom_message_provider_session_retries_rate_limits() {
+    run(async |session| session_retries(&session, 429).await);
+}
+
+#[test]
+fn custom_message_provider_session_retries_server_errors() {
+    run(async |session| session_retries(&session, 500).await);
+}
