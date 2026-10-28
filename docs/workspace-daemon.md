@@ -668,10 +668,11 @@ the same owners as the pane commands.
 - **Apply.** `handle_layout_apply` checks the limits in `layouts/tree.rs` before it creates
   anything, adds the new tab with the first leaf, then splits leaf by leaf in layout order
   through `spawn_split`, as `pane.split` does. A failure removes the new tab with
-  `retire_tab`, which releases its terminals and plugin records, then
-  `shutdown_detached_terminal_runtimes` stops their processes. The replaced tab is retired
-  only after the new tab stands. `emit_tab_created_events` publishes every pane of the
-  new tab, which for a tab with one pane is its root.
+  `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
+  and plugin records and stops their processes. The replaced tab is retired only after the
+  new tab stands. `emit_tab_created_events` publishes every pane of the
+  new tab, which for a tab with one pane is its root; a new workspace publishes its first
+  tab through it too.
 
 ## Environment names
 
