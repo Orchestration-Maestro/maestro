@@ -36,12 +36,12 @@ bool exports_maestro_doom_engine_init(game_list_u8_t *data,
     }
     memcpy(root, directory->ptr, directory->len);
     root[directory->len] = 0;
-    memcpy(wad, data->ptr, data->len);
+    if (data->len) memcpy(wad, data->ptr, data->len);
     wad_len = data->len;
     game_list_u8_free(data);
     game_string_free(directory);
     failed = !save("doom1.wad", wad, wad_len) ||
-             !save("config.cfg", "controlled config", 17);
+             !save("config.cfg", "controlled config", 17) || wad_len == 0;
     if (failed) game_string_dup(error, "controlled engine file creation failed");
     return !failed;
 }

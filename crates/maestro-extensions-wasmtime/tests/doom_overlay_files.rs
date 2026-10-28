@@ -136,39 +136,55 @@ fn files(root: &Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
 /// Runs with a private HOME, project and temporary parent, without mutating process globals.
 #[test]
 fn doom_overlay_files_are_private_and_deleted_on_shutdown() {
+    checked(
+        "doom_overlay_files_are_private_and_deleted_on_shutdown",
+        false,
+    );
+}
+
+/// A rejected initialization cannot leave its caller-created files behind.
+#[test]
+fn doom_overlay_failed_initialization_removes_private_files() {
+    checked(
+        "doom_overlay_failed_initialization_removes_private_files",
+        true,
+    );
+}
+
+/// Runs exactly one filesystem scenario in its own process.
+fn checked(name: &str, empty: bool) {
     if !maestro_test_process::selection().is_child() {
         let scratch = Scratch::new().unwrap();
         for name in ["home", "project", "temporary"] {
             std::fs::create_dir(scratch.path().join(name)).unwrap();
         }
         let path = component();
-        let status = maestro_test_process::TestProcess::current(
-            "doom_overlay_files_are_private_and_deleted_on_shutdown",
-        )
-        .unwrap()
-        .case("isolated")
-        .env("MAESTRO_DOOM_FILES_ROOT", scratch.path())
-        .env("MAESTRO_DOOM_FILES_COMPONENT", path)
-        .env("HOME", scratch.path().join("home"))
-        .env("TMPDIR", scratch.path().join("temporary"))
-        .env("TMP", scratch.path().join("temporary"))
-        .env("TEMP", scratch.path().join("temporary"))
-        .current_dir(scratch.path().join("project"))
-        .nocapture()
-        .status()
-        .unwrap();
+        let status = maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .case(if empty { "empty" } else { "save" })
+            .env("MAESTRO_DOOM_FILES_ROOT", scratch.path())
+            .env("MAESTRO_DOOM_FILES_COMPONENT", path)
+            .env("HOME", scratch.path().join("home"))
+            .env("TMPDIR", scratch.path().join("temporary"))
+            .env("TMP", scratch.path().join("temporary"))
+            .env("TEMP", scratch.path().join("temporary"))
+            .current_dir(scratch.path().join("project"))
+            .nocapture()
+            .status()
+            .unwrap();
         assert!(status.success());
         return;
     }
-    super::wasi_support::run(run());
+    super::wasi_support::run(run(empty));
 }
 
 /// Plays on the production loader and runner, then dispatches actual shutdown.
-async fn run() {
+async fn run(empty: bool) {
     let root = PathBuf::from(std::env::var("MAESTRO_DOOM_FILES_ROOT").unwrap());
     let project = root.join("project");
     let wad = project.join("doom1.wad");
-    std::fs::write(&wad, b"controlled WAD").unwrap();
+    let data = if empty { "" } else { "controlled WAD" };
+    std::fs::write(&wad, data).unwrap();
     let tails = Rc::new(RefCell::new(Vec::new()));
     let started = tails.clone();
     let bus = create_event_bus_for::<Local>(
@@ -190,23 +206,28 @@ async fn run() {
     let before_home = files(&root.join("home"));
     let before_project = files(&project);
     let handler = runner.get_command("doom-overlay").unwrap().command.handler;
-    handler(
+    let result = handler(
         wad.to_str().unwrap().into(),
         runner.create_command_context(),
     )
-    .await
-    .unwrap();
-    let private = saved.borrow().clone().unwrap();
-    assert!(private.join("config.cfg").is_file());
+    .await;
     assert_eq!(files(&root.join("home")), before_home);
     assert_eq!(files(&project), before_project);
-    let mut event: SessionShutdownEvent =
-        serde_json::from_value(serde_json::json!({"reason":"quit"})).unwrap();
-    runner.emit(&mut event).await.unwrap();
-    assert!(
-        !private.exists(),
-        "shutdown must delete the private engine root"
-    );
+    if empty {
+        assert!(result.is_err());
+        assert!(
+            std::fs::read_dir(root.join("temporary"))
+                .unwrap()
+                .next()
+                .is_none(),
+            "failed initialization must delete its private root"
+        );
+        return;
+    }
+    result.unwrap();
+    let private = saved.borrow().clone().unwrap();
+    assert!(private.join("config.cfg").is_file());
+    shutdown(&runner, &private).await;
     for tail in tails.take() {
         tail.await.unwrap();
     }
@@ -251,5 +272,16 @@ fn doom_files_engine_fixture_matches_source() {
         result.status.success(),
         "{}",
         String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+/// Completes actual session shutdown before checking the retained root.
+async fn shutdown(runner: &ExtensionRunner<Local>, private: &Path) {
+    let mut event: SessionShutdownEvent =
+        serde_json::from_value(serde_json::json!({"reason":"quit"})).unwrap();
+    runner.emit(&mut event).await.unwrap();
+    assert!(
+        !private.exists(),
+        "shutdown must delete the private engine root"
     );
 }
