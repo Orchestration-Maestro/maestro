@@ -169,6 +169,8 @@ fn write_target(
     file.sync_all()?;
     if let Some(mode) = mode {
         apply_creation_mode(&file, mode)?;
+        #[cfg(test)]
+        crate::replace::tests::effect("mode_sync")?;
         file.sync_all()?;
     }
     Ok(())

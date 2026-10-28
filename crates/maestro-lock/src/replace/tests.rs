@@ -777,3 +777,54 @@ fn writable_creation_replays_even_when_unsynced_bytes_and_mode_match() {
     assert!(events.contains(&"target_sync"));
     assert_eq!(fs::read(&target).unwrap(), b"intended");
 }
+
+#[test]
+fn readonly_replay_syncs_mode_before_removing_recovery() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    EFFECTS.set(Effects {
+        fault: Some(("mode_sync", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert!(
+        replace(
+            &target,
+            b"intended",
+            Replace {
+                creation_mode: Some(0o400),
+                ..Replace::default()
+            }
+        )
+        .is_err()
+    );
+    EFFECTS.take();
+    EFFECTS.set(Effects {
+        fault: Some(("mode_sync", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert!(crate::acquire_write(&target, true).is_err());
+    assert!(fs::read_dir(root()).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .path()
+            .extension()
+            .is_some_and(|ext| ext == "recovery")
+    }));
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
+    assert!(fs::metadata(&target).unwrap().permissions().readonly());
+}
+
+#[cfg(unix)]
+#[test]
+fn existing_lock_root_needs_only_search_access_to_ancestors() {
+    let root = root();
+    fs::create_dir_all(&root).unwrap();
+    let ancestor = root.ancestors().nth(3).unwrap();
+    let Some(_restore) = maestro_test_directory::deny(ancestor, 0o311).unwrap() else {
+        return;
+    };
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    drop(crate::acquire_write(&scratch.path().join("session"), true).unwrap());
+}
