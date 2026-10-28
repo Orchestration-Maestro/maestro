@@ -721,7 +721,8 @@ fn opening_missing_file_preserves_explicit_path_until_publication() {
             .len(),
         3
     );
-    assert_eq!(fs::read_dir(directory.text()).unwrap().count(), 1);
+    assert_eq!(fs::read_dir(directory.text()).unwrap().count(), 2);
+    assert!(path.with_extension("jsonl.lock").is_file());
 }
 
 #[test]
