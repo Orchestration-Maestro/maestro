@@ -125,9 +125,9 @@ async fn restrictions(runner: &Rc<ExtensionRunner<Local>>, root: &Path) {
     );
 }
 
-/// Echoes only the two admitted proxy connections; denied attempts must never arrive.
+/// Echoes only admitted proxy connections; denied attempts must never arrive.
 async fn echo(listener: TcpListener) {
-    for _ in 0..2 {
+    for _ in 0..3 {
         let (mut peer, _) = listener.accept().await.unwrap();
         let mut bytes = Vec::new();
         peer.read_to_end(&mut bytes).await.unwrap();
@@ -255,31 +255,97 @@ async fn user_bash(runner: &ExtensionRunner<Local>, root: &Path) {
     assert_eq!(bytes, b"user-shell");
 }
 
-#[test]
-fn sandbox_session_wraps_bash_and_filters_loopback_traffic() {
-    if std::env::var_os("MAESTRO_SANDBOX_CHILD").is_none() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
-        fixture(scratch.path());
-        let output = maestro_test_process::TestProcess::current(
-            "sandbox_session_wraps_bash_and_filters_loopback_traffic",
+/// The filesystem policy exercised by an isolated child.
+#[derive(Clone, Copy)]
+enum Fixture {
+    /// Writable project with protected secrets.
+    Session,
+    /// No configured write paths; the sandbox still supplies its own temporary directory.
+    TemporaryDirectory,
+}
+
+/// Runs the selected case below one disposable parent, with distinct caller and sandbox temp paths.
+fn isolated(test: &str, selected: Fixture) -> bool {
+    if std::env::var_os("MAESTRO_SANDBOX_CHILD").is_some() {
+        return false;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().join("project");
+    let caller_temporary = scratch.path().join("caller-temporary");
+    let sandbox_temporary = scratch.path().join("sandbox-temporary");
+    std::fs::create_dir(&root).unwrap();
+    std::fs::create_dir(&caller_temporary).unwrap();
+    fixture(&root);
+    if matches!(selected, Fixture::TemporaryDirectory) {
+        std::fs::write(
+            root.join(".maestro/sandbox.json"),
+            json!({"filesystem":{"allowWrite":[],"denyRead":[],"denyWrite":[]}}).to_string(),
         )
+        .unwrap();
+    }
+    let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env_clear()
         .env("PATH", std::env::var_os("PATH").unwrap())
-        .env("HOME", scratch.path())
+        .env("HOME", &root)
         .env("SHELL", "/bin/bash")
+        .env("TMPDIR", caller_temporary)
+        .env("MAESTRO_TMPDIR", sandbox_temporary)
         .env("MAESTRO_SANDBOX_CHILD", "1")
         .env(
             "MAESTRO_SANDBOX_COMPONENT",
             std::env::var_os("MAESTRO_SANDBOX_COMPONENT").unwrap(),
         )
-        .current_dir(scratch.path())
+        .current_dir(root)
         .output()
         .unwrap();
-        assert!(output.status.success(), "{output:?}");
+    assert!(output.status.success(), "{output:?}");
+    true
+}
+
+#[test]
+fn sandbox_session_wraps_bash_and_filters_loopback_traffic() {
+    if isolated(
+        "sandbox_session_wraps_bash_and_filters_loopback_traffic",
+        Fixture::Session,
+    ) {
         return;
     }
     super::super::wasi_support::run(session());
+}
+
+#[test]
+fn sandbox_temp_directory_keeps_artifacts_without_configured_write_paths() {
+    if isolated(
+        "sandbox_temp_directory_keeps_artifacts_without_configured_write_paths",
+        Fixture::TemporaryDirectory,
+    ) {
+        return;
+    }
+    super::super::wasi_support::run(temporary_directory());
+}
+
+/// A supplied temporary directory is writable, private and retained after shutdown.
+async fn temporary_directory() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let root = std::env::current_dir().unwrap();
+    let runner = super::loaded(&root).await;
+    let ui = Rc::new(Ui::default());
+    runner.set_ui_context(Some(ExtensionUIContext::new(ui)));
+    event(&runner, true).await;
+    let path = bash(
+        &runner,
+        "file=$(mktemp) && printf kept >\"$file\" && printf '%s' \"$file\"",
+    )
+    .await;
+    let temporary = std::env::var("MAESTRO_TMPDIR").unwrap();
+    assert!(Path::new(&path).starts_with(&temporary), "{path}");
+    let metadata = std::fs::metadata(&temporary).unwrap();
+    assert!(metadata.is_dir());
+    assert_eq!(metadata.uid(), std::fs::metadata(root).unwrap().uid());
+    assert_eq!(metadata.permissions().mode() & 0o777, 0o700);
+    event(&runner, false).await;
+    assert_eq!(std::fs::read_to_string(path).unwrap(), "kept");
 }
 
 /// Exercises one initialized session through its tools, commands and lifecycle events.
@@ -291,7 +357,7 @@ async fn session() {
     initialized(&runner, &ui).await;
     let [http, socks_port] = ports(&runner).await;
     restrictions(&runner, &root).await;
-    proxy_traffic(http, socks_port).await;
+    proxy_traffic(&runner, http, socks_port).await;
     cancellation(&runner).await;
     user_bash(&runner, &root).await;
     event(&runner, false).await;
@@ -301,7 +367,7 @@ async fn session() {
 }
 
 /// Exercises both protocols with the same loopback destination and deny rule.
-async fn proxy_traffic(http: u16, socks_port: u16) {
+async fn proxy_traffic(runner: &Rc<ExtensionRunner<Local>>, http: u16, socks_port: u16) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let destination = listener.local_addr().unwrap().port();
     let echoed = tokio::task::spawn_local(echo(listener));
@@ -309,6 +375,10 @@ async fn proxy_traffic(http: u16, socks_port: u16) {
     connect(http, destination, "localhost", false).await;
     socks(socks_port, destination, "127.0.0.1", true).await;
     socks(socks_port, destination, "localhost", false).await;
+    assert_eq!(
+        bash(runner, &format!("printf inside-bridge | socat - PROXY:127.0.0.1:127.0.0.1:{destination},proxyport=3128")).await,
+        "inside-bridge"
+    );
     echoed.await.unwrap();
 }
 
