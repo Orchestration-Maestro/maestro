@@ -150,6 +150,16 @@ fn custom_message_provider_rejects_mismatched_authorization_state() {
 }
 
 #[test]
+fn custom_message_provider_keeps_host_pkce_failure_before_prompting() {
+    let host = Controlled::default();
+    let provider = authorization(&host);
+    host.observe().actions.error = Some("secure entropy unavailable".into());
+    let result = super::block_on(provider.login(callbacks()));
+    assert_eq!(result.unwrap_err(), "secure entropy unavailable");
+    assert!(host.observed().native_http.requests.is_empty());
+}
+
+#[test]
 fn custom_message_provider_token_failure_keeps_status_when_body_fails() {
     let host = Controlled::default();
     let provider = authorization(&host);
@@ -297,6 +307,10 @@ fn check_stream_result(result: &crate::SharedAssistantMessage) {
     assert_eq!(value["usage"]["cacheRead"], json!(10.0));
     assert_eq!(value["usage"]["cacheWrite"], json!(4.0));
     assert_eq!(value["usage"]["totalTokens"], json!(134.0));
+    assert_eq!(
+        value["usage"]["cost"]["input"].as_f64().unwrap().to_bits(),
+        (3.0_f64 / 1_000_000.0 * 100.0).to_bits()
+    );
     assert!((value["usage"]["cost"]["total"].as_f64().unwrap() - 0.000_618).abs() < f64::EPSILON);
 }
 

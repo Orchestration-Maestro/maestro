@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod byte_line_framing;
 mod flag_rules;
 mod locale_rules;
 mod newline_rules;
