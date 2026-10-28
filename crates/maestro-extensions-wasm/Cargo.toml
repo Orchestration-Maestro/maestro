@@ -12,6 +12,11 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "bash_spawn_hook"
+path = "../../examples/extensions/bash_spawn_hook.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "bookmark"
 path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]

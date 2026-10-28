@@ -48,6 +48,8 @@ resolving conflicts, then regenerate the table.
 <!-- example-index:start -->
 | File | Provides |
 | --- | --- |
+| `bash_spawn_hook.md` | Bash spawn hook |
+| `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |
 | `bookmark.rs` | Entry bookmarks: commands that label session entries, so that the tree view can find the important points of a conversation again. |
 | `built_in_tool_renderer.md` | Built-in tool renderer |
