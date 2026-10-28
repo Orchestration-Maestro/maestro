@@ -217,6 +217,6 @@ pub fn get_debug_log_path(agent_dir: &str) -> String {
 ///
 /// # Errors
 /// Returns path-resolution failures.
-pub fn get_workspace_skill_path(_package_dir: &str) -> io::Result<String> {
-    Err(io::ErrorKind::Unsupported.into())
+pub fn get_workspace_skill_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "docs/skills/workspace/SKILL.md")
 }
