@@ -356,6 +356,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
+    "maestro-lock",
     "maestro-models",
     "maestro-packages",
     "maestro-process",
@@ -466,7 +467,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
         && !matches!(
             name,
             "maestro-watch"
-                | "maestro-lock"
                 | "maestro-process"
                 | "maestro-listing"
                 | "maestro-pattern"
@@ -474,7 +474,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"
-                | "maestro-extensions-wasmtime"
                 | "maestro-test-terminal"
                 | "maestro-text"
                 | "maestro-json"

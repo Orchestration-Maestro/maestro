@@ -1,4 +1,4 @@
-//! Disposable configuration and a cleared executable environment.
+//! Disposable configuration, a cleared executable environment and the shipped theme.
 use maestro_test_directory::Scratch;
 use std::{
     path::Path,
@@ -27,6 +27,8 @@ impl Root {
             .current_dir(self.path("project"))
             .env("HOME", self.scratch.path())
             .env("PATH", std::env::var_os("PATH").unwrap_or_default())
+            // A Windows process without its system root cannot open sockets.
+            .envs(std::env::var_os("SYSTEMROOT").map(|root| ("SYSTEMROOT", root)))
             .env("MAESTRO_CODING_AGENT_DIR", self.path("agent"))
             .env(
                 "MAESTRO_PACKAGE_DIR",
@@ -49,6 +51,37 @@ impl Root {
     pub fn path(&self, path: &str) -> std::path::PathBuf {
         self.scratch.path().join(path)
     }
+}
+
+/// Stops and reaps a borrowed child if its caller unwinds before normal cleanup.
+pub struct ChildGuard<'a>(pub &'a mut std::process::Child);
+
+impl Drop for ChildGuard<'_> {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
+#[test]
+fn child_guard_reaps_during_unwind() {
+    let root = Root::new();
+    let mut child = root
+        .command(&["--mode", "rpc"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _guard = ChildGuard(&mut child);
+        panic!("simulated selector read failure");
+    }));
+    let status = child.try_wait().unwrap();
+    let _ = child.kill();
+    child.wait().unwrap();
+    assert!(unwind.is_err());
+    assert!(status.is_some(), "child survived selector failure");
 }
 
 pub mod rpc;
@@ -163,3 +196,16 @@ pub fn widgets() -> std::rc::Rc<dyn maestro_app::ExtensionWidgets> {
 
 /// SDK construction for compiled extension witnesses.
 pub mod session;
+
+/// A prepared shipped theme for loader decoration, editor styling and the example renderers.
+pub fn theme() -> maestro_theme::LiveTheme {
+    let theme = maestro_theme::load_theme_from_path(
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../maestro-theme/assets/theme/dark.json"
+        ),
+        Some(maestro_theme::ColorMode::Truecolor),
+    )
+    .unwrap();
+    maestro_theme::LiveTheme::from_theme(std::rc::Rc::new(theme))
+}

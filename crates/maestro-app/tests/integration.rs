@@ -23,6 +23,7 @@ mod analysis_usage;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
+mod base_package_loading;
 #[path = "docx_support/body_tree.rs"]
 mod body_tree;
 mod browser_contributions;
@@ -52,6 +53,7 @@ mod clipboard_status;
 mod command_operations;
 mod configuration_paths;
 mod context_discovery;
+mod daemon_connection;
 #[cfg(unix)]
 #[path = "support/default_configuration.rs"]
 mod default_configuration;
@@ -86,6 +88,7 @@ mod footer_metadata;
 mod footer_support;
 mod footer_watch;
 mod helper_launches;
+mod hold_unchecked_text_checks;
 mod install_reporting;
 mod installation_kind;
 #[cfg(not(target_arch = "wasm32"))]

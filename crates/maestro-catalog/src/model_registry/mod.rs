@@ -64,8 +64,10 @@ type ModelList = Arc<RwLock<Vec<Arc<RwLock<Model>>>>>;
 pub struct ModelRegistry {
     /// Accepted credential owner, shared natively and local in the browser.
     auth_storage: SharedHandle<AuthStorage>,
-    /// Explicit model-file path; empty disables file access.
-    path: String,
+    /// Ordered model-file paths; empty entries disable file access for that entry.
+    paths: Vec<String>,
+    /// Base files ranked before the construction-time files, replaced at resource reload.
+    base_paths: RwLock<Vec<String>>,
     /// Caller-selected file effects.
     operations: Box<dyn ModelFileOperations>,
     /// Runs the commands that configured credentials name.
@@ -135,9 +137,27 @@ impl ModelRegistry {
         operations: impl ModelFileOperations + 'static,
         config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
+        Self::with_model_files(
+            auth_storage,
+            vec![models_json_path.into()],
+            operations,
+            config_values,
+        )
+    }
+    /// Loads ordered model files with later fields overriding earlier ones.
+    ///
+    /// # Errors
+    /// Returns a catalog error wrapping an account transformation failure.
+    pub fn with_model_files(
+        auth_storage: SharedHandle<AuthStorage>,
+        paths: Vec<String>,
+        operations: impl ModelFileOperations + 'static,
+        config_values: ConfigValues,
+    ) -> Result<Self, CatalogError> {
         let registry = Self {
             auth_storage,
-            path: models_json_path.into(),
+            paths,
+            base_paths: RwLock::default(),
             operations: Box::new(operations),
             config_values,
             state: RwLock::new(CatalogState {
@@ -152,6 +172,27 @@ impl ModelRegistry {
         registry.load_models()?;
         Ok(registry)
     }
+    /// Replaces the base files below the construction-time files and restores dynamic providers.
+    /// An empty base that was already empty leaves the existing catalog untouched.
+    ///
+    /// # Errors
+    /// Returns a stored account transformation failure during refresh.
+    pub fn set_base_model_files(&self, paths: Vec<String>) -> Result<(), CatalogError> {
+        let reload = {
+            let mut base = self
+                .base_paths
+                .write()
+                .unwrap_or_else(PoisonError::into_inner);
+            let reload = !base.is_empty() || !paths.is_empty();
+            *base = paths;
+            reload
+        };
+        if reload {
+            self.refresh()?;
+        }
+        Ok(())
+    }
+
     /// Validate and apply the incoming record, then merge defined fields into retained state.
     ///
     /// The configuration is the platform handle, retained as the browser's local owner or
@@ -223,7 +264,13 @@ impl ModelRegistry {
     }
     /// Prepare descriptors after supplied file effects return.
     fn prepare_load(&self) -> Vec<Arc<RwLock<Model>>> {
-        let config = loading::load(&self.path, self.operations.as_ref());
+        let mut paths = self
+            .base_paths
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        paths.extend(self.paths.iter().cloned());
+        let config = loading::load(&paths, self.operations.as_ref());
         let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
         {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);

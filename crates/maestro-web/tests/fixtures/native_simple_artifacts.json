@@ -14,15 +14,7 @@
         ],
         "titles": [
           "Download"
-        ],
-        "download": {
-          "mime": "application/octet-stream",
-          "bytes": [
-            0,
-            1,
-            255
-          ]
-        }
+        ]
       }
     },
     {
@@ -39,15 +31,7 @@
         ],
         "titles": [
           "Herunterladen"
-        ],
-        "download": {
-          "mime": "application/octet-stream",
-          "bytes": [
-            0,
-            1,
-            255
-          ]
-        }
+        ]
       }
     }
   ],

@@ -14,6 +14,10 @@ use maestro_extensions_wasm::{
 };
 
 /// Asks before a new session or before leaving history containing a user message.
+///
+/// # Errors
+/// The returned future returns a UI availability, session-entry, confirmation or
+/// notification failure.
 fn before_switch(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
@@ -64,6 +68,9 @@ fn before_switch(
 }
 
 /// Permits a fork only when its selector returns the exact affirmative choice.
+///
+/// # Errors
+/// The returned future returns a UI availability, selection or notification failure.
 fn before_fork(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
@@ -102,6 +109,10 @@ fn before_fork(
 }
 
 /// Registers session confirmation handlers with the supplied host.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses a handler
+/// registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

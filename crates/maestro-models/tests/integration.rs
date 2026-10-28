@@ -110,6 +110,8 @@ mod invocation_cancellation;
 #[path = "support/json.rs"]
 pub(crate) mod json;
 mod json_boundary_consumers;
+#[path = "support/json_equivalence.rs"]
+mod json_equivalence;
 #[path = "support/key_selection.rs"]
 mod key_selection;
 #[allow(
