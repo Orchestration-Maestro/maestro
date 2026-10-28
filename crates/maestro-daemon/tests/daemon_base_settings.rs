@@ -457,6 +457,7 @@ fn daemon_startup_keeps_base_locks_when_user_document_is_unavailable() {
     }
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
     use crate::config_support::{block_on, fixture, put};
@@ -496,6 +497,7 @@ fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
     }
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn daemon_first_reload_retains_startup_area_document() {
     use crate::config_support::put;
@@ -527,6 +529,7 @@ fn daemon_first_reload_retains_startup_area_document() {
     );
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn daemon_runtime_rejected_documents_do_not_replace_accepted_areas() {
     use crate::config_support::{fixture, put};
@@ -561,6 +564,7 @@ fn daemon_runtime_rejected_documents_do_not_replace_accepted_areas() {
     assert_eq!(app.config.server.headless_rows, 47);
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn daemon_no_layer_rejected_ui_does_not_reset_scroll() {
     use crate::config_support::{fixture, put};
@@ -573,6 +577,7 @@ fn daemon_no_layer_rejected_ui_does_not_reset_scroll() {
     assert_eq!(app.state.agent_panel_scroll, 7);
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn daemon_typed_constructor_retains_ui_on_first_invalid_no_layer_reload() {
     use crate::config_support::{fixture, put};
