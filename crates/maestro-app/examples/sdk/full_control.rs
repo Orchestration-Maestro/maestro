@@ -1,0 +1,44 @@
+//! Supply credentials, a model, preferences, tools and resources explicitly.
+mod support;
+use serde_json::{Value, json};
+use support::{Error, Sample};
+
+/// Run the explicit-configuration sample with no resource discovery.
+fn main() -> Result<(), Error> {
+    support::launch(run)
+}
+
+/// Invoke a session built entirely from caller-selected inputs.
+async fn run(sample: Sample) -> Result<Value, Error> {
+    let _options = sample.options()?;
+    Ok(json!({}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Explicit resources exclude disk instructions and the tool allowlist reaches the session.
+    #[test]
+    fn full_control_uses_only_the_supplied_configuration() -> Result<(), Error> {
+        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
+        let sample = Sample::new(std::rc::Rc::clone(&local))?;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        let value = runtime.block_on(local.run_until(run(sample)))?;
+        assert_eq!(value["tools"], json!(["read", "bash"]));
+        assert_eq!(value["skills"], 0);
+        assert_eq!(value["templates"], 0);
+        assert_eq!(value["contextFiles"], 0);
+        assert_eq!(value["thinking"], "off");
+        let prompt = value["prompt"].as_str().ok_or("missing prompt")?;
+        assert!(prompt.starts_with("You are a minimal assistant."));
+        assert!(!prompt.contains("Unwanted disk instruction"));
+        assert_eq!(
+            value["answer"],
+            "Only the supplied read and bash tools are available."
+        );
+        Ok(())
+    }
+}

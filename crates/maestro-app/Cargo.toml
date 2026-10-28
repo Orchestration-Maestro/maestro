@@ -141,6 +141,11 @@ path = "examples/sdk/custom_prompt.rs"
 test = true
 
 [[example]]
+name = "full_control"
+path = "examples/sdk/full_control.rs"
+test = true
+
+[[example]]
 name = "minimal"
 path = "examples/sdk/minimal.rs"
 test = true
