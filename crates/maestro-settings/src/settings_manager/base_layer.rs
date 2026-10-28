@@ -60,7 +60,11 @@ impl BaseSettingsLayer {
     }
 
     /// Restores locked leaves and reports each overwritten stored value.
-    fn apply_locks(&self, settings: &mut Map<String, Value>, mut ignored: impl FnMut(&str)) {
+    pub(super) fn apply_locks(
+        &self,
+        settings: &mut Map<String, Value>,
+        mut ignored: impl FnMut(&str),
+    ) {
         for path in &self.locked {
             let edit = Edit::dotted(path);
             let value = edit.value_in(&self.settings.0).cloned();
@@ -70,6 +74,13 @@ impl BaseSettingsLayer {
             }
             edit.apply(settings, value);
         }
+    }
+    /// Formats a constraint with this layer's accepted publisher provenance.
+    pub(super) fn lock_message(&self, path: &str, action: &str) -> String {
+        format!(
+            "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
+            self.source, self.recorded_at
+        )
     }
 }
 
@@ -174,6 +185,25 @@ impl SettingsManager {
         true
     }
 
+    /// Checks derived edits against the layer governing their raw scope.
+    pub(super) fn check_changes(
+        &self,
+        scope: SettingsScope,
+        changes: &[Change],
+    ) -> Result<(), String> {
+        let layer = match scope {
+            SettingsScope::Global => self.get_global_base_layer(),
+            SettingsScope::Project => self.get_base_layer(),
+        };
+        let message = layer.and_then(|layer| {
+            changes
+                .iter()
+                .find_map(|change| layer.locked_path(&change.components()))
+                .map(|path| layer.lock_message(path, "Edit refused"))
+        });
+        message.map_or(Ok(()), Err)
+    }
+
     /// Reports a constraint with the publisher's persisted provenance.
     fn record_lock(
         &self,
@@ -193,38 +223,13 @@ impl SettingsManager {
         self.queue.record(scope, kind, message.into());
     }
 
-    /// Restores locked leaves after the ordinary merges without editing raw scopes.
-    pub(super) fn apply_base_locks(&mut self) {
-        let Some(layer) = self.get_base_layer().cloned() else {
-            return;
-        };
-        let mut effective = std::mem::take(&mut self.effective);
-        layer.apply_locks(&mut effective, |path| {
-            let scope = if overrides_path(&self.project.settings, path) {
-                SettingsScope::Project
-            } else {
-                SettingsScope::Global
-            };
-            self.record_lock(scope, &layer, path, SettingsErrorKind::StoredValueIgnored);
-        });
-        self.effective = effective;
+    /// Clears native nonfinite flags for presentation values supplied by base locks.
+    pub(super) fn apply_base_nan_locks(&mut self) {
         if self.locked_path(&["editorPaddingX"]).is_some() {
             self.effective_nan.editor_padding_x = false;
         }
         if self.locked_path(&["autocompleteMaxVisible"]).is_some() {
             self.effective_nan.autocomplete_max_visible = false;
         }
-    }
-}
-
-/// Whether the one-level merge lets this document replace a locked leaf.
-fn overrides_path(document: &Map<String, Value>, path: &str) -> bool {
-    let mut keys = path.split('.');
-    let Some(field) = keys.next().and_then(|key| document.get(key)) else {
-        return false;
-    };
-    match (field, keys.next()) {
-        (Value::Object(object), Some(key)) => object.contains_key(key),
-        _ => true,
     }
 }

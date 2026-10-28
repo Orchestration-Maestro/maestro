@@ -268,6 +268,43 @@ pub(crate) fn open_artifact(prefix: &str) -> io::Result<(String, File)> {
     Ok((path, file))
 }
 
+/// Creates a distinct private directory under the native temporary root.
+///
+/// `prefix` is a nonempty leaf name. Unix directories are created with mode `0700`;
+/// other hosts use their default directory access controls. The caller owns cleanup.
+///
+/// # Errors
+/// Returns invalid-prefix, random-source, non-UTF-8 path or directory-creation errors.
+pub fn make_temp_dir(prefix: &str) -> io::Result<String> {
+    if prefix.is_empty() || prefix.contains(['/', '\\', '\0', ':']) || matches!(prefix, "." | "..")
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "temporary prefix must be a leaf name",
+        ));
+    }
+    let builder = &mut std::fs::DirBuilder::new();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    loop {
+        let path = std::env::temp_dir().join(format!("{prefix}{}", random_id()?));
+        let path = path.into_os_string().into_string().map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "temporary path is not valid UTF-8",
+            )
+        })?;
+        match builder.create(&path) {
+            Ok(()) => return Ok(path),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
+}
+
 /// Generate eight random bytes as sixteen lowercase hexadecimal digits.
 pub(crate) fn random_id() -> io::Result<String> {
     let mut random = [0_u8; 8];

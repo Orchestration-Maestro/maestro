@@ -25,8 +25,8 @@ Manifest mode is a capability of the default-on `maestro-manifest` base package,
 a package crate in this workspace released with Maestro. The core holds no
 manifest code. It gains five generic hooks (H1 to H5, see
 [Core hooks](#core-hooks)) that any package may use, and the manifest package is
-their first user. Every manifest-mode behaviour is an owner-approved difference
-with no reference source, listed in
+their first user. Every manifest-mode behaviour is a difference with no
+reference source, listed in
 [Differences with no reference source](#differences-with-no-reference-source).
 
 The same **authored artifacts** work without a manifest. A user or a project
@@ -375,10 +375,10 @@ Stored values and explicit requests differ:
 
 The manifest package decides governed changes through the decision hook (H2).
 Every owner asks the hook before its own effect, except package commands, which
-run before packages load (`main.ts:431–436`). Before any package effect, they use
+run before packages load. Before any package effect, they use
 the persisted base layer for the operation's scope (H1): `install` refuses when
 `packages` is locked, and `remove` refuses an identity listed in that layer's
-`packages` entries, before deleting any file (`core/package-manager.ts:991–993`).
+`packages` entries, before deleting any file.
 The package commands reuse the core's base-layer enforcement (H1); they hold no
 manifest policy logic.
 
@@ -531,8 +531,7 @@ persisted layer for their scope (H1), even when the manifest is broken; with non
 they retain foundation behaviour. A changed selection keeps the old layer until
 the next session start refreshes it. `--version`, `list`, viewing config and
 editing unlocked settings remain available. `--help` runs after runtime creation
-but before load errors are reported (`main.ts:609–620,654–658`), so a broken
-manifest does not prevent help.
+but before load errors are reported, so a broken manifest does not prevent help.
 
 Every construction of session services (start, new session, resume, fork, import,
 switching to another working directory) recomposes the manifest and refuses on
@@ -828,14 +827,11 @@ packages install again (M6.5, H4).
 Base packages load before other extensions (H4). Base packages are Maestro
 additions. They keep their ordinary place in the extension list as the lowest
 package source, and the list keeps the reference's order: command-line extensions
-first, then project, user and package resources by precedence
-(`core/resource-loader.ts:395-399`, `core/package-manager.ts:162-177,2314`). The
-order of every other extension is therefore unchanged, and conflicts resolve from
-that list as in the reference: the first registration wins for tools and flags
-(`core/extensions/runner.ts:374-383,397-406`), the later one for shortcuts
-(`runner.ts:449-455`), and duplicate commands get numbered names in list order
-(`runner.ts:520-545`). A base package resolves conflicts exactly as any other
-package does.
+first, then project, user and package resources by precedence. The order of
+every other extension is therefore unchanged, and conflicts resolve from that list
+as in the reference: the first registration wins for tools and flags, the later
+one for shortcuts, and duplicate commands get numbered names in list order. A base
+package resolves conflicts exactly as any other package does.
 
 ## Implementation decisions
 
@@ -856,9 +852,9 @@ package does.
   manifest fails the load. There is no separate checker command or binary.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
   applies the base layer, then the ordinary one-level user and project merge, then
-  locked paths, then stored-value decisions. There is no new settings scope and no
-  change to raw scopes or the write queue. Decisions run outside the queue and
-  storage locks.
+  locked paths, then stored-value decisions, then locked paths again. One settings-owned
+  composition function owns this order. There is no new settings scope or change to raw scopes or the write queue. Decisions run
+  outside the queue and storage locks.
 - **Packages.** The package owner gains release listing for one source and the
   corrected Git pin check. Source parsing stays single.
 - **Catalog.** The model registry accepts an ordered list of model files; the
@@ -924,7 +920,7 @@ package does.
 
 ## Differences with no reference source
 
-Each item is an owner-approved difference.
+Each item is a deliberate difference from the reference.
 
 1. The `manifest` setting, its self-lock and the user-first reading of a locked
    selection.
