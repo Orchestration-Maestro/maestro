@@ -220,9 +220,10 @@ For a proxy, keep the upstream key in `apiKey` and add proxy authentication in
 ## Declare thinking levels
 
 A model's `thinkingLevelMap` accepts `off`, `minimal`, `low`, `medium`, `high` and
-`xhigh`. An absent key retains the protocol's default mapping; a string supplies
-a provider value; `null` marks a level unsupported so selection skips or clamps
-it. `off: null` describes a model whose reasoning cannot be disabled.
+`xhigh`. An absent ordinary key retains the protocol's default mapping; `xhigh`
+requires an explicit string mapping. A string supplies a provider value; `null`
+marks a level unsupported so selection skips or clamps it. `off: null` describes
+a model whose reasoning cannot be disabled.
 
 For a reasoning model that accepts only off, high and a provider-specific maximum:
 
