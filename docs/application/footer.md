@@ -33,9 +33,10 @@ local.block_on(&runtime, async { provider.dispose(); });
 
 `FooterOperations` supplies the watch registration, timer scheduling, polling
 and Git lookups, so native and controlled adapters are interchangeable;
-`NativeFooterOperations` (Unix) is the native adapter and other targets pass
-their own. Paths stay authored strings; their lexical rules are those of
-[`maestro-path`](../../crates/maestro-path/src/lib.rs).
+`NativeFooterOperations` (Unix and Windows) is the native adapter and other
+targets pass their own. Stable Rust has no file change time on Windows, so there
+the poll reports the modification time as the change time. Paths stay authored
+strings; their lexical rules are those of [`maestro-path`](../../crates/maestro-path/src/lib.rs).
 
 Construction walks from the working directory towards the root for the nearest
 `.git` entry. A directory needs a `HEAD`; a file is a worktree link when it
