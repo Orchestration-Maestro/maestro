@@ -41,7 +41,7 @@ impl ExtensionOperations {
                     };
                     Ok(Value::Object(raw.0))
                 }
-                HostOperation::ResolvePackages(_) => owners.resolve_packages().await,
+                HostOperation::ResolvePackages(explicit) => owners.resolve_packages(explicit).await,
                 HostOperation::Acquire(source, scope) => owners
                     .packages
                     .install(&source, Some(installed_scope(scope)))
@@ -64,8 +64,22 @@ impl ExtensionOperations {
 
 impl ExtensionOperations {
     /// Projects the owner's selected roots independently of resource membership.
-    async fn resolve_packages(&self) -> std::io::Result<Value> {
-        let resolved = self.packages.resolve(None).await?;
+    async fn resolve_packages(
+        &self,
+        explicit: Option<(Vec<String>, OperationScope)>,
+    ) -> std::io::Result<Value> {
+        let resolved = match explicit {
+            None => self.packages.resolve(None).await?,
+            Some((sources, scope)) => {
+                let scope = match scope {
+                    OperationScope::User => maestro_resources::SourceScope::User,
+                    OperationScope::Project => maestro_resources::SourceScope::Project,
+                };
+                self.packages
+                    .resolve_extension_sources(&sources, Some(scope))
+                    .await?
+            }
+        };
         Ok(Value::Array(
             resolved
                 .packages
