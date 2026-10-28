@@ -4,8 +4,11 @@ Four developer reports read the journals Maestro already writes under the home
 session root. Two print totals for one project, one writes transcript files with
 an optional analysis run, and one writes an interactive tool report. They are
 checkout-run example programs: they read recorded journals and write nothing
-except their own output. No background collection, telemetry or network access is
-involved.
+except their own output. No background collection or telemetry is involved, and
+the programs make no network request of their own. Two things reach the network
+beyond them: the child runs `--analyze` starts use the configured model provider,
+and the tool report page, once opened, loads its two pinned chart and style
+scripts from their source URLs.
 
 Every program accepts its arguments after `--` and decodes them lossily, so a
 non-UTF-8 argument reaches the report as replacement text instead of aborting
@@ -23,9 +26,10 @@ empty value counts as absent, and `0` or text fails with the same diagnostic as
 a missing argument. `-h`/`--help` prints the usage text before anything is read.
 Unknown arguments are ignored.
 
-The report keeps the directory under the home session root, `~/.maestro/agent/sessions/<project>--<name>--`,
-where the project path is spelled with one leading separator removed and every
-other separator or drive colon replaced by a dash. A missing directory fails
+The report keeps the directory under the home session root,
+`~/.maestro/agent/sessions/--<project>--`, where `<project>` is the authored path
+with one leading separator removed and every other `/`, `\` or `:` replaced by a
+dash; the path is not normalized or made absolute. A missing directory fails
 with the path it looked for; an empty or fully filtered directory reports that
 no sessions were found.
 
@@ -35,8 +39,9 @@ report alone takes its root from the `HOME` variable; the other three use the
 account-aware home directory, so they still work where `HOME` is unset. Days
 are UTC calendar days of the message instant, providers keep their recorded
 names including ones that collide with inherited object properties, and every
-amount is spelled with four fractional digits. Days, providers and the grand
-total are listed in UTF-16 order, and amounts the record omits count as zero.
+amount is spelled with four fractional digits, except that one of 1e21 or more
+keeps the shortest scientific spelling, such as `1e+21`. Days, providers and the
+grand total are listed in UTF-16 order, and amounts the record omits count as zero.
 
 ## Usage totals
 
@@ -61,7 +66,8 @@ names.
 
 Counts are rounded to the nearest integer, a half toward positive infinity, and
 grouped in en-US spelling; a rounded negative zero stays visible as `-0`. Costs
-keep four fractional digits. Days and providers are listed in UTF-16 order.
+keep four fractional digits, with the same scientific spelling from 1e21 up. Days
+and providers are listed in UTF-16 order.
 
 ## Transcript files
 
