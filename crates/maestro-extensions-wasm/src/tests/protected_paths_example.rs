@@ -229,8 +229,11 @@ fn protected_paths_component_matches_the_hook() -> Result<(), String> {
             expected_answer(row),
             "{name}"
         );
-        let lines = harness.observed().transcript[start..].to_vec();
-        assert_eq!(notifications(&lines), expected_notifications(row), "{name}");
+        assert_eq!(
+            notifications(&harness.observed().transcript[start..]),
+            expected_notifications(row),
+            "{name}"
+        );
     }
     super::block_on(harness.release(key)).map_err(|error| error.to_string())?;
     assert_eq!(harness.observed().live, 0);

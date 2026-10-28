@@ -1421,7 +1421,6 @@
       "toolName": "write",
       "path": "safe.rs",
       "branch": "returned",
-      "result": null,
       "notifications": []
     },
     {
@@ -1429,7 +1428,6 @@
       "toolName": "read",
       "path": ".env",
       "branch": "returned",
-      "result": null,
       "notifications": []
     },
     {
@@ -1437,7 +1435,6 @@
       "toolName": "write",
       "path": ".env",
       "branch": "error",
-      "error": "controlled host failure",
       "notifications": [
         [
           "Blocked write to protected path: .env",
@@ -1450,7 +1447,6 @@
       "toolName": "write",
       "path": "safe.rs",
       "branch": "returned",
-      "result": null,
       "notifications": []
     },
     {
@@ -1458,7 +1454,6 @@
       "toolName": "read",
       "path": ".env",
       "branch": "returned",
-      "result": null,
       "notifications": []
     }
   ]

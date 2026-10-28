@@ -410,7 +410,12 @@ fn refused_registration(case: &Case) -> Result<(), String> {
     host.observe().registrations.refuse_at = Some((position, refused("register")));
     let started = super::block_on(exports.start::<SendUserMessage>());
     assert_eq!(started, Err(refused("register")), "{}: answer", case.name);
-    assert!(case.expected.calls.is_empty(), "{}: no effect", case.name);
+    assert_eq!(
+        calls(&host.observed().transcript),
+        case.expected.calls,
+        "{}: effects",
+        case.name
+    );
     let admitted: Vec<String> = case
         .expected
         .registration

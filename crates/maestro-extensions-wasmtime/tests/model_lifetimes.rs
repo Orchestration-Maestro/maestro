@@ -15,6 +15,8 @@ use std::{
 };
 use tokio::sync::{Notify, mpsc};
 
+use crate::model_registered::pending;
+
 /// Effects from real guest callback and destructor calls into application actions.
 #[derive(Default)]
 struct Trace {
@@ -74,9 +76,9 @@ pub(super) async fn retained(simple: bool, object_drop: Option<&'static str>) {
     invocation.start.send(()).unwrap();
     invocation.ready.await.unwrap();
     trace.expect(&["first:payload", "first:response"]).await;
-    assert_pending(&invocation.stream);
+    pending(&invocation.stream);
     Cancellation::new().abort();
-    assert_pending(&invocation.stream);
+    pending(&invocation.stream);
     signal.abort();
     invocation.complete.await.unwrap();
     let result = invocation.stream.result().await;
@@ -182,27 +184,6 @@ async fn observe(runner: &ExtensionRunner<Local>, action: &str) -> Value {
         .unwrap_err()
         .to_string();
     serde_json::from_str(&output).unwrap_or_else(|_| panic!("{output}"))
-}
-
-/// Both observation channels remain genuinely pending until the original signal aborts.
-fn assert_pending(stream: &maestro_models::AssistantMessageEventStream) {
-    use std::{
-        future::Future,
-        task::{Context, Waker},
-    };
-    let mut context = Context::from_waker(Waker::noop());
-    assert!(
-        std::pin::pin!(stream.result())
-            .as_mut()
-            .poll(&mut context)
-            .is_pending()
-    );
-    assert!(
-        std::pin::pin!(stream.next())
-            .as_mut()
-            .poll(&mut context)
-            .is_pending()
-    );
 }
 
 /// Independent result observation leaves exactly the terminal event and then EOF.

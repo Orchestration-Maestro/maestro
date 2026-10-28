@@ -1047,7 +1047,7 @@ sends user messages the way a user types them. `/ask` sends an ordinary message,
 which starts a turn, and reports `Agent is busy. Use /steer or /followup
 instead.` while the agent is working. `/steer` sends an ordinary message while
 idle and a steering message while the agent is working, so that message reaches
-the request in flight. `/followup` sends an ordinary message while idle and
+the next model request. `/followup` sends an ordinary message while idle and
 otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
 it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
 respond concisely.`, so the second instruction arrives with the request.
