@@ -22,10 +22,13 @@ pub(super) fn heard_while_held(event: &SharedAgentEvent) -> Option<SharedAgentEv
         AgentEvent::MessageUpdate {
             message,
             assistant_message_event,
-        } => AgentEvent::MessageUpdate {
-            message: emptied(message),
-            assistant_message_event: held_model_event(assistant_message_event)?,
-        },
+        } => {
+            let assistant_message_event = held_model_event(assistant_message_event)?;
+            AgentEvent::MessageUpdate {
+                message: emptied(message),
+                assistant_message_event,
+            }
+        }
         AgentEvent::ToolExecutionUpdate {
             tool_call,
             partial_result,
