@@ -152,7 +152,7 @@ async fn modes(runner: &Rc<AgentSession>, root: &Path) {
     assert_eq!(single["content"][0]["text"], text);
     assert_eq!(
         single["details"]["results"][0]["usage"],
-        json!({"input":12,"output":8,"cacheRead":4,"cacheWrite":6,"cost":0.003,"contextTokens":19,"turns":2})
+        json!({"input":12.0,"output":8.0,"cacheRead":4.0,"cacheWrite":6.0,"cost":0.003,"contextTokens":19.0,"turns":2})
     );
     assert_eq!(
         single["details"]["results"][0]["stderr"],
