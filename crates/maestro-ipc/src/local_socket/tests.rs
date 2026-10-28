@@ -29,7 +29,8 @@ fn socket_stale_errors_exclude_would_block() {
 
 #[test]
 fn socket_identity_records_native_device_and_inode() {
-    let path = std::env::temp_dir().join(format!("mipc-identity-{}.sock", std::process::id()));
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
+    let path = root.path().join("identity.sock");
     let listener = bind_local_listener(&path).unwrap();
     let identity = socket_file_identity(&path).unwrap();
     let metadata = fs::metadata(&path).unwrap();
@@ -43,7 +44,7 @@ fn socket_identity_records_native_device_and_inode() {
 fn saturated_backlog_never_returns_an_unconnected_stream() {
     use rustix::net::{SocketAddrUnix, connect, listen};
     use std::time::{Duration, Instant};
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
     let path = root.path().join("full.sock");
     let listener = bind_local_listener(&path).unwrap();
     let LocalListener::UdSocket(ref native) = listener;
@@ -66,7 +67,7 @@ fn saturated_backlog_never_returns_an_unconnected_stream() {
 
 #[test]
 fn bounded_connections_are_close_on_exec() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
     let path = root.path().join("cloexec.sock");
     let _listener = bind_local_listener(&path).unwrap();
     let stream =
