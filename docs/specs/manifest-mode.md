@@ -385,7 +385,8 @@ may do with them:
 | `multiplexer.remote.manageSshConfig` | lock; default |
 | `update.versionCheck` | lock; default |
 | `update.channel` | lock; default |
-| `shellPath`, `npmCommand`, `sessionDir`, `daemon.paneShell`, `daemon.worktreesDirectory` | lock; default (a location, written in the key's own path syntax) |
+| `shellPath`, `sessionDir`, `daemon.paneShell`, `daemon.worktreesDirectory` | lock (a location, written in the key's own path syntax; the manifest holds a value only as the lock's value) |
+| `npmCommand` | lock (the package-manager argument vector, program and arguments; the manifest holds a value only as the lock's value) |
 | `keybindings.<action>` | lock (one named action; other actions stay free) |
 | `showChangelog` | lock (whether the changelog shows at start) |
 | `credentials.<provider>` | lock (the credential sources allowed for one provider) |
@@ -400,9 +401,11 @@ Maestro writes, and `roles.<role>.{model,thinking}`, which the policy's `roles`
 member governs (M12). Guard rules take none either (M20).
 
 Invariants: a lock on an unknown key or on a key without a lock meaning, and a bound
-on a non-numeric, non-thinking key, make the manifest invalid; a lock name outside
-the `locked` row is an unknown key. The manifest package holds the governed-key
-table; the core holds none.
+on a non-numeric, non-thinking key, make the manifest invalid; so does a manifest
+value for a location or command key (`shellPath`, `npmCommand`, `sessionDir`,
+`daemon.paneShell`, `daemon.worktreesDirectory`) that `locked` does not name; a
+lock name outside the `locked` row is an unknown key. The manifest package holds
+the governed-key table; the core holds none.
 
 #### Lock meanings
 
@@ -419,7 +422,8 @@ local-addition locks of M6.4 to kinds that have their own owners.
 | `mcpServers` | Only the manifest's servers exist. A required server is the by-value lock: it cannot be dropped (M13). | Servers defined in the user's and the project's gateway configuration are ignored with a diagnostic. | A gateway option that adds a server refuses the run. | MCP package |
 | presentation keys (`theme`, `themes`, `shellCommandPrefix` and the rest) | The key has the manifest's value, or the engine default when the manifest sets none. | A user or project value is replaced by the locked value with a diagnostic. | `/settings`, a setter or a flag that sets a different value is refused. | Settings owner (H1); frontends render |
 | `keybindings.<action>` | The binding of one named action is the manifest's (a string or a list of strings, the forms `keybindings.json` accepts), or the action's default when the manifest sets none. Other actions stay free. | The user's `keybindings.json` entry for that action is ignored with a diagnostic; every other entry applies. The file is never rewritten. | An SDK or extension call that sets that action's binding is refused. | Application's keybinding loader; frontends render |
-| `shellPath`, `npmCommand`, `sessionDir`, `daemon.paneShell`, `daemon.worktreesDirectory` | The program or folder is the manifest's value, written in the syntax the key already reads: an absolute path, and `~` or `~/` where the key accepts home-relative paths. For `sessionDir`, new session files are stored only there. | A user or project value is replaced with a diagnostic. Session files stored elsewhere stay where they are. | A flag or environment override that names a different value is refused (`--session-dir` and `MAESTRO_CODING_AGENT_SESSION_DIR` for `sessionDir`), and so is `--session <path>` naming a file outside the locked folder. A location equal to the locked one after the key's own expansion is accepted; the comparison is lexical. | Settings owner (H1); the session manager and the process launchers read the effective value; the daemon reads it through H3 |
+| `shellPath`, `sessionDir`, `daemon.paneShell`, `daemon.worktreesDirectory` | The program or folder is the manifest's value, written in the syntax the key already reads: an absolute path, and `~` or `~/` where the key accepts home-relative paths. For `sessionDir`, new session files are stored only there. | A user or project value is replaced with a diagnostic. Session files stored elsewhere stay where they are. | A flag or environment override that names a different value is refused (`--session-dir` and `MAESTRO_CODING_AGENT_SESSION_DIR` for `sessionDir`), and so is `--session <path>` naming a file outside the locked folder. A location equal to the locked one after the key's own expansion is accepted; the comparison is lexical. | Settings owner (H1); the session manager and the process launchers read the effective value; the daemon reads it through H3 |
+| `npmCommand` | The package-manager command is the manifest's argument vector: the program and every argument after it, for example `["mise", "exec", "node@20", "--", "npm"]`. The program is resolved as the key resolves it today, so it need not be an absolute path. | A user or project vector is replaced as a whole with a diagnostic; arguments are never merged or dropped. | A setter, settings edit or SDK call that sets a different vector is refused. A vector equal to the locked one, entry by entry and in order, is accepted. | Settings owner (H1); the package manager reads the effective vector |
 | `showChangelog` | The changelog entries since the last run show at interactive start (`true`, as today) or never show (`false`). `lastChangelogVersion` is state Maestro writes, not a preference, so a lock on it is invalid; this is the nearest useful lock, and the state stays Maestro's and is written as before. | The key exists only in the base layer; the user's files cannot set it. | A settings edit of the key is refused. `/changelog` still shows the full changelog on request under either value. | Settings owner (H1); the interactive start reads the effective value |
 | `credentials.<provider>` | The sources Maestro may use for one provider: any of `environment` (the provider's environment variable), `command` (a key produced by a `!` command), `signIn` (sign-in tokens) and `storedFile` (a literal key, whether stored by login, written in the model file or passed with `--api-key`). Secrets are never manifest values, so this is the nearest useful lock. A value naming a secret or another source makes the manifest invalid. | A stored record or environment variable of an excluded source is ignored with a diagnostic. The credentials file is never rewritten by a read. | Storing a key or tokens of an excluded source (a pasted key when only `signIn` is allowed), `--api-key` when `storedFile` is excluded, and an SDK or extension write of one are refused before any file changes. | Credentials owner (`AuthStorage`), asked through the decision hook (H2) |
 
@@ -1255,9 +1259,13 @@ changes nothing, and enabling it only withholds text until checked.
   it is ignored with a diagnostic while the entry for another action applies, an
   SDK or extension rebind of the locked action is refused with no change, and the
   file is not rewritten.
-- Machine-path lock: with `shellPath` and `npmCommand` locked, stored user values
-  are replaced with a diagnostic; a flag naming a different program is refused,
-  and one naming the locked value is accepted.
+- Machine-path lock: with `shellPath` locked, a stored user value is replaced with
+  a diagnostic, a flag naming a different program is refused, and one naming the
+  locked value is accepted. With `npmCommand` locked to
+  `["mise", "exec", "node@20", "--", "npm"]`, a stored vector is replaced as
+  a whole with a diagnostic, a setter that changes or drops one argument is
+  refused, and the identical vector is accepted. A manifest value for either key
+  that `locked` does not name makes the manifest invalid.
 - Session-directory lock: with `sessionDir` locked to `~/org-sessions`, a stored
   value is replaced with a diagnostic, new sessions are created only there,
   `--session-dir`, `MAESTRO_CODING_AGENT_SESSION_DIR` and `--session <path>`
