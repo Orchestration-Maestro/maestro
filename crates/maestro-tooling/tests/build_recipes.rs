@@ -142,7 +142,6 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
-#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
@@ -1304,7 +1303,6 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
 }
 
 #[test]
-#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_source_recipes_preserve_invocation_directory() {
     let workspace = Workspace::new();
     let outside = workspace.path().join("outside");
