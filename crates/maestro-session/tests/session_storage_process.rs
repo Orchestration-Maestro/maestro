@@ -40,7 +40,6 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
     stream.read_exact(&mut pid).unwrap();
     let blocked = observe_waiter(u32::from_be_bytes(pid), &stream);
     holder.replace(&original, None).unwrap();
-    drop(holder);
     let output = child.wait_with_output().unwrap();
     assert!(
         output.status.success(),
