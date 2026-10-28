@@ -5,14 +5,49 @@ use super::{
 use maestro_settings::{DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsScope};
 use std::io;
 
+/// The admitted package-list change, including its unchanged-checkout behaviour.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum SourceEditEffect {
+    /// No preference change was needed.
+    Unchanged,
+    /// The source was not configured before acquisition.
+    Addition,
+    /// A configured source would receive a new pin.
+    Replacement,
+    /// Configured source entries would be removed.
+    Removal,
+}
+
 impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Separates additions from pin replacements before acquisition can report no change.
+    fn source_edit_effect(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+        remove: bool,
+    ) -> io::Result<SourceEditEffect> {
+        if remove {
+            return Ok(SourceEditEffect::Removal);
+        }
+        Ok(
+            if self
+                .source_addition(source, scope, SourceAcquisition::CurrentGit)?
+                .is_some()
+            {
+                SourceEditEffect::Addition
+            } else {
+                SourceEditEffect::Replacement
+            },
+        )
+    }
+
     /// Stages exact edits only when admission is installed, preserving ordinary late reads.
     pub(super) fn prepare_source_edit(
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
         remove: bool,
-    ) -> io::Result<Option<(PreparedSettingsEdit, bool)>> {
+    ) -> io::Result<Option<(PreparedSettingsEdit, SourceEditEffect)>> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         {
             let settings = self.options.settings_manager.borrow();
@@ -29,7 +64,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         } else {
             self.source_addition(source, scope, SourceAcquisition::Prepared)?
         };
-        let modified = entries.is_some();
+        let effect = if entries.is_some() {
+            self.source_edit_effect(source, scope, remove)?
+        } else {
+            SourceEditEffect::Unchanged
+        };
         let changes = entries.map_or_else(Vec::new, |entries| {
             vec![SettingsChange {
                 path: vec!["packages".into()],
@@ -56,7 +95,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 settings.report_refusal(scope, message.clone());
                 io::Error::new(io::ErrorKind::PermissionDenied, message)
             })?;
-        Ok(Some((edit, modified)))
+        Ok(Some((edit, effect)))
     }
 }
 

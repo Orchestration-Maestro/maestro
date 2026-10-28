@@ -1,6 +1,7 @@
 //! Source dispatch for explicit install and removal, and settings edits after success.
 use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations, ProgressAction,
+    decisions::SourceEditEffect,
     sources::{self, Source},
 };
 use std::{io, path::Path};
@@ -78,8 +79,10 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<()> {
         let prepared = self.prepare_source_edit(source, scope, false)?;
         let acquisition = self.acquire(source, scope).await?;
-        if let Some((edit, _)) = prepared {
-            if acquisition != SourceAcquisition::CurrentGit {
+        if let Some((edit, effect)) = prepared {
+            if acquisition != SourceAcquisition::CurrentGit
+                || effect != SourceEditEffect::Replacement
+            {
                 self.options
                     .settings_manager
                     .borrow_mut()
@@ -98,12 +101,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<bool> {
         let prepared = self.prepare_source_edit(source, scope, true)?;
         self.release(source, scope).await?;
-        if let Some((edit, changed)) = prepared {
+        if let Some((edit, effect)) = prepared {
             self.options
                 .settings_manager
                 .borrow_mut()
                 .apply_prepared_edit(edit);
-            Ok(changed)
+            Ok(effect != SourceEditEffect::Unchanged)
         } else {
             self.remove_source(source, scope)
         }
