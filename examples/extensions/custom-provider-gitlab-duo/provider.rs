@@ -55,7 +55,12 @@ impl GitLabDuo {
         gitlab_access_token: &str,
     ) -> ExtensionResult<DirectAccessToken> {
         let now = (self.now)();
-        if let Some(cached) = self.direct_access.borrow().as_ref().filter(|cached| cached.expires_at > now) {
+        if let Some(cached) = self
+            .direct_access
+            .borrow()
+            .as_ref()
+            .filter(|cached| cached.expires_at > now)
+        {
             return Ok(cached.clone());
         }
         let response = self
@@ -64,19 +69,31 @@ impl GitLabDuo {
                 url: format!("{GITLAB_COM_URL}/api/v4/ai/third_party_agents/direct_access"),
                 method: Some("POST".into()),
                 headers: vec![
-                    ("Authorization".into(), format!("Bearer {gitlab_access_token}")),
+                    (
+                        "Authorization".into(),
+                        format!("Bearer {gitlab_access_token}"),
+                    ),
                     ("Content-Type".into(), "application/json".into()),
                 ],
-                body: Some(json!({"feature_flags": {"DuoAgentPlatformNext": true}}).to_string().into_bytes()),
+                body: Some(
+                    json!({"feature_flags": {"DuoAgentPlatformNext": true}})
+                        .to_string()
+                        .into_bytes(),
+                ),
                 signal: None,
             })
             .await?;
         if !response.ok() {
             let error = body_text(&*response).await;
             return Err(if response.status() == 403 {
-                format!("GitLab Duo access denied. Ensure GitLab Duo is enabled for your account. Error: {error}")
+                format!(
+                    "GitLab Duo access denied. Ensure GitLab Duo is enabled for your account. Error: {error}"
+                )
             } else {
-                format!("Failed to get direct access token: {} {error}", response.status())
+                format!(
+                    "Failed to get direct access token: {} {error}",
+                    response.status()
+                )
             });
         }
         let mut granted: DirectAccessToken =
