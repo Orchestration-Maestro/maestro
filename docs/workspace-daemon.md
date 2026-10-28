@@ -574,9 +574,9 @@ connection rules.
 
 ## Panes and layouts
 
-The pane commands, the `layout_updated` event and an attached client read one
-projection of a tab, `maestro_daemon::app::layout`. It combines the tab's split tree,
-the view area and the pane chrome.
+The pane commands and the `layout_updated` event read one projection of a tab,
+`maestro_daemon::app::layout`, available to attached clients. It combines the tab's
+split tree, the view area and the pane chrome.
 
 - **View area.** `DaemonState::view_area` is the region panes are laid out in. With no
   client attached it is the headless surface, `daemon.headlessCols` by
