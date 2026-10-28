@@ -4,12 +4,14 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use super::{doom_component::DoomOverlayComponent, doom_engine::DoomEngine, doom_keys::DoomKeys};
+use super::{
+    doom_component::DoomOverlayComponent, doom_engine::DoomEngine, doom_keys::DoomKeys, wad_finder,
+};
 use maestro_extensions_wasm::{
     Background, CommandOptions, Component, CustomFactoryOutcome, CustomUIOptions, ExtensionAPI,
     ExtensionCommandContext, ExtensionComponent, ExtensionFuture, ExtensionResult,
-    ExtensionUIContext, OverlayAnchor, OverlayMargin, OverlayMarginValue, OverlayOptions,
-    OverlayOptionsHandle, OverlayOptionsSource, SizeValue, tools::path_utils,
+    ExtensionUIContext, NotificationType, OverlayAnchor, OverlayMargin, OverlayMarginValue,
+    OverlayOptions, OverlayOptionsHandle, OverlayOptionsSource, SizeValue, tools::path_utils,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -25,6 +27,31 @@ struct ActiveGame {
 /// Retained game selection.
 type Active = Rc<RefCell<Option<ActiveGame>>>;
 
+/// Keeps command errors visible without escaping the game UI boundary.
+async fn command(
+    api: ExtensionAPI,
+    background: Background,
+    active: Active,
+    args: String,
+    ctx: ExtensionCommandContext,
+) -> ExtensionResult<()> {
+    let ui = ctx.ui()?;
+    if !ctx.has_ui()? {
+        return ui.notify(
+            "DOOM requires interactive mode",
+            Some(NotificationType::Error),
+        );
+    }
+    ui.notify("Loading DOOM...", Some(NotificationType::Info))?;
+    if let Err(error) = play(api, background, active, args, ctx).await {
+        ui.notify(
+            &format!("Failed to load DOOM: {error}"),
+            Some(NotificationType::Error),
+        )?;
+    }
+    Ok(())
+}
+
 /// Resolves supplied WAD bytes only when a new engine is needed.
 async fn play(
     api: ExtensionAPI,
@@ -33,7 +60,20 @@ async fn play(
     args: String,
     ctx: ExtensionCommandContext,
 ) -> ExtensionResult<()> {
-    let wad = path_utils::resolve_to_cwd(&api, args.trim(), &ctx.cwd()?)?;
+    let cwd = ctx.cwd()?;
+    let wad = if args.trim().is_empty() {
+        match wad_finder::ensure_wad_file(&api, &cwd).await {
+            Ok(wad) => wad,
+            Err(_) => {
+                return ctx.ui()?.notify(
+                    "Failed to download DOOM WAD file. Check your internet connection.",
+                    Some(NotificationType::Error),
+                );
+            }
+        }
+    } else {
+        path_utils::resolve_to_cwd(&api, args.trim(), &cwd)?
+    };
     let existing = active
         .borrow()
         .as_ref()
@@ -42,8 +82,14 @@ async fn play(
         if old != wad {
             return Err("Reload the extension before changing WAD files".into());
         }
+        ctx.ui()?
+            .notify("Resuming DOOM...", Some(NotificationType::Info))?;
         (engine, true)
     } else {
+        ctx.ui()?.notify(
+            &format!("Loading DOOM from {wad}..."),
+            Some(NotificationType::Info),
+        )?;
         let game = initialize(&api, wad)?;
         let engine = game.engine.clone();
         active.replace(Some(game));
@@ -146,7 +192,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 description: Some("Play DOOM in an overlay. Q pauses and closes it.".into()),
                 get_argument_completions: None,
                 handler: Rc::new(move |args, context| {
-                    Box::pin(play(
+                    Box::pin(command(
                         sender.clone(),
                         background.clone(),
                         active.clone(),

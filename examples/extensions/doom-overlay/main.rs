@@ -5,6 +5,7 @@ pub mod doom_component;
 pub mod doom_engine;
 pub mod doom_keys;
 mod factory;
+pub mod wad_finder;
 pub use factory::factory;
 
 #[cfg(target_arch = "wasm32")]
