@@ -21,6 +21,7 @@ pub struct KeybindingsReset {
 ///
 /// `timestamp` is the caller's observed Unix time in seconds. Existing backups are
 /// never overwritten. Chat actions and unknown members retain their JSON values.
+/// Missing files and documents without multiplexer overrides succeed without writes.
 ///
 /// # Errors
 /// Returns a read, JSON object validation, backup or precommit publication error.
@@ -30,12 +31,24 @@ pub fn reset_multiplexer_keybindings(
     timestamp: u64,
 ) -> io::Result<KeybindingsReset> {
     let path = Path::new(agent_dir).join("keybindings.json");
-    let original = fs::read_to_string(&path)?;
+    let unchanged = KeybindingsReset {
+        backup_path: None,
+        removed: 0,
+        dir_sync: None,
+    };
+    let original = match fs::read_to_string(&path) {
+        Ok(original) => original,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(unchanged),
+        Err(error) => return Err(error),
+    };
     let mut raw: Map<String, Value> = maestro_json::object::from_str(&original)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
     let before = raw.len();
     raw.retain(|key, _| !key.starts_with("multiplexer."));
-    let mut updated = maestro_json::pretty_object(&raw).map_err(io::Error::other)?;
+    if before == raw.len() {
+        return Ok(unchanged);
+    }
+    let mut updated = serde_json::to_string_pretty(&raw).map_err(io::Error::other)?;
     updated.push('\n');
     let backup_path = path.with_file_name(format!("keybindings.json.bak-{timestamp}"));
     let mut options = OpenOptions::new();

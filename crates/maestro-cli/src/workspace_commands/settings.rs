@@ -1,5 +1,7 @@
 //! Presentation of application-owned workspace settings operations.
-use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+use maestro_app::presentation_data::keybindings::{
+    KeybindingsReset, reset_multiplexer_keybindings,
+};
 use std::io::{self, Write};
 
 /// Validate and present a multiplexer keybinding reset beneath the supplied root.
@@ -30,14 +32,20 @@ pub fn run_reset_keys(
             return Ok(1);
         }
     };
-    writeln!(
-        stdout,
-        "Created backup: {}",
-        reset
-            .backup_path
-            .as_ref()
-            .map_or_else(String::new, |path| path.display().to_string())
-    )?;
+    present_reset(reset, stdout, stderr)
+}
+
+/// Present the application outcome without changing its commit status.
+fn present_reset(
+    reset: KeybindingsReset,
+    stdout: &mut dyn Write,
+    stderr: &mut dyn Write,
+) -> io::Result<i32> {
+    let Some(backup_path) = reset.backup_path else {
+        writeln!(stdout, "No multiplexer overrides; defaults already apply.")?;
+        return Ok(0);
+    };
+    writeln!(stdout, "Created backup: {}", backup_path.display())?;
     writeln!(stdout, "Removed {} multiplexer overrides.", reset.removed)?;
     writeln!(
         stdout,
@@ -47,16 +55,6 @@ pub fn run_reset_keys(
         writeln!(stderr, "Keybindings reset; directory sync warning: {error}")?;
     }
     Ok(0)
-}
-
-/// Present the application outcome without changing its commit status.
-#[cfg(test)]
-fn present_reset(
-    _reset: maestro_app::presentation_data::keybindings::KeybindingsReset,
-    _stdout: &mut dyn Write,
-    _stderr: &mut dyn Write,
-) -> io::Result<i32> {
-    Err(io::Error::other("reset presentation unavailable"))
 }
 
 #[cfg(test)]
