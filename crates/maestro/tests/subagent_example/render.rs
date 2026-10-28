@@ -84,6 +84,14 @@ fn result_views(session: &AgentSession) {
             );
         }
     }
+    #[cfg(unix)]
+    {
+        let home = std::env::var("HOME").unwrap();
+        let sibling = format!("{home}-sibling/file.rs");
+        let mut details = details("single");
+        details["results"][0]["messages"][0]["content"][1]["arguments"]["path"] = json!(sibling);
+        assert!(rendered(session, &args, &details, true).contains(&sibling));
+    }
 }
 
 #[test]

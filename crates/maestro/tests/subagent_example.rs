@@ -97,7 +97,30 @@ fn subagent_discovery_refreshes_scopes_and_nearest_project_shadowing() {
                 default["details"]["projectAgentsDir"],
                 root.path(".maestro/agents").to_str().unwrap()
             );
+            #[cfg(unix)]
+            {
+                std::fs::rename(user.join("role.md"), root.path("linked-role.md")).unwrap();
+                std::os::unix::fs::symlink(root.path("linked-role.md"), user.join("role.md"))
+                    .unwrap();
+                assert_eq!(
+                    execute(&session, json!({})).await["content"],
+                    default["content"]
+                );
+            }
             agent(&root.path("project/.maestro/agents"), "role.md", "role");
+            #[cfg(unix)]
+            {
+                std::fs::rename(
+                    root.path("project/.maestro/agents"),
+                    root.path("linked-agents"),
+                )
+                .unwrap();
+                std::os::unix::fs::symlink(
+                    root.path("linked-agents"),
+                    root.path("project/.maestro/agents"),
+                )
+                .unwrap();
+            }
             let both = execute(&session, json!({"agentScope":"both"})).await;
             assert_eq!(
                 both["content"][0]["text"],

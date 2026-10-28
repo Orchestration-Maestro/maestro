@@ -105,8 +105,9 @@ fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
             let _abort = AbortOnDrop(signal.clone());
             let aborted = signal.clone();
             let (send, ready) = tokio::sync::oneshot::channel();
+            let active = Rc::clone(&session);
             let pending = tokio::task::spawn_local(async move {
-                invoked(&session, json!({"agentScope":"project","confirmProjectAgents":false,"tasks":vec![json!({"agent":"role","task":"cancel"});8]}), Some(aborted), Some(progress(send))).await
+                invoked(&active, json!({"agentScope":"project","confirmProjectAgents":false,"tasks":vec![json!({"agent":"role","task":"cancel"});8]}), Some(aborted), Some(progress(send))).await
             });
             ready.await.unwrap();
             let admitted_before_abort = launches.count.get();
@@ -126,6 +127,24 @@ fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
             assert_eq!(admitted_before_abort, 4);
             assert_eq!(launches.count.get(), 4);
             assert_eq!(codes, vec![Some(0); 4]);
+            preaborted(&session, &launches).await;
         })
     });
+}
+
+/// A signal cancelled before admission still terminates the newly owned child.
+async fn preaborted(session: &Rc<AgentSession>, launches: &Launches) {
+    let preaborted = maestro_app::Cancellation::new();
+    preaborted.abort();
+    let result = invoked(
+        session,
+        json!({"agentScope":"project","agent":"role","task":"cancel"}),
+        Some(preaborted),
+        None,
+    )
+    .await;
+    assert!(result.unwrap_err().contains("Subagent was aborted"));
+    let last = launches.children.borrow().last().cloned().unwrap();
+    last.wait().await.unwrap();
+    assert_eq!(launches.count.get(), 5);
 }
