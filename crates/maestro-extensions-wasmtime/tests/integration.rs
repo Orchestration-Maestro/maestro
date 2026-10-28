@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod built_in_tool_renderer;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
