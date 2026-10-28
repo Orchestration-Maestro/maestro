@@ -68,11 +68,11 @@ fn moving_a_pane_to_another_tab_keeps_its_terminal_and_closes_the_emptied_tab() 
     assert_eq!(moved.closed_workspace_id, None);
     assert_eq!((moved.created_tab, moved.created_workspace), (None, None));
     assert_eq!(moved.source_layout, None);
+    let (_, pane) = app.state.parse_pane_id(&moved.pane.pane_id).unwrap();
     let workspace = &app.state.topology.workspaces[0];
-    let source = root_pane(&app, 0);
     assert_eq!(workspace.tabs.len(), 1);
     assert_eq!(
-        workspace.terminal_id(source).map(ToString::to_string),
+        workspace.terminal_id(pane).map(ToString::to_string),
         Some(terminal)
     );
 }
@@ -83,10 +83,10 @@ fn a_focused_move_splits_at_the_ratio_and_focuses_the_moved_pane() {
     assert_eq!(moved.target_layout.panes.len(), 2);
     assert!((moved.target_layout.splits[0].ratio - 0.25).abs() < f32::EPSILON);
     assert_eq!(moved.focused_pane_id, "w1:p1");
-    let source = root_pane(&app, 0);
+    let (_, pane) = app.state.parse_pane_id(&moved.pane.pane_id).unwrap();
     assert_eq!(
         app.state.topology.workspaces[0].tabs[0].layout.focused(),
-        source
+        pane
     );
     assert!(app.state.session_dirty);
 }
