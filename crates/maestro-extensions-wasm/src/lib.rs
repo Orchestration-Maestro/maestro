@@ -133,3 +133,6 @@ pub mod stream;
 pub use stream::{complete, complete_simple, stream, stream_simple};
 
 pub mod wasi;
+
+pub mod settings_manager;
+pub use settings_manager::SettingsManager;
