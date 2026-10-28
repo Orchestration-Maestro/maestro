@@ -189,6 +189,18 @@ fn check_native_declaration(
     dependency: &cargo_metadata::Dependency,
     kind: &Kind,
 ) -> Result<(), String> {
+    if *kind != Kind::Development
+        && owner == "maestro-app"
+        && member == Some("maestro-lock")
+        && dependency
+            .target
+            .as_ref()
+            .map(ToString::to_string)
+            .as_deref()
+            != Some(NATIVE)
+    {
+        return Err("maestro-app: maestro-lock must be a native dependency".into());
+    }
     if member == Some(UNIFIER) && !native_declared(dependency, kind, &Kind::Normal) {
         return Err(format!(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"

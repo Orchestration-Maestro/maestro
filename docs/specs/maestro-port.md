@@ -539,7 +539,7 @@ Move the existing matchers only after this contract lands, through
 workspace dependencies; lock may use the optional path utility, which does not
 change its leaf status. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock. Application uses maestro-lock: atomic file publication.
+may depend on lock. Application uses maestro-lock: atomic file publication, on native targets only.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
