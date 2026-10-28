@@ -320,8 +320,8 @@ type ShellCase = (
     &'static str,
 );
 
-/// Successful, unsuccessful, signalled and failed process completions.
-const SHELL_CASES: [ShellCase; 5] = [
+/// Successful, unsuccessful, signalled and failed terminal or process completions.
+const SHELL_CASES: [ShellCase; 6] = [
     (
         Some(0),
         "",
@@ -357,9 +357,16 @@ const SHELL_CASES: [ShellCase; 5] = [
         "echo controlled",
         "(interactive command failed: controlled wait failure)",
     ),
+    (
+        None,
+        "stop",
+        "i echo controlled",
+        "echo controlled",
+        "(interactive command failed: stop failure)",
+    ),
 ];
 
-/// Covers inherited descriptors, cwd, force removal, statuses and restoration after native failure.
+/// Covers inherited descriptors, cwd, force removal, statuses and restoration after failure.
 #[test]
 fn interactive_shell_restores_terminal_and_returns_child_status() {
     if std::env::var_os("MAESTRO_INTERACTIVE_CHILD").is_none() {
@@ -399,14 +406,18 @@ fn interactive_shell_restores_terminal_and_returns_child_status() {
             tui.start().unwrap();
             clock.settle().unwrap();
             let redraws = tui.full_redraws();
+            if fault == "stop" {
+                terminal.set_stop_error(Some(std::io::ErrorKind::Other));
+            }
             let result = command(&runner, input).await.expect(input);
             assert_eq!(result.output, output);
             assert_eq!(result.exit_code, Some(f64::from(code.unwrap_or(1))));
             assert!(!result.cancelled && !result.truncated);
-            assert_eq!(io.launches.get(), 1);
+            assert_eq!(io.launches.get(), usize::from(fault != "stop"));
             assert_eq!(terminal.events(), ["start", "stop", "start"]);
             clock.settle().unwrap();
             assert_eq!(tui.full_redraws(), redraws + 1);
+            terminal.set_stop_error(None);
             tui.stop().unwrap();
         }
     });
