@@ -799,6 +799,8 @@ remote directory with `pwd`. Without the flag, the registered read, write, edit
 and bash tools use the host's original local operations. With it, those tools
 and user `!` commands run through SSH. Session startup reports the selected host
 and directory; the supplied system prompt names that remote directory.
+If directory discovery fails, these tools and user `!` commands return that error
+instead of running locally. Clearing the flag restores local operations.
 
 Loading and remote execution are opt-in. The local host needs `ssh` on `PATH`,
 key-based authentication and a trusted host key already configured, with no

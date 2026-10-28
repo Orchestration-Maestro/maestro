@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    BeforeAgentStartEventResult, ExtensionAPI, ExtensionContext, ExtensionEvent,
+    BashOperations, BeforeAgentStartEventResult, ExtensionAPI, ExtensionContext, ExtensionEvent,
     ExtensionEventResult, ExtensionFuture, ExtensionResult, FlagOptions, FlagType, FlagValue,
     NotificationType, Presence, SessionEvent, ToolsOptions, UserBashEventResult,
 };
@@ -17,8 +17,8 @@ mod operations;
 mod transport;
 use operations::Remote;
 
-/// Destination resolved after the host supplies its command-line flags.
-type State = Rc<RefCell<Option<Remote>>>;
+/// No flag, or the destination or failure retained for a requested connection.
+type State = Rc<RefCell<Option<ExtensionResult<Remote>>>>;
 
 /// Keeps each built-in definition while selecting operations at execution time.
 fn register(api: &ExtensionAPI, name: &'static str, state: State) -> ExtensionResult<()> {
@@ -26,8 +26,9 @@ fn register(api: &ExtensionAPI, name: &'static str, state: State) -> ExtensionRe
     let registered = api.clone();
     definition.execute = Rc::new(move |id, args, signal, update, ctx| {
         let api = registered.clone();
-        let remote = state.borrow().clone();
+        let remote = state.borrow().clone().transpose();
         Box::pin(async move {
+            let remote = remote?;
             let options = remote.as_ref().map_or_else(
                 || Ok(ToolsOptions::default()),
                 |remote| remote.options(name),
@@ -39,18 +40,12 @@ fn register(api: &ExtensionAPI, name: &'static str, state: State) -> ExtensionRe
     api.register_tool(definition)
 }
 
-/// Resolves the optional destination before reporting its directory to the user.
-async fn start(api: &ExtensionAPI, ctx: &ExtensionContext, state: &State) -> ExtensionResult<()> {
-    let was_remote = state.borrow_mut().take().is_some();
-    let Some(FlagValue::String(value)) = api
-        .get_flag("ssh")?
-        .filter(|value| matches!(value, FlagValue::String(text) if !text.is_empty()))
-    else {
-        if was_remote {
-            ctx.ui()?.set_status("ssh", None)?;
-        }
-        return Ok(());
-    };
+/// Builds a destination from an explicit path or the remote working directory.
+async fn resolve(
+    api: &ExtensionAPI,
+    ctx: &ExtensionContext,
+    value: String,
+) -> ExtensionResult<Remote> {
     let (host, cwd) = if let Some((host, cwd)) = value.split_once(':') {
         (host.to_owned(), cwd.to_owned())
     } else {
@@ -60,19 +55,49 @@ async fn start(api: &ExtensionAPI, ctx: &ExtensionContext, state: &State) -> Ext
     if host.is_empty() || cwd.is_empty() {
         return Err("SSH destination and working directory must not be empty".into());
     }
-    let destination = format!("{host}:{cwd}");
-    *state.borrow_mut() = Some(Remote {
+    Ok(Remote {
         api: api.clone(),
         host,
         cwd,
         local_cwd: ctx.cwd()?,
-    });
+    })
+}
+
+/// Retains discovery failures instead of treating a requested connection as local mode.
+async fn start(api: &ExtensionAPI, ctx: &ExtensionContext, state: &State) -> ExtensionResult<()> {
+    let was_requested = state.borrow_mut().take().is_some();
+    let Some(FlagValue::String(value)) = api
+        .get_flag("ssh")?
+        .filter(|value| matches!(value, FlagValue::String(text) if !text.is_empty()))
+    else {
+        if was_requested {
+            ctx.ui()?.set_status("ssh", None)?;
+        }
+        return Ok(());
+    };
+    *state.borrow_mut() = Some(Err("SSH destination resolution is pending".into()));
+    let resolved = resolve(api, ctx, value).await;
+    *state.borrow_mut() = Some(resolved.clone());
+    let remote = resolved?;
+    let destination = format!("{}:{}", remote.host, remote.cwd);
     let ui = ctx.ui()?;
     let status = ui.theme()?.fg("accent", &format!("SSH: {destination}"))?;
     ui.set_status("ssh", Some(&status))?;
     ui.notify(
         &format!("SSH mode: {destination}"),
         Some(NotificationType::Info),
+    )
+}
+
+/// Returns rejecting shell operations on failure so the host cannot select local execution.
+fn shell_operations(remote: ExtensionResult<Remote>) -> ExtensionResult<BashOperations> {
+    remote.map_or_else(
+        |error| {
+            Ok(BashOperations {
+                exec: Rc::new(move |_, _, _| Box::pin(std::future::ready(Err(error.clone())))),
+            })
+        },
+        |remote| remote.bash(),
     )
 }
 
@@ -94,11 +119,12 @@ fn on_event(
         match event {
             ExtensionEvent::UserBash(_) => {
                 Ok(Some(ExtensionEventResult::UserBash(UserBashEventResult {
-                    operations: Some(remote.bash()?),
+                    operations: Some(shell_operations(remote)?),
                     result: Presence::Missing,
                 })))
             }
             ExtensionEvent::BeforeAgentStart(event) => {
+                let remote = remote?;
                 let prompt = event.system_prompt.replacen(
                     &format!("Current working directory: {}", remote.local_cwd),
                     &format!(
