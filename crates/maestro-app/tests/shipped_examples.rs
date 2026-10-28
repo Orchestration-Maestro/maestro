@@ -238,11 +238,21 @@ fn directory_names(directory: &Path) -> Vec<String> {
     names
 }
 
-/// List file names below a directory, relative to its root, in name order.
+/// List indexed paths in name order, using a directory example's entry point once.
 fn recursive_names(root: &Path, directory: &Path) -> Vec<String> {
     let mut names = Vec::new();
     for entry in fs::read_dir(directory).unwrap() {
         let path = entry.unwrap().path();
+        let main = path.join("main.rs");
+        let path = if path.is_dir()
+            && main
+                .symlink_metadata()
+                .is_ok_and(|metadata| metadata.is_file())
+        {
+            main
+        } else {
+            path
+        };
         if path.is_dir() {
             names.extend(recursive_names(root, &path));
         } else {
