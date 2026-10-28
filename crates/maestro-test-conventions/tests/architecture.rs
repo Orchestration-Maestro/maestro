@@ -626,7 +626,7 @@ fn process_capture_consumers_may_declare_the_owner() {
 }
 
 #[test]
-fn process_leaf_cannot_depend_on_cancellation() {
+fn process_owner_cannot_depend_on_cancellation() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-process", "maestro-cancellation"]);
     for (kind, extra) in DECLARATIONS.iter().chain(&[
@@ -640,7 +640,11 @@ fn process_leaf_cannot_depend_on_cancellation() {
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("maestro-process must not depend on workspace crate maestro-cancellation".into()),
+            Err(if kind.ends_with("dev-dependencies") {
+                "internal dev dependency requires declared dependency-free test support: maestro-process -> maestro-cancellation".into()
+            } else {
+                "forbidden production dependency: maestro-process -> maestro-cancellation".into()
+            }),
             "{kind}{extra}"
         );
     }
