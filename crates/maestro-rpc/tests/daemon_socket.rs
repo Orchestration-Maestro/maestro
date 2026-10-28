@@ -1184,6 +1184,51 @@ fn socket_pane_io_round_trip() {
     });
 }
 
+/// Through `run_server`, a split tab has its ratio changed, is exported and is replaced by an
+/// applied layout, with typed answers.
+#[test]
+fn socket_layout_round_trip() {
+    served_live("socket_layout_round_trip", |socket| {
+        let created = call(&socket, json!({"type": "workspace.create"}));
+        let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
+            panic!("expected a created workspace: {created:?}")
+        };
+        let split = json!({
+            "type": "pane.split", "target_pane_id": root_pane.pane_id, "direction": "right"
+        });
+        assert!(call(&socket, split).is_ok());
+        let ratio = json!({"type": "layout.set_split_ratio", "path": [], "ratio": 0.7});
+        let Ok(ResponseResult::LayoutSplitRatioSet { layout }) = call(&socket, ratio) else {
+            panic!("expected the adjusted layout")
+        };
+        let exported = call(&socket, json!({"type": "layout.export"}));
+        assert_eq!(
+            exported,
+            Ok(ResponseResult::LayoutExport {
+                layout: layout.clone()
+            })
+        );
+        let sleeper = json!({"type": "pane", "command": ["/bin/sleep", "60"]});
+        let apply = json!({
+            "type": "layout.apply", "tab_id": layout.tab_id, "tab_label": "dev", "focus": true,
+            "root": {
+                "type": "split", "direction": "down", "ratio": 0.4,
+                "first": sleeper, "second": sleeper
+            }
+        });
+        let Ok(ResponseResult::LayoutApply { layout: applied }) = call(&socket, apply) else {
+            panic!("expected the applied layout")
+        };
+        assert_eq!(applied.tab_id, "w1:t2");
+        let tabs = tabs_of(call(&socket, json!({"type": "tab.list"})));
+        let listed: Vec<_> = tabs
+            .iter()
+            .map(|tab| (tab.tab_id.as_str(), tab.label.as_str(), tab.pane_count))
+            .collect();
+        assert_eq!(listed, [("w1:t2", "dev", 2)]);
+    });
+}
+
 /// A tab created over the socket without focus leaves the active tab as it was, while
 /// returning the new tab and its root pane.
 #[test]
