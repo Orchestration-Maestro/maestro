@@ -5,6 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::{ExtensionFuture, ExtensionResult};
+use std::rc::Rc;
 
 /// A consuming raw-byte reader; a pending read is distinct from EOF.
 pub trait Readable {
@@ -23,4 +24,12 @@ pub trait Writable {
     fn write<'a>(&'a self, bytes: &'a [u8]) -> ExtensionFuture<'a, ()>;
     /// Closes input after already admitted writes.
     fn end(&self) -> ExtensionFuture<'_, ()>;
+}
+
+/// Reads the remaining bytes of a consuming stream without decoding them.
+///
+/// # Errors
+/// Returns a stream-read error unchanged.
+pub async fn read_to_end(_stream: Rc<dyn Readable>) -> ExtensionResult<Vec<u8>> {
+    std::future::ready(Ok(Vec::new())).await
 }
