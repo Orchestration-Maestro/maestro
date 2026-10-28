@@ -20,7 +20,12 @@ impl Scratch {
 
     /// Path of an entry below the scratch directory.
     pub fn path(&self, relative: &str) -> String {
-        self.0.path().join(relative).to_string_lossy().into_owned()
+        // Join by component, so a Windows path keeps one separator throughout.
+        relative
+            .split('/')
+            .fold(self.0.path().to_path_buf(), |path, part| path.join(part))
+            .to_string_lossy()
+            .into_owned()
     }
 
     /// Write a file below the scratch directory.

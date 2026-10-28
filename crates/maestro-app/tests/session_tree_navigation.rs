@@ -2,8 +2,8 @@
 //! leaf, appended entries, rebuilt history, summary prompts and extension events.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, HarnessOptions, Names, answer, build_tree, case, harness, history_view, load_history,
-    on_task_set, script_responses,
+    Auth, HarnessOptions, Names, answer, as_recorded, build_tree, case, harness, history_view,
+    load_history, on_task_set, script_responses,
 };
 use maestro_app::agent_session::NavigateTreeResult;
 use maestro_extensions::{
@@ -234,7 +234,7 @@ fn navigate(name: &str, scenario: Scenario) -> Value {
             "prompts": *prompts.lock().unwrap(),
             "extensionEvents": *log.borrow(),
         });
-        serde_json::from_str(&observed.to_string().replace(&docs, "$DOCS")).unwrap()
+        as_recorded(observed, &[(&docs, "$DOCS")])
     })
 }
 
