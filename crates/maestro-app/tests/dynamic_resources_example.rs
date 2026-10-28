@@ -162,7 +162,7 @@ fn dynamic_resources_discovery_and_reload_load_shipped_files() {
         let h = harness(HarnessOptions::default()).await;
         fs::create_dir_all(&h.cwd).unwrap();
         for name in ["original", "relocated # Ω"] {
-            let directory = h.scratch.path().join(name);
+            let directory = h.scratch.path().join(name).join("dynamic-resources");
             let artifact = install(&directory);
             let factory = factory(&directory);
             let mut options = ResourceLoaderOptions::<Local>::new(
