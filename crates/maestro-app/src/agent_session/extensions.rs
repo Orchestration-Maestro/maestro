@@ -236,8 +236,11 @@ fn set_model_action(weak: &Weak<AgentSession<Local>>) -> SetModelHandler<Local> 
             {
                 return Ok(false);
             }
-            session.set_model(model).await?;
-            Ok(true)
+            match session.set_model_checked(model).await {
+                Ok(()) => Ok(true),
+                Err(super::decisions::SelectionError::Refused(_)) => Ok(false),
+                Err(super::decisions::SelectionError::Failed(error)) => Err(error.into()),
+            }
         }) as <Local as Execution>::Future<'static, Result<bool, EventError>>
     })
 }

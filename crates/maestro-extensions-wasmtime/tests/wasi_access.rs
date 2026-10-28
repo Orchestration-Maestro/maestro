@@ -336,15 +336,13 @@ fn component_root_access_reaches_sibling_paths() {
 }
 
 /// Each spelling independently writes and reads exact empty and binary file contents.
-#[cfg(unix)]
 async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
     let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
     let cwd = host.request(json!({"op":"cwd"})).await;
-    assert_eq!(
-        cwd["p2"]["path"],
-        json!(std::env::current_dir().unwrap()),
-        "standard cwd: {cwd}"
-    );
+    let native = std::env::current_dir().unwrap();
+    let guest = maestro_extensions::helpers::guest_path(native.to_str().unwrap());
+    assert_eq!(cwd["p2"]["path"], guest, "standard cwd: {cwd}");
+    assert_eq!(cwd["p3"], guest, "asynchronous cwd: {cwd}");
     for generation in ["p2", "p3"] {
         for path in paths {
             for bytes in [b"".as_slice(), b"file\0\xff\x1b\xce\xa9".as_slice()] {
@@ -361,6 +359,218 @@ async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
                 );
             }
         }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn component_root_reaches_below_a_directory_it_may_search_but_not_list() {
+    if maestro_test_process::run_alone(
+        "component_root_reaches_below_a_directory_it_may_search_but_not_list",
+    )
+    .unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let searchable = scratch.path().join("searchable Ω");
+    std::fs::create_dir(&searchable).unwrap();
+    let target = searchable.join("file Ω name");
+    std::fs::write(&target, b"").unwrap();
+    // A privileged run lists every directory, so it has no unlistable parent to reach through.
+    let Some(_restore) = maestro_test_directory::deny(&searchable, 0o311).unwrap() else {
+        eprintln!("skipped: this process may list every directory");
+        return;
+    };
+    run(root_paths(std::slice::from_ref(&target), &target));
+}
+
+/// The drive spelling of a native path, without the verbatim prefix a canonical path keeps.
+#[cfg(windows)]
+fn plain(path: &Path) -> String {
+    let path = path.to_str().unwrap();
+    path.strip_prefix(r"\\?\").unwrap_or(path).to_owned()
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_roots_reach_drive_spellings() {
+    if maestro_test_process::run_alone("component_windows_roots_reach_drive_spellings").unwrap() {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("cwd")).unwrap();
+    std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
+    std::env::set_current_dir(scratch.path().join("cwd")).unwrap();
+    let target = scratch.path().join(r"sibling Ω space\file Ω name");
+    let native = plain(&target);
+    let mut paths: Vec<std::path::PathBuf> = vec![
+        native.clone().into(),
+        native.replace('\\', "/").into(),
+        format!("{}{}", native[..1].to_ascii_lowercase(), &native[1..]).into(),
+        format!(r"\\?\{native}").into(),
+        r"..\sibling Ω space\file Ω name".into(),
+        "../sibling Ω space/file Ω name".into(),
+    ];
+    // An account the host refuses symbolic links has no relative-link spelling to offer.
+    match std::os::windows::fs::symlink_dir(
+        r"..\sibling Ω space",
+        scratch.path().join(r"cwd\relative-link"),
+    ) {
+        Ok(()) => paths.push(r"relative-link\file Ω name".into()),
+        Err(error) => eprintln!("skipped the relative-link spelling: {error}"),
+    }
+    run(root_paths(&paths, &target));
+    std::env::set_current_dir(original).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_roots_reach_a_second_volume() {
+    let first = maestro_test_directory::Scratch::new().unwrap();
+    let drive = plain(first.path())[..1].to_ascii_uppercase();
+    // A host with one writable volume has no second root to reach.
+    let Some(scratch) = ('A'..='Z')
+        .filter(|letter| letter.to_string() != drive)
+        .find_map(|letter| {
+            maestro_test_directory::Scratch::new_in(Path::new(&format!(r"{letter}:\"))).ok()
+        })
+    else {
+        eprintln!("skipped: no writable volume besides {drive}:");
+        return;
+    };
+    let target = scratch.path().join("file Ω name");
+    let native = plain(&target);
+    run(root_paths(
+        &[native.clone().into(), native.replace('\\', "/").into()],
+        &target,
+    ));
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_roots_reach_a_share_working_directory() {
+    if maestro_test_process::run_alone("component_windows_roots_reach_a_share_working_directory")
+        .unwrap()
+    {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("cwd")).unwrap();
+    std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
+    let local = plain(scratch.path());
+    let share = format!(r"\\localhost\{}${}", &local[..1], &local[2..]);
+    // The administrative share is a host premise; without it no share is reachable.
+    if let Err(error) = std::env::set_current_dir(format!(r"{share}\cwd")) {
+        eprintln!("skipped: {share} is unavailable: {error}");
+        return;
+    }
+    let target = scratch.path().join(r"sibling Ω space\file Ω name");
+    let paths = [
+        format!(r"{share}\sibling Ω space\file Ω name").into(),
+        format!(r"\\?\UNC\{}\sibling Ω space\file Ω name", &share[2..]).into(),
+        format!(
+            r"\\LOCALHOST\{}${}\sibling Ω space\file Ω name",
+            local[..1].to_ascii_lowercase(),
+            &local[2..]
+        )
+        .into(),
+        r"..\sibling Ω space\file Ω name".into(),
+    ];
+    run(root_paths(&paths, &target));
+    std::env::set_current_dir(original).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_root_reaches_later_drives_other_shares_and_links() {
+    use std::process::Command;
+    if maestro_test_process::run_alone(
+        "component_windows_root_reaches_later_drives_other_shares_and_links",
+    )
+    .unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("inner")).unwrap();
+    let target = scratch.path().join(r"inner\file Ω name");
+    std::fs::write(&target, b"").unwrap();
+    let local = plain(scratch.path());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        // Every path below is created after the component has listed its root.
+        let drive = ('D'..='Z')
+            .rev()
+            .map(|letter| format!("{letter}:"))
+            .find(|drive| {
+                Command::new("subst")
+                    .arg(drive)
+                    .arg(&local)
+                    .status()
+                    .is_ok_and(|status| status.success())
+            })
+            .unwrap();
+        let _mounted = Subst(drive.clone());
+        let junction = scratch.path().join("junction");
+        let linked = Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(&junction)
+            .arg(scratch.path().join("inner"))
+            .status()
+            .unwrap();
+        assert!(linked.success(), "mklink /J");
+        std::os::windows::fs::symlink_file(&target, scratch.path().join("absolute Ω")).unwrap();
+        let long = scratch.path().join("l".repeat(200)).join("m".repeat(100));
+        std::fs::create_dir_all(&long).unwrap();
+        std::os::windows::fs::symlink_dir(scratch.path().join("inner"), long.join("deep")).unwrap();
+        let share = format!(r"localhost\{}${}", &local[..1], &local[2..]);
+        let mut paths = vec![
+            format!(r"{drive}\inner\file Ω name"),
+            format!(r"\\{share}\inner\file Ω name"),
+            format!(r"\\?\UNC\{share}\inner\file Ω name"),
+            format!(r"{local}\junction\file Ω name"),
+            format!(r"{drive}\junction\file Ω name"),
+            format!(r"{local}\absolute Ω"),
+            format!(r"{}\deep\file Ω name", plain(&long)),
+        ];
+        let cwd = plain(&std::env::current_dir().unwrap());
+        if cwd[..1].eq_ignore_ascii_case(&local[..1]) {
+            paths.push(format!(r"{}\inner\file Ω name", &local[2..]));
+        }
+        reach_after_load(&host, &paths, &target).await;
+    });
+}
+
+/// Each path writes and reads the target, reporting every path that missed it.
+#[cfg(windows)]
+async fn reach_after_load(host: &Harness, paths: &[String], target: &Path) {
+    let bytes = b"file\0\xff\x1b\xce\xa9".as_slice();
+    let mut missed = Vec::new();
+    for generation in ["p2", "p3"] {
+        for path in paths {
+            std::fs::write(target, b"").unwrap();
+            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"write":true,"bytes":bytes})).await;
+            if observed["bytes"] != json!(bytes) || std::fs::read(target).unwrap() != bytes {
+                missed.push(format!("{generation} {path}: {observed}"));
+            }
+        }
+    }
+    assert!(missed.is_empty(), "{missed:#?}");
+}
+
+/// Removes a substituted drive when the test ends, even after a failed assertion.
+#[cfg(windows)]
+struct Subst(String);
+#[cfg(windows)]
+impl Drop for Subst {
+    fn drop(&mut self) {
+        let _removed = std::process::Command::new("subst")
+            .arg(&self.0)
+            .arg("/D")
+            .status();
     }
 }
 
@@ -498,4 +708,247 @@ fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, ki
     });
     drop(permission);
     std::env::set_current_dir(original).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn component_absolute_links_reach_native_targets() {
+    if maestro_test_process::run_alone("component_absolute_links_reach_native_targets").unwrap() {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let cwd = scratch.path().join("cwd");
+    let outside = scratch.path().join("outside Ω");
+    std::fs::create_dir(&cwd).unwrap();
+    std::fs::create_dir(&outside).unwrap();
+    let target = outside.join("bytes");
+    std::os::unix::fs::symlink(&target, cwd.join("absolute-file")).unwrap();
+    std::os::unix::fs::symlink(&outside, cwd.join("absolute-directory")).unwrap();
+    std::os::unix::fs::symlink("../outside Ω/bytes", cwd.join("relative-file")).unwrap();
+    std::os::unix::fs::symlink("../outside Ω", cwd.join("relative-directory")).unwrap();
+    std::os::unix::fs::symlink(outside.join("missing"), cwd.join("dangling")).unwrap();
+    let denied = outside.join("denied");
+    std::fs::write(&denied, b"private").unwrap();
+    let permission = maestro_test_directory::deny(&denied, 0).unwrap();
+    std::env::set_current_dir(&cwd).unwrap();
+    if permission.is_some() {
+        assert_eq!(
+            std::fs::read(&denied).unwrap_err().kind(),
+            std::io::ErrorKind::PermissionDenied
+        );
+        run(absolute_links(&target, Some(&denied)));
+    }
+    run(absolute_links(&target, None));
+    std::env::set_current_dir(original).unwrap();
+}
+
+/// Follows direct paths and relative and absolute links as a native process does.
+#[cfg(unix)]
+async fn absolute_links(target: &Path, denied: Option<&Path>) {
+    let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+    for bytes in [
+        b"first\0\xff".as_slice(),
+        b"updated\0\xfe\xce\xa9".as_slice(),
+    ] {
+        std::fs::write(target, bytes).unwrap();
+        for path in ["absolute-file", "absolute-directory/bytes"] {
+            assert_eq!(std::fs::read(path).unwrap(), bytes, "native {path}");
+        }
+        let mut names: Vec<_> = std::fs::read_dir("absolute-directory")
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        names.sort();
+        assert_eq!(names, ["bytes", "denied"]);
+        assert_eq!(
+            std::fs::read("dangling").unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
+        for generation in ["p2", "p3"] {
+            for path in [
+                target,
+                Path::new("relative-file"),
+                Path::new("relative-directory/bytes"),
+                Path::new("absolute-file"),
+                Path::new("absolute-directory/bytes"),
+            ] {
+                let observed = host
+                    .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
+                    .await;
+                assert_eq!(
+                    observed["bytes"],
+                    json!(bytes),
+                    "{generation} {path:?}: {observed}"
+                );
+            }
+            link_failures(&host, generation, denied).await;
+        }
+    }
+}
+
+/// A dangling link and a genuinely unreadable target fail as they do natively.
+#[cfg(unix)]
+async fn link_failures(host: &Harness, generation: &str, denied: Option<&Path>) {
+    let observed = host
+        .request(json!({"op":"file","generation":generation,"path":"dangling","bytes":[]}))
+        .await;
+    assert_eq!(observed["error"], "not-found", "{generation}: {observed}");
+    let Some(denied) = denied else {
+        return;
+    };
+    let observed = host
+        .request(json!({"op":"file","generation":generation,"path":denied,"bytes":[]}))
+        .await;
+    assert_eq!(
+        observed["error"], "permission-denied",
+        "{generation}: {observed}"
+    );
+    if generation == "p3" {
+        assert_eq!(
+            observed["code"], "ErrorCode::Access",
+            "OS denial: {observed}"
+        );
+    }
+}
+
+#[test]
+fn component_creates_and_reads_link_targets() {
+    if maestro_test_process::run_alone("component_creates_and_reads_link_targets").unwrap() {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("outside Ω")).unwrap();
+    let target = scratch.path().join("outside Ω").join("bytes");
+    #[cfg(windows)]
+    let target = std::path::PathBuf::from(plain(&target));
+    std::fs::write(&target, b"linked\0\xff").unwrap();
+    let made = scratch.path().join("native link");
+    #[cfg(unix)]
+    let native = std::os::unix::fs::symlink(&target, &made);
+    #[cfg(windows)]
+    let native = std::os::windows::fs::symlink_file(&target, &made);
+    // An account the host refuses symbolic links has no link to read or create.
+    if let Err(error) = native {
+        eprintln!("skipped: {error}");
+        return;
+    }
+    let relative = Path::new("outside Ω").join("bytes");
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        let observed = host
+            .request(json!({"op":"link","generation":"p2","target":target,"link":made}))
+            .await;
+        assert_link(&observed, &target, "p2 absolute");
+        for (target, name) in [(&target, "absolute"), (&relative, "relative")] {
+            let link = scratch.path().join(format!("{name} component link"));
+            let observed = host
+                .request(json!({"op":"link","generation":"p3","target":target,"link":link}))
+                .await;
+            assert_link(&observed, target, &format!("p3 {name}"));
+            assert_eq!(&std::fs::read_link(&link).unwrap(), target, "p3 {name}");
+        }
+    });
+}
+
+/// A component reads the native target in its own spelling and the bytes behind it.
+fn assert_link(observed: &serde_json::Value, target: &Path, case: &str) {
+    let guest = maestro_extensions::helpers::guest_path(target.to_str().unwrap());
+    assert_eq!(observed["target"], guest, "{case}: {observed}");
+    assert_eq!(
+        observed["bytes"],
+        json!(b"linked\0\xff"),
+        "{case}: {observed}"
+    );
+}
+
+/// A terminal dot must not turn a rejected path into removal of its preceding file.
+#[test]
+fn component_unlink_preserves_terminal_dot() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let victim = scratch.path().join(generation);
+            std::fs::write(&victim, b"keep").unwrap();
+            let path = format!("{}/.", victim.display());
+            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"bytes":[],"action":"unlink"})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert_eq!(std::fs::read(&victim).unwrap(), b"keep");
+        }
+    });
+}
+
+/// Exclusive creation rejects an existing link without creating its missing target.
+#[cfg(unix)]
+#[test]
+fn component_exclusive_creation_rejects_dangling_link() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let target = scratch.path().join(format!("{generation}-missing"));
+            let link = scratch.path().join(generation);
+            std::os::unix::fs::symlink(&target, &link).unwrap();
+            let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[],"action":"exclusive"})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert_eq!(
+                observed["error"],
+                if generation == "p2" {
+                    "AlreadyExists"
+                } else {
+                    "ErrorCode::Exist"
+                }
+            );
+            assert!(!target.exists(), "{generation} created the link target");
+        }
+    });
+}
+
+/// A native non-Unicode target must never be redirected to a lossy sibling.
+#[cfg(unix)]
+#[test]
+fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join(OsStr::from_bytes(b"raw\xff"));
+    let neighbor = scratch.path().join("raw�");
+    std::fs::write(&target, b"native").unwrap();
+    std::fs::write(&neighbor, b"neighbor").unwrap();
+    let link = scratch.path().join("alias");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[120],"write":true})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            if generation == "p3" {
+                assert_eq!(observed["code"], "ErrorCode::IllegalByteSequence");
+            }
+            assert_eq!(std::fs::read(&neighbor).unwrap(), b"neighbor");
+            assert_eq!(std::fs::read(&target).unwrap(), b"native");
+        }
+    });
+}
+
+/// A shared traversal bound must retain the standard interface's loop error.
+#[cfg(unix)]
+#[test]
+fn component_link_cycles_keep_loop_errors() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let link = scratch.path().join("loop");
+    std::os::unix::fs::symlink("loop", &link).unwrap();
+    assert!(std::fs::read(&link).is_err());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":link,"bytes":[]}))
+                .await;
+            assert!(observed["error"].is_string(), "{generation}: {observed}");
+            if generation == "p3" {
+                assert_eq!(observed["code"], "ErrorCode::Loop", "{observed}");
+            }
+        }
+    });
 }

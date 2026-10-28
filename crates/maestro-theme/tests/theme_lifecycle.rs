@@ -227,8 +227,17 @@ fn theme_named_switch_reports_failure_after_fallback() {
     let broken = broken_shipped_state(&scratch);
     let error = broken.set_theme("invalid", None).unwrap_err().to_string();
     assert_ne!(error, selection);
-    assert_eq!(error, "No such file or directory (os error 2)");
+    assert_eq!(error, missing_shipped_theme(&scratch));
     assert!(broken.theme().get().is_err());
+}
+
+/// The native error of reading the fallback theme from the absent shipped directory.
+#[cfg(test)]
+fn missing_shipped_theme(scratch: &Scratch) -> String {
+    match std::fs::read(scratch.path("absent/dark.json")) {
+        Ok(_) => panic!("the shipped theme directory must be absent"),
+        Err(error) => error.to_string(),
+    }
 }
 
 /// A state whose shipped theme directory does not exist, so no fallback can load.
@@ -250,7 +259,7 @@ fn theme_failed_initialization_reports_the_fallback_error_not_the_selection_erro
 
     let broken = broken_shipped_state(&scratch);
     let error = broken.init_theme(Some("invalid"), None).unwrap_err();
-    assert_eq!(error.to_string(), "No such file or directory (os error 2)");
+    assert_eq!(error.to_string(), missing_shipped_theme(&scratch));
     assert!(broken.theme().get().is_err());
 }
 

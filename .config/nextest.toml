@@ -8,7 +8,7 @@ slow-timeout = { period = "60s", terminate-after = 6 }
 command = "sh .config/prepare-author-component.sh"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_stdout::) | test(native_io::) | test(tools_example::) | test(qna_example::)))"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(/_example::/)))"
 setup = "author-component"
 
 [test-groups.file-trigger]

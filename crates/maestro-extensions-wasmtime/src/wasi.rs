@@ -1,4 +1,6 @@
 //! One owned operating environment shared by both standard-interface generations.
+pub(crate) mod root;
+use maestro_extensions::helpers::guest_path;
 use std::{
     io::{self, Write},
     pin::Pin,
@@ -65,7 +67,7 @@ impl AsyncWrite for Stdout {
     }
 }
 /// Copies the native environment, reserving the artifact location for this instance.
-pub(crate) fn build(path: &str, output: Option<Stdout>) -> wasmtime::Result<WasiCtx> {
+pub(crate) fn build(path: &str, output: Option<Stdout>) -> WasiCtx {
     let env: Vec<_> = std::env::vars_os()
         .filter(|(key, _)| {
             if cfg!(windows) {
@@ -93,16 +95,14 @@ pub(crate) fn build(path: &str, output: Option<Stdout>) -> wasmtime::Result<Wasi
         .allow_ip_name_lookup(true)
         .allow_tcp(true)
         .allow_udp(true);
-    if cfg!(unix) {
-        if let Ok(cwd) = std::env::current_dir()
-            && let Some(cwd) = cwd.to_str()
-        {
-            builder.initial_cwd(cwd);
-        }
-        builder.preopened_dir("/", "/", wasmtime_wasi::FsPerms::ReadWrite)?;
+    let cwd = std::env::current_dir()
+        .ok()
+        .and_then(|cwd| cwd.to_str().map(str::to_owned));
+    if let Some(cwd) = cwd {
+        builder.initial_cwd(guest_path(&cwd));
     }
     if let Some(output) = output {
         builder.stdout(output);
     }
-    Ok(builder.build())
+    builder.build()
 }

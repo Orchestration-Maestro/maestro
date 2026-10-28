@@ -3,9 +3,11 @@
 //! commands, the extension runtime and the agent-event dispatch.
 mod bash;
 mod compaction;
+mod decisions;
 mod events;
 mod export;
 mod extensions;
+mod held;
 mod lifecycle;
 mod navigation;
 mod prompting;

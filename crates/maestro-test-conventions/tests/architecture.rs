@@ -2312,6 +2312,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
 
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
+    assert!(owner_callers().contains(&"maestro-lock"));
     support_inventory_matches_contract(
         OWNER,
         support::policy::TEST_PROCESS_CALLERS,
@@ -2524,6 +2525,28 @@ fn extension_and_rpc_test_edges_are_native() {
                 "{target} in {table}"
             );
         }
+    }
+}
+
+#[test]
+fn session_lock_edge_is_scoped() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-session", "maestro-lock"]);
+    check_permitted_declarations(&workspace, "maestro-session", &["maestro-lock"]);
+
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-models", "maestro-lock"]);
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-models",
+            "maestro-models",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("forbidden production dependency: maestro-models -> maestro-lock".into()),
+            "{kind}{extra}"
+        );
     }
 }
 
@@ -3451,4 +3474,10 @@ fn guest_schema_validation_edge_is_native_development_only() {
         caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
+}
+
+/// Native link traversal can be shared without adding an effect owner or a dependency cycle.
+#[test]
+fn final_link_consumers_may_use_the_path_utility() {
+    native_consumers_may_declare_the_utility(&["maestro-lock", "maestro-extensions-wasmtime"]);
 }

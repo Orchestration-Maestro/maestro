@@ -79,6 +79,9 @@ mod exec;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/load_time.rs"]
+mod load_time;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/oauth.rs"]
 mod oauth;
 #[cfg(target_arch = "wasm32")]
@@ -162,6 +165,7 @@ mod model_protocol_routes;
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         check_start(&api)?;
+        load_time::publish(&api)?;
         providers::factory(&api)?;
         register_callbacks(&api)?;
         let renderer_api = api.clone();

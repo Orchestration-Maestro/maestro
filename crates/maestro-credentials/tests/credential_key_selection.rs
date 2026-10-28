@@ -127,9 +127,32 @@ mod tests {
         assert_eq!(key.as_deref(), Some("last"));
     }
 
+    /// Variable carrying the Windows parent's Git Bash into its cleared child.
+    const GIT_BASH: &str = "MAESTRO_TEST_GIT_BASH";
+
+    /// Run `test` in a cleared child with `variables`, plus on Windows the Git Bash that
+    /// configured helpers run in, found where the native shell selector looks.
+    fn run_with_helpers(test: &str, variables: &[(&str, &str)]) {
+        let bash = std::env::var("ProgramFiles")
+            .ok()
+            .filter(|_| cfg!(windows))
+            .map(|programs| format!("{programs}\\Git\\bin\\bash.exe"));
+        let mut environment = variables.to_vec();
+        environment.extend(bash.as_deref().map(|bash| (GIT_BASH, bash)));
+        run_isolated(test, &environment);
+    }
+
+    /// Native helper execution; Windows runs helpers in the configured Git Bash.
+    fn native_operations() -> ProcessConfigValueOperations {
+        ProcessConfigValueOperations::new(|| {
+            let bash = std::env::var(GIT_BASH).map_err(std::io::Error::other)?;
+            Ok((bash, vec!["-c".to_owned()]))
+        })
+    }
+
     /// Real shell commands resolve with the same trimming and pipes.
     async fn native_commands_resolve() {
-        let native = ProcessConfigValueOperations::new(|| unreachable!("Unix avoids selection"));
+        let native = native_operations();
         for (command, expected) in [
             ("!printf 'k2-native\\n\\n'", "k2-native"),
             ("!printf 'hello world' | tr ' ' '-'", "hello-world"),
@@ -142,7 +165,7 @@ mod tests {
     #[test]
     fn stored_key_values_keep_resolution_semantics() {
         if !is_child() {
-            return run_isolated(
+            return run_with_helpers(
                 "credential_key_selection::tests::stored_key_values_keep_resolution_semantics",
                 &K2_ENVIRONMENT,
             );
@@ -364,7 +387,7 @@ mod tests {
 
     /// With `OPENAI_API_KEY` set, failing helpers still end the lookup without a key.
     async fn failing_helpers_end_lookup() {
-        let native = ProcessConfigValueOperations::new(|| unreachable!("Unix avoids selection"));
+        let native = native_operations();
         let commands = [
             "!exit 1",
             "!maestro-no-such-helper-k7",
@@ -384,7 +407,7 @@ mod tests {
         if is_child() {
             return block_on(failing_helpers_end_lookup());
         }
-        run_isolated(
+        run_with_helpers(
             "credential_key_selection::tests::stored_helper_failure_does_not_consult_ambient_sources",
             &[("OPENAI_API_KEY", "ambient")],
         );

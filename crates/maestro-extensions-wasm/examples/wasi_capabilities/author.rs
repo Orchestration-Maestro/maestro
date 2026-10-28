@@ -6,6 +6,7 @@
 )]
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
+    tools::path_utils::guest_path,
 };
 use serde_json::{Value, json};
 use std::{cell::Cell, rc::Rc};
@@ -60,7 +61,20 @@ async fn dispatch(
         Some("basics") => basics(&request)?,
         Some("close-pending") => network::close_pending(&request, &reporter.events()).await?,
         Some("listen") => network::listen(&request, &reporter.events()).await?,
-        Some("file") => filesystem::operate(&request).await?,
+        Some("file") => {
+            let path = request["path"].as_str().ok_or("missing path")?;
+            filesystem::operate(&request, &guest_path(&reporter, path)?).await?
+        }
+        Some("link") => {
+            let target = request["target"].as_str().ok_or("missing target")?;
+            let link = request["link"].as_str().ok_or("missing link")?;
+            filesystem::link(
+                &request,
+                &guest_path(&reporter, target)?,
+                &guest_path(&reporter, link)?,
+            )
+            .await?
+        }
         Some("cwd") => filesystem::cwd(),
         Some("stdio") => {
             stdio::inherited(request["generation"].as_str().ok_or("missing generation")?).await?

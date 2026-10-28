@@ -8,8 +8,6 @@ use maestro_app::{
 };
 use maestro_theme::{SyntectHighlighter, ThemeState};
 use maestro_tui::tui::TerminalHandle;
-#[cfg(not(unix))]
-use std::io;
 use std::{error::Error, rc::Rc};
 use tokio::task::LocalSet;
 
@@ -63,7 +61,6 @@ pub fn launchers(
 }
 
 /// Wire the native terminal and footer effects to the interactive frontend.
-#[cfg(unix)]
 fn interactive(
     runtime: Rc<AgentSessionRuntime>,
     options: InteractiveModeOptions,
@@ -87,25 +84,4 @@ fn interactive(
             ),
         ),
     )?)
-}
-
-/// Leave unsupported native presentation to the existing I/O error boundary.
-#[cfg(not(unix))]
-fn interactive(
-    _: Rc<AgentSessionRuntime>,
-    _: InteractiveModeOptions,
-    _: Rc<LocalSet>,
-    _: Rc<ThemeState>,
-    _: TerminalHandle,
-) -> Result<Rc<dyn InteractiveModeRunner>, Box<dyn Error>> {
-    Err(unsupported_terminal().into())
-}
-
-/// The native adapter has no terminal implementation for this platform.
-#[cfg(not(unix))]
-pub fn unsupported_terminal() -> io::Error {
-    io::Error::new(
-        io::ErrorKind::Unsupported,
-        "native terminal is unavailable on this platform",
-    )
 }
