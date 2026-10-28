@@ -81,19 +81,37 @@ fn matches_prefix(command: &str, prefix: &str) -> bool {
             .is_some_and(|rest| rest.starts_with([' ', '\t']))
 }
 
+/// Reads comma-separated prefixes at command time for case-insensitive detection.
+fn configured(name: &str) -> Vec<String> {
+    std::env::var(name)
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_lowercase)
+        .collect()
+}
+
 /// Detects the start or last pipe operand without parsing shell syntax.
 fn is_interactive(command: &str) -> bool {
     let command = command.trim().to_lowercase();
-    DEFAULT_INTERACTIVE_COMMANDS.iter().any(|prefix| {
-        matches_prefix(&command, prefix)
-            || command.rsplit_once('|').is_some_and(|(_, tail)| {
-                let tail = tail.trim();
-                tail == *prefix
-                    || tail
-                        .strip_prefix(prefix)
-                        .is_some_and(|rest| rest.starts_with(' '))
-            })
-    })
+    let added = configured("INTERACTIVE_COMMANDS");
+    let excluded = configured("INTERACTIVE_EXCLUDE");
+    DEFAULT_INTERACTIVE_COMMANDS
+        .iter()
+        .copied()
+        .chain(added.iter().map(String::as_str))
+        .filter(|prefix| !excluded.iter().any(|excluded| excluded == prefix))
+        .any(|prefix| {
+            matches_prefix(&command, prefix)
+                || command.rsplit_once('|').is_some_and(|(_, tail)| {
+                    let tail = tail.trim();
+                    tail == prefix
+                        || tail
+                            .strip_prefix(prefix)
+                            .is_some_and(|rest| rest.starts_with(' '))
+                })
+        })
 }
 
 /// Prevents normal shell execution with an already-produced result.
