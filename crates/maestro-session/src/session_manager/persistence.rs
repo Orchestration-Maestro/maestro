@@ -6,6 +6,7 @@ use super::{
 use maestro_request::presence::Presence;
 use serde::Serialize;
 use serde_json::{Map, Value, ser::Formatter};
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     io::{self, Write},
@@ -101,7 +102,8 @@ impl SessionManager {
         cwd_override: Option<&str>,
     ) -> io::Result<Self> {
         let path = absolute(path)?;
-        let entries = files::load_entries_from_file(&path)?;
+        let bytes = super::storage::read(&path)?;
+        let entries = files::entries_from_bytes(&bytes);
         let cwd = match cwd_override {
             Some(cwd) => cwd.to_owned(),
             None => match entries.first().and_then(|header| header.get("cwd")) {
@@ -115,7 +117,7 @@ impl SessionManager {
         let directory =
             session_dir.map_or_else(|| maestro_path::join(&[&path, ".."]), str::to_owned);
         let mut manager = Self::base(cwd, directory, true)?;
-        manager.install(path, entries)?;
+        manager.install(path, bytes)?;
         Ok(manager)
     }
 
@@ -143,23 +145,16 @@ impl SessionManager {
     /// Propagates native reads, conversion, rewrite and selected identity errors.
     pub fn set_session_file(&mut self, session_file: &str) -> io::Result<()> {
         let path = absolute(session_file)?;
-        let entries = files::load_entries_from_file(&path)?;
-        self.install(path, entries)
+        let bytes = super::storage::read(&path)?;
+        self.install(path, bytes)
     }
 
     /// Prepare a selected history without publishing inconsistent retained state.
-    fn install(&mut self, path: String, mut entries: Vec<FileEntry>) -> io::Result<()> {
+    fn install(&mut self, path: String, bytes: Vec<u8>) -> io::Result<()> {
         let exists = std::path::Path::new(&path).exists();
+        let entries = self.prepare_entries(&path, bytes)?;
         let mut by_id = std::collections::HashMap::new();
         let mut leaf_id = None;
-        if entries.is_empty() {
-            entries = Self::in_memory(Some(&self.cwd))?.file_entries;
-            if exists && self.persist {
-                rewrite(&path, &entries)?;
-            }
-        } else if super::conversions::migrate(&mut entries, uuid::Uuid::new_v4)? && self.persist {
-            rewrite(&path, &entries)?;
-        }
         let (mut labels, mut label_timestamps) = (Map::new(), Map::new());
         build_index(
             &entries,
@@ -178,6 +173,30 @@ impl SessionManager {
         self.session_file = Some(path);
         self.flushed = exists;
         Ok(())
+    }
+
+    /// Repeats conversion when a locked re-read observes a concurrent writer.
+    fn prepare_entries(&self, path: &str, mut bytes: Vec<u8>) -> io::Result<Vec<FileEntry>> {
+        loop {
+            let mut entries = files::entries_from_bytes(&bytes);
+            let changed = if entries.is_empty() {
+                entries = Self::in_memory(Some(&self.cwd))?.file_entries;
+                std::path::Path::new(path).exists()
+            } else {
+                super::conversions::migrate(&mut entries, uuid::Uuid::new_v4)?
+            };
+            if !changed || !self.persist {
+                return Ok(entries);
+            }
+            match super::storage::rewrite_session_file(
+                path,
+                &Sha256::digest(&bytes).into(),
+                &encode_entries(&entries)?,
+            )? {
+                Some(current) => bytes = current,
+                None => return Ok(entries),
+            }
+        }
     }
 
     /// Write the extracted history now only when it holds an assistant message.
@@ -257,13 +276,27 @@ fn absolute(path: &str) -> io::Result<String> {
     maestro_resources::paths::resolve(&[path])
 }
 
-/// Rewrite retained records in order, leaving native partial writes in place.
+/// Publishes a new branch without overwriting a file that another writer created.
 pub(super) fn rewrite(path: &str, entries: &[FileEntry]) -> io::Result<()> {
+    if super::storage::rewrite_session_file(
+        path,
+        &Sha256::digest([]).into(),
+        &encode_entries(entries)?,
+    )?
+    .is_some()
+    {
+        return Err(io::ErrorKind::AlreadyExists.into());
+    }
+    Ok(())
+}
+
+/// Encodes retained records in their publication order.
+fn encode_entries(entries: &[FileEntry]) -> io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
     for entry in entries {
         bytes.extend(encode(entry)?);
     }
-    fs::write(path, bytes)
+    Ok(bytes)
 }
 
 /// Compact float spelling for the JSONL wire producer.
