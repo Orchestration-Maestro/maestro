@@ -121,6 +121,11 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             .as_deref()
             .or(discovered.as_deref())
             .and_then(|input| resolve_prompt_input(input, "system prompt"));
+        let system_prompt = if options.system_prompt.is_none() && discovered.is_none() {
+            self.state.borrow().base_system_prompt.clone()
+        } else {
+            system_prompt
+        };
         let system_prompt = apply(options.system_prompt_override.as_ref(), system_prompt);
         self.state.borrow_mut().system_prompt = system_prompt.map(Rc::from);
 
@@ -137,7 +142,9 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             .filter_map(|input| resolve_prompt_input(input, "append system prompt"))
             .collect();
         let appended = apply(options.append_system_prompt_override.as_ref(), appended);
-        self.state.borrow_mut().append_system_prompt = Rc::from(appended);
+        let mut combined = self.state.borrow().base_append_text.clone();
+        combined.extend(appended);
+        self.state.borrow_mut().append_system_prompt = Rc::from(combined);
         Ok(())
     }
 }

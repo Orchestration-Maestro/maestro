@@ -2900,6 +2900,12 @@ impl Imports for Controlled {
         observed.register(format!("shortcut {shortcut}"), handler.id);
         Ok(())
     }
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("load-time {contributions}"));
+        Ok(())
+    }
     fn register_flag(&self, name: &str, options: &crate::FlagOptions) -> ExtensionResult<()> {
         if let Some(error) = self.observed.borrow_mut().registrations.refusal() {
             return Err(error);

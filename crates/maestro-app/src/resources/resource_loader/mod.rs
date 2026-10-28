@@ -1,9 +1,11 @@
 //! Extensions, skills, prompt templates, themes, browser contributions, context files and
 //! system prompt files discovered for one working directory, with provenance for every resource.
 
+mod base_packages;
 mod context;
 mod discovery;
 mod extensions;
+mod load_time;
 mod overrides;
 mod themes;
 
@@ -106,6 +108,10 @@ pub trait ResourceLoader<E: ExtensionExecution = Threaded> {
     fn get_system_prompt(&self) -> Option<Rc<str>>;
     /// The texts appended to the system prompt.
     fn get_append_system_prompt(&self) -> Rc<[String]>;
+    /// Contributed model files in order, ranked before the catalog's existing files.
+    fn get_model_files(&self) -> Vec<String> {
+        Vec::new()
+    }
     /// Adds extension-contributed locations and reloads each kind that gained some.
     ///
     /// # Errors
@@ -128,6 +134,8 @@ pub struct ResourceLoaderOptions<E: ExtensionExecution = Threaded> {
     pub event_bus: Option<EventBusController<E>>,
     /// Existing application tool services available during extension construction.
     pub tool_construction: Option<maestro_extensions::ToolConstruction>,
+    /// Ordered base package sources whose factories run before other extensions.
+    pub base_package_sources: Vec<String>,
     /// Extension sources loaded before configured ones.
     pub additional_extension_paths: Vec<String>,
     /// Skill paths loaded after discovered ones.
@@ -171,6 +179,7 @@ impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
             module_loader,
             event_bus: None,
             tool_construction: None,
+            base_package_sources: Vec::new(),
             additional_extension_paths: Vec::new(),
             additional_skill_paths: Vec::new(),
             additional_prompt_template_paths: Vec::new(),
@@ -241,6 +250,12 @@ struct LoaderState<E: ExtensionExecution> {
     system_prompt: Option<Rc<str>>,
     /// The appended texts.
     append_system_prompt: Rc<[String]>,
+    /// Base model files in contribution order.
+    model_files: Vec<String>,
+    /// The system prompt candidate below ordinary prompt inputs.
+    base_system_prompt: Option<String>,
+    /// Text that always precedes the ordinary append choice.
+    base_append_text: Vec<String>,
     /// Skill paths and contributions.
     skill_sources: Contributed,
     /// Prompt template paths and contributions.
@@ -337,6 +352,9 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             agents_files: Rc::from([]),
             system_prompt: None,
             append_system_prompt: Rc::from([]),
+            model_files: Vec::new(),
+            base_system_prompt: None,
+            base_append_text: Vec::new(),
             skill_sources: Contributed::default(),
             prompt_sources: Contributed::default(),
             theme_sources: Contributed::default(),
@@ -411,6 +429,9 @@ impl<E: DefaultEventBus> ResourceLoader<E> for DefaultResourceLoader<E> {
     }
     fn get_append_system_prompt(&self) -> Rc<[String]> {
         Rc::clone(&self.state.borrow().append_system_prompt)
+    }
+    fn get_model_files(&self) -> Vec<String> {
+        self.state.borrow().model_files.clone()
     }
     fn extend_resources(&self, paths: ResourceExtensionPaths) -> io::Result<()> {
         let contributions = [

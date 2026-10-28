@@ -421,12 +421,15 @@ fn find_native_symlinks_and_invalid_utf8_keep_fd_results() {
         "*link*",
         &["linked-dir", "linked-file", "dangling-link"],
     );
-    std::fs::write(
-        root.path()
-            .join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
-        b"",
-    )
-    .unwrap();
+    let invalid = std::ffi::OsStr::from_bytes(b"invalid-\xff");
+    if !root.keeps_distinct(&[invalid]).unwrap() {
+        eprintln!(
+            "the lossy name needs a host that stores the bytes {:?}",
+            invalid.as_bytes()
+        );
+        return;
+    }
+    std::fs::write(root.path().join(invalid), b"").unwrap();
     assert_files(&root, "invalid-*", &["invalid-�"]);
 }
 /// Native nested ignore rules with both repository states.
