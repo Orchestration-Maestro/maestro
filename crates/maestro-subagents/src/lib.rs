@@ -4,6 +4,8 @@
 pub mod agents;
 /// Tool registration over guest capabilities.
 mod extension;
+/// Child observations and native process isolation.
+mod runs;
 
 use maestro_extensions_wasm::{ExtensionAPI, ExtensionFuture};
 
