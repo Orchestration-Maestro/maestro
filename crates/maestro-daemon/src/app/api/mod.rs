@@ -6,6 +6,7 @@ mod manifests;
 mod notifications;
 mod overlay;
 mod panes;
+mod reads;
 mod respawn;
 mod responses;
 mod state_events;

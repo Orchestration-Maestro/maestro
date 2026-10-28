@@ -25,8 +25,18 @@ impl TerminalReadSnapshot {
     /// older lines were left out; without a limit every line stays.
     #[must_use]
     pub fn limited(text: String, limit: Option<usize>) -> Self {
-        let _ = (text, limit);
-        Self::default()
+        let Some(limit) = limit else {
+            return Self {
+                text,
+                truncated: false,
+            };
+        };
+        let lines: Vec<&str> = text.split_inclusive('\n').collect();
+        let omitted = lines.len().saturating_sub(limit);
+        Self {
+            text: lines[omitted..].concat(),
+            truncated: omitted > 0,
+        }
     }
 }
 

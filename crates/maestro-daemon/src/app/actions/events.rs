@@ -31,43 +31,18 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             screen @ (AppEvent::AgentProcessDetected { .. } | AppEvent::StateChanged { .. }) => {
                 self.handle_screen_event(&screen)
             }
-            AppEvent::HookStateReported {
-                pane_id,
-                source,
-                agent_label,
-                state,
-                message,
-                seq,
-                session_ref,
-            } => self.update_hook_state(
-                pane_id,
-                HookReport {
-                    source,
-                    agent_label,
-                    state,
-                    message,
-                    session_ref,
-                    seq,
-                },
-            ),
-            AppEvent::HookAgentReleased {
-                pane_id,
-                source,
-                agent_label,
-                seq,
-                ..
-            } if !crate::agent_resume::is_official_agent_source(&source, &agent_label) => self
-                .update_terminal_state(pane_id, |terminal| {
-                    terminal.release_agent_with_mutation(&source, &agent_label, seq)
-                }),
+            hook @ (AppEvent::HookStateReported { .. }
+            | AppEvent::AgentSessionReported { .. }
+            | AppEvent::HookMetadataReported { .. }
+            | AppEvent::HookAuthorityCleared { .. }
+            | AppEvent::HookAgentReleased { .. }) => self.handle_hook_event(hook),
             AppEvent::TerminalCwdReported { pane_id, cwd } => {
                 self.update_terminal_cwd(pane_id, cwd);
                 None
             }
             AppEvent::TerminalBell { .. }
             | AppEvent::ClipboardWrite { .. }
-            | AppEvent::TabBarCommandFinished { .. }
-            | AppEvent::HookAgentReleased { .. } => None,
+            | AppEvent::TabBarCommandFinished { .. } => None,
         };
         update.into_iter().collect()
     }
@@ -105,6 +80,57 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                     observed_at,
                 ))
             }),
+            _ => None,
+        }
+    }
+
+    /// Applies an integration's report through the terminal owner; an official release of a
+    /// live agent waits for the process to exit instead.
+    fn handle_hook_event(&mut self, event: AppEvent) -> Option<PaneStateUpdate> {
+        match event {
+            AppEvent::HookStateReported {
+                pane_id,
+                source,
+                agent_label,
+                state,
+                message,
+                seq,
+                session_ref,
+            } => self.update_hook_state(
+                pane_id,
+                HookReport {
+                    source,
+                    agent_label,
+                    state,
+                    message,
+                    session_ref,
+                    seq,
+                },
+            ),
+            AppEvent::AgentSessionReported { pane_id, report } => self
+                .update_terminal_state(pane_id, |terminal| {
+                    terminal.set_agent_session_ref_for_session_start(report)
+                }),
+            AppEvent::HookMetadataReported { pane_id, report } => {
+                self.update_terminal_state(pane_id, |terminal| terminal.set_agent_metadata(report))
+            }
+            AppEvent::HookAuthorityCleared {
+                pane_id,
+                source,
+                seq,
+            } => self.update_terminal_state(pane_id, |terminal| {
+                terminal.clear_hook_authority_with_mutation(source.as_deref(), seq)
+            }),
+            AppEvent::HookAgentReleased {
+                pane_id,
+                source,
+                agent_label,
+                seq,
+                ..
+            } if !crate::agent_resume::is_official_agent_source(&source, &agent_label) => self
+                .update_terminal_state(pane_id, |terminal| {
+                    terminal.release_agent_with_mutation(&source, &agent_label, seq)
+                }),
             _ => None,
         }
     }

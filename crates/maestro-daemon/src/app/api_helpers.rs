@@ -2,6 +2,22 @@
 
 use std::{collections::HashMap, time::Duration};
 
+/// Trims a reporter's agent label and gives a recognized agent its catalogue spelling.
+///
+/// Returns `None` for a blank label; any other label stays as a custom identity.
+pub(super) fn normalize_reported_agent_label(agent: &str) -> Option<String> {
+    let trimmed = agent.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(
+        maestro_detection::agents::parse_agent_label(trimmed).map_or_else(
+            || trimmed.to_owned(),
+            |known| maestro_detection::agents::agent_label(known).to_owned(),
+        ),
+    )
+}
+
 /// Longest accepted metadata source, in Unicode scalars.
 const METADATA_SOURCE_MAX_CHARS: usize = 80;
 /// Shortest accepted token lifetime, in milliseconds.

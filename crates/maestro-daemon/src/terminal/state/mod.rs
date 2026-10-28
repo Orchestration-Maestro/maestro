@@ -485,6 +485,7 @@ pub struct ManagedAgentLaunch {
 }
 
 /// Supplied session identity, freshness and lifecycle-start provenance.
+#[derive(Debug)]
 pub struct SessionStartReport {
     /// Integration provenance admitted into the canonical source domain.
     pub source: String,
