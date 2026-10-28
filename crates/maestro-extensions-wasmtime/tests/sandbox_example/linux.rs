@@ -20,7 +20,16 @@ struct Ui {
 }
 impl ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {
-        maestro_theme::LiveTheme::default()
+        maestro_theme::LiveTheme::from_theme(Rc::new(
+            maestro_theme::load_theme_from_path(
+                concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../maestro-theme/assets/theme/dark.json"
+                ),
+                Some(maestro_theme::ColorMode::Truecolor),
+            )
+            .unwrap(),
+        ))
     }
     fn notify(&self, message: String, _: Option<NotificationType>) -> Result<(), EventError> {
         self.messages.borrow_mut().push(message);
