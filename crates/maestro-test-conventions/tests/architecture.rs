@@ -3475,3 +3475,16 @@ fn guest_schema_validation_edge_is_native_development_only() {
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
 }
+
+/// Repository tooling reuses the resource owner's frontmatter parser.
+#[test]
+fn repository_tooling_may_read_resource_metadata() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tooling", "maestro-resources"]);
+    workspace.member(
+        "maestro-tooling",
+        "maestro-tooling",
+        "[dependencies]\nmaestro-resources = { path = \"../maestro-resources\" }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}

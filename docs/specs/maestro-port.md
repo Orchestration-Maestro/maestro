@@ -357,7 +357,7 @@ from the optional foundation utility described below.
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
-| `maestro-tooling` | automate repository development | — | 0 |
+| `maestro-tooling` | automate repository development | `maestro-resources` | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources`, `maestro-listeners` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
