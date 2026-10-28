@@ -1,5 +1,6 @@
 //! Shows the model, thinking level, context use, working directory and Git branch on the
 //! editor's borders, in place of the footer and the working row.
+// maestro-component: MAESTRO_BORDER_STATUS_EDITOR_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

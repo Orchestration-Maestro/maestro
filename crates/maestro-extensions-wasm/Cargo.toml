@@ -6,9 +6,15 @@ license.workspace = true
 repository.workspace = true
 description = "Author-side contract for native-async extension components."
 
-# Keep these targets in name order, so a new example inserts at its own place.
+# `just example-index` renders these targets from the example sources.
+# example-index:start
 [[example]]
 name = "author_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "auto_commit_on_exit"
+path = "../../examples/extensions/auto_commit_on_exit.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -58,6 +64,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "custom_header"
 path = "../../examples/extensions/custom_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "dirty_repo_guard"
+path = "../../examples/extensions/dirty_repo_guard.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -255,6 +266,11 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "tic_tac_toe"
+path = "../../examples/extensions/tic_tac_toe.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "timed_confirm"
 path = "../../examples/extensions/timed_confirm.rs"
 crate-type = ["cdylib"]
@@ -307,6 +323,7 @@ crate-type = ["cdylib"]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
+# example-index:end
 
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }

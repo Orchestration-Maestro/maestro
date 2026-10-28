@@ -771,6 +771,10 @@ metadata expiry, configuration reload and session scheduling in
 `crates/maestro-daemon/src/app/` derive from the application modules under the
 same license. Workspace attention ordering derives from the workspace aggregate
 module. The daemon's repository queries reuse workspace-owned discovery.
+The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config.rs`
+and its submodules derives from the repository configuration module under the same
+license. Changes include one include walk in place of three, wildcard matching with path
+rules in bounded time, and supplied user files and home directory.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
