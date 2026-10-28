@@ -150,6 +150,19 @@ fn recorded_loader(
     local: Rc<tokio::task::LocalSet>,
     observed: Rc<RefCell<Vec<Value>>>,
 ) -> (DefaultResourceLoader<Local>, Rc<RefCell<SettingsManager>>) {
+    let (options, settings) = recorded_options(root, local, observed);
+    (DefaultResourceLoader::new(options), settings)
+}
+
+/// The SDK and direct loader share the same real component inputs.
+fn recorded_options(
+    root: &crate::support::Root,
+    local: Rc<tokio::task::LocalSet>,
+    observed: Rc<RefCell<Vec<Value>>>,
+) -> (
+    DefaultResourceLoaderOptions<Local>,
+    Rc<RefCell<SettingsManager>>,
+) {
     let bus = create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no tails")),
         Rc::new(|text| panic!("{text}")),
@@ -182,11 +195,106 @@ fn recorded_loader(
                 agent_dir: agent_dir.clone(),
             },
         ));
-    let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+    let options = DefaultResourceLoaderOptions {
         cwd,
         agent_dir,
         settings_manager: Some(settings.clone()),
         resources,
+    };
+    (options, settings)
+}
+
+#[test]
+fn sdk_component_reads_original_settings_on_creation_and_reload() {
+    if !selection().is_child() {
+        let output =
+            TestProcess::current("sdk_component_reads_original_settings_on_creation_and_reload")
+                .unwrap()
+                .case("sdk")
+                .env("MAESTRO_HOST_OPERATIONS_REQUEST", "sdk")
+                .output()
+                .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let root = crate::support::Root::new();
+    let global = json!({"unknown": {"kept": null}, "defaultModel": 17, "packages": ["./empty"]});
+    let packages = sdk_package(&root);
+    let project = json!({});
+    write_settings(
+        &root,
+        &json!({"diskOnly": true}),
+        &json!({"diskProject": true}),
+    );
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, async {
+        let observed = Rc::new(RefCell::new(Vec::<Value>::new()));
+        let (options, settings) = recorded_options(&root, local.clone(), observed.clone());
+        *settings.borrow_mut() =
+            SettingsManager::in_memory(serde_json::from_value(global.clone()).unwrap());
+        let created = maestro_app::create_agent_session(sdk_options(options, settings.clone()))
+            .await
+            .unwrap();
+        assert!(
+            created.extensions_result.errors.is_empty(),
+            "{:?}",
+            created.extensions_result.errors
+        );
+        assert_eq!(
+            observed.take(),
+            vec![json!({"settings": [global, project], "packages": packages})]
+        );
+        settings
+            .borrow_mut()
+            .set_global_key("unknown", "originalOwner", json!(true));
+        created.session.reload().await.unwrap();
+        let mut reloaded = global.clone();
+        reloaded["unknown"]["originalOwner"] = json!(true);
+        assert_eq!(
+            observed.take(),
+            vec![json!({"settings": [reloaded, project], "packages": packages})]
+        );
     });
-    (loader, settings)
+}
+
+/// SDK creation uses its default loader with the supplied live settings owner.
+fn sdk_options(
+    options: DefaultResourceLoaderOptions<Local>,
+    settings: Rc<RefCell<SettingsManager>>,
+) -> maestro_app::CreateAgentSessionOptions {
+    maestro_app::CreateAgentSessionOptions {
+        cwd: Some(options.cwd),
+        agent_dir: Some(options.agent_dir),
+        auth_storage: None,
+        model_registry: None,
+        model: None,
+        thinking_level: None,
+        scoped_models: Vec::new(),
+        no_tools: Some(maestro_app::NoTools::All),
+        tools: None,
+        custom_tools: Vec::new(),
+        resources: maestro_app::SessionResources::Default(Box::new(options.resources)),
+        session_manager: None,
+        settings_manager: Some(settings),
+        session_start_event: None,
+        theme: maestro_theme::LiveTheme::default(),
+        offline: Some(true),
+    }
+}
+
+/// An empty package visible only through the SDK's original in-memory settings.
+fn sdk_package(root: &crate::support::Root) -> Value {
+    let empty = root.path("agent/empty");
+    std::fs::create_dir(&empty).unwrap();
+    std::fs::write(empty.join("package.json"), r#"{"maestro":{}}"#).unwrap();
+    json!([{"source": "./empty", "identity": format!("local:{}", empty.display()), "scope": "user", "installedPath": empty}])
 }

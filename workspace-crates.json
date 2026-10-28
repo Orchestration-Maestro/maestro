@@ -24,6 +24,7 @@
   "maestro-markdown": "core",
   "maestro-models": "core",
   "maestro-multiplexer": "core",
+  "maestro-package": "core",
   "maestro-packages": "core",
   "maestro-path": "core",
   "maestro-pattern": "core",

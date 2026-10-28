@@ -4274,6 +4274,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-package"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
