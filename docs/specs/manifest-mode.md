@@ -354,7 +354,7 @@ invalid):
 | `locked` | L | Each entry is a settings key path (dotted for nested members), one of the lock names `systemPrompt`, `appendSystemPrompt`, `providers`, `workflows`, `agents`, `instructions`, `mcpServers`, or one of three paths that exist only in the base layer because their local form is not a setting: `keybindings.<action>`, `showChangelog` and `credentials.<provider>`. The locked value is the manifest's settings value, or the engine default when the manifest sets none; a `manifest` lock fixes the manifest's own identity (M1). |
 | `bounds` | B | `min` and/or `max` for numeric keys and for thinking levels (order: off < minimal < low < medium < high < xhigh). |
 | `models` | B (allowed set) | Model patterns in the `enabledModels` syntax. Every model selection must match. |
-| `required` | A | Paths relative to the manifest root. A resource at or under a required path is required. A required workflow also requires its references (M15). A required instruction keeps its installed copy present and refreshed (M5.3). |
+| `required` | A | Paths relative to the manifest root. A resource at or under a required path is required. A required workflow also requires its references (M15). How required instructions stay present is settled with the rules system. |
 | `roles` | L/B per role | `locked` (`model`, `thinking`, `tools`), `bounds.thinking`, `models` for one role (M12). |
 | `credentialHeaders` | Credential classification | Header names added to the default credential list (M7); additions from every selected area combine. |
 | `minimumRelease` | Release floor | The lowest release a laptop may run (M11). A release version; Git tags compare as semantic versions after an optional leading `v`. Common and core areas only. |

@@ -4127,6 +4127,7 @@ dependencies = [
  "maestro-models",
  "maestro-request",
  "maestro-tool",
+ "num-traits",
  "regex",
  "ryu-js",
  "serde",
@@ -4201,6 +4202,7 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
+ "maestro-test-process",
 ]
 
 [[package]]
