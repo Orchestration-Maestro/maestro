@@ -19,3 +19,5 @@ mod support;
 mod temp_directories;
 mod test_directories;
 mod time_limits;
+
+mod test_budget;
