@@ -169,7 +169,14 @@ impl Run {
         )
         .await?;
         result.stderr = stderr;
-        result.exit_code = child.wait().await?.code.unwrap_or(0);
+        let status = child.wait().await?;
+        result.exit_code = status.code.unwrap_or(0);
+        result.signal = status.signal;
+        if let Some(signal) = &result.signal {
+            result
+                .error_message
+                .get_or_insert_with(|| format!("Subagent terminated by {signal}"));
+        }
         if self.signal.as_ref().is_some_and(AbortSignal::aborted) {
             return Err("Subagent was aborted".into());
         }

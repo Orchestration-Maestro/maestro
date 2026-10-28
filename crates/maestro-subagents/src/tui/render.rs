@@ -134,12 +134,12 @@ fn group_header(details: &SubagentDetails, theme: &Theme) -> ExtensionResult<Str
     let success = details
         .results
         .iter()
-        .filter(|result| result.exit_code == 0)
+        .filter(|result| !result.failed())
         .count();
     let failed = details
         .results
         .iter()
-        .filter(|result| result.exit_code > 0)
+        .filter(|result| result.exit_code != -1 && result.failed())
         .count();
     let (role, mark) = if details.mode == "parallel" && running > 0 {
         ("warning", "⏳")

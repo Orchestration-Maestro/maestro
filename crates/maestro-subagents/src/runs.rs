@@ -52,8 +52,10 @@ pub(crate) struct SingleResult {
     pub agent_source: String,
     /// Instructions after chain substitution.
     pub task: String,
-    /// Minus one while running, otherwise the native numeric exit.
+    /// Minus one while running; numeric exit or zero when terminated by signal.
     pub exit_code: i32,
+    /// Native terminating signal, separate from the numeric exit.
+    pub signal: Option<String>,
     /// Complete observed messages.
     pub messages: Vec<Value>,
     /// Captured error output.
@@ -64,7 +66,7 @@ pub(crate) struct SingleResult {
     pub model: Option<String>,
     /// Last reported stop reason.
     pub stop_reason: Option<String>,
-    /// Last reported provider error.
+    /// Provider error or native termination description.
     pub error_message: Option<String>,
     /// One-indexed chain position.
     pub step: Option<usize>,
@@ -77,6 +79,7 @@ impl SingleResult {
             agent_source: "unknown".into(),
             task: task.task.clone(),
             exit_code: -1,
+            signal: None,
             messages: Vec::new(),
             stderr: String::new(),
             usage: UsageStats::default(),
@@ -106,7 +109,9 @@ impl SingleResult {
     }
     /// Includes provider-reported failures even after a successful process exit.
     pub fn failed(&self) -> bool {
-        self.exit_code != 0 || matches!(self.stop_reason.as_deref(), Some("error" | "aborted"))
+        self.exit_code != 0
+            || self.signal.is_some()
+            || matches!(self.stop_reason.as_deref(), Some("error" | "aborted"))
     }
     /// Chooses the most specific supplied failure text.
     pub fn error(&self) -> &str {

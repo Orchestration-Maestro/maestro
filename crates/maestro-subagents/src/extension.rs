@@ -271,7 +271,7 @@ async fn parallel(
     let successes = details
         .results
         .iter()
-        .filter(|result| result.exit_code == 0)
+        .filter(|result| !result.failed())
         .count();
     let summaries = details
         .results
@@ -280,10 +280,10 @@ async fn parallel(
             format!(
                 "[{}] {}: {}",
                 result.agent,
-                if result.exit_code == 0 {
-                    "completed"
-                } else {
+                if result.failed() {
                     "failed"
+                } else {
+                    "completed"
                 },
                 fallback(&preview(result.output(), 100), "(no output)")
             )
