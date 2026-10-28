@@ -7,7 +7,7 @@ use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::Cell, path::Path, rc::Rc};
 
 /// Invokes the original command, preserving its native command context.
-async fn command(demo: &Demo, wad: &Path) {
+pub(super) async fn command(demo: &Demo, wad: &Path) {
     (demo
         .runner
         .get_command("doom-overlay")
@@ -29,7 +29,7 @@ async fn start(demo: &Demo, reason: &str) {
 }
 
 /// Stops each independently owned instance and settles its announced tails.
-async fn shutdown(demo: &Demo) {
+pub(super) async fn shutdown(demo: &Demo) {
     let mut event: SessionShutdownEvent =
         serde_json::from_value(serde_json::json!({"reason":"quit"})).unwrap();
     demo.runner.emit(&mut event).await.unwrap();
@@ -75,7 +75,7 @@ async fn replacement(root: &Path, original: &Demo) -> Demo {
 }
 
 /// Binds the real command import to a counted application reload.
-fn bind_reload(first: &Demo, called: Rc<Cell<u32>>) {
+pub(super) fn bind_reload(first: &Demo, called: Rc<Cell<u32>>) {
     first
         .runner
         .bind_command_context(Some(ExtensionCommandContextActions::new(

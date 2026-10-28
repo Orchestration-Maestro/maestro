@@ -49,7 +49,10 @@ bool exports_maestro_doom_engine_init(game_list_u8_t *data,
 bool exports_maestro_doom_engine_tick(uint32_t milliseconds,
                                      game_string_t *error) {
     (void)milliseconds;
-    (void)error;
+    if (wad_len == 10 && memcmp(wad, "tick-error", 10) == 0) {
+        game_string_dup(error, "controlled tick failure");
+        return false;
+    }
     return true;
 }
 
@@ -58,7 +61,15 @@ void exports_maestro_doom_engine_key(bool pressed, uint8_t key) {
 }
 
 void exports_maestro_doom_engine_frame(game_list_u8_t *frame) {
-    frame->len = failed ? 0 : 640 * 400 * 4;
+    size_t width = wad_len == 11 && memcmp(wad, "small-frame", 11) == 0 ? 320 : 640;
+    size_t height = width == 320 ? 200 : 400;
+    bool malformed = wad_len == 9 && memcmp(wad, "bad-frame", 9) == 0;
+    frame->len = failed || malformed ? 0 : width * height * 4;
     frame->ptr = calloc(frame->len, 1);
     if (!frame->ptr) frame->len = 0;
+    for (size_t index = 0; index < frame->len / 4; ++index) {
+        frame->ptr[index * 4] = index % width;
+        frame->ptr[index * 4 + 1] = index / width;
+        frame->ptr[index * 4 + 3] = 255;
+    }
 }

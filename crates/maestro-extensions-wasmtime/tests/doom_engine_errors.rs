@@ -97,3 +97,20 @@ fn check_errors(cases: Vec<(u32, String)>) -> wasmtime::Result<()> {
 }
 
 mod real;
+
+/// The external build recipe validates and forwards both resolution overrides.
+#[test]
+fn doom_engine_builder_preserves_resolution_overrides() {
+    let output = std::process::Command::new("python3")
+        .arg(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/check_doom_builder.py"),
+        )
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

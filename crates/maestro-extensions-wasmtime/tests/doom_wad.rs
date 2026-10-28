@@ -11,6 +11,7 @@ use std::{
     rc::Rc,
     sync::RwLock,
 };
+mod failures;
 mod io;
 mod reload;
 mod ui;
@@ -62,6 +63,10 @@ async fn loaded_on(
         tui,
         temporary: root.join("temporary"),
         notices: RefCell::default(),
+        failed: Rc::default(),
+        failure: ["tick-error", "bad-frame"]
+            .contains(&case)
+            .then(|| case.to_owned()),
         wad: Rc::default(),
     });
     if case != "headless" {
@@ -152,6 +157,10 @@ fn observed(demo: &Demo, root: &Path, case: &str, expected: Option<&[u8]>) {
 async fn run() {
     let root = PathBuf::from(std::env::var("MAESTRO_DOOM_WAD_ROOT").unwrap());
     let case = std::env::var("MAESTRO_DOOM_WAD_CASE").unwrap();
+    if ["tick-error", "bad-frame", "small-frame"].contains(&case.as_str()) {
+        failures::run(&root, &case).await;
+        return;
+    }
     if case == "switch" {
         reload::switch(&root).await;
         return;
@@ -394,4 +403,31 @@ pub(super) fn bind_history(
             maestro_extensions::types::ProviderActions::default(),
         )
         .unwrap();
+}
+
+/// A rejected tick closes and disposes the view before requesting a fresh instance.
+#[test]
+fn doom_overlay_tick_failure_notifies_disposes_and_replaces() {
+    checked(
+        "doom_overlay_tick_failure_notifies_disposes_and_replaces",
+        &["tick-error"],
+    );
+}
+
+/// Malformed external frames are reported through the command and cannot be resumed.
+#[test]
+fn doom_overlay_bad_frame_notifies_disposes_and_replaces() {
+    checked(
+        "doom_overlay_bad_frame_notifies_disposes_and_replaces",
+        &["bad-frame"],
+    );
+}
+
+/// Engine dimensions, not a fixed resolution, determine validation and sampling.
+#[test]
+fn doom_overlay_renders_nondefault_engine_resolution() {
+    checked(
+        "doom_overlay_renders_nondefault_engine_resolution",
+        &["small-frame"],
+    );
 }
