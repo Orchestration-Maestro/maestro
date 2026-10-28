@@ -173,12 +173,16 @@ the resource diagnostics described below.
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
 inside the working directory shows its relative path (`.` for the directory
-itself), and any other file its absolute path. The expanded form puts each path on
-its own row. Paths resolve lexically, without reading the filesystem. A leading
-home directory is shown as `~`; a home directory that is empty or `/` abbreviates
-nothing, so paths stay as written. The home directory is looked up only when a
-full path is shown, so a listing of prompts alone needs none. When that lookup
-fails, the listing reports the failure.
+itself), and any other file, including one whose relative path would start with
+`..`, keeps its full path. The compact form resolves paths lexically, without
+reading the filesystem; the expanded form puts each path on its own row in the
+spelling the loader supplied. A leading home directory is shown as `~`; a home
+directory that is empty or `/` abbreviates nothing, so paths stay as written. The
+home directory is looked up whenever a listing prepares a path that shows it
+abbreviated. Every section prepares its expanded body even while it shows only its
+compact form, so a listing of context files, or of skills outside a package, needs
+the lookup when only names or relative paths show. An empty listing or one of
+prompts alone needs none. When that lookup fails, the listing reports the failure.
 
 `[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
 templates. The compact form is one row of skill names, or of prompt names with a
@@ -186,7 +190,8 @@ leading `/`, trimmed and sorted for the current locale. The expanded form groups
 entries under `project`, `user` and `path` (command-line and temporary resources).
 Within each scope it lists plain paths first, then each package source with its
 entries, all sorted for the locale. A package entry is shown relative to its
-package root, or else by its path inside the npm or Git package directory. Prompts
+package root, or else by its path inside the npm or Git package directory, or
+else by its full path with the home directory shown as `~`. Prompts
 show their `/name`; when several templates share a file, the last one's name is
 shown.
 

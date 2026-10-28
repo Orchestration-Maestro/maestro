@@ -162,9 +162,10 @@ workspace dependencies. It owns one job: retaining callbacks in live registratio
 order, admitting one per identity and returning removed ownership to the caller.
 Models, the toolkit, the agent, the application and the extension runtime may
 depend on it and keep their own borrowing, locking, delivery and settlement
-policy. Retired registrations are reclaimed while no traversal runs, so one
-removal costs expected constant work and clearing every registration costs work
-proportional to their number.
+policy. Retired registrations are reclaimed once no traversal runs and at least
+half the slots are retired, so removal costs expected constant work amortized over
+the removals and clearing every registration costs work proportional to their
+number. While a traversal runs, retired slots stay until it ends.
 
 ## Authored paths and the foundation utility
 
