@@ -346,7 +346,12 @@ impl Client {
     /// Replaces the bottom chrome while forwarding focus to the actual editor or list.
     fn show_dialog(&mut self, title: &str, body: ComponentHandle) {
         let bottom = Rc::new(Container::new());
-        bottom.add_child(Rc::new(Text::new(OutputLog::literal(title), 0, 0, None)));
+        let title = title
+            .split('\n')
+            .map(OutputLog::literal)
+            .collect::<Vec<_>>()
+            .join("\n");
+        bottom.add_child(Rc::new(Text::new(title, 0, 0, None)));
         bottom.add_child(body.clone());
         bottom.add_child(Rc::new(Text::new(
             "Enter to submit, Esc to cancel".into(),
