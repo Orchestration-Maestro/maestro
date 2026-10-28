@@ -10,7 +10,11 @@ use maestro_protocol::{
     schema::{ErrorBody, ResponseResult, SplitDirection},
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
-use maestro_workspace::layout::{PaneId, SplitRequest};
+use maestro_workspace::{
+    layout::{PaneId, SplitRequest},
+    terminal_id::TerminalId,
+    workspace::WorktreeSpaceMembership,
+};
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -93,6 +97,17 @@ pub fn add_tab(app: &mut TestApp, workspace: usize) -> PaneId {
     pane
 }
 
+/// Joins the workspace at `index` to the repository group `key`.
+pub fn join_group(app: &mut TestApp, index: usize, key: &str, linked: bool) {
+    app.state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
+        key: key.into(),
+        label: "repo".into(),
+        repo_root: "/repo".into(),
+        checkout_path: format!("/repo-{index}").into(),
+        is_linked_worktree: linked,
+    });
+}
+
 /// The root pane of the first tab of the workspace at `workspace`.
 pub fn root_pane(app: &TestApp, workspace: usize) -> PaneId {
     app.state.topology.workspaces[workspace].tabs[0].root_pane
@@ -121,8 +136,16 @@ pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBo
 
 /// Answers the wire-form `wire` from inside a running test runtime.
 pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
+    answer_command(app, command(wire)).await
+}
+
+/// Answers a decoded `command` from inside a running test runtime.
+pub async fn answer_command(
+    app: &mut TestApp,
+    command: RpcCommand,
+) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
-    app.handle_api_request(command(wire), &mut settings, &untouched_paths())
+    app.handle_api_request(command, &mut settings, &untouched_paths())
         .await
 }
 
@@ -143,6 +166,19 @@ pub fn events_after(app: &TestApp, sequence: u64) -> Vec<EventData> {
         .collect()
 }
 
+/// The wire names of every event published after `sequence`, in order.
+pub fn event_names(app: &TestApp, sequence: u64) -> Vec<String> {
+    events_after(app, sequence)
+        .iter()
+        .map(|event| {
+            serde_json::to_value(event).unwrap()["type"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        })
+        .collect()
+}
+
 /// The stable identities of the workspaces in display order.
 pub fn workspace_ids(app: &TestApp) -> Vec<String> {
     app.state
@@ -151,6 +187,29 @@ pub fn workspace_ids(app: &TestApp) -> Vec<String> {
         .iter()
         .map(|workspace| workspace.id.clone())
         .collect()
+}
+
+/// Types `script` into the shell of `terminal` and returns the visible text once a line
+/// starts with `marker`.
+pub async fn run_in_pane(
+    app: &TestApp,
+    terminal: &TerminalId,
+    script: &str,
+    marker: &str,
+) -> String {
+    let runtime = app.terminal_runtimes.get(terminal).unwrap();
+    runtime
+        .send_bytes(script.as_bytes().to_vec())
+        .await
+        .unwrap();
+    loop {
+        let _ = app.launch.render_dirty.take();
+        let text = runtime.visible_text();
+        if text.lines().any(|line| line.starts_with(marker)) {
+            return text;
+        }
+        app.launch.render_notify.notified().await;
+    }
 }
 
 /// Runs `body` alone in a process of its own, against a daemon whose panes start real

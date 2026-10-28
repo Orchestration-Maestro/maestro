@@ -4,6 +4,7 @@
 mod tests;
 
 use crate::app::state::{DaemonState, Mode};
+use maestro_workspace::layout::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Retires one non-final tab and its detached pane and terminal records.
@@ -28,44 +29,56 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         true
     }
 
+    /// Whether closing `pane` would leave its workspace without any pane.
+    #[must_use]
+    pub fn close_pane_would_close_workspace(&self, workspace: usize, pane: PaneId) -> bool {
+        self.topology
+            .workspaces
+            .get(workspace)
+            .is_some_and(|target| {
+                target.tabs.len() <= 1
+                    && target
+                        .find_tab_index_for_pane(pane)
+                        .is_some_and(|tab| target.tabs[tab].layout.pane_count() <= 1)
+            })
+    }
+
     /// Closes the focused pane, returning whether confirmation deferred the close.
     pub fn close_pane(&mut self) -> bool {
-        if let Some(index) = self.active
-            && self
-                .topology
-                .workspaces
-                .get(index)
-                .is_some_and(|workspace| {
-                    workspace.tabs.len() <= 1
-                        && workspace
-                            .active_tab()
-                            .is_none_or(|tab| tab.layout.pane_count() <= 1)
-                })
+        let focused = self.active.and_then(|index| {
+            let pane = self.topology.workspaces.get(index)?.focused_pane_id()?;
+            Some((index, pane))
+        });
+        if let Some((index, pane)) = focused
+            && self.close_pane_would_close_workspace(index, pane)
             && self.confirm_implicit_worktree_group_close(index)
         {
             return true;
         }
         self.clear_selection();
         self.session_dirty = true;
-        let Some(index) = self.active else {
+        if let Some((index, pane)) = focused {
+            self.close_pane_in_workspace(index, pane);
+        }
+        false
+    }
+
+    /// Closes a pane with its pane-owned records and terminal, reporting whether its
+    /// workspace closed with it because the pane was the last one there.
+    pub fn close_pane_in_workspace(&mut self, workspace: usize, pane: PaneId) -> bool {
+        let Some(target) = self.topology.workspaces.get_mut(workspace) else {
             return false;
         };
-        let Some(workspace) = self.topology.workspaces.get_mut(index) else {
-            return false;
-        };
-        let Some(pane) = workspace.focused_pane_id() else {
-            return false;
-        };
-        let terminals = workspace.terminal_id(pane).cloned().into_iter().collect();
-        let close_workspace = workspace.close_pane(pane);
+        let terminals = target.terminal_id(pane).cloned().into_iter().collect();
+        let close_workspace = target.close_pane(pane);
         self.remove_plugin_pane_records(&std::collections::HashSet::from([pane]));
         if close_workspace {
-            self.selected = index;
+            self.selected = workspace;
             self.close_selected_workspace();
         } else {
             self.remove_unattached_terminal_ids(terminals);
         }
-        false
+        close_workspace
     }
 
     /// Closes the active tab, returning whether confirmation deferred the close.

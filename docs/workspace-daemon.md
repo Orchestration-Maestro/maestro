@@ -605,6 +605,29 @@ split tree, the view area and the pane chrome.
 `maestro-workspace` keeps the split math and the border flag sets. The view area and the
 preferences stay in the daemon.
 
+### Pane mutations
+
+Split, resize, swap, zoom, move and close change one tab's tree and nothing else. Each
+handler lives in `app/api/panes/`, resolves its pane through the same target rules as
+the reads, and then calls the topology owners in `maestro-workspace`, so the split math,
+the leaf swap and the pane transfer have one implementation.
+
+- **Focus history.** A split with focus, a swap and a move record the pane that had focus
+  before them (`DaemonState::record_pane_focus_change`), so last-pane navigation returns
+  to it. A zoom focuses through `focus_pane_in_workspace`.
+- **Zoom.** `DaemonState::apply_pane_zoom` is the one place a tab's zoom changes;
+  `toggle_zoom` calls it.
+- **Close.** `DaemonState::close_pane_in_workspace` closes a pane, its records and its
+  terminal, and closes the workspace when the pane was its last. The focused-pane close
+  uses it too.
+- **Move.** The pane's terminal never restarts. The source is captured first
+  (`PaneMoveRecovery`): the workspace's label, its tab's label, worktree provenance and
+  identity directory. If the destination refuses the pane,
+  `DaemonState::recover_failed_pane_move` adds it back as a tab of the surviving
+  workspace, or rebuilds the removed workspace with its old identity at its old place.
+  `remove_emptied_workspace` keeps the active and selected workspaces on the workspaces
+  they were on.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and

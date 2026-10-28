@@ -174,6 +174,52 @@ A created workspace or tab publishes `layout_updated` after its created records.
 Every other command fails with `not_implemented` and `method not implemented yet` until
 the daemon handles it.
 
+## Pane mutation commands
+
+The daemon also answers `pane.split`, `resize`, `swap`, `zoom`, `move` and `close`. They
+take the same pane targets as the topology commands. Each change that alters a tab's
+layout publishes `layout_updated` with the tab's new snapshot, and nothing is published
+when a command changes nothing.
+
+- `pane.split` splits `target_pane_id`; without one it splits the focused pane of
+  `workspace_id`, or of the active workspace. The new pane starts a process in `cwd`, or
+  in the directory the configured new-terminal policy picks from the split pane, with
+  the `env` pairs added. `direction` is `right` or `down`, `ratio` is the first child's
+  share, and `right_click` set to `pane` keeps right clicks for the program in the new
+  pane. With `focus` the new pane takes focus, activating its tab. The answer is the
+  new pane's record once its process runs, after `pane_created` and `layout_updated`. A
+  missing target fails with `pane_not_found`, a bad `env` with `invalid_env`, and a
+  process that cannot start with `pane_split_failed`, leaving the tab as it was.
+- `pane.resize` moves the divider nearest the pane's edge in `direction` by `amount`,
+  which defaults to 0.05 of the split, ignores its sign and is limited to 0.5. Focus does
+  not change. When no divider moves the answer has `changed` false and the reason
+  `unchanged`.
+- `pane.swap` exchanges two panes of one tab: `source_pane_id` with `target_pane_id`, or
+  `pane_id` (the focused pane by default) with its neighbour in `direction`. The
+  source ends focused. A swap that cannot happen is answered, not refused, with the
+  reason `no_neighbor`, `same_pane`, `not_found` or `cross_tab`. Naming both a direction
+  and a pair, or neither, or half a pair, fails with `invalid_pane_swap`.
+- `pane.zoom` zooms the pane's tab with `mode` `toggle` (the default), `on` or `off`, and
+  gives the pane focus. The answer tells apart `zoom_changed` and `focus_changed`; a
+  tab of one pane, or a mode that matches the tab, changes no zoom and says why
+  (`single_pane`, `already_zoomed`, `already_unzoomed`).
+- `pane.move` moves a pane with its terminal: beside a pane of another tab
+  (`tab`, with a split direction and ratio), to a new tab of a workspace (`new_tab`) or to
+  a new workspace (`new_workspace`). A pane that leaves its workspace gets a handle
+  there and keeps answering to the old one; a tab or workspace left empty is closed.
+  A move into the pane's own tab, or involving a zoomed tab, is answered with the
+  reason `same_tab` or `zoomed_tab` and the layouts concerned. A target pane outside
+  the destination tab fails with `target_pane_not_found`. When the destination refuses
+  the pane after it was taken, the pane is put back and the command fails with
+  `pane_move_failed`. A move publishes `tab_closed` and `workspace_closed` for what it
+  emptied, `workspace_created` and `tab_created` for what it made, `pane_moved`, and
+  `layout_updated` for the source and the destination tab.
+- `pane.close` closes the pane and releases its terminal. The last pane of a tab closes
+  the tab, and the last pane of a workspace closes the workspace. It publishes
+  `pane_closed`, then `workspace_closed` or `layout_updated`. When closing would close a
+  worktree group that asks first, it fails with `confirmation_required` and the daemon
+  waits for the answer.
+
 ## Binary screen channel
 
 Binary is explicitly selected at connection creation, using `Hello`/`Welcome` on

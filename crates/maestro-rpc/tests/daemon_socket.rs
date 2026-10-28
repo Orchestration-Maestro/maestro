@@ -1034,6 +1034,69 @@ fn socket_pane_records_round_trip() {
     });
 }
 
+/// Through `run_server`, a live pane is split, zoomed, resized, swapped, moved and closed
+/// with typed answers.
+#[test]
+fn socket_pane_mutations_round_trip() {
+    served_live("socket_pane_mutations_round_trip", |socket| {
+        let created = call(&socket, json!({"type": "workspace.create"}));
+        let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
+            panic!("expected a created workspace: {created:?}")
+        };
+        let root = root_pane.pane_id.as_str();
+        let split = json!({"type": "pane.split", "target_pane_id": root, "direction": "right"});
+        let Ok(ResponseResult::PaneInfo { pane: split }) = call(&socket, split) else {
+            panic!("expected the new pane")
+        };
+        assert_ne!(split.terminal_id, root_pane.terminal_id);
+        let zoom = json!({"type": "pane.zoom", "pane_id": split.pane_id, "mode": "on"});
+        let Ok(ResponseResult::PaneZoom { zoom }) = call(&socket, zoom) else {
+            panic!("expected a zoom")
+        };
+        assert!(zoom.zoom_changed && zoom.zoomed.0 && zoom.layout.zoomed);
+        let unzoom = json!({"type": "pane.zoom", "pane_id": split.pane_id, "mode": "off"});
+        assert!(matches!(
+            call(&socket, unzoom),
+            Ok(ResponseResult::PaneZoom { .. })
+        ));
+        let resize =
+            json!({"type": "pane.resize", "pane_id": root, "direction": "right", "amount": 0.1});
+        let Ok(ResponseResult::PaneResize { resize }) = call(&socket, resize) else {
+            panic!("expected a resize")
+        };
+        assert!(resize.changed && (resize.layout.splits[0].ratio - 0.6).abs() < f32::EPSILON);
+        let swap = json!({"type": "pane.swap", "pane_id": root, "direction": "right"});
+        let Ok(ResponseResult::PaneSwap { swap }) = call(&socket, swap) else {
+            panic!("expected a swap")
+        };
+        assert!(swap.changed);
+        assert_eq!(swap.target_pane_id.as_deref(), Some(split.pane_id.as_str()));
+        let destination = json!({"type": "new_tab", "label": "side"});
+        let relocate =
+            json!({"type": "pane.move", "pane_id": split.pane_id, "destination": destination});
+        let Ok(ResponseResult::PaneMove { move_result }) = call(&socket, relocate) else {
+            panic!("expected a move")
+        };
+        assert!(move_result.changed);
+        assert_eq!(move_result.pane.terminal_id, split.terminal_id);
+        assert_eq!(
+            move_result.created_tab.map(|tab| tab.label),
+            Some("side".into())
+        );
+        let close = call(
+            &socket,
+            json!({"type": "pane.close", "pane_id": split.pane_id}),
+        );
+        assert_eq!(close, Ok(ResponseResult::Ok {}));
+        let list = call(&socket, json!({"type": "pane.list"}));
+        let Ok(ResponseResult::PaneList { panes }) = list else {
+            panic!("expected a pane list")
+        };
+        assert_eq!(panes.len(), 1);
+        assert_eq!(panes[0].terminal_id, root_pane.terminal_id);
+    });
+}
+
 /// A tab created over the socket without focus leaves the active tab as it was, while
 /// returning the new tab and its root pane.
 #[test]
