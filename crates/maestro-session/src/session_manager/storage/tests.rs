@@ -92,6 +92,10 @@ fn observe_comparison(
         .unwrap()
         .env("MAESTRO_COMPARED_APPEND", target)
         .env(
+            "MAESTRO_CODING_AGENT_DIR",
+            target.parent().unwrap().join("other-config-root"),
+        )
+        .env(
             "MAESTRO_COMPARED_ADDRESS",
             listener.local_addr().unwrap().to_string(),
         );

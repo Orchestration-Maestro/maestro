@@ -1,6 +1,6 @@
 //! Deterministic publication phases exercised through the native transaction.
 use super::*;
-use std::cell::RefCell;
+use std::{cell::RefCell, path::PathBuf};
 
 /// Per-test-thread observations; no global subscriber or process mutation.
 #[derive(Default)]
@@ -14,6 +14,12 @@ struct Effects {
 }
 thread_local! {
     static EFFECTS: RefCell<Effects> = RefCell::default();
+    static ROOT: maestro_test_directory::Scratch = maestro_test_directory::Scratch::new().unwrap();
+}
+
+/// Keeps each unit-test process's recovery namespace inside a disposable root.
+pub(crate) fn root() -> PathBuf {
+    ROOT.with(|root| root.path().to_path_buf())
 }
 
 /// Records an imminent operation and optionally refuses it with a native error.
@@ -62,6 +68,7 @@ fn run_with_collision(
     fault: Option<(&'static str, io::ErrorKind)>,
     collision: bool,
 ) -> Observation {
+    let _ = root();
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let dir = scratch.path();
     let target = dir.join("snapshot");
@@ -88,12 +95,12 @@ fn run_with_collision(
     let effects = EFFECTS.take();
     let bytes = fs::read(&target).unwrap();
     let entries = fs::read_dir(dir).unwrap().count();
-    let temporary_bytes = fs::read_dir(dir)
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| path != &target)
-        .map(|path| fs::read(path).unwrap())
-        .collect();
+    let temporary_bytes = effects
+        .temporary_path
+        .as_ref()
+        .filter(|path| path.exists())
+        .map(|path| vec![fs::read(path).unwrap()])
+        .unwrap_or_default();
     #[cfg(unix)]
     let mode = {
         use std::os::unix::fs::PermissionsExt;
@@ -116,7 +123,17 @@ fn run_with_collision(
 fn replacement_syncs_before_and_after_commit() {
     let observed = run(None);
     assert!(observed.result.unwrap().dir_sync.is_none());
-    let committed = ["create", "write_all", "file_sync", "close", "rename"];
+    let committed = [
+        "create",
+        "write_all",
+        "file_sync",
+        "close",
+        "rename",
+        "recovery_sync",
+        "target_write",
+        "target_sync",
+        "recovery_sync",
+    ];
     assert_eq!(observed.events, [&committed[..], sync_phases()].concat());
     assert_eq!(observed.bytes, b"new");
     assert_eq!(observed.entries, 1);
@@ -154,7 +171,7 @@ fn replacement_errors_before_commit_keep_old_bytes() {
         io::ErrorKind::AlreadyExists
     );
     assert_eq!(observed.bytes, b"old");
-    assert_eq!(observed.entries, 2);
+    assert_eq!(observed.entries, 1);
     assert_eq!(observed.temporary_bytes, [b"competitor".to_vec()]);
     let dir = std::env::temp_dir().join(format!("maestro-rename-directory-{}", std::process::id()));
     fs::create_dir(&dir).unwrap();

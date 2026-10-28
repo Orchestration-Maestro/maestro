@@ -47,6 +47,30 @@ mod tests;
 ///
 /// # Errors
 /// Returns native acquisition or recovery errors.
-pub fn acquire_write(_path: &std::path::Path, _through_symlinks: bool) -> std::io::Result<File> {
+pub fn acquire_write(
+    _path: &std::path::Path,
+    _through_symlinks: bool,
+) -> std::io::Result<WriteLock> {
     Err(std::io::ErrorKind::Unsupported.into())
+}
+
+/// Exclusive ownership of one native target's recoverable write.
+#[derive(Debug)]
+pub struct WriteLock {
+    /// Retained native exclusion handle.
+    _file: File,
+}
+
+impl WriteLock {
+    /// Publishes bytes while retaining the target's exclusion.
+    ///
+    /// # Errors
+    /// Returns native publication errors.
+    pub fn replace(
+        &self,
+        _bytes: &[u8],
+        _creation_mode: Option<u32>,
+    ) -> std::io::Result<Committed> {
+        Err(std::io::ErrorKind::Unsupported.into())
+    }
 }

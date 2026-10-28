@@ -22,14 +22,7 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
         .unwrap();
     let path = manager.get_session_file().unwrap();
     let original = fs::read(path).unwrap();
-    let sidecar = fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(format!("{path}.lock"))
-        .unwrap();
-    let holder = maestro_lock::acquire_waiting(sidecar).unwrap();
+    let holder = maestro_lock::acquire_write(std::path::Path::new(path), true).unwrap();
     assert_eq!(fs::read(path).unwrap(), original);
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let child = TestProcess::current("append_waits_for_one_replacement_and_preserves_its_entry")
@@ -46,12 +39,7 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
     let mut pid = [0; 4];
     stream.read_exact(&mut pid).unwrap();
     let blocked = observe_waiter(u32::from_be_bytes(pid), &stream);
-    maestro_lock::replace(
-        std::path::Path::new(path),
-        &original,
-        maestro_lock::Replace::default(),
-    )
-    .unwrap();
+    holder.replace(&original, None).unwrap();
     drop(holder);
     let output = child.wait_with_output().unwrap();
     assert!(
@@ -115,8 +103,7 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
     fs::write(path, original).unwrap();
     let previous = root.path().join("previous.jsonl");
     fs::hard_link(path, &previous).unwrap();
-    let holder =
-        maestro_lock::acquire_waiting(fs::File::create(format!("{path}.lock")).unwrap()).unwrap();
+    let holder = maestro_lock::acquire_write(std::path::Path::new(path), true).unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let child =
         TestProcess::current("migration_rechecks_a_concurrent_append_before_atomic_publication")
@@ -151,7 +138,8 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
         blocked,
         "migration published without waiting for the concurrent writer"
     );
-    assert_eq!(fs::read(&previous).unwrap(), before_replace);
+    assert_eq!(fs::read(&previous).unwrap(), fs::read(path).unwrap());
+    assert_ne!(fs::read(&previous).unwrap(), before_replace);
     let mut manager = SessionManager::open(path, None, Some("/work")).unwrap();
     let start = std::time::Instant::now();
     manager
