@@ -747,6 +747,12 @@ Terminal construction, state reads, palette updates and effective-colour rules i
 under Apache-2.0. The implementation uses owned Rust screen storage instead of
 foreign-library handles.
 
+The application keybinding backup/reset operation in
+`crates/maestro-app/src/presentation_data/keybindings/reset.rs` derives from the
+configuration reset command under the same license. It validates the JSON
+object, preserves non-multiplexer actions and uses the shared atomic publisher
+instead of rewriting the source file in place.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
