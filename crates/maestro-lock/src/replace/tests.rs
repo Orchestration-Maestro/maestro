@@ -8,6 +8,7 @@ struct Effects {
     events: Vec<&'static str>,
     fault: Option<(&'static str, io::ErrorKind)>,
     collision: bool,
+    before_sync: Option<Box<dyn FnOnce()>>,
     temporary_path: Option<PathBuf>,
     #[cfg(unix)]
     temporary_mode: Option<u32>,
@@ -19,11 +20,20 @@ thread_local! {
 
 /// Keeps each unit-test process's recovery namespace inside a disposable root.
 pub(crate) fn root() -> PathBuf {
-    ROOT.with(|root| root.path().to_path_buf())
+    std::env::var_os("MAESTRO_TEST_LOCK_ROOT").map_or_else(
+        || ROOT.with(|root| root.path().join(".maestro/state/file-locks")),
+        PathBuf::from,
+    )
 }
 
 /// Records an imminent operation and optionally refuses it with a native error.
 pub(crate) fn effect(phase: &'static str) -> io::Result<()> {
+    if phase == "target_sync" {
+        let callback = EFFECTS.with_borrow_mut(|effects| effects.before_sync.take());
+        if let Some(callback) = callback {
+            callback();
+        }
+    }
     EFFECTS.with_borrow_mut(|effects| {
         effects.events.push(phase);
         #[cfg(unix)]
@@ -588,4 +598,146 @@ fn acquisition_syncs_recovery_absence_before_admitting_a_writer() {
     );
     EFFECTS.take();
     assert_eq!(fs::read(&target).unwrap(), b"before");
+}
+
+#[test]
+fn first_use_persists_directory_ancestry_before_target_write() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("ancestry_sync", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert!(replace(&target, b"intended", Replace::default()).is_err());
+    let events = EFFECTS.take().events;
+    assert_eq!(events, ["ancestry_sync"]);
+    assert_eq!(fs::read(&target).unwrap(), b"before");
+    replace(&target, b"intended", Replace::default()).unwrap();
+    let events = EFFECTS.take().events;
+    assert!(
+        events.iter().position(|p| *p == "ancestry_sync").unwrap()
+            < events.iter().position(|p| *p == "target_write").unwrap()
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn completed_readonly_creation_recovers_after_parent_sync_failure() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    EFFECTS.set(Effects {
+        fault: Some(("parent_open", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert!(
+        replace(
+            &target,
+            b"intended",
+            Replace {
+                creation_mode: Some(0o400),
+                ..Replace::default()
+            }
+        )
+        .unwrap()
+        .dir_sync
+        .is_some()
+    );
+    EFFECTS.take();
+    // A completed recovery must not need a second writable open, even as root.
+    EFFECTS.set(Effects {
+        fault: Some(("target_write", io::ErrorKind::PermissionDenied)),
+        ..Effects::default()
+    });
+    drop(crate::acquire_write(&target, true).unwrap());
+    EFFECTS.take();
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
+    assert!(!fs::read_dir(root()).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .path()
+            .extension()
+            .is_some_and(|ext| ext == "recovery")
+    }));
+    if let Some(_restore) = maestro_test_directory::deny(&target, 0o400).unwrap() {
+        assert!(replace(&target, b"different", Replace::default()).is_err());
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn append_waits_at_target_sync_until_publication_finishes() {
+    use std::{
+        io::{Read, Write},
+        net::{TcpListener, TcpStream},
+    };
+    if let Ok(path) = std::env::var("MAESTRO_SYNC_APPEND") {
+        let mut stream =
+            TcpStream::connect(std::env::var("MAESTRO_SYNC_ADDRESS").unwrap()).unwrap();
+        stream.write_all(&std::process::id().to_be_bytes()).unwrap();
+        let holder = crate::acquire_write(Path::new(&path), true).unwrap();
+        fs::OpenOptions::new()
+            .append(true)
+            .open(holder.path())
+            .unwrap()
+            .write_all(b"after")
+            .unwrap();
+        stream.write_all(b"done").unwrap();
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let child = maestro_test_process::TestProcess::current(
+        "append_waits_at_target_sync_until_publication_finishes",
+    )
+    .unwrap()
+    .env("MAESTRO_SYNC_APPEND", &target)
+    .env("MAESTRO_TEST_LOCK_ROOT", root())
+    .env(
+        "MAESTRO_SYNC_ADDRESS",
+        listener.local_addr().unwrap().to_string(),
+    );
+    let (sender, receiver) = std::sync::mpsc::channel();
+    EFFECTS.set(Effects {
+        before_sync: Some(Box::new(move || {
+            let child = child.spawn().unwrap();
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut pid = [0; 4];
+            stream.read_exact(&mut pid).unwrap();
+            let blocked = sync_waiter(u32::from_be_bytes(pid), &stream);
+            sender.send((child, blocked)).unwrap();
+        })),
+        ..Effects::default()
+    });
+    replace(&target, b"rewritten", Replace::default()).unwrap();
+    EFFECTS.take();
+    let (child, blocked) = receiver.recv().unwrap();
+    assert!(child.wait_with_output().unwrap().status.success());
+    assert!(blocked, "append escaped while target sync was pending");
+    assert_eq!(fs::read(&target).unwrap(), b"rewrittenafter");
+}
+
+/// Observes the native waiter while the target synchronization remains paused.
+#[cfg(target_os = "linux")]
+fn sync_waiter(pid: u32, stream: &std::net::TcpStream) -> bool {
+    stream.set_nonblocking(true).unwrap();
+    loop {
+        let locks = fs::read_to_string("/proc/locks").unwrap();
+        if locks.lines().any(|line| {
+            line.contains("->") && line.split_whitespace().any(|word| word == pid.to_string())
+        }) {
+            break true;
+        }
+        match stream.peek(&mut [0; 1]) {
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                std::thread::yield_now();
+            }
+            result => {
+                result.unwrap();
+                break false;
+            }
+        }
+    }
 }
