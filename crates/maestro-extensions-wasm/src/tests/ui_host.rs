@@ -383,6 +383,13 @@ pub fn call(
     method: &str,
     operands: &Value,
 ) -> Result<(), String> {
+    let captured = observed
+        .stdout
+        .as_ref()
+        .map(|stdout| stdout.contents().len());
+    if let Some(captured) = captured {
+        observed.log(format!("captured {captured}"));
+    }
     observed.log(format!("ui {key} {method} {operands}"));
     let error = observed.ui.settle().err();
     let error = error.or_else(|| observed.ui.refusal(method));

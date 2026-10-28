@@ -212,19 +212,24 @@ fn grep_flag_like_pattern_never_runs_commands() {
 fn grep_native_files_and_protocol_bytes() {
     use crate::grep_support as g;
     let root = g::tree();
+    let invalid_filename = g::add_invalid_filename(&root);
     for c in g::cases("grep_native_files_and_protocol_bytes") {
-        g::check_native(&c, &root);
+        if c.id != "invalid-filename" || invalid_filename {
+            g::check_native(&c, &root);
+        }
     }
-    root.file("invalid-�", b"wrong\n");
-    let result = g::native(
-        &root,
-        serde_json::json!({"pattern":"needle","glob":"invalid-*","context":1}),
-    )
-    .unwrap();
-    assert_eq!(
-        result["content"][0]["text"],
-        "invalid-�:1: needle\ninvalid-�-2- "
-    );
+    if invalid_filename {
+        root.file("invalid-�", b"wrong\n");
+        let result = g::native(
+            &root,
+            serde_json::json!({"pattern":"needle","glob":"invalid-*","context":1}),
+        )
+        .unwrap();
+        assert_eq!(
+            result["content"][0]["text"],
+            "invalid-�:1: needle\ninvalid-�-2- "
+        );
+    }
     root.file("invalid-content", b"\xef\xbb\xbfhit\xff\n");
     let result = g::native(
         &root,
@@ -257,6 +262,18 @@ fn grep_native_search_options_reach_ripgrep() {
     );
 }
 
+/// The lines of a result's first text block, sorted, since search order is not recorded.
+#[cfg(unix)]
+fn sorted_lines(result: &serde_json::Value) -> Vec<&str> {
+    let mut lines: Vec<_> = result["content"][0]["text"]
+        .as_str()
+        .unwrap()
+        .lines()
+        .collect();
+    lines.sort_unstable();
+    lines
+}
+
 #[cfg(unix)]
 #[test]
 fn grep_native_nested_ignores_hidden_and_metadata() {
@@ -268,12 +285,11 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
         case.input,
         serde_json::json!({"params":{"pattern":"needle"}})
     );
-    let mut expected: Vec<_> = case.expected["result"]["content"][0]["text"]
-        .as_str()
-        .unwrap()
-        .lines()
-        .collect();
-    expected.sort_unstable();
+    let invalid_filename = g::add_invalid_filename(&root);
+    let mut expected = sorted_lines(&case.expected["result"]);
+    if !invalid_filename {
+        expected.retain(|line| *line != "invalid-�:1: needle");
+    }
     for worktree in [false, true] {
         if worktree {
             assert!(
@@ -287,25 +303,16 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
         }
         let result = g::native(&root, serde_json::json!({"pattern":"needle"})).unwrap();
         assert!(result.get("details").is_none());
-        let mut actual: Vec<_> = result["content"][0]["text"]
-            .as_str()
-            .unwrap()
-            .lines()
-            .collect();
-        actual.sort_unstable();
-        assert_eq!(actual, expected);
+        assert_eq!(sorted_lines(&result), expected);
         let filtered = g::native(
             &root,
             serde_json::json!({"pattern":"needle","glob":"**/local.txt"}),
         )
         .unwrap();
-        let mut rows: Vec<_> = filtered["content"][0]["text"]
-            .as_str()
-            .unwrap()
-            .lines()
-            .collect();
-        rows.sort_unstable();
-        assert_eq!(rows, ["a/local.txt:1: needle", "b/local.txt:1: needle"]);
+        assert_eq!(
+            sorted_lines(&filtered),
+            ["a/local.txt:1: needle", "b/local.txt:1: needle"]
+        );
         root.file(".git/meta.txt", b"needle");
         assert_eq!(
             g::native(
