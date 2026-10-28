@@ -113,6 +113,10 @@ fn authentication_frontend_exports_share_existing_owners() {
         .map(|(provider, id)| (provider.clone(), id.clone()))
         .collect();
     assert_eq!(defaults, expected.defaults);
+    assert!(std::ptr::eq(
+        &raw const *DEFAULT_MODEL_PER_PROVIDER,
+        &raw const *maestro_catalog::DEFAULT_MODEL_PER_PROVIDER
+    ));
     assert_display_names_are_shared_with_the_registry();
     assert_supplied_prompt_retains_option_order();
 }

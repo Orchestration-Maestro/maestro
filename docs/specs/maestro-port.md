@@ -997,8 +997,9 @@ only converter. Inside that owner the supplied schema is indexed once: a data-on
 document holds each authored node's kind against the node's identity, a small context owns
 only the named definitions visible on the current conversion call path, and each stage and
 kind keeps its own module (conversion, instantiation, evaluation, comparison, object
-property modifiers). The stages receive the operands they act on, never the conversion
-context or a projection shared between kinds. Serialization writes the supplied JSON
+property modifiers). Structural comparison and evaluation receive only the operands they
+act on, never the conversion context or a projection shared between kinds; conversion and
+instantiation also receive the conversion context. Serialization writes the supplied JSON
 alone: providers, persisted JSON
 and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
 text. The guest carries the declared kinds only inside its opaque internal registration

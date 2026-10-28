@@ -44,11 +44,11 @@ keyUsage = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth
 subjectAltName = DNS:destination.invalid, DNS:localhost
 EOF
-    if [ -z "$3" ]; then signer="-selfsign"; else signer="-cert $3"; fi
-    # shellcheck disable=SC2086
-    openssl ca -batch -notext -config "$work/ca.cnf" -extensions "$1" \
+    section=$1 key=$2 output=$4
+    if [ -z "$3" ]; then set -- -selfsign; else set -- -cert "$3"; fi
+    openssl ca -batch -notext -config "$work/ca.cnf" -extensions "$section" \
         -startdate 20190601000000Z -enddate 21261018000000Z \
-        -keyfile "$2" $signer -in "$work/$1.csr" -out "$4"
+        -keyfile "$key" "$@" -in "$work/$section.csr" -out "$output"
 }
 
 # A key in the committed DER form, as the PEM the signing commands read.

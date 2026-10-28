@@ -7,7 +7,8 @@ use super::extends_right::extends_right;
 use crate::SchemaKind;
 use crate::arguments::validation::authored::schema_view::{Members, Node};
 
-/// An object extends an object whose every member it declares and extends.
+/// An object extends an object whose every member it declares and extends; it may leave out
+/// a member the other object marks optional.
 pub(crate) fn extends_object<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
     if right.kind() != Some(SchemaKind::Object) {
         return extends_right(left, right);
