@@ -51,6 +51,23 @@ fn configure_prompt(
 mod tests {
     use super::*;
 
+    /// Both prompt configurations perform a real conversation through the controlled model.
+    #[test]
+    fn custom_prompt_invokes_both_configurations() -> Result<(), Error> {
+        let value = support::execute(run)?;
+        assert_eq!(value["messages"][0][0]["content"], "What is 2 + 2?");
+        assert_eq!(value["messages"][0][1]["content"][0]["text"], "Four, Arrr!");
+        assert_eq!(
+            value["messages"][1][0]["content"],
+            "List 3 benefits of Rust."
+        );
+        assert_eq!(
+            value["messages"][1][1]["content"][0]["text"],
+            "- Safety\n- Speed\n- Tooling"
+        );
+        Ok(())
+    }
+
     /// Replacement removes discovered append text; appending retains the default prompt.
     #[test]
     fn custom_prompt_replaces_or_appends_instructions() -> Result<(), Error> {
