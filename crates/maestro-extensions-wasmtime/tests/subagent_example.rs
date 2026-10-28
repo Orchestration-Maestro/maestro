@@ -108,3 +108,95 @@ fn subagent_discovery_refreshes_scopes_and_nearest_project_shadowing() {
         );
     });
 }
+
+/// Starts a selected test in its own environment, keeping its child script private.
+#[cfg(unix)]
+fn child_fixture(test: &str) -> Option<Scratch> {
+    use std::os::unix::fs::PermissionsExt;
+    if maestro_test_process::selection().is_child() {
+        return None;
+    }
+    let root = Scratch::new().unwrap();
+    for directory in ["work", "other", "tmp", "user/agents"] {
+        std::fs::create_dir_all(root.path().join(directory)).unwrap();
+    }
+    std::fs::write(root.path().join("user/agents/role.md"), "---\nname: role\ndescription: Controlled child\nmodel: controlled-model\ntools: read, ls\n---\nPrivate role prompt\n").unwrap();
+    let program = root.path().join("maestro-child");
+    std::fs::write(&program, include_str!("fixtures/subagent-child.py")).unwrap();
+    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let status = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .case("*")
+        .env("MAESTRO_BIN_PATH", &program)
+        .env("MAESTRO_SUBAGENT_FIXTURE", root.path())
+        .env("TMPDIR", root.path().join("tmp"))
+        .nocapture()
+        .status()
+        .unwrap();
+    assert!(status.success(), "{status}");
+    assert_eq!(
+        std::fs::read_dir(root.path().join("tmp")).unwrap().count(),
+        0
+    );
+    Some(root)
+}
+
+/// One set of literal subprocess expectations across all invocation modes.
+#[cfg(unix)]
+async fn modes(runner: &Rc<ExtensionRunner<Local>>, root: &Path) {
+    let single = execute(runner, json!({"agent":"role","task":"inspect"})).await;
+    let text = "Task: inspect;role=Private role prompt;cwd=work";
+    assert_eq!(single["content"][0]["text"], text);
+    assert_eq!(
+        single["details"]["results"][0]["usage"],
+        json!({"input":12,"output":8,"cacheRead":4,"cacheWrite":6,"cost":0.003,"contextTokens":19,"turns":2})
+    );
+    assert_eq!(
+        single["details"]["results"][0]["stderr"],
+        "controlled stderr"
+    );
+    assert_eq!(
+        single["details"]["results"][0]["messages"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    let chain = execute(runner, json!({"chain":[{"agent":"role","task":"inspect"},{"agent":"role","task":"continue {previous}","cwd":root.join("other")}]})).await;
+    assert_eq!(
+        chain["details"]["results"][1]["task"],
+        format!("continue {text}")
+    );
+    assert_eq!(
+        chain["content"][0]["text"],
+        format!("Task: continue {text};role=Private role prompt;cwd=other")
+    );
+    let parallel = execute(
+        runner,
+        json!({"tasks":[{"agent":"role","task":"first"},{"agent":"role","task":"second"}]}),
+    )
+    .await;
+    assert!(
+        parallel["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .starts_with("Parallel: 2/2 succeeded")
+    );
+    assert_eq!(parallel["details"]["results"][0]["task"], "first");
+    assert_eq!(parallel["details"]["results"][1]["task"], "second");
+}
+
+#[test]
+#[cfg(unix)]
+fn subagent_invocation_modes_preserve_child_output_and_usage() {
+    if child_fixture("subagent_example::subagent_invocation_modes_preserve_child_output_and_usage")
+        .is_some()
+    {
+        return;
+    }
+    super::example_process::run(async {
+        let root = std::path::PathBuf::from(std::env::var_os("MAESTRO_SUBAGENT_FIXTURE").unwrap());
+        let runner = loaded(&root.join("work"), &root.join("user")).await;
+        modes(&runner, &root).await;
+    });
+}
