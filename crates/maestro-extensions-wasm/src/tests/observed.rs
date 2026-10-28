@@ -187,6 +187,11 @@ impl Observed {
         self.live = self.live.saturating_sub(1);
     }
 
+    /// Every callback identity this isolated host issued, including those already dropped.
+    pub fn identities(&self) -> std::ops::RangeInclusive<u32> {
+        1..=self.next
+    }
+
     /// Hands out a fresh callback identity.
     pub fn next_identity(&mut self) -> u32 {
         self.next += 1;

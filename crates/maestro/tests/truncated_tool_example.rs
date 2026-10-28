@@ -1,21 +1,14 @@
-//! The shipped search tool through the production loader, process and filesystem owners.
-#![cfg(test)]
+//! The shipped search tool through the composition root's native process and filesystem owners.
 #![cfg(unix)]
-use maestro_extensions::{ExtensionRunner, Local};
-use maestro_test_directory::Scratch;
+use crate::support::Root;
+use maestro_app::AgentSession;
 use serde_json::{Value, json};
 use std::{
-    collections::BTreeMap,
-    fmt::Write as _,
-    os::unix::fs::PermissionsExt as _,
-    path::{Path, PathBuf},
+    collections::BTreeMap, fmt::Write as _, os::unix::fs::PermissionsExt as _, path::PathBuf,
     rc::Rc,
-    sync::RwLock,
 };
 
-use super::extension_guide::cargo as component_build;
-
-/// Component path inherited by the checked child, so it need not build with a cleared environment.
+/// Component path inherited by the checked child, whose environment is cleared.
 const COMPONENT: &str = "MAESTRO_TRUNCATED_TOOL_COMPONENT";
 
 /// Returns supplied process streams and status without interpreting search operands.
@@ -23,12 +16,9 @@ const SEARCH_PROCESS: &str = r#"#!/usr/bin/python3
 import json, os, sys
 from pathlib import Path
 root = Path(__file__).parent
-invocation = {"argv": sys.argv[1:], "cwd": os.getcwd()}
-if sys.argv[1:] == ["--version"]:
-    (root / "version.json").write_text(json.dumps(invocation))
-    print("ripgrep controlled fixture")
-    sys.exit(0)
-(root / "invocation.json").write_text(json.dumps(invocation))
+(root / "invocation.json").write_text(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd()}))
+if (root / "vanish").exists():
+    Path(__file__).unlink()
 sys.stdout.buffer.write((root / "stdout").read_bytes())
 sys.stderr.buffer.write((root / "stderr").read_bytes())
 sys.exit(int((root / "code").read_text()))
@@ -39,22 +29,15 @@ fn isolated(name: &str) -> bool {
     if maestro_test_process::selection().is_child() {
         return false;
     }
-    let directory = Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let executable = directory.path().join("rg");
     std::fs::write(&executable, SEARCH_PROCESS).unwrap();
     std::fs::set_permissions(executable, std::fs::Permissions::from_mode(0o755)).unwrap();
-    let component = component_build::component(
-        Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../maestro-extensions-wasm"
-        )),
-        &["--example", "truncated_tool"],
-        "truncated_tool",
-    )
-    .unwrap();
+    let component =
+        std::env::var(COMPONENT).expect("nextest author-component setup builds truncated_tool");
     let environment = BTreeMap::from([
         ("PATH", directory.path().display().to_string()),
-        (COMPONENT, component.to_str().unwrap().to_owned()),
+        (COMPONENT, component),
     ]);
     maestro_test_process::run_per_environment(name, [()], |()| environment.clone())
         .unwrap()
@@ -81,52 +64,40 @@ fn supply(stdout: &str, stderr: &str, code: i32) {
 }
 
 /// Checks literal operands and the actual native process working directory.
-fn assert_process(root: &Scratch, argv: &[&str]) {
+fn assert_process(root: &Root, argv: &[&str]) {
     let observed: Value =
         serde_json::from_slice(&std::fs::read(process_file("invocation.json")).unwrap()).unwrap();
-    assert_eq!(observed, json!({"argv":argv,"cwd":root.path()}));
+    assert_eq!(observed, json!({"argv":argv,"cwd":root.path("project")}));
 }
 
-/// Runs a component invocation on the host's local executor.
-fn run(action: impl std::future::Future<Output = ()>) {
+/// Runs a component session on the application's local executor.
+fn run(action: impl AsyncFnOnce(Rc<tokio::task::LocalSet>)) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, action(local.clone()));
 }
 
-/// Loads the prebuilt shipped copy over real native owners.
-async fn loaded(cwd: &Path) -> Rc<ExtensionRunner<Local>> {
-    let path = std::env::var(COMPONENT).unwrap();
-    let runtime = maestro_extensions::create_extension_runtime::<Local>();
-    let bus = maestro_extensions::create_event_bus_for::<Local>(
-        Rc::new(|_| panic!("no background work")),
-        Rc::new(|error| panic!("{error}")),
-    );
-    let owner = maestro_extensions::load_extension_from_factory(
-        crate::artifact(path.clone()),
-        cwd.to_str().unwrap().into(),
-        bus.for_extension(),
-        runtime.clone(),
-        Some(path),
+/// Loads the prebuilt shipped copy with the application's native effects.
+async fn loaded(root: &Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSession> {
+    crate::support::session::component_session(
+        root,
+        local,
+        std::env::var(COMPONENT).unwrap(),
+        None,
+        crate::support::widgets(),
     )
     .await
-    .unwrap();
-    Rc::new(ExtensionRunner::<Local>::new(
-        Rc::new(RwLock::new(vec![owner])),
-        runtime,
-        super::session::runner_session(cwd.to_str().unwrap()).0,
-        Rc::new(|_| {}),
-        maestro_theme::LiveTheme::default(),
-    ))
 }
 
 /// Executes the registered tool, retaining its complete caller-visible result.
-async fn search(runner: &Rc<ExtensionRunner<Local>>, args: Value) -> Result<Value, String> {
+async fn search(session: &AgentSession, args: Value) -> Result<Value, String> {
+    let runner = session.extension_runner();
     let tools = runner.get_all_registered_tools();
     assert_eq!(tools.len(), 1);
-    let tool = maestro_extensions::wrap_registered_tool(&tools[0], runner.clone());
+    let tool = maestro_app::wrap_registered_tool(&tools[0], runner);
     (tool.execute)("search".into(), args, None, None)
         .await
         .map(|result| serde_json::to_value(result).unwrap())
@@ -138,12 +109,12 @@ fn truncated_tool_component_reports_no_matches_and_search_errors() {
     if isolated("truncated_tool_component_reports_no_matches_and_search_errors") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
+    run(async |local| {
+        let root = Root::new();
         supply("", "", 1);
-        let runner = loaded(root.path()).await;
+        let session = loaded(&root, local).await;
         assert_eq!(
-            search(&runner, json!({"pattern":"needle"})).await.unwrap(),
+            search(&session, json!({"pattern":"needle"})).await.unwrap(),
             json!({"content":[{"type":"text","text":"No matches found"}],
                 "details":{"pattern":"needle","matchCount":0}})
         );
@@ -152,27 +123,48 @@ fn truncated_tool_component_reports_no_matches_and_search_errors() {
             &["--line-number", "--color=never", "--", "needle", "."],
         );
         supply("", "regex parse error: controlled error", 2);
-        let error = search(&runner, json!({"pattern":"["})).await.unwrap_err();
+        let error = search(&session, json!({"pattern":"["})).await.unwrap_err();
         assert_eq!(error, "ripgrep failed: regex parse error: controlled error");
         assert_process(&root, &["--line-number", "--color=never", "--", "[", "."]);
     });
 }
 
 #[test]
-fn truncated_tool_component_checks_empty_no_match_status() {
-    if isolated("truncated_tool_component_checks_empty_no_match_status") {
+fn truncated_tool_component_reports_no_matches_from_its_only_search() {
+    if isolated("truncated_tool_component_reports_no_matches_from_its_only_search") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
+    run(async |local| {
+        let root = Root::new();
         supply("", "", 1);
-        let runner = loaded(root.path()).await;
-        let result = search(&runner, json!({"pattern":"needle"})).await.unwrap();
+        std::fs::write(process_file("vanish"), "").unwrap();
+        let session = loaded(&root, local).await;
+        let result = search(&session, json!({"pattern":"needle"})).await.unwrap();
         assert_eq!(result["content"][0]["text"], "No matches found");
-        let version: Value =
-            serde_json::from_slice(&std::fs::read(process_file("version.json")).unwrap()).unwrap();
-        assert_eq!(version, json!({"argv":["--version"],"cwd":root.path()}));
+        assert_process(
+            &root,
+            &["--line-number", "--color=never", "--", "needle", "."],
+        );
+        assert!(!process_file("rg").exists());
     });
+}
+
+/// Searches after `prevent` stops the process from starting, returning the search error.
+fn rejected(name: &str, prevent: impl FnOnce(&Root)) -> String {
+    let mut error = String::new();
+    run(async |local| {
+        let root = Root::new();
+        let session = loaded(&root, local).await;
+        prevent(&root);
+        error = search(&session, json!({"pattern":"needle"}))
+            .await
+            .unwrap_err();
+    });
+    assert!(
+        !process_file("invocation.json").exists(),
+        "{name} started rg"
+    );
+    error
 }
 
 #[test]
@@ -180,15 +172,13 @@ fn truncated_tool_component_rejects_missing_executable() {
     if isolated("truncated_tool_component_rejects_missing_executable") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
-        let runner = loaded(root.path()).await;
+    let error = rejected("missing executable", |_| {
         std::fs::remove_file(process_file("rg")).unwrap();
-        let error = search(&runner, json!({"pattern":"needle"}))
-            .await
-            .unwrap_err();
-        assert_eq!(error, "ripgrep failed: could not start rg");
     });
+    assert_eq!(
+        error,
+        "ripgrep failed: No such file or directory (os error 2)"
+    );
 }
 
 #[test]
@@ -196,15 +186,13 @@ fn truncated_tool_component_rejects_removed_working_directory() {
     if isolated("truncated_tool_component_rejects_removed_working_directory") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
-        let runner = loaded(root.path()).await;
-        std::fs::remove_dir(root.path()).unwrap();
-        let error = search(&runner, json!({"pattern":"needle"}))
-            .await
-            .unwrap_err();
-        assert_eq!(error, "ripgrep failed: could not start rg");
+    let error = rejected("removed working directory", |root| {
+        std::fs::remove_dir(root.path("project")).unwrap();
     });
+    assert_eq!(
+        error,
+        "ripgrep failed: No such file or directory (os error 2)"
+    );
 }
 
 #[test]
@@ -212,16 +200,11 @@ fn truncated_tool_component_rejects_permission_denied() {
     if isolated("truncated_tool_component_rejects_permission_denied") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
-        let runner = loaded(root.path()).await;
+    let error = rejected("permission denied", |_| {
         std::fs::set_permissions(process_file("rg"), std::fs::Permissions::from_mode(0o644))
             .unwrap();
-        let error = search(&runner, json!({"pattern":"needle"}))
-            .await
-            .unwrap_err();
-        assert_eq!(error, "ripgrep failed: could not start rg");
     });
+    assert_eq!(error, "ripgrep failed: Permission denied (os error 13)");
 }
 
 #[test]
@@ -229,12 +212,12 @@ fn truncated_tool_component_preserves_literal_search_operands_and_output() {
     if isolated("truncated_tool_component_preserves_literal_search_operands_and_output") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
+    run(async |local| {
+        let root = Root::new();
         supply("space dir/match me.txt:1:-needle;touch escaped\n", "", 0);
-        let runner = loaded(root.path()).await;
+        let session = loaded(&root, local).await;
         let args = json!({"pattern":"-needle;touch escaped","path":"space dir","glob":"*.txt"});
-        let result = search(&runner, args).await.unwrap();
+        let result = search(&session, args).await.unwrap();
         assert_eq!(
             result,
             json!({"content":[{"type":"text","text":
@@ -253,14 +236,14 @@ fn truncated_tool_component_preserves_literal_search_operands_and_output() {
                 "space dir",
             ],
         );
-        assert!(!root.path().join("escaped").exists());
+        assert!(!root.path("project/escaped").exists());
     });
 }
 
 /// A completed result must already name the full, private artifact it retained.
 fn assert_artifact(result: &Value, expected: &str) -> String {
     let path = result["details"]["fullOutputPath"].as_str().unwrap();
-    let file = Path::new(path);
+    let file = std::path::Path::new(path);
     assert_eq!(file.file_name().unwrap(), "output.txt");
     let directory = file.parent().unwrap();
     assert!(
@@ -272,14 +255,10 @@ fn assert_artifact(result: &Value, expected: &str) -> String {
             .starts_with("maestro-rg-")
     );
     assert_eq!(std::fs::read_to_string(file).unwrap(), expected);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        assert_eq!(
-            std::fs::metadata(directory).unwrap().permissions().mode() & 0o777,
-            0o700
-        );
-    }
+    assert_eq!(
+        std::fs::metadata(directory).unwrap().permissions().mode() & 0o777,
+        0o700
+    );
     std::fs::remove_file(file).unwrap();
     std::fs::remove_dir(directory).unwrap();
     path.into()
@@ -342,9 +321,9 @@ fn truncated_tool_component_limits_lines_and_bytes_and_retains_full_output() {
     if isolated("truncated_tool_component_limits_lines_and_bytes_and_retains_full_output") {
         return;
     }
-    run(async {
-        let root = Scratch::new().unwrap();
-        let runner = loaded(root.path()).await;
+    run(async |local| {
+        let root = Root::new();
+        let session = loaded(&root, local).await;
         for (name, input, count, limit, lines, total, bytes, total_bytes, notice) in
             truncation_cases()
         {
@@ -353,7 +332,7 @@ fn truncated_tool_component_limits_lines_and_bytes_and_retains_full_output() {
                 writeln!(full, "{}:{text}", line + 1).unwrap();
             }
             supply(&full, "", 0);
-            let result = search(&runner, json!({"pattern":".","path":name}))
+            let result = search(&session, json!({"pattern":".","path":name}))
                 .await
                 .unwrap();
             assert_process(&root, &["--line-number", "--color=never", "--", ".", name]);

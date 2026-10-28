@@ -22,6 +22,7 @@ fn main() -> Result<(), String> {
     )?;
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
+    let bash_spawn_hook = build::component("bash_spawn_hook", "MAESTRO_BASH_SPAWN_HOOK_COMPONENT")?;
     let summarize = build::component("summarize", "MAESTRO_SUMMARIZE_COMPONENT")?;
     let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
     let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
@@ -40,12 +41,14 @@ fn main() -> Result<(), String> {
         "resource_component_reloaded",
         "MAESTRO_RESOURCE_RELOADED_COMPONENT",
     )?;
+    let truncated_tool = build::component("truncated_tool", "MAESTRO_TRUNCATED_TOOL_COMPONENT")?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
         std::fs::write(
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_BORDER_STATUS_EDITOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_SUMMARIZE_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\n",
+                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_SUMMARIZE_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n\
+                 MAESTRO_TRUNCATED_TOOL_COMPONENT={}\n",
                 path.display(),
                 border.display(),
                 context.display(),
@@ -63,7 +66,9 @@ fn main() -> Result<(), String> {
                 checkpoint.display(),
                 tool_override.display(),
                 handoff.display(),
-                qna.display()
+                qna.display(),
+                bash_spawn_hook.display(),
+                truncated_tool.display()
             ),
         )
         .map_err(|error| error.to_string())?;
