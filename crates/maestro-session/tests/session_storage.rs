@@ -147,7 +147,7 @@ fn stage_interrupted_history(path: &std::path::Path, bytes: &[u8]) -> std::path:
 fn opening_missing_nested_history_retains_unpublished_session() {
     use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
     let root = maestro_test_directory::Scratch::new().unwrap();
-    let path = root.path().join("new/nested/session.jsonl");
+    let path = root.path().join("new").join("nested").join("session.jsonl");
     let mut manager = SessionManager::open(path.to_str().unwrap(), None, Some("/work")).unwrap();
     assert!(path.parent().unwrap().is_dir());
     assert!(!path.exists());
