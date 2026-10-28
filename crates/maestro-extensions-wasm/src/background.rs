@@ -5,6 +5,7 @@
     clippy::excessive_nesting
 )]
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::future::poll_fn;
 use std::rc::Rc;
 use std::task::{Poll, Waker};
@@ -25,6 +26,15 @@ struct Job {
 /// Work shared by its task and its host tail.
 type SharedJob = Rc<RefCell<Job>>;
 
+/// Announced work indexed by its emission payload.
+#[derive(Default)]
+struct Pending {
+    /// The next unused announcement identity.
+    next_id: u64,
+    /// Work awaiting its own listener delivery.
+    jobs: HashMap<u64, SharedJob>,
+}
+
 /// Starts background work for one extension.
 ///
 /// A component has no task of its own that outlives a callback. Each start announces its
@@ -35,7 +45,7 @@ pub struct Background {
     /// The bus the work is announced on.
     events: EventBus,
     /// Work announced and not yet claimed by the listener.
-    pending: Rc<RefCell<Option<SharedJob>>>,
+    pending: Rc<RefCell<Pending>>,
 }
 
 impl Background {
@@ -54,7 +64,7 @@ impl Background {
     /// A failure of the work goes to the host's event-bus reporter.
     ///
     /// # Errors
-    /// Returns the host's refusal of the announcement; the work then never runs.
+    /// Returns the host's refusal or exhaustion of announcement IDs; the work then never runs.
     #[must_use]
     pub fn spawn(&self, work: ExtensionFuture<'static, ()>) -> ExtensionFuture<'_, BackgroundTask> {
         Box::pin(async move {
@@ -62,9 +72,17 @@ impl Background {
                 running: Some(work),
                 waker: None,
             }));
-            self.pending.replace(Some(Rc::clone(&job)));
-            if let Err(error) = self.events.emit(CHANNEL, serde_json::Value::Null).await {
-                self.pending.take();
+            let id = {
+                let mut pending = self.pending.borrow_mut();
+                let id = pending.next_id;
+                pending.next_id = id
+                    .checked_add(1)
+                    .ok_or("Background announcement IDs exhausted")?;
+                pending.jobs.insert(id, Rc::clone(&job));
+                id
+            };
+            if let Err(error) = self.events.emit(CHANNEL, id.into()).await {
+                self.pending.borrow_mut().jobs.remove(&id);
                 return Err(error);
             }
             Ok(BackgroundTask(job))
@@ -74,9 +92,12 @@ impl Background {
 
 /// Returns each announced job as its emission's tail; other emissions on the channel find
 /// nothing to claim.
-fn listener(pending: Rc<RefCell<Option<SharedJob>>>) -> EventListener {
-    Rc::new(move |_, _| {
-        let Some(job) = pending.borrow_mut().take() else {
+fn listener(pending: Rc<RefCell<Pending>>) -> EventListener {
+    Rc::new(move |data, _| {
+        let Some(id) = data.as_u64() else {
+            return Ok(None);
+        };
+        let Some(job) = pending.borrow_mut().jobs.remove(&id) else {
             return Ok(None);
         };
         Ok(Some(Box::pin(poll_fn(move |cx| {
