@@ -367,10 +367,15 @@ impl ForkRig {
         super::SessionManager::fork_with(&self.source, "/t", Some(dir), "", write)
     }
 
-    /// The single file created in a destination directory.
+    /// The single session file created beside its persistent lock sidecar.
     fn only_file(dir: &str) -> String {
-        let entry = std::fs::read_dir(dir).unwrap().next().unwrap().unwrap();
-        std::fs::read_to_string(entry.path()).unwrap()
+        let files: Vec<_> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(Result::unwrap)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".jsonl"))
+            .collect();
+        assert_eq!(files.len(), 1);
+        std::fs::read_to_string(files[0].path()).unwrap()
     }
 }
 
