@@ -116,3 +116,24 @@ fn sdk_component_uses_async_filesystem_and_standard_library_bytes() {
         session.dispose();
     });
 }
+
+/// A dependency-backed author workload executes after package discovery, not a test-host import.
+#[test]
+fn sdk_executes_a_packaged_dependency_backed_author_workload() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, async {
+        let root = Root::new();
+        let package = root.path("project/duration-package");
+        std::fs::create_dir(&package).unwrap();
+        std::fs::copy(std::env::var_os("MAESTRO_WITH_DEPS_COMPONENT").unwrap(), package.join("duration.wasm")).unwrap();
+        std::fs::write(package.join("package.json"), r#"{"name":"duration-package","maestro":{"extensions":["duration.wasm"]}}"#).unwrap();
+        let session = component_session(&root, local.clone(), package.display().to_string(), None, crate::support::widgets()).await;
+        assert_eq!(execute(&session, "parse_duration", json!({"duration":"2 days"})).await["content"][0]["text"], "2 days = 172800000 milliseconds");
+        assert_eq!(execute(&session, "parse_duration", json!({"duration":"1h"})).await["content"][0]["text"], "1h = 3600000 milliseconds");
+        session.dispose();
+    });
+}
