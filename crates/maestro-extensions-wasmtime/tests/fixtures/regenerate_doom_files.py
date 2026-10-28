@@ -15,7 +15,8 @@ def main():
     parser.add_argument("--check", action="store_true")
     check = parser.parse_args().check
     sdk = os.environ.get("WASI_SDK_PATH")
-    if not sdk or not (Path(sdk) / "bin/clang").is_file():
+    compiler = shutil.which("clang", path=str(Path(sdk) / "bin")) if sdk else None
+    if not compiler:
         message = "set WASI_SDK_PATH to wasi-sdk 34 to rebuild the engine fixture"
         if check:
             print(f"SKIP: {message}.")
@@ -35,7 +36,7 @@ def main():
             if name == "doom_sjlj_engine":
                 flags = ["-mllvm", "-wasm-enable-sjlj", "-mllvm",
                          "-wasm-use-legacy-eh=false", "-lsetjmp", "-Wl,--wrap=I_Error", "-Wl,--wrap=exit"]
-            subprocess.run([str(Path(sdk) / "bin/clang"), "--target=wasm32-wasip2",
+            subprocess.run([compiler, "--target=wasm32-wasip2",
                             "-mexec-model=reactor", "-O2", "-DNDEBUG", *flags,
                             f"-ffile-prefix-map={work}=.", f"-ffile-prefix-map={repo}=.",
                             f"-I{work}", f"-I{repo / 'examples/extensions/doom-overlay'}", str(source), str(work / "game.c"),

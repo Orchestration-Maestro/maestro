@@ -1,4 +1,5 @@
 //! Play DOOM in a retained terminal overlay.
+// maestro-component: MAESTRO_DOOM_OVERLAY_COMPONENT
 mod engine_bindings;
 engine_bindings::generate!("player");
 pub mod doom_component;

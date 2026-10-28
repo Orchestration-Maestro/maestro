@@ -23,7 +23,15 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
         let entry = entry?;
         let kind = entry.file_type()?;
         if kind.is_dir() {
-            collect_into(&entry.path(), files)?;
+            let main = entry.path().join("main.rs");
+            if main
+                .symlink_metadata()
+                .is_ok_and(|metadata| metadata.is_file())
+            {
+                files.push(main);
+            } else {
+                collect_into(&entry.path(), files)?;
+            }
         } else if kind.is_file() && entry.file_name() != "README.md" {
             files.push(entry.path());
         }

@@ -5,6 +5,7 @@ import argparse
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 from tempfile import TemporaryDirectory
 
@@ -24,7 +25,8 @@ def main():
     if source.is_relative_to(repo) or output.is_relative_to(repo):
         raise SystemExit("Keep engine source and output outside the shipped workspace.")
     sdk = os.environ.get("WASI_SDK_PATH")
-    if not sdk or not (Path(sdk) / "bin/clang").is_file():
+    compiler = shutil.which("clang", path=str(Path(sdk) / "bin")) if sdk else None
+    if not compiler:
         raise SystemExit("Set WASI_SDK_PATH to wasi-sdk 34.")
     revision = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     if revision != PIN:
@@ -39,7 +41,7 @@ def main():
         work = Path(directory)
         subprocess.run(["wit-bindgen", "c", "--world", "game", "--out-dir", str(work), str(here / "engine.wit")], check=True)
         wraps = ["I_Error", "exit", "printf", "puts", "putchar", "fprintf", "vfprintf", "fwrite"]
-        subprocess.run([str(Path(sdk) / "bin/clang"), "--target=wasm32-wasip2", "-mexec-model=reactor",
+        subprocess.run([compiler, "--target=wasm32-wasip2", "-mexec-model=reactor",
                         "-std=gnu17", "-O2", "-DNDEBUG", "-DNORMALUNIX", "-D_DEFAULT_SOURCE", "-fno-builtin",
                         "-DDOOMGENERIC_RESX=640", "-DDOOMGENERIC_RESY=400",
                         "-mllvm", "-wasm-enable-sjlj", "-mllvm", "-wasm-use-legacy-eh=false",
