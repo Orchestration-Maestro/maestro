@@ -126,6 +126,8 @@ fn rpc_selection_refusals_preserve_history_and_return_the_message() {
             json!({"type":"cycle_thinking_level"}),
             json!({"type":"set_steering_mode", "mode":"all"}),
             json!({"type":"set_follow_up_mode", "mode":"all"}),
+            json!({"type":"set_auto_compaction", "enabled": false}),
+            json!({"type":"set_auto_retry", "enabled": false}),
         ] {
             let reply = client.ask(&command.to_string()).await;
             assert_eq!(reply["success"], false);

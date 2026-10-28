@@ -171,7 +171,7 @@ impl Scripted {
 
     /// Makes `session` answer through the provider without retrying.
     pub(super) fn adopt(&self, session: &AgentSession) {
-        session.set_auto_retry_enabled(false);
+        session.set_auto_retry_enabled(false).unwrap();
         session.state().write().unwrap().model =
             Arc::new(RwLock::new(self.provider.models[0].clone()));
     }

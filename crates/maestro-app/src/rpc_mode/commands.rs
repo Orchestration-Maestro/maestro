@@ -326,8 +326,8 @@ fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> Result<
     match *command {
         Command::SetSteeringMode { mode } => session.set_steering_mode(mode)?,
         Command::SetFollowUpMode { mode } => session.set_follow_up_mode(mode)?,
-        Command::SetAutoCompaction { enabled } => session.set_auto_compaction_enabled(enabled),
-        Command::SetAutoRetry { enabled } => session.set_auto_retry_enabled(enabled),
+        Command::SetAutoCompaction { enabled } => session.set_auto_compaction_enabled(enabled)?,
+        Command::SetAutoRetry { enabled } => session.set_auto_retry_enabled(enabled)?,
         Command::AbortRetry => session.abort_retry(),
         Command::AbortBash => session.abort_bash(),
         Command::GetForkMessages => {

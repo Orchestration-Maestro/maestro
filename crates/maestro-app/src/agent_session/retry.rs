@@ -146,10 +146,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Enables or disables retrying failed responses.
-    pub fn set_auto_retry_enabled(&self, enabled: bool) {
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal without changing preferences.
+    pub fn set_auto_retry_enabled(&self, enabled: bool) -> Result<(), DiagnosticErrorInfo> {
         self.settings_manager
             .borrow_mut()
             .set_retry_enabled(enabled);
+        Ok(())
     }
 
     /// Creates the release every observer of this retry awaits, once.

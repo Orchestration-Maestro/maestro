@@ -139,7 +139,7 @@ fn settings_snapshot_reads_live_session_and_preferences() {
             })
             .await;
             let session = world.host.session();
-            session.set_auto_compaction_enabled(true);
+            session.set_auto_compaction_enabled(true).unwrap();
             session
                 .set_steering_mode(maestro_app::QueueMode::All)
                 .unwrap();
@@ -1641,6 +1641,29 @@ fn refused_transport_selection_preserves_live_agent_and_settings() {
                 session.settings_manager().borrow().get_transport(),
                 saved(&before)
             );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// A refused session policy cannot change the footer's compaction marker.
+#[test]
+fn refused_compaction_selection_preserves_session_and_footer() {
+    isolated(
+        "refused_compaction_selection_preserves_session_and_footer",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            assert!(footer_shows(&world, "(auto)"));
+            choose(&list, "compact", 0);
+            assert!(session.auto_compaction_enabled());
+            assert!(footer_shows(&world, "(auto)"));
             drop(world.runtime.settle());
         },
     );

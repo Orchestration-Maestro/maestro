@@ -74,7 +74,7 @@ impl InteractiveMode {
     pub(super) fn settings_callbacks(self: &Rc<Self>, done: Rc<dyn Fn()>) -> SettingsCallbacks {
         let mode = Rc::downgrade(self);
         SettingsCallbacks {
-            on_auto_compact_change: self.setting_callback(Self::settings_auto_compact),
+            on_auto_compact_change: self.fallible_setting_callback(Self::settings_auto_compact),
             on_show_images_change: self.fallible_setting_callback(Self::settings_show_images),
             on_image_width_cells_change: self.fallible_setting_callback(Self::settings_image_width),
             on_auto_resize_images_change: self.save_setting(SettingsManager::set_image_auto_resize),
@@ -195,11 +195,12 @@ impl InteractiveMode {
     }
 
     /// Saves the session compaction policy before refreshing the footer.
-    fn settings_auto_compact(&self, enabled: bool) {
+    fn settings_auto_compact(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()
-            .set_auto_compaction_enabled(enabled);
+            .set_auto_compaction_enabled(enabled)?;
         self.footer.set_auto_compact_enabled(enabled);
+        Ok(())
     }
 
     /// Saves inline image visibility and applies it to retained tool rows.

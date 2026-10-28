@@ -109,10 +109,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Enables or disables automatic compaction.
-    pub fn set_auto_compaction_enabled(&self, enabled: bool) {
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal without changing preferences.
+    pub fn set_auto_compaction_enabled(&self, enabled: bool) -> Result<(), DiagnosticErrorInfo> {
         self.settings_manager
             .borrow_mut()
             .set_compaction_enabled(enabled);
+        Ok(())
     }
 
     /// Compacts the context once the caller's turn is stopped.
