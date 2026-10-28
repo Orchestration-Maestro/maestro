@@ -104,6 +104,7 @@ pub fn read_branch_config(
         },
         reader: Reader::default(),
         reading: Vec::new(),
+        inspecting: false,
     };
     let repository = info.git_common_dir.join("config");
     let files: Vec<&Path> = environment
@@ -219,6 +220,8 @@ struct Walker<'a> {
     reader: Reader,
     /// Files being read, outermost first.
     reading: Vec<PathBuf>,
+    /// Whether a remote-URL inspection is running; it follows every matching include.
+    inspecting: bool,
 }
 
 impl Walker<'_> {
@@ -301,7 +304,7 @@ impl Walker<'_> {
                 if !self.subject.holds(condition, config_path, urls) {
                     return Some(Include::Skip);
                 }
-                condition.starts_with("hasconfig:")
+                condition.starts_with("hasconfig:") && !self.inspecting
             }
             _ => return None,
         };
@@ -316,11 +319,15 @@ impl Walker<'_> {
     }
 
     /// Whether `path`, with the files it includes, sets any `remote.<name>.url`.
+    ///
+    /// Matching `hasconfig` includes inside `path` are read as well, so a URL they set counts.
     fn defines_remote_url(&mut self, path: &Path, urls: Option<&[String]>) -> bool {
         let mut defines = false;
+        self.inspecting = true;
         self.walk(path, urls, &mut |variable| {
             defines |= variable.remote_url().is_some();
         });
+        self.inspecting = false;
         defines
     }
 }
