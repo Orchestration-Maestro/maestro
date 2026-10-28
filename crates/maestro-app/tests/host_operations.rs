@@ -180,7 +180,7 @@ fn local_factory_resolves_empty_packages_with_project_precedence() {
         std::fs::create_dir_all(path).unwrap();
         std::fs::write(path.join("package.json"), r#"{"maestro":{}}"#).unwrap();
     }
-    let result = probe.run(vec![HostOperation::ResolvePackages]);
+    let result = probe.run(vec![HostOperation::ResolvePackages(None)]);
     assert_eq!(
         result,
         vec![Ok(json!([
@@ -188,6 +188,29 @@ fn local_factory_resolves_empty_packages_with_project_precedence() {
             {"source":"./empty", "identity":format!("local:{}", empty.display()), "scope":"user", "installedPath":empty},
         ]))]
     );
+}
+
+#[test]
+fn local_factory_resolves_explicit_sources_in_their_selected_scope_only() {
+    let probe = Probe::new(json!({"packages":["./empty"]}), json!({"unknown": false}));
+    let before = probe.settings.borrow().get_project_settings();
+    let target = std::path::Path::new(&probe.cwd)
+        .join(maestro_app::configuration::config::CONFIG_DIR_NAME)
+        .join("git/example.test/team/repo");
+    std::fs::create_dir_all(&target).unwrap();
+    std::fs::write(target.join("package.json"), r#"{"maestro":{}}"#).unwrap();
+    let source = "https://example.test/team/repo@v1".to_owned();
+    let result = probe.run(vec![HostOperation::ResolvePackages(Some((
+        vec![source.clone()],
+        OperationScope::Project,
+    )))]);
+    assert_eq!(
+        result,
+        vec![Ok(json!([
+            {"source":source, "identity":"git:example.test/team/repo", "scope":"project", "installedPath":target},
+        ]))]
+    );
+    assert_eq!(probe.settings.borrow().get_project_settings(), before);
 }
 
 #[path = "host_operations_support/mod.rs"]

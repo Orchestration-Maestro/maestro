@@ -41,7 +41,7 @@ impl ExtensionOperations {
                     };
                     Ok(Value::Object(raw.0))
                 }
-                HostOperation::ResolvePackages => owners.resolve_packages().await,
+                HostOperation::ResolvePackages(_) => owners.resolve_packages().await,
                 HostOperation::Acquire(source, scope) => owners
                     .packages
                     .install(&source, Some(installed_scope(scope)))

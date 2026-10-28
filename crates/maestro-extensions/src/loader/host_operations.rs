@@ -17,8 +17,9 @@ pub enum OperationScope {
 pub enum HostOperation {
     /// Reads a raw preference document, without effective overrides.
     ReadSettings(OperationScope),
-    /// Resolves configured packages, including packages without resources.
-    ResolvePackages,
+    /// Resolves configured packages, or the supplied sources in one scope, including
+    /// packages without resources. Supplied sources are never written to settings.
+    ResolvePackages(Option<(Vec<String>, OperationScope)>),
     /// Acquires contents without editing preferences.
     Acquire(String, OperationScope),
     /// Observes a managed pinned Git checkout without changing it.

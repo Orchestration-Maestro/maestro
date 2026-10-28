@@ -57,7 +57,7 @@ impl From<Operation> for HostOperation {
     fn from(operation: Operation) -> Self {
         match operation {
             Operation::ReadSettings(scope) => Self::ReadSettings(scope.into()),
-            Operation::ResolvePackages => Self::ResolvePackages,
+            Operation::ResolvePackages => Self::ResolvePackages(None),
             Operation::Acquire(package) => Self::Acquire(package.source, package.scope.into()),
             Operation::VerifyPin(package) => Self::VerifyPin(package.source, package.scope.into()),
             Operation::RestorePin(package) => {
