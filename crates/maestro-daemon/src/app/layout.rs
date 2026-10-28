@@ -6,7 +6,9 @@ use maestro_protocol::{
     events::EventData,
     schema::{PaneDirection, PaneLayoutPane, PaneLayoutRect, PaneLayoutSnapshot, PaneLayoutSplit},
 };
-use maestro_workspace::layout::{Borders, NavDirection, PaneId, PaneInfo, Rect, find_in_direction};
+use maestro_workspace::layout::{
+    Borders, NavDirection, PaneId, PaneInfo, Rect, find_in_direction, ranges_overlap,
+};
 
 /// Chrome switches that decide the cell each pane occupies and the borders it keeps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,17 +75,12 @@ impl Extent {
     }
 }
 
-/// Whether two spans share at least one cell.
-fn spans_overlap(a_start: u16, a_len: u16, b_start: u16, b_len: u16) -> bool {
-    a_start < b_start.saturating_add(b_len) && b_start < a_start.saturating_add(a_len)
-}
-
 /// Whether another cell begins at this cell's right edge across a shared span of rows.
 fn has_cell_to_right(pane: &PaneInfo, panes: &[PaneInfo]) -> bool {
     panes.iter().any(|other| {
         other.id != pane.id
             && other.rect.x == pane.rect.right()
-            && spans_overlap(
+            && ranges_overlap(
                 pane.rect.y,
                 pane.rect.height,
                 other.rect.y,
@@ -97,7 +94,7 @@ fn has_cell_below(pane: &PaneInfo, panes: &[PaneInfo]) -> bool {
     panes.iter().any(|other| {
         other.id != pane.id
             && other.rect.y == pane.rect.bottom()
-            && spans_overlap(pane.rect.x, pane.rect.width, other.rect.x, other.rect.width)
+            && ranges_overlap(pane.rect.x, pane.rect.width, other.rect.x, other.rect.width)
     })
 }
 

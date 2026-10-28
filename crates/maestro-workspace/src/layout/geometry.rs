@@ -79,7 +79,7 @@ impl Borders {
 /// Whether two spans of cells share at least one cell, saturating at the coordinate limit.
 #[must_use]
 pub fn ranges_overlap(a_start: u16, a_len: u16, b_start: u16, b_len: u16) -> bool {
-    a_start.saturating_add(a_len) > b_start && b_len > 0
+    a_start < b_start.saturating_add(b_len) && a_start.saturating_add(a_len) > b_start
 }
 /// Split cells using multiply-then-round for the first extent.
 pub(super) fn split_rect(area: Rect, direction: &SplitDirection, ratio: f32) -> (Rect, Rect) {

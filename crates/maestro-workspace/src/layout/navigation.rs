@@ -1,11 +1,7 @@
 //! Split-tree operations.
-use super::{NavDirection, PaneId, PaneInfo, Rect, SplitBorder, SplitDirection};
+use super::{NavDirection, PaneId, PaneInfo, Rect, SplitBorder, SplitDirection, ranges_overlap};
 use std::cmp::Reverse;
 
-/// Test strictly positive interval overlap.
-fn ranges_overlap(a_start: u16, a_len: u16, b_start: u16, b_len: u16) -> bool {
-    a_start < b_start.saturating_add(b_len) && a_start.saturating_add(a_len) > b_start
-}
 /// Test whether a divider meets the requested pane edge.
 fn split_on_requested_edge(split: &SplitBorder, focused: Rect, nav: NavDirection) -> bool {
     split_edge_distance(split, focused, nav) <= 1
