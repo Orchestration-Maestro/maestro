@@ -1192,36 +1192,6 @@ fn standalone_inputs(source: &Path, package: &Path) {
     package_inputs(package);
 }
 
-/// The component examples stay in name order.
-#[test]
-fn shipped_example_lists_stay_in_name_order() {
-    let targets = example_targets(include_str!("../../maestro-extensions-wasm/Cargo.toml"));
-    assert!(
-        targets.is_sorted(),
-        "the component examples are not in name order: {targets:?}"
-    );
-}
-
-/// Example names come from the TOML the manifest holds, so either quote style declares one.
-#[test]
-fn example_targets_reads_both_quote_styles() {
-    let manifest = "[[example]]\nname = 'hello'\n\n[[example]]\nname = \"pirate\"\n";
-    assert_eq!(example_targets(manifest), ["hello", "pirate"]);
-}
-
-/// The `[[example]]` target names one manifest declares, in authored order.
-fn example_targets(manifest: &str) -> Vec<String> {
-    let manifest: toml::Table = manifest.parse().unwrap();
-    let Some(targets) = manifest.get("example").and_then(toml::Value::as_array) else {
-        return Vec::new();
-    };
-    targets
-        .iter()
-        .filter_map(|target| target.get("name").and_then(toml::Value::as_str))
-        .map(str::to_owned)
-        .collect()
-}
-
 /// Write the package-level inputs the standalone layout copies.
 fn package_inputs(package: &Path) {
     for (name, bytes) in [

@@ -9,9 +9,12 @@ Run them directly with Cargo in a disposable Unix terminal.
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
 `sdk/`, and each folder has its own index page. The [extension index](../examples/extensions/README.md) lists the shipped
-sources and their usage pages. Its table is generated from each example's own
-documentation; `just example-index-check` checks it against the tree. Each usage
-page keeps its own controlled-run commands and host prerequisites.
+sources and their usage pages. `just example-index` generates its table from each
+example's own documentation. The same command generates the `[[example]]` targets
+of `crates/maestro-extensions-wasm/Cargo.toml` and the component table of its
+`prepare_author_component` example, from each source's component marker.
+`just example-index-check` checks all three against the tree. Each usage page
+keeps its own controlled-run commands and host prerequisites.
 
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a

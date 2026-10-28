@@ -1,4 +1,5 @@
 //! Generates an editable prompt from the current branch for a new, parent-linked session.
+// Tests receive this component's path in MAESTRO_HANDOFF_COMPONENT.
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,

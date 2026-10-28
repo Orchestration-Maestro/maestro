@@ -25,9 +25,18 @@ steps.
 2. Add usage and controlled-run commands in a same-name Markdown page.
 3. Add `src/tests/<name>_example.rs` in `maestro-extensions-wasm`. The build
    script discovers these files; do not add a `mod` line to `src/tests.rs`.
-4. Add a `[[example]]` block to that crate's manifest in alphabetical order,
-   with the source path and `crate-type = ["cdylib"]`.
+4. If a test reads the built component from its environment, add one line
+   after the `//!` paragraph:
+   `// Tests receive this component's path in MAESTRO_<NAME>_COMPONENT.`
+   Each variable names one example. Nextest's setup builds every marked example
+   and exports its variable.
 5. Run `just example-index`, then run the example's controlled tests.
+
+`just example-index` also generates the `[[example]]` targets in
+`crates/maestro-extensions-wasm/Cargo.toml` and the component table in
+`crates/maestro-extensions-wasm/examples/prepare_author_component.rs`; do not
+edit either by hand. `just example-index-check` fails when one is stale or a
+marker is malformed or repeated.
 
 The table below is generated from each Rust file's opening documentation and
 Markdown page's heading. Do not edit its rows by hand. `just example-index-check`

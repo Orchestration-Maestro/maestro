@@ -1,4 +1,5 @@
 //! An opt-in file watcher that sends external triggers to the conversation.
+// Tests receive this component's path in MAESTRO_FILE_TRIGGER_COMPONENT.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
