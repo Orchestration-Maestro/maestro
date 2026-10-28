@@ -480,6 +480,11 @@ fn open_checks_its_request_before_creating_anything() {
         ask(&mut app, open(json!({"path": "relative/checkout"}))),
         failure("invalid_request", "worktree path must be absolute")
     );
+    assert!(std::env::var_os("HOME").is_some());
+    assert_eq!(
+        ask(&mut app, open(json!({"path": "~/no-such-checkout"}))),
+        failure("worktree_not_found", "worktree path not found")
+    );
     let from_linked = json!({"type": "worktree.open", "cwd": text(&linked_path),
                              "branch": "worktree/checked"});
     assert_eq!(
@@ -844,39 +849,40 @@ fn create_refuses_a_checkout_another_operation_owns() {
     let scratch = Scratch::new().unwrap();
     let repo = repository(&scratch);
     let linked_path = checkout(&scratch, &repo, "worktree/busy");
-    let mut app = daemon_with_workspaces(&[text(&repo), text(&linked_path)]);
-    keep_checkouts_in(&mut app, &scratch);
-    app.state.topology.workspaces[1].worktree_space = Some(linked(&repo, &linked_path));
-    let busy = failure(
-        "worktree_operation_in_progress",
-        "worktree operation is already in progress for this checkout",
+    with_live_daemon(
+        "worktree_commands::create_refuses_a_checkout_another_operation_owns",
+        async |app| {
+            add_workspaces(app, &[text(&repo), text(&linked_path)]);
+            keep_checkouts_in(app, &scratch);
+            app.state.topology.workspaces[1].worktree_space = Some(linked(&repo, &linked_path));
+            let busy = failure(
+                "worktree_operation_in_progress",
+                "worktree operation is already in progress for this checkout",
+            );
+            let removing = submit(
+                app,
+                json!({"type": "worktree.remove", "workspace_id": "w2"}),
+            )
+            .await;
+            let create = json!({"type": "worktree.create", "workspace_id": "w1",
+                                "branch": "worktree/other", "path": text(&linked_path)});
+            assert_eq!(answer(app, create).await, busy);
+            let next =
+                json!({"type": "worktree.create", "workspace_id": "w1", "branch": "worktree/next"});
+            let adding = submit(app, next.clone()).await;
+            assert_eq!(answer(app, next).await, busy);
+            let removed = settle(app, removing).await;
+            assert!(
+                matches!(removed, Ok(ResponseResult::WorktreeRemoved { .. })),
+                "{removed:?}"
+            );
+            let added = settle(app, adding).await;
+            assert!(
+                matches!(added, Ok(ResponseResult::WorktreeCreated { .. })),
+                "{added:?}"
+            );
+        },
     );
-    block_on(async {
-        let removing = submit(
-            &mut app,
-            json!({"type": "worktree.remove", "workspace_id": "w2"}),
-        )
-        .await;
-        let create = json!({"type": "worktree.create", "workspace_id": "w1",
-                            "branch": "worktree/other", "path": text(&linked_path)});
-        assert_eq!(answer(&mut app, create).await, busy);
-        let adding = submit(
-            &mut app,
-            json!({"type": "worktree.create", "workspace_id": "w1", "branch": "worktree/next"}),
-        )
-        .await;
-        let again =
-            json!({"type": "worktree.create", "workspace_id": "w1", "branch": "worktree/next"});
-        assert_eq!(answer(&mut app, again).await, busy);
-        assert!(matches!(
-            settle(&mut app, removing).await,
-            Ok(ResponseResult::WorktreeRemoved { .. })
-        ));
-        assert!(matches!(
-            settle(&mut app, adding).await,
-            Ok(ResponseResult::WorktreeCreated { .. })
-        ));
-    });
 }
 
 /// A parent workspace and a linked workspace of `repo` on `branch`, the parent active.
@@ -890,6 +896,68 @@ fn parent_and_child(scratch: &Scratch, repo: &Path, branch: &str) -> (TestApp, P
     });
     app.state.topology.workspaces[1].worktree_space = Some(linked(repo, &linked_path));
     (app, linked_path)
+}
+
+#[test]
+fn create_from_a_workspace_with_membership_keeps_it_as_the_source() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    with_live_daemon(
+        "worktree_commands::create_from_a_workspace_with_membership_keeps_it_as_the_source",
+        async |app| {
+            keep_checkouts_in(app, &scratch);
+            add_workspaces(app, &[text(&repo)]);
+            let parent = WorktreeSpaceMembership {
+                is_linked_worktree: false,
+                checkout_path: repo.clone(),
+                ..linked(&repo, &repo)
+            };
+            app.state.topology.workspaces[0].worktree_space = Some(parent.clone());
+            let wire = json!({"type": "worktree.create", "workspace_id": "w1",
+                              "branch": "worktree/member-source"});
+            let result = answer(app, wire).await;
+            assert!(
+                matches!(result, Ok(ResponseResult::WorktreeCreated { .. })),
+                "{result:?}"
+            );
+            assert_eq!(app.state.topology.workspaces.len(), 2);
+            assert_eq!(
+                app.state.topology.workspaces[0].worktree_space.as_ref(),
+                Some(&parent)
+            );
+            assert_eq!(
+                kinds_after(app, 0),
+                [
+                    "workspace_created",
+                    "tab_created",
+                    "pane_created",
+                    "worktree_created"
+                ]
+            );
+        },
+    );
+}
+
+#[test]
+fn finishing_an_operation_marks_the_view_for_rendering() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    let (mut app, _) = parent_and_child(&scratch, &repo, "worktree/render");
+    block_on(async {
+        let pending = submit(
+            &mut app,
+            json!({"type": "worktree.remove", "workspace_id": "w2"}),
+        )
+        .await;
+        let _ = app.launch.render_dirty.take();
+        assert!(!app.launch.render_dirty.is_pending());
+        let result = settle(&mut app, pending).await;
+        assert!(
+            matches!(result, Ok(ResponseResult::WorktreeRemoved { .. })),
+            "{result:?}"
+        );
+        assert!(app.launch.render_dirty.is_pending());
+    });
 }
 
 #[test]
