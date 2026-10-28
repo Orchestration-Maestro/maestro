@@ -12,6 +12,61 @@ fn call(rpc: &mut Rpc, data: &Value) -> Value {
 }
 
 #[test]
+fn native_files_reject_invalid_operands_without_filesystem_changes() {
+    let root = Root::new();
+    let mut rpc = loaded(&root);
+    let parent = root.path("validation");
+    std::fs::create_dir(&parent).unwrap();
+    let path = parent.join("original");
+    std::fs::write(&path, b"original\0\xff").unwrap();
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+    let mut operands = vec![
+        "{".to_owned(),
+        json!({"op":"save", "bytes":[], "mode":0o600}).to_string(),
+        json!({"op":"mode", "path":42}).to_string(),
+        json!({"op":"unknown", "path":path}).to_string(),
+        json!({"path":path}).to_string(),
+    ];
+    for bytes in [Value::Null, json!([256]), json!([-1]), json!("bytes")] {
+        operands.push(json!({"op":"save", "path":path, "bytes":bytes, "mode":0o600}).to_string());
+    }
+    for op in ["save", "chmod", "mkdir"] {
+        for invalid_mode in [
+            Value::Null,
+            json!(-1),
+            json!(4_294_967_296_u64),
+            json!("600"),
+        ] {
+            operands
+                .push(json!({"op":op, "path":path, "bytes":[], "mode":invalid_mode}).to_string());
+        }
+    }
+    for args in operands {
+        let start = rpc.events.len();
+        rpc.request(json!({"type":"prompt", "message":format!("/native-files {args}")}));
+        let reply: Value = rpc.events[start..]
+            .iter()
+            .find_map(|event| event["title"].as_str()?.strip_prefix("NATIVE-IO:"))
+            .map(|text| serde_json::from_str(text).unwrap())
+            .expect("guest native-operation rejection");
+        assert!(
+            reply["error"]
+                .as_str()
+                .is_some_and(|error| !error.is_empty()),
+            "{args}: {reply}"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), b"original\0\xff", "{args}");
+        assert_eq!(
+            std::fs::metadata(&path).unwrap().permissions().mode(),
+            mode,
+            "{args}"
+        );
+        assert_eq!(std::fs::read_dir(&parent).unwrap().count(), 1, "{args}");
+    }
+    rpc.finish();
+}
+
+#[test]
 fn native_files_save_private_bytes_and_preserve_existing_modes() {
     let root = Root::new();
     let mut rpc = loaded(&root);
