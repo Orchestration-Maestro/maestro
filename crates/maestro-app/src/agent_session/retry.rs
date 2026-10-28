@@ -150,9 +150,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns the publisher's refusal without changing preferences.
     pub fn set_auto_retry_enabled(&self, enabled: bool) -> Result<(), DiagnosticErrorInfo> {
-        self.settings_manager
-            .borrow_mut()
-            .set_retry_enabled(enabled);
+        let edit = self.prepare_behaviour(&["retry", "enabled"], serde_json::json!(enabled))?;
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
         Ok(())
     }
 

@@ -59,11 +59,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Admits one behaviour preference before its live agent effect.
     pub(super) fn prepare_behaviour(
         &self,
-        field: &str,
+        path: &[&str],
         value: serde_json::Value,
     ) -> Result<PreparedSettingsEdit, DiagnosticErrorInfo> {
         let settings = self.settings_manager.borrow();
-        let changes = vec![preference(field, value)];
+        let changes = vec![SettingsChange {
+            path: path.iter().map(|part| (*part).into()).collect(),
+            value: Some(value),
+        }];
         let scope = SettingsScope::Global;
         settings
             .prepare_operation(

@@ -113,9 +113,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns the publisher's refusal without changing preferences.
     pub fn set_auto_compaction_enabled(&self, enabled: bool) -> Result<(), DiagnosticErrorInfo> {
-        self.settings_manager
-            .borrow_mut()
-            .set_compaction_enabled(enabled);
+        let edit =
+            self.prepare_behaviour(&["compaction", "enabled"], serde_json::json!(enabled))?;
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
         Ok(())
     }
 
