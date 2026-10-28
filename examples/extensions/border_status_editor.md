@@ -35,12 +35,15 @@ Build with `--example border_status_editor` using the
 a component-enabled native host with an interactive UI, native waits and
 event-tail execution; the branch also needs Git on `PATH`. The controlled runs
 load the built component through the production runner with a supplied model,
-context estimate, theme and terminal, a paused clock and disposable directories.
-They need Git but no provider, credentials or paid service.
+context estimate, theme and terminal in disposable directories, and drive the
+spinner through held native waits. They need Git but no provider, credentials
+or paid service.
 
 ## Controlled runs
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- border_status_editor_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- border_status_editor_
 ```
