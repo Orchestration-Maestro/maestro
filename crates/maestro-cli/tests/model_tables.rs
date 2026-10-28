@@ -140,8 +140,15 @@ fn listing(case: &support::Recorded) -> (String, String) {
     let mut diagnostics = Vec::new();
     list_models(&registry(case), options, &mut output, &mut diagnostics)
         .expect("written model table");
+    let output = String::from_utf8(output).expect("utf-8 table");
+    // Windows joins the recorded POSIX documentation root natively; the recording uses `/`.
+    let output = if cfg!(windows) {
+        output.replace('\\', "/")
+    } else {
+        output
+    };
     (
-        String::from_utf8(output).expect("utf-8 table"),
+        output,
         String::from_utf8(diagnostics).expect("utf-8 diagnostics"),
     )
 }

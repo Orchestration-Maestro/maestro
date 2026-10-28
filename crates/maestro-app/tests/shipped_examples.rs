@@ -249,12 +249,10 @@ fn recursive_names(root: &Path, directory: &Path) -> Vec<String> {
         if path.is_dir() {
             names.extend(recursive_names(root, &path));
         } else {
-            names.push(
-                path.strip_prefix(root)
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            // Index pages link with `/`, whatever the host separator.
+            let relative = path.strip_prefix(root).unwrap();
+            let parts: Vec<_> = relative.iter().map(|part| part.to_string_lossy()).collect();
+            names.push(parts.join("/"));
         }
     }
     names.sort();

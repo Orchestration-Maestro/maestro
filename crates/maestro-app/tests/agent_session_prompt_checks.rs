@@ -3,8 +3,8 @@
 //! refusals, compared with the recorded operation cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, HarnessOptions, Scripted, answer, command_extension, delivery_requests, delivery_view,
-    expected, harness, observed_preflight, on_task_set, start_prompt, substituting, template,
+    Auth, HarnessOptions, Scripted, answer, as_recorded, command_extension, delivery_requests,
+    delivery_view, expected, harness, observed_preflight, on_task_set, start_prompt, template,
     waiting_tool,
 };
 use indexmap::IndexMap;
@@ -209,11 +209,10 @@ fn skill_input_reaches_the_provider_expanded() {
         assert!(result.is_ok());
         let mut observed = delivery_view(&h);
         observed["requests"] = delivery_requests(&h);
-        let expected = substituting(
-            expected("skill_input_reaches_the_provider_expanded"),
-            &[("$SKILL_ROOT", &root)],
+        assert_eq!(
+            as_recorded(observed, &[(&root, "$SKILL_ROOT")]),
+            expected("skill_input_reaches_the_provider_expanded")
         );
-        assert_eq!(observed, expected);
         h.session.dispose();
     });
 }
@@ -351,11 +350,10 @@ fn unauthenticated_prompt_fails_before_dispatch() {
         observed["preflight"] = json!(*accepted.borrow());
         observed["calls"] = json!(h.faux.state.call_count());
         let docs = maestro_app::configuration::config::get_docs_path().unwrap();
-        let expected = substituting(
-            expected("unauthenticated_prompt_fails_before_dispatch"),
-            &[("$DOCS", &docs)],
+        assert_eq!(
+            as_recorded(observed, &[(&docs, "$DOCS")]),
+            expected("unauthenticated_prompt_fails_before_dispatch")
         );
-        assert_eq!(observed, expected);
         h.session.dispose();
     });
 }

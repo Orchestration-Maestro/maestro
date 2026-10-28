@@ -164,7 +164,13 @@ fn paired_save_keeps_topology_if_history_fails() {
     assert!(save_to_paths(&session, &path, &snapshot, Some(&history())).is_err());
     assert_eq!(load(&session).unwrap().selected, 7);
     snapshot.selected = 8;
-    assert!(save_to_paths(&session, &path, &snapshot, None).is_err());
+    // Unix refuses a path below a file; Windows reports it absent, which removal accepts.
+    let refused =
+        fs::remove_file(&path).is_err_and(|error| error.kind() != std::io::ErrorKind::NotFound);
+    assert_eq!(
+        save_to_paths(&session, &path, &snapshot, None).is_err(),
+        refused
+    );
     assert_eq!(load(&session).unwrap().selected, 8);
     let history_path = dir.path().join("kept-history");
     fs::write(&history_path, b"old history").unwrap();

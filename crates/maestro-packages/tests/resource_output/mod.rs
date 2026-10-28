@@ -9,3 +9,14 @@ pub fn output(result: ResolvedPaths, base: &str) -> Value {
     };
     json!({"extensions":encode(result.extensions),"skills":encode(result.skills),"prompts":encode(result.prompts),"themes":encode(result.themes)})
 }
+
+/// [`output`] as the recordings spell it: Windows, which never stores `\\` in a name, joins
+/// with native separators where the recordings use `/`.
+pub fn recorded_output(result: ResolvedPaths, base: &str) -> Value {
+    let output = output(result, base);
+    if cfg!(windows) {
+        serde_json::from_str(&output.to_string().replace("\\\\", "/")).unwrap()
+    } else {
+        output
+    }
+}

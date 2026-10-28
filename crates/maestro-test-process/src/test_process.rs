@@ -10,13 +10,14 @@ use std::process::{Command, ExitStatus, Output, Stdio};
 use crate::proof::{check_file, check_output};
 use crate::{CheckedChild, TestProcessError, selection};
 
-/// Variable the coverage runtime reads; kept when the environment is cleared.
-const PROFILE: &str = "LLVM_PROFILE_FILE";
+/// Variables a cleared environment keeps: the coverage runtime's profile path and the
+/// Windows system root, without which a Windows child cannot load its socket library.
+const KEPT: [&str; 2] = ["LLVM_PROFILE_FILE", "SYSTEMROOT"];
 
 /// One ordered environment edit.
 #[derive(Debug)]
 enum EnvEdit {
-    /// Drop the inherited environment, keeping the coverage profile path.
+    /// Drop the inherited environment, keeping the [`KEPT`] variables.
     Clear,
     /// Set a variable.
     Set(OsString, OsString),
@@ -30,9 +31,10 @@ impl EnvEdit {
         match self {
             Self::Clear => {
                 command.env_clear();
-                if let Some(profile) = std::env::var_os(PROFILE) {
-                    command.env(PROFILE, profile);
-                }
+                let kept = KEPT
+                    .iter()
+                    .filter_map(|name| Some((name, std::env::var_os(name)?)));
+                command.envs(kept);
             }
             Self::Set(key, value) => {
                 command.env(key, value);
@@ -172,7 +174,8 @@ impl TestProcess {
         self
     }
 
-    /// Drop the inherited environment, keeping the coverage profile path.
+    /// Drop the inherited environment, keeping the coverage profile path and the
+    /// Windows system root.
     #[must_use]
     pub fn env_clear(mut self) -> Self {
         self.envs.push(EnvEdit::Clear);

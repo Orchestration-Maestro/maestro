@@ -1,7 +1,7 @@
 //! System prompt assembly against the recorded prompt texts.
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_app::BuildSystemPromptOptions;
-use maestro_app::configuration::config::{get_docs_path, get_readme_path};
+use maestro_app::configuration::config::{get_docs_path, get_readme_path, paths};
 use maestro_app::resources::system_prompt::build_system_prompt;
 use maestro_test_process::{TestProcess, selection};
 use serde::Deserialize;
@@ -54,9 +54,10 @@ fn in_child(test: &str, value: Option<&str>) {
 /// Every recorded prompt, with the documentation paths of `package_dir` and the local date
 /// read around the build.
 fn assert_recorded_prompts(package_dir: &str) {
-    let readme = format!("{package_dir}/README.md");
-    let docs = format!("{package_dir}/docs");
-    let examples = format!("{package_dir}/examples");
+    // Resolved as the prompt resolves them: `/package` is on the working drive on Windows.
+    let readme = paths::get_readme_path(package_dir).unwrap();
+    let docs = paths::get_docs_path(package_dir).unwrap();
+    let examples = paths::get_examples_path(package_dir).unwrap();
     for case in cases() {
         let before = today();
         let built = prompt(case.options);
