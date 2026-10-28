@@ -59,7 +59,10 @@ lists the terminal and platform prerequisites and controlled run command.
 retains complete truncated output in a temporary file, and renders search calls
 and results. It needs a Unix component host with `rg` on its `PATH`; loading it
 is opt-in. Temporary output can contain private contents and remains until
-removed. The
+removed. `extensions/custom-provider-anthropic/main.rs` registers an opt-in
+provider with two models, its own message stream, an API-key variable and
+subscription login; its index entry lists the build and controlled run commands.
+The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 
