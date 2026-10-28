@@ -36,6 +36,7 @@ mod module_location;
 mod native_helpers;
 mod native_io;
 mod overlay_test_example;
+mod project_rules_example;
 mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
