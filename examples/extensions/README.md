@@ -58,19 +58,19 @@ resolving conflicts, then regenerate the table.
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
 | `confirm_destructive.md` | Confirm destructive |
 | `confirm_destructive.rs` | Opt-in confirmation before replacing or forking a session. |
+| `custom-provider-anthropic.md` | Custom message provider |
 | `custom-provider-anthropic/main.rs` | Opt-in registration of a custom message-stream provider. |
 | `custom-provider-anthropic/oauth.rs` | Subscription sign-in through the host's HTTP and interaction interfaces. |
 | `custom-provider-anthropic/request.rs` | Conversation conversion and HTTP parameters for the custom message protocol. |
 | `custom-provider-anthropic/response.rs` | Ordered provider events reduced into one shared assistant message. |
 | `custom-provider-anthropic/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |
 | `custom-provider-anthropic/stream.rs` | A custom message-stream implementation using the host's transport and event buffer. |
-| `custom-provider-anthropic.md` | Custom message provider |
+| `custom-provider-gitlab-duo.md` | Custom gateway provider |
 | `custom-provider-gitlab-duo/main.rs` | A provider for GitLab Duo's Claude and GPT models, with GitLab sign-in and requests delegated to the built-in protocols. |
 | `custom-provider-gitlab-duo/models.rs` | The gateway's service addresses and the models it serves. |
 | `custom-provider-gitlab-duo/oauth.rs` | GitLab sign-in and token refresh through the host's HTTP and interaction interfaces. |
 | `custom-provider-gitlab-duo/provider.rs` | The provider's retained effects and its cached direct access token. |
 | `custom-provider-gitlab-duo/stream.rs` | Requests for the gateway's models, delegated to the built-in Anthropic and OpenAI protocols. |
-| `custom-provider-gitlab-duo.md` | Custom gateway provider |
 | `custom_compaction.md` | Custom compaction |
 | `custom_compaction.rs` | Summarizes the complete prepared conversation with a separately selected model. |
 | `custom_footer.md` | Custom footer |
@@ -111,24 +111,24 @@ resolving conflicts, then regenerate the table.
 | `permission_gate.rs` | An opt-in confirmation hook for illustrative dangerous bash patterns. |
 | `pirate.md` | Pirate |
 | `pirate.rs` | A command that toggles a pirate response style in the assembled system prompt. |
-| `preset/config.rs` | Layered preset files read through the host's authored-path helpers. |
-| `preset/selector.rs` | Themed preset selection through the host's retained list and container widgets. |
 | `preset.md` | Preset |
 | `preset.rs` | Named model, thinking, tool and prompt configurations selected for one session. |
+| `preset/config.rs` | Layered preset files read through the host's authored-path helpers. |
+| `preset/selector.rs` | Themed preset selection through the host's retained list and container widgets. |
 | `prompt_customizer.md` | Prompt customizer |
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
 | `qna.md` | Qna |
 | `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
-| `question/render.rs` | Compact call and result rows using the host's unpadded text widget. |
-| `question/view.rs` | Retained option navigation with the host's multiline editor. |
 | `question.md` | Question |
 | `question.rs` | An opt-in single-question tool with an inline custom answer. |
-| `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
-| `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
+| `question/render.rs` | Compact call and result rows using the host's unpadded text widget. |
+| `question/view.rs` | Retained option navigation with the host's multiline editor. |
 | `questionnaire.md` | Questionnaire |
 | `questionnaire.rs` | A questionnaire tool with selectable options and inline custom answers. |
+| `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
+| `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |
@@ -137,14 +137,14 @@ resolving conflicts, then regenerate the table.
 | `session_name.rs` | A command that sets or shows the session's friendly name. |
 | `shutdown_command.md` | Shutdown command |
 | `shutdown_command.rs` | A quit command and two tools that ask the host to shut down. |
-| `snake/game.rs` | Snake positions, food and the state stored in session entries. |
-| `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
 | `snake.md` | Snake |
 | `snake.rs` | Play Snake in a custom terminal view, saving a paused game in session entries. |
-| `space_invaders/game.rs` | Retained game records and one deterministic simulation tick. |
-| `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
+| `snake/game.rs` | Snake positions, food and the state stored in session entries. |
+| `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
 | `space_invaders.md` | Space invaders |
 | `space_invaders.rs` | Play Space Invaders in a custom terminal view with session-entry saves. |
+| `space_invaders/game.rs` | Retained game records and one deterministic simulation tick. |
+| `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
 | `summarize.md` | Summarize |
@@ -156,9 +156,9 @@ resolving conflicts, then regenerate the table.
 | `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |
 | `titlebar_spinner.rs` | Animates the terminal title while the agent works, restoring it when work stops. |
-| `todo/view.rs` | Tool rows and the interactive todo list, using the host's theme and terminal helpers. |
 | `todo.md` | Todo |
 | `todo.rs` | A todo tool whose result snapshots follow the active session branch. |
+| `todo/view.rs` | Tool rows and the interactive todo list, using the host's theme and terminal helpers. |
 | `tool_override.md` | Tool override |
 | `tool_override.rs` | An opt-in read override with access records and illustrative sensitive-path checks. |
 | `tools.md` | Tools |
@@ -169,8 +169,8 @@ resolving conflicts, then regenerate the table.
 | `truncated_tool.rs` | A ripgrep tool that retains full output when the host's output limits are reached. |
 | `widget_placement.md` | Widget placement |
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
-| `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
 | `with-deps.md` | With deps |
+| `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->
