@@ -25,6 +25,34 @@ impl WasiView for State {
 /// A fatal engine call unwinds only to its export and leaves later calls usable.
 #[test]
 fn engine_fatal_error_returns_without_poisoning_instance() -> wasmtime::Result<()> {
+    check_errors(vec![(28, "forced engine failure: 7".into())])
+}
+
+/// Invalid leading bytes and malformed scalar encodings remain recoverable diagnostics.
+#[test]
+fn engine_invalid_diagnostics_return_without_poisoning_instance() -> wasmtime::Result<()> {
+    let invalid = b"\xff\xc0\xaf\xe0\x80\xaf\xed\xa0\x80\xf0\x80\x80\xaf\xf4\x90\x80\x80\xe2\x82x";
+    check_errors(vec![
+        (29, "invalid:\u{fffd}".into()),
+        (32, format!("sequence:{}", String::from_utf8_lossy(invalid))),
+        (33, "incomplete:\u{fffd}".into()),
+    ])
+}
+
+/// A diagnostic cut within a three-byte scalar ends at the preceding character boundary.
+#[test]
+fn engine_truncated_diagnostic_returns_without_poisoning_instance() -> wasmtime::Result<()> {
+    check_errors(vec![(30, "a".repeat(1021))])
+}
+
+/// Complete two-, three- and four-byte scalar encodings are unchanged.
+#[test]
+fn engine_valid_multibyte_diagnostic_is_preserved() -> wasmtime::Result<()> {
+    check_errors(vec![(31, "valid:\u{e9}\u{20ac}\u{10000}\u{10ffff}".into())])
+}
+
+/// Every error vector is followed by a successful call on the same instance.
+fn check_errors(cases: Vec<(u32, String)>) -> wasmtime::Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -52,14 +80,18 @@ fn engine_fatal_error_returns_without_poisoning_instance() -> wasmtime::Result<(
                 .unwrap();
             let tick =
                 instance.get_typed_func::<(u32,), (Result<(), String>,)>(&mut store, &export)?;
-            let (first,) = store
-                .run_concurrent(async |accessor| tick.call_concurrent(accessor, (28,)).await)
-                .await??;
-            assert_eq!(first, Err("forced engine failure: 7".into()));
-            let (second,) = store
-                .run_concurrent(async |accessor| tick.call_concurrent(accessor, (57,)).await)
-                .await??;
-            assert_eq!(second, Ok(()));
+            for (milliseconds, expected) in cases {
+                let (first,) = store
+                    .run_concurrent(async |accessor| {
+                        tick.call_concurrent(accessor, (milliseconds,)).await
+                    })
+                    .await??;
+                assert_eq!(first, Err(expected));
+                let (second,) = store
+                    .run_concurrent(async |accessor| tick.call_concurrent(accessor, (57,)).await)
+                    .await??;
+                assert_eq!(second, Ok(()));
+            }
             Ok(())
         })
 }
