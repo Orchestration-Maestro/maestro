@@ -43,22 +43,42 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         Ok(())
     }
-    /// Resolves a pin locally without fetching or treating it as a command option.
+    /// Resolves a commit locally, preferring local branches as checkout does.
     pub(super) async fn local_git_pin(
         &self,
         git: &GitSource,
         path: &str,
     ) -> io::Result<Option<String>> {
-        let reference = format!("{}^{{commit}}", git.r#ref.as_deref().unwrap_or_default());
-        let output = self
+        let reference = git.r#ref.as_deref().unwrap_or_default();
+        let branch = format!("refs/heads/{reference}");
+        let branches = self
             .git_capture(
                 path,
-                &["rev-parse", "--revs-only", "--end-of-options", &reference],
+                &["for-each-ref", "--format=%(refname)", "--", &branch],
                 &[],
             )
             .await?;
-        let commit = crate::trim(&output);
-        Ok((!commit.is_empty()).then(|| commit.to_owned()))
+        let mut candidates = vec![
+            format!("{reference}^{{commit}}"),
+            format!("refs/remotes/origin/{reference}^{{commit}}"),
+        ];
+        if branches.lines().any(|name| name == branch) {
+            candidates.insert(0, format!("{branch}^{{commit}}"));
+        }
+        for candidate in candidates {
+            let output = self
+                .git_capture(
+                    path,
+                    &["rev-parse", "--revs-only", "--end-of-options", &candidate],
+                    &[],
+                )
+                .await?;
+            let commit = crate::trim(&output);
+            if !commit.is_empty() {
+                return Ok(Some(commit.to_owned()));
+            }
+        }
+        Ok(None)
     }
     /// Observes the exact local commit and NUL-delimited tracked and untracked paths.
     pub(super) async fn inspect_pin(

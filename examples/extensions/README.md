@@ -141,6 +141,12 @@ resolving conflicts, then regenerate the table.
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
+| `tic_tac_toe.md` | Tic-tac-toe |
+| `tic_tac_toe.rs` | Play tic-tac-toe through a command and sequential atomic tools. |
+| `tic_tac_toe/game.rs` | Board snapshots shared by the tools and session reconstruction. |
+| `tic_tac_toe/prompt.rs` | Turn instructions added only while the interactive game is active. |
+| `tic_tac_toe/render.rs` | Themed boards, move banners and final-game banners. |
+| `tic_tac_toe/ui.rs` | The human's private cursor and the retained interactive game view. |
 | `timed_confirm.md` | Timed confirm |
 | `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |

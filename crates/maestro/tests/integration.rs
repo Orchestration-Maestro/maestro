@@ -9,5 +9,6 @@ mod native_io;
 mod qna_example;
 mod startup_modes;
 mod support;
+mod tic_tac_toe_example;
 pub mod tools_example;
 mod truncated_tool_example;
