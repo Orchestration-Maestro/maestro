@@ -74,6 +74,12 @@ impl SettingsManager {
         Ok(())
     }
 
+    /// Whether explicit operations must preflight with the registered publisher.
+    #[must_use]
+    pub fn has_decider(&self) -> bool {
+        self.decider.is_some()
+    }
+
     /// Asks the publisher without changing any settings or acquiring storage locks.
     ///
     /// # Errors

@@ -29,6 +29,19 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         acquisition: super::acquisition::SourceAcquisition,
     ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        let Some(entries) = self.source_addition(source, scope, acquisition)? else {
+            return Ok(false);
+        };
+        self.write(scope, entries)?;
+        Ok(true)
+    }
+    /// Derives the exact source addition without publishing it.
+    pub(super) fn source_addition(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+        acquisition: super::acquisition::SourceAcquisition,
+    ) -> io::Result<Option<Vec<PackageSource>>> {
         let snapshot = self.snapshot(scope)?;
         let normalized = self.normalize_source(source, scope)?;
         let mut entries = packages(snapshot)?;
@@ -41,7 +54,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             if acquisition == super::acquisition::SourceAcquisition::CurrentGit
                 || same_pin(stored, source)
             {
-                return Ok(false);
+                return Ok(None);
             }
             found = Some(index);
             break;
@@ -56,9 +69,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         } else {
             entries.push(Value::String(normalized));
         }
-        let next = entries.into_iter().map(PackageSource::Unknown).collect();
-        self.write(scope, next)?;
-        Ok(true)
+        Ok(Some(
+            entries.into_iter().map(PackageSource::Unknown).collect(),
+        ))
     }
     /// Removes every matching entry after examining the complete selected list.
     /// # Errors
@@ -69,6 +82,18 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        let Some(entries) = self.source_removal(source, scope)? else {
+            return Ok(false);
+        };
+        self.write(scope, entries)?;
+        Ok(true)
+    }
+    /// Derives the exact source removal without publishing it.
+    pub(super) fn source_removal(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+    ) -> io::Result<Option<Vec<PackageSource>>> {
         let entries = packages(self.snapshot(scope)?)?;
         let mut next = Vec::new();
         let mut changed = false;
@@ -79,10 +104,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 next.push(PackageSource::Unknown(entry));
             }
         }
-        if changed {
-            self.write(scope, next)?;
-        }
-        Ok(changed)
+        Ok(changed.then_some(next))
     }
     /// Lists original rows in user-then-project order with per-row content lookup.
     /// # Errors

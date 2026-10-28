@@ -7,6 +7,7 @@ mod commands;
 mod concurrency;
 mod configuration;
 mod configured_resolution;
+mod decisions;
 mod git;
 mod git_checks;
 mod inspection;

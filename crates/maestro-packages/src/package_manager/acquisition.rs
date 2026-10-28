@@ -74,8 +74,19 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
+        let prepared = self.prepare_source_edit(source, scope, false)?;
         let acquisition = self.acquire(source, scope).await?;
-        self.record_source(source, scope, acquisition).map(drop)
+        if let Some((edit, _)) = prepared {
+            if acquisition != SourceAcquisition::CurrentGit {
+                self.options
+                    .settings_manager
+                    .borrow_mut()
+                    .apply_prepared_edit(edit);
+            }
+            Ok(())
+        } else {
+            self.record_source(source, scope, acquisition).map(drop)
+        }
     }
     /// Removes the contents, then removes the source from settings.
     pub(super) async fn release_and_persist(
@@ -83,7 +94,16 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
+        let prepared = self.prepare_source_edit(source, scope, true)?;
         self.release(source, scope).await?;
-        self.remove_source(source, scope)
+        if let Some((edit, changed)) = prepared {
+            self.options
+                .settings_manager
+                .borrow_mut()
+                .apply_prepared_edit(edit);
+            Ok(changed)
+        } else {
+            self.remove_source(source, scope)
+        }
     }
 }
