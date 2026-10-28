@@ -157,3 +157,50 @@ fn inline_bash_preserves_whole_line_commands_and_expands_without_ui() {
         assert!(ui.0.borrow().is_empty());
     });
 }
+
+/// Failed commands retain usable output and errors do not prevent later expansions.
+#[test]
+fn inline_bash_summarizes_failures_and_clips_only_notification_previews() {
+    run(async {
+        let root = Scratch::new().unwrap();
+        let (runner, ui) = loaded(root.path().to_str().unwrap()).await;
+        let text = "!{printf ' error ' >&2; exit 7}|!{printf out; printf hidden >&2; exit 3}|!{exit 9}|!{printf warning >&2}|!{true}|!{printf \0}|!{printf after}";
+        let result = input(&runner, text).await;
+        let InputEventResult::Transform(transform) = result else {
+            panic!("expected expanded input")
+        };
+        assert_eq!(
+            transform.text,
+            "error|out||warning||[error: nul byte found in provided data]|after"
+        );
+        assert_eq!(
+            *ui.0.borrow(),
+            [json!([
+                "Expanded 7 inline command(s):\n!{printf ' error ' >&2; exit 7} (exit code 7) -> \"error\"\n!{printf out; printf hidden >&2; exit 3} (exit code 3) -> \"out\"\n!{exit 9} -> \"\"\n!{printf warning >&2} -> \"warning\"\n!{true} -> \"\"\n!{printf \0} (nul byte found in provided data) -> \"\"\n!{printf after} -> \"after\"",
+                "info"
+            ])]
+        );
+        ui.0.borrow_mut().clear();
+        for length in [50, 51] {
+            let output = "é".repeat(length);
+            let command = format!("printf '{output}'");
+            let result = input(&runner, &format!("!{{{command}}}")).await;
+            let InputEventResult::Transform(transform) = result else {
+                panic!("expected expanded input")
+            };
+            assert_eq!(transform.text, output);
+            let suffix = if length == 50 { "" } else { "..." };
+            assert_eq!(
+                *ui.0.borrow(),
+                [json!([
+                    format!(
+                        "Expanded 1 inline command(s):\n!{{{command}}} -> \"{}{suffix}\"",
+                        "é".repeat(50)
+                    ),
+                    "info"
+                ])]
+            );
+            ui.0.borrow_mut().clear();
+        }
+    });
+}
