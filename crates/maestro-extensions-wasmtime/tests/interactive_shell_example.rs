@@ -48,6 +48,9 @@ async fn command(
 /// Detects defaults and force prefixes, without intercepting ordinary commands or name prefixes.
 #[test]
 fn interactive_shell_headless_detection() {
+    if isolated("interactive_shell_headless_detection", &[]) {
+        return;
+    }
     super::wasi_support::run(async {
         let runner = loaded().await;
         for text in [
@@ -70,6 +73,63 @@ fn interactive_shell_headless_detection() {
             "printf less",
             "cat | lessish",
             "i",
+        ] {
+            assert!(command(&runner, text).await.is_none(), "{text}");
+        }
+    });
+}
+
+/// Isolates environment configuration without changing another test's process state.
+fn isolated(name: &str, environment: &[(&str, &str)]) -> bool {
+    if std::env::var_os("MAESTRO_INTERACTIVE_CHILD").is_some() {
+        return false;
+    }
+    let component = std::env::var("MAESTRO_INTERACTIVE_SHELL_COMPONENT").unwrap();
+    let mut child = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("MAESTRO_INTERACTIVE_CHILD", "1")
+        .env("MAESTRO_INTERACTIVE_SHELL_COMPONENT", component);
+    for (key, value) in environment {
+        child = child.env(key, value);
+    }
+    let output = child.output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    true
+}
+
+/// Includes configured prefixes, excludes them case-insensitively and keeps force available.
+#[test]
+fn interactive_shell_configured_prefixes() {
+    if isolated(
+        "interactive_shell_configured_prefixes",
+        &[
+            (
+                "INTERACTIVE_COMMANDS",
+                " Custom Tool , custom-editor, ,vim ",
+            ),
+            ("INTERACTIVE_EXCLUDE", " VIM , CUSTOM-EDITOR "),
+        ],
+    ) {
+        return;
+    }
+    super::wasi_support::run(async {
+        let runner = loaded().await;
+        for text in [
+            "Custom Tool file",
+            "cat | custom tool file",
+            "i vim file",
+            "i\tcustom-editor file",
+            "nvim file",
+        ] {
+            assert!(command(&runner, text).await.is_some(), "{text}");
+        }
+        for text in [
+            "vim file",
+            "custom-editor file",
+            "custom toolbox",
+            "echo ordinary",
         ] {
             assert!(command(&runner, text).await.is_none(), "{text}");
         }
