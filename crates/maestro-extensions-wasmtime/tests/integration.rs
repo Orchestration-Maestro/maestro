@@ -20,6 +20,7 @@ mod completion_providers;
 mod component_events;
 mod component_loading;
 mod components;
+mod context_bridge;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
