@@ -4127,6 +4127,7 @@ dependencies = [
  "maestro-models",
  "maestro-request",
  "maestro-tool",
+ "num-traits",
  "regex",
  "ryu-js",
  "serde",

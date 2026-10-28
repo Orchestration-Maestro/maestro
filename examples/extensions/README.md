@@ -84,6 +84,8 @@ resolving conflicts, then regenerate the table.
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `mac_system_theme.md` | Mac system theme |
 | `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
+| `message_renderer.md` | Message renderer |
+| `message_renderer.rs` | A `/status` command posts status notes, and the renderer it registers draws each one: the level in its theme color over the custom message background, and the host's local send time once the message is expanded. |
 | `minimal_mode.md` | Minimal mode |
 | `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
 | `model_status.md` | Model status |
