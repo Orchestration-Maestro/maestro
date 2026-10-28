@@ -108,6 +108,7 @@ impl Remote {
         Ok(BashOperations {
             exec: Rc::new(move |command, cwd, options| {
                 let path = remote.path(&cwd);
+                let cwd = remote.local_cwd.clone();
                 let host = remote.host.clone();
                 let exec = Rc::clone(&local.exec);
                 Box::pin(async move {
