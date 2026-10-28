@@ -1,7 +1,9 @@
 //! Worktree names, checkout paths and the Git commands that add, remove and list worktrees.
-use super::discovery::{canonicalize_best_effort_path, discover_git_paths, read_text, trim};
+use super::discovery::{
+    canonicalize_best_effort_path, discover_git_paths, git_output, read_text, trim,
+};
 use crate::paths::expand_home_path;
-use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+use maestro_process::SpawnSyncError;
 use std::{
     ffi::OsStr,
     fmt,
@@ -219,19 +221,7 @@ fn os(operand: &(impl AsRef<OsStr> + ?Sized)) -> &OsStr {
 
 /// Runs `git -C <dir> <args>` to completion with its output captured.
 fn capture(dir: &Path, args: &[&OsStr]) -> Result<Output, WorktreeError> {
-    let mut command = maestro_process::command("git");
-    command.arg("-C").arg(dir).args(args);
-    spawn_sync(
-        &mut command,
-        SpawnSyncOptions::Capture {
-            stdout: OutputMode::Capture,
-            input: None,
-            timeout: None,
-            stderr: OutputMode::Capture,
-            max_buffer_bytes: None,
-        },
-    )
-    .map_err(|error| {
+    git_output(dir, args).map_err(|error| {
         WorktreeError::new(match error {
             SpawnSyncError::Infrastructure(error)
             | SpawnSyncError::Spawn(error)
