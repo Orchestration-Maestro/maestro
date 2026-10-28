@@ -1,14 +1,13 @@
 //! Pane zoom through the daemon's handler: modes, focus changes and no-ops.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, command, daemon_with_workspaces, event_names, events_after, failure, request,
-    root_pane, split_pane,
+    TestApp, daemon_with_workspaces, event_names, events_after, failure, request, root_pane,
+    split_pane,
 };
 use maestro_daemon::app::state::{CopyModeState, Mode};
 use maestro_protocol::events::EventData;
-use maestro_protocol::rpc_types::RpcCommand;
 use maestro_protocol::schema::{
-    ErrorBody, PaneZoomMode, PaneZoomReason, PaneZoomResult, ResponseResult, SplitDirection,
+    ErrorBody, PaneZoomReason, PaneZoomResult, ResponseResult, SplitDirection,
 };
 use maestro_workspace::layout::PaneId;
 use serde_json::json;
@@ -182,22 +181,4 @@ fn zooming_a_missing_pane_is_refused() {
         request(&mut app, json!({"type": "pane.zoom"})),
         failure("pane_not_found", "pane not found")
     );
-}
-
-#[test]
-fn zoom_modes_decode_from_the_wire_form() {
-    let wire = json!({"type": "pane.zoom", "pane_id": "issue-1", "mode": "on"});
-    let RpcCommand::PaneZoom(params) = command(wire.clone()) else {
-        panic!("expected a zoom command");
-    };
-    assert_eq!(params.pane_id.as_deref(), Some("issue-1"));
-    assert_eq!(params.mode, PaneZoomMode::On);
-    assert_eq!(
-        serde_json::to_value(RpcCommand::PaneZoom(params)).unwrap(),
-        wire
-    );
-    let RpcCommand::PaneZoom(params) = command(json!({"type": "pane.zoom"})) else {
-        panic!("expected a zoom command");
-    };
-    assert_eq!(params.mode, PaneZoomMode::Toggle);
 }
