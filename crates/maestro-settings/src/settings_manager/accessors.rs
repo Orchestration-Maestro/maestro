@@ -318,6 +318,18 @@ impl SettingsManager {
         self.set_global("hideThinkingBlock", value);
     }
 
+    /// Returns whether unchecked assistant text and tool output are withheld from session
+    /// listeners until checked (default false).
+    #[must_use]
+    pub fn get_hold_unchecked_text(&self) -> bool {
+        self.flag("holdUncheckedText").unwrap_or(false)
+    }
+
+    /// Withholds or delivers unchecked assistant text and tool output.
+    pub fn set_hold_unchecked_text(&mut self, value: bool) {
+        self.set_global("holdUncheckedText", value);
+    }
+
     /// Returns the custom shell path, if any.
     #[must_use]
     pub fn get_shell_path(&self) -> Option<String> {
