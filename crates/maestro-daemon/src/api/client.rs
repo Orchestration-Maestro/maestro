@@ -2,9 +2,12 @@
 
 use crate::api::status::RuntimeStatus;
 use crate::instances::Selection;
-use maestro_ipc::local_socket::connect_local_stream;
+use maestro_ipc::local_socket::{LocalStream, LocalStreamExt, connect_local_stream};
 use maestro_json::jsonl::serialize_native_json_line;
-use maestro_protocol::rpc_types::{Request, RpcResponse};
+use maestro_protocol::{
+    rpc_types::{Request, RpcCommand, RpcResponse},
+    schema::{PingParams, ResponseResult},
+};
 use std::{
     fmt,
     io::{self, BufRead, BufReader, Write},
@@ -59,51 +62,104 @@ impl DaemonClient {
 
     /// Writes one shared request frame and reads one raw JSON response.
     ///
+    /// The connection has no timeout of its own.
+    ///
     /// # Errors
     /// Returns the original connection, write, read or JSON error, or an empty-response
     /// error when the peer supplies no nonblank line.
     pub fn request_value(&self, request: &Request) -> Result<serde_json::Value, ApiClientError> {
-        let mut stream = connect_local_stream(self.target.path())?;
-        let line = serialize_native_json_line(&serde_json::to_value(request)?)?;
-        stream.write_all(line.as_bytes())?;
-        stream.flush()?;
-        let mut line = String::new();
-        let read = BufReader::new(stream).read_line(&mut line)?;
-        if read == 0 || line.trim().is_empty() {
-            return Err(ApiClientError::EmptyResponse);
-        }
-        Ok(serde_json::from_str(&line)?)
+        exchange(connect_local_stream(self.target.path())?, request)
     }
 
     /// Sends one request and decodes the shared response.
     ///
     /// # Errors
-    /// Not yet implemented: always fails.
+    /// Returns a [`DaemonClient::request_value`] failure, a decoding failure, or the
+    /// daemon's failure with its correlation and command.
     pub fn request(&self, request: &Request) -> Result<RpcResponse, ApiClientError> {
-        let _ = request;
-        Err(ApiClientError::EmptyResponse)
+        let response: RpcResponse = serde_json::from_value(self.request_value(request)?)?;
+        match response.result {
+            Ok(_) => Ok(response),
+            Err(_) => Err(ApiClientError::ErrorResponse(Box::new(response))),
+        }
     }
 
-    /// Sends one request with the native send and receive timeouts of its connection.
+    /// Sends one request with `timeout` as the native send and receive timeouts of its
+    /// connection.
     ///
     /// # Errors
-    /// Not yet implemented: always fails.
+    /// Returns the native failure to set either timeout, such as invalid input for a zero
+    /// duration, a timed-out write or read, or any [`DaemonClient::request_value`] failure.
     pub fn request_value_with_timeout(
         &self,
         request: &Request,
         timeout: Duration,
     ) -> Result<serde_json::Value, ApiClientError> {
-        let _ = (request, timeout);
-        Err(ApiClientError::EmptyResponse)
+        let stream = connect_local_stream(self.target.path())?;
+        stream.set_send_timeout(Some(timeout))?;
+        stream.set_recv_timeout(Some(timeout))?;
+        exchange(stream, request)
     }
 
     /// Reads the daemon's live status from a ping.
     ///
     /// # Errors
-    /// Not yet implemented: always fails.
+    /// Returns a [`DaemonClient::request`] failure, or an unexpected-result error when the
+    /// success is not a pong.
     pub fn status(&self) -> Result<RuntimeStatus, ApiClientError> {
-        Err(ApiClientError::EmptyResponse)
+        pong(self.request(&ping("api-client:status"))?)
     }
+}
+
+/// A ping request with the supplied correlation.
+pub(crate) fn ping(id: &str) -> Request {
+    Request {
+        id: Some(id.into()),
+        command: RpcCommand::Ping(PingParams::default()),
+    }
+}
+
+/// Reads the live status from a decoded ping response.
+///
+/// # Errors
+/// Returns the daemon's failure, or names any success other than a pong.
+pub(crate) fn pong(response: RpcResponse) -> Result<RuntimeStatus, ApiClientError> {
+    match response.result {
+        Ok(ResponseResult::Pong {
+            version,
+            protocol,
+            capabilities,
+        }) => Ok(RuntimeStatus {
+            version: Some(version),
+            protocol: Some(protocol),
+            capabilities,
+        }),
+        Ok(result) => Err(ApiClientError::UnexpectedResult(format!("{result:?}"))),
+        Err(_) => Err(ApiClientError::ErrorResponse(Box::new(response))),
+    }
+}
+
+/// Frames one request as a canonical line with exact integers.
+///
+/// # Errors
+/// Returns the request's encoding failure.
+pub(crate) fn request_line(request: &Request) -> Result<String, serde_json::Error> {
+    serialize_native_json_line(&serde_json::to_value(request)?)
+}
+
+/// Writes one request line on `stream` and reads one nonblank JSON line back.
+fn exchange(
+    mut stream: LocalStream,
+    request: &Request,
+) -> Result<serde_json::Value, ApiClientError> {
+    stream.write_all(request_line(request)?.as_bytes())?;
+    stream.flush()?;
+    let mut line = String::new();
+    let read = BufReader::new(stream).read_line(&mut line)?;
+    if read == 0 || line.trim().is_empty() {
+        return Err(ApiClientError::EmptyResponse);
+    }
+    Ok(serde_json::from_str(&line)?)
 }
 
 /// A native client transport or response decoding failure.

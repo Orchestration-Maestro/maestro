@@ -28,5 +28,5 @@ pub struct ForegroundJob {
 #[cfg(unix)]
 #[must_use]
 pub fn current_process_is_detached_server_daemon() -> bool {
-    false
+    rustix::process::getsid(None).is_ok_and(|session| session == rustix::process::getpid())
 }

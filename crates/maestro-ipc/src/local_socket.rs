@@ -10,6 +10,8 @@ use std::path::Path;
 pub type LocalListener = interprocess::local_socket::Listener;
 /// The owned duplex stream returned by the local-socket library.
 pub type LocalStream = interprocess::local_socket::Stream;
+/// The library's stream operations, including its native send and receive timeouts.
+pub use interprocess::local_socket::traits::Stream as LocalStreamExt;
 
 /// The observed device and inode of a socket file.
 #[derive(Clone, Debug, Eq, PartialEq)]
