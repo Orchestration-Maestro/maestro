@@ -1,14 +1,13 @@
 //! Tab commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, request,
-    with_live_daemon, workspace_ids,
+    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group,
+    request, run_in_pane, with_live_daemon, workspace_ids,
 };
 use maestro_daemon::app::state::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, TabInfo};
-use maestro_workspace::workspace::WorktreeSpaceMembership;
 use serde_json::json;
 use std::path::PathBuf;
 
@@ -228,17 +227,6 @@ fn single_moves_validate_insertion_boundaries() {
     assert_eq!(events_after(&app, 0).len(), 2);
 }
 
-/// Joins the workspace at `index` to the repository group `key`.
-fn join_group(app: &mut TestApp, index: usize, key: &str, linked: bool) {
-    app.state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
-        key: key.into(),
-        label: "repo".into(),
-        repo_root: "/repo".into(),
-        checkout_path: format!("/repo-{index}").into(),
-        is_linked_worktree: linked,
-    });
-}
-
 #[test]
 fn final_tab_close_publishes_tab_then_workspace() {
     let mut app = daemon_with_workspaces(&["/repo-issue", "/other"]);
@@ -410,21 +398,9 @@ fn launch_environment_reaches_the_root_pane() {
                 .terminal_id(app.state.topology.workspaces[0].tabs[1].root_pane)
                 .unwrap()
                 .clone();
-            let runtime = app.terminal_runtimes.get(&terminal).unwrap();
             let script = "printf '\\nseen:<%s>|<%s>|<%s>|<%s>\\n' \"$MAESTRO_TEST_ECHO\" \"$HOME\" \"${EMPTY-unset}\" \"$MAESTRO_PANE_ID\"\n";
-            runtime
-                .send_bytes(script.as_bytes().to_vec())
-                .await
-                .unwrap();
             let expected = format!("seen:<é>|</overridden>|<>|<{}>", root_pane.pane_id);
-            let text = loop {
-                let _ = app.launch.render_dirty.take();
-                let text = runtime.visible_text();
-                if text.lines().any(|line| line.starts_with("seen:<")) {
-                    break text;
-                }
-                app.launch.render_notify.notified().await;
-            };
+            let text = run_in_pane(app, &terminal, script, "seen:<").await;
             assert!(text.contains(&expected), "{text:?}");
         },
     );
