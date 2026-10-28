@@ -1,7 +1,7 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, daemon, daemon_with_workspaces, events_after, failure, request,
+    TestApp, add_workspaces, daemon_with_workspaces, events_after, failure, request,
     with_live_daemon, workspace_ids,
 };
 use maestro_daemon::app::state::Mode;
@@ -221,48 +221,6 @@ fn workspace_block_validation_is_atomic() {
         assert_eq!(listed(&request(&mut app, accepted)), order);
     }
     assert_eq!(events_after(&app, 0).len(), 3);
-}
-
-/// The best of three timings, in seconds, of `operation` on a block of every other one of
-/// `count` workspaces.
-fn timed(count: usize, operation: fn(&mut TestApp, &[String])) -> f64 {
-    let cwds: Vec<String> = (0..count).map(|index| format!("/w{index}")).collect();
-    let cwds: Vec<&str> = cwds.iter().map(String::as_str).collect();
-    (0..3)
-        .map(|_| {
-            let mut app = daemon();
-            add_workspaces(&mut app, &cwds);
-            let block: Vec<String> = workspace_ids(&app).into_iter().step_by(2).collect();
-            let started = std::time::Instant::now();
-            operation(&mut app, &block);
-            started.elapsed().as_secs_f64()
-        })
-        .fold(f64::INFINITY, f64::min)
-}
-
-/// Moves the block to the end through the handler.
-fn move_block(app: &mut TestApp, block: &[String]) {
-    let request_block = json!({"type": "workspace.move_block", "workspace_ids": block});
-    assert!(request(app, request_block).is_ok());
-}
-
-/// Resolves every member with its own scan of the workspaces: quadratic work.
-fn rescan(app: &mut TestApp, block: &[String]) {
-    for id in block {
-        assert!(app.state.parse_workspace_id(id).is_some());
-    }
-}
-
-#[test]
-fn workspace_order_resolution_has_linear_work() {
-    let base = 2000;
-    let growth = |operation| timed(4 * base, operation) / timed(base, operation).max(1e-6);
-    // Four times the workspaces costs linear work about four times as much; a scan per
-    // member costs about sixteen times as much.
-    let control = growth(rescan);
-    assert!(control > 10.0, "the rescan control grew only {control:.1}x");
-    let measured = growth(move_block);
-    assert!(measured < 8.0, "a block move grew {measured:.1}x");
 }
 
 #[test]

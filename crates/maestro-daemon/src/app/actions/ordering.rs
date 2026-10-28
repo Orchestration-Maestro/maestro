@@ -110,10 +110,11 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         !moved.is_empty()
             && moved.len() == ids.len()
             && ids.iter().all(|id| {
-                self.topology
-                    .workspaces
-                    .iter()
-                    .any(|workspace| workspace.id == *id)
+                self.topology.workspaces.iter().any(|workspace| {
+                    #[cfg(test)]
+                    crate::tests::record_workspace_work();
+                    workspace.id == *id
+                })
             })
             && before.is_none_or(|id| {
                 !moved.contains(id)
@@ -125,3 +126,6 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             })
     }
 }
+
+#[cfg(test)]
+mod tests;
