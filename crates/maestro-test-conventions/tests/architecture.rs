@@ -3474,3 +3474,24 @@ fn guest_schema_validation_edge_is_native_development_only() {
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
 }
+
+#[test]
+fn native_process_and_guest_share_text_without_giving_text_dependencies() {
+    for owner in ["maestro-process", "maestro-extensions-wasm"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[owner, "maestro-text"]);
+        workspace.member(
+            owner,
+            owner,
+            r#"[dependencies]
+maestro-text = { path = "../maestro-text" }
+"#,
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    }
+    let text = support::policy::POLICY
+        .iter()
+        .find(|(name, _)| *name == "maestro-text")
+        .unwrap();
+    assert!(text.1.is_empty());
+}
