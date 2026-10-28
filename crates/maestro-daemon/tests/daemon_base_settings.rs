@@ -624,3 +624,75 @@ fn daemon_global_view_resolves_stored_values_and_restores_locks_after_decider() 
     assert_eq!(loaded.config.terminal.default_shell, "resolved-global");
     assert_eq!(loaded.config.update.channel, UpdateChannelConfig::Preview);
 }
+
+#[test]
+fn daemon_startup_fallback_resolves_stored_values_and_restores_locks_after_decider() {
+    use maestro_test_directory::Scratch;
+    let root = Scratch::new().unwrap();
+    let agent = root.path().join("agent");
+    let mut publisher = SettingsManager::create(".", agent.to_str().unwrap(), ".maestro");
+    publisher.publish_base_layer(
+        SettingsScope::Global,
+        Some(layer(
+            json!({"daemon":{"paneShell":"base-shell"},"update":{"channel":"preview"}}),
+            &["update.channel"],
+        )),
+    );
+    block_on(publisher.flush());
+    std::fs::write(agent.join("settings.json"), "{").unwrap();
+    let mut manager = SettingsManager::create(".", agent.to_str().unwrap(), ".maestro");
+    manager
+        .register_decider(Arc::new(ResolveDaemonGlobal))
+        .unwrap();
+    let (loaded, errors) = load_config(&mut manager, &agent);
+    assert!(errors.is_empty());
+    assert_eq!(loaded.config.terminal.default_shell, "resolved-global");
+    assert_eq!(loaded.config.update.channel, UpdateChannelConfig::Preview);
+}
+
+/// Resolves an unlocked catalog check without touching the area a reload rejects.
+struct ResolveCatalogCheck;
+
+impl maestro_settings::SettingsDecider for ResolveCatalogCheck {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn resolve(&self, settings: &mut maestro_settings::Settings) -> Vec<String> {
+        settings.0.entry("daemon").or_insert_with(|| json!({}))["detectionCatalogCheck"] =
+            json!(false);
+        Vec::new()
+    }
+}
+
+#[test]
+fn daemon_area_recovery_resolves_stored_values_and_restores_locks_after_decider() {
+    use maestro_daemon::settings::io::{AcceptedAreas, reload_config};
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| {
+            Ok(Some(json!({"update":{"versionCheck":"bad"}}).to_string()))
+        })
+        .unwrap();
+    storage
+        .write_base_layer(
+            SettingsScope::Global,
+            Some(&layer(
+                json!({"update":{"channel":"stable"},"daemon":{"detectionCatalogCheck":true}}),
+                &["update.channel"],
+            )),
+        )
+        .unwrap();
+    let mut manager = SettingsManager::from_storage(storage);
+    manager
+        .register_decider(Arc::new(ResolveCatalogCheck))
+        .unwrap();
+    let mut current =
+        project_global_settings(&maestro_settings::Settings::default(), Path::new("."));
+    current.accepted_areas = AcceptedAreas::default();
+    let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
+    assert!(errors.is_empty());
+    assert!(!report.diagnostics.is_empty());
+    assert!(!current.config.update.manifest_check);
+    assert_eq!(current.config.update.channel, UpdateChannelConfig::Stable);
+}
