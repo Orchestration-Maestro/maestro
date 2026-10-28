@@ -30,6 +30,16 @@ fn ssh_maps_windows_host_paths_to_posix_without_rewriting_other_roots() -> Exten
         let (_, args, _) = observations.native_io.launches.last().unwrap();
         assert_eq!(args[2], format!("cat -- {}", transport::quote(expected)));
     }
+    let remote = operations::Remote {
+        local_cwd: "C:/work/".into(),
+        ..remote
+    };
+    let read = remote.options("read")?.read.operations.unwrap();
+    super::block_on((read.read_file)(r"C:\work\note.txt".into())).unwrap();
+    assert_eq!(
+        host.observed().native_io.launches.last().unwrap().1[2],
+        format!("cat -- {}", transport::quote("/srv/note.txt"))
+    );
     // Backslashes remain literal file-name bytes for a POSIX host.
     let remote = operations::Remote {
         local_cwd: "/work".into(),
