@@ -89,6 +89,9 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties
   and the relations its entries have.
+- **Requires:** The catalog relation from a release or package to a package it
+  needs. Skills and workflows inherit their package's requirements; selecting an
+  entry installs the transitive required-package closure in its scope.
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
