@@ -26,11 +26,14 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Result<ResponseResult, ErrorBody> {
         self.drain_all_internal_events();
         self.sync_pending_terminal_titles().await;
-        drop(command);
-        Err(ErrorBody {
-            code: String::new(),
-            message: String::new(),
-        })
+        let RpcCommand::ServerStop(_stop) = command else {
+            return Err(ErrorBody {
+                code: "not_implemented".into(),
+                message: "method not implemented yet".into(),
+            });
+        };
+        self.state.should_quit.0 = true;
+        Ok(ResponseResult::Ok {})
     }
 
     /// Applies a background observation through the retained state transition owner.

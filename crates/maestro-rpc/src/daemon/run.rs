@@ -1,19 +1,71 @@
-//! Starts the API socket beside the daemon loop and runs both until the daemon stops.
-use maestro_app::daemon::{app::App, paths::DaemonPaths};
-use std::{future::Future, io};
+//! Server mode: binds the API socket, announces it and serves it beside the daemon loop
+//! until the daemon stops.
+use super::server::Server;
+use maestro_app::daemon::{app::App, logging, paths::DaemonPaths, platform};
+use maestro_app::rpc_mode::DaemonWorkspaceOperations;
+use maestro_app::rpc_types::workspace_schema::ServerCapabilities;
+use std::path::{Path, PathBuf};
+use std::{future::Future, io, rc::Rc};
+
+/// The log role of the server.
+const LOG_ROLE: &str = "daemon";
 
 /// Serves the daemon's API socket while `app` runs its loop, until `shutdown` resolves or a
-/// client stops the daemon.
+/// client stops the daemon; then removes the socket unless another file replaced it.
+///
+/// Logs to the daemon log of `paths`, filtered by a valid `MAESTRO_LOG` directive, and
+/// writes the ready message to standard error once the socket is bound. Must run inside a
+/// [`tokio::task::LocalSet`].
 ///
 /// # Errors
-/// Returns the socket preparation or binding failure.
+/// Returns the socket preparation or binding failure: address-in-use while another daemon
+/// serves the socket, already-exists for a file that is not a socket.
 pub async fn run_server<C: FnMut() -> u128>(
     app: &mut App<C>,
     paths: &DaemonPaths,
     shutdown: impl Future<Output = ()>,
 ) -> io::Result<()> {
-    shutdown.await;
-    let _ = (app.state.should_quit.0, paths.name());
-    drop(super::server::Admission::new(()));
+    let filter = std::env::var("MAESTRO_LOG").ok();
+    logging::init_file_logging(paths, LOG_ROLE, filter.as_deref());
+    let path = PathBuf::from(paths.api_socket_path());
+    let server = Server::bind(&path).inspect_err(|error| {
+        if error.kind() == io::ErrorKind::AddrInUse {
+            eprintln!("error: maestro server is already running");
+            eprintln!("api socket: {}", path.display());
+        }
+    })?;
+    tracing::info!(api_socket = %path.display(), "maestro server started");
+    announce(&path, paths);
+    let (sender, mut requests) = tokio::sync::mpsc::unbounded_channel();
+    let (stop, mut stopped) = tokio::sync::watch::channel(false);
+    let operations = DaemonWorkspaceOperations::new(sender, Some(capabilities()), stop);
+    let shutdown = async move {
+        tokio::select! {
+            () = shutdown => {}
+            _ = stopped.wait_for(|stopped| *stopped) => {}
+        }
+    };
+    tokio::select! {
+        () = app.run(paths, &mut requests, shutdown) => {}
+        never = server.serve(Rc::new(operations)) => match never {},
+    }
+    drop(server);
+    logging::shutdown(LOG_ROLE);
     Ok(())
+}
+
+/// Writes the ready message: the server runs, with its bound API socket and its log.
+fn announce(api_socket: &Path, paths: &DaemonPaths) {
+    eprintln!("maestro server running; you can use any maestro CLI command in another terminal.");
+    eprintln!("api socket: {}", api_socket.display());
+    eprintln!("logs: {}", paths.log_path(LOG_ROLE));
+}
+
+/// What a ping reports the server can do; live handoff stays off until the server performs
+/// one.
+fn capabilities() -> ServerCapabilities {
+    ServerCapabilities {
+        live_handoff: false,
+        detached_server_daemon: platform::current_process_is_detached_server_daemon(),
+    }
 }

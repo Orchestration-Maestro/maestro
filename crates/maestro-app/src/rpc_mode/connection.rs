@@ -2,14 +2,17 @@
 //! until the input ends or the connection shuts down.
 use super::commands::Reply;
 use super::lifecycle::{Finish, Lifecycle};
-use super::output::Writer;
+use super::output::{Attempt, Writer};
 use super::ui::RpcUi;
 use super::{
     RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, RpcSessionOptions,
     WorkspaceOperations,
 };
 use crate::agent_session::AgentSession;
-use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
+use crate::rpc_types::{
+    RpcCommandBody, RpcCommandRejection, RpcResponse, names, parse_rpc_command, workspace,
+    workspace_schema,
+};
 use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
 use serde_json::Value;
@@ -51,19 +54,34 @@ pub struct JsonlLineReader<R> {
     reader: R,
     /// The unfinished line.
     splitter: JsonlLineSplitter,
-    /// Complete lines not yet returned.
-    pending: VecDeque<String>,
+    /// Complete lines, and a failure that ends them, not yet returned.
+    pending: VecDeque<io::Result<String>>,
+    /// The raw byte limit of a strictly decoded line; `None` decodes lossily.
+    max_bytes: Option<usize>,
     /// Whether the end was observed or reading stopped.
     ended: bool,
 }
 
 impl<R> JsonlLineReader<R> {
-    /// A reader of `reader`.
+    /// A reader of `reader`, decoding invalid UTF-8 with replacement characters.
     pub fn new(reader: R) -> Self {
+        Self::reading(reader, None)
+    }
+
+    /// A reader of `reader` that decodes each line as strict UTF-8 and fails a line whose
+    /// bytes before its LF exceed `max_bytes`, a CR included; it reads only LF-terminated
+    /// lines, so an unterminated final line is dropped.
+    pub fn strict(reader: R, max_bytes: usize) -> Self {
+        Self::reading(reader, Some(max_bytes))
+    }
+
+    /// A reader of `reader` with the strict limit `max_bytes`, if any.
+    fn reading(reader: R, max_bytes: Option<usize>) -> Self {
         Self {
             reader,
             splitter: JsonlLineSplitter::default(),
             pending: VecDeque::new(),
+            max_bytes,
             ended: false,
         }
     }
@@ -74,7 +92,7 @@ impl<R: AsyncRead + Unpin> JsonlLineReader<R> {
     async fn read_line(&mut self) -> io::Result<RpcInput> {
         loop {
             if let Some(line) = self.pending.pop_front() {
-                return Ok(RpcInput::Line(line));
+                return line.map(RpcInput::Line);
             }
             if self.ended {
                 return Ok(RpcInput::End { tail: None });
@@ -82,11 +100,20 @@ impl<R: AsyncRead + Unpin> JsonlLineReader<R> {
             let mut bytes = Vec::with_capacity(8192);
             if self.reader.read_buf(&mut bytes).await? == 0 {
                 self.ended = true;
-                return Ok(RpcInput::End {
-                    tail: self.splitter.finish(),
-                });
+                let tail = match self.max_bytes {
+                    Some(_) => None,
+                    None => self.splitter.finish(),
+                };
+                return Ok(RpcInput::End { tail });
             }
-            self.pending.extend(self.splitter.push(&bytes));
+            match self.max_bytes {
+                Some(max_bytes) => self
+                    .pending
+                    .extend(self.splitter.push_strict(&bytes, max_bytes)),
+                None => self
+                    .pending
+                    .extend(self.splitter.push(&bytes).into_iter().map(Ok)),
+            }
         }
     }
 }
@@ -396,7 +423,7 @@ impl Connection {
     pub(super) fn send(
         self: &Rc<Self>,
         record: RpcRecord<'_>,
-        attempted: Option<tokio::sync::oneshot::Sender<()>>,
+        attempted: Option<Attempt>,
     ) -> io::Result<()> {
         let written = RpcLine::new(&record)
             .map_err(io::Error::from)
@@ -426,9 +453,22 @@ pub(super) fn write_to(connection: &Weak<Connection>, record: RpcRecord<'_>) -> 
         .write(record)
 }
 
-/// The failure response of a record that is not a valid command.
+/// The failure response of a record that is not a valid command; a known workspace type
+/// answers with the workspace envelope, an empty id and `invalid_request`.
 fn rejected(rejection: RpcCommandRejection) -> RpcResponse {
     match rejection {
+        RpcCommandRejection::Invalid { command, error, .. }
+            if names::<workspace::RpcCommand>(&command) =>
+        {
+            RpcResponse::Workspace(Box::new(workspace::RpcResponse {
+                id: Some(String::new()),
+                command,
+                result: Err(workspace_schema::ErrorBody {
+                    code: "invalid_request".into(),
+                    message: format!("invalid request: {error}"),
+                }),
+            }))
+        }
         RpcCommandRejection::Invalid { command, id, error } => RpcResponse::Error {
             id,
             command: Some(command),

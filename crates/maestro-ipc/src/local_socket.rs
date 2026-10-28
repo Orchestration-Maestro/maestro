@@ -12,6 +12,16 @@ pub type LocalListener = interprocess::local_socket::Listener;
 pub type LocalStream = interprocess::local_socket::Stream;
 /// The library's stream operations, including its native send and receive timeouts.
 pub use interprocess::local_socket::traits::Stream as LocalStreamExt;
+/// The owned listener of the library's Tokio adapter.
+pub type AsyncLocalListener = interprocess::local_socket::tokio::Listener;
+/// The owned duplex stream of the library's Tokio adapter.
+pub type AsyncLocalStream = interprocess::local_socket::tokio::Stream;
+/// The receiving half of an [`AsyncLocalStream`].
+pub type AsyncRecvHalf = interprocess::local_socket::tokio::RecvHalf;
+/// The sending half of an [`AsyncLocalStream`].
+pub type AsyncSendHalf = interprocess::local_socket::tokio::SendHalf;
+/// The library's Tokio listener operations, including accepting a connection.
+pub use interprocess::local_socket::traits::tokio::Listener as AsyncLocalListenerExt;
 
 /// The observed device and inode of a socket file.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -36,11 +46,31 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// # Errors
 /// Returns a path-conversion or binding error.
 pub fn bind_local_listener(path: &Path) -> io::Result<LocalListener> {
+    listener_options(path)?.create_sync()
+}
+
+/// Bind for the Tokio adapter without unlinking a name when the listener is dropped. Runs
+/// inside a Tokio runtime.
+///
+/// # Errors
+/// Returns a path-conversion or binding error.
+pub fn bind_async_local_listener(path: &Path) -> io::Result<AsyncLocalListener> {
+    listener_options(path)?.create_tokio()
+}
+
+/// The options naming `path` that keep the name when the listener is dropped.
+fn listener_options(path: &Path) -> io::Result<interprocess::local_socket::ListenerOptions<'_>> {
     use interprocess::local_socket::{GenericFilePath, ListenerOptions, prelude::*};
-    ListenerOptions::new()
+    Ok(ListenerOptions::new()
         .name(path.to_fs_name::<GenericFilePath>()?)
-        .reclaim_name(false)
-        .create_sync()
+        .reclaim_name(false))
+}
+
+/// Split a stream into its receiving and sending halves, each owned on its own.
+#[must_use]
+pub fn split_async_stream(stream: AsyncLocalStream) -> (AsyncRecvHalf, AsyncSendHalf) {
+    use interprocess::local_socket::traits::tokio::Stream as _;
+    stream.split()
 }
 
 /// Create parents and remove a stale socket, rejecting an active listener.

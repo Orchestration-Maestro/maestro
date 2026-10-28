@@ -3,6 +3,7 @@
 mod commands;
 mod responses;
 
+pub(crate) use commands::names;
 pub use commands::{
     RpcCommand, RpcCommandBody, RpcCommandRejection, RpcSessionCommand, parse_rpc_command,
 };

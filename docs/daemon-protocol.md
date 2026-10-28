@@ -69,6 +69,37 @@ negotiated protocol. Product versions remain separate strings. Existing JSONL
 clients need no header, handshake, version field or unsolicited startup record.
 JSONL framing belongs to `maestro-json::jsonl`, not a second codec here.
 
+## Socket server
+
+`maestro_rpc::daemon::run_server` serves this protocol on the daemon's API socket.
+Each accepted connection runs the application's one connection runner without a
+session, so a line read during a long request is the next command, and responses
+can arrive out of order. Match them by `id`. A connection ends when the client ends
+its input: requests still waiting on the daemon get no response, but a request the
+daemon already took is not undone.
+
+- The first line must arrive within 5 s of the connection's acceptance. A partial
+  line does not extend the deadline. Once the first line arrives, later lines have
+  no deadline.
+- A line is at most 1 MiB before its LF, a CR included, and must be valid UTF-8.
+  A longer line or invalid UTF-8 closes the connection without a response.
+- Each line is trimmed of Unicode whitespace before it is parsed; U+FEFF is not
+  whitespace. A blank first line, or input that ends before a complete first line,
+  closes the connection without a response.
+- `ping` answers at once, even while the daemon is busy. It reports the product
+  version, protocol 21 and the server's capabilities.
+- `server.stop` answers at once and stops the daemon. Once stopped, every request
+  but `ping` fails with `server_unavailable` and `server is shutting down`.
+- Other requests wait for the daemon however long it takes. A daemon that is gone
+  fails them with `server_unavailable`.
+- A response write that makes no progress for 5 s fails the connection. Each write
+  that takes bytes starts a new budget. The daemon learns that a response was
+  written once its whole line was written and flushed, or once that attempt failed.
+  A client that closed its end is not a write failure.
+
+Commands without a daemon handler yet fail with `not_implemented` and
+`method not implemented yet`.
+
 ## Binary screen channel
 
 Binary is explicitly selected at connection creation, using `Hello`/`Welcome` on

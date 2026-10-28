@@ -139,7 +139,7 @@ converts topology rectangles to frame rectangles with free functions.
   fails.
 - **Atomic replacement.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
 - **Paths and names.** `maestro_daemon::paths::DaemonPaths` and `maestro_daemon::environment::NAMES`.
-- **Server.** `maestro_daemon::server::run::run_server` starts the API socket and runs the daemon loop. The
+- **Server.** `maestro_rpc::daemon::run_server` starts the API socket and runs the daemon loop. The
   executable's `server` arm and the in-process tests call it.
 - **Daemon client.** `maestro_app::daemon::client::{DaemonClient, ensure_running}`.
 

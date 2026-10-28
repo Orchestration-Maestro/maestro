@@ -259,7 +259,7 @@ impl<'de> Deserialize<'de> for RpcCommandBody {
 }
 
 /// Whether the type-tagged family `T` names `kind`, asked of `T`'s own decoder.
-pub(super) fn names<T: de::DeserializeOwned>(kind: &str) -> bool {
+pub(crate) fn names<T: de::DeserializeOwned>(kind: &str) -> bool {
     let tag = de::value::MapDeserializer::<_, NameProbe>::new(std::iter::once(("type", kind)));
     !matches!(T::deserialize(tag), Err(NameProbe::UnknownVariant))
 }
