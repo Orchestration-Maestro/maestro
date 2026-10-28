@@ -123,3 +123,13 @@ synchronous regular-file destinations return no handle.
 The executable's final selection of this supplied route is not wired here.
 The ordered-output guarantee applies to active queued destinations, not to
 inherited stdout redirected to a regular file.
+
+## Native file ownership
+
+The native-I/O file operations belong to the application's
+`extension_native_io::files` module. Byte saves use `maestro-lock` for atomic
+publication, preserving existing permissions and applying a requested mode to
+new files. The guest forwards operands without implementing a save algorithm.
+The application selects final-link policy and reports native errors; a committed
+save's directory-sync warning is separate from a precommit failure. Permission
+bits are native Unix observations, not a Windows POSIX or ACL guarantee.

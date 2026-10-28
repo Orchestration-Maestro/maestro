@@ -2529,6 +2529,33 @@ fn extension_and_rpc_test_edges_are_native() {
 }
 
 #[test]
+fn application_lock_edge_keeps_publication_native_owned() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-lock"]);
+    check_permitted_declarations(&workspace, "maestro-app", &["maestro-lock"]);
+    for from in ["maestro-extensions-wasmtime", "maestro-extensions-wasm"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, "maestro-lock"]);
+        for (kind, extra) in DECLARATIONS {
+            workspace.member(
+                from,
+                from,
+                &format!(
+                    r#"[{kind}]
+alias = {{ package = "maestro-lock", path = "../maestro-lock"{extra} }}"#
+                ),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!(
+                    "forbidden production dependency: {from} -> maestro-lock"
+                ))
+            );
+        }
+    }
+}
+
+#[test]
 fn session_lock_edge_is_scoped() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-session", "maestro-lock"]);
