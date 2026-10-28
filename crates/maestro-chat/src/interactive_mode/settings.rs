@@ -4,12 +4,10 @@ use crate::{
     AssistantMessageComponent, BehaviorSettings, SessionSettings, SettingsCallbacks,
     SettingsConfig, SettingsSelectorComponent, TerminalDisplaySettings, ToolExecutionComponent,
 };
-use maestro_app::{
-    SettingsManager, ThinkingLevel, Transport, TransportSetting, delivery_mode, queue_mode,
-};
+use maestro_app::{SettingsManager, ThinkingLevel, Transport, delivery_mode, queue_mode};
 use maestro_theme::ThemeChangeResult;
 use maestro_tui::{Component, EditorComponent};
-use std::{any::Any, error::Error, rc::Rc, sync::PoisonError};
+use std::{any::Any, error::Error, rc::Rc};
 
 impl InteractiveMode {
     /// Shows the settings panel in place of the editor over the current session.
@@ -95,7 +93,7 @@ impl InteractiveMode {
                     .set_follow_up_mode(queue_mode(&value))?;
                 Ok(())
             }),
-            on_transport_change: self.setting_callback(Self::settings_transport),
+            on_transport_change: self.fallible_setting_callback(Self::settings_transport),
             on_thinking_level_change: self.fallible_setting_callback(Self::settings_thinking),
             on_theme_change: self.settings_theme_callback(false),
             on_theme_preview: Some(self.settings_theme_callback(true)),
@@ -252,20 +250,9 @@ impl InteractiveMode {
     }
 
     /// Saves the transport before changing the next request's live preference.
-    fn settings_transport(&self, transport: Transport) {
-        let saved = match &transport {
-            Transport::Auto => TransportSetting::Auto,
-            Transport::Sse => TransportSetting::Sse,
-            Transport::Websocket => TransportSetting::Websocket,
-            Transport::WebsocketCached => TransportSetting::WebsocketCached,
-        };
-        let session = self.runtime_host.session();
-        session.settings_manager().borrow_mut().set_transport(saved);
-        *session
-            .agent()
-            .transport
-            .write()
-            .unwrap_or_else(PoisonError::into_inner) = transport;
+    fn settings_transport(&self, transport: Transport) -> Result<(), Box<dyn Error>> {
+        self.runtime_host.session().set_transport(transport)?;
+        Ok(())
     }
 
     /// Selects thinking before refreshing the footer and the editor decoration.
