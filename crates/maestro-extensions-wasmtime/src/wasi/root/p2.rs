@@ -1,5 +1,5 @@
 //! The ordinary generation's filesystem below the native root.
-use super::{Placed, View, is_root, parent};
+use super::{Place, Placed, View, is_root, parent};
 use wasmtime::component::Resource;
 use wasmtime_wasi::{
     filesystem::Descriptor,
@@ -27,10 +27,13 @@ impl View<'_> {
         if !is_root(self.fs.table, &fd, self.root) {
             return Ok((fd, path, None));
         }
-        let (dir, name) =
-            wasmtime_wasi::runtime::spawn_blocking(move || parent(&path, follow)).await?;
-        let held = self.fs.table.push(Descriptor::Dir(dir))?;
-        Ok((Resource::new_borrow(held.rep()), name, Some(held)))
+        match wasmtime_wasi::runtime::spawn_blocking(move || parent(path, follow)).await? {
+            Place::Native(dir, name) => {
+                let held = self.fs.table.push(Descriptor::Dir(dir))?;
+                Ok((Resource::new_borrow(held.rep()), name, Some(held)))
+            }
+            Place::Root(path) => Ok((fd, path, None)),
+        }
     }
 
     /// Places both paths of a two-path operation, closing the first directory if the second fails.

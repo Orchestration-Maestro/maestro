@@ -1,5 +1,5 @@
 //! The asynchronous generation's filesystem below the native root.
-use super::{Placed, Root, View, is_root, parent};
+use super::{Place, Placed, Root, View, is_root, parent};
 use crate::lifecycle::State;
 use wasmtime::{
     AsContextMut,
@@ -46,9 +46,13 @@ async fn place(
     }) {
         return Ok((fd, path, None));
     }
-    let (dir, name) = wasmtime_wasi::runtime::spawn_blocking(move || parent(&path, follow)).await?;
-    let held = store.with(|mut access| access.get().fs.table.push(Descriptor::Dir(dir)))?;
-    Ok((Resource::new_borrow(held.rep()), name, Some(held)))
+    match wasmtime_wasi::runtime::spawn_blocking(move || parent(path, follow)).await? {
+        Place::Native(dir, name) => {
+            let held = store.with(|mut access| access.get().fs.table.push(Descriptor::Dir(dir)))?;
+            Ok((Resource::new_borrow(held.rep()), name, Some(held)))
+        }
+        Place::Root(path) => Ok((fd, path, None)),
+    }
 }
 
 /// Places both paths of a two-path operation, closing the first directory if the second fails.

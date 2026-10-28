@@ -88,10 +88,21 @@ fn is_root(table: &ResourceTable, fd: &Resource<Descriptor>, root: &Dir) -> bool
     matches!(table.get(fd), Ok(Descriptor::Dir(dir)) if Arc::ptr_eq(&dir.dir, &root.dir))
 }
 
-/// The native directory that holds `path` below the root, and the name to use in it.
+/// Where one path operation below the root runs.
+enum Place {
+    /// In the native directory that holds the path, under its final name.
+    Native(Dir, String),
+    /// In the root itself, under the whole path.
+    Root(String),
+}
+
+/// Finds the native directory that holds `path` below the root, and the name to use in it.
 ///
 /// A following lookup first follows links in the final name, as the system does.
-fn parent(path: &str, follow: bool) -> io::Result<(Dir, String)> {
+/// A Unix directory the user may search but not list cannot be opened, so a path
+/// below it stays with the root, where the standard implementation resolves each
+/// component and an absolute link is refused.
+fn parent(path: String, follow: bool) -> io::Result<Place> {
     let mut native = PathBuf::from(native_path(&format!("/{path}")));
     if follow {
         for _ in 0..40 {
@@ -104,11 +115,15 @@ fn parent(path: &str, follow: bool) -> io::Result<(Dir, String)> {
         }
     }
     let slash = if path.ends_with('/') { "/" } else { "" };
-    match (native.parent(), native.file_name()) {
-        (Some(parent), Some(name)) => Ok((
-            directory(parent)?,
-            format!("{}{slash}", name.to_string_lossy()),
-        )),
-        _ => Ok((directory(&native)?, ".".into())),
+    let (directory_path, name) = match (native.parent(), native.file_name()) {
+        (Some(parent), Some(name)) => (parent, format!("{}{slash}", name.to_string_lossy())),
+        _ => (native.as_path(), ".".into()),
+    };
+    match directory(directory_path) {
+        Ok(dir) => Ok(Place::Native(dir, name)),
+        Err(error) if cfg!(unix) && error.kind() == io::ErrorKind::PermissionDenied => {
+            Ok(Place::Root(path))
+        }
+        Err(error) => Err(error),
     }
 }
