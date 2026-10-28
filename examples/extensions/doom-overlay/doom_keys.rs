@@ -66,6 +66,10 @@ pub fn map_key_to_doom(api: &ExtensionAPI, data: &str) -> ExtensionResult<Vec<u8
         ("\x1b", "escape", 27),
         ("\t", "tab", 9),
         ("\x7f", "backspace", 127),
+        ("y", "y", b'y'),
+        ("Y", "shift+y", b'y'),
+        ("n", "n", b'n'),
+        ("N", "shift+n", b'n'),
     ] {
         if data == raw || matches_key(api, data, key)? {
             return Ok(vec![code]);
