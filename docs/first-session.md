@@ -2,8 +2,9 @@
 
 Start in a disposable project or a clean Git working tree. Maestro can run shell
 commands and change files; a request to leave files alone is not a sandbox.
-This guide uses the native source executable on Unix. See
-[command-line input](cli.md) for the CLI reference.
+This guide uses the native source executable on Unix. On Windows, read
+[Windows setup and runtime limits](windows.md) before choosing a launch route.
+See [command-line input](cli.md) for the CLI reference.
 
 ## 1. Build from source
 
