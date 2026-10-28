@@ -12,6 +12,7 @@ use std::{
     sync::RwLock,
 };
 mod io;
+mod reload;
 mod ui;
 
 /// One loaded instance and its caller-owned effects.
@@ -24,12 +25,27 @@ struct Demo {
     tails: Rc<RefCell<Vec<tokio::task::JoinHandle<()>>>>,
     /// Notices and the WAD observed by the engine.
     ui: Rc<ui::Ui>,
+    /// Original session capabilities reused by a fresh component instance.
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    /// Writable history kept by the application owner.
+    history: Rc<RefCell<maestro_session::SessionManager>>,
     /// Controlled HTTP request owner.
     io: Rc<io::Io>,
 }
 
 /// Loads from a controlled module directory with real filesystem access.
 async fn loaded(root: &Path, case: &str) -> Demo {
+    let (session, history) = super::session::runner_session(root.join("project").to_str().unwrap());
+    loaded_on(root, case, session, history).await
+}
+
+/// Loads a fresh component while preserving the caller's session history.
+async fn loaded_on(
+    root: &Path,
+    case: &str,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    history: Rc<RefCell<maestro_session::SessionManager>>,
+) -> Demo {
     let tails = Rc::new(RefCell::new(Vec::new()));
     let started = tails.clone();
     let bus = create_event_bus_for::<Local>(
@@ -39,7 +55,7 @@ async fn loaded(root: &Path, case: &str) -> Demo {
         Rc::new(|error| panic!("unexpected background error: {error:?}")),
     );
     let io = controlled_io(case);
-    let runner = runner(root, &bus, io.clone()).await;
+    let runner = runner(root, &bus, io.clone(), &session).await;
     let (tui, _terminal) = super::canonical_ui::screen();
     let ui = Rc::new(ui::Ui {
         tui,
@@ -53,6 +69,8 @@ async fn loaded(root: &Path, case: &str) -> Demo {
     Demo {
         runner,
         _bus: bus,
+        session,
+        history,
         tails,
         ui,
         io,
@@ -139,6 +157,10 @@ fn observed(demo: &Demo, root: &Path, case: &str, expected: Option<&[u8]>) {
 async fn run() {
     let root = PathBuf::from(std::env::var("MAESTRO_DOOM_WAD_ROOT").unwrap());
     let case = std::env::var("MAESTRO_DOOM_WAD_CASE").unwrap();
+    if case == "switch" {
+        reload::switch(&root).await;
+        return;
+    }
     let (args, expected) = prepare(&root, &case);
     let demo = loaded(&root, &case).await;
     (demo
@@ -235,6 +257,7 @@ async fn runner(
     root: &Path,
     bus: &EventBusController<Local>,
     io: Rc<io::Io>,
+    session: &maestro_extensions::runner::ExtensionRunnerSession,
 ) -> ExtensionRunner<Local> {
     let path = root
         .join("module/doom_overlay.wasm")
@@ -262,7 +285,11 @@ async fn runner(
     let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(vec![owner])),
         runtime,
-        super::session::runner_session(root.join("project").to_str().unwrap()).0,
+        maestro_extensions::runner::ExtensionRunnerSession {
+            cwd: session.cwd.clone(),
+            session_manager: session.session_manager.clone(),
+            model_registry: session.model_registry.clone(),
+        },
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
@@ -290,4 +317,13 @@ fn controlled_io(case: &str) -> Rc<io::Io> {
             }),
         }),
     })
+}
+
+/// WAD switching plays once after a fresh instance loads, never on later resume.
+#[test]
+fn doom_wad_switch_reloads_and_consumes_pending_play_once() {
+    checked(
+        "doom_wad_switch_reloads_and_consumes_pending_play_once",
+        &["switch"],
+    );
 }
