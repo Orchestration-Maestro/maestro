@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
+| `confirm_destructive.rs` | Confirmation before starting a new session, switching away from user history or forking. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
@@ -40,6 +41,7 @@ inserts at its own place instead of appending at the end of each list.
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
 | `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
+| `overlay_test.rs` | An `/overlay-test` overlay with inline text fields, wide characters, themed colors and emoji that reports the chosen entry. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `preset.rs` | A `--preset` flag, `/preset` selector and Ctrl+Shift+U shortcut for named model, thinking, tool and prompt configurations. |
@@ -95,6 +97,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- commands_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- confirm_destructive_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_header_component_
@@ -124,6 +128,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- overlay_test_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- permission_gate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -650,6 +656,34 @@ file directly; saving and clearing append ordinary session entries through the
 host. Narrow views show fewer columns without changing the game's collision
 boundaries.
 
+### What the overlay demo does
+
+`/overlay-test` opens a floating overlay 70 cells wide over the conversation.
+Its upper rows hold wide CJK and Hangul text, words in five theme colors, and
+emoji: a joined sequence, a flag and single symbols. The right border lines up
+on every row when the host measures cells and composes the overlay over the text
+beneath it correctly. The menu below has four entries. Find and Launch hold an
+inline text field; Preferences and Dismiss do not.
+
+The up and down arrows move the selection and stop at either end. On an entry
+with a field, typed characters go in at the cursor, Backspace deletes the
+character before it, and the left and right arrows move it within the text.
+Other control input is ignored. A field too short for its text scrolls sideways
+to keep the cursor in view, centered until the cursor comes close to either end
+of the text; Enter still reports the whole text. The cell under the cursor is
+drawn in reverse video. While the overlay has focus, it also places the terminal's hardware
+cursor on that cell, so an input method can show its composition there. Enter
+closes the overlay and reports the entry, for example `Find: "query"`, or only
+its name when its field is empty or it has none. Escape closes it without a
+report.
+
+Build with `--example overlay_test` in the command above. Loading is opt-in and
+needs a component-enabled interactive host with custom UI overlays and
+notifications. The controlled `overlay_test_` runs load the built component
+through the production runner and show the overlay on the real frame writer over
+a recording terminal with supplied key input. They need no provider,
+credentials or network.
+
 ### What the audited read override does
 
 `tool_override` replaces `read` only when you load it. It records each resolved
@@ -790,6 +824,29 @@ component-enabled interactive host, a selected model and its configured API key.
 A real extraction sends the assistant reply to that provider and can incur
 charges. The controlled `qna_` runs use a loopback provider and supplied terminal
 input; they require no credentials, paid service or installation.
+
+### What the session confirmation example does
+
+Build with `--example confirm_destructive` using the command above. Loading is
+opt-in and needs a component-enabled host. Interactive confirmation needs that
+host's dialog and notification UI; headless hosts continue without a veto.
+
+Starting a new session always asks **Clear session?**, even when history is empty.
+Resuming another session asks **Switch session?** only when the current session
+contains a user message anywhere in its entries. Other entry kinds do not count.
+Declining or dismissing either confirmation reports cancellation and vetoes the
+replacement. Approving returns no override.
+
+Before a fork, the selector shows the first eight characters of the entry ID.
+Only **Yes, create fork** permits it; **No, stay in current session**, dismissal
+and any other answer report `Fork cancelled` and veto it. The host owns session
+replacement and forking: this example only returns cancellation decisions and
+never deletes messages or changes files itself.
+
+The controlled `confirm_destructive_` runs replay scripted history and UI answers
+through both the in-process adapter and the built component. They need no
+provider, credentials, filesystem changes or extension installation. A host
+rejection propagates unchanged instead of becoming an approval.
 
 ### What the SSH example does
 

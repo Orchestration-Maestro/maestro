@@ -41,6 +41,7 @@ pub(crate) mod catalog_host;
 mod commands_example;
 mod completion_contract;
 mod component_driver;
+mod confirm_destructive_example;
 mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;

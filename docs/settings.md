@@ -4,7 +4,7 @@
 [settings guide](sessions/settings.md) explains them by topic; this page is the
 single authority for defaults. A
 `SettingsManager` loads both scopes through a replaceable raw-text storage,
-answers typed reads from memory, publishes every edit immediately and persists
+answers typed reads from memory, publishes admitted edits immediately and persists
 edits through one ordered queue. Every public item lives in the `settings_manager`
 module and is re-exported at the crate root.
 
@@ -28,6 +28,19 @@ let mut settings = SettingsManager::in_memory(Settings::default());
 settings.set_theme("light".into());
 assert_eq!(settings.get_theme().as_deref(), Some("light"));
 ```
+
+## Contents
+
+1. [Reading](#reading)
+2. [Host decisions](#host-decisions)
+3. [Writing](#writing)
+4. [Storage](#storage)
+5. [Saved text](#saved-text)
+6. [Stored-format conversions](#stored-format-conversions)
+7. [Preferences](#preferences)
+8. [Example](#example)
+9. [Workspace preference records](#workspace-preference-records)
+10. [Nested preference edits](#nested-preference-edits)
 
 ## Reading
 
@@ -117,9 +130,78 @@ in-memory adapter retains both scope records; the native adapter reuses its
 existing file transaction and sidecar lock. This owner does not read a manifest,
 validate policy or decide which settings may be governed.
 
+## Host decisions
+
+A host that needs to constrain preferences can register one `SettingsDecider`
+with `SettingsManager::register_decider`. The publisher owns its constraints;
+the settings manager owns registration, admission and persistence. This is a
+host interface, not a guest component registration. Runtime model and thinking
+changes use it through the application, including their RPC and extension
+setters. Without a decider, operations keep their ordinary behaviour; read-only
+base locks still apply.
+
+### Registration and refusal
+
+1. Implement `SettingsDecider::decide` and register the handle before applying
+   runtime overrides. Native handles use `Arc` and require `Send + Sync`; a
+   browser host uses `Rc`. Registration rebuilds the current effective view.
+2. Return `Ok(())` to admit a `DecisionRequest`, or `Err(message)` to refuse it.
+   Callbacks run synchronously, outside the persistence queue and storage locks.
+3. Read refusal from a fallible operation's result. Settings setters keep their
+   void signatures and put the message in `drain_errors` instead.
+
+A second registration returns `A settings decider is already registered` and
+retains the first publisher. There is no chain of deciders.
+
+| Request | Data offered to the decider |
+| --- | --- |
+| `SettingsEdit` | Scope and every literal path with its requested value, or absence for removal |
+| `RuntimeOverrides` | Runtime settings before the one-level merge |
+| `Model` | Provider, model ID and requested thinking before capability clamping |
+| `ThinkingLevel` | Requested thinking before capability clamping |
+
+A refused edit changes no accepted scope, runtime override, pending edit or
+saved file. Runtime model and thinking refusal also leaves active state,
+history and change notifications untouched. Admission does not add rollback:
+an I/O failure after admission keeps the owner's ordinary failure behaviour.
+
+### Stored values
+
+`SettingsDecider::resolve` receives only the mutable effective view and returns
+diagnostic messages. The manager calls it after base values, scope merging and
+locks, and when applying an admitted runtime override. It restores locked values
+again after the callback, so resolution cannot weaken a lock. The callback may
+change the view but never receives the raw scopes or persistence queue. Its messages
+use the existing settings error channel. Reads and resolution never rewrite
+stored conflicting values.
+
+The [decision tests](../crates/maestro-settings/tests/settings_decisions.rs)
+show a refusing publisher and a stored-value resolver through the public
+manager. They also check duplicate registration and stored-value preservation.
+
+### Preflighted application writes
+
+An owner whose operation has effects before its settings save calls
+`prepare_operation`. It supplies the request, scope and all derived settings
+paths before the first effect. The settings owner asks the decider and checks
+base locks, then returns a `PreparedSettingsEdit` without publishing or queuing
+anything.
+
+Keep the token with that operation and consume it with `apply_prepared_edit` at
+the original save position. `split_at` separates admitted edits when an operation
+has more than one save position; apply those parts in their original order. Use
+the preparing manager, before another explicit operation. Dropping a token saves
+nothing. Applying it does not ask the decider again.
+
+Model selection admits requested thinking before the model capability clamp.
+A locked thinking default remains unchanged while the active level can clamp
+lower. The model change skips only the derived write to that locked key; its
+other effects keep their order. Without that lock, derived thinking-default
+saves keep their ordinary behaviour.
+
 ## Writing
 
-Every setter publishes the new value to memory before it returns, then queues one
+An admitted setter publishes the new value to memory before it returns, then queues one
 save of its scope; a scope whose load failed is never saved (see Failures). The
 queue is shared by both scopes and runs saves in order on a background thread (the
 browser runs the same saves on its task queue), so no runtime is needed to start a

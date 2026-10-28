@@ -24,7 +24,8 @@ platform limitations.
 2. [Build the component](#build-the-component)
 3. [Package the component](#package-the-component)
 4. [Load and reload](#load-and-reload)
-5. [Capability reference](#capability-reference)
+5. [Author workflows](extensions/workflows.md)
+6. [Capability reference](#capability-reference)
 
 ## Create the project
 
@@ -284,6 +285,14 @@ the native artifact runtime. It asserts both `Hello, Ada!` and the structured
 `greeted` details. Build dependencies can be cached; the project folder itself
 starts empty. No extension package is downloaded or published, and no provider
 request is made.
+
+## Author workflows
+
+After loading your first component, use the [author workflows](extensions/workflows.md)
+to choose event handlers, wrap built-in tools, bound output, restore branch-local
+state and add UI that also handles headless use. Each workflow points to a shipped
+example and its owning capability reference. Keep using the build and packaging
+recipe above.
 
 ## Capability reference
 
