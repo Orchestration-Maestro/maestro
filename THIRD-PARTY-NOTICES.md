@@ -787,6 +787,12 @@ The worktree names, checkout paths and Git commands in
 same license. Changes include operands that cannot be read as options, native path bytes
 in the listing, a supplied home directory, and a leftover-checkout check that follows
 links to the repository.
+The worktree list, open, create and remove handlers in
+`crates/maestro-daemon/src/app/api/worktrees/` derive from the worktree API modules under the
+same license, with typed results instead of encoded response text. Changes include one source
+rule for listing, opening and creating in place of two resolvers, one table of pending
+operations in place of three maps, answers held on the request's own response channel, and
+record snapshots taken before a removal stops the workspace's processes.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from

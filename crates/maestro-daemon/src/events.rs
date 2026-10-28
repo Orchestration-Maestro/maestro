@@ -18,6 +18,13 @@ pub enum AppEvent {
         /// Last sanitized output line, or the command failure.
         result: Result<Option<String>, String>,
     },
+    /// A background `git worktree add` or `git worktree remove` has completed.
+    WorktreeOperationFinished {
+        /// Operation that started the Git command.
+        operation_id: u64,
+        /// Git's outcome.
+        result: Result<(), crate::git::worktree::WorktreeError>,
+    },
     /// The pane's child or imported terminal reader has exited.
     PaneDied {
         /// Pane whose runtime ended.

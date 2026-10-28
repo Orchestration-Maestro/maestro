@@ -67,6 +67,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             AppEvent::TerminalBell { .. }
             | AppEvent::ClipboardWrite { .. }
             | AppEvent::TabBarCommandFinished { .. }
+            | AppEvent::WorktreeOperationFinished { .. }
             | AppEvent::HookAgentReleased { .. } => None,
         };
         update.into_iter().collect()

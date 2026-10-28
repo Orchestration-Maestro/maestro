@@ -759,6 +759,55 @@ exist names no folder. Any other directory stays and Git's message is returned.
 bare, detached and prunable flags. Paths keep the bytes Git printed, including bytes that
 text cannot hold and line breaks.
 
+### Worktree commands
+
+`worktree.list`, `worktree.open`, `worktree.create` and `worktree.remove` build on the
+operations above. Each starts from one repository, named by `workspace_id` or by an absolute
+`cwd` (a leading `~` expands), never both; with neither, the active workspace is used. A
+workspace names its repository through its recorded worktree membership, else through the
+repository its working directory is in. A directory outside any repository answers
+`not_git_worktree`. `worktree.list` accepts a linked checkout as its source and lists from
+the checkout it was added from; `worktree.open` and `worktree.create` refuse one with
+`linked_worktree_source`.
+
+`worktree.list` returns the source and every entry of `git worktree list`, each with the
+workspace that has it open. A workspace has a checkout open when its membership, its
+repository identity or the directory of its first root process names that checkout, so a
+workspace sitting in a subdirectory counts.
+
+`worktree.open` takes exactly one of `path` and `branch`. A path matches a listed checkout once
+both are resolved; a branch matches the one entry that has it checked out, and a bare,
+detached or prunable entry never matches. Two matches answer `ambiguous_worktree_branch`.
+The checkout opens in the workspace that already shows it, in the source workspace when it is
+the source checkout, or in a new workspace, and the source workspace is created when none
+shows the repository. Both workspaces carry their worktree membership afterwards. `label`
+names the workspace, `focus` focuses it and `already_open` tells whether a workspace showed
+the checkout before the request.
+
+`worktree.create` adds a checkout of `branch` (a generated name when none is given), creating
+the branch at `base` (default `HEAD`) when it does not exist, at `path` or at
+`<daemon.worktreesDirectory>/<repository>/<branch folder>`. The request is checked first and
+Git then runs away from the loop, so other commands keep being served; a create or remove that
+names a checkout another request is working on answers `worktree_operation_in_progress`. When
+Git succeeds the daemon opens a workspace for the checkout, records its membership and answers
+with the workspace, its tab, its root pane and the worktree. The source workspace is found
+again at that point: if it no longer shows the same repository, the repository's own workspace
+is used, and one is created when there is none. Git's failure answers `worktree_create_failed`
+with Git's message and leaves the checkout free for another attempt.
+
+`worktree.remove` takes the workspace of a linked checkout. A checkout with local changes
+answers `dirty_worktree_requires_force`; repeating the request with `force` removes it. A forced
+removal stops the workspace's processes first, and so does every removal on Windows, where it
+also looks for local changes before stopping anything. When Git succeeds and the workspace
+still carries that checkout, the workspace closes, focus goes to the repository's own
+workspace, and `workspace.closed` and `worktree.removed` follow with the records taken when the
+request arrived. If the workspace changed meanwhile, only `worktree.removed` is published.
+
+`App::handle_api_request` refuses `worktree.create` and `worktree.remove`. A connection goes
+through `App::answer_request`, which keeps the response channel of these two commands until
+`App::settle_worktree_operations` applies Git's outcome; the daemon loop does so before every
+wait.
+
 ## Retained tab-bar status
 
 `App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,

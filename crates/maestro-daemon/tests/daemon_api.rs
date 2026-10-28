@@ -54,7 +54,6 @@ fn undelivered_families_use_one_source_fallback() {
         json!({"type": "server.live_handoff"}),
         json!({"type": "client.window_title.clear"}),
         json!({"type": "session.snapshot"}),
-        json!({"type": "worktree.list"}),
         json!({"type": "agent.list"}),
         json!({"type": "pane.list"}),
         json!({"type": "layout.export"}),

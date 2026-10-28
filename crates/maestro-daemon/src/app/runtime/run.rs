@@ -21,9 +21,7 @@ impl<C: FnMut() -> u128> App<C> {
     ) {
         tokio::pin!(shutdown);
         while !self.state.should_quit.0 {
-            self.drain_internal_events();
-            self.sync_pending_terminal_titles().await;
-            self.shutdown_detached_terminal_runtimes().await;
+            self.apply_queued_work().await;
             self.sync_session_save_schedule();
             self.handle_scheduled_tasks(Instant::now(), paths).await;
             let deadline = self.next_headless_loop_deadline(Instant::now(), false);
@@ -41,6 +39,15 @@ impl<C: FnMut() -> u128> App<C> {
             }
         }
         self.shutdown(paths).await;
+    }
+
+    /// Applies what the last pass queued: observations, finished worktree operations, terminal
+    /// titles and detached runtimes.
+    async fn apply_queued_work(&mut self) {
+        self.drain_internal_events();
+        self.settle_worktree_operations().await;
+        self.sync_pending_terminal_titles().await;
+        self.shutdown_detached_terminal_runtimes().await;
     }
 
     /// Completes final persistence before terminating children and draining their exit hooks.
@@ -69,7 +76,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Keeps the runtime alive until its critical exit publication has been applied.
-    async fn shutdown_terminal_runtime(&mut self, terminal: &TerminalId) {
+    pub(in crate::app) async fn shutdown_terminal_runtime(&mut self, terminal: &TerminalId) {
         let Some(mut runtime) = self.terminal_runtimes.remove(terminal) else {
             return;
         };

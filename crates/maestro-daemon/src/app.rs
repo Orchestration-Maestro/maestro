@@ -69,6 +69,8 @@ pub struct App<C> {
     pub state: DaemonState<C>,
     /// Live process owners keyed by durable terminal identity.
     pub terminal_runtimes: TerminalRuntimeRegistry,
+    /// Worktree requests waiting for Git, each holding the answer it owes.
+    worktree_operations: api::WorktreeOperations,
     /// Shared publication history for state transitions and pane exits.
     pub event_hub: crate::api::event_hub::EventHub,
     /// Temporary panes awaiting exit and restoration of their previous focus.

@@ -410,7 +410,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// The record of a tab's root pane.
-    async fn root_pane_info(
+    pub(in crate::app) async fn root_pane_info(
         &self,
         workspace: usize,
         tab: usize,

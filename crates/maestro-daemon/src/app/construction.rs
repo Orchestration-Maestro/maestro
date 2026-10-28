@@ -130,6 +130,7 @@ impl<C: FnMut() -> u128> App<C> {
             accepted_config_areas: AcceptedAreas::default(),
             launch,
             terminal_runtimes: TerminalRuntimeRegistry::new(),
+            worktree_operations: super::api::WorktreeOperations::default(),
             event_hub,
             overlay_panes: HashMap::new(),
         };

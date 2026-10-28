@@ -10,6 +10,7 @@ mod responses;
 mod state_events;
 mod tabs;
 mod workspaces;
+mod worktrees;
 
 use super::{
     App,
@@ -25,9 +26,13 @@ use maestro_protocol::{
 };
 use maestro_settings::SettingsManager;
 use responses::api_error;
+pub(super) use worktrees::WorktreeOperations;
 
 impl<C: FnMut() -> u128> App<C> {
     /// Answers one connection request through its response channel.
+    ///
+    /// A worktree create or remove waits for Git: the loop moves on and the answer follows
+    /// from [`Self::settle_worktree_operations`]. Every other command is answered at once.
     pub async fn answer_request(
         &mut self,
         request: RequestMessage,
@@ -39,13 +44,17 @@ impl<C: FnMut() -> u128> App<C> {
             respond_to,
             ..
         } = request;
-        let response = self.handle_api_request(command, settings, paths).await;
-        let _ = respond_to.send(response);
-    }
-
-    /// Applies the worktree operations whose Git work has finished.
-    pub async fn settle_worktree_operations(&mut self) {
-        self.shutdown_detached_terminal_runtimes().await;
+        self.begin_request(&command).await;
+        match command {
+            RpcCommand::WorktreeCreate(params) => self.start_worktree_create(params, respond_to),
+            RpcCommand::WorktreeRemove(params) => {
+                self.start_worktree_remove(params, respond_to).await;
+            }
+            command => {
+                let response = self.route_request(command, settings, paths).await;
+                let _ = respond_to.send(response);
+            }
+        }
     }
 
     /// Answers one workspace command after applying every queued internal observation.
@@ -61,11 +70,27 @@ impl<C: FnMut() -> u128> App<C> {
         settings: &mut SettingsManager,
         paths: &DaemonPaths,
     ) -> Result<ResponseResult, ErrorBody> {
+        self.begin_request(&command).await;
+        self.route_request(command, settings, paths).await
+    }
+
+    /// Applies every queued observation before a command is answered and marks the render
+    /// work a command that changes what a view shows will cause.
+    async fn begin_request(&mut self, command: &RpcCommand) {
         self.drain_all_internal_events();
         self.sync_pending_terminal_titles().await;
-        if crate::api::request_changes_ui(&command) {
+        if crate::api::request_changes_ui(command) {
             self.launch.render_dirty.request_generic();
         }
+    }
+
+    /// Sends a command to its handler.
+    async fn route_request(
+        &mut self,
+        command: RpcCommand,
+        settings: &mut SettingsManager,
+        paths: &DaemonPaths,
+    ) -> Result<ResponseResult, ErrorBody> {
         match command {
             RpcCommand::ServerStop(_) => {
                 self.state.should_quit.0 = true;
@@ -108,6 +133,16 @@ impl<C: FnMut() -> u128> App<C> {
             RpcCommand::WorkspaceClose(target) => {
                 self.handle_workspace_close(&target.workspace_id).await
             }
+            RpcCommand::WorktreeList(params) => self.handle_worktree_list(&params),
+            RpcCommand::WorktreeOpen(params) => self.handle_worktree_open(params).await,
+            RpcCommand::WorktreeCreate(_) => Err(api_error(
+                "invalid_request",
+                "worktree.create is handled asynchronously by the app runtime",
+            )),
+            RpcCommand::WorktreeRemove(_) => Err(api_error(
+                "invalid_request",
+                "worktree.remove is handled asynchronously by the app runtime",
+            )),
             RpcCommand::TabList(params) => self.handle_tab_list(params.workspace_id.as_deref()),
             RpcCommand::TabGet(target) => self.handle_tab_get(&target.tab_id),
             RpcCommand::TabCreate(params) => self.handle_tab_create(params).await,
@@ -137,27 +172,46 @@ impl<C: FnMut() -> u128> App<C> {
         result
     }
 
-    /// Dispatches a background observation through its existing domain owner.
-    fn dispatch_internal_event(&mut self, event: AppEvent) -> (Vec<PaneStateUpdate>, bool) {
-        if let AppEvent::TabBarCommandFinished {
-            generation,
-            segment_index,
-            result,
-        } = event
-        {
-            let changed = self.handle_tab_bar_command_finished(generation, segment_index, result);
-            if changed {
+    /// Applies an observation that changes no pane state and reports its render impact; any
+    /// other observation is handed back.
+    fn apply_standalone_event(&mut self, event: AppEvent) -> Result<bool, AppEvent> {
+        match event {
+            AppEvent::TabBarCommandFinished {
+                generation,
+                segment_index,
+                result,
+            } => {
+                let changed =
+                    self.handle_tab_bar_command_finished(generation, segment_index, result);
+                if changed {
+                    self.launch.render_dirty.request_generic();
+                    self.launch.render_notify.notify_one();
+                }
+                Ok(changed)
+            }
+            AppEvent::WorktreeOperationFinished {
+                operation_id,
+                result,
+            } => {
+                self.worktree_operations.finish(operation_id, result);
+                Ok(false)
+            }
+            AppEvent::ClipboardWrite { .. } => {
+                self.show_clipboard_feedback();
                 self.launch.render_dirty.request_generic();
                 self.launch.render_notify.notify_one();
+                Ok(true)
             }
-            return (Vec::new(), changed);
+            event => Err(event),
         }
-        if let AppEvent::ClipboardWrite { .. } = event {
-            self.show_clipboard_feedback();
-            self.launch.render_dirty.request_generic();
-            self.launch.render_notify.notify_one();
-            return (Vec::new(), true);
-        }
+    }
+
+    /// Dispatches a background observation through its existing domain owner.
+    fn dispatch_internal_event(&mut self, event: AppEvent) -> (Vec<PaneStateUpdate>, bool) {
+        let event = match self.apply_standalone_event(event) {
+            Ok(changed) => return (Vec::new(), changed),
+            Err(event) => event,
+        };
         let changed = !matches!(&event, AppEvent::TerminalBell { .. });
         self.publish_pane_process_exit(&event);
         if self.respawn_shell_after_exit(&event) {
