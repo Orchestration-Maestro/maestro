@@ -310,6 +310,18 @@ fn failed_extraction_keeps_a_consistent_owner() {
     assert_ne!(manager.get_session_file().unwrap(), path);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn branch_publication_refuses_a_competing_file() {
+    let scratch = Scratch::new().unwrap();
+    let path = scratch.path().join("branch.jsonl");
+    let competing = b"{\"type\":\"session\",\"id\":\"competing\",\"version\":3}\n";
+    std::fs::write(&path, competing).unwrap();
+    let error = super::persistence::rewrite(path.to_str().unwrap(), &[]).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+    assert_eq!(std::fs::read(&path).unwrap(), competing);
+}
+
 /// A readable source below a scratch root, forked into chosen directories.
 #[cfg(not(target_arch = "wasm32"))]
 struct ForkRig {
