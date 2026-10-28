@@ -136,6 +136,11 @@ path = "examples/sdk/minimal.rs"
 test = true
 
 [[example]]
+name = "prompt_templates"
+path = "examples/sdk/prompt_templates.rs"
+test = true
+
+[[example]]
 name = "skills"
 path = "examples/sdk/skills.rs"
 test = true
