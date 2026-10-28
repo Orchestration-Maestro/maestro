@@ -30,6 +30,14 @@ pub struct DirectAccessToken {
     pub expires_at: f64,
 }
 
+/// A gateway grant tied to the credential that requested it.
+pub struct CachedDirectAccess {
+    /// The originating GitLab credential, never sent to the gateway.
+    credential: String,
+    /// The grant and its expiration.
+    grant: DirectAccessToken,
+}
+
 /// Provider effects retained independently of the registration callbacks.
 #[derive(Clone)]
 pub struct GitLabDuo {
@@ -42,11 +50,11 @@ pub struct GitLabDuo {
     /// Sixteen secure random bytes, supplied by WASI in the component.
     pub random: Rc<dyn Fn() -> ExtensionResult<[u8; 16]>>,
     /// The token in use, shared by every clone of this provider.
-    pub direct_access: Rc<RefCell<Option<DirectAccessToken>>>,
+    pub direct_access: Rc<RefCell<Option<CachedDirectAccess>>>,
 }
 
 impl GitLabDuo {
-    /// Reuses the cached token until it expires, otherwise requests a new one.
+    /// Reuses an unexpired grant only for the credential that requested it.
     ///
     /// # Errors
     /// Returns the denial, the failed status with its body, or the transport failure.
@@ -55,13 +63,10 @@ impl GitLabDuo {
         gitlab_access_token: &str,
     ) -> ExtensionResult<DirectAccessToken> {
         let now = (self.now)();
-        if let Some(cached) = self
-            .direct_access
-            .borrow()
-            .as_ref()
-            .filter(|cached| cached.expires_at > now)
-        {
-            return Ok(cached.clone());
+        if let Some(cached) = self.direct_access.borrow().as_ref().filter(|cached| {
+            cached.credential == gitlab_access_token && cached.grant.expires_at > now
+        }) {
+            return Ok(cached.grant.clone());
         }
         let response = self
             .io
@@ -99,7 +104,10 @@ impl GitLabDuo {
         let mut granted: DirectAccessToken =
             serde_json::from_value(response.json().await?).map_err(|error| error.to_string())?;
         granted.expires_at = now + DIRECT_ACCESS_TTL;
-        *self.direct_access.borrow_mut() = Some(granted.clone());
+        *self.direct_access.borrow_mut() = Some(CachedDirectAccess {
+            credential: gitlab_access_token.to_owned(),
+            grant: granted.clone(),
+        });
         Ok(granted)
     }
 

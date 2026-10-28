@@ -26,6 +26,24 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
   --target wasm32-wasip2 --release
 ```
 
+## Run a greeting probe
+
+Put the built `custom_gateway_provider.wasm` in an extension directory, for
+example `./gateway/`, then load that directory in print mode:
+
+```sh
+maestro -e ./gateway --model gitlab-duo/claude-sonnet-4-5-20250929 \
+  --mode json -p "Say hello in exactly 3 words."
+```
+
+Use any registered model ID listed above with the `gitlab-duo/` provider prefix.
+Add `--thinking low` to request low reasoning. JSON mode prints the stream's
+thinking, text and final outcome. This is a live request, not a controlled test.
+
+Maestro uses stored credentials from `/login gitlab-duo`, or `GITLAB_TOKEN`.
+Without either, the stream reports `No GitLab access token. Run /login gitlab-duo
+or set GITLAB_TOKEN`. Load the extension when signing in so its login is available.
+
 ## Registration
 
 The component registers the gateway address, the `GITLAB_TOKEN` key variable, the
@@ -36,7 +54,8 @@ windows and output limits, and the GitLab Duo sign-in.
 
 The first request posts your GitLab token to
 `/api/v4/ai/third_party_agents/direct_access`. Maestro reuses the returned token
-and headers for 25 minutes, and drops them when you sign in or refresh. A 403
+and headers for 25 minutes for the same GitLab credential, and drops them when
+you change credentials, sign in or refresh. A 403
 reports that GitLab Duo is not enabled for the account. Any other failure reports
 its status and body, and the status stays even when the body cannot be read.
 

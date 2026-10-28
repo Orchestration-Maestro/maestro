@@ -9,7 +9,7 @@ use super::provider::GitLabDuo;
 use maestro_extensions_wasm::{
     AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Context, ErrorReason,
     ExtensionFuture, ExtensionResult, Model, SimpleStreamOptions, StopReason, StreamOptionsInput,
-    Usage, stream_simple,
+    Usage, stream_simple_via,
 };
 use std::sync::{Arc, RwLock};
 
@@ -75,7 +75,12 @@ impl GitLabDuo {
         );
         options.common.api_key = Some("gitlab-duo".into());
         options.common.headers = Some(headers);
-        let inner = stream_simple(routed(model, configured), context, Some(options))?;
+        let inner = stream_simple_via(
+            configured.backend.api(),
+            routed(model, configured),
+            context,
+            Some(options),
+        )?;
         while let Some(event) = inner.next().await? {
             stream.push((*event).clone())?;
         }
@@ -86,7 +91,6 @@ impl GitLabDuo {
 /// The model addressed to the gateway's proxy for its built-in protocol.
 fn routed(model: &Model, configured: &GitLabModel) -> Model {
     Model {
-        api: configured.backend.api().into(),
         base_url: configured.backend.base_url(),
         ..model.clone()
     }

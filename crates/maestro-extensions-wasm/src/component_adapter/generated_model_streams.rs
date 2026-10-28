@@ -63,6 +63,7 @@ pub(crate) fn raw(
         model,
         context,
         options.as_ref().map(|o| (&o.common, &o.extra)),
+        None::<&str>,
     ))?;
     let (common, objects) = options.map_or((None, None), |options| {
         (Some(options.common), options.objects)
@@ -71,6 +72,7 @@ pub(crate) fn raw(
 }
 /// Encode the simple path's own policies without selecting similarly named raw fields.
 pub(crate) fn simple(
+    api: Option<&str>,
     model: Model,
     context: Context,
     options: Option<SimpleStreamOptions>,
@@ -81,6 +83,7 @@ pub(crate) fn simple(
         options
             .as_ref()
             .map(|o| (&o.common, &o.reasoning, &o.thinking_budgets)),
+        api,
     ))?;
     let common = options.map(|options| options.common);
     invoke(true, &data, common.as_ref(), None)

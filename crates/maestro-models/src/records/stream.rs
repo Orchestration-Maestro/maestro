@@ -1,7 +1,7 @@
 //! Immediate invocation and eager, independently observed completion.
 pub use crate::builtins::get_env_api_key;
 
-use super::api_registry::{ApiProvider, get_api_provider};
+use super::api_registry::{ApiProvider, get_api_provider, get_api_stream_simple};
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{
     AssistantMessageEventStream, BoxFuture, Context, Model, ProviderExecution, ProviderInvocation,
@@ -132,7 +132,9 @@ pub fn stream_simple_via_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    resolve(api)?
-        .stream_simple
+    get_api_stream_simple(api)
+        .ok_or_else(|| {
+            DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
+        })?
         .call(model, context, E::submission(options, E::provided(submit)))
 }
