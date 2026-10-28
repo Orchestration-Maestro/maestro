@@ -1192,36 +1192,6 @@ fn standalone_inputs(source: &Path, package: &Path) {
     package_inputs(package);
 }
 
-/// The component examples stay in name order.
-#[test]
-fn shipped_example_lists_stay_in_name_order() {
-    let targets = example_targets(include_str!("../../maestro-extensions-wasm/Cargo.toml"));
-    assert!(
-        targets.is_sorted(),
-        "the component examples are not in name order: {targets:?}"
-    );
-}
-
-/// Example names come from the TOML the manifest holds, so either quote style declares one.
-#[test]
-fn example_targets_reads_both_quote_styles() {
-    let manifest = "[[example]]\nname = 'hello'\n\n[[example]]\nname = \"pirate\"\n";
-    assert_eq!(example_targets(manifest), ["hello", "pirate"]);
-}
-
-/// The `[[example]]` target names one manifest declares, in authored order.
-fn example_targets(manifest: &str) -> Vec<String> {
-    let manifest: toml::Table = manifest.parse().unwrap();
-    let Some(targets) = manifest.get("example").and_then(toml::Value::as_array) else {
-        return Vec::new();
-    };
-    targets
-        .iter()
-        .filter_map(|target| target.get("name").and_then(toml::Value::as_str))
-        .map(str::to_owned)
-        .collect()
-}
-
 /// Write the package-level inputs the standalone layout copies.
 fn package_inputs(package: &Path) {
     for (name, bytes) in [
@@ -3405,13 +3375,9 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
 fn example_index_discovers_independent_additions() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let folder = root.path().join("examples/extensions");
+    example_checkout(root.path());
     fs::create_dir_all(folder.join("nested")).unwrap();
     let readme = folder.join("README.md");
-    fs::write(
-        &readme,
-        "Before\n<!-- example-index:start -->\nold\n<!-- example-index:end -->\nAfter\n",
-    )
-    .unwrap();
     fs::write(
         folder.join("zebra.rs"),
         "//! Zebra | tool.\nfn factory() {}\n",
@@ -3453,6 +3419,130 @@ fn example_index_discovers_independent_additions() {
         .is_err()
     );
     assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
+}
+
+/// Write a checkout whose three generated regions hold stale text between their markers.
+fn example_checkout(root: &Path) {
+    let folder = root.join("examples/extensions");
+    let local = root.join("crates/maestro-extensions-wasm/examples");
+    fs::create_dir_all(&folder).unwrap();
+    fs::create_dir_all(&local).unwrap();
+    fs::write(
+        folder.join("README.md"),
+        "Before\n<!-- example-index:start -->\nold\n<!-- example-index:end -->\nAfter\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("crates/maestro-extensions-wasm/Cargo.toml"),
+        "[package]\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
+    )
+    .unwrap();
+    fs::write(
+        local.join("prepare_author_component.rs"),
+        "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n",
+    )
+    .unwrap();
+}
+
+/// Run the generator, in check mode when `check` is set.
+fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::ExitCode> {
+    let mut args = vec!["example-index".into()];
+    if check {
+        args.push("--check".into());
+    }
+    tooling::run(&args, Path::new("unused-cargo"), root)
+}
+
+/// Example sources supply their own manifest targets and prepared components.
+#[test]
+fn example_index_renders_targets_and_components() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    let local = root.path().join("crates/maestro-extensions-wasm/examples");
+    example_checkout(root.path());
+    fs::create_dir_all(folder.join("with-deps")).unwrap();
+    fs::create_dir_all(folder.join("zebra")).unwrap();
+    let marker = "// Tests receive this component's path in";
+    fs::write(
+        folder.join("zebra.rs"),
+        format!("//! Zebra.\n{marker} MAESTRO_ZEBRA_COMPONENT.\n"),
+    )
+    .unwrap();
+    fs::write(folder.join("zebra/view.rs"), "//! Zebra view.\n").unwrap();
+    fs::write(folder.join("alpha.rs"), "//! Alpha.\n").unwrap();
+    fs::write(folder.join("alpha.md"), "# Alpha usage\n").unwrap();
+    fs::write(
+        folder.join("with-deps/main.rs"),
+        format!("//! Dependencies.\n{marker} MAESTRO_DEPS_COMPONENT.\n"),
+    )
+    .unwrap();
+    fs::write(
+        local.join("bridge.rs"),
+        format!("//! Bridge.\n{marker} MAESTRO_CONTEXT_COMPONENT.\nfn f() {{}}\n"),
+    )
+    .unwrap();
+    fs::write(local.join("plain.rs"), "//! Plain.\n").unwrap();
+    example_index(root.path(), false).unwrap();
+    let manifest = root
+        .path()
+        .join("crates/maestro-extensions-wasm/Cargo.toml");
+    let prepare = local.join("prepare_author_component.rs");
+    let rendered = (
+        fs::read_to_string(&manifest).unwrap(),
+        fs::read_to_string(&prepare).unwrap(),
+    );
+    assert_eq!(
+        rendered.0,
+        "[package]\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+    );
+    assert_eq!(
+        rendered.1,
+        "//! Prepare.\n// example-index:start\n/// Each prepared example and the variable that hands its component path to the tests.\nconst COMPONENTS: &[(&str, &str)] = &[\n    (\"bridge\", \"MAESTRO_CONTEXT_COMPONENT\"),\n    (\"with_deps\", \"MAESTRO_DEPS_COMPONENT\"),\n    (\"zebra\", \"MAESTRO_ZEBRA_COMPONENT\"),\n];\n// example-index:end\nfn main() {}\n"
+    );
+    example_index(root.path(), true).unwrap();
+    fs::write(
+        local.join("plain.rs"),
+        format!("//! Plain.\n{marker} MAESTRO_PLAIN_COMPONENT.\n"),
+    )
+    .unwrap();
+    assert!(example_index(root.path(), true).is_err());
+    fs::write(local.join("plain.rs"), "//! Plain.\n").unwrap();
+    fs::write(local.join("added.rs"), "//! Added.\n").unwrap();
+    assert!(example_index(root.path(), true).is_err());
+    assert_eq!(
+        (
+            fs::read_to_string(&manifest).unwrap(),
+            fs::read_to_string(&prepare).unwrap()
+        ),
+        rendered
+    );
+}
+
+/// A malformed marker, two markers in one source and one variable in two sources are rejected.
+#[test]
+fn example_index_rejects_malformed_and_duplicate_markers() {
+    let marker = "// Tests receive this component's path in";
+    for sources in [
+        vec![("alpha.rs", format!("{marker} alpha.\n"))],
+        vec![("alpha.rs", format!("{marker} MAESTRO_COMPONENT.\n"))],
+        vec![(
+            "alpha.rs",
+            format!("{marker} MAESTRO_A_COMPONENT.\n{marker} MAESTRO_B_COMPONENT.\n"),
+        )],
+        vec![
+            ("alpha.rs", format!("{marker} MAESTRO_A_COMPONENT.\n")),
+            ("beta.rs", format!("{marker} MAESTRO_A_COMPONENT.\n")),
+        ],
+    ] {
+        let root = maestro_test_directory::Scratch::new().unwrap();
+        example_checkout(root.path());
+        let folder = root.path().join("examples/extensions");
+        for (name, text) in &sources {
+            fs::write(folder.join(name), format!("//! Example.\n{text}")).unwrap();
+        }
+        let error = example_index(root.path(), false).unwrap_err().to_string();
+        assert!(error.contains("marker"), "{sources:?}: {error}");
+    }
 }
 
 /// The tracked repository index is exactly the table rendered from its files.

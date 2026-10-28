@@ -1,4 +1,5 @@
 //! Interactive tool selection retained in the current session branch.
+// Tests receive this component's path in MAESTRO_TOOLS_COMPONENT.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

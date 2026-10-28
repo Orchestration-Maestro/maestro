@@ -1,4 +1,5 @@
 //! Author component for native context forwarding through the extension loader.
+// Tests receive this component's path in MAESTRO_CONTEXT_COMPONENT.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

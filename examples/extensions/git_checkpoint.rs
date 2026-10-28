@@ -1,4 +1,5 @@
 //! Opt-in Git stash checkpoints for restoring code when forking a conversation.
+// Tests receive this component's path in MAESTRO_GIT_CHECKPOINT_COMPONENT.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

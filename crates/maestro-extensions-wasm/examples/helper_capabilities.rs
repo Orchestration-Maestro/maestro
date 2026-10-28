@@ -1,4 +1,5 @@
 //! An author fixture that observes helpers through the installed host.
+// Tests receive this component's path in MAESTRO_HELPER_COMPONENT.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
