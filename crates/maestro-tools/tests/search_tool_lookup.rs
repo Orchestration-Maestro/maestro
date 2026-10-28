@@ -207,8 +207,9 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
             let selected = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)))
                 .with_offline(Some(true));
             assert_eq!(
-                selected.get_tool_path(SearchTool::Fd).await.as_deref(),
-                Some("fdfind")
+                selected.ensure_tool(SearchTool::Fd, None).await.as_deref(),
+                Some("fdfind"),
+                "an offline selection still uses the program a probe finds"
             );
             assert_eq!(probe_log(&root), Some("fdfind --version\n".to_owned()));
             assert_eq!(calls.load(Ordering::SeqCst), 0);

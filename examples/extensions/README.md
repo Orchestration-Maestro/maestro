@@ -102,12 +102,16 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `interactive_shell.md` | Interactive shell |
+| `interactive_shell.rs` | Opt-in interactive user shell commands with full terminal access. |
 | `mac_system_theme.md` | Mac system theme |
 | `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
 | `message_renderer.md` | Message renderer |
 | `message_renderer.rs` | A `/status` command posts status notes, and the renderer it registers draws each one: the level in its theme color over the custom message background, and the host's local send time once the message is expanded. |
 | `minimal_mode.md` | Minimal mode |
 | `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
+| `modal_editor.md` | Modal editor |
+| `modal_editor.rs` | A modal editor in the style of vi. |
 | `model_status.md` | Model status |
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
@@ -122,10 +126,14 @@ resolving conflicts, then regenerate the table.
 | `preset.rs` | Named model, thinking, tool and prompt configurations selected for one session. |
 | `preset/config.rs` | Layered preset files read through the host's authored-path helpers. |
 | `preset/selector.rs` | Themed preset selection through the host's retained list and container widgets. |
+| `project_rules.md` | Project rules |
+| `project_rules.rs` | Lists the project's rule files in the system prompt. |
 | `prompt_customizer.md` | Prompt customizer |
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
+| `provider_payload.md` | Provider payload |
+| `provider_payload.rs` | Opt-in logging of provider request payloads and response status and headers. |
 | `qna.md` | Qna |
 | `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
 | `question.md` | Question |
@@ -136,6 +144,8 @@ resolving conflicts, then regenerate the table.
 | `questionnaire.rs` | A questionnaire tool with selectable options and inline custom answers. |
 | `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
 | `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
+| `rainbow_editor.md` | Rainbow editor |
+| `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |

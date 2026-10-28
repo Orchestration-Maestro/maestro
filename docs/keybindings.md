@@ -3,6 +3,8 @@
 Open `/hotkeys` in an interactive session to see keys from your loaded bindings.
 Use this reference when editing `keybindings.json`; action IDs are case-sensitive.
 The [toolkit API](terminal/keybindings.md) is for embedding applications.
+[Terminal key forwarding](terminal/setup.md) covers terminal and tmux setup when
+a modified key never reaches Maestro.
 
 ## Change a shortcut
 

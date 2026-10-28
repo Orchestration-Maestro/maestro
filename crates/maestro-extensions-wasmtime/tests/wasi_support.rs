@@ -13,13 +13,7 @@ use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 pub const COMPONENT: &str = "MAESTRO_WASI_COMPONENT";
 
 /// Runs on the caller's local executor with actual native I/O and timer drivers.
-pub fn run(test: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, test);
-}
+pub use super::example_process::run;
 
 /// One independently live component and the existing notification route it reports through.
 pub struct Harness {

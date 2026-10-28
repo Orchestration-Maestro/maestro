@@ -240,11 +240,12 @@ returns `None`.
 
 ## Editor access
 
-`set_editor_text` replaces the current editor's text unchanged, and
-`get_editor_text` returns its expanded text, or its raw text when it does not
-expand. `paste_to_editor` delivers the text to the current editor as a bracketed
-paste, so the editor applies its own paste rules. Nothing is trimmed and no
-history entry is written. An editor's own failure is returned unchanged.
+`set_editor_text` hands the text to the current editor unchanged, and the editor
+stores it with its own newline and tab normalization. `get_editor_text` returns
+the editor's expanded text, or its raw text when it does not expand.
+`paste_to_editor` delivers the text to the current editor as a bracketed paste,
+so the editor applies its own paste rules. Nothing is trimmed and no history
+entry is written. An editor's own failure is returned unchanged.
 
 ## Custom editors
 
