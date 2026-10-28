@@ -116,8 +116,7 @@ pub fn command(wire: Value) -> RpcCommand {
 
 /// Answers the wire-form `command` through the daemon's handler.
 pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
-    let mut settings = settings();
-    block_on(app.handle_api_request(command(wire), &mut settings, &untouched_paths()))
+    block_on(answer(app, wire))
 }
 
 /// Answers the wire-form `wire` from inside a running test runtime.
