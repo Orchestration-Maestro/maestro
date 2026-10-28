@@ -1,6 +1,7 @@
 //! Minimal displays through the shipped component and original native tool owners.
 #![cfg(test)]
 #![cfg(unix)]
+use super::example_process::run;
 use maestro_extensions::{ExtensionRunner, Local};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
@@ -51,15 +52,6 @@ async fn loaded(cwd: &Path) -> Rc<ExtensionRunner<Local>> {
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     ))
-}
-
-/// Runs a component on its caller-owned local executor.
-fn run(action: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// Invokes a registered override, not a replacement implementation in the test.

@@ -1,4 +1,5 @@
 //! An opt-in filesystem and network sandbox for bash commands.
+// maestro-component: MAESTRO_SANDBOX_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
