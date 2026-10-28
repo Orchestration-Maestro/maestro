@@ -90,6 +90,8 @@ resolving conflicts, then regenerate the table.
 | `preset.rs` | Named model, thinking, tool and prompt configurations selected for one session. |
 | `preset/config.rs` | Layered preset files read through the host's authored-path helpers. |
 | `preset/selector.rs` | Themed preset selection through the host's retained list and container widgets. |
+| `project_rules.md` | Project rules |
+| `project_rules.rs` | Lists the project's rule files in the system prompt. |
 | `prompt_customizer.md` | Prompt customizer |
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
