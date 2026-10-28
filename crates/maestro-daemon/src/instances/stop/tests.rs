@@ -133,13 +133,33 @@ fn serve(
 
 /// An explicit named selection under `root`.
 fn named(root: &Scratch, name: &str) -> Selection {
-    Selection::from_args(
+    let selection = Selection::from_args(
         root.path().to_str().unwrap(),
         &[],
         Some(name),
         SelectionEnvironment::default(),
     )
-    .unwrap()
+    .unwrap();
+    for path in [
+        Path::new(&selection.api_socket_path),
+        &selection.client_socket_path,
+    ] {
+        assert!(
+            path.as_os_str().len() < 104,
+            "socket fixture too long: {path:?}"
+        );
+    }
+    selection
+}
+
+#[test]
+fn stop_socket_fixtures_fit_with_a_long_temporary_base() {
+    let parent = Scratch::new().unwrap();
+    let long_base = parent.path().join("temporary-base-".repeat(10));
+    std::fs::create_dir(&long_base).unwrap();
+    let root = Scratch::new_in(&long_base).unwrap();
+    let selection = named(&root, "full-client");
+    assert!(selection.client_socket_path.as_os_str().len() < 104);
 }
 
 /// The deadline diagnostic naming the still-reachable sockets.
