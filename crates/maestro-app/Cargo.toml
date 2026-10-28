@@ -141,6 +141,11 @@ path = "examples/sdk/prompt_templates.rs"
 test = true
 
 [[example]]
+name = "sessions"
+path = "examples/sdk/sessions.rs"
+test = true
+
+[[example]]
 name = "settings"
 path = "examples/sdk/settings.rs"
 test = true
