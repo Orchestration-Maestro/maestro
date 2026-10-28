@@ -88,14 +88,16 @@ daemon already took is not undone.
   closes the connection without a response.
 - `ping` answers at once, even while the daemon is busy. It reports the product
   version, protocol 21 and the server's capabilities.
-- `server.stop` answers at once and stops the daemon. Once stopped, every request
-  but `ping` fails with `server_unavailable` and `server is shutting down`.
+- `server.stop` answers at once and stops the daemon after its response write
+  attempt settles. Once stopping, every request but `ping` and `server.stop` fails
+  with `server_unavailable` and `server is shutting down`.
 - Other requests wait for the daemon however long it takes. A daemon that is gone
   fails them with `server_unavailable`.
 - A response write that makes no progress for 5 s fails the connection. Each write
   that takes bytes starts a new budget. The daemon learns that a response was
   written once its whole line was written and flushed, or once that attempt failed.
-  A client that closed its end is not a write failure.
+  A client that closed its end ends the connection normally, but the daemon's
+  private write receipt still reports the failed write attempt.
 
 ## Workspace and tab commands
 
