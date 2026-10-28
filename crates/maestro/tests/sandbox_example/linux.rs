@@ -468,3 +468,5 @@ async fn close_after<F: Future>(runner: &ExtensionRunner<Local>, action: F) -> F
         Err(error) => resume_unwind(error),
     }
 }
+
+mod permissions;
