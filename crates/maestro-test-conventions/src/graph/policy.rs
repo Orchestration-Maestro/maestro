@@ -388,6 +388,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-listing",

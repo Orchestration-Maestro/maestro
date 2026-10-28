@@ -773,7 +773,7 @@ utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
-`maestro-extensions-wasmtime`,
+`maestro-extensions-wasm`, `maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
