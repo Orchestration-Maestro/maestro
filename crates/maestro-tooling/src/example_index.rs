@@ -129,7 +129,7 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
         };
         if folder.join(&source).is_file() {
             targets.push(Target {
-                name: example_files::target_name(&folder.join(&source))?,
+                name: example_files::target_name(folder, &folder.join(&source))?,
                 path: Some(format!("../../examples/extensions/{source}")),
             });
         }
@@ -140,7 +140,7 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
         match file.strip_suffix(".rs") {
             Some(stem) if stem != PREPARATION && entry.file_type()?.is_file() => {
                 targets.push(Target {
-                    name: example_files::target_name(&entry.path())?,
+                    name: example_files::target_name(local, &entry.path())?,
                     path: None,
                 });
             }

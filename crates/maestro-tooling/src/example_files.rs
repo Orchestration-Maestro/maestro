@@ -48,9 +48,9 @@ pub fn prepare(
     ]);
     let mut files = Vec::new();
     for folder in folders {
-        files.extend(collect(folder)?);
+        files.extend(collect(folder)?.into_iter().map(|file| (folder, file)));
     }
-    for file in files {
+    for (folder, file) in files {
         if file.extension().is_none_or(|extension| extension != "rs") {
             continue;
         }
@@ -65,7 +65,7 @@ pub fn prepare(
                     "duplicate component variable: {variable}"
                 )));
             }
-            let name = target_name(&file)?;
+            let name = target_name(folder, &file)?;
             let path = build(&name, variable)?;
             writeln!(result, "{variable}={}", path.display()).map_err(io::Error::other)?;
         }
@@ -93,8 +93,9 @@ fn validate_variable(variable: &str) -> io::Result<()> {
 ///
 /// # Errors
 /// Returns an error when the target name is absent or is not UTF-8.
-pub fn target_name(source: &Path) -> io::Result<String> {
-    let directory = source.file_name().is_some_and(|name| name == "main.rs");
+pub fn target_name(folder: &Path, source: &Path) -> io::Result<String> {
+    let directory =
+        source.parent() != Some(folder) && source.file_name().is_some_and(|name| name == "main.rs");
     let name = if directory {
         source.parent().and_then(Path::file_name)
     } else {
