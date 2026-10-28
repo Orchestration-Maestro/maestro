@@ -58,6 +58,7 @@ const PREPARED_COMPONENTS: [&str; 3] = [
     "MAESTRO_GIT_CHECKPOINT_COMPONENT",
 ];
 
+/// Warm the one prepared artifact selected by this consumer family's setup.
 #[test]
 #[ignore = "Run by the selected consumer's setup before concurrent tests"]
 fn warm_selected_component() {
@@ -67,6 +68,7 @@ fn warm_selected_component() {
     cached_compile(Path::new(&path));
 }
 
+/// Prepared artifacts must be reusable by later processes of the runtime test executable.
 #[test]
 fn prepared_components_hit_compilation_cache() {
     for variable in PREPARED_COMPONENTS {

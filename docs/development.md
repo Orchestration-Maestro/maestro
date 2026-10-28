@@ -510,8 +510,8 @@ Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
 as long as the example is newer than its source, the shared component and Cargo
-build modules, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
-features for that one package and recompile the engine. When the example is missing
+build modules, the package manifest and `Cargo.lock`. Running it through Cargo
+instead would resolve features for that one package and recompile the engine. When the example is missing
 or older, as after a `--lib` or filtered selection, the launcher builds and runs it
 through Cargo in the same target directory and profile.
 The launcher fails if the directory cannot be resolved rather than building
@@ -531,7 +531,9 @@ the builder copies its path exports to a run-scoped file in the active artifact
 directory; a missing file fails the warm step clearly. This also works after
 archive extraction changes executable timestamps. Later processes of that
 binary reuse these entries; `prepared_components_hit_compilation_cache` checks
-that every prepared component is a cache hit. Neither cache helper rebuilds a component.
+that every prepared component is a cache hit. Neither cache helper rebuilds a
+component. Keep the context consumer filter aligned with direct and retained
+context-component loaders.
 The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its

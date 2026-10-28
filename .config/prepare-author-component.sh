@@ -55,7 +55,6 @@ for directory in $paths; do
         [ -f "$example" ] || continue
         fresh=true
         for source in crates/maestro-extensions-wasm/examples/prepare_author_component.rs \
-            crates/maestro-extensions-wasm/src/tests/build.rs \
             crates/maestro-extensions-wasm/src/tests/build/components.rs \
             crates/maestro-extensions-wasm/src/tests/build/cargo.rs \
             crates/maestro-tooling/src/example_files.rs \

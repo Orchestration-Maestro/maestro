@@ -180,6 +180,7 @@ fn browser_compile_watch_starts_no_server() {
     assert!(!log.contains("serve") && !log.contains("clear"));
 }
 
+/// Recreating identical inputs must retain their compiler-visible modification times.
 #[test]
 fn browser_cached_sources_keep_unchanged_timestamps() {
     let modified = || {
@@ -194,6 +195,7 @@ fn browser_cached_sources_keep_unchanged_timestamps() {
     assert_eq!(modified(), before);
 }
 
+/// Keep full browser validation in one fixture with each failure's original step context.
 #[test]
 fn browser_check_scenario() {
     use std::io::{Read, Seek, SeekFrom};
@@ -1778,14 +1780,26 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
     let command = |recipe: &str| {
-        let mut command = browser.command(recipe);
-        command
+        let started = std::time::Instant::now();
+        let output = browser
+            .command(recipe)
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)
-            .env("CARGO_NET_OFFLINE", "true");
-        command
+            .env("CARGO_NET_OFFLINE", "true")
+            .output()
+            .unwrap();
+        let timing = format!(
+            "phase: cold {recipe} complete {} in {:?}\n{}\n{}",
+            output.status,
+            started.elapsed(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        recipe_support::record(&timing);
+        eprintln!("{timing}");
+        output
     };
-    success(&command("browser-library-build").output().unwrap());
+    success(&command("browser-library-build"));
     let first = browser_support::wasm(&browser, "library");
     assert_eq!(&first[..8], b"\0asm\x01\0\0\0");
     let output = browser.path("target/maestro-browser/library");
@@ -1803,7 +1817,7 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let mut value: serde_json::Value = serde_json::from_slice(&original_pack).unwrap();
     value["wordmark"] = "cold-included-rebuild".into();
     fs::write(&pack, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
-    success(&command("browser-library-build").output().unwrap());
+    success(&command("browser-library-build"));
     assert!(
         browser_support::wasm(&browser, "library")
             .windows(b"cold-included-rebuild".len())
@@ -1813,15 +1827,9 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let source = browser.fixture("src/main.rs");
     let original = fs::read(&source).unwrap();
     fs::write(&source, "fn main() { missing(); }").unwrap();
-    assert!(
-        !command("browser-library-build")
-            .output()
-            .unwrap()
-            .status
-            .success()
-    );
+    assert!(!command("browser-library-build").status.success());
     fs::write(source, original).unwrap();
-    success(&command("browser-library-build").output().unwrap());
+    success(&command("browser-library-build"));
     assert_eq!(browser_support::authored(&browser), before);
 }
 
