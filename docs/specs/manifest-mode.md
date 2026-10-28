@@ -1113,6 +1113,13 @@ package resolves conflicts exactly as any other package does.
 Without a manifest, `holdUncheckedText` may still be set explicitly: its default
 changes nothing, and enabling it only withholds text until checked.
 
+Package requirement resolution and dependent-aware removal (M16.5) apply in both
+modes. Without a manifest, the same package-manager operations resolve transitive
+requirements, reuse satisfying installed packages, refuse missing requirements,
+cycles and version conflicts before effects, and require explicit combined
+removal of installed dependents. Package commands still enforce any persisted
+policy layer (H1), without reading a manifest or requiring a selection.
+
 ## Implementation decisions
 
 - **Placement.** The core holds only H1 to H5 and the `holdUncheckedText` setting.
@@ -1197,9 +1204,11 @@ changes nothing, and enabling it only withholds text until checked.
   and project checks never use each other's layer.
 - Package requirements: exercise the existing install operation through CLI,
   SDK, catalog selection and startup required installs (M6.5), in user and project
-  scopes. A transitive chain installs all required packages; a diamond installs
-  its shared requirement once. Each selection is one operation and one settings
-  write. A satisfying installed version in the selected scope is reused without
+  scopes. Exercise CLI and SDK installation, reuse, preflight refusals and
+  dependent-aware removal both with and without a manifest; package-command
+  policy refusals use the persisted layer. A transitive chain installs all required
+  packages; a diamond installs its shared requirement once. Each selection is one
+  operation and one settings write. A satisfying installed version in the selected scope is reused without
   reinstalling; an installation in another scope does not satisfy it. Catalog
   preview names every addition and its requirer, confirms once and reports the
   installed result; cancellation changes nothing. Listings report actual scoped
@@ -1298,8 +1307,10 @@ changes nothing, and enabling it only withholds text until checked.
 - Schemas: generated schemas equal the committed ones, and every fixture passes or
   fails as marked.
 - Internal-mode equality is tested: with no selection, resources, prompt, model,
-  tools, settings writes and JSON/RPC output equal the foundation behaviour, and no
-  manifest path is read.
+  tools, settings writes and JSON/RPC output equal the foundation behaviour except
+  for the three [internal-mode changes](#internal-mode-changes): base-package
+  loading, explicitly enabled `holdUncheckedText`, and package requirement
+  resolution with dependent-aware removal (M16.5). No manifest path is read.
 - Prior art: settings behaviour and reload tests, configured-source and pinned
   package checks, resource-loader precedence cases, catalog composition and
   provider lifecycle tests, startup listing and selector tests, extension host
