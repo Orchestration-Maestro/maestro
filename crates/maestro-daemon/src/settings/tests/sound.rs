@@ -147,11 +147,13 @@ fn sound_none_never_selects_a_configured_or_fallback_path() {
 #[test]
 fn sound_unsupported_extension_reports_fallback() {
     let config: SoundConfig = serde_json::from_value(json!({"path":"missing.wav"})).unwrap();
+    let root = std::path::Path::new("agent-root");
     assert_eq!(
-        config.diagnostics(std::path::Path::new("agent-root")),
-        [
-            "unsupported sound file format: multiplexer.sound.path = missing.wav resolves to agent-root/missing.wav; expected an mp3 file; using default sound"
-        ]
+        config.diagnostics(root),
+        [format!(
+            "unsupported sound file format: multiplexer.sound.path = missing.wav resolves to {}; expected an mp3 file; using default sound",
+            root.join("missing.wav").display()
+        )]
     );
 }
 

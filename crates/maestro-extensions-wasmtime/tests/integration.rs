@@ -35,6 +35,7 @@ mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
 mod startup;
+mod summarize_example;
 mod synchronous_reentry;
 mod truncated_tool_example;
 mod wasi_access;

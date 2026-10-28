@@ -110,6 +110,8 @@ resolving conflicts, then regenerate the table.
 | `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
+| `summarize.md` | Summarize |
+| `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |

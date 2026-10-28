@@ -189,6 +189,11 @@ path = "../../examples/extensions/status_line.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "summarize"
+path = "../../examples/extensions/summarize.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]

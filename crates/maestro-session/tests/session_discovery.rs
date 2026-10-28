@@ -160,6 +160,9 @@ fn discovery_missing_timestamp_uses_parsed_entry_time() {
 fn discovery_local_dates_use_native_local_zone() {
     let name = "discovery_local_dates_use_native_local_zone";
     if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()

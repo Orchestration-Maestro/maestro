@@ -28,6 +28,33 @@ fn client_key_pem() -> String {
     )
 }
 
+/// The variable naming the platform configuration home, set to `home`: Windows reads
+/// `%APPDATA%`, where other hosts read `$HOME/.config`.
+fn home_variable(home: &str) -> (&'static str, String) {
+    if cfg!(windows) {
+        ("APPDATA", maestro_path::join(&[home, ".config"]))
+    } else {
+        ("HOME", home.to_owned())
+    }
+}
+
+/// `variables` as a child can hold them: Windows names ignore case, so there only the first
+/// nonempty spelling of each name is set.
+fn settable<'a>(variables: &[(&'a str, &'a str)]) -> Vec<(&'a str, &'a str)> {
+    let mut kept: Vec<(&str, &str)> = Vec::new();
+    for &(name, value) in variables {
+        match kept
+            .iter_mut()
+            .find(|(held, _)| cfg!(windows) && held.eq_ignore_ascii_case(name))
+        {
+            Some(held) if held.1.is_empty() => *held = (name, value),
+            Some(_) => {}
+            None => kept.push((name, value)),
+        }
+    }
+    kept
+}
+
 use crate::tests::content_credentials::{Files, workforce};
 use crate::tests::runtime::{run, run_paused};
 
