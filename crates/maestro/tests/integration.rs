@@ -9,5 +9,6 @@ mod qna_example;
 mod startup_modes;
 mod structured_output_example;
 mod support;
+mod tic_tac_toe_example;
 pub mod tools_example;
 mod truncated_tool_example;
