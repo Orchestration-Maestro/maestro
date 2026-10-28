@@ -114,10 +114,7 @@ pub(super) async fn run(
         Ok::<_, wasmtime::Error>((guest, input, emitter))
     })?;
     let result = async {
-        if let Some(options) = options {
-            assert!(!options.overlay.unwrap_or(false));
-            assert!(options.overlay_options.is_none());
-        }
+        assert_options(accessor, options)?;
         let built = factory_outcome(
             accessor,
             &guest,
@@ -135,6 +132,38 @@ pub(super) async fn run(
         assert!(close.is_closed());
     }
     result
+}
+
+/// Checks the custom view's exact supplied placement without changing non-overlay cases.
+fn assert_options(
+    accessor: &Accessor<State, Imports>,
+    options: Option<host::CustomUiOptions>,
+) -> wasmtime::Result<()> {
+    let expected = accessor.with(|mut access| access.get().observed.ui.custom_overlay.clone());
+    let Some(options) = options else {
+        assert!(expected.is_none());
+        return Ok(());
+    };
+    assert_eq!(options.overlay.unwrap_or(false), expected.is_some());
+    match (options.overlay_options, expected) {
+        (Some(host::OverlayOptionsSource::Placement(placement)), Some(expected)) => {
+            let encoded = accessor.with(|mut access| {
+                access
+                    .get()
+                    .table
+                    .get(&placement)?
+                    .get()
+                    .map_err(wasmtime::Error::msg)
+            })?;
+            assert_eq!(
+                serde_json::from_str::<crate::OverlayOptions>(&encoded).unwrap(),
+                expected
+            );
+        }
+        (None, None) => {}
+        _ => panic!("unexpected overlay placement"),
+    }
+    Ok(())
 }
 
 /// Runs the prefix now, then awaits only the separately retained future when needed.
@@ -189,6 +218,17 @@ async fn view(
         .with(|mut access| access.get().observed.ui.custom_script.clone())
         .unwrap_or_default();
     assert_eq!(built.width, script.width);
+    if let Some(expected) = accessor.with(|mut access| access.get().observed.ui.custom_key_release)
+    {
+        let actual = guest
+            .call_component_wants_key_release(
+                accessor,
+                Resource::new_borrow(built.component.rep()),
+                Resource::new_borrow(emitter.rep()),
+            )
+            .await?;
+        assert_eq!(actual.unwrap(), expected);
+    }
     let clock = (!script.ticks.is_empty()).then(super::custom_ticks::Clock::default);
     accessor.with(|mut access| access.get().observed.tick_clock = clock.clone());
     let work = async {
