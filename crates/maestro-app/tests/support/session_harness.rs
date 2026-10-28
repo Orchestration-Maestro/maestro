@@ -1398,30 +1398,54 @@ pub fn hold_first_answer(
 
 /// `value` with every `(from, to)` spelling replaced, in order, in its strings.
 pub fn substituting(value: Value, paths: &[(&str, &str)]) -> Value {
+    mapping_strings(value, &|text| {
+        paths
+            .iter()
+            .fold(text, |text, (from, to)| text.replace(from, to))
+    })
+}
+
+/// `value` with `map` applied to each of its strings.
+fn mapping_strings(value: Value, map: &impl Fn(String) -> String) -> Value {
     match value {
-        Value::String(text) => json!(
-            paths
-                .iter()
-                .fold(text, |text, (from, to)| text.replace(from, to))
-        ),
+        Value::String(text) => json!(map(text)),
         Value::Array(items) => items
             .into_iter()
-            .map(|item| substituting(item, paths))
+            .map(|item| mapping_strings(item, map))
             .collect(),
         Value::Object(fields) => Value::Object(
             fields
                 .into_iter()
-                .map(|(key, item)| (key, substituting(item, paths)))
+                .map(|(key, item)| (key, mapping_strings(item, map)))
                 .collect(),
         ),
         other => other,
     }
 }
 
+/// `value` with each `(path, placeholder)` path spelled as its placeholder, as the recorded
+/// cases spell it. On Windows a string that names a placeholder also spells its native
+/// separators `/`, as the recordings do.
+pub fn as_recorded(value: Value, paths: &[(&str, &str)]) -> Value {
+    mapping_strings(value, &|text| {
+        let text = paths.iter().fold(text, |text, (path, placeholder)| {
+            text.replace(path, placeholder)
+        });
+        let named = paths
+            .iter()
+            .any(|(_, placeholder)| text.contains(placeholder));
+        if cfg!(windows) && named {
+            text.replace('\\', "/")
+        } else {
+            text
+        }
+    })
+}
+
 /// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
 pub fn with_placeholders(value: Value, h: &Harness) -> Value {
     let root = h.scratch.path().display().to_string();
-    substituting(value, &[(&root, "$ROOT")])
+    as_recorded(value, &[(&root, "$ROOT")])
 }
 
 /// The agent run and message events, as the session's listeners would see them.
@@ -1756,6 +1780,8 @@ pub struct Scripted {
     pub error: Option<String>,
     /// Input and output tokens; 100 and 50 when absent.
     pub usage: Option<(f64, f64)>,
+    /// Whether the stream sends only the terminal event, so the response arrives whole.
+    pub terminal_only: bool,
 }
 
 impl Scripted {
@@ -1790,7 +1816,8 @@ fn scripted_stream(
         let index = requests.0.borrow().len() % responses.len();
         requests.0.borrow_mut().push(context);
         let stream = maestro_models::AssistantMessageEventStream::new();
-        stream_with_deltas(&stream, scripted_message(&responses[index]));
+        let response = &responses[index];
+        stream_with_deltas(&stream, scripted_message(response), response.terminal_only);
         Box::pin(std::future::ready(Ok(stream)))
     })
 }
@@ -1840,11 +1867,22 @@ fn scripted_message(response: &Scripted) -> AssistantMessage {
 }
 
 /// Pushes `message` onto `stream` block by block, each with its start, deltas of up to four
-/// characters and its end, then its terminal event.
+/// characters and its end, then its terminal event; only the terminal event when
+/// `terminal_only`.
 fn stream_with_deltas(
     stream: &maestro_models::AssistantMessageEventStream,
     message: AssistantMessage,
+    terminal_only: bool,
 ) {
+    if !terminal_only {
+        stream_blocks(stream, &message);
+    }
+    stream_terminal(stream, message);
+}
+
+/// Pushes the start of `message`, then each block with its start, deltas of up to four
+/// characters and its end.
+fn stream_blocks(stream: &maestro_models::AssistantMessageEventStream, message: &AssistantMessage) {
     use maestro_models::{AssistantContent, AssistantMessageEvent as Event};
     let mut partial = AssistantMessage {
         content: Vec::new(),
@@ -1875,6 +1913,14 @@ fn stream_with_deltas(
         }
         stream.push(block_end(block, index, &snapshot(&partial)));
     }
+}
+
+/// Pushes the terminal event of `message`: its completion, or its failure.
+fn stream_terminal(
+    stream: &maestro_models::AssistantMessageEventStream,
+    message: AssistantMessage,
+) {
+    use maestro_models::AssistantMessageEvent as Event;
     let failed = matches!(message.stop_reason, StopReason::Error | StopReason::Aborted);
     let reason = message.stop_reason.clone();
     let message = Arc::new(RwLock::new(message));

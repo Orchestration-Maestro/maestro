@@ -384,6 +384,15 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `steeringMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `followUpMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `transport` | string | `auto` | `sse`, `websocket`, `websocket-cached` or `auto`; any other text, including empty, is kept |
+| `holdUncheckedText` | boolean | `false` | Withhold assistant text, thinking and partial tool output from session listeners until they are checked |
+
+`holdUncheckedText` only withholds, and at its default it changes nothing. While it is
+`true`, the session tells its listeners (the interactive view, the JSON and RPC modes and
+SDK subscribers) nothing of a response's text or thinking until the message ends, and
+nothing of a tool's partial content or details until the tool result is complete.
+Tool-call and status events still arrive. A snapshot that carries a tool call keeps its
+text and thinking blocks in place, emptied. The message end delivers the message as the
+extensions left it, and extension hooks see every event as before.
 
 ### Terminal and images
 

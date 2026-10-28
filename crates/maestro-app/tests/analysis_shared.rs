@@ -171,7 +171,8 @@ fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
         &[("TZ", ZONE)],
         &["HOME"],
         |base| {
-            let project = format!("{base}/project");
+            // The reports print the working directory they resolved, natively joined.
+            let project = maestro_path::join(&[base, "project"]);
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
             let account = maestro_resources::paths::native_home_directory()
                 .expect("the child has an account home directory")
@@ -215,7 +216,8 @@ fn tool_report_defaults_to_the_home_session_root() {
         let run = run_tools(&["--output", &page]).expect("the tool report reads its directory");
         assert!(run.succeeded(), "{run:?}");
         let data = page_data(&std::fs::read_to_string(&page).expect("the page is readable"));
-        // Without `--sessions-dir` the report reads the home session root.
+        // Without `--sessions-dir` the report reads the home session root, joined natively.
+        let root = maestro_path::join(&[&root]);
         assert_eq!(data["sessionsDir"], serde_json::json!(root));
         assert_eq!(data["files"], serde_json::json!(1));
     });

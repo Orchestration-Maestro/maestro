@@ -27,18 +27,22 @@ called.
 
 Before binding, preparation creates parents, rejects a live listener with
 `maestro server is already running (socket busy at {path})`, and removes stale
-socket entries. A connection failure that is not stale does not authorize
-unlinking: preparation reads the entry's type without following a link, and when
-that entry is not a socket it preserves the entry and returns `AlreadyExists`. A
-link to a live listener takes the live-listener branch.
+socket entries. Preparation inspects the entry in two cases only: a stale
+connection failure (connection refused, not found or timed out) and a native
+not-a-socket failure. Every other connection failure is returned unchanged and
+nothing is inspected. Inspection reads the entry's type without following a link,
+and when that entry is not a socket it preserves the entry and returns
+`AlreadyExists`. A link to a live listener takes the live-listener branch.
 
 The not-a-socket test follows the native error, because the general error kind does
-not separate these cases. An ordinary file reports a native not-a-socket failure,
-which admits the entry inspection; a datagram socket reports a native
-wrong-protocol failure with that same general kind, and preparation keeps its
-exact native error and socket identity. A real socket that fails any other way
-keeps that failure too. Only a stale connection failure removes a socket.
-Unclassified errors propagate unchanged.
+not separate these cases on macOS. There an ordinary file reports a native
+not-a-socket failure, which admits the entry inspection, and a datagram socket
+reports a native wrong-protocol failure with that same general kind; preparation
+keeps the datagram socket's exact native error and socket identity. On Linux an
+ordinary file reports connection refused, so it is admitted through the stale case,
+while a datagram socket still reports wrong-protocol. On both platforms the ordinary
+file is preserved and preparation returns `AlreadyExists`. Only a stale connection
+failure removes a socket.
 
 Binding disables automatic pathname removal on listener drop. The caller records
 `SocketFileIdentity` and can remove the pathname if its current device and inode

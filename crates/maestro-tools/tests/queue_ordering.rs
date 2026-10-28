@@ -128,6 +128,10 @@ fn mutation_queue_raw_names_preserve_literal_path_identity() {
         std::os::unix::fs::symlink(&target, dir.path().join("alias.txt")).unwrap();
         std::fs::hard_link(&target, dir.path().join("hard.txt")).unwrap();
         let [first, second] = serde_json::from_value::<Input>(row.input).unwrap().pair;
+        if cfg!(not(unix)) && (first == "alias.txt" || second == "alias.txt") {
+            // Only Unix fixtures create the symbolic link this pair names.
+            continue;
+        }
         let spell = |name: &str| {
             if IN_DIRECTORY.contains(&name) {
                 format!("{}/{name}", dir.text())
