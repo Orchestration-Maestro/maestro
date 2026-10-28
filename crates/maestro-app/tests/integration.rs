@@ -76,6 +76,7 @@ mod docx_support;
 mod docx_tables;
 mod docx_values;
 mod docx_xml;
+mod dynamic_resources_example;
 mod extension_context_exports;
 mod extension_ui;
 mod extension_ui_exports;
