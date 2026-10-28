@@ -137,3 +137,39 @@ fn sdk_executes_a_packaged_dependency_backed_author_workload() {
         session.dispose();
     });
 }
+
+/// Link operations and both cwd observations use the inherited native standard interfaces.
+#[test]
+fn sdk_component_keeps_native_links_and_standard_cwd() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, async {
+        let root = Root::new();
+        let session = component_session(
+            &root,
+            local.clone(),
+            std::env::var("MAESTRO_SDK_STANDARD_COMPONENT").unwrap(),
+            None,
+            crate::support::widgets(),
+        )
+        .await;
+        let target = root.path("project/target.bin");
+        let link = root.path("project/linked.bin");
+        std::fs::write(&target, [0, 255, 7]).unwrap();
+        let result = execute(
+            &session,
+            "sdk-standard",
+            json!({"operation":"link","generation":"p3","target":target,"link":link}),
+        )
+        .await;
+        assert_eq!(result["details"]["bytes"], json!([0, 255, 7]));
+        assert_eq!(std::fs::read_link(link).unwrap(), target);
+        let cwd = std::env::current_dir().unwrap().display().to_string();
+        assert_eq!(result["details"]["standardCwd"]["p2"]["path"], cwd);
+        assert_eq!(result["details"]["standardCwd"]["p3"], cwd);
+        session.dispose();
+    });
+}

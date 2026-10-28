@@ -73,4 +73,5 @@ mod tests {
         assert!(!prompt.contains("unrelated-skill"));
         Ok(())
     }
+    mod skill_loading;
 }
