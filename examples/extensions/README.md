@@ -73,6 +73,10 @@ resolving conflicts, then regenerate the table.
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
+| `dynamic-resources.md` | Dynamic resources |
+| `dynamic-resources/SKILL.md` | Example skill loaded from resources_discover |
+| `dynamic-resources/dynamic.json` | dynamic-resources |
+| `dynamic-resources/dynamic.md` | Example prompt template loaded from resources_discover |
 | `dynamic-resources/main.rs` | Contributes a skill, prompt template and theme installed beside the component. |
 | `dynamic_tools.md` | Dynamic tools |
 | `dynamic_tools.rs` | Dynamic tools: one echo tool registered when a session starts, and a command that adds more echo tools while the session runs. |

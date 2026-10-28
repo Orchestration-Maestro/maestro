@@ -24,3 +24,7 @@ The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the
 same path. The standalone copy reads the README, the release history, the
 documentation and the examples from the package directory.
+
+Support files supply their index descriptions through Markdown frontmatter or a
+JSON theme name. The [dynamic resources example](../examples/extensions/dynamic-resources.md)
+shows a component contributing a skill, prompt template and theme from its installed directory.
