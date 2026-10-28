@@ -308,7 +308,6 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "with_deps"
-path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
