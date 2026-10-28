@@ -5,13 +5,15 @@
     clippy::excessive_nesting
 )]
 use super::{
-    doom_component::DoomOverlayComponent, doom_engine::DoomEngine, doom_keys::DoomKeys, wad_finder,
+    doom_component::DoomOverlayComponent, doom_engine::DoomEngine, doom_keys::DoomKeys, doom_state,
+    wad_finder,
 };
 use maestro_extensions_wasm::{
     Background, CommandOptions, Component, CustomFactoryOutcome, CustomUIOptions, ExtensionAPI,
-    ExtensionCommandContext, ExtensionComponent, ExtensionFuture, ExtensionResult,
-    ExtensionUIContext, NotificationType, OverlayAnchor, OverlayMargin, OverlayMarginValue,
-    OverlayOptions, OverlayOptionsHandle, OverlayOptionsSource, SizeValue, tools::path_utils,
+    ExtensionCommandContext, ExtensionComponent, ExtensionContext, ExtensionFuture,
+    ExtensionResult, ExtensionUIContext, NotificationType, OverlayAnchor, OverlayMargin,
+    OverlayMarginValue, OverlayOptions, OverlayOptionsHandle, OverlayOptionsSource, SizeValue,
+    tools::path_utils,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -24,8 +26,16 @@ struct ActiveGame {
     /// The one engine initialized in this component.
     engine: Rc<DoomEngine>,
 }
-/// Retained game selection.
-type Active = Rc<RefCell<Option<ActiveGame>>>;
+/// Engine ownership and whether any failed operation requires a replacement.
+#[derive(Default)]
+struct Instance {
+    /// The initialized engine and its private files.
+    game: Option<ActiveGame>,
+    /// Prevents a partially initialized or failed component from being reused.
+    invalid: bool,
+}
+/// Retained engine state for one composed instance.
+type Active = Rc<RefCell<Instance>>;
 
 /// Keeps command errors visible without escaping the game UI boundary.
 async fn command(
@@ -43,7 +53,61 @@ async fn command(
         );
     }
     ui.notify("Loading DOOM...", Some(NotificationType::Info))?;
-    if let Err(error) = play(api, background, active, args, ctx).await {
+    let Some(wad) = selected_wad(&api, &args, &ctx).await? else {
+        return Ok(());
+    };
+    let replace = {
+        let instance = active.borrow();
+        instance.invalid
+            || instance
+                .game
+                .as_ref()
+                .is_some_and(|game| game.wad != wad || game.engine.has_failed())
+    };
+    if replace {
+        doom_state::request(&api, &wad)?;
+        cleanup(&active)?;
+        return ctx.reload().await;
+    }
+    report_open(api, background, active, wad, (*ctx).clone()).await
+}
+
+/// Resolves an explicit or remembered choice before considering a download.
+async fn selected_wad(
+    api: &ExtensionAPI,
+    args: &str,
+    ctx: &ExtensionContext,
+) -> ExtensionResult<Option<String>> {
+    let cwd = ctx.cwd()?;
+    if !args.trim().is_empty() {
+        return path_utils::resolve_to_cwd(api, args.trim(), &cwd).map(Some);
+    }
+    if let Some(selection) = doom_state::saved(ctx)? {
+        return Ok(Some(selection.wad));
+    }
+    if let Ok(wad) = wad_finder::ensure_wad_file(api, &cwd).await {
+        Ok(Some(wad))
+    } else {
+        ctx.ui()?.notify(
+            "Failed to download DOOM WAD file. Check your internet connection.",
+            Some(NotificationType::Error),
+        )?;
+        Ok(None)
+    }
+}
+
+/// Reports a failed open while preventing later reuse of that instance.
+async fn report_open(
+    api: ExtensionAPI,
+    background: Background,
+    active: Active,
+    wad: String,
+    ctx: ExtensionContext,
+) -> ExtensionResult<()> {
+    let ui = ctx.ui()?;
+    let failed = active.clone();
+    if let Err(error) = open(api, background, active, wad, ctx).await {
+        failed.borrow_mut().invalid = true;
         ui.notify(
             &format!("Failed to load DOOM: {error}"),
             Some(NotificationType::Error),
@@ -52,36 +116,20 @@ async fn command(
     Ok(())
 }
 
-/// Resolves supplied WAD bytes only when a new engine is needed.
-async fn play(
+/// Opens or resumes a healthy retained engine.
+async fn open(
     api: ExtensionAPI,
     background: Background,
     active: Active,
-    args: String,
-    ctx: ExtensionCommandContext,
+    wad: String,
+    ctx: ExtensionContext,
 ) -> ExtensionResult<()> {
-    let cwd = ctx.cwd()?;
-    let wad = if args.trim().is_empty() {
-        match wad_finder::ensure_wad_file(&api, &cwd).await {
-            Ok(wad) => wad,
-            Err(_) => {
-                return ctx.ui()?.notify(
-                    "Failed to download DOOM WAD file. Check your internet connection.",
-                    Some(NotificationType::Error),
-                );
-            }
-        }
-    } else {
-        path_utils::resolve_to_cwd(&api, args.trim(), &cwd)?
-    };
     let existing = active
         .borrow()
+        .game
         .as_ref()
-        .map(|game| (game.wad.clone(), game.engine.clone()));
-    let (engine, resume) = if let Some((old, engine)) = existing {
-        if old != wad {
-            return Err("Reload the extension before changing WAD files".into());
-        }
+        .map(|game| game.engine.clone());
+    let (engine, resume) = if let Some(engine) = existing {
         ctx.ui()?
             .notify("Resuming DOOM...", Some(NotificationType::Info))?;
         (engine, true)
@@ -90,12 +138,35 @@ async fn play(
             &format!("Loading DOOM from {wad}..."),
             Some(NotificationType::Info),
         )?;
-        let game = initialize(&api, wad)?;
+        let game = initialize(&api, wad.clone())?;
         let engine = game.engine.clone();
-        active.replace(Some(game));
+        active.borrow_mut().game = Some(game);
+        doom_state::remember(&api, &wad)?;
         (engine, false)
     };
     show(api, background, engine, ctx.ui()?, resume).await
+}
+
+/// Consumes a request before opening it, including when initialization fails.
+async fn pending(
+    api: ExtensionAPI,
+    background: Background,
+    active: Active,
+    ctx: ExtensionContext,
+) -> ExtensionResult<()> {
+    let Some(selection) = doom_state::saved(&ctx)? else {
+        return Ok(());
+    };
+    if !selection.pending {
+        return Ok(());
+    }
+    doom_state::consume(&api, &selection)?;
+    if !ctx.has_ui()? {
+        return Ok(());
+    }
+    ctx.ui()?
+        .notify("Loading DOOM...", Some(NotificationType::Info))?;
+    report_open(api, background, active, selection.wad, ctx).await
 }
 
 /// Creates one private root and removes partial files if initialization fails.
@@ -119,7 +190,7 @@ fn initialize(api: &ExtensionAPI, wad: String) -> ExtensionResult<ActiveGame> {
 
 /// Deletes the retained engine's files on session shutdown.
 fn cleanup(active: &Active) -> ExtensionResult<()> {
-    let Some(game) = active.borrow_mut().take() else {
+    let Some(game) = active.borrow_mut().game.take() else {
         return Ok(());
     };
     std::fs::remove_dir_all(game.root).map_err(|error| error.to_string())
@@ -183,6 +254,22 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             Rc::new(move |_, _| {
                 let result = cleanup(&shutdown);
                 Box::pin(async move { result.map(|()| None) })
+            }),
+        )?;
+        let (starting_api, starting_background, starting_active) =
+            (api.clone(), background.clone(), active.clone());
+        api.on(
+            "session_start",
+            Rc::new(move |_, ctx| {
+                let (api, background, active) = (
+                    starting_api.clone(),
+                    starting_background.clone(),
+                    starting_active.clone(),
+                );
+                Box::pin(async move {
+                    pending(api, background, active, ctx).await?;
+                    Ok(None)
+                })
             }),
         )?;
         let sender = api.clone();

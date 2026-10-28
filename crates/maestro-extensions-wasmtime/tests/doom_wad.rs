@@ -1,8 +1,8 @@
 //! WAD discovery and controlled download through the shipped command.
 #![cfg(test)]
 use maestro_extensions::{
-    EventBusController, ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for,
-    create_extension_runtime, load_extension_from_factory,
+    EventBusController, ExtensionExecution, ExtensionRunner, ExtensionUIContext, Local,
+    create_event_bus_for, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_directory::Scratch;
 use std::{
@@ -56,6 +56,7 @@ async fn loaded_on(
     );
     let io = controlled_io(case);
     let runner = runner(root, &bus, io.clone(), &session).await;
+    bind_history(&runner, history.clone());
     let (tui, _terminal) = super::canonical_ui::screen();
     let ui = Rc::new(ui::Ui {
         tui,
@@ -326,4 +327,35 @@ fn doom_wad_switch_reloads_and_consumes_pending_play_once() {
         "doom_wad_switch_reloads_and_consumes_pending_play_once",
         &["switch"],
     );
+}
+
+/// Binds hidden custom-entry writes to the same in-memory history the runner reads.
+pub(super) fn bind_history(
+    runner: &ExtensionRunner<Local>,
+    history: Rc<std::cell::RefCell<maestro_session::SessionManager>>,
+) {
+    let actions: maestro_extensions::ExtensionActions<Local> =
+        maestro_extensions::ExtensionActions {
+            append_entry: Rc::new(move |kind: String, data: Option<serde_json::Value>| {
+                history
+                    .borrow_mut()
+                    .append_custom_entry(
+                        &kind,
+                        data.map_or(
+                            maestro_session::Presence::Missing,
+                            maestro_session::Presence::Present,
+                        ),
+                    )
+                    .map(|_| ())
+                    .map_err(|error| error.to_string().into())
+            }),
+            ..Local::unbound_actions()
+        };
+    runner
+        .bind_core(
+            actions,
+            maestro_extensions::ExtensionContextActions::default(),
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
 }

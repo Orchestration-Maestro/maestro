@@ -52,6 +52,12 @@ impl DoomEngine {
         }
         Ok(frame)
     }
+    /// Whether this component needs replacement after a failed engine operation.
+    #[must_use]
+    pub fn has_failed(&self) -> bool {
+        self.failed.get()
+    }
+
     /// Enqueues a press or release.
     pub fn push_key(&self, pressed: bool, key: u8) {
         if !self.failed.get() {

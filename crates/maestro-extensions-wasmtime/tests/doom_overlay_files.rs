@@ -194,7 +194,6 @@ async fn run(empty: bool) {
         Rc::new(|error| panic!("unexpected tail error: {error:?}")),
     );
     let runner = runner(&project, &bus).await;
-    super::support::bind_prompt(&runner, "controlled game");
     let (tui, _terminal) = super::canonical_ui::screen();
     tui.start().unwrap();
     let saved = Rc::default();
@@ -253,13 +252,16 @@ async fn runner(
     )
     .await
     .unwrap();
-    ExtensionRunner::<Local>::new(
+    let (session, history) = super::session::runner_session(project.to_str().unwrap());
+    let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(vec![owner])),
         runtime,
-        super::session::runner_session(project.to_str().unwrap()).0,
+        session,
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
-    )
+    );
+    super::doom_wad::bind_history(&runner, history);
+    runner
 }
 
 /// Reproduces committed bytes when the optional native compiler is configured.
