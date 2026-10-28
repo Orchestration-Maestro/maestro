@@ -28,11 +28,11 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 
 ## Run a greeting probe
 
-Put the built `custom_gateway_provider.wasm` in an extension directory, for
-example `./gateway/`, then load that directory in print mode:
+Put the built `custom_gateway_provider.wasm` in a directory, for example
+`./gateway/`, then load the component file in print mode:
 
 ```sh
-maestro -e ./gateway --model gitlab-duo/claude-sonnet-4-5-20250929 \
+maestro -e ./gateway/custom_gateway_provider.wasm --model gitlab-duo/claude-sonnet-4-5-20250929 \
   --mode json -p "Say hello in exactly 3 words."
 ```
 
