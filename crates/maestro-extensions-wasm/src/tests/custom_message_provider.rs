@@ -149,6 +149,19 @@ fn custom_message_provider_rejects_mismatched_authorization_state() {
     assert!(host.observed().native_http.requests.is_empty());
 }
 
+#[test]
+fn custom_message_provider_token_failure_keeps_status_when_body_fails() {
+    let host = Controlled::default();
+    let provider = authorization(&host);
+    host.observe().native_http.status = 429;
+    host.observe().native_http.read_error = Some("body interrupted".into());
+    let result = super::block_on(provider.login(callbacks()));
+    assert_eq!(
+        result.unwrap_err(),
+        "Token exchange failed: HTTP 429 body interrupted"
+    );
+}
+
 #[path = "../../../../examples/extensions/custom-provider-anthropic/stream.rs"]
 mod stream;
 
@@ -198,7 +211,7 @@ fn conversation() -> crate::Context {
             {"role":"user","content":"  ","timestamp":0},
             {"role":"user","content":[{"type":"text","text":"Question 雪🚀"},{"type":"image","mimeType":"image/png","data":"image-data"}],"timestamp":0},
             {"role":"assistant","api":"custom-anthropic-api","provider":"custom-anthropic","model":"claude-sonnet-4-5",
-             "content":[{"type":"text","text":" "},{"type":"thinking","thinking":"unsigned"},{"type":"thinking","thinking":"signed","thinkingSignature":"prior-signature"},
+             "content":[{"type":"text","text":" "},{"type":"thinking","thinking":"unsigned"},{"type":"thinking","thinking":"signed","thinkingSignature":"prior-signature"},{"type":"thinking","thinking":"empty-signed","thinkingSignature":""},
                 {"type":"toolCall","id":"call-first","name":"write","arguments":{"path":"demo"}}],
              "usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"toolUse","timestamp":0},
             {"role":"toolResult","toolCallId":"call-first","toolName":"write","content":[{"type":"text","text":"alpha"},{"type":"text","text":"beta"}],"isError":false,"timestamp":0},
@@ -355,7 +368,7 @@ fn check_message_request(host: &Controlled) {
         body["messages"],
         json!([
             {"role":"user","content":[{"type":"text","text":"Question 雪🚀"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"image-data"}}]},
-            {"role":"assistant","content":[{"type":"text","text":"unsigned"},{"type":"thinking","thinking":"signed","signature":"prior-signature"},{"type":"tool_use","id":"call-first","name":"Write","input":{"path":"demo"}}]},
+            {"role":"assistant","content":[{"type":"text","text":"unsigned"},{"type":"thinking","thinking":"signed","signature":"prior-signature"},{"type":"text","text":"empty-signed"},{"type":"tool_use","id":"call-first","name":"Write","input":{"path":"demo"}}]},
             {"role":"user","content":[{"type":"tool_result","tool_use_id":"call-first","content":"alpha\nbeta","is_error":false},{"type":"tool_result","tool_use_id":"call-second","content":[{"type":"text","text":"(see attached image)"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"result-image"}}],"is_error":true,"cache_control":{"type":"ephemeral"}}]}
         ])
     );
@@ -524,5 +537,34 @@ fn custom_message_provider_requires_credentials_before_http() -> ExtensionResult
         );
         assert!(host.observed().native_http.requests.is_empty());
     }
+    Ok(())
+}
+
+#[test]
+fn custom_message_provider_stream_failure_keeps_status_when_body_fails() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_http.status = 503;
+    host.observe().native_http.read_error = Some("body interrupted".into());
+    let provider = authorization(&host);
+    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
+        maestro_models::AssistantMessageEventStream::new(),
+    )));
+    let options = crate::SimpleStreamOptions {
+        common: crate::StreamOptions {
+            api_key: Some("sk-ant-oat-fixture".into()),
+            ..crate::StreamOptions::default()
+        },
+        ..crate::SimpleStreamOptions::default()
+    };
+    super::block_on(provider.stream_custom_anthropic(
+        model(),
+        conversation(),
+        Some(options.into()),
+        output.clone(),
+    ))?;
+    let result = super::block_on(output.result())?;
+    let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
+    assert_eq!(value["stopReason"], "error");
+    assert_eq!(value["errorMessage"], "HTTP 503 body interrupted");
     Ok(())
 }
