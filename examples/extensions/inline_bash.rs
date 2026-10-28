@@ -46,6 +46,12 @@ async fn input(
     let ExtensionEvent::Input(event) = event else {
         return Ok(None);
     };
+    let text = trim(api, &event.text)?;
+    if text.starts_with('!') && !text.starts_with("!{") {
+        return Ok(Some(ExtensionEventResult::Input(
+            InputEventResult::Continue,
+        )));
+    }
     let mut result = String::new();
     let mut summaries = Vec::new();
     for fragment in event.text.split_inclusive('}') {
