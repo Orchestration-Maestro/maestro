@@ -477,6 +477,14 @@ the daemon only reads the persisted global layer, because it hosts no extensions
    before any file is deleted. With no persisted layer, package commands retain
    foundation behaviour; the next session start installs a removed required
    package again. A forbidden local addition is excluded before execution (M6.4).
+   Startup installs include the transitive required-package closure through the
+   same package-manager install operation as explicit selections (M16.5), in the
+   selection's scope, with one operation and one settings write. Satisfying
+   installed packages in that scope are reused. The whole closure passes source,
+   version and cycle checks and the applicable M4/M6.4 policy before any install;
+   a missing requirement or any refusal installs nothing and refuses the session
+   with its reason. Required manifest packages remain protected from removal,
+   including combined removal (M16.5).
 6. Optional resources that fail to load are skipped with the ordinary warning. A
    required resource that fails to load refuses sessions.
 7. Themes from the manifest are offered; the manifest's `theme` value is a default
@@ -786,6 +794,39 @@ chain:
    by the owning package and applied with the package owner's filter semantics
    through a host-backed call (H5).
 
+   A package requirement uses that same source grammar, including pins. The
+   existing package-manager install operation resolves the transitive closure for
+   the chosen entry in its selected scope, installs each missing package once and
+   persists the selection with one settings write. Already installed packages in
+   that scope satisfying a requirement are reused; another scope does not satisfy
+   it. CLI install, SDK calls, catalog selection (M17.4) and startup required
+   installs (M6.5) use this one operation, not a second resolver.
+
+   Before installing anything or writing settings, the operation checks the whole
+   closure. A missing requirement refuses with the missing source and its
+   requirer. A cycle refuses with the cycle's packages in order, ending at its
+   starting package. Requirements on one package that no single version satisfies
+   refuse with both requirers and their requirements. An incompatible installed
+   version refuses with the installed package and version and the conflicting
+   requirer and requirement; it is never silently replaced. Every addition must
+   pass M4/M6.4 policy, using H1's persisted layer for early commands; a refusal
+   names the lock or other constraint, including a `packages` lock or a source
+   outside the allowed set. Each such refusal states its reason and installs
+   nothing, leaving settings unchanged.
+
+   The existing remove operation refuses to remove a package required by another
+   installed package in the same scope. It names every dependent, transitively,
+   and offers one explicit step to remove the package and all those dependents
+   together. Only that explicit request performs the combined removal through the
+   same operation and one settings write; it first checks policy for every package
+   to be removed. Required manifest packages cannot be removed this way. A refusal
+   deletes nothing and leaves settings unchanged. CLI and SDK removal use the
+   same operation. CLI, SDK and catalog listings use the existing scoped package
+   listing and report actual installed state without installing packages. The
+   daemon retains H3's global-only policy view and gains no package resolver;
+   any package operation exposed through it uses these same operations and the
+   applicable persisted global layer.
+
 ### M17 — Catalog data (delivered with the catalog)
 
 1. **Blueprints.** The manifest package declares one catalog blueprint per artifact
@@ -797,7 +838,9 @@ chain:
 2. **Relations.** A release requires packages and contains areas; a capability
    group contains capabilities; a capability provides skills, prompts, roles,
    instructions and workflows; a workflow uses roles and prompts; a policy locks,
-   bounds or requires entries; every entry is owned by a team.
+   bounds or requires entries; every entry is owned by a team. A package requires
+   packages through the same `requires` relation as a release, not a new schema.
+   A skill or workflow inherits its package's requirements.
 3. **Ownership.** Every entry's owning team comes from the release's `CODEOWNERS`,
    applied the way the source host applies it to the entry's path in the
    repository (the manifest root's folder, then the entry's path under it): the
@@ -805,7 +848,15 @@ chain:
    This is the catalog's only read outside the manifest root (M3).
 4. **Views.** Each entry gets a card with its properties, owner and relations; the
    catalog draws the dependency graph from the relations, so a team sees what its
-   capability provides and what depends on it.
+   capability provides and what depends on it. Choosing an entry adds its
+   transitive required packages through M16.5 in the selection's scope. Before
+   installation the catalog lists every package to be added and which entry
+   requires it, including transitive requirers, and asks for one confirmation for
+   the whole selection. Packages already satisfying requirements are shown as
+   reused, not additions. Cancellation changes nothing. After installation it
+   reports what was installed; an installation failure reports the real partial
+   state rather than claiming success or rolling back. A preflight refusal shows
+   its reason and installs nothing.
 5. Locked entries are read-only in the catalog, and edits go through their owners.
    When a page opens, the catalog reads the installed release's manifest root and
    the ownership file (item 3); it keeps no copy.
@@ -1144,6 +1195,26 @@ changes nothing, and enabling it only withholds text until checked.
   the old layer until start replaces it; clearing the selection removes it.
   Project layers stay in configuration-root state, keyed by project root; global
   and project checks never use each other's layer.
+- Package requirements: exercise the existing install operation through CLI,
+  SDK, catalog selection and startup required installs (M6.5), in user and project
+  scopes. A transitive chain installs all required packages; a diamond installs
+  its shared requirement once. Each selection is one operation and one settings
+  write. A satisfying installed version in the selected scope is reused without
+  reinstalling; an installation in another scope does not satisfy it. Catalog
+  preview names every addition and its requirer, confirms once and reports the
+  installed result; cancellation changes nothing. Listings report actual scoped
+  state without effects; daemon-routed operations keep H3's global policy view.
+  A missing requirement names its source and requirer; a cycle names its ordered
+  loop; incompatible requirements name both requirers; an incompatible installed
+  version names that version and the conflicting requirer and is not replaced.
+  A `packages` lock and a forbidden source each name the refusing constraint.
+  Every preflight refusal installs nothing and leaves settings and files
+  unchanged, including at startup, where it refuses session construction.
+  Removal of a required package names every direct and transitive installed
+  dependent and changes nothing. Its offered explicit combined-removal step
+  removes exactly that package and its dependents in that scope with one settings
+  write, leaving unrelated packages alone. A required manifest package or lock
+  blocking any member refuses the entire combined removal before deletion.
 - Broken-release repair: a clean newer release of the same identity applies at
   start; permission growth asks, and refusal or a headless run with growth stops
   with the fix. Compare against the last accepted composition; without one, list
@@ -1271,6 +1342,9 @@ Each item is a deliberate difference from the reference.
     withholds assistant text, thinking, partial tool-result content and details,
     and running user shell output until they have been checked, while status
     events still flow.
+18. Package-to-package `requires` resolution through the existing install
+    operation, transitive selection, cycle and version refusals, and explicit
+    combined removal of dependents (M6.5, M16.5, M17.2, M17.4).
 
 ## Corrected reference defects
 
@@ -1356,6 +1430,9 @@ Add to `CONTEXT.md`:
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties
   and the relations its entries have.
+- **Requires:** The catalog relation from a release or package to a package it
+  needs. Skills and workflows inherit their package's requirements; selecting an
+  entry installs the transitive required-package closure in its scope.
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
