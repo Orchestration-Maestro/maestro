@@ -245,20 +245,56 @@ fn tool_construction(
     }
 }
 
+/// Reports an explicit SDK refusal through the settings diagnostic channel.
+fn admit_sdk_request(
+    settings: &SettingsManager,
+    request: &maestro_settings::DecisionRequest<'_>,
+) -> Result<(), DiagnosticErrorInfo> {
+    settings.decide(request).map_err(|message| {
+        settings.report_refusal(maestro_settings::SettingsScope::Global, message.clone());
+        DiagnosticErrorInfo::new(Some("ConfigurationRefusal".into()), message)
+    })
+}
+
 /// Admits explicit SDK tools before history creation or live tool publication.
 fn admit_requested_tools(
     settings: &SettingsManager,
     tools: Option<&[String]>,
 ) -> Result<(), DiagnosticErrorInfo> {
-    let Some(tools) = tools else {
+    tools.map_or(Ok(()), |tools| {
+        admit_sdk_request(settings, &maestro_settings::DecisionRequest::Tools(tools))
+    })
+}
+
+/// Admits explicit selections while retaining the requested, unclamped thinking level.
+fn admit_requested_selection(
+    settings: &SettingsManager,
+    model: Option<&Arc<RwLock<Model>>>,
+    level: Option<&ModelThinkingLevel>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let requested = level.cloned().unwrap_or_else(|| {
+        settings
+            .get_default_thinking_level()
+            .as_ref()
+            .map_or(DEFAULT_THINKING_LEVEL, model_level)
+    });
+    let requested = saved_level(&requested);
+    let identity = model.map(|model| {
+        let model = read(model);
+        (model.provider.clone(), model.id.clone())
+    });
+    let request = if let Some((provider, model_id)) = &identity {
+        maestro_settings::DecisionRequest::Model {
+            provider,
+            model_id,
+            thinking_level: requested.as_str(),
+        }
+    } else if level.is_some() {
+        maestro_settings::DecisionRequest::ThinkingLevel(requested.as_str())
+    } else {
         return Ok(());
     };
-    settings
-        .decide(&maestro_settings::DecisionRequest::Tools(tools))
-        .map_err(|message| {
-            settings.report_refusal(maestro_settings::SettingsScope::Global, message.clone());
-            DiagnosticErrorInfo::new(Some("ConfigurationRefusal".into()), message)
-        })
+    admit_sdk_request(settings, &request)
 }
 
 /// Loads resources only after their application-owned construction services are installed.
@@ -297,6 +333,11 @@ fn prepare_agent(
     explicit_model: Option<Arc<RwLock<Model>>>,
     explicit_level: Option<ModelThinkingLevel>,
 ) -> Result<PreparedAgent, DiagnosticErrorInfo> {
+    admit_requested_selection(
+        &services.settings_manager.borrow(),
+        explicit_model.as_ref(),
+        explicit_level.as_ref(),
+    )?;
     let recorded = recorded(&session_manager.borrow())?;
     let (model, model_fallback_message) = resolve_model(services, explicit_model, &recorded)?;
     let thinking_level = resolve_thinking_level(
