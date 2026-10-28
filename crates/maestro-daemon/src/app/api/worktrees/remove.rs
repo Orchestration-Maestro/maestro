@@ -90,7 +90,7 @@ impl<C: FnMut() -> u128> App<C> {
             .ok_or_else(|| workspace_not_found(&params.workspace_id))?;
         Ok(RemovePlan {
             repo_root: membership.repo_root.clone(),
-            terminals: self.workspace_terminals(index),
+            terminals: self.state.workspace_terminals(&[index]),
             operation: RemoveOperation {
                 workspace_id: workspace.id.clone(),
                 checkout_path: membership.checkout_path.clone(),
@@ -121,19 +121,6 @@ impl<C: FnMut() -> u128> App<C> {
             operation: Operation::Remove(operation),
         });
         self.run_worktree_git(id, move || worktree::remove(&repo_root, &path, force));
-    }
-
-    /// The terminals the panes of a workspace are attached to.
-    fn workspace_terminals(&self, index: usize) -> Vec<TerminalId> {
-        self.state
-            .topology
-            .workspaces
-            .get(index)
-            .into_iter()
-            .flat_map(|workspace| &workspace.tabs)
-            .flat_map(|tab| tab.panes.values())
-            .map(|pane| pane.attached_terminal_id.clone())
-            .collect()
     }
 
     /// Closes the workspace of a removed checkout and builds the answer of the request.

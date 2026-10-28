@@ -4,6 +4,7 @@
 mod tests;
 
 use crate::app::state::{DaemonState, Mode};
+use maestro_workspace::terminal_id::TerminalId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Retires one non-final tab and its detached pane and terminal records.
@@ -115,12 +116,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             .flat_map(|index| &self.topology.workspaces[*index].tabs)
             .flat_map(|tab| tab.panes.keys().copied())
             .collect();
-        let terminals = indices
-            .iter()
-            .flat_map(|index| &self.topology.workspaces[*index].tabs)
-            .flat_map(|tab| tab.panes.values())
-            .map(|pane| pane.attached_terminal_id.clone())
-            .collect();
+        let terminals = self.workspace_terminals(&indices);
         self.remove_plugin_pane_records(&panes);
         for index in indices.into_iter().rev() {
             self.topology.workspaces.remove(index);
@@ -146,6 +142,17 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         } else {
             false
         }
+    }
+
+    /// The terminals attached to the panes of the workspaces at `indices`.
+    pub(crate) fn workspace_terminals(&self, indices: &[usize]) -> Vec<TerminalId> {
+        indices
+            .iter()
+            .filter_map(|index| self.topology.workspaces.get(*index))
+            .flat_map(|workspace| &workspace.tabs)
+            .flat_map(|tab| tab.panes.values())
+            .map(|pane| pane.attached_terminal_id.clone())
+            .collect()
     }
 
     /// Selects the parent repository group, or only the selected linked workspace.
