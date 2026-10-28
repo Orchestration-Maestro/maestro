@@ -34,7 +34,7 @@ pub(crate) struct Spawn {
 /// One operation on an original native capability.
 pub(crate) enum Request {
     /// Atomic byte publication and a possible postcommit warning.
-    SaveFile(String, Vec<u8>, u32, Reply<Option<String>>),
+    SaveFile(String, Vec<u8>, u32, Reply<Option<String>>, Admission),
     /// Native permission observation.
     FileMode(String, Reply<u32>),
     /// Native permission change.
@@ -71,7 +71,7 @@ impl Request {
             Self::Spawn(_, reply, _) => {
                 let _ = reply.send(Err(error));
             }
-            Self::SaveFile(_, _, _, reply) => {
+            Self::SaveFile(_, _, _, reply, _) => {
                 let _ = reply.send(Err(error));
             }
             Self::FileMode(_, reply) => {
@@ -132,9 +132,16 @@ impl State {
             .clone()
             .ok_or_else(|| "native I/O capability unavailable".to_owned());
         match request {
-            Request::SaveFile(path, bytes, mode, reply) => {
-                let _ = reply.send(operations.and_then(|io| io.save_file(&path, &bytes, mode)));
-            }
+            Request::SaveFile(path, bytes, mode, reply, admission) => self.admit(
+                Box::pin(async move {
+                    let result = match operations {
+                        Ok(io) => io.save_file(path, bytes, mode).await,
+                        Err(error) => Err(error),
+                    };
+                    let _ = reply.send(result);
+                }),
+                admission,
+            ),
             Request::FileMode(path, reply) => {
                 let _ = reply.send(operations.and_then(|io| io.file_mode(&path)));
             }

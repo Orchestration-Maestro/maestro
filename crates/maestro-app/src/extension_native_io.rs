@@ -29,8 +29,10 @@ struct Operations {
     local: Weak<LocalSet>,
 }
 impl NativeIo for Operations {
-    fn save_file(&self, path: &str, bytes: &[u8], mode: u32) -> Result<Option<String>, String> {
-        files::save_file(path, bytes, mode).map_err(|error| error.to_string())
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        Box::pin(
+            async move { files::save_file(&path, &bytes, mode).map_err(|error| error.to_string()) },
+        )
     }
     fn file_mode(&self, path: &str) -> Result<u32, String> {
         files::file_mode(path).map_err(|error| error.to_string())

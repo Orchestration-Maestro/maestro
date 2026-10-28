@@ -11,7 +11,10 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
         "save-file",
         |store: StoreContextMut<'_, T>, (path, bytes, mode): (String, Vec<u8>, u32)| {
             Ok((store.data().api().0.request(|id, reply| {
-                Message::Native(id, Request::SaveFile(path, bytes, mode, reply))
+                Message::Native(
+                    id,
+                    Request::SaveFile(path, bytes, mode, reply, store.data().api().0.admission()),
+                )
             }),))
         },
     )?;

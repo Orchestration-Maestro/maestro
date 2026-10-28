@@ -15,7 +15,7 @@ use std::{
 /// A real application adapter whose output consumer supplies one selected failure.
 struct FailedIo(Rc<dyn NativeIo>);
 impl NativeIo for FailedIo {
-    fn save_file(&self, path: &str, bytes: &[u8], mode: u32) -> Result<Option<String>, String> {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
         self.0.save_file(path, bytes, mode)
     }
     fn file_mode(&self, path: &str) -> Result<u32, String> {
