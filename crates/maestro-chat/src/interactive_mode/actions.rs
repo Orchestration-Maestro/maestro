@@ -58,6 +58,11 @@ impl InteractiveMode {
     }
 
     /// Opens the thinking picker or selects a case-insensitive supported level.
+    ///
+    /// # Errors
+    /// Returns the session's recording failure for a selected level, or the published
+    /// theme's failure while colouring the editor border, the status line or the
+    /// unknown-level error notice.
     pub(super) fn handle_thinking_command(
         self: &Rc<Self>,
         search_term: &str,
@@ -83,6 +88,10 @@ impl InteractiveMode {
     }
 
     /// Saves the chosen level and refreshes its footer, border and status.
+    ///
+    /// # Errors
+    /// Returns the session's recording failure, or the published theme's failure while
+    /// colouring the editor border or the status line.
     pub(super) fn select_thinking_level(&self, level: ThinkingLevel) -> Result<(), Box<dyn Error>> {
         let label = thinking_text(&level).0;
         self.settings_thinking(level)?;
