@@ -650,6 +650,32 @@ their pane like the reads do, and hand the work to the owners that already exist
 - **Rename.** The label lives on the terminal state. A changed label is published with
   `emit_pane_updated`.
 
+### Layouts
+
+The layout commands in `app/api/layouts.rs` read and change one tab's split tree through
+the same owners as the pane commands.
+
+- **Export.** `App::layout_description` turns the tree into the portable description. A
+  leaf takes its label and launch command from the terminal state and its directory from
+  `crate::tab::cwd_for_pane`, the same lookup a pane record uses.
+- **Ratio.** `TileLayout::set_ratio_at` finds the split and keeps the ratio in range; the
+  handler only checks that the ratio is finite and publishes the tab with
+  `emit_layout_updated_event`.
+- **Launch.** `RootLaunch` in `app/creation.rs` is what a new root process runs: its
+  directory, extra environment and, for a layout leaf with a `command`, a literal argv.
+  `spawn_root` starts either through `PaneRuntime`, records the argv on the terminal state,
+  and serves new workspaces, tabs, splits and layout leaves alike.
+- **Apply.** `handle_layout_apply` checks the limits in `layouts/tree.rs` before it creates
+  anything, adds the new tab with the first leaf, then splits leaf by leaf in layout order
+  through `spawn_split`, as `pane.split` does. A failure removes the new tab with
+  `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
+  and plugin records and stops their processes. The replaced tab is retired only after the
+  new tab stands. Stopping its processes applies the events that arrive meanwhile, which can
+  close or move workspaces, so the apply looks its workspace up again by identity and fails
+  with `layout_apply_failed` when the new tab is gone. `emit_tab_created_events` publishes every pane of the
+  new tab, which for a tab with one pane is its root; a new workspace publishes its first
+  tab through it too.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and

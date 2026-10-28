@@ -2,6 +2,7 @@
 
 pub mod api;
 pub mod launch;
+pub mod layouts;
 pub mod runtime;
 
 use maestro_daemon::app::state::DaemonState;

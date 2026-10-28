@@ -2,6 +2,7 @@
 //! dispatch of workspace commands to their handlers.
 
 mod env;
+mod layouts;
 mod manifests;
 mod notifications;
 mod overlay;
