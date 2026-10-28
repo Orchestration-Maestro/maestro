@@ -11,6 +11,16 @@ mod transport;
 fn ssh_maps_windows_host_paths_to_posix_without_rewriting_other_roots() -> ExtensionResult<()> {
     let host = Controlled::default();
     host.observe().native_io.exit_code = Some(0);
+    for (authored, resolved) in [
+        (r"C:\work\", r"C:\work"),
+        ("C:/work/", r"C:\work"),
+        ("/work", "/work"),
+    ] {
+        host.observe().actions.helpers.insert(
+            format!("paths.resolve {}", serde_json::json!([[authored]])),
+            serde_json::json!(resolved),
+        );
+    }
     let remote = operations::Remote {
         api: captured_api(&host)?,
         host: "user@controlled".into(),
