@@ -1,5 +1,5 @@
 //! The ordinary generation's filesystem below the native root.
-use super::{Place, Placed, View, is_root, parent};
+use super::{Place, Placed, View, is_root, parent, read_link, symlink};
 use wasmtime::component::Resource;
 use wasmtime_wasi::{
     filesystem::Descriptor,
@@ -240,10 +240,12 @@ impl HostDescriptor for View<'_> {
     }
 
     async fn readlink_at(&mut self, fd: Resource<Descriptor>, path: String) -> FsResult<String> {
-        let (fd, path, held) = self.place(fd, path, false).await?;
-        let result = self.fs.readlink_at(fd, path).await;
-        self.release(held)?;
-        result
+        if !is_root(self.fs.table, &fd, self.root) {
+            return self.fs.readlink_at(fd, path).await;
+        }
+        wasmtime_wasi::runtime::spawn_blocking(move || read_link(&path))
+            .await?
+            .ok_or_else(|| ErrorCode::IllegalByteSequence.into())
     }
 
     async fn remove_directory_at(
@@ -278,10 +280,10 @@ impl HostDescriptor for View<'_> {
         old_path: String,
         new_path: String,
     ) -> FsResult<()> {
-        let (fd, new_path, held) = self.place(fd, new_path, false).await?;
-        let result = self.fs.symlink_at(fd, old_path, new_path).await;
-        self.release(held)?;
-        result
+        if !is_root(self.fs.table, &fd, self.root) {
+            return self.fs.symlink_at(fd, old_path, new_path).await;
+        }
+        Ok(wasmtime_wasi::runtime::spawn_blocking(move || symlink(&old_path, &new_path)).await?)
     }
 
     async fn unlink_file_at(&mut self, fd: Resource<Descriptor>, path: String) -> FsResult<()> {

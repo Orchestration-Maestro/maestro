@@ -8,7 +8,7 @@
 //! with the user's own access, so the operating system resolves that directory,
 //! and the standard implementation handles the final name in it.
 use crate::lifecycle::State;
-use maestro_extensions::helpers::native_path;
+use maestro_extensions::helpers::{guest_path, native_path};
 use std::{
     io,
     path::{Path, PathBuf},
@@ -126,4 +126,31 @@ fn parent(path: String, follow: bool) -> io::Result<Place> {
         }
         Err(error) => Err(error),
     }
+}
+
+/// Reads the target of a link below the root as the system does, in the component's spelling.
+///
+/// `None` stands for a target that is not Unicode.
+fn read_link(path: &str) -> io::Result<Option<String>> {
+    let target = std::fs::read_link(native_path(&format!("/{path}")))?;
+    Ok(target.to_str().map(guest_path))
+}
+
+/// Creates a link below the root to a target in the component's spelling.
+///
+/// The target is kept as given, absolute or relative, and the system resolves
+/// it when the link is used. A Windows link needs its target's kind: a target
+/// that is not a directory, including a missing one, gets a file link.
+fn symlink(target: &str, path: &str) -> io::Result<()> {
+    let link = PathBuf::from(native_path(&format!("/{path}")));
+    let target = PathBuf::from(native_path(target));
+    #[cfg(windows)]
+    let created = if link.parent().unwrap_or(&link).join(&target).is_dir() {
+        std::os::windows::fs::symlink_dir(target, link)
+    } else {
+        std::os::windows::fs::symlink_file(target, link)
+    };
+    #[cfg(unix)]
+    let created = std::os::unix::fs::symlink(target, link);
+    created
 }

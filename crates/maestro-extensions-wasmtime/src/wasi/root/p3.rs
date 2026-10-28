@@ -1,5 +1,5 @@
 //! The asynchronous generation's filesystem below the native root.
-use super::{Place, Placed, Root, View, is_root, parent};
+use super::{Place, Placed, Root, View, is_root, parent, read_link, symlink};
 use crate::lifecycle::State;
 use wasmtime::{
     AsContextMut,
@@ -33,6 +33,14 @@ fn access<'a>(store: &'a mut Access<'_, State, Root>) -> Access<'a, State, WasiF
     )
 }
 
+/// Whether `fd` is the root itself.
+fn rooted(store: &Accessor<State, Root>, fd: &Resource<Descriptor>) -> bool {
+    store.with(|mut access| {
+        let view = access.get();
+        is_root(view.fs.table, fd, view.root)
+    })
+}
+
 /// The descriptor and name for `path` below `fd`, holding a native directory below the root.
 async fn place(
     store: &Accessor<State, Root>,
@@ -40,10 +48,7 @@ async fn place(
     path: String,
     follow: bool,
 ) -> FilesystemResult<Placed> {
-    if !store.with(|mut access| {
-        let view = access.get();
-        is_root(view.fs.table, &fd, view.root)
-    }) {
+    if !rooted(store, &fd) {
         return Ok((fd, path, None));
     }
     match wasmtime_wasi::runtime::spawn_blocking(move || parent(path, follow)).await? {
@@ -271,10 +276,12 @@ impl HostDescriptorWithStore<State> for Root {
         fd: Resource<Descriptor>,
         path: String,
     ) -> FilesystemResult<String> {
-        let (fd, path, held) = place(store, fd, path, false).await?;
-        let result = WasiFilesystem::readlink_at(&fs(store), fd, path).await;
-        release(store, held)?;
-        result
+        if !rooted(store, &fd) {
+            return WasiFilesystem::readlink_at(&fs(store), fd, path).await;
+        }
+        wasmtime_wasi::runtime::spawn_blocking(move || read_link(&path))
+            .await?
+            .ok_or_else(|| ErrorCode::IllegalByteSequence.into())
     }
 
     async fn remove_directory_at(
@@ -309,10 +316,10 @@ impl HostDescriptorWithStore<State> for Root {
         old_path: String,
         new_path: String,
     ) -> FilesystemResult<()> {
-        let (fd, new_path, held) = place(store, fd, new_path, false).await?;
-        let result = WasiFilesystem::symlink_at(&fs(store), fd, old_path, new_path).await;
-        release(store, held)?;
-        result
+        if !rooted(store, &fd) {
+            return WasiFilesystem::symlink_at(&fs(store), fd, old_path, new_path).await;
+        }
+        Ok(wasmtime_wasi::runtime::spawn_blocking(move || symlink(&old_path, &new_path)).await?)
     }
 
     async fn unlink_file_at(
