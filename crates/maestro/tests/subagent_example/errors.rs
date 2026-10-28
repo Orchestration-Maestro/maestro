@@ -163,3 +163,67 @@ fn subagent_usage_preserves_reported_fractional_counts() {
         })
     });
 }
+
+#[test]
+fn subagent_provider_errors_and_aborts_fail_parallel_and_chain_views() {
+    if child_fixture("subagent_example::errors::subagent_provider_errors_and_aborts_fail_parallel_and_chain_views", None).is_some() { return; }
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            controlled_role(&root, "agent/agents");
+            let session = loaded(&root, local).await;
+            for task in ["provider-error", "provider-abort", "signal"] {
+                let args = json!({"tasks":[{"agent":"role","task":task},{"agent":"role","task":"inspect"}]});
+                let parallel = execute(&session, args.clone()).await;
+                assert!(
+                    parallel["content"][0]["text"]
+                        .as_str()
+                        .unwrap()
+                        .starts_with("Parallel: 1/2 succeeded"),
+                    "{parallel}"
+                );
+                assert!(
+                    parallel["content"][0]["text"]
+                        .as_str()
+                        .unwrap()
+                        .contains("[role] failed:")
+                );
+                let view = super::render::rendered(&session, &args, &parallel["details"], false);
+                assert!(view.contains("parallel 1/2 tasks"), "{view}");
+                let chain = execute(&session, json!({"chain":[{"agent":"role","task":task},{"agent":"role","task":"inspect"}]})).await;
+                assert_eq!(chain["details"]["results"].as_array().unwrap().len(), 1);
+                let view = super::render::rendered(&session, &json!({}), &chain["details"], true);
+                assert!(view.contains("chain 0/1 steps"), "{view}");
+            }
+        })
+    });
+}
+
+#[test]
+fn subagent_retains_native_signal_termination_as_failure() {
+    if child_fixture(
+        "subagent_example::errors::subagent_retains_native_signal_termination_as_failure",
+        None,
+    )
+    .is_some()
+    {
+        return;
+    }
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            controlled_role(&root, "agent/agents");
+            let session = loaded(&root, local).await;
+            let result = execute(&session, json!({"agent":"role","task":"signal"})).await;
+            assert_eq!(result["details"]["results"][0]["signal"], "SIGKILL");
+            assert_eq!(result["details"]["results"][0]["exitCode"], 0);
+            assert!(
+                result["content"][0]["text"]
+                    .as_str()
+                    .unwrap()
+                    .contains("SIGKILL"),
+                "{result}"
+            );
+        })
+    });
+}

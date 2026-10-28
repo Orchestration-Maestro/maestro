@@ -15,6 +15,9 @@ assert args[args.index("--tools") + 1] == "read,ls", args
 with open(args[args.index("--append-system-prompt") + 1], encoding="utf-8") as prompt:
     role = prompt.read()
 assert role == "Private role prompt", role
+if args[-1] == "Task: signal":
+    import signal
+    os.kill(os.getpid(), signal.SIGKILL)
 if args[-1] == "Task: fractional":
     for first in (True, False):
         usage = {"input":0.5 if first else 1.25,"output":2.5 if first else 0.25,"cacheRead":0.125,"cacheWrite":0.75,"cost":{"total":0.125},"totalTokens":12.5}

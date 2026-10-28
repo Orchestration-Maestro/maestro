@@ -20,7 +20,12 @@ fn details(mode: &str) -> Value {
 }
 
 /// Renders a complete result with each supplied view option through the native binding.
-fn rendered(session: &AgentSession, args: &Value, details: &Value, expanded: bool) -> String {
+pub(super) fn rendered(
+    session: &AgentSession,
+    args: &Value,
+    details: &Value,
+    expanded: bool,
+) -> String {
     let binding = session
         .get_tool_definition("subagent")
         .unwrap()
