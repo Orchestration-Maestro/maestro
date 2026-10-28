@@ -2,7 +2,7 @@
 
 use std::{collections::BTreeMap, path::Path};
 
-use maestro_settings::{BaseSettingsLayer, Settings};
+use maestro_settings::{Settings, SettingsManager};
 
 use super::{super::model::LoadedConfig, project_global_settings};
 
@@ -32,12 +32,12 @@ impl AcceptedAreas {
     pub(super) fn recover(
         &self,
         loaded: &mut LoadedConfig,
-        layer: Option<&BaseSettingsLayer>,
+        manager: &SettingsManager,
         agent_dir: &Path,
     ) {
         macro_rules! recover {
             ($($field:ident),* $(,)?) => { $(
-                if let Some(recovered) = self.recover_area(loaded, layer, stringify!($field), agent_dir) {
+                if let Some(recovered) = self.recover_area(loaded, manager, stringify!($field), agent_dir) {
                     loaded.config.$field = recovered.config.$field;
                 }
             )* };
@@ -61,7 +61,7 @@ impl AcceptedAreas {
     fn recover_area(
         &self,
         loaded: &mut LoadedConfig,
-        layer: Option<&BaseSettingsLayer>,
+        manager: &SettingsManager,
         area: &str,
         agent_dir: &Path,
     ) -> Option<LoadedConfig> {
@@ -71,7 +71,7 @@ impl AcceptedAreas {
         if let Some(previous) = self.0.get(area) {
             loaded.accepted_areas.remember(area, previous);
         }
-        let document = self.restored_document(area, layer?);
+        let document = self.restored_document(area, manager)?;
         let recovered = project_global_settings(&document, agent_dir);
         if recovered.invalid_sections.iter().any(|name| name == area) {
             return None;
@@ -82,11 +82,13 @@ impl AcceptedAreas {
     }
 
     /// Uses the accepted area document, or the ordinary empty-user startup view.
-    fn restored_document(&self, area: &str, layer: &BaseSettingsLayer) -> Settings {
+    /// Without a global base layer nothing is restored.
+    fn restored_document(&self, area: &str, manager: &SettingsManager) -> Option<Settings> {
+        let layer = manager.get_global_base_layer()?;
         let Some(mut document) = self.0.get(area).cloned() else {
-            return layer.compose_settings(&Settings::default());
+            return Some(manager.global_base_settings());
         };
         layer.restore_locked_settings(&mut document);
-        document
+        Some(document)
     }
 }

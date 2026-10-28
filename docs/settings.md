@@ -553,8 +553,9 @@ Workspace preferences never use project settings, project base
 layers or runtime chat overrides. Stored lock conflicts are nonfatal diagnostics;
 explicit refused edits remain failures. `load_config` consumes startup global
 errors and returns unrelated project errors separately. Read or parse failures
-emit a structured warning and compose the base with an empty user scope, so
-locks still hold. `reload_config` waits for queued writes before separating earlier
+emit a structured warning and use `SettingsManager::global_base_settings`: the
+cached base layer with an empty user scope, resolved by the registered decider
+and restored to its locks like the global view. `reload_config` waits for queued writes before separating earlier
 errors, awaits the existing manager reload, then applies valid semantic areas.
 Only a new global document failure retains every area and reports `Failed`.
 Warnings or rejected areas report `Partial`; a clean reload reports `Applied`.
@@ -567,8 +568,8 @@ blocking valid siblings. Documents rejected by runtime checks, such as inverted
 sidebar bounds or zero terminal dimensions, do not replace accepted documents.
 Current global locks are restored in the retained document before decoding it
 again: locked fields follow the base, while unlocked fields keep their previous
-values. If the area has never decoded successfully, it uses the base with an
-empty user scope, as at startup. Without a base layer, rejected areas keep their
+values. If the area has never decoded successfully, it uses
+`global_base_settings`, as at startup. Without a base layer, rejected areas keep their
 current typed values and do not reapply UI interaction settings. A diagnostic
 identifies the invalid area. Correcting the user value restores ordinary overrides of unlocked
 fields. Project-only locks do not change this behavior. Removed members return

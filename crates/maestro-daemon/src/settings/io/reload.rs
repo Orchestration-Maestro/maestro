@@ -2,9 +2,7 @@
 
 use std::path::Path;
 
-use maestro_settings::{
-    Settings, SettingsError, SettingsErrorKind, SettingsManager, SettingsScope,
-};
+use maestro_settings::{SettingsError, SettingsErrorKind, SettingsManager, SettingsScope};
 
 use super::{
     super::model::{Config, ConfigReloadReport, ConfigReloadStatus, LoadedConfig},
@@ -31,14 +29,10 @@ pub fn load_config(
             }
             document_diagnostic(error, "using defaults")
         }));
-        settings = manager
-            .get_global_base_layer()
-            .map_or_else(Default::default, |layer| {
-                layer.compose_settings(&Settings::default())
-            });
+        settings = manager.global_base_settings();
     }
     let mut loaded = project_global_settings(&settings, agent_dir);
-    AcceptedAreas::default().recover(&mut loaded, manager.get_global_base_layer(), agent_dir);
+    AcceptedAreas::default().recover(&mut loaded, manager, agent_dir);
     if loaded
         .diagnostics
         .iter()
@@ -102,7 +96,7 @@ pub async fn load_live_config(
         );
     }
     let mut loaded = project_global_settings(&settings, agent_dir);
-    accepted.recover(&mut loaded, manager.get_global_base_layer(), agent_dir);
+    accepted.recover(&mut loaded, manager, agent_dir);
     loaded.diagnostics.append(&mut diagnostics);
     (Ok(loaded), other)
 }
