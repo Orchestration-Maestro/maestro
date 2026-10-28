@@ -34,7 +34,7 @@ async fn watching(app: &mut TestApp, count: usize, preamble: &str) -> (String, T
         .clone();
     let script = format!(
         "{preamble}stty -echo -icanon -isig -icrnl -inlcr -ixon -iexten; echo READ\"Y\"; \
-         od -An -vtx1 -w32 -N{count} | {{ read line; echo \"G\"\"OT $line\"; }}\n"
+         od -An -vtx1 -w32 -N{count} | {{ read line; echo \"GO\"\"T $line\"; }}\n"
     );
     run_in_pane(app, &terminal, &script, "READY").await;
     (created_pane.pane_id, terminal)
