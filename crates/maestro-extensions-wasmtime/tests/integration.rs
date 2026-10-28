@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod auto_commit_on_exit_example;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
