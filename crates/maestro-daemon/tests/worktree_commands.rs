@@ -5,7 +5,7 @@ use crate::{
     support::{
         api::{
             TestApp, add_workspaces, answer, daemon, daemon_with_workspaces, events_after, failure,
-            request, settle, submit, with_live_daemon,
+            request, settle, submit, with_live_daemon, workspace_ids,
         },
         runtime::block_on,
     },
@@ -63,6 +63,25 @@ fn linked(repo: &Path, checkout: &Path) -> WorktreeSpaceMembership {
         repo_root: repo.to_owned(),
         checkout_path: checkout.to_owned(),
         is_linked_worktree: true,
+    }
+}
+
+/// The membership of the repository's own checkout in its group.
+fn parent_membership(repo: &Path) -> WorktreeSpaceMembership {
+    WorktreeSpaceMembership {
+        is_linked_worktree: false,
+        ..linked(repo, repo)
+    }
+}
+
+/// A membership of some unrelated repository group.
+fn unrelated_membership() -> WorktreeSpaceMembership {
+    WorktreeSpaceMembership {
+        key: "other-key".into(),
+        label: "other".into(),
+        repo_root: "/repo/other".into(),
+        checkout_path: "/repo/other".into(),
+        is_linked_worktree: false,
     }
 }
 
@@ -184,11 +203,7 @@ fn list_starts_from_the_membership_a_workspace_carries() {
     let elsewhere = scratch.path().join("elsewhere");
     std::fs::create_dir(&elsewhere).unwrap();
     let mut app = daemon_with_workspaces(&[text(&repo), text(&elsewhere)]);
-    app.state.topology.workspaces[0].worktree_space = Some(WorktreeSpaceMembership {
-        is_linked_worktree: false,
-        checkout_path: repo.clone(),
-        ..linked(&repo, &repo)
-    });
+    app.state.topology.workspaces[0].worktree_space = Some(parent_membership(&repo));
     app.state.topology.workspaces[1].worktree_space = Some(linked(&repo, &linked_path));
     let (source, worktrees) = listing(request(
         &mut app,
@@ -822,13 +837,7 @@ fn create_completes_for_the_repository_after_its_source_workspace_changed() {
             let wire = json!({"type": "worktree.create", "workspace_id": "w1",
                               "branch": "worktree/moved-on"});
             let pending = submit(app, wire).await;
-            let other = WorktreeSpaceMembership {
-                key: "other-key".into(),
-                label: "other".into(),
-                repo_root: "/repo/other".into(),
-                checkout_path: "/repo/other".into(),
-                is_linked_worktree: false,
-            };
+            let other = unrelated_membership();
             app.state.topology.workspaces[0].worktree_space = Some(other.clone());
             let result = settle(app, pending).await;
             assert!(
@@ -889,13 +898,36 @@ fn create_refuses_a_checkout_another_operation_owns() {
 fn parent_and_child(scratch: &Scratch, repo: &Path, branch: &str) -> (TestApp, PathBuf) {
     let linked_path = checkout(scratch, repo, branch);
     let mut app = daemon_with_workspaces(&[text(repo), text(&linked_path)]);
-    app.state.topology.workspaces[0].worktree_space = Some(WorktreeSpaceMembership {
-        is_linked_worktree: false,
-        checkout_path: repo.to_owned(),
-        ..linked(repo, repo)
-    });
+    app.state.topology.workspaces[0].worktree_space = Some(parent_membership(repo));
     app.state.topology.workspaces[1].worktree_space = Some(linked(repo, &linked_path));
     (app, linked_path)
+}
+
+#[test]
+fn create_completes_for_the_repository_after_a_source_membership_was_replaced() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    with_live_daemon(
+        "worktree_commands::create_completes_for_the_repository_after_a_source_membership_was_replaced",
+        async |app| {
+            keep_checkouts_in(app, &scratch);
+            add_workspaces(app, &[text(&repo)]);
+            app.state.topology.workspaces[0].worktree_space = Some(parent_membership(&repo));
+            let wire = json!({"type": "worktree.create", "workspace_id": "w1",
+                              "branch": "worktree/replaced"});
+            let pending = submit(app, wire).await;
+            let other = unrelated_membership();
+            app.state.topology.workspaces[0].worktree_space = Some(other.clone());
+            let result = settle(app, pending).await;
+            assert!(
+                matches!(result, Ok(ResponseResult::WorktreeCreated { .. })),
+                "{result:?}"
+            );
+            let workspaces = &app.state.topology.workspaces;
+            assert_eq!(workspaces.len(), 3);
+            assert_eq!(workspaces[0].worktree_space.as_ref(), Some(&other));
+        },
+    );
 }
 
 #[test]
@@ -907,11 +939,7 @@ fn create_from_a_workspace_with_membership_keeps_it_as_the_source() {
         async |app| {
             keep_checkouts_in(app, &scratch);
             add_workspaces(app, &[text(&repo)]);
-            let parent = WorktreeSpaceMembership {
-                is_linked_worktree: false,
-                checkout_path: repo.clone(),
-                ..linked(&repo, &repo)
-            };
+            let parent = parent_membership(&repo);
             app.state.topology.workspaces[0].worktree_space = Some(parent.clone());
             let wire = json!({"type": "worktree.create", "workspace_id": "w1",
                               "branch": "worktree/member-source"});
@@ -957,6 +985,62 @@ fn finishing_an_operation_marks_the_view_for_rendering() {
             "{result:?}"
         );
         assert!(app.launch.render_dirty.is_pending());
+    });
+}
+
+#[test]
+fn remove_returns_focus_to_the_repository_workspace() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    let linked_path = checkout(&scratch, &repo, "worktree/focus");
+    let elsewhere = scratch.path().join("elsewhere");
+    std::fs::create_dir(&elsewhere).unwrap();
+    let mut app = daemon_with_workspaces(&[text(&repo), text(&elsewhere), text(&linked_path)]);
+    app.state.topology.workspaces[0].worktree_space = Some(parent_membership(&repo));
+    app.state.topology.workspaces[2].worktree_space = Some(linked(&repo, &linked_path));
+    app.state.active = Some(2);
+    app.state.selected = 2;
+    let result = ask(
+        &mut app,
+        json!({"type": "worktree.remove", "workspace_id": "w3"}),
+    );
+    assert!(
+        matches!(result, Ok(ResponseResult::WorktreeRemoved { .. })),
+        "{result:?}"
+    );
+    assert_eq!(workspace_ids(&app), ["w1", "w2"]);
+    assert_eq!((app.state.active, app.state.selected), (Some(0), 0));
+}
+
+#[test]
+fn remove_refuses_a_workspace_that_is_already_being_removed_from_another_checkout() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    let (mut app, _) = parent_and_child(&scratch, &repo, "worktree/relocated");
+    block_on(async {
+        let first = submit(
+            &mut app,
+            json!({"type": "worktree.remove", "workspace_id": "w2", "force": true}),
+        )
+        .await;
+        app.state.topology.workspaces[1].worktree_space =
+            Some(linked(&repo, &scratch.path().join("relocated")));
+        assert_eq!(
+            answer(
+                &mut app,
+                json!({"type": "worktree.remove", "workspace_id": "w2"})
+            )
+            .await,
+            failure(
+                "worktree_operation_in_progress",
+                "worktree operation is already in progress for this checkout"
+            )
+        );
+        let result = settle(&mut app, first).await;
+        assert!(
+            matches!(result, Ok(ResponseResult::WorktreeRemoved { .. })),
+            "{result:?}"
+        );
     });
 }
 
