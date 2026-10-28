@@ -11,7 +11,7 @@ mod topology;
 /// Describe the complete command-line surface without consuming chat input.
 #[must_use]
 pub fn command() -> Command {
-    chat::configure(
+    configure_help(chat::configure(
         Command::new("maestro")
             .about("Coding conversations and terminal workspaces")
             .disable_help_subcommand(true)
@@ -27,7 +27,7 @@ pub fn command() -> Command {
             .subcommands(local::notifications_and_integrations())
             .subcommand(local::action())
             .subcommands(local::packages()),
-    )
+    ))
 }
 
 /// Describe the unified daemon lifecycle grammar.
@@ -70,7 +70,7 @@ fn daemon() -> Command {
         .subcommand(
             Command::new("delete")
                 .about("Delete a stopped named daemon")
-                .arg(flag("json")),
+                .args([option("daemon", "NAME").required(true), flag("json")]),
         )
         .subcommand(
             Command::new("attach")
@@ -128,9 +128,45 @@ fn snapshot() -> [Arg; 3] {
 /// # Errors
 /// Returns output errors unchanged.
 pub fn write_requested_help(
-    _args: &[String],
-    _skill_path: &str,
-    _output: &mut dyn std::io::Write,
+    args: &[String],
+    skill_path: &str,
+    mut output: &mut dyn std::io::Write,
 ) -> std::io::Result<bool> {
-    Ok(false)
+    let Some((flag, path)) = args.split_last() else {
+        return Ok(false);
+    };
+    if !matches!(flag.as_str(), "--help" | "-h") {
+        return Ok(false);
+    }
+    let mut root = command();
+    root.build();
+    let mut selected = &mut root;
+    for name in path {
+        let Some(child) = selected.find_subcommand_mut(name) else {
+            return Ok(false);
+        };
+        selected = child;
+    }
+    selected.set_bin_name(
+        std::iter::once("maestro")
+            .chain(path.iter().map(String::as_str))
+            .collect::<Vec<_>>()
+            .join(" "),
+    );
+    selected.write_long_help(&mut output)?;
+    writeln!(output)?;
+    if path.is_empty() || selected.has_subcommands() {
+        writeln!(
+            output,
+            "\nWorkspace skill: {skill_path}\nLoad with --skill <path>; skip if already in context."
+        )?;
+    }
+    Ok(true)
+}
+
+/// Keep help paths explicit at every command depth.
+fn configure_help(command: Command) -> Command {
+    command
+        .disable_help_subcommand(true)
+        .mut_subcommands(configure_help)
 }

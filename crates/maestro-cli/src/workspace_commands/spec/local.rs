@@ -11,7 +11,7 @@ pub(super) fn attach() -> Command {
             option("daemon", "NAME"),
             flag("in-process"),
             option("remote", "TARGET"),
-            option("remote-keybindings", "MODE").value_parser(["local", "daemon"]),
+            option("remote-keybindings", "MODE").value_parser(["local", "server"]),
             flag("handoff"),
         ])
 }
@@ -139,20 +139,21 @@ pub(super) fn notifications_and_integrations() -> [Command; 2] {
 pub(super) fn action() -> Command {
     Command::new("action")
         .about("Inspect and run workspace actions")
+        .subcommands(action_manifests())
         .subcommand(
             Command::new("list")
                 .about("List workspace actions")
-                .arg(option("package", "ID")),
+                .arg(option("action-manifest", "ID")),
         )
         .subcommand(
             Command::new("invoke")
                 .about("Invoke a workspace action")
-                .args([required("action_id"), option("package", "ID")]),
+                .args([required("action_id"), option("action-manifest", "ID")]),
         )
         .subcommand(
             Command::new("config-dir")
                 .about("Print an action package configuration directory")
-                .arg(required("package_id")),
+                .arg(required("manifest_id")),
         )
         .subcommand(
             Command::new("log")
@@ -160,7 +161,7 @@ pub(super) fn action() -> Command {
                 .subcommand(
                     Command::new("list")
                         .about("List action command logs")
-                        .args([option("package", "ID"), option("limit", "N")]),
+                        .args([option("action-manifest", "ID"), option("limit", "N")]),
                 ),
         )
         .subcommand(
@@ -180,7 +181,7 @@ pub(super) fn action() -> Command {
 /// Describe an action pane's placement and launch context.
 fn action_pane_open() -> Command {
     Command::new("open").about("Open an action pane").args([
-        option("package", "ID"),
+        option("action-manifest", "ID"),
         option("entrypoint", "ID"),
         option("placement", "PLACEMENT").value_parser(["overlay", "split", "tab", "zoomed"]),
         option("workspace", "ID"),
@@ -214,5 +215,30 @@ pub(super) fn packages() -> [Command; 5] {
             ]),
         Command::new("list").about("List installed package sources"),
         Command::new("config").about("Select enabled package resources"),
+    ]
+}
+
+/// Describe action-manifest admission and enabled-state discovery.
+fn action_manifests() -> [Command; 5] {
+    [
+        Command::new("link")
+            .about("Link a local action manifest")
+            .args([
+                required("path").value_hint(clap::ValueHint::AnyPath),
+                flag("disabled").conflicts_with("enabled"),
+                flag("enabled"),
+            ]),
+        Command::new("remove")
+            .about("Remove an action manifest")
+            .arg(required("manifest_id")),
+        Command::new("enable")
+            .about("Enable an action manifest")
+            .arg(required("manifest_id")),
+        Command::new("disable")
+            .about("Disable an action manifest")
+            .arg(required("manifest_id")),
+        Command::new("manifests")
+            .about("List admitted action manifests")
+            .args([option("action-manifest", "ID"), flag("json")]),
     ]
 }
