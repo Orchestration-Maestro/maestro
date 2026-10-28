@@ -45,7 +45,7 @@ fn restore(ctx: &ExtensionContext, state: &RefCell<BoardDetails>) -> ExtensionRe
     Ok(())
 }
 
-/// Admits only the two game tools' snapshots; other messages leave the state alone.
+/// Replays successful game snapshots, leaving runner errors and unrelated messages alone.
 fn restore_result(message: AgentMessage, restored: &mut BoardDetails) -> ExtensionResult<()> {
     if let AgentMessage::Message(message) = message
         && let Message::ToolResult(message) = *message
@@ -53,6 +53,7 @@ fn restore_result(message: AgentMessage, restored: &mut BoardDetails) -> Extensi
             message.tool_name.as_str(),
             "tic_tac_toe" | "tic_tac_toe_see_board"
         )
+        && !message.is_error
         && let Some(details) = message.details
     {
         *restored = serde_json::from_value(details).map_err(|e| e.to_string())?;
@@ -121,13 +122,13 @@ fn metadata(inspect: bool) -> ToolMetadata {
     ToolMetadata {
         name: if inspect { "tic_tac_toe_see_board" } else { "tic_tac_toe" }.into(),
         label: if inspect { "See Board" } else { "Tic-Tac-Toe" }.into(),
-        description: if inspect { "Return the current tic-tac-toe board and YOUR cursor position (Player O). The user's cursor is never exposed." } else { "Execute ONE action as Player O: move_up, move_down, move_left, move_right, or play. Moves clamp at edges. Emit every move and the final play as separate tool calls in the SAME assistant response, without waiting for intermediate results. The cursor resets to (0,0) only after a successful play." }.into(),
+        description: if inspect { "Read the tic-tac-toe position and your O cursor coordinates. The human cursor remains private." } else { "Perform one O action per call: move_up, move_down, move_left, move_right, or play. Movement stops at the board boundary. Submit the ordered moves and placement together in one assistant response, each as its own call; do not wait for results between calls. Only an accepted play returns your cursor to (0,0)." }.into(),
         parameters: if inspect { json!({"type":"object","properties":{}}) } else { json!({"type":"object","required":["action"],"properties":{"action":{"type":"string","enum":["move_up","move_down","move_left","move_right","play"]}}}) }.into(),
         execution_mode: if inspect { Presence::Missing } else { Presence::Present(ToolExecutionMode::Sequential) },
-        prompt_snippet: Presence::Present(if inspect { "Inspect the tic-tac-toe board and your cursor" } else { "Play a tic-tac-toe action (move_up/down/left/right or play) as Player O" }.into()),
+        prompt_snippet: Presence::Present(if inspect { "Read the tic-tac-toe position and your O cursor" } else { "Take one O action in tic-tac-toe: move_up, move_down, move_left, move_right, or play" }.into()),
         prompt_guidelines: if inspect { Presence::Missing } else { Presence::Present(vec![
-            "When it is your tic-tac-toe turn, decide the target cell first, then emit every move_* plus the final play as separate tic_tac_toe tool calls in a SINGLE assistant response. Never split them across responses or wait for intermediate results.".into(),
-            "Never ask the user for the board. The board and your cursor position are included in the user's move message; use tic_tac_toe_see_board if you need them restated.".into(),
+            "On your tic-tac-toe turn, choose a destination before calling tools. Submit its ordered move_* calls followed by play together in one assistant response, with a separate tic_tac_toe call for each action. Do not continue the turn in another response or pause for action results.".into(),
+            "Use the position and O cursor supplied with the human move instead of asking the human to describe the board. Request tic_tac_toe_see_board when you need another copy.".into(),
         ]) },
         render_shell: Presence::Missing,
     }

@@ -314,17 +314,21 @@ pub(super) fn result_renderer(
     inspect: bool,
 ) -> maestro_extensions_wasm::ToolRenderResult {
     std::rc::Rc::new(move |result, options, theme, context, _| {
-        let details = details(result.result.details.present())?;
+        let error = context.is_error;
+        let details = if error {
+            None
+        } else {
+            details(result.result.details.present())?
+        };
         let message = match result.result.content.first() {
             Some(maestro_extensions_wasm::UserBlock::Text(text)) => text.text.as_str(),
             _ => "",
         };
-        let error = context.is_error;
         let prefix = theme.fg(
             if error { "error" } else { "success" },
             if error { "✗ " } else { "✓ " },
         )?;
-        let summary = if inspect {
+        let summary = if inspect && !error {
             let (row, col) = details
                 .as_ref()
                 .map_or((0, 0), |d| (d.agent_cursor_row, d.agent_cursor_col));
