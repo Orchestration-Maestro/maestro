@@ -4,6 +4,7 @@ use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionResult, config,
     frontmatter::{FrontmatterValue, parse_frontmatter},
     tools::path_utils::{guest_path, resolve},
+    utils::is_whitespace_char,
 };
 use serde::{Deserialize, Serialize};
 
@@ -108,9 +109,9 @@ fn load(api: &ExtensionAPI, directory: &str, source: &str) -> ExtensionResult<Ve
     let mut agents = Vec::new();
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
-        if std::path::Path::new(&name)
-            .extension()
-            .is_none_or(|extension| extension != "md")
+        if name
+            .rsplit_once('.')
+            .is_none_or(|(_, extension)| extension != "md")
             || !entry
                 .file_type()
                 .is_ok_and(|kind| kind.is_file() || kind.is_symlink())
@@ -122,7 +123,7 @@ fn load(api: &ExtensionAPI, directory: &str, source: &str) -> ExtensionResult<Ve
             continue;
         };
         let parsed = parse_frontmatter(api, &String::from_utf8_lossy(&bytes))?;
-        if let Some(agent) = definition(parsed, source, file_path)? {
+        if let Some(agent) = definition(api, parsed, source, file_path)? {
             agents.push(agent);
         }
     }
@@ -131,6 +132,7 @@ fn load(api: &ExtensionAPI, directory: &str, source: &str) -> ExtensionResult<Ve
 
 /// Accepts named, described definitions and the optional comma-separated tool selection.
 fn definition(
+    api: &ExtensionAPI,
     parsed: maestro_extensions_wasm::frontmatter::ParsedFrontmatter,
     source: &str,
     file_path: String,
@@ -148,9 +150,14 @@ fn definition(
         .map(|tools| {
             tools
                 .split(',')
-                .map(str::trim)
+                .map(|tool| trim_tool_name(api, tool).map(str::to_owned))
+                .collect::<ExtensionResult<Vec<_>>>()
+        })
+        .transpose()?
+        .map(|tools| {
+            tools
+                .into_iter()
                 .filter(|tool| !tool.is_empty())
-                .map(str::to_owned)
                 .collect::<Vec<_>>()
         })
         .filter(|tools| !tools.is_empty());
@@ -202,4 +209,17 @@ fn optional_text(
         Some(FrontmatterValue::String(value)) => Ok(Some(value.clone())),
         Some(_) => Err(format!("Agent field {name} must be text")),
     }
+}
+
+/// Trims tool restrictions using the shared host text membership, retaining helper errors.
+fn trim_tool_name<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
+    let mut failure = None;
+    let trimmed = text.trim_matches(|ch: char| match is_whitespace_char(api, &ch.to_string()) {
+        Ok(value) => value,
+        Err(error) => {
+            failure = Some(error);
+            false
+        }
+    });
+    failure.map_or(Ok(trimmed), Err)
 }
