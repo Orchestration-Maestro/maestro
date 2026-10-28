@@ -41,6 +41,9 @@ fn append_observation(event: &ExtensionEvent, path: &Path) -> ExtensionResult<()
 /// Registers provider observations with the extension host.
 ///
 /// Callbacks report filesystem errors to the host.
+///
+/// # Errors
+/// Returns an error if the working directory cannot be read or hook registration fails.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

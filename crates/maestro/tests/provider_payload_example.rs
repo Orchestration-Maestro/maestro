@@ -3,6 +3,43 @@ use crate::support::{Root, provider::Provider, rpc::Rpc};
 use serde_json::Value;
 
 #[test]
+fn provider_payload_reports_missing_directory_without_creating_it() {
+    let root = Root::new();
+    let provider = Provider::new();
+    root.models(&provider.base);
+    let component = std::env::var("MAESTRO_PROVIDER_PAYLOAD_COMPONENT")
+        .expect("nextest component setup builds provider_payload");
+    let mut rpc = Rpc::command(&mut root.command(&[
+        "--mode",
+        "rpc",
+        "--provider",
+        "startup",
+        "--model",
+        "controlled",
+        "--extension",
+        &component,
+    ]));
+    rpc.prompt("Controlled prompt without a log directory");
+    let errors: Vec<_> = rpc
+        .events
+        .iter()
+        .filter(|event| event["type"] == "extension_error")
+        .collect();
+    assert_eq!(errors.len(), 2, "{errors:?}");
+    for (error, hook) in errors
+        .iter()
+        .zip(["before_provider_request", "after_provider_response"])
+    {
+        assert_eq!(error["event"], hook);
+        assert_eq!(error["extensionPath"], component);
+        assert!(!error["error"].as_str().unwrap().is_empty());
+    }
+    assert!(!root.path("project/.maestro").exists());
+    assert_eq!(provider.requests.lock().unwrap().len(), 1);
+    rpc.finish();
+}
+
+#[test]
 fn provider_payload_appends_actual_requests_and_response_headers() {
     let root = Root::new();
     let provider = Provider::new();
