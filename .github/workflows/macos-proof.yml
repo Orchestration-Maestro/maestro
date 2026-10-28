@@ -90,7 +90,10 @@ jobs:
           }
           set +e
           started=$SECONDS
-          run_isolated cargo test --workspace --locked 2>&1 | tee cargo-test.log
+          run_isolated cargo test --workspace --locked --no-run || exit "$?"
+          environment="$PWD/author-component.env"
+          run_isolated env NEXTEST_ENV="$environment" "$PWD/target/debug/examples/prepare_author_component" || exit "$?"
+          run_isolated bash -c "set -a; . \"\$1\"; set +a; cargo test --workspace --locked" _ "$environment" 2>&1 | tee cargo-test.log
           tests=${PIPESTATUS[0]}
           echo "CARGO_TEST exit=$tests wall_seconds=$((SECONDS - started))"
           exit "$tests"
