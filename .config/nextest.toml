@@ -7,9 +7,48 @@ slow-timeout = { period = "60s", terminate-after = 6 }
 [scripts.setup.author-component]
 command = "sh .config/prepare-author-component.sh"
 
+# Nextest executes setup scripts in declaration order, after the shared builder above.
+[scripts.setup.author-context-cache]
+command = "sh .config/prepare-author-component.sh MAESTRO_CONTEXT_COMPONENT"
+
+[scripts.setup.author-hook-cache]
+command = "sh .config/prepare-author-component.sh MAESTRO_HOOK_COMPONENT"
+
+[scripts.setup.author-checkpoint-cache]
+command = "sh .config/prepare-author-component.sh MAESTRO_GIT_CHECKPOINT_COMPONENT"
+
 [[profile.default.scripts]]
 filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
 setup = "author-component"
+
+[[profile.default.scripts]]
+platform = 'cfg(target_os = "linux")'
+filter = '''
+package(maestro-extensions-wasmtime) & (
+    test(/^(abort_observers|asynchronous_reentry|authored_stream_lifetimes|authored_streams|canonical_api|canonical_schema|canonical_theme|canonical_ui|canonical_widgets)::/) |
+    test(/^(completion_providers|custom_ui|editor_factories|exec_io|execution_bridge|factory_capabilities|factory_shutdown|foreign_schema|lifetimes|listener_prefixes|load_time_contributions)::/) |
+    test(/^(model_completions|model_finite|model_hook_gates|model_hooks|model_lifetimes|model_protocol_routes|model_registered|model_signal_selection|model_streams)::/) |
+    test(/^(oauth|provider_catalog|retained_components|retained_contexts|startup|synchronous_reentry|tui_capabilities)::/) |
+    test(=compilation_cache::prepared_components_hit_compilation_cache)
+)
+'''
+setup = "author-context-cache"
+
+[[profile.default.scripts]]
+platform = 'cfg(target_os = "linux")'
+filter = '''
+package(maestro-extensions-wasmtime) & (
+    test(/^component_events::/) |
+    (test(/^component_loading::/) & !test(=component_loading::component_discovery_uses_existing_entry_rules)) |
+    test(=compilation_cache::prepared_components_hit_compilation_cache)
+)
+'''
+setup = "author-hook-cache"
+
+[[profile.default.scripts]]
+platform = 'cfg(target_os = "linux")'
+filter = "package(maestro-extensions-wasmtime) & (test(/^git_checkpoint_example::/) | test(=compilation_cache::prepared_components_hit_compilation_cache))"
+setup = "author-checkpoint-cache"
 
 [test-groups.file-trigger]
 max-threads = 1

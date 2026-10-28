@@ -59,12 +59,12 @@ const PREPARED_COMPONENTS: [&str; 3] = [
 ];
 
 #[test]
-#[ignore = "Run by the component setup before concurrent tests"]
-fn warm_prepared_components() {
-    for variable in PREPARED_COMPONENTS {
-        let path = std::env::var_os(variable).unwrap();
-        cached_compile(Path::new(&path));
-    }
+#[ignore = "Run by the selected consumer's setup before concurrent tests"]
+fn warm_selected_component() {
+    let variable = std::env::var("MAESTRO_WARM_COMPONENT").unwrap();
+    let path = std::env::var_os(&variable)
+        .unwrap_or_else(|| panic!("missing prepared component path: {variable}"));
+    cached_compile(Path::new(&path));
 }
 
 #[test]
