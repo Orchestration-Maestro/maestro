@@ -25,6 +25,18 @@ max-threads = 1
 filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
+# A full browser check compiles native helpers and the browser graph once (131 s measured).
+# Keep its existing limit while sharing all checks in one fixture; remove with #3589.
+[[profile.default.overrides]]
+filter = "package(maestro-tooling) & test(=browser_author_build::browser_check_scenario)"
+slow-timeout = { period = "60s", terminate-after = 6 }
+
+# Empty Cargo home/target deliberately vendor 769 packages and bootstrap binaries (191 s in CI).
+# Compiled outputs cannot be reused without losing the cold-start assertion; tracked in #3589.
+[[profile.default.overrides]]
+filter = "package(maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
+slow-timeout = { period = "60s", terminate-after = 6 }
+
 [test-groups.browser-author]
 max-threads = 1
 

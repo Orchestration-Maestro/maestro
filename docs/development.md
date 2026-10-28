@@ -540,7 +540,16 @@ host set to a single space, exercising manual fallback without a listener.
 Callback tests that still bind a fixed port belong in an `oauth_callback` module,
 which joins a single-thread nextest group. Browser author-build tests also
 join a single-thread group because Trunk shares binding/optimizer intermediates;
-their file lock keeps plain Cargo tests safe. Other tests remain parallel.
+their file lock keeps plain Cargo tests safe. The full browser checks share one
+cached fixture in `browser_check_scenario`: valid sources, formatter repair,
+lock preservation, invalid syntax, warnings and native-adapter checks remain
+named steps with their own failure context and timing. A regression checks
+that the scenario creates its fixture once. Restoring identical source bytes
+keeps their timestamps; restoring edited bytes invalidates compiled output.
+The scenario and empty-state bootstrap retain explicit six-minute exceptions
+in the runner configuration. The scenario pays for one cold native/browser
+compilation rather than one per shard; the bootstrap must start with an empty
+Cargo home and target directory. Other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the
