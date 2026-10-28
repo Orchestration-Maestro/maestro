@@ -119,6 +119,8 @@ resolving conflicts, then regenerate the table.
 | `prompt_customizer.rs` | A prompt-guidance extension that reads the supplied prompt options. |
 | `protected_paths.md` | Protected paths |
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
+| `provider_payload.md` | Provider payload |
+| `provider_payload.rs` | Opt-in logging of provider request payloads and response status and headers. |
 | `qna.md` | Qna |
 | `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
 | `question.md` | Question |
