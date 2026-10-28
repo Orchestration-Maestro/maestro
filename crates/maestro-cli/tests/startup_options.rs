@@ -276,14 +276,16 @@ fn cli_resource_paths_keep_startup_directory() {
         "/absolute/theme".to_owned(),
     ];
     let resolved = resolve_cli_paths(cwd, Some(&authored)).unwrap().unwrap();
+    // The host's spelling of a POSIX path: Windows puts it on the working drive.
+    let native = |path: &str| maestro_app::resolve(&[path]).unwrap();
     assert_eq!(
         resolved,
         vec![
-            "/projects/current/extensions/local".to_owned(),
+            native("/projects/current/extensions/local"),
             "npm:maestro-formatter".to_owned(),
             "https://example.test/skill".to_owned(),
-            "/projects/current/  ./skills/spaced  ".to_owned(),
-            "/absolute/theme".to_owned(),
+            native("/projects/current/  ./skills/spaced  "),
+            native("/absolute/theme"),
         ]
     );
     assert_eq!(resolve_cli_paths(cwd, None).unwrap(), None);

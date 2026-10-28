@@ -1,19 +1,40 @@
-# SDK Examples
+# SDK examples
 
-Programmatic sessions through Maestro's embedding interface. An example builds a
-session, supplies the model, prompt, tools and extensions it wants, and drives
-the conversation.
+Use Maestro through an in-process session or a child process in RPC mode.
+The [RPC integration guide](../../docs/rpc.md) describes the wire records;
+the [Rust client](../../docs/client.md) provides typed subprocess operations.
 
-## Examples
+| File | Purpose |
+|---|---|
+| `rpc.py` | Inspect session state or print one prompted run with an LF-only JSONL reader. |
+| `test_rpc.py` | Check the Python example against disposable subprocess peers without provider calls. |
 
-No SDK example ships yet; the
-[examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
-lists each one with its owner.
+## Inspect a session
 
-## Running
-
-Build and run an example through its owning crate:
+From the repository root, with Python 3 and Maestro on `PATH`:
 
 ```sh
-cargo run -p <crate> --example <name>
+python3 examples/sdk/rpc.py -- maestro --mode rpc --no-session --no-tools --offline --no-extensions --no-skills --no-prompt-templates --no-context-files
 ```
+
+This sends `get_state` without a model request. The example prints protocol
+records to stdout and leaves child diagnostics on stderr. To send plain prompt
+text, add `--prompt TEXT` before `--`; choose a configured provider and model in
+the child arguments. Prompting can incur provider charges. The example cancels
+dialogs and stops after the first run ends; it does not track later automatic
+retries or compaction recovery, or wait for slash commands handled without a run.
+
+## Check the example
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s examples/sdk -p test_rpc.py
+```
+
+The tests cover LF framing with Unicode separators, startup dialogs, response
+correlation, run completion, refusals, EOF and child exit status. They need
+neither Maestro nor credentials.
+
+For the interactive Rust flow, see the application-owned
+[`rpc_client_demo`](../../crates/maestro-app/examples/rpc_client_demo/main.rs).
+Other SDK examples are listed in the
+[examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074).

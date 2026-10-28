@@ -72,6 +72,10 @@ fn tool_call(
 }
 
 /// Registers the bash confirmation hook through the supplied host.
+///
+/// # Errors
+/// The returned future fails when the dangerous-command patterns do not compile, or
+/// with the host's rejection when it refuses the handler registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

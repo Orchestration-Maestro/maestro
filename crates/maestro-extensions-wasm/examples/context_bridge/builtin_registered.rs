@@ -21,7 +21,7 @@ pub(super) fn register(
     let mut operations = super::builtin_edit::registration_operations(api.events());
     let access = operations.access;
     operations.access = Rc::new(move |path| {
-        if path.ends_with("/error.txt") {
+        if super::builtin::ends_in(&path, "error.txt") {
             return Box::pin(async {
                 Err(maestro_extensions_wasm::DiagnosticErrorInfo::error(
                     "authored registered failure é",
@@ -35,7 +35,7 @@ pub(super) fn register(
     operations.read_file = Rc::new(move |path| {
         let (read, context) = (read.clone(), context.clone());
         Box::pin(async move {
-            let gate = path.ends_with("/gate.txt");
+            let gate = super::builtin::ends_in(&path, "gate.txt");
             let bytes = read(path).await?;
             if gate {
                 context

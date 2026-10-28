@@ -811,8 +811,12 @@ fn workspace_only_connections_refuse_session_commands() {
                 .unwrap()
                 .contains("open in a session")
         );
+        assert!(lines[0].get("code").is_none());
         assert_eq!(lines[1]["id"], "workspace");
         assert_eq!(lines[1]["command"], "ping");
+        assert_eq!(lines[1]["success"], false);
+        assert_eq!(lines[1]["error"], "no workspace");
+        assert_eq!(lines[1]["code"], "unsupported");
     });
 }
 

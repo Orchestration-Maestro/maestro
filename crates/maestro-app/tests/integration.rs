@@ -23,6 +23,7 @@ mod analysis_usage;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
+mod base_package_loading;
 #[path = "docx_support/body_tree.rs"]
 mod body_tree;
 mod browser_contributions;
