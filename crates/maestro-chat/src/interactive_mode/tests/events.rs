@@ -246,6 +246,22 @@ async fn subscription(world: World, unchanged_rows: &Presentation) {
     assert_eq!(titles(&effects).len(), 1);
 }
 
+/// Calls the removal operation while the mode is alive: the next event writes no title.
+async fn removal_while_alive(world: World) {
+    let session = world.host.session();
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    let effects = tap(&world);
+    let removal = world.mode.unsubscribe.borrow_mut().take().unwrap();
+    removal();
+    session.set_session_name("detached").unwrap();
+    world.runtime.settle().unwrap();
+    assert!(
+        titles(&effects).is_empty(),
+        "removal stops delivery to a live mode"
+    );
+}
+
 #[test]
 fn events_subscription_initializes_once_and_releases() {
     let test = "events_subscription_initializes_once_and_releases";
@@ -260,7 +276,10 @@ fn events_subscription_initializes_once_and_releases() {
                     initialization(&world, initialized).await;
                     shown(&world, &unchanged_rows);
                 }
-                Input::Subscribe => subscription(world, &unchanged_rows).await,
+                Input::Subscribe => {
+                    subscription(world, &unchanged_rows).await;
+                    removal_while_alive(Setup::default().build(directory)).await;
+                }
                 _ => panic!("a subscription case"),
             }
         }
