@@ -6,7 +6,8 @@ license.workspace = true
 repository.workspace = true
 description = "Author-side contract for native-async extension components."
 
-# Keep these targets in name order, so a new example inserts at its own place.
+# `just example-index` renders these targets from the example sources.
+# example-index:start
 [[example]]
 name = "author_component"
 crate-type = ["cdylib"]
@@ -336,6 +337,7 @@ crate-type = ["cdylib"]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
+# example-index:end
 
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }

@@ -25,13 +25,18 @@ steps.
 2. Add usage and controlled-run commands in a same-name Markdown page.
 3. Add `src/tests/<name>_example.rs` in `maestro-extensions-wasm`. The build
    script discovers these files; do not add a `mod` line to `src/tests.rs`.
-4. Add a `[[example]]` block to that crate's manifest in alphabetical order,
-   with the source path and `crate-type = ["cdylib"]`.
-5. For a prepared test component, add
+4. For a prepared test component, add
    `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening docs. The
-   file stem names its Cargo target. Native executable test modules use the
+   file stem names its Cargo target; `<dir>/main.rs` uses the directory name with
+   hyphens replaced by underscores. Native executable test modules use the
    `<name>_example` suffix so the setup filter selects them automatically.
-6. Run `just example-index`, then run the example's controlled tests.
+5. Run `just example-index`, then run the example's controlled tests.
+
+`just example-index` also generates the `[[example]]` targets in
+`crates/maestro-extensions-wasm/Cargo.toml`; do not edit them by hand.
+`just example-index-check` fails when the index or targets are stale.
+Component preparation reads the source markers at run time. Each variable names
+one example; the shared author and context variables are reserved.
 
 The table below is generated from each Rust file's opening documentation and
 Markdown page's heading. Do not edit its rows by hand. `just example-index-check`
