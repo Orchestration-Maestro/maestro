@@ -171,6 +171,11 @@ path = "../../examples/extensions/qna.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "question"
+path = "../../examples/extensions/question.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]

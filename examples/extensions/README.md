@@ -104,6 +104,10 @@ resolving conflicts, then regenerate the table.
 | `protected_paths.rs` | An opt-in tool-call hook that blocks writes and edits to illustrative path substrings. |
 | `qna.md` | Qna |
 | `qna.rs` | Extracts questions from the last complete assistant reply into the editor. |
+| `question.md` | Question |
+| `question.rs` | An opt-in single-question tool with an inline custom answer. |
+| `question/render.rs` | Compact call and result rows using the host's unpadded text widget. |
+| `question/view.rs` | Retained option navigation with the host's multiline editor. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |
