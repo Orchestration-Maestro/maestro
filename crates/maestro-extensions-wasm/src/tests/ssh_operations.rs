@@ -15,6 +15,12 @@ fn ssh_maps_windows_host_paths_to_posix_without_rewriting_other_roots() -> Exten
         (r"C:\work\", r"C:\work"),
         ("C:/work/", r"C:\work"),
         ("/work", "/work"),
+        (r"C:\work\note.txt", r"C:\work\note.txt"),
+        (r"C:\work\nested\note.txt", r"C:\work\nested\note.txt"),
+        (r"C:\work", r"C:\work"),
+        (r"C:\worker\note.txt", r"C:\worker\note.txt"),
+        (r"D:\work\note.txt", r"D:\work\note.txt"),
+        (r"/work/note\name", r"/work/note\name"),
     ] {
         host.observe().actions.helpers.insert(
             format!("paths.resolve {}", serde_json::json!([[authored]])),
@@ -72,6 +78,13 @@ fn ssh_maps_forward_slash_unc_prefix_using_host_resolution() -> ExtensionResult<
     host.observe().actions.value = serde_json::json!({
         "paths.resolve": r"\\server\share\work"
     });
+    host.observe().actions.helpers.insert(
+        format!(
+            "paths.resolve {}",
+            serde_json::json!([[r"\\server\share\work\note.txt"]])
+        ),
+        serde_json::json!(r"\\server\share\work\note.txt"),
+    );
     let remote = operations::Remote {
         api: captured_api(&host)?,
         host: "user@controlled".into(),
@@ -83,6 +96,40 @@ fn ssh_maps_forward_slash_unc_prefix_using_host_resolution() -> ExtensionResult<
     assert_eq!(
         host.observed().native_io.launches.last().unwrap().1[2],
         format!("cat -- {}", transport::quote("/srv/note.txt"))
+    );
+    Ok(())
+}
+
+#[test]
+fn ssh_maps_authored_bash_cwd_using_host_resolution() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().actions.value = serde_json::json!({
+        "paths.resolve": "/work/project"
+    });
+    let remote = operations::Remote {
+        api: captured_api(&host)?,
+        host: "user@controlled".into(),
+        cwd: "/srv".into(),
+        local_cwd: "/work//project".into(),
+    };
+    let bash = remote.bash()?;
+    super::block_on((bash.exec)(
+        "pwd".into(),
+        "/work//project".into(),
+        crate::BashExecOptions {
+            on_data: std::rc::Rc::new(|_| Ok(())),
+            signal: None,
+            timeout: None,
+            env: None,
+        },
+    ))?;
+    assert_eq!(
+        host.observed().native_io.launches.last().unwrap().0,
+        format!(
+            "exec ssh -- {} {}",
+            transport::quote("user@controlled"),
+            transport::quote("cd /srv && pwd")
+        )
     );
     Ok(())
 }
