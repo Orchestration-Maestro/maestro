@@ -124,3 +124,8 @@ path = "examples/rpc_client_demo/main.rs"
 name = "minimal"
 path = "examples/sdk/minimal.rs"
 test = true
+
+[[example]]
+name = "tools"
+path = "examples/sdk/tools.rs"
+test = true
