@@ -255,6 +255,11 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "tic_tac_toe"
+path = "../../examples/extensions/tic_tac_toe.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "timed_confirm"
 path = "../../examples/extensions/timed_confirm.rs"
 crate-type = ["cdylib"]

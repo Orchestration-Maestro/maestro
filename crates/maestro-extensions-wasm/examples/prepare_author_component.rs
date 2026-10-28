@@ -39,6 +39,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("resource_component", "MAESTRO_RESOURCE_COMPONENT"),
     ("resource_component_reloaded", "MAESTRO_RESOURCE_RELOADED_COMPONENT"),
     ("summarize", "MAESTRO_SUMMARIZE_COMPONENT"),
+    ("tic_tac_toe", "MAESTRO_TIC_TAC_TOE_COMPONENT"),
     ("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT"),
     ("tools", "MAESTRO_TOOLS_COMPONENT"),
     ("truncated_tool", "MAESTRO_TRUNCATED_TOOL_COMPONENT"),
