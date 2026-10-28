@@ -89,15 +89,26 @@ impl Browser {
         let mut browser = Self::new();
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../target/Maestro's browser 東京 checkout");
+        let sources = [
+            format!("{FIXTURE}/src/main.rs"),
+            "crates/maestro-web/src/lib.rs".to_owned(),
+        ];
+        let modified = sources.each_ref().map(|source| {
+            let previous = path.join(source);
+            let restored = fs::read(browser.path(source)).unwrap();
+            match fs::read(&previous) {
+                Ok(bytes) if bytes == restored => {
+                    fs::metadata(previous).unwrap().modified().unwrap()
+                }
+                _ => std::time::SystemTime::now(),
+            }
+        });
         browser.workspace.cache_at(&path);
-        // Restored mutable sources must be newer than any compiled edited version.
-        for source in [
-            browser.fixture("src/main.rs"),
-            browser.path("crates/maestro-web/src/lib.rs"),
-        ] {
-            fs::File::open(source)
+        // Changed bytes invalidate compiled edits; identical bytes keep the warm fingerprint.
+        for (source, modified) in sources.into_iter().zip(modified) {
+            fs::File::open(browser.path(&source))
                 .unwrap()
-                .set_modified(std::time::SystemTime::now())
+                .set_modified(modified)
                 .unwrap();
         }
         browser
