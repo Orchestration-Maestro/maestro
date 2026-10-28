@@ -9,7 +9,7 @@ pub struct Directory(maestro_test_directory::Scratch);
 impl Directory {
     /// Create a unique directory without replacing an existing entry.
     pub fn new() -> Self {
-        Self(maestro_test_directory::Scratch::new().unwrap())
+        Self(maestro_test_directory::Scratch::new_socket().unwrap())
     }
     /// The directory this test owns.
     pub fn path(&self) -> &Path {
