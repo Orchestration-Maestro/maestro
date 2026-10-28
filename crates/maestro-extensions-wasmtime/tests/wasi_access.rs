@@ -930,3 +930,25 @@ fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
         }
     });
 }
+
+/// A shared traversal bound must retain the standard interface's loop error.
+#[cfg(unix)]
+#[test]
+fn component_link_cycles_keep_loop_errors() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let link = scratch.path().join("loop");
+    std::os::unix::fs::symlink("loop", &link).unwrap();
+    assert!(std::fs::read(&link).is_err());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":link,"bytes":[]}))
+                .await;
+            assert!(observed["error"].is_string(), "{generation}: {observed}");
+            if generation == "p3" {
+                assert_eq!(observed["code"], "ErrorCode::Loop", "{observed}");
+            }
+        }
+    });
+}
