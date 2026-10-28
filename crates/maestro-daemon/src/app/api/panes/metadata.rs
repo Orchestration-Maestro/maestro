@@ -8,7 +8,7 @@ use crate::{
     app::{
         App,
         api_helpers::{
-            MAX_METADATA_TOKEN_KEYS_PER_RESOURCE, normalize_metadata_source,
+            MAX_METADATA_TOKEN_KEYS_PER_RESOURCE, clean_metadata_text, normalize_metadata_source,
             normalize_metadata_tokens, normalize_metadata_ttl,
         },
     },
@@ -47,16 +47,9 @@ impl ValidReport {
     }
 }
 
-/// Drops control characters, trims, and keeps at most 80 scalars; blank text is absent.
-fn normalize_presentation_text(value: Option<String>) -> Option<String> {
-    let kept: String = value?
-        .trim()
-        .chars()
-        .filter(|ch| !ch.is_control())
-        .take(PRESENTATION_MAX_CHARS)
-        .collect();
-    let kept = kept.trim();
-    (!kept.is_empty()).then(|| kept.to_owned())
+/// Cleans presentation text to its 80 scalar limit; blank text is absent.
+fn presentation_text(value: &str) -> Option<String> {
+    clean_metadata_text(value, PRESENTATION_MAX_CHARS)
 }
 
 /// Cleans each label and its state name, refusing a name that is not an execution state.
@@ -72,7 +65,7 @@ fn normalize_state_labels(
                 format!("unknown state label: {state}"),
             ));
         }
-        if let Some(label) = normalize_presentation_text(Some(label)) {
+        if let Some(label) = presentation_text(&label) {
             kept.insert(state, label);
         }
     }
@@ -141,8 +134,8 @@ fn validate(params: PaneReportMetadataParams) -> Result<ValidReport, ErrorBody> 
             source,
             agent_label,
             applies_to_source,
-            title: normalize_presentation_text(params.title),
-            display_agent: normalize_presentation_text(params.display_agent),
+            title: params.title.as_deref().and_then(presentation_text),
+            display_agent: params.display_agent.as_deref().and_then(presentation_text),
             state_labels: normalize_state_labels(params.state_labels)?,
             clear_title: params.clear_title,
             clear_display_agent: params.clear_display_agent,

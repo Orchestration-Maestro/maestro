@@ -56,6 +56,19 @@ pub(super) fn normalize_metadata_source(value: &str) -> Result<String, &'static 
     Ok(value.to_owned())
 }
 
+/// Trims reporter text, drops control characters, keeps at most `max_chars` scalars and trims
+/// again; blank text is absent.
+pub(super) fn clean_metadata_text(value: &str, max_chars: usize) -> Option<String> {
+    let kept: String = value
+        .trim()
+        .chars()
+        .filter(|ch| !ch.is_control())
+        .take(max_chars)
+        .collect();
+    let kept = kept.trim();
+    (!kept.is_empty()).then(|| kept.to_owned())
+}
+
 /// Converts an optional token lifetime, checking it lies between 1 ms and one day.
 ///
 /// # Errors
@@ -102,16 +115,8 @@ pub(super) fn normalize_metadata_tokens(
             {
                 return Err(format!("invalid metadata token key: {key}"));
             }
-            let value = value.and_then(|value| {
-                let normalized = value
-                    .trim()
-                    .chars()
-                    .filter(|ch| !ch.is_control())
-                    .take(MAX_METADATA_TOKEN_VALUE_LEN)
-                    .collect::<String>();
-                let normalized = normalized.trim();
-                (!normalized.is_empty()).then(|| normalized.to_owned())
-            });
+            let value =
+                value.and_then(|value| clean_metadata_text(&value, MAX_METADATA_TOKEN_VALUE_LEN));
             Ok((key, value))
         })
         .collect()
