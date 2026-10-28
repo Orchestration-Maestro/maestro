@@ -71,3 +71,48 @@ fn sdk_loads_and_reloads_packaged_component_tools() {
         session.dispose();
     });
 }
+
+/// Both standard generations operate on the same native bytes through an actual SDK tool.
+#[test]
+fn sdk_component_uses_async_filesystem_and_standard_library_bytes() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, async {
+        let root = Root::new();
+        let session = component_session(
+            &root,
+            local.clone(),
+            std::env::var("MAESTRO_SDK_STANDARD_COMPONENT").unwrap(),
+            None,
+            crate::support::widgets(),
+        )
+        .await;
+        let path = root.path("project/shared.bin");
+        for (generation, bytes) in [("p3", vec![0, 255, 7]), ("p2", vec![1, 254, 8, 0])] {
+            let written = execute(
+                &session,
+                "sdk-standard",
+                json!({"generation":generation,"path":path,"write":true,"bytes":bytes}),
+            )
+            .await;
+            assert_eq!(written["details"]["bytes"], json!(bytes));
+            assert_eq!(
+                written["details"]["cwd"],
+                root.path("project").display().to_string()
+            );
+            assert_eq!(std::fs::read(&path).unwrap(), bytes);
+            let other = if generation == "p3" { "p2" } else { "p3" };
+            let read = execute(
+                &session,
+                "sdk-standard",
+                json!({"generation":other,"path":path,"write":false,"bytes":[]}),
+            )
+            .await;
+            assert_eq!(read["details"]["bytes"], json!(bytes));
+        }
+        session.dispose();
+    });
+}
