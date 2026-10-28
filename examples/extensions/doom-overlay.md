@@ -32,7 +32,7 @@ engine source, engine binary or WAD. The external engine is GPL-2.0; its license
 still applies to artifacts you build or distribute. Do not put its source or the
 composed artifact in the shipped workspace or package.
 
-Install Python 3, Git, wasi-sdk 34, wit-bindgen-cli 0.62.0 and wasm-tools 1.262.0.
+Install Python 3.9 or newer, Git, wasi-sdk 34, wit-bindgen-cli 0.62.0 and wasm-tools 1.262.0.
 Put `wit-bindgen` and `wasm-tools` on PATH and set `WASI_SDK_PATH` to the SDK root.
 Install the component target with `rustup target add wasm32-wasip2`.
 From the workspace root, using an empty external build directory:
@@ -77,7 +77,6 @@ host terminal.
 ## Controlled runs
 
 ```sh
-cargo test --locked -p maestro-extensions-wasm --example doom_overlay
 cargo test --locked -p maestro-extensions-wasm --lib doom_overlay_
 cargo test --locked -p maestro-extensions-wasmtime --test integration doom_
 ```

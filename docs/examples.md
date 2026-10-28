@@ -14,9 +14,9 @@ example's own documentation. The same command generates the `[[example]]` target
 of `crates/maestro-extensions-wasm/Cargo.toml` from the source paths. `just example-index-check` checks both against the tree. Each usage page
 keeps its own controlled-run commands and host prerequisites.
 
-A test checks both directions: every entry of a folder is listed in that
-folder's index, and every relative link or table row an index carries names a
-path that exists.
+A test checks the generated index against the tree. A directory example has
+one row for its documented `main.rs`; its support files need no separate
+summaries. Other documented files retain their own rows.
 
 The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the

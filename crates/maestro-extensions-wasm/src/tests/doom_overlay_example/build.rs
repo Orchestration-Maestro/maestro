@@ -16,7 +16,7 @@ pub fn component() -> Result<PathBuf, String> {
 
 /// Assembles the pixel engine and composes it with the real author component.
 fn build() -> Result<PathBuf, String> {
-    let author = super::super::build::example_component("doom_overlay")?;
+    let author = super::super::build::component("doom_overlay", "MAESTRO_DOOM_OVERLAY_COMPONENT")?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let source = root.join("src/tests/doom_overlay_example/engine.wat");
     let output = author

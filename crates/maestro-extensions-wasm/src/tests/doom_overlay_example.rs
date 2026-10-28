@@ -6,6 +6,10 @@ use std::{collections::BTreeMap, fmt::Write, path::Path};
 
 mod build;
 
+/// The verifier used before the shipped example creates a downloaded cache.
+#[path = "../../../../examples/extensions/doom-overlay/wad_finder/checksum.rs"]
+mod checksum;
+
 /// Starts the composed component with read-only controlled WAD bytes.
 fn host() -> Result<Harness, String> {
     let path = build::component()?;
@@ -221,4 +225,13 @@ fn doom_overlay_retains_frames_keys_and_clock_across_pause_resume() -> Result<()
         "disposal settles all timer tails"
     );
     Ok(())
+}
+
+/// Standard synthetic bytes accept only their own complete SHA-256 digest.
+#[test]
+fn checksum_accepts_exact_bytes_and_rejects_modified_body() {
+    let digest = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+    assert!(checksum::matches_checksum(b"abc", digest));
+    assert!(!checksum::matches_checksum(b"abd", digest));
+    assert!(!checksum::matches_checksum(b"abc", ""));
 }

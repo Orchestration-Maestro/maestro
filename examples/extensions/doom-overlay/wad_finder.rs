@@ -5,8 +5,10 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, http::Request, tools::path_utils};
-use sha2::{Digest, Sha256};
-use std::{fmt::Write as _, io::Write};
+use std::io::Write;
+
+mod checksum;
+use checksum::matches_checksum;
 
 /// Shareware data downloaded only when no local candidate exists.
 const WAD_URL: &str = "https://raw.githubusercontent.com/Daivuk/PureDOOM/355cfbd16fac119718879239336ee2ea408886bd/doom1.wad";
@@ -107,17 +109,3 @@ fn write_cache(path: &str, bytes: &[u8]) -> ExtensionResult<()> {
     }
     Ok(())
 }
-
-/// Accepts only the complete expected SHA-256 digest.
-fn matches_checksum(bytes: &[u8], expected: &str) -> bool {
-    let mut actual = String::with_capacity(64);
-    for byte in Sha256::digest(bytes) {
-        if write!(&mut actual, "{byte:02x}").is_err() {
-            return false;
-        }
-    }
-    actual == expected
-}
-
-#[cfg(test)]
-mod tests;
