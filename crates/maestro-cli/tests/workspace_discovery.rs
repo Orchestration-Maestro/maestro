@@ -429,3 +429,48 @@ fn completion_validates_usage_and_propagates_output_failures() {
         assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe, "{shell}");
     }
 }
+
+#[test]
+fn settings_defaults_prints_the_owned_jsonc_without_loading_settings() {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    assert_eq!(
+        maestro_cli::workspace_commands::settings::run_defaults(&[], &mut stdout, &mut stderr)
+            .unwrap(),
+        0
+    );
+    assert!(stderr.is_empty());
+    let text = String::from_utf8(stdout).unwrap();
+    assert_eq!(text, maestro_app::daemon::settings::DEFAULTS_TEXT);
+    assert!(text.contains("// Workspace preferences belong in the global settings.json"));
+    assert!(text.contains("\"scrollbackLimitBytes\": 10000000"));
+    assert!(
+        serde_json::from_str::<serde_json::Value>(&text).is_err(),
+        "the reading guide remains annotated JSONC"
+    );
+}
+
+#[test]
+fn settings_defaults_rejects_extra_arguments_and_preserves_output_errors() {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    assert_eq!(
+        maestro_cli::workspace_commands::settings::run_defaults(
+            &["extra".into()],
+            &mut stdout,
+            &mut stderr
+        )
+        .unwrap(),
+        2
+    );
+    assert!(stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(stderr).unwrap(),
+        "usage: maestro settings defaults\n"
+    );
+    let error = maestro_cli::workspace_commands::settings::run_defaults(
+        &[],
+        &mut BrokenOutput,
+        &mut Vec::new(),
+    )
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+}

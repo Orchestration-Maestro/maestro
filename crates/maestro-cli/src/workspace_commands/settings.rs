@@ -59,3 +59,15 @@ fn present_reset(
 
 #[cfg(test)]
 mod tests;
+
+/// Print annotated workspace defaults without loading user settings.
+///
+/// # Errors
+/// Returns output failures unchanged.
+pub fn run_defaults(
+    _args: &[String],
+    _stdout: &mut dyn Write,
+    _stderr: &mut dyn Write,
+) -> io::Result<i32> {
+    Ok(2)
+}
