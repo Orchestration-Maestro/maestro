@@ -45,6 +45,7 @@ mod confirm_destructive_example;
 mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;
+mod dirty_repo_guard_example;
 mod documents;
 mod dynamic_tools_example;
 mod event_bus_example;
