@@ -2,7 +2,9 @@
 #![cfg(test)]
 
 use crate::support::{ControlledStorage, assert_number, block_on, settings, text_entries};
-use maestro_settings::{DecisionRequest, SettingsDecider, SettingsManager, SettingsScope};
+use maestro_settings::{
+    DecisionRequest, SettingsDecider, SettingsErrorKind, SettingsManager, SettingsScope,
+};
 use serde_json::json;
 use std::sync::Arc;
 
@@ -71,10 +73,10 @@ fn sole_decider_resolves_rebuilds_without_rewriting_stored_values() {
     manager.register_decider(Arc::new(Resolve)).unwrap();
     assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
     assert!(manager.register_decider(Arc::new(Refuse)).is_err());
-    assert_eq!(manager.drain_errors().len(), 1);
+    assert_resolution_diagnostic(&mut manager);
     manager.apply_overrides(settings(json!({"defaultModel":"runtime"})));
     assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
-    assert_eq!(manager.drain_errors().len(), 1);
+    assert_resolution_diagnostic(&mut manager);
     manager.set_quiet_startup(true);
     block_on(manager.flush());
     assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
@@ -88,8 +90,15 @@ fn sole_decider_resolves_rebuilds_without_rewriting_stored_values() {
     storage.inject(SettingsScope::Global, r#"{"defaultModel":"external"}"#);
     block_on(manager.reload());
     assert_eq!(manager.get_default_model().as_deref(), Some("accepted"));
-    assert_eq!(manager.drain_errors().len(), 1);
+    assert_resolution_diagnostic(&mut manager);
     assert_eq!(storage.writes().len(), 1);
+}
+
+/// Requires one successful stored-value resolution rather than a refusal.
+fn assert_resolution_diagnostic(manager: &mut SettingsManager) {
+    let errors = manager.drain_errors();
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].kind, SettingsErrorKind::StoredValueIgnored);
 }
 
 /// Attempts to replace a value that the base layer locks.
