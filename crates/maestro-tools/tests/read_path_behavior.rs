@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::ls_support::posix_spelling;
 use crate::read_support;
 use crate::runtime::run;
 
@@ -62,12 +63,16 @@ fn path_resolution_keeps_absolute_spelling_and_resolves_relative_inputs() {
         ("/absolute", "relative", "/absolute"),
         ("./a//b/.", "/base", "/base/a/b"),
     ] {
-        assert_eq!(resolve_to_cwd(path, cwd).unwrap(), expected, "{path:?}");
+        assert_eq!(
+            posix_spelling(&resolve_to_cwd(path, cwd).unwrap()),
+            posix_spelling(expected),
+            "{path:?}"
+        );
     }
     let process = std::env::current_dir().unwrap();
     assert_eq!(
-        resolve_to_cwd("leaf", "relative").unwrap(),
-        format!("{}/relative/leaf", process.to_str().unwrap())
+        posix_spelling(&resolve_to_cwd("leaf", "relative").unwrap()),
+        posix_spelling(&format!("{}/relative/leaf", process.to_str().unwrap()))
     );
 }
 
@@ -98,9 +103,11 @@ fn reaches_decomposed(index: usize, files: &[&str], ask: &str) -> bool {
 /// Files present, the spelling asked for, and the existing file that spelling must select.
 type Fallback = (&'static [&'static str], &'static str, &'static str);
 
+/// A file name whose meridiem follows a narrow no-break space.
+const AM: &str = "shot 10.00\u{202f}AM.png";
+
 #[test]
 fn read_paths_try_original_ampm_nfd_curly_then_combined() {
-    const AM: &str = "shot 10.00\u{202f}AM.png";
     let cases: [Fallback; 16] = [
         (&[], "shot 10.00 AM.png", "shot 10.00 AM.png"),
         (&[AM], "shot 10.00 AM.png", AM),
@@ -152,13 +159,14 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
             dir.file(file, b"");
         }
         let resolved = resolve_read_path(ask, &dir.text()).unwrap();
-        assert_eq!(resolved, format!("{}/{found}", dir.text()), "case {index}");
+        let expected = dir.path().join(found);
+        assert_eq!(resolved, expected.to_string_lossy(), "case {index}");
     }
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("folder")).unwrap();
     assert_eq!(
         resolve_read_path("folder", &dir.text()).unwrap(),
-        format!("{}/folder", dir.text())
+        dir.path().join("folder").to_string_lossy()
     );
 }
 
@@ -177,11 +185,15 @@ fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
         &written,
         "./sub/../x\u{a0}y.txt",
     ] {
-        assert_eq!(resolve_read_path(ask, &cwd).unwrap(), written, "{ask:?}");
+        assert_eq!(
+            posix_spelling(&resolve_read_path(ask, &cwd).unwrap()),
+            posix_spelling(&written),
+            "{ask:?}"
+        );
     }
     assert_eq!(
-        resolve_read_path("p\u{a0}q.txt", &cwd).unwrap(),
-        format!("{cwd}/p\u{a0}q.txt")
+        posix_spelling(&resolve_read_path("p\u{a0}q.txt", &cwd).unwrap()),
+        posix_spelling(&format!("{cwd}/p\u{a0}q.txt"))
     );
     let home = Scratch::new().unwrap();
     home.file("h\u{a0}o.txt", b"home written");
@@ -197,8 +209,8 @@ fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
     ) {
         let home = std::env::var("HOME").unwrap();
         assert_eq!(
-            resolve_read_path("~/h\u{a0}o.txt", &cwd).unwrap(),
-            format!("{home}/h\u{a0}o.txt")
+            posix_spelling(&resolve_read_path("~/h\u{a0}o.txt", &cwd).unwrap()),
+            posix_spelling(&format!("{home}/h\u{a0}o.txt"))
         );
     }
 }
@@ -211,14 +223,14 @@ fn read_paths_fall_back_to_the_normalized_spelling_when_nothing_has_the_written_
     let cwd = dir.text();
     for ask in ["sp\u{a0}ace.txt", "@sp\u{a0}ace.txt"] {
         assert_eq!(
-            resolve_read_path(ask, &cwd).unwrap(),
-            format!("{cwd}/sp ace.txt"),
+            posix_spelling(&resolve_read_path(ask, &cwd).unwrap()),
+            posix_spelling(&format!("{cwd}/sp ace.txt")),
             "{ask:?}"
         );
     }
     assert_eq!(
-        resolve_read_path("n\u{a0}e.txt", &cwd).unwrap(),
-        format!("{cwd}/n e.txt")
+        posix_spelling(&resolve_read_path("n\u{a0}e.txt", &cwd).unwrap()),
+        posix_spelling(&format!("{cwd}/n e.txt"))
     );
 }
 
@@ -230,7 +242,10 @@ fn read_paths_accept_lowercase_meridiem() {
         dir.file(&chosen, b"chosen");
         let ask = format!("Screenshot 2024-01-01 at 10.00.00 {suffix}.png");
         let resolved = resolve_read_path(&ask, &dir.text()).unwrap();
-        assert_eq!(resolved, format!("{}/{chosen}", dir.text()));
+        assert_eq!(
+            posix_spelling(&resolved),
+            posix_spelling(&format!("{}/{chosen}", dir.text()))
+        );
         assert_eq!(std::fs::read(&resolved).unwrap(), b"chosen");
     }
 }
@@ -245,12 +260,12 @@ fn read_paths_keep_lexical_symlink_identity() {
     std::os::unix::fs::symlink(dir.path().join("a/b"), dir.path().join("link")).unwrap();
     let cwd = dir.text();
     assert_eq!(
-        resolve_read_path("link", &cwd).unwrap(),
-        format!("{cwd}/link")
+        posix_spelling(&resolve_read_path("link", &cwd).unwrap()),
+        posix_spelling(&format!("{cwd}/link"))
     );
     assert_eq!(
-        resolve_read_path("link/../f", &cwd).unwrap(),
-        format!("{cwd}/f")
+        posix_spelling(&resolve_read_path("link/../f", &cwd).unwrap()),
+        posix_spelling(&format!("{cwd}/f"))
     );
     let tool = create_read_tool_definition::<()>(cwd, ReadToolOptions::default());
     let result = call(&tool, input("link/../f", None, None), None, None).unwrap();
@@ -273,7 +288,12 @@ fn native_path_host_lookups_are_lazy() {
         assert_eq!(expand_path("plain").unwrap(), "plain");
         assert!(resolve_to_cwd("rel", "relative-cwd").is_err());
     }
-    if isolated(test, "home-explicit", &[("HOME", Some("/explicit"))]) {
+    let explicit = Some("/explicit");
+    if isolated(
+        test,
+        "home-explicit",
+        &[("HOME", explicit), ("USERPROFILE", explicit)],
+    ) {
         assert_eq!(expand_path("~").unwrap(), "/explicit");
         assert_eq!(expand_path("~/x").unwrap(), "/explicit/x");
     }

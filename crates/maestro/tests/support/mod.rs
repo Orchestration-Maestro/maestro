@@ -27,6 +27,8 @@ impl Root {
             .current_dir(self.path("project"))
             .env("HOME", self.scratch.path())
             .env("PATH", std::env::var_os("PATH").unwrap_or_default())
+            // A Windows process without its system root cannot open sockets.
+            .envs(std::env::var_os("SYSTEMROOT").map(|root| ("SYSTEMROOT", root)))
             .env("MAESTRO_CODING_AGENT_DIR", self.path("agent"))
             .env(
                 "MAESTRO_PACKAGE_DIR",

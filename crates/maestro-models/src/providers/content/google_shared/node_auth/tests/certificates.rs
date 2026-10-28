@@ -299,7 +299,7 @@ fn check_configuration_precedence(test: &str) {
         .unwrap()
         .to_owned();
     let (_, sdk_config) = default_layout(&files, &location, "sdk");
-    let (home, _) = default_layout(&files, &location, "home");
+    let (home_name, home) = super::home_variable(&default_layout(&files, &location, "home").0);
     let explicit = serde_json::json!({"certificate_config_location":location}).to_string();
     let default = serde_json::json!({"use_default_certificate_config":true}).to_string();
     let missing = format!("{sdk_config}/missing.json");
@@ -328,14 +328,14 @@ fn check_configuration_precedence(test: &str) {
                 ("HOME", "/nonexistent"),
             ],
         ),
-        ("ok", &default, vec![("HOME", home.as_str())]),
+        ("ok", &default, vec![(home_name, home.as_str())]),
         (
             "err",
             &default,
             vec![
                 ("GOOGLE_API_CERTIFICATE_CONFIG", missing.as_str()),
                 ("CLOUDSDK_CONFIG", sdk_config.as_str()),
-                ("HOME", home.as_str()),
+                (home_name, home.as_str()),
             ],
         ),
         ("err", &default, vec![("HOME", "/nonexistent")]),

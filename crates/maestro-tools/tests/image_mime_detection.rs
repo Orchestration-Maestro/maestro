@@ -92,10 +92,13 @@ fn file_sniff_errors_keep_native_io_identity() -> TestResult {
         let (path, kind) = match input.path.as_str() {
             "directory" => {
                 assert_eq!(expected.code, "EISDIR");
-                (
-                    directory.path().to_path_buf(),
-                    std::io::ErrorKind::IsADirectory,
-                )
+                // Windows refuses to open a directory as a file.
+                let kind = if cfg!(windows) {
+                    std::io::ErrorKind::PermissionDenied
+                } else {
+                    std::io::ErrorKind::IsADirectory
+                };
+                (directory.path().to_path_buf(), kind)
             }
             "nonexistent-file" => {
                 assert_eq!(expected.code, "ENOENT");

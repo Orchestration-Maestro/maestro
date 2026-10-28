@@ -26,7 +26,11 @@ fn session_locators_choose_first_local_then_global() {
     std::fs::create_dir_all(&cwd).unwrap();
     let local_dir = scratch.path().join("local");
     let local = startup::stored_history(&local_dir, "local-one", "project-session", path(&cwd));
-    let other = scratch.path().join("agent/sessions/other-project");
+    let other = scratch
+        .path()
+        .join("agent")
+        .join("sessions")
+        .join("other-project");
     let global = startup::stored_history(&other, "global-one", "global-456", "/other/project");
     let ambiguous = ["amb-1", "amb-2"]
         .iter()
@@ -79,7 +83,7 @@ fn a_local_match_alone_answers_without_the_global_root() {
     std::fs::create_dir_all(&cwd).unwrap();
     let local_dir = scratch.path().join("local");
     let local = startup::stored_history(&local_dir, "local-one", "project-session", path(&cwd));
-    let broken = scratch.path().join("broken/agent");
+    let broken = scratch.path().join("broken").join("agent");
     std::fs::create_dir_all(&broken).unwrap();
     std::fs::write(broken.join("sessions"), "not a directory").unwrap();
 
@@ -133,7 +137,11 @@ fn explicit_foreign_fork_copies_in_without_confirming() {
     let cwd = scratch.path().join("project");
     std::fs::create_dir_all(&cwd).unwrap();
     let local_dir = scratch.path().join("local");
-    let other = scratch.path().join("agent/sessions/other-project");
+    let other = scratch
+        .path()
+        .join("agent")
+        .join("sessions")
+        .join("other-project");
     let global = startup::stored_history(&other, "global-one", "global-456", "/other/project");
     let here = (path(&cwd), path(&agent_dir), path(&local_dir));
 

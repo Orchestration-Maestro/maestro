@@ -29,12 +29,16 @@ fn probe(path: &PathBuf, write: bool) -> io::Result<()> {
         };
         Ok(rustix::fs::access(path, mode)?)
     }
+    // As access(2) behaves on Windows: the entry exists, and a write needs a file that is
+    // not read-only. A directory passes, so reading it reports the real failure.
     #[cfg(not(unix))]
-    std::fs::OpenOptions::new()
-        .read(true)
-        .write(write)
-        .open(path)
-        .map(drop)
+    {
+        let metadata = std::fs::metadata(path)?;
+        if write && metadata.permissions().readonly() && !metadata.is_dir() {
+            return Err(io::ErrorKind::PermissionDenied.into());
+        }
+        Ok(())
+    }
 }
 
 /// The default operations: read, probe and sniff the local filesystem.

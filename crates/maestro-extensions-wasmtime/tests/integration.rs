@@ -23,8 +23,10 @@ mod extension_guide;
 mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
+mod handoff_example;
 mod lifetimes;
 mod listener_prefixes;
+mod load_time_contributions;
 mod module_location;
 mod native_helpers;
 mod native_io;
@@ -94,5 +96,3 @@ fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extens
         },
     )
 }
-
-mod handoff_example;

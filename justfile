@@ -266,3 +266,11 @@ browser-chat-example *args:
 browser-test:
     node crates/maestro-web/tests/sandbox_loading_support/run.cjs
     node crates/maestro-app/tests/browser/analysis_page.cjs
+
+# Render the extension index from each example's own documentation.
+example-index:
+    cargo run --quiet --locked -p maestro-tooling --bin development -- example-index
+
+# Check the tracked extension index without rewriting it.
+example-index-check:
+    cargo run --quiet --locked -p maestro-tooling --bin development -- example-index --check

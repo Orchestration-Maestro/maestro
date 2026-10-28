@@ -210,6 +210,9 @@ impl AgentSession<Local> {
         self.settings_manager.borrow_mut().reload_from_storage();
         maestro_models::reset_api_providers();
         self.resource_loader.reload().await.map_err(thrown)?;
+        self.model_registry
+            .set_base_model_files(self.resource_loader.get_model_files())
+            .map_err(thrown)?;
         self.build_runtime(Some(self.get_active_tool_names()), previous_flag_values)?;
         let has_bindings = {
             let state = self.state.borrow();

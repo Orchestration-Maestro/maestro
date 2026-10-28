@@ -13,6 +13,9 @@ fn memory_session_starts_with_current_header() {
         support::session_history::group("memory_session_starts_with_current_header");
         return;
     }
+    if !maestro_test_process::local_zone_follows_tz() {
+        return;
+    }
     let output =
         maestro_test_process::TestProcess::current("memory_session_starts_with_current_header")
             .unwrap()

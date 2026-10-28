@@ -29,6 +29,8 @@ workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+globset.workspace = true
+regex-syntax.workspace = true
 maestro-listing = { path = "../maestro-listing" }
 indexmap = "=2.14.2"
 maestro-path = { path = "../maestro-path" }
