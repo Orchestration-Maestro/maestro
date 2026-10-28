@@ -39,7 +39,7 @@ checks that it is current. Keep descriptions and run commands in the example's
 own files, not in this page or `docs/examples.md`.
 
 The component setup reads source markers at run time; it has no shared example
-list. See [adding an example](../../docs/examples.md#adding-an-extension-example).
+list. See [adding an example](../../docs/examples.md).
 
 Cargo needs an explicit target for each out-of-package component. Those manifest
 blocks and the tracked table remain shared edits; alphabetical neighbours can
