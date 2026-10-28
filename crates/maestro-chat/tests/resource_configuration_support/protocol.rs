@@ -161,6 +161,12 @@ pub fn refused_toggles() {
             );
             assert_eq!(list.try_render(80).unwrap(), before);
             assert!(h.events.borrow().is_empty());
+            let errors = h.settings.borrow_mut().drain_errors();
+            assert_eq!(errors.len(), 1);
+            assert_eq!(
+                errors[0].error.to_string(),
+                "release refuses resource toggle"
+            );
             h.persisted(&scopes);
         }
     }
