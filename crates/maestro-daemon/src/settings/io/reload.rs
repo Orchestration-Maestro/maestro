@@ -19,7 +19,7 @@ pub fn load_config(
 ) -> (LoadedConfig, Vec<SettingsError>) {
     let earlier = manager.drain_errors();
     let mut settings = manager.effective_global_settings();
-    let (global, other, mut diagnostics) = drain_load_errors(manager, earlier);
+    let (global, mut other, mut diagnostics) = drain_load_errors(manager, earlier);
     if !global.is_empty() {
         diagnostics.extend(global.iter().map(|error| {
             if is_parse_error(error) {
@@ -46,6 +46,7 @@ pub fn load_config(
         }
     }
     loaded.diagnostics.append(&mut diagnostics);
+    collect_recovery_errors(manager, &mut loaded, &mut other);
     (loaded, other)
 }
 
@@ -98,7 +99,22 @@ pub async fn load_live_config(
     let mut loaded = project_global_settings(&settings, agent_dir);
     accepted.recover(&mut loaded, manager, agent_dir);
     loaded.diagnostics.append(&mut diagnostics);
+    collect_recovery_errors(manager, &mut loaded, &mut other);
     (Ok(loaded), other)
+}
+
+/// Returns recovery resolutions once and preserves unrelated errors for their caller.
+fn collect_recovery_errors(
+    manager: &mut SettingsManager,
+    loaded: &mut LoadedConfig,
+    other: &mut Vec<SettingsError>,
+) {
+    let (failures, project, diagnostics) = drain_load_errors(manager, Vec::new());
+    other.extend(failures);
+    other.extend(project);
+    loaded.diagnostics.extend(diagnostics);
+    loaded.diagnostics.sort();
+    loaded.diagnostics.dedup();
 }
 
 /// Keep fresh global resolutions, failures and unrelated project errors.

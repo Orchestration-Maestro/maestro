@@ -147,8 +147,9 @@ an object containing the locked base value, or removed when that value is absent
 This repair reports the locked path once. Raw scope snapshots, pending edits
 and saved preferences never include the base. Stored conflicts produce diagnostics
 through `drain_errors`, without rewriting either preference file.
-`SettingsError::kind` distinguishes `StoredValueIgnored` diagnostics from
-`Failure` errors, including refused explicit edits. Reload retains
+`SettingsError::kind` classifies base-lock and registered-decider resolutions as
+nonfatal `StoredValueIgnored` diagnostics, distinct from `Failure` errors such as
+refused explicit edits. Reload retains
 the accepted layer and keeps the ordinary failed-scope rules.
 
 Setters and runtime overrides refuse a locked path before changing memory,

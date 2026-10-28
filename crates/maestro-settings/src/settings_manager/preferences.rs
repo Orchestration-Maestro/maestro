@@ -59,7 +59,7 @@ pub type SettingsUpdate = Result<Option<String>, SettingsStorageError>;
 pub enum SettingsErrorKind {
     /// A read, parse, write or explicit edit failure.
     Failure,
-    /// A stored preference was ignored in favor of a locked base value.
+    /// A stored preference was resolved by a base lock or the registered decider.
     StoredValueIgnored,
 }
 

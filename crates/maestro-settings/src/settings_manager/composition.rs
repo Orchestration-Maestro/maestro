@@ -37,7 +37,11 @@ impl SettingsManager {
         restore(&mut view.0);
         if let Some(decider) = &self.decider {
             for message in decider.resolve(&mut view) {
-                self.report_refusal(SettingsScope::Global, message);
+                self.queue.record(
+                    SettingsScope::Global,
+                    SettingsErrorKind::StoredValueIgnored,
+                    message.into(),
+                );
             }
         }
         restore(&mut view.0);
