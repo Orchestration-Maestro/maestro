@@ -33,7 +33,7 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
 
 /// Build marked components and render their nextest environment entries.
 ///
-/// A marker names the environment variable; the Rust file stem names the Cargo target.
+/// Variables are unique across all roots, including the fixed author and context exports.
 ///
 /// # Errors
 /// Returns discovery, invalid or duplicate marker, source-reading or build failures.
@@ -46,10 +46,11 @@ pub fn prepare(
         String::from("MAESTRO_AUTHOR_COMPONENT"),
         String::from("MAESTRO_CONTEXT_COMPONENT"),
     ]);
-    let folder = folders
-        .first()
-        .ok_or_else(|| io::Error::other("missing example root"))?;
-    for file in collect(folder)? {
+    let mut files = Vec::new();
+    for folder in folders {
+        files.extend(collect(folder)?);
+    }
+    for file in files {
         if file.extension().is_none_or(|extension| extension != "rs") {
             continue;
         }
@@ -64,11 +65,8 @@ pub fn prepare(
                     "duplicate component variable: {variable}"
                 )));
             }
-            let name = file
-                .file_stem()
-                .and_then(|name| name.to_str())
-                .ok_or_else(|| io::Error::other("component target needs a UTF-8 file stem"))?;
-            let path = build(name, variable)?;
+            let name = target_name(&file)?;
+            let path = build(&name, variable)?;
             writeln!(result, "{variable}={}", path.display()).map_err(io::Error::other)?;
         }
     }
@@ -89,4 +87,24 @@ fn validate_variable(variable: &str) -> io::Result<()> {
             "invalid component variable: {variable}"
         )))
     }
+}
+
+/// Derive Cargo's target name from a source file or a directory entry point.
+///
+/// # Errors
+/// Returns an error when the target name is absent or is not UTF-8.
+pub fn target_name(source: &Path) -> io::Result<String> {
+    let directory = source.file_name().is_some_and(|name| name == "main.rs");
+    let name = if directory {
+        source.parent().and_then(Path::file_name)
+    } else {
+        source.file_stem()
+    }
+    .and_then(|name| name.to_str())
+    .ok_or_else(|| io::Error::other("component target needs a UTF-8 name"))?;
+    Ok(if directory {
+        name.replace('-', "_")
+    } else {
+        name.to_owned()
+    })
 }

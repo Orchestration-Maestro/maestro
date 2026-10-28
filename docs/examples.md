@@ -29,8 +29,8 @@ documentation and the examples from the package directory.
    same-name Markdown usage page. `just example-index` generates its `cdylib`
    Cargo target in `crates/maestro-extensions-wasm/Cargo.toml`.
 2. If tests need a prepared component, add this line after its opening docs:
-   `// maestro-component: MAESTRO_<NAME>_COMPONENT`. The source file stem must
-   match its Cargo target. Keep an existing variable's spelling unchanged.
+   `// maestro-component: MAESTRO_<NAME>_COMPONENT`. The file stem names its Cargo target; for
+   `<dir>/main.rs`, the directory name is used with hyphens replaced by underscores. Keep an existing variable's spelling unchanged.
 3. Add guest tests as `src/tests/<name>_example.rs`. The build script discovers
    those modules. Executable integration tests also use `<name>_example` as
    their module name; nextest selects every `_example::` module for component

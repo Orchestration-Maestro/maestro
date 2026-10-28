@@ -120,16 +120,16 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
     for entry in fs::read_dir(folder)? {
         let entry = entry?;
         let file = file_name(&entry)?;
-        let (name, source) = if entry.file_type()?.is_dir() {
-            (file.replace('-', "_"), format!("{file}/main.rs"))
-        } else if let Some(stem) = file.strip_suffix(".rs") {
-            (stem.to_owned(), file.clone())
+        let source = if entry.file_type()?.is_dir() {
+            format!("{file}/main.rs")
+        } else if file.strip_suffix(".rs").is_some() {
+            file.clone()
         } else {
             continue;
         };
         if folder.join(&source).is_file() {
             targets.push(Target {
-                name,
+                name: example_files::target_name(&folder.join(&source))?,
                 path: Some(format!("../../examples/extensions/{source}")),
             });
         }
@@ -140,7 +140,7 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
         match file.strip_suffix(".rs") {
             Some(stem) if stem != PREPARATION && entry.file_type()?.is_file() => {
                 targets.push(Target {
-                    name: stem.to_owned(),
+                    name: example_files::target_name(&entry.path())?,
                     path: None,
                 });
             }

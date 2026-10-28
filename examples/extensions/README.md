@@ -27,7 +27,8 @@ steps.
    script discovers these files; do not add a `mod` line to `src/tests.rs`.
 4. For a prepared test component, add
    `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening docs. The
-   file stem names its Cargo target. Native executable test modules use the
+   file stem names its Cargo target; `<dir>/main.rs` uses the directory name with
+   hyphens replaced by underscores. Native executable test modules use the
    `<name>_example` suffix so the setup filter selects them automatically.
 5. Run `just example-index`, then run the example's controlled tests.
 
