@@ -23,7 +23,7 @@ pub(crate) fn root() -> PathBuf {
 }
 
 /// Records an imminent operation and optionally refuses it with a native error.
-pub(super) fn effect(phase: &'static str) -> io::Result<()> {
+pub(crate) fn effect(phase: &'static str) -> io::Result<()> {
     EFFECTS.with_borrow_mut(|effects| {
         effects.events.push(phase);
         #[cfg(unix)]
@@ -132,15 +132,23 @@ fn replacement_syncs_before_and_after_commit() {
         "recovery_sync",
         "target_write",
         "target_sync",
-        "recovery_sync",
     ];
-    assert_eq!(observed.events, [&committed[..], sync_phases()].concat());
+    assert_eq!(
+        observed.events,
+        [
+            &["recovery_sync"][..],
+            &committed[..],
+            sync_phases(),
+            &["recovery_sync"]
+        ]
+        .concat()
+    );
     assert_eq!(observed.bytes, b"new");
     assert_eq!(observed.entries, 1);
 }
 
 /// Observes exclusive creation, optionally simulating a competing creator.
-pub(super) fn before_create(path: &Path) -> io::Result<()> {
+pub(crate) fn before_create(path: &Path) -> io::Result<()> {
     effect("create")?;
     EFFECTS.with_borrow_mut(|effects| effects.temporary_path = Some(path.to_path_buf()));
     if EFFECTS.with_borrow(|effects| effects.collision) {
@@ -150,7 +158,7 @@ pub(super) fn before_create(path: &Path) -> io::Result<()> {
 }
 
 /// Observes that the temporary handle is closed before publication.
-pub(super) fn closed() {
+pub(crate) fn closed() {
     effect("close").unwrap();
 }
 
@@ -260,7 +268,7 @@ fn replacement_preserves_existing_permissions_before_publication() {
 #[test]
 fn creation_mode_is_private_before_publication() {
     use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases() {
+    if launch_umask_cases("creation_mode_is_private_before_publication") {
         return;
     }
     let dir = maestro_test_directory::Scratch::new().unwrap();
@@ -333,13 +341,13 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
 
 /// Runs permission observations in checked children with caller-selected umasks.
 #[cfg(unix)]
-fn launch_umask_cases() -> bool {
+fn launch_umask_cases(test: &str) -> bool {
     use maestro_test_process::TestProcess;
     if std::env::var_os("MAESTRO_REPLACE_UMASK").is_some() {
         return false;
     }
     for mask in ["000", "077"] {
-        let output = TestProcess::current("creation_mode_is_private_before_publication")
+        let output = TestProcess::current(test)
             .unwrap()
             .shell_setup("/bin/sh", format!("umask {mask}"))
             .env("MAESTRO_REPLACE_UMASK", mask)
@@ -426,4 +434,158 @@ fn interrupted_publication_is_replayed_before_the_next_write() {
     EFFECTS.take();
     drop(crate::acquire_write(&target, true).unwrap());
     assert_eq!(fs::read(&target).unwrap(), b"intended");
+    assert_eq!(EFFECTS.take().events.first(), Some(&"recovery_sync"));
+}
+
+#[test]
+fn recovery_refuses_a_record_for_another_target() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("target_write", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    assert!(replace(&target, b"intended", Replace::default()).is_err());
+    EFFECTS.take();
+    let recovery = fs::read_dir(root())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "recovery")
+        })
+        .unwrap();
+    fs::write(&recovery, [0; 37]).unwrap();
+    assert_eq!(
+        crate::acquire_write(&target, true).unwrap_err().kind(),
+        io::ErrorKind::InvalidData
+    );
+    assert_eq!(fs::read(&target).unwrap(), b"before");
+}
+
+#[test]
+fn recovery_completes_a_target_interrupted_before_sync() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("target_sync", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    assert_eq!(
+        replace(&target, b"intended", Replace::default())
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::Interrupted
+    );
+    EFFECTS.take();
+    fs::write(&target, b"partial").unwrap();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
+}
+
+#[test]
+fn target_parent_sync_failure_keeps_the_recovery_copy() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("parent_open", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert!(
+        replace(&target, b"intended", Replace::default())
+            .unwrap()
+            .dir_sync
+            .is_some()
+    );
+    EFFECTS.take();
+    assert!(fs::read_dir(root()).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .path()
+            .extension()
+            .is_some_and(|extension| extension == "recovery")
+    }));
+    fs::write(&target, b"partial").unwrap();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
+}
+
+#[cfg(unix)]
+#[test]
+fn interrupted_private_creation_replays_its_requested_mode() {
+    new_target_mode(Some(0o600), true);
+}
+
+#[cfg(unix)]
+#[test]
+fn new_read_only_target_finishes_with_the_requested_mode() {
+    new_target_mode(Some(0o400), false);
+    new_target_mode(Some(0o400), true);
+}
+
+#[cfg(unix)]
+#[test]
+fn new_target_and_replay_keep_umask_default_permissions() {
+    if launch_umask_cases("new_target_and_replay_keep_umask_default_permissions") {
+        return;
+    }
+    new_target_mode(None, false);
+    new_target_mode(None, true);
+}
+
+/// Checks both ordinary and interrupted new-file permission selection.
+#[cfg(unix)]
+fn new_target_mode(mode: Option<u32>, interrupted: bool) {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let control = scratch.path().join("control");
+    fs::write(&control, b"").unwrap();
+    let default = fs::metadata(&control).unwrap().permissions().mode() & 0o777;
+    EFFECTS.set(Effects {
+        fault: interrupted.then_some(("target_write", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    let result = replace(
+        &target,
+        b"intended",
+        Replace {
+            creation_mode: mode,
+            ..Replace::default()
+        },
+    );
+    if interrupted {
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
+        assert!(!target.exists());
+        EFFECTS.take();
+        drop(crate::acquire_write(&target, true).unwrap());
+    } else {
+        result.unwrap();
+    }
+    EFFECTS.take();
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        mode.unwrap_or(default)
+    );
+}
+
+#[test]
+fn acquisition_syncs_recovery_absence_before_admitting_a_writer() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("recovery_sync", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    assert_eq!(
+        crate::acquire_write(&target, true).unwrap_err().kind(),
+        io::ErrorKind::Other
+    );
+    EFFECTS.take();
+    assert_eq!(fs::read(&target).unwrap(), b"before");
 }
