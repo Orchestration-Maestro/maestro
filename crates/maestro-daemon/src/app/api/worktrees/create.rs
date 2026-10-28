@@ -3,7 +3,7 @@
 use super::{
     super::responses::api_error,
     absolute_user_path, home,
-    info::worktree_info_for_membership,
+    info::{git_space_of, worktree_info_for_membership},
     operation_in_progress,
     operations::{CreateOperation, Operation, Pending, Responder},
     source::{SourceRule, WorktreeSource},
@@ -184,7 +184,7 @@ impl<C: FnMut() -> u128> App<C> {
             }
             (None, None) => {
                 let cwd = self.workspace_cwd(workspace);
-                super::info::git_space_of(workspace, cwd.as_deref()).is_some_and(|space| {
+                git_space_of(workspace, cwd.as_deref()).is_some_and(|space| {
                     !space.is_linked_worktree
                         && space.key == source.repo_key
                         && canonicalize_best_effort_path(&space.repo_root)
