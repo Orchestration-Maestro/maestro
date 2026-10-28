@@ -41,6 +41,7 @@ mod transcript;
 mod transfer;
 mod typed;
 
+use crate::components::thinking_selector::thinking_text;
 use crate::interactive_mode::bash::component_address;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
 // The controlled host, disposable directory and palettes are compiled once in the library tests.
@@ -1086,6 +1087,14 @@ fn startup_constructor_forwards_each_display_setting() {
                 assert_eq!(world.mode.ui.get_clear_on_shrink(), shrink);
                 start(&world).await;
                 world.runtime.settle().unwrap();
+                let visibility = world
+                    .terminal
+                    .writes()
+                    .into_iter()
+                    .rev()
+                    .find(|write| write == "\x1b[?25h" || write == "\x1b[?25l");
+                let expected = if cursor { "\x1b[?25h" } else { "\x1b[?25l" };
+                assert_eq!(visibility.as_deref(), Some(expected), "terminal cursor");
                 world.mode.show_error("tall").unwrap();
                 world.runtime.settle().unwrap();
                 let redraws = world.mode.ui.full_redraws();
@@ -1208,13 +1217,35 @@ fn startup_theme_and_branch_notifications_request_fresh_frames() {
             let world = started(directory).await;
             let header = world.mode.header_container.render(80);
             let footer = world.mode.footer.render(80);
-            world.themes.set_theme_instance(light()).unwrap();
+            let level = thinking_text(&world.host.session().thinking_level()).0;
+            let dark = world.themes.theme().get().unwrap();
+            let replaced = (dark.get_thinking_border_color(level))("─");
+            let published = light();
+            let border = (published.get_thinking_border_color(level))("─");
+            assert_ne!(replaced, border);
+            world.themes.set_theme_instance(published).unwrap();
             assert_eq!(world.runtime.pending(), 1);
             world.terminal.clear_writes();
             world.runtime.settle().unwrap();
             assert!(!world.terminal.writes().is_empty());
             assert_eq!(world.mode.header_container.render(80), header);
             assert_ne!(world.mode.footer.render(80), footer);
+            let width = world.terminal.size().0;
+            let editor = world.mode.editor.render(width);
+            assert!(
+                editor[0].contains(&border),
+                "the editor border uses the new theme"
+            );
+            assert!(
+                !editor[0].contains(&replaced),
+                "no border keeps the old theme"
+            );
+            let painted = world.terminal.writes().concat();
+            for row in editor.iter().chain(&world.mode.footer.render(width)) {
+                // The frame writer removes the hardware-cursor marker before it writes a row.
+                let row = row.replacen(maestro_tui::CURSOR_MARKER, "", 1);
+                assert!(painted.contains(&row), "painted row {row:?}");
+            }
             let other = directory.join("elsewhere");
             std::fs::create_dir(&other).unwrap();
             world
@@ -1497,11 +1528,17 @@ pub(super) async fn echoing_shell(directory: &Path) -> World {
     bash::shelling(directory, &script).await
 }
 
-/// Submits `count` shell commands while the response streams, awaiting each command it
-/// admits so its row settles.
+/// Submits `count` shell commands, each with its own text, while the response streams,
+/// awaiting each command it admits so its row settles.
 pub(super) async fn start_shells(world: &World, count: usize) {
+    start_commands(world, count, |index| format!("!mark{index}")).await;
+}
+
+/// Submits `count` shell commands worded by `text` while the response streams, awaiting
+/// each command it admits so its row settles.
+pub(super) async fn start_commands(world: &World, count: usize, text: impl Fn(usize) -> String) {
     for index in 0..count {
-        submit(&world.mode, &format!("!mark{index}"));
+        submit(&world.mode, &text(index));
         for command in world.runtime.take_futures() {
             command.await.expect("the shell command completes");
         }

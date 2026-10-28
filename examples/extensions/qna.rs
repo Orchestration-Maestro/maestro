@@ -1,4 +1,5 @@
 //! Extracts questions from the last complete assistant reply into the editor.
+// maestro-component: MAESTRO_QNA_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,
@@ -15,9 +16,7 @@ use maestro_extensions_wasm::{
 };
 use std::{
     cell::RefCell,
-    future::poll_fn,
     rc::Rc,
-    task::{Poll, Waker},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -40,58 +39,20 @@ Keep questions in the order they appeared. Be concise.";
 /// The channel that hands extraction to the host's independent event-tail executor.
 const CHANNEL: &str = "maestro.example.qna";
 
-/// One extraction future, cancelled by dropping it when its custom view closes.
-#[derive(Default)]
-struct Extraction {
-    /// Work owned by this view, never by its synchronous factory callback.
-    running: Option<ExtensionFuture<'static, ()>>,
-    /// Wakes the event tail; disposal clears it even while work is being polled.
-    waker: Option<Waker>,
-}
-/// The command and its event listener share one cancellable slot.
-type Current = Rc<RefCell<Extraction>>;
+#[path = "support/tail.rs"]
+mod tail;
+use tail::Tail;
+
 /// Work waiting to be handed to the listener once.
-type Pending = Rc<RefCell<Option<Current>>>;
+type Pending = Rc<RefCell<Option<Tail>>>;
 
-/// Cancels owned work and lets the host retire its waiting tail.
-fn cancel(current: &Current) {
-    let mut extraction = current.borrow_mut();
-    extraction.running = None;
-    if let Some(waker) = extraction.waker.take() {
-        waker.wake();
-    }
-}
-
-/// Hands extraction to the host without retaining the callback's borrowed emitter.
+/// Hands the loader's work to the shared cancellable tail owner.
 fn listener(pending: Pending) -> EventListener {
-    Rc::new(move |_, _| {
-        let Some(current) = pending.borrow_mut().take() else {
-            return Ok(None);
-        };
-        Ok(Some(Box::pin(poll_fn(move |cx| {
-            let running = {
-                let mut extraction = current.borrow_mut();
-                extraction.waker = Some(cx.waker().clone());
-                extraction.running.take()
-            };
-            let Some(mut running) = running else {
-                current.borrow_mut().waker = None;
-                return Poll::Ready(Ok(()));
-            };
-            // Closing can cancel this slot while the future is being polled.
-            let result = running.as_mut().poll(cx);
-            let mut extraction = current.borrow_mut();
-            if result.is_pending() && extraction.waker.is_some() {
-                extraction.running = Some(running);
-                Poll::Pending
-            } else {
-                extraction.waker = None;
-                match result {
-                    Poll::Ready(result) => Poll::Ready(result),
-                    Poll::Pending => Poll::Ready(Ok(())),
-                }
-            }
-        }))))
+    Rc::new(move |payload, emitter| {
+        pending
+            .borrow_mut()
+            .take()
+            .map_or(Ok(None), |tail| (tail.listener())(payload, emitter))
     })
 }
 
@@ -202,7 +163,7 @@ fn loader_factory(
 ) -> CustomFactory<Option<String>> {
     Rc::new(
         move |tui, theme, _, done: CustomDone<Option<String>>, emitter| {
-            let current = Current::default();
+            let current = Tail::default();
             let model = ctx.model()?.ok_or_else(|| "No model selected".to_owned())?;
             let loader = BorderedLoader::new(
                 &tui,
@@ -213,24 +174,21 @@ fn loader_factory(
             let aborted = done.clone();
             loader.set_on_abort(Some(Rc::new(move |_| aborted(None))))?;
             let (context, text, extracting) = (ctx.clone(), text.clone(), loader.clone());
-            *current.borrow_mut() = Extraction {
-                running: Some(Box::pin(async move {
-                    let result = extract(context, text, extracting).await.unwrap_or_default();
-                    done(result)
-                })),
-                ..Default::default()
-            };
+            current.start(Box::pin(async move {
+                let result = extract(context, text, extracting).await.unwrap_or_default();
+                done(result)
+            }));
             pending.replace(Some(current.clone()));
             if let Err(error) = emitter.emit(CHANNEL, serde_json::Value::Null) {
                 pending.borrow_mut().take();
-                cancel(&current);
+                current.stop();
                 loader.dispose()?;
                 return Err(error);
             }
             Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                 component: (&loader).into(),
                 dispose: Some(Rc::new(move |_| {
-                    cancel(&current);
+                    current.stop();
                     loader.dispose()
                 })),
                 set_expanded: None,

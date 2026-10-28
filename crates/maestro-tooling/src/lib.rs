@@ -18,6 +18,11 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Source-owned example discovery and component preparation.
+pub mod example_files;
+
+/// Derived extension documentation table.
+mod example_index;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
@@ -69,6 +74,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
+        Some("example-index") => example_index::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {

@@ -1,4 +1,5 @@
 //! A companion extension exercising the terminal client's RPC UI methods.
+// maestro-component: MAESTRO_RPC_DEMO_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,

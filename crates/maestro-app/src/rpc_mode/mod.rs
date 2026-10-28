@@ -11,7 +11,7 @@ mod output;
 mod ui;
 
 pub use connection::{JsonlLineReader, RpcInput, RpcLineReader, run_rpc_connection};
-pub use output::{RpcLine, RpcRecord, stdout_output};
+pub use output::{RpcLine, RpcOutput, RpcRecord, stdout_output};
 
 use crate::rpc_types::{workspace, workspace_schema};
 use maestro_export::ExportOperations;
@@ -23,34 +23,29 @@ use std::{future::Future, io, pin::Pin, rc::Rc};
 /// A local operation a caller supplies.
 pub type RpcFuture<T> = Pin<Box<dyn Future<Output = T>>>;
 
-/// Writes one complete protocol line.
-///
-/// Hand-built text never reaches it:
-///
-/// ```compile_fail
-/// fn write(output: &maestro_app::rpc_mode::RpcOutput) -> std::io::Result<()> {
-///     output("{}\n")
-/// }
-/// ```
-pub type RpcOutput = Rc<dyn Fn(&RpcLine) -> io::Result<()>>;
-
 /// Writes one workspace event on the connection's output.
 pub type WorkspaceEventSink = Rc<dyn Fn(workspace_schema::EventData) -> io::Result<()>>;
 
 /// Runs the workspace commands a connection receives.
 pub trait WorkspaceOperations {
     /// Runs `command`, writing the events it opts the connection into through `events`.
+    ///
+    /// `write_complete` settles once the connection has attempted to write the whole
+    /// response, whether or not the write succeeded; it disconnects if the response is
+    /// dropped before any attempt. It does not report delivery to the peer.
     fn execute(
         &self,
         command: workspace::RpcCommand,
         events: WorkspaceEventSink,
+        write_complete: tokio::sync::oneshot::Receiver<()>,
     ) -> RpcFuture<Result<workspace_schema::ResponseResult, workspace_schema::ErrorBody>>;
 }
 
 /// Native process facilities of the server.
 pub trait RpcProcessPort {
     /// Delivers each termination signal to `callback`; the returned operation stops the
-    /// delivery and makes a later signal take its native default action.
+    /// delivery, and a later signal takes its native default action once no other
+    /// registration is live.
     ///
     /// # Errors
     /// Returns the native registration failure.

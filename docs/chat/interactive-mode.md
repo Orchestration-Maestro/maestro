@@ -30,8 +30,9 @@ and publishes them as the toolkit's registry. The footer metadata watches the
 session's working directory. Last, the themes the session's resource loader has
 loaded are registered and the configured `theme` is selected, so a loaded theme
 wins over a shipped one with the same name. The setting is read after the loader
-answers. A failure to read the bindings, build the footer's collator or load the
-fallback theme is returned. The constructed mode installs its rebinding and its
+answers. An unreadable or malformed bindings file is skipped and the default
+bindings apply; a failure to find the agent directory, build the footer's collator
+or load the fallback theme is returned. The constructed mode installs its rebinding and its
 [extension UI reset](extension-ui.md#session-replacement) on the runtime, both
 holding the mode weakly.
 
@@ -152,9 +153,10 @@ HUP and native stdout/stderr disconnection errors take the emergency route:
 remove handlers, kill tracked children and exit 129, without draining, restoring
 the terminal or disposing the application runtime. EIO, broken-pipe and
 not-connected errors select this route; input errors and other output errors
-keep their existing handling. During graceful disposal, a second termination or
-hangup signal takes its native default action. Windows console-close integration
-is not provided by this mode.
+keep their existing handling. During graceful disposal, once the mode's signal
+handlers are removed and no other registration in the process is live, a later
+termination or hangup signal takes its native default action. Windows
+console-close integration is not provided by this mode.
 
 At agent end, a requested shutdown follows transient-row cleanup through this
 same graceful owner instead of requesting a final frame. Extension requests reach
@@ -288,9 +290,11 @@ on the transcript, completes no waiting input and enters no history. `/export`,
 `/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
 only on normal completion, leaving text written during a rejected operation intact.
 Import confirmation and directory retry reuse the native dialogs, and its
-replacement is [bound](#session-binding) before the replay. Near spellings are
-prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
-`/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
+replacement is [bound](#session-binding) before the replay. The submission is trimmed
+first, so `/export` followed only by a tab runs the command and a submission of white
+space alone is dropped. Near spellings are prompt text, so `/exporter notes.jsonl`,
+`/export<Tab>path`, `/share extra`, `/important`, `/import<Tab>path` and `/copyx`
+reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
@@ -328,8 +332,9 @@ for it.
 
 ## Session replay
 
-`render_initial_messages` rebuilds the transcript from the session's current
-context. Each message is shown by its existing component:
+`render_initial_messages` appends the session's current context to the transcript and
+clears nothing first; the rebuild after the thinking shortcut clears the transcript and
+then replays the same way. Each message is shown by its existing component:
 
 - user text, with its text blocks joined without a separator; a skill block shows
   as a collapsible skill row followed by any text after it as a separate user row;
@@ -429,7 +434,8 @@ The agent's events drive the working row and the transcript:
 - an agent start forgets the registered tool calls, shows terminal progress when
   `terminal.showTerminalProgress` is set, and replaces the working row in the status
   rows, unless an extension hid it: the indicator in the accent colour beside the
-  muted working message, painted by the theme in effect when it is drawn;
+  muted working message, painted by the theme in effect when the row last updated
+  its frame or message;
 - a message start adds a custom or user message to the transcript, the user one
   also rebuilding the pending rows; an assistant message starts one streaming row
   that keeps the message it shows; a tool result adds nothing;
@@ -452,11 +458,13 @@ The agent's events drive the working row and the transcript:
   row's renderer as the tool returned them, with a missing value kept apart from
   null;
 - an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
-  stops the working row and empties the status rows, removes an unfinished
+  stops the working row and empties the status rows when a working row is shown,
+  removes an unfinished
   streaming row and forgets the registered calls; completed rows stay. A requested
   shutdown then runs through the graceful owner; otherwise the mode requests a frame.
 
-Rows change in place, so each frame rewrites only from its first changed row.
+Rows change in place, so an incremental frame rewrites only from its first changed
+row. A resize can force a full redraw instead.
 
 Extensions control the working row and the thinking label through the extension UI
 host:
@@ -565,8 +573,11 @@ up.
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
 every expandable transcript row: loaded-resource sections, tool rows, shell runs,
-summaries, skill rows and custom messages. The walk uses the transcript's rows as they are when it starts, so
-a row a renderer appends during the walk is reached, and a row it removes is not.
+summaries, skill rows and custom messages. The walk goes through the child array the
+transcript holds when it starts, one position at a time: a row a renderer appends to
+that array is reached when its position comes up, and a row it removes before then
+is not. Replacing or clearing the transcript during the walk does not stop it, which
+finishes over the array it started with.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript, puts a streaming row back after it with the new visibility
@@ -581,7 +592,9 @@ The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
 session's next thinking level. It shows `Thinking level: <level>` as a status line
 and refreshes the footer and editor border; when the model cannot reason it shows
 `Current model does not support thinking` and changes nothing else. A recording
-failure goes to the terminal runtime's error route.
+failure goes to the terminal runtime's error route. `/thinking` opens the level
+picker and `/thinking <level>` sets a level directly; see
+[the thinking level command](commands.md#thinking-level).
 
 The model cycle keys (`app.model.cycleForward` and `app.model.cycleBackward`,
 Ctrl+P and Shift+Ctrl+P by default) select the next or previous scoped model, or

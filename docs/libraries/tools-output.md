@@ -151,6 +151,17 @@ symlinks remain supported. These upstream security fixes are covered by
 the subsequent non-streaming permission fix in ZIP 9.0.1. Installer staging and
 publication ownership are unchanged; no whole-filesystem atomicity is promised.
 
+## File search
+
+Native `maestro-tools` uses workspace-pinned `globset =0.4.20` (MIT or Unlicense;
+use MIT) with default features disabled, and workspace-pinned `regex-syntax =0.8.11`
+(MIT or Apache-2.0) with only `std`. fd matches a full-path glob against the native
+absolute path, which Windows spells with `\`, so on Windows the find tool compiles
+the glob with globset as fd does, parses that regex with regex-syntax, widens every
+separator it matches to `/` or `\`, and passes the printed regex to fd. Other hosts
+pass the glob unchanged. The closure adds `bstr =1.13.1` (MIT or Apache-2.0);
+`aho-corasick`, `regex-automata` and `regex-syntax` were already locked.
+
 ## Local shell operations
 
 Native [local shell operations](../tools-process.md#local-shell-operations) use

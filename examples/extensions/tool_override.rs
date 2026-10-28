@@ -1,4 +1,5 @@
 //! An opt-in read override with access records and illustrative sensitive-path checks.
+// maestro-component: MAESTRO_TOOL_OVERRIDE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -11,7 +12,8 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use maestro_extensions_wasm::{
     AgentToolResult, CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult,
     NotificationType, Presence, TextContent, ToolDefinition, ToolMetadata, UserBlock, config,
-    tools::path_utils::resolve, utils::is_whitespace_char,
+    tools::path_utils::{guest_path, resolve},
+    utils::is_whitespace_char,
 };
 use regex::RegexSet;
 use serde::Deserialize;
@@ -45,14 +47,16 @@ async fn log_access(api: &ExtensionAPI, log: &str, path: &str, blocked: bool) {
         "[{}] {status}: {path}{reason}\n",
         timestamp(SystemTime::now())
     );
-    let log = log.to_owned();
+    let Ok(file) = guest_path(api, log) else {
+        return;
+    };
     let _ = api
-        .with_file_mutation_queue(log.clone(), move || {
+        .with_file_mutation_queue(log.to_owned(), move || {
             Box::pin(async move {
                 let mut file = OpenOptions::new()
                     .create(true)
                     .append(true)
-                    .open(log)
+                    .open(file)
                     .map_err(|error| error.to_string())?;
                 file.write_all(line.as_bytes())
                     .map_err(|error| error.to_string())
@@ -140,12 +144,14 @@ fn read_tool(api: ExtensionAPI, log: String) -> ExtensionResult<ToolDefinition> 
             Box::pin(async move {
                 let params: ReadParams = serde_json::from_value(params).map_err(|error| error.to_string())?;
                 let path = resolve(&api, &[&ctx.cwd()?, &params.path])?;
-                let denied = blocked.is_match(&path);
+                // The component spelling opens the file and separates it with `/` on every host.
+                let file = guest_path(&api, &path)?;
+                let denied = blocked.is_match(&file);
                 log_access(&api, &log, &path, denied).await;
                 if denied {
                     return Ok(result(format!("Access denied: \"{}\" matches a blocked pattern (sensitive file). This tool blocks access to .env files, secrets, credentials, and SSH/AWS/GPG directories.", params.path), &json!({"blocked":true})));
                 }
-                Ok(read_content(&path, &params).unwrap_or_else(|error| {
+                Ok(read_content(&file, &params).unwrap_or_else(|error| {
                     result(format!("Error reading file: {error}"), &json!({"error":true}))
                 }))
             })
@@ -155,7 +161,7 @@ fn read_tool(api: ExtensionAPI, log: String) -> ExtensionResult<ToolDefinition> 
 
 /// Displays the last twenty records, trimming with the host's whitespace rules.
 fn recent_log(api: &ExtensionAPI, log: &str) -> ExtensionResult<String> {
-    let Ok(bytes) = std::fs::read(log) else {
+    let Ok(bytes) = std::fs::read(guest_path(api, log)?) else {
         return Ok("No access log found".into());
     };
     let text = String::from_utf8_lossy(&bytes);

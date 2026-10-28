@@ -292,7 +292,10 @@ fn apply(model: &mut Model, fields: ModelOverride) {
     model.compat = merge_compat(model.compat.take(), fields.compat);
 }
 /// Overlay compatibility; a routing slot merges one level only when either side is truthy.
-fn merge_compat(base: Option<ModelCompat>, overlay: Option<ModelCompat>) -> Option<ModelCompat> {
+pub(super) fn merge_compat(
+    base: Option<ModelCompat>,
+    overlay: Option<ModelCompat>,
+) -> Option<ModelCompat> {
     let Some(overlay) = overlay else {
         return base;
     };

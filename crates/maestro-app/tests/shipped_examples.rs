@@ -82,12 +82,8 @@ fn index_entries(index: &str) -> Vec<String> {
 }
 
 /// The file names one table lists, in row order.
-fn table_entries(table: &Table) -> Vec<String> {
-    table
-        .rows
-        .iter()
-        .filter_map(|row| first_code(row))
-        .collect()
+fn table_entries(table: &Table) -> impl Iterator<Item = String> + '_ {
+    table.rows.iter().filter_map(|row| first_code(row))
 }
 
 /// The examples index keeps its table rows and its controlled-run commands in file-name
@@ -112,10 +108,11 @@ fn examples_index_stays_in_file_name_order() {
 fn table_rows(index: &str) -> Vec<String> {
     let document = maestro_markdown::parse(index.to_owned());
     descendants(document.nodes.iter(), nodes::children)
-        .flat_map(|node| match &node.kind {
-            Kind::Table(table) => table_entries(table),
-            _ => Vec::new(),
+        .filter_map(|node| match &node.kind {
+            Kind::Table(table) => Some(table),
+            _ => None,
         })
+        .flat_map(table_entries)
         .collect()
 }
 
@@ -252,12 +249,10 @@ fn recursive_names(root: &Path, directory: &Path) -> Vec<String> {
         if path.is_dir() {
             names.extend(recursive_names(root, &path));
         } else {
-            names.push(
-                path.strip_prefix(root)
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            // Index pages link with `/`, whatever the host separator.
+            let relative = path.strip_prefix(root).unwrap();
+            let parts: Vec<_> = relative.iter().map(|part| part.to_string_lossy()).collect();
+            names.push(parts.join("/"));
         }
     }
     names.sort();

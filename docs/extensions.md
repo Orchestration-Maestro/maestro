@@ -10,10 +10,13 @@ call, inspect or block tool calls, change the assembled prompt, manage session
 history, add a provider, or offer dialogs and terminal components. The
 [working examples](../examples/extensions/README.md) show the patterns available in the shipped examples. Start with
 [`hello.rs`](../examples/extensions/hello.rs), which registers one greeting tool.
+For terminal views, follow [component authoring and recipes](extensions/components.md)
+to connect host widgets, input, focus and cleanup.
 
 Extensions run with the user's access. They inherit environment variables and
-standard streams, can use the network, and on Unix can read and write through a
-preopened filesystem root. A component is **not an untrusted-code sandbox** in
+standard streams, can use the network, and can read and write every path the
+user can open through one filesystem root, `/`, on Unix and Windows alike. A
+component is **not an untrusted-code sandbox** in
 Maestro. Inspect an extension before loading it; see the
 [operating environment](extensions/host_io.md) for the precise access and current
 platform limitations.
@@ -24,7 +27,8 @@ platform limitations.
 2. [Build the component](#build-the-component)
 3. [Package the component](#package-the-component)
 4. [Load and reload](#load-and-reload)
-5. [Capability reference](#capability-reference)
+5. [Author workflows](extensions/workflows.md)
+6. [Capability reference](#capability-reference)
 
 ## Create the project
 
@@ -284,6 +288,14 @@ the native artifact runtime. It asserts both `Hello, Ada!` and the structured
 `greeted` details. Build dependencies can be cached; the project folder itself
 starts empty. No extension package is downloaded or published, and no provider
 request is made.
+
+## Author workflows
+
+After loading your first component, use the [author workflows](extensions/workflows.md)
+to choose event handlers, wrap built-in tools, bound output, restore branch-local
+state and add UI that also handles headless use. Each workflow points to a shipped
+example and its owning capability reference. Keep using the build and packaging
+recipe above.
 
 ## Capability reference
 

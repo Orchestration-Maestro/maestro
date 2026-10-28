@@ -1,5 +1,8 @@
 # Theme
 
+For selecting a theme and writing a complete custom file, read
+[Select and create terminal themes](themes.md).
+
 `maestro-theme` builds typed terminal themes. A `Theme` holds one prepared ANSI
 prefix per plane and color name, a stored `ColorMode`, and optional name and source path.
 Every public item lives in the `theme` module and is re-exported at the crate root.

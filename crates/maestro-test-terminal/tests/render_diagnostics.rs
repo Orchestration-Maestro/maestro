@@ -1,6 +1,6 @@
 //! Diagnostic files and errors the frame writer produces.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use maestro_tui::{TUI, TerminalImage};
@@ -11,10 +11,13 @@ use crate::support::recording_terminal::RecordingTerminal;
 
 /// Width of the terminals in these scenarios.
 const COLUMNS: usize = 10;
-/// Where the redraw log is appended.
-const DEBUG_LOG: &str = "/home/fixture/.maestro/agent/maestro-debug.log";
-/// Where the crash report is written.
-const CRASH_LOG: &str = "/home/fixture/.maestro/agent/maestro-crash.log";
+/// The home directory the controlled host reports.
+const HOME: &str = "/home/fixture";
+
+/// Where the writer keeps `name` below the home's agent directory, joined natively.
+fn agent_log(name: &str) -> PathBuf {
+    Path::new(HOME).join(".maestro").join("agent").join(name)
+}
 
 /// A writer with the given environment drawing `lines` on a 10 by 3 terminal.
 struct Rig {
@@ -135,7 +138,7 @@ fn redraw_log_reasons_keep_exact_messages() {
         rig.tui.request_render(false);
         rig.runtime.settle().unwrap();
         let logged = FileEffect::Append(
-            PathBuf::from(DEBUG_LOG),
+            agent_log("maestro-debug.log"),
             format!(
                 "[2026-01-02T03:04:05.006Z] fullRender: {}\n",
                 reason.message
@@ -182,14 +185,15 @@ fn overflow_message(row: usize, measured: usize) -> String {
         "Rendered line {row} exceeds terminal width ({measured} > {COLUMNS}).\n\n\
         This is likely caused by a custom TUI component not truncating its output.\n\
         Use visibleWidth() to measure and truncateToWidth() to truncate lines.\n\n\
-        Debug log written to: {CRASH_LOG}"
+        Debug log written to: {}",
+        agent_log("maestro-crash.log").display()
     )
 }
 
 /// The crash report for a frame of one oversized line.
 fn crash_report() -> FileEffect {
     FileEffect::Write(
-        PathBuf::from(CRASH_LOG),
+        agent_log("maestro-crash.log"),
         "Crash at 2026-01-02T03:04:05.006Z\nTerminal width: 10\nLine 0 visible width: 11\n\n\
         === All rendered lines ===\n[0] (w=11) 01234567890\x1b[0m\x1b]8;;\x07\n"
             .to_owned(),

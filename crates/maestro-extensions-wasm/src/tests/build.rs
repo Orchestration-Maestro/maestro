@@ -51,10 +51,18 @@ pub fn example_component(name: &str) -> Result<PathBuf, String> {
 /// # Errors
 /// Returns Wasmtime's failure to configure the engine or to compile the component.
 pub fn compile(path: &Path) -> wasmtime::Result<(Engine, Component)> {
+    let engine = engine()?;
+    let component = Component::from_file(&engine, path)?;
+    Ok((engine, component))
+}
+
+/// Creates an async component engine with the optional user cache.
+///
+/// # Errors
+/// Returns Wasmtime's failure to configure the engine.
+pub fn engine() -> wasmtime::Result<Engine> {
     let mut config = Config::new();
     config.wasm_component_model_async(true);
     config.cache(Cache::from_file(None).ok());
-    let engine = Engine::new(&config)?;
-    let component = Component::from_file(&engine, path)?;
-    Ok((engine, component))
+    Engine::new(&config)
 }
