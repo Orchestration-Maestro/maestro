@@ -98,6 +98,7 @@ impl host::HostFsWatcher for State {
     }
 }
 
+#[cfg(target_os = "linux")]
 impl super::host::Harness {
     /// Delivers a controlled notification to a live component watch.
     ///
