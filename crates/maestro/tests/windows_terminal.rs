@@ -113,6 +113,17 @@ fn missing_directory_selector_opens_on_a_console() {
                 "timestamp": "2025-01-01T00:00:00.000Z",
             });
             std::fs::write(&session, format!("{header}\n")).unwrap();
+            let preflight =
+                root.output(&["--mode", "json", "--session", session.to_str().unwrap()]);
+            assert!(
+                session.is_file(),
+                "startup moved the selected session fixture"
+            );
+            let error = String::from_utf8_lossy(&preflight.stderr);
+            assert!(
+                error.contains("Stored session working directory does not exist"),
+                "{error}"
+            );
             presents(
                 &root,
                 &["--session", session.to_str().unwrap()],
