@@ -92,8 +92,9 @@ and add the package to your [package configuration](../packages.md):
 ```
 
 Package prompt discovery also recurses. Paths in `maestro.prompts` are relative
-to the package root. Without a resource manifest list, the conventional
-`prompts/` directory supplies package templates.
+to the package root. Without a `maestro` resource manifest, the conventional
+`prompts/` directory supplies package templates. See
+[package-root manifests](../packages.md#package-root-manifests).
 
 For a one-off file, run from the project directory:
 
