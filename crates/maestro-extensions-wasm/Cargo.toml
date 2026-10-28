@@ -12,6 +12,11 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "auto_commit_on_exit"
+path = "../../examples/extensions/auto_commit_on_exit.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "bash_spawn_hook"
 path = "../../examples/extensions/bash_spawn_hook.rs"
 crate-type = ["cdylib"]
@@ -58,6 +63,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "custom_header"
 path = "../../examples/extensions/custom_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "dirty_repo_guard"
+path = "../../examples/extensions/dirty_repo_guard.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -246,6 +256,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "tic_tac_toe"
+path = "../../examples/extensions/tic_tac_toe.rs"
 crate-type = ["cdylib"]
 
 [[example]]
