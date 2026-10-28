@@ -17,6 +17,8 @@ use std::{cell::RefCell, rc::Rc};
 struct ActiveGame {
     /// Lexically resolved native WAD path.
     wad: String,
+    /// Writable guest path belonging only to this engine instance.
+    root: String,
     /// The one engine initialized in this component.
     engine: Rc<DoomEngine>,
 }
@@ -42,20 +44,39 @@ async fn play(
         }
         (engine, true)
     } else {
-        let bytes =
-            std::fs::read(path_utils::guest_path(&api, &wad)?).map_err(|e| e.to_string())?;
-        let root = path_utils::make_temp_dir(&api, "maestro-doom")?;
-        let engine = Rc::new(DoomEngine::new(
-            &bytes,
-            &path_utils::guest_path(&api, &root)?,
-        )?);
-        active.replace(Some(ActiveGame {
-            wad,
-            engine: engine.clone(),
-        }));
+        let game = initialize(&api, wad)?;
+        let engine = game.engine.clone();
+        active.replace(Some(game));
         (engine, false)
     };
     show(api, background, engine, ctx.ui()?, resume).await
+}
+
+/// Creates one private root and removes partial files if initialization fails.
+fn initialize(api: &ExtensionAPI, wad: String) -> ExtensionResult<ActiveGame> {
+    let bytes = std::fs::read(path_utils::guest_path(api, &wad)?).map_err(|e| e.to_string())?;
+    let root = path_utils::guest_path(api, &path_utils::make_temp_dir(api, "maestro-doom")?)?;
+    match DoomEngine::new(&bytes, &root) {
+        Ok(engine) => Ok(ActiveGame {
+            wad,
+            root,
+            engine: Rc::new(engine),
+        }),
+        Err(error) => {
+            std::fs::remove_dir_all(root).map_err(|cleanup| {
+                format!("{error}; removing private engine files failed: {cleanup}")
+            })?;
+            Err(error)
+        }
+    }
+}
+
+/// Deletes the retained engine's files on session shutdown.
+fn cleanup(active: &Active) -> ExtensionResult<()> {
+    let Some(game) = active.borrow_mut().take() else {
+        return Ok(());
+    };
+    std::fs::remove_dir_all(game.root).map_err(|error| error.to_string())
 }
 
 /// Shows one centered overlay; its disposer owns the ticking task's end.
@@ -110,6 +131,14 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         let background = Background::new(api.events())?;
         let active: Active = Rc::default();
+        let shutdown = active.clone();
+        api.on(
+            "session_shutdown",
+            Rc::new(move |_, _| {
+                let result = cleanup(&shutdown);
+                Box::pin(async move { result.map(|()| None) })
+            }),
+        )?;
         let sender = api.clone();
         api.register_command(
             "doom-overlay",

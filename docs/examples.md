@@ -21,3 +21,21 @@ The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the
 same path. The standalone copy reads the README, the release history, the
 documentation and the examples from the package directory.
+
+## Controlled engine fixture
+
+The DOOM filesystem test uses a small MIT C component, not game code or game
+assets. Its committed bytes keep ordinary tests independent of wasi-sdk and
+avoid relaxing Rust's unsafe-code policy for generated exports.
+
+To regenerate it, install wasi-sdk 34, wit-bindgen-cli 0.62.0 and wasm-tools
+1.262.0, then run from the workspace root:
+
+```sh
+WASI_SDK_PATH=/path/to/wasi-sdk python3 crates/maestro-extensions-wasmtime/tests/fixtures/regenerate_doom_files.py
+```
+
+Add `--check` to rebuild and compare the bytes without changing the fixture.
+The integration test runs this check when `WASI_SDK_PATH` names an installed
+SDK; otherwise it prints a `SKIP` message. The save and cleanup tests always
+use the committed component.
