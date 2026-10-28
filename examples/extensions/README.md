@@ -48,6 +48,8 @@ resolving conflicts, then regenerate the table.
 <!-- example-index:start -->
 | File | Provides |
 | --- | --- |
+| `auto_commit_on_exit.md` | Auto-commit on exit |
+| `auto_commit_on_exit.rs` | Opt-in commit of a changed Git working tree when the session shuts down, titled with the first line of the newest assistant reply. |
 | `bash_spawn_hook.md` | Bash spawn hook |
 | `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |
