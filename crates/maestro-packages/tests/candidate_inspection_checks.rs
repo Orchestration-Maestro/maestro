@@ -123,7 +123,7 @@ fn candidate_failures_clean_staging_and_reject_escaping_paths() {
         .calls
         .borrow()
         .iter()
-        .find(|(_, args)| args.first().is_some_and(|arg| arg == "clone"))
+        .find(|(_, args)| args.iter().any(|arg| arg == "clone"))
         .unwrap()
         .1
         .last()
@@ -222,4 +222,67 @@ fn assert_candidate_path_refusals(fixture: &RetryFixture, source: &str) {
             .kind(),
         std::io::ErrorKind::PermissionDenied
     );
+}
+
+#[test]
+fn candidate_pin_cannot_resolve_only_to_a_tracked_path() {
+    let Some(_) = crate::resolution_support::case_in_child("path-pin", |_| vec![]) else {
+        return;
+    };
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    assert!(
+        fixture
+            .run(
+                fixture
+                    .manager
+                    .read_candidate_files("git:github.com/acme/tool@content", &["content".into()],)
+            )
+            .is_err()
+    );
+}
+
+#[test]
+fn candidate_inspection_disables_inherited_checkout_hooks() {
+    use std::os::unix::fs::PermissionsExt;
+    let Some(tree) = crate::resolution_support::case_in_child("hooks", |base| {
+        vec![
+            ("GIT_CONFIG_COUNT", Some("1".into())),
+            ("GIT_CONFIG_KEY_0", Some("core.hooksPath".into())),
+            ("GIT_CONFIG_VALUE_0", Some(format!("{base}/hooks"))),
+        ]
+    }) else {
+        return;
+    };
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    let hooks = tree.join("hooks");
+    std::fs::create_dir(&hooks).unwrap();
+    let hook = hooks.join("post-checkout");
+    std::fs::write(
+        &hook,
+        "#!/bin/sh\nprintf ran >> \"$MAESTRO_TEST_TREE/hook-sentinel\"\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
+    assert_eq!(
+        fixture
+            .run(
+                fixture
+                    .manager
+                    .read_candidate_files(&source, &["content".into()])
+            )
+            .unwrap(),
+        vec![Some(b"manifest".to_vec())]
+    );
+    assert!(!tree.join("hook-sentinel").exists());
+    fixture
+        .run(
+            fixture
+                .manager
+                .resolve_extension_sources(&[source], Some(SourceScope::Temporary)),
+        )
+        .unwrap();
+    assert!(tree.join("hook-sentinel").is_file());
 }
