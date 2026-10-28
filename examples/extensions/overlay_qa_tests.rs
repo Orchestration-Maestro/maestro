@@ -2,6 +2,7 @@
 //! passive overlays, focus and streaming input.
 //!
 //! Each `/overlay-*` command shows one demonstration; Escape closes it.
+// maestro-component: MAESTRO_OVERLAY_QA_TESTS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

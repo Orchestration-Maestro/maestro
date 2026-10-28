@@ -271,6 +271,11 @@ impl Connection {
 }
 
 impl Lifecycle {
+    /// The failure that arrived after the connection reported how it ended.
+    pub(super) fn take_failure(&mut self) -> Option<io::Error> {
+        self.failure.take()
+    }
+
     /// Records that the input can no longer answer the initial binding.
     fn end_input(&mut self) {
         if self.phase == Phase::Serving {

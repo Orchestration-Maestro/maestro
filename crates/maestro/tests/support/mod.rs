@@ -53,6 +53,37 @@ impl Root {
     }
 }
 
+/// Stops and reaps a borrowed child if its caller unwinds before normal cleanup.
+pub struct ChildGuard<'a>(pub &'a mut std::process::Child);
+
+impl Drop for ChildGuard<'_> {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
+#[test]
+fn child_guard_reaps_during_unwind() {
+    let root = Root::new();
+    let mut child = root
+        .command(&["--mode", "rpc"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _guard = ChildGuard(&mut child);
+        panic!("simulated selector read failure");
+    }));
+    let status = child.try_wait().unwrap();
+    let _ = child.kill();
+    child.wait().unwrap();
+    assert!(unwind.is_err());
+    assert!(status.is_some(), "child survived selector failure");
+}
+
 pub mod rpc;
 
 impl Root {

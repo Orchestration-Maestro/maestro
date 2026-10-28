@@ -123,6 +123,6 @@ fn embedded_bare_repo_container(info: &GitWorktreeInfo) -> Option<&Path> {
 }
 
 /// Canonicalize an identity path without rejecting an unavailable native path.
-fn canonicalize_best_effort_path(path: &Path) -> PathBuf {
+pub(super) fn canonicalize_best_effort_path(path: &Path) -> PathBuf {
     std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }

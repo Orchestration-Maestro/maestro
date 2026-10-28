@@ -362,6 +362,29 @@ async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn component_root_reaches_below_a_directory_it_may_search_but_not_list() {
+    if maestro_test_process::run_alone(
+        "component_root_reaches_below_a_directory_it_may_search_but_not_list",
+    )
+    .unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let searchable = scratch.path().join("searchable Ω");
+    std::fs::create_dir(&searchable).unwrap();
+    let target = searchable.join("file Ω name");
+    std::fs::write(&target, b"").unwrap();
+    // A privileged run lists every directory, so it has no unlistable parent to reach through.
+    let Some(_restore) = maestro_test_directory::deny(&searchable, 0o311).unwrap() else {
+        eprintln!("skipped: this process may list every directory");
+        return;
+    };
+    run(root_paths(std::slice::from_ref(&target), &target));
+}
+
 /// The drive spelling of a native path, without the verbatim prefix a canonical path keeps.
 #[cfg(windows)]
 fn plain(path: &Path) -> String {
@@ -458,6 +481,97 @@ fn component_windows_roots_reach_a_share_working_directory() {
     ];
     run(root_paths(&paths, &target));
     std::env::set_current_dir(original).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn component_windows_root_reaches_later_drives_other_shares_and_links() {
+    use std::process::Command;
+    if maestro_test_process::run_alone(
+        "component_windows_root_reaches_later_drives_other_shares_and_links",
+    )
+    .unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("inner")).unwrap();
+    let target = scratch.path().join(r"inner\file Ω name");
+    std::fs::write(&target, b"").unwrap();
+    let local = plain(scratch.path());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        // Every path below is created after the component has listed its root.
+        let drive = ('D'..='Z')
+            .rev()
+            .map(|letter| format!("{letter}:"))
+            .find(|drive| {
+                Command::new("subst")
+                    .arg(drive)
+                    .arg(&local)
+                    .status()
+                    .is_ok_and(|status| status.success())
+            })
+            .unwrap();
+        let _mounted = Subst(drive.clone());
+        let junction = scratch.path().join("junction");
+        let linked = Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(&junction)
+            .arg(scratch.path().join("inner"))
+            .status()
+            .unwrap();
+        assert!(linked.success(), "mklink /J");
+        std::os::windows::fs::symlink_file(&target, scratch.path().join("absolute Ω")).unwrap();
+        let long = scratch.path().join("l".repeat(200)).join("m".repeat(100));
+        std::fs::create_dir_all(&long).unwrap();
+        std::os::windows::fs::symlink_dir(scratch.path().join("inner"), long.join("deep")).unwrap();
+        let share = format!(r"localhost\{}${}", &local[..1], &local[2..]);
+        let mut paths = vec![
+            format!(r"{drive}\inner\file Ω name"),
+            format!(r"\\{share}\inner\file Ω name"),
+            format!(r"\\?\UNC\{share}\inner\file Ω name"),
+            format!(r"{local}\junction\file Ω name"),
+            format!(r"{drive}\junction\file Ω name"),
+            format!(r"{local}\absolute Ω"),
+            format!(r"{}\deep\file Ω name", plain(&long)),
+        ];
+        let cwd = plain(&std::env::current_dir().unwrap());
+        if cwd[..1].eq_ignore_ascii_case(&local[..1]) {
+            paths.push(format!(r"{}\inner\file Ω name", &local[2..]));
+        }
+        reach_after_load(&host, &paths, &target).await;
+    });
+}
+
+/// Each path writes and reads the target, reporting every path that missed it.
+#[cfg(windows)]
+async fn reach_after_load(host: &Harness, paths: &[String], target: &Path) {
+    let bytes = b"file\0\xff\x1b\xce\xa9".as_slice();
+    let mut missed = Vec::new();
+    for generation in ["p2", "p3"] {
+        for path in paths {
+            std::fs::write(target, b"").unwrap();
+            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"write":true,"bytes":bytes})).await;
+            if observed["bytes"] != json!(bytes) || std::fs::read(target).unwrap() != bytes {
+                missed.push(format!("{generation} {path}: {observed}"));
+            }
+        }
+    }
+    assert!(missed.is_empty(), "{missed:#?}");
+}
+
+/// Removes a substituted drive when the test ends, even after a failed assertion.
+#[cfg(windows)]
+struct Subst(String);
+#[cfg(windows)]
+impl Drop for Subst {
+    fn drop(&mut self) {
+        let _removed = std::process::Command::new("subst")
+            .arg(&self.0)
+            .arg("/D")
+            .status();
+    }
 }
 
 #[cfg(unix)]
@@ -598,8 +712,8 @@ fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, ki
 
 #[cfg(unix)]
 #[test]
-fn component_absolute_link_qualification() {
-    if maestro_test_process::run_alone("component_absolute_link_qualification").unwrap() {
+fn component_absolute_links_reach_native_targets() {
+    if maestro_test_process::run_alone("component_absolute_links_reach_native_targets").unwrap() {
         return;
     }
     let original = std::env::current_dir().unwrap();
@@ -623,15 +737,15 @@ fn component_absolute_link_qualification() {
             std::fs::read(&denied).unwrap_err().kind(),
             std::io::ErrorKind::PermissionDenied
         );
-        run(qualify_links(&target, Some(&denied)));
+        run(absolute_links(&target, Some(&denied)));
     }
-    run(qualify_links(&target, None));
+    run(absolute_links(&target, None));
     std::env::set_current_dir(original).unwrap();
 }
 
-/// Separates a runtime's absolute-link refusal from native permission denial.
+/// Follows direct paths and relative and absolute links as a native process does.
 #[cfg(unix)]
-async fn qualify_links(target: &Path, denied: Option<&Path>) {
+async fn absolute_links(target: &Path, denied: Option<&Path>) {
     let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
     for bytes in [
         b"first\0\xff".as_slice(),
@@ -656,6 +770,8 @@ async fn qualify_links(target: &Path, denied: Option<&Path>) {
                 target,
                 Path::new("relative-file"),
                 Path::new("relative-directory/bytes"),
+                Path::new("absolute-file"),
+                Path::new("absolute-directory/bytes"),
             ] {
                 let observed = host
                     .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
@@ -666,29 +782,18 @@ async fn qualify_links(target: &Path, denied: Option<&Path>) {
                     "{generation} {path:?}: {observed}"
                 );
             }
-            qualify_refusals(&host, generation, denied).await;
+            link_failures(&host, generation, denied).await;
         }
     }
 }
 
-/// Checks the runtime's refusal and a genuinely unreadable native target separately.
+/// A dangling link and a genuinely unreadable target fail as they do natively.
 #[cfg(unix)]
-async fn qualify_refusals(host: &Harness, generation: &str, denied: Option<&Path>) {
-    for path in ["absolute-file", "absolute-directory/bytes", "dangling"] {
-        let observed = host
-            .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
-            .await;
-        assert_eq!(
-            observed["error"], "permission-denied",
-            "{generation} {path}: {observed}"
-        );
-        if generation == "p3" {
-            assert_eq!(
-                observed["code"], "ErrorCode::NotPermitted",
-                "{path}: {observed}"
-            );
-        }
-    }
+async fn link_failures(host: &Harness, generation: &str, denied: Option<&Path>) {
+    let observed = host
+        .request(json!({"op":"file","generation":generation,"path":"dangling","bytes":[]}))
+        .await;
+    assert_eq!(observed["error"], "not-found", "{generation}: {observed}");
     let Some(denied) = denied else {
         return;
     };
@@ -705,4 +810,145 @@ async fn qualify_refusals(host: &Harness, generation: &str, denied: Option<&Path
             "OS denial: {observed}"
         );
     }
+}
+
+#[test]
+fn component_creates_and_reads_link_targets() {
+    if maestro_test_process::run_alone("component_creates_and_reads_link_targets").unwrap() {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("outside Ω")).unwrap();
+    let target = scratch.path().join("outside Ω").join("bytes");
+    #[cfg(windows)]
+    let target = std::path::PathBuf::from(plain(&target));
+    std::fs::write(&target, b"linked\0\xff").unwrap();
+    let made = scratch.path().join("native link");
+    #[cfg(unix)]
+    let native = std::os::unix::fs::symlink(&target, &made);
+    #[cfg(windows)]
+    let native = std::os::windows::fs::symlink_file(&target, &made);
+    // An account the host refuses symbolic links has no link to read or create.
+    if let Err(error) = native {
+        eprintln!("skipped: {error}");
+        return;
+    }
+    let relative = Path::new("outside Ω").join("bytes");
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        let observed = host
+            .request(json!({"op":"link","generation":"p2","target":target,"link":made}))
+            .await;
+        assert_link(&observed, &target, "p2 absolute");
+        for (target, name) in [(&target, "absolute"), (&relative, "relative")] {
+            let link = scratch.path().join(format!("{name} component link"));
+            let observed = host
+                .request(json!({"op":"link","generation":"p3","target":target,"link":link}))
+                .await;
+            assert_link(&observed, target, &format!("p3 {name}"));
+            assert_eq!(&std::fs::read_link(&link).unwrap(), target, "p3 {name}");
+        }
+    });
+}
+
+/// A component reads the native target in its own spelling and the bytes behind it.
+fn assert_link(observed: &serde_json::Value, target: &Path, case: &str) {
+    let guest = maestro_extensions::helpers::guest_path(target.to_str().unwrap());
+    assert_eq!(observed["target"], guest, "{case}: {observed}");
+    assert_eq!(
+        observed["bytes"],
+        json!(b"linked\0\xff"),
+        "{case}: {observed}"
+    );
+}
+
+/// A terminal dot must not turn a rejected path into removal of its preceding file.
+#[test]
+fn component_unlink_preserves_terminal_dot() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let victim = scratch.path().join(generation);
+            std::fs::write(&victim, b"keep").unwrap();
+            let path = format!("{}/.", victim.display());
+            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"bytes":[],"action":"unlink"})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert_eq!(std::fs::read(&victim).unwrap(), b"keep");
+        }
+    });
+}
+
+/// Exclusive creation rejects an existing link without creating its missing target.
+#[cfg(unix)]
+#[test]
+fn component_exclusive_creation_rejects_dangling_link() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let target = scratch.path().join(format!("{generation}-missing"));
+            let link = scratch.path().join(generation);
+            std::os::unix::fs::symlink(&target, &link).unwrap();
+            let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[],"action":"exclusive"})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            assert_eq!(
+                observed["error"],
+                if generation == "p2" {
+                    "AlreadyExists"
+                } else {
+                    "ErrorCode::Exist"
+                }
+            );
+            assert!(!target.exists(), "{generation} created the link target");
+        }
+    });
+}
+
+/// A native non-Unicode target must never be redirected to a lossy sibling.
+#[cfg(unix)]
+#[test]
+fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join(OsStr::from_bytes(b"raw\xff"));
+    let neighbor = scratch.path().join("raw�");
+    std::fs::write(&target, b"native").unwrap();
+    std::fs::write(&neighbor, b"neighbor").unwrap();
+    let link = scratch.path().join("alias");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let observed = host.request(json!({"op":"file","generation":generation,"path":link,"bytes":[120],"write":true})).await;
+            assert!(!observed["error"].is_null(), "{generation}: {observed}");
+            if generation == "p3" {
+                assert_eq!(observed["code"], "ErrorCode::IllegalByteSequence");
+            }
+            assert_eq!(std::fs::read(&neighbor).unwrap(), b"neighbor");
+            assert_eq!(std::fs::read(&target).unwrap(), b"native");
+        }
+    });
+}
+
+/// A shared traversal bound must retain the standard interface's loop error.
+#[cfg(unix)]
+#[test]
+fn component_link_cycles_keep_loop_errors() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let link = scratch.path().join("loop");
+    std::os::unix::fs::symlink("loop", &link).unwrap();
+    assert!(std::fs::read(&link).is_err());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        for generation in ["p2", "p3"] {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":link,"bytes":[]}))
+                .await;
+            assert!(observed["error"].is_string(), "{generation}: {observed}");
+            if generation == "p3" {
+                assert_eq!(observed["code"], "ErrorCode::Loop", "{observed}");
+            }
+        }
+    });
 }
