@@ -1,6 +1,9 @@
 //! File-write exclusion and durable byte publication.
 
+mod identity;
+mod recovery;
 mod replace;
+pub use identity::acquire_write;
 pub use replace::{Committed, Replace, replace};
 
 use std::fs::{File, TryLockError};
@@ -43,34 +46,32 @@ fn retry_contended(
 #[cfg(test)]
 mod tests;
 
-/// Acquires target-based write exclusion and replays a pending publication.
-///
-/// # Errors
-/// Returns native acquisition or recovery errors.
-pub fn acquire_write(
-    _path: &std::path::Path,
-    _through_symlinks: bool,
-) -> std::io::Result<WriteLock> {
-    Err(std::io::ErrorKind::Unsupported.into())
-}
-
-/// Exclusive ownership of one native target's recoverable write.
+/// Exclusive ownership of one canonical native target's recoverable write.
 #[derive(Debug)]
 pub struct WriteLock {
+    /// Resolved canonical entry, leaving caller-authored paths untouched.
+    pub(crate) target: std::path::PathBuf,
+    /// Durable intended-byte record in the shared per-user state directory.
+    pub(crate) recovery: std::path::PathBuf,
+    /// Target identity carried by the recovery record.
+    pub(crate) digest: [u8; 32],
     /// Retained native exclusion handle.
     _file: File,
 }
 
 impl WriteLock {
-    /// Publishes bytes while retaining the target's exclusion.
+    /// The canonical entry protected by this holder.
+    #[must_use]
+    pub fn path(&self) -> &std::path::Path {
+        &self.target
+    }
+
+    /// Consumes this holder to publish one write, retaining native identity and access controls.
     ///
     /// # Errors
-    /// Returns native publication errors.
-    pub fn replace(
-        &self,
-        _bytes: &[u8],
-        _creation_mode: Option<u32>,
-    ) -> std::io::Result<Committed> {
-        Err(std::io::ErrorKind::Unsupported.into())
+    /// Returns native staging or target-write errors. A pending durable copy is
+    /// replayed before the next holder is admitted.
+    pub fn replace(self, bytes: &[u8], creation_mode: Option<u32>) -> std::io::Result<Committed> {
+        recovery::replace(&self, bytes, creation_mode)
     }
 }

@@ -2,62 +2,48 @@
 use sha2::{Digest, Sha256};
 use std::{fs, io, path::Path};
 
-/// Replaces a session only when its SHA-256 matches `expected`.
+/// Rewrites a session only when its locked SHA-256 matches `expected`.
 ///
-/// Returns the newly observed bytes on a mismatch so the caller can check again.
-/// A missing session has the digest of empty bytes. Success returns `None`.
-/// The stable sidecar stays locked from the final read through atomic publication.
-/// Existing targets must allow a writable open, including their native ACL checks.
-/// A parent-directory sync failure after publication does not fail the write.
+/// Returns newly observed bytes on mismatch, or `None` after publication. An
+/// absent session has the digest of empty bytes. Canonical target exclusion spans
+/// recovery, the final read and comparison, and one recoverable in-place write.
+/// Existing targets retain ownership, access controls and hard links. Authored
+/// manager paths are unchanged. Postcommit durability warnings do not fail it.
 ///
 /// # Errors
-/// Propagates native lock, read and replacement errors before publication.
+/// Propagates native lock, recovery, read and publication errors.
 pub fn rewrite_session_file(
     path: &str,
     expected: &[u8; 32],
     bytes: &[u8],
 ) -> io::Result<Option<Vec<u8>>> {
-    with_write_lock(path, || {
-        let current = read(path)?;
-        if Sha256::digest(&current).as_slice() != expected {
-            return Ok(Some(current));
-        }
-        #[cfg(test)]
-        tests::compared();
-        match fs::OpenOptions::new().write(true).open(path) {
-            Ok(file) => drop(file),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => (),
-            Err(error) => return Err(error),
-        }
-        maestro_lock::replace(
-            Path::new(path),
-            bytes,
-            maestro_lock::Replace {
-                through_symlinks: true,
-                ..maestro_lock::Replace::default()
-            },
-        )?;
-        Ok(None)
-    })
+    let holder = maestro_lock::acquire_write(Path::new(path), true)?;
+    let current = read_native(holder.path())?;
+    if Sha256::digest(&current).as_slice() != expected {
+        return Ok(Some(current));
+    }
+    #[cfg(test)]
+    tests::compared();
+    holder.replace(bytes, None)?;
+    Ok(None)
 }
 
-/// Runs exactly one file write while retaining its stable sidecar's exclusive lock.
+/// Runs one file write under the canonical target's shared exclusion after recovery.
 pub(super) fn with_write_lock<T>(
     path: &str,
-    write: impl FnOnce() -> io::Result<T>,
+    write: impl FnOnce(&Path) -> io::Result<T>,
 ) -> io::Result<T> {
-    let sidecar = fs::OpenOptions::new()
-        .create(true)
-        .truncate(false)
-        .read(true)
-        .write(true)
-        .open(format!("{path}.lock"))?;
-    let _lock = maestro_lock::acquire_waiting(sidecar)?;
-    write()
+    let holder = maestro_lock::acquire_write(Path::new(path), true)?;
+    write(holder.path())
 }
 
-/// Reads native session bytes, treating an absent history as empty.
+/// Reads authored native session bytes, treating an absent history as empty.
 pub(super) fn read(path: &str) -> io::Result<Vec<u8>> {
+    read_native(Path::new(path))
+}
+
+/// Reads selected target bytes without changing their authored path representation.
+fn read_native(path: &Path) -> io::Result<Vec<u8>> {
     match fs::read(path) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
         result => result,

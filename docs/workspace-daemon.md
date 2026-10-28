@@ -177,7 +177,7 @@ axes and resume provenance. Screen history is stored separately and can be
 removed by saving without history.
 
 Saving writes pretty JSON without a trailing newline through the shared
-[atomic replacement](locking.md#atomic-replacement) operation, following symbolic
+[recoverable in-place publication](locking.md#recoverable-byte-publication) operation, following symbolic
 links. Topology commits before history is saved or removed; failure on the second
 file does not undo the first. Snapshot saves ignore postcommit directory-sync
 advisories.
@@ -463,7 +463,7 @@ client or background worker.
 
 The catalog resolves safe relative document paths against its own URL directory.
 Each agent updates independently: newer versions publish through the shared
-atomic replacement owner, identical equal-version bytes are left alone, and
+recoverable publication owner, identical equal-version bytes are left alone, and
 downgrades or changed bytes at the same version are rejected. `status.toml`
 records outcomes under the supplied catalog folder. `auto_update` reloads the
 supplied cache after a commit, before invoking the result callback. Daemon path

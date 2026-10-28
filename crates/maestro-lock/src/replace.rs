@@ -1,36 +1,34 @@
-//! Durable byte publication through a temporary sibling.
-use std::fs::{self, File, OpenOptions, Permissions};
-use std::io::{self, Write};
-#[cfg(unix)]
-use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+//! Recoverable byte publication preserving native file identity.
+#[cfg(test)]
+use crate::identity::resolve_write_target;
+use std::{
+    fs::{self, File},
+    io,
+    path::Path,
+};
 
-/// Symbolic-link policy selected by the calling feature.
+/// Symbolic-link and creation policy selected by the calling feature.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Replace {
-    /// Follow existing symbolic links, including dangling final targets.
+    /// Follow final symbolic links, including dangling targets.
     pub through_symlinks: bool,
-    /// Creation bits for a missing file; existing native permissions win.
-    ///
-    /// Unix applies all permission bits. Windows maps a missing owner-write bit
-    /// to read-only and ignores the other bits; this does not configure ACLs.
+    /// Creation bits for missing files; existing access controls remain unchanged.
     pub creation_mode: Option<u32>,
 }
 /// Successful publication with an optional postcommit durability warning.
 #[derive(Debug)]
 pub struct Committed {
-    /// Unexpected parent-directory sync error after the bytes were committed.
+    /// Unexpected directory sync or recovery cleanup error after target sync.
     pub dir_sync: Option<io::Error>,
 }
-/// Publishes bytes with file sync before rename and directory sync afterwards.
+/// Publishes intended bytes durably, then writes the target in place under exclusion.
 ///
 /// # Errors
-/// Returns native errors before publication, or an error for an unresolved link
-/// after forty hops. Postcommit errors are returned in [`Committed::dir_sync`].
+/// Returns native resolution, lock, staging or target-write errors. An interrupted
+/// write is completed from its recovery record by the next coordinated writer.
 pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Committed> {
     let target = if options.through_symlinks {
-        resolve_write_target(path)?
+        crate::identity::resolve_write_target(path)?
     } else {
         path.to_path_buf()
     };
@@ -39,165 +37,46 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent)?;
-    if target.file_name().is_none() {
-        return Err(io::Error::other("replacement target has no file name"));
-    }
-    let temp = parent.join(format!(
-        ".maestro-{}.{}.tmp",
-        std::process::id(),
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos()
-    ));
-    #[cfg(test)]
-    tests::before_create(&temp)?;
-    let permissions = replacement_permissions(&target)?;
-    let file = create_temporary(&temp, permissions.as_ref(), options.creation_mode)?;
-    let result = write_and_sync(file, bytes, permissions, options.creation_mode).and_then(|()| {
-        #[cfg(test)]
-        tests::closed();
-        commit(&temp, &target)
-    });
-    if let Err(error) = result {
-        remove_temporary(&temp);
-        return Err(error);
-    }
-    Ok(Committed {
-        dir_sync: sync_parent_dir(parent).err(),
-    })
-}
-/// Reads the replaced file's permissions without following a replaced link entry.
-fn replacement_permissions(target: &Path) -> io::Result<Option<Permissions>> {
-    match fs::symlink_metadata(target) {
-        Ok(metadata) if !metadata.file_type().is_symlink() => Ok(Some(metadata.permissions())),
-        Ok(_) => Ok(None),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(error),
-    }
+    crate::acquire_write(&target, false)?.replace(bytes, options.creation_mode)
 }
 
-/// Creates a sibling no more permissive than the selected Unix permission bits.
-fn create_temporary(
-    path: &Path,
-    permissions: Option<&Permissions>,
-    creation_mode: Option<u32>,
-) -> io::Result<File> {
-    let mut open = OpenOptions::new();
-    open.write(true).create_new(true);
-    #[cfg(unix)]
-    if let Some(mode) = permissions.map(Permissions::mode).or(creation_mode) {
-        open.mode(mode);
-    }
-    #[cfg(not(unix))]
-    let _ = (permissions, creation_mode);
-    open.open(path)
+/// Opens and syncs a directory, tolerating hosts without native directory sync.
+pub(crate) fn sync_directory(parent: &Path) -> io::Result<()> {
+    tolerate_sync_error(File::open(parent).and_then(|file| file.sync_all()))
 }
 
-/// Removes only an owned sibling, clearing Windows read-only deletion protection.
-fn remove_temporary(path: &Path) {
-    #[cfg(windows)]
-    if let Ok(metadata) = fs::metadata(path) {
-        let mut permissions = metadata.permissions();
-        #[expect(
-            clippy::permissions_set_readonly_false,
-            reason = "clears the Windows read-only attribute; cfg(windows) excludes Unix world-writable permissions"
-        )]
-        permissions.set_readonly(false);
-        let _ = fs::set_permissions(path, permissions);
-    }
-    let _ = fs::remove_file(path);
+/// Syncs a target parent after successful publication, retaining test observations.
+pub(crate) fn sync_parent_dir(parent: &Path) -> io::Result<()> {
+    tolerate_sync_error(sync_observed_parent(parent))
 }
 
-/// Writes all bytes before syncing the temporary file.
-fn write_and_sync(
-    mut file: File,
-    bytes: &[u8],
-    permissions: Option<Permissions>,
-    creation_mode: Option<u32>,
-) -> io::Result<()> {
-    #[cfg(test)]
-    tests::effect("write_all")?;
-    file.write_all(bytes)?;
-    #[cfg(unix)]
-    let permissions = permissions.or_else(|| creation_mode.map(Permissions::from_mode));
-    #[cfg(windows)]
-    let permissions = match (permissions, creation_mode) {
-        (None, Some(mode)) => {
-            let mut selected = file.metadata()?.permissions();
-            selected.set_readonly(mode & 0o200 == 0);
-            Some(selected)
-        }
-        (permissions, _) => permissions,
-    };
-    #[cfg(not(any(unix, windows)))]
-    let _ = creation_mode;
-    if let Some(permissions) = permissions {
-        file.set_permissions(permissions)?;
-    }
-    #[cfg(test)]
-    tests::effect("file_sync")?;
-    file.sync_all()
-}
-
-/// Commits the closed temporary sibling.
-fn commit(temp: &Path, target: &Path) -> io::Result<()> {
-    #[cfg(test)]
-    tests::effect("rename")?;
-    fs::rename(temp, target)
-}
-
-/// Opens a directory handle before syncing it.
-fn open_and_sync_directory(parent: &Path) -> io::Result<()> {
+/// Performs the observed parent-directory synchronization.
+fn sync_observed_parent(parent: &Path) -> io::Result<()> {
     #[cfg(test)]
     tests::effect("parent_open")?;
-    let dir = File::open(parent)?;
     #[cfg(test)]
-    tests::effect("parent_sync")?;
-    dir.sync_all()
+    if File::open(parent).is_ok() {
+        tests::effect("parent_sync")?;
+    }
+    sync_directory(parent)
 }
 
-/// Resolves at most forty final-component links without requiring a target.
-fn resolve_write_target(path: &Path) -> io::Result<PathBuf> {
-    let mut current = path.to_path_buf();
-    for _ in 0..40 {
-        let Ok(meta) = fs::symlink_metadata(&current) else {
-            return Ok(current);
-        };
-        if !meta.file_type().is_symlink() {
-            return Ok(current);
-        }
-        let link = fs::read_link(&current)?;
-        current = if link.is_absolute() {
-            link
-        } else {
-            current
-                .parent()
-                .unwrap_or_else(|| Path::new("."))
-                .join(link)
-        };
-    }
-    if fs::symlink_metadata(&current).is_ok_and(|meta| meta.file_type().is_symlink()) {
-        Err(io::Error::other("symbolic link chain exceeds 40 links"))
-    } else {
-        Ok(current)
-    }
-}
-/// Syncs the parent while tolerating unsupported directory sync.
-fn sync_parent_dir(parent: &Path) -> io::Result<()> {
-    let result = open_and_sync_directory(parent);
+/// Retains the native policy for hosts without directory synchronization.
+fn tolerate_sync_error(result: io::Result<()>) -> io::Result<()> {
     match result {
-        Err(error) if directory_sync_unsupported(&error) => Ok(()),
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::Unsupported
+                    | io::ErrorKind::InvalidInput
+                    | io::ErrorKind::PermissionDenied
+            ) =>
+        {
+            Ok(())
+        }
         result => result,
     }
 }
-/// Recognizes native platforms that cannot sync directory handles.
-fn directory_sync_unsupported(error: &io::Error) -> bool {
-    matches!(
-        error.kind(),
-        io::ErrorKind::Unsupported | io::ErrorKind::InvalidInput | io::ErrorKind::PermissionDenied
-    )
-}
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
