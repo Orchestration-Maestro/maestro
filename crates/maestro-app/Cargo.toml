@@ -121,6 +121,11 @@ name = "rpc_client_demo"
 path = "examples/rpc_client_demo/main.rs"
 
 [[example]]
+name = "context_files"
+path = "examples/sdk/context_files.rs"
+test = true
+
+[[example]]
 name = "custom_prompt"
 path = "examples/sdk/custom_prompt.rs"
 test = true
