@@ -1561,3 +1561,62 @@ fn admitted_current_git_checkout_preserves_addition_and_pin_semantics() {
         );
     }
 }
+
+/// Captures package intent and its exact derived edit in one ordered observation.
+struct OrderedPackageDecider(Arc<Mutex<Vec<&'static str>>>);
+impl maestro_settings::SettingsDecider for OrderedPackageDecider {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        let event = match request {
+            maestro_settings::DecisionRequest::PackageInstall { .. } => "intent",
+            maestro_settings::DecisionRequest::SettingsEdit { .. } => "edit",
+            _ => "other",
+        };
+        self.0.lock().unwrap().push(event);
+        Ok(())
+    }
+}
+
+/// Admission precedes progress; allowed contents still finish before preferences publish.
+#[test]
+fn allowed_package_admission_keeps_progress_before_preference_publication() {
+    for registered in [false, true] {
+        let fixture = Fixture::new(&json!({}));
+        let events = Arc::new(Mutex::new(Vec::new()));
+        if registered {
+            fixture
+                .settings
+                .borrow_mut()
+                .register_decider(Arc::new(OrderedPackageDecider(events.clone())))
+                .unwrap();
+        }
+        let log = events.clone();
+        let settings = fixture.settings.clone();
+        fixture
+            .manager
+            .set_progress_callback(Some(Rc::new(move |event| {
+                assert!(
+                    !settings
+                        .borrow()
+                        .get_global_settings()
+                        .0
+                        .contains_key("packages")
+                );
+                log.lock().unwrap().push(if event.r#type == Phase::Start {
+                    "start"
+                } else {
+                    "complete"
+                });
+                Ok(())
+            })));
+        block_on(fixture.manager.install_and_persist("npm:pkg", None)).unwrap();
+        assert_eq!(
+            *events.lock().unwrap(),
+            if registered {
+                vec!["intent", "edit", "start", "complete"]
+            } else {
+                vec!["start", "complete"]
+            }
+        );
+        assert_eq!(stored(&fixture), json!(["npm:pkg"]));
+    }
+}
