@@ -10,6 +10,7 @@ struct Effects {
     collision: bool,
     before_sync: Option<Box<dyn FnOnce()>>,
     temporary_path: Option<PathBuf>,
+    directories: Vec<PathBuf>,
     #[cfg(unix)]
     temporary_mode: Option<u32>,
 }
@@ -21,7 +22,7 @@ thread_local! {
 /// Keeps each unit-test process's recovery namespace inside a disposable root.
 pub(crate) fn root() -> PathBuf {
     std::env::var_os("MAESTRO_TEST_LOCK_ROOT").map_or_else(
-        || ROOT.with(|root| root.path().join(".maestro/state/file-locks")),
+        || ROOT.with(|root| root.path().join("home/.maestro/state/file-locks")),
         PathBuf::from,
     )
 }
@@ -833,10 +834,59 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
 fn existing_lock_root_needs_only_search_access_to_ancestors() {
     let root = root();
     fs::create_dir_all(&root).unwrap();
-    let ancestor = root.ancestors().nth(3).unwrap();
+    let ancestor = root.ancestors().nth(4).unwrap();
     let Some(_restore) = maestro_test_directory::deny(ancestor, 0o311).unwrap() else {
         return;
     };
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     drop(crate::acquire_write(&scratch.path().join("session"), true).unwrap());
+}
+
+/// Records only directory handles actually passed to ancestry synchronization.
+pub(crate) fn ancestry_directory(path: &Path) {
+    EFFECTS.with_borrow_mut(|effects| effects.directories.push(path.to_path_buf()));
+}
+
+#[test]
+fn interrupted_ancestry_is_synced_by_the_next_process_once() {
+    if std::env::var_os("MAESTRO_ANCESTRY_CHILD").is_some() {
+        let root = root();
+        let home = root.ancestors().nth(3).unwrap();
+        let target = home.join("session");
+        replace(&target, b"first", Replace::default()).unwrap();
+        let directories = EFFECTS.take().directories;
+        assert_eq!(
+            directories,
+            root.ancestors()
+                .take(4)
+                .map(Path::to_path_buf)
+                .collect::<Vec<_>>()
+        );
+        replace(&target, b"second", Replace::default()).unwrap();
+        assert!(EFFECTS.take().directories.is_empty());
+        return;
+    }
+    EFFECTS.set(Effects {
+        fault: Some(("ancestry_sync", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    assert!(
+        replace(
+            &scratch.path().join("session"),
+            b"first",
+            Replace::default()
+        )
+        .is_err()
+    );
+    EFFECTS.take();
+    let output = maestro_test_process::TestProcess::current(
+        "interrupted_ancestry_is_synced_by_the_next_process_once",
+    )
+    .unwrap()
+    .env("MAESTRO_ANCESTRY_CHILD", "1")
+    .env("MAESTRO_TEST_LOCK_ROOT", root())
+    .output()
+    .unwrap();
+    assert!(output.status.success(), "{output:?}");
 }

@@ -56,6 +56,8 @@ fn lock_root() -> io::Result<PathBuf> {
     crate::replace::tests::effect("ancestry_sync")?;
     // Sync even existing ancestors: another creator may not have persisted them yet.
     for parent in root.ancestors().skip(1) {
+        #[cfg(test)]
+        crate::replace::tests::ancestry_directory(parent);
         #[cfg(windows)]
         crate::replace::sync_directory(parent)?;
         #[cfg(not(windows))]
