@@ -3367,3 +3367,140 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
     );
     stdout(&output)
 }
+
+/// Independent source files supply their own index rows without a second inventory.
+#[test]
+fn example_index_discovers_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    fs::create_dir_all(folder.join("nested")).unwrap();
+    let readme = folder.join("README.md");
+    fs::write(
+        &readme,
+        "Before\n<!-- example-index:start -->\nold\n<!-- example-index:end -->\nAfter\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("zebra.rs"),
+        "//! Zebra | tool.\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("alpha.rs"),
+        "//! Alpha command\n//! with a continuation.\n\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
+    fs::write(folder.join("nested.md"), "# Nested usage\n").unwrap();
+    fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
+    let cargo = Path::new("unused-cargo");
+    assert_eq!(
+        tooling::run(&["example-index".into()], cargo, root.path()).unwrap(),
+        std::process::ExitCode::SUCCESS
+    );
+    let rendered = fs::read_to_string(&readme).unwrap();
+    assert_eq!(
+        rendered,
+        "Before\n<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `alpha.md` | Alpha usage |\n| `alpha.rs` | Alpha command with a continuation. |\n| `nested.md` | Nested usage |\n| `nested/helper.rs` | A helper. |\n| `zebra.rs` | Zebra \\| tool. |\n<!-- example-index:end -->\nAfter\n"
+    );
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_ok()
+    );
+    fs::write(folder.join("beta.rs"), "//! Beta command.\n").unwrap();
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
+}
+
+/// The tracked repository index is exactly the table rendered from its files.
+#[test]
+fn shipped_example_index_matches_documentation() {
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    tooling::run(
+        &["example-index".into(), "--check".into()],
+        Path::new("unused-cargo"),
+        &checkout,
+    )
+    .unwrap();
+}
+
+/// Two new example test files enter the same generated module inventory independently.
+#[test]
+fn example_test_modules_discover_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["zebra_example.rs", "alpha_example.rs", "helper.rs"] {
+        fs::write(root.path().join(name), "// test fixture\n").unwrap();
+    }
+    let declarations = crate::example_test_modules::generate(root.path()).unwrap();
+    assert!(declarations.contains("mod alpha_example;"));
+    assert!(declarations.contains("mod zebra_example;"));
+    assert!(!declarations.contains("mod helper;"));
+    assert!(
+        declarations.find("alpha_example").unwrap() < declarations.find("zebra_example").unwrap()
+    );
+    assert!(!declarations.contains("#[path"));
+}
+
+/// Discovered modules retain ordinary nested-module lookup when compiled and run.
+#[test]
+fn example_test_modules_resolve_nested_modules() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tests = root.path().join("tests");
+    fs::create_dir_all(tests.join("nested_example")).unwrap();
+    fs::create_dir(root.path().join("generated")).unwrap();
+    fs::write(
+        tests.join("nested_example.rs"),
+        "mod child; pub(super) fn value() -> u8 { child::value() }",
+    )
+    .unwrap();
+    fs::write(
+        tests.join("nested_example/child.rs"),
+        "pub(super) fn value() -> u8 { 42 }",
+    )
+    .unwrap();
+    let generated = root.path().join("generated/modules.rs");
+    fs::write(
+        &generated,
+        crate::example_test_modules::generate(&tests).unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        root.path().join("tests.rs"),
+        format!(
+            "include!({generated:?}); example_tests!(); pub fn value() -> u8 {{ nested_example::value() }}"
+        ),
+    )
+    .unwrap();
+    let main = root.path().join("main.rs");
+    fs::write(
+        &main,
+        "mod tests; fn main() { assert_eq!(tests::value(), 42); }",
+    )
+    .unwrap();
+    let executable = root
+        .path()
+        .join(format!("nested{}", std::env::consts::EXE_SUFFIX));
+    let output = toolchain_support::command("rustc")
+        .arg(&main)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(Command::new(executable).status().unwrap().success());
+}

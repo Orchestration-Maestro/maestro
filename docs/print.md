@@ -3,7 +3,8 @@
 `run_print_mode` runs one session to completion and presents its result: the
 final answer alone in text mode, or every session event as a JSON line in JSON
 mode. The caller supplies the `AgentSessionRuntime` it already owns, so no
-executor, input source or second session is created here.
+executor, input source or second session is created here. To launch JSON output
+and consume its records, follow [Consume JSON session events](json-events.md).
 
 ## Options
 

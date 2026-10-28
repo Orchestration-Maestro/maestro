@@ -1,7 +1,8 @@
 # Local model catalog
 
 `maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
-model file. `create` uses native file operations; `with_operations` accepts
+model file or an ordered list of files. `create` uses native file operations;
+`with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential
 owner. Constructors take that credential as
@@ -11,6 +12,18 @@ allows. Every constructor also takes the catalog's own `ConfigValues` handle,
 which runs the commands that configured credential values name; it is a platform
 handle in the same way. Native file and command effects require `Send + Sync`;
 browser effects may capture local `Rc` state.
+
+`with_model_files` takes an ordered `Vec<String>` with supplied file operations.
+The single-file constructors use the same path with one entry. Later files
+replace supplied fields while retaining unsupplied provider and model-override
+fields. Custom models overlay by provider and ID: a later definition replaces
+the whole earlier definition without moving its first position. Compatibility
+overlays keep the loading rules below, including one-level routing overlays.
+
+`set_base_model_files` replaces the ordered base files below the construction-time
+files and refreshes the registry, replaying dynamic providers. An empty base that
+was already empty leaves the current catalog untouched. Session construction and
+reload use this operation for base-package contributions.
 
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
