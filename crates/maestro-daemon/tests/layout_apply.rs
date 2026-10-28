@@ -457,13 +457,33 @@ fn shell_leaves_start_the_configured_shell_without_a_launch_command() {
     );
 }
 
-/// A leaf that creates `gate` when its pane is hung up and runs on until it is terminated, so
-/// the pane takes a while to stop.
+/// Blocks hangup, reports `ready` on a line of its own (the launch helper leaves one open), takes
+/// the hangup with `sigwait` (a handler would miss one that arrives before it is installed),
+/// creates `gate` and runs on until it is terminated, so the pane takes a while to stop.
+const HOLDS_UNTIL_TERMINATED: &str = "import signal, sys, time
+signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGHUP})
+print('\\nready', flush=True)
+signal.sigwait({signal.SIGHUP})
+open(sys.argv[1], 'w').close()
+while True:
+    time.sleep(0.05)";
+
+/// A leaf that holds until terminated; see `HOLDS_UNTIL_TERMINATED`.
 fn holds_until_terminated(gate: &Path) -> Value {
     json!({
         "type": "pane",
-        "command": ["/bin/sh", "-c", "trap 'touch \"$0\"' HUP; while :; do sleep 0.05; done", gate]
+        "command": ["/usr/bin/python3", "-c", HOLDS_UNTIL_TERMINATED, gate]
     })
+}
+
+/// Waits until the focused pane of `layout` has blocked hangup, so shutdown cannot reach it first.
+async fn wait_until_ready(app: &TestApp, layout: &LayoutDescription) {
+    let (workspace, pane) = app.state.parse_pane_id(&layout.focused_pane_id).unwrap();
+    let terminal = app.state.topology.workspaces[workspace]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    wait_for_line(app, &terminal, "ready").await;
 }
 
 /// A leaf that exits as soon as `gate` exists.
@@ -483,7 +503,8 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
             let scratch = Scratch::new().unwrap();
             let gate = scratch.path().join("hangup");
             let holder = apply_wire(&holds_until_terminated(&gate), &json!({"tab_id": "w1:t1"}));
-            applied(answer(app, holder).await);
+            let held = applied(answer(app, holder).await);
+            wait_until_ready(app, &held).await;
             let replacement = apply_wire(&exits_once_seen(&gate), &json!({"tab_id": "w1:t2"}));
             assert_eq!(
                 answer(app, replacement).await,
@@ -505,7 +526,8 @@ fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout
             let leaving = apply_wire(&exits_once_seen(&gate), &json!({"tab_id": "w1:t1"}));
             applied(answer(app, leaving).await);
             let holder = apply_wire(&holds_until_terminated(&gate), &json!({"tab_id": "w2:t1"}));
-            applied(answer(app, holder).await);
+            let held = applied(answer(app, holder).await);
+            wait_until_ready(app, &held).await;
             let replacement = apply_wire(&sleeper(), &json!({"tab_id": "w2:t2"}));
             let layout = applied(answer(app, replacement).await);
             assert_eq!(
