@@ -3500,3 +3500,9 @@ maestro-text = { path = "../maestro-text" }
         .unwrap();
     assert!(text.1.is_empty());
 }
+
+/// Native link traversal can be shared without adding an effect owner or a dependency cycle.
+#[test]
+fn final_link_consumers_may_use_the_path_utility() {
+    native_consumers_may_declare_the_utility(&["maestro-lock", "maestro-extensions-wasmtime"]);
+}
