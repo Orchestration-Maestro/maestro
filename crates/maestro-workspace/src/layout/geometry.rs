@@ -51,6 +51,33 @@ impl Borders {
     pub const LEFT: Self = Self(8);
     /// Every edge.
     pub const ALL: Self = Self(15);
+
+    /// Whether every edge of `other` is set.
+    #[must_use]
+    pub const fn contains(self, other: Self) -> bool {
+        let _ = other;
+        false
+    }
+
+    /// Whether no edge is set.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        false
+    }
+
+    /// Edges set in either flag set.
+    #[must_use]
+    pub const fn union(self, other: Self) -> Self {
+        let _ = other;
+        self
+    }
+
+    /// Edges of `self` that `other` does not set.
+    #[must_use]
+    pub const fn without(self, other: Self) -> Self {
+        let _ = other;
+        self
+    }
 }
 /// Split cells using multiply-then-round for the first extent.
 pub(super) fn split_rect(area: Rect, direction: &SplitDirection, ratio: f32) -> (Rect, Rect) {

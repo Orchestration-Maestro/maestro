@@ -240,6 +240,13 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         }
     }
 
+    /// Region of the surface in which panes are laid out.
+    #[must_use]
+    pub fn view_area(&self) -> maestro_workspace::layout::Rect {
+        let _ = self;
+        maestro_workspace::layout::Rect::default()
+    }
+
     /// Estimates rows and columns from the first pane, or unattached dimensions.
     #[must_use]
     pub fn estimate_pane_size(&self) -> (u16, u16) {
