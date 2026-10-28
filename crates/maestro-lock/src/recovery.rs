@@ -4,7 +4,7 @@ use crate::WriteLock;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Write},
+    io::{self, Read, Write},
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -47,14 +47,46 @@ pub(crate) fn replay(guard: &WriteLock) -> io::Result<()> {
     let mode =
         (bytes[32] == 1).then(|| u32::from_le_bytes([bytes[33], bytes[34], bytes[35], bytes[36]]));
     sync_root(recovery_root(guard)?)?;
-    write_target(
-        &guard.target,
-        existing_target(&guard.target)?,
-        &bytes[HEADER_LENGTH..],
-        mode,
-    )?;
+    let intended = &bytes[HEADER_LENGTH..];
+    if !finish_creation(&guard.target, intended, mode)? {
+        write_target(
+            &guard.target,
+            existing_target(&guard.target)?,
+            intended,
+            mode,
+        )?;
+    }
     crate::replace::sync_parent_dir(guard.target.parent().unwrap_or_else(|| Path::new(".")))?;
     cleanup(guard)
+}
+
+/// Recognizes a completed read-only creation without requiring another writable open.
+fn finish_creation(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<bool> {
+    let Some(mode) = mode else {
+        return Ok(false);
+    };
+    if !fs::symlink_metadata(path).is_ok_and(|meta| meta.is_file() && meta.permissions().readonly())
+    {
+        return Ok(false);
+    }
+    let mut file = File::open(path)?;
+    let mut current = Vec::new();
+    file.read_to_end(&mut current)?;
+    if current != bytes {
+        return Ok(false);
+    }
+    let permissions = file.metadata()?.permissions();
+    #[cfg(unix)]
+    let matches = permissions.mode() & 0o7777 == mode & 0o7777;
+    #[cfg(windows)]
+    let matches = permissions.readonly() == (mode & 0o200 == 0);
+    #[cfg(not(any(unix, windows)))]
+    let matches = {
+        let _ = (permissions, mode);
+        true
+    };
+    // Read-only mode follows the completed byte sync; writable staging cannot prove it.
+    Ok(matches)
 }
 
 /// Opens an existing writable target without truncating or following a replaced link.

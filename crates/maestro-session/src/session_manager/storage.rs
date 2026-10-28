@@ -37,9 +37,9 @@ pub(super) fn with_write_lock<T>(
     write(holder.path())
 }
 
-/// Reads authored native session bytes, treating an absent history as empty.
+/// Replays and reads native history under exclusion before a writable owner loads it.
 pub(super) fn read(path: &str) -> io::Result<Vec<u8>> {
-    read_native(Path::new(path))
+    with_write_lock(path, read_native)
 }
 
 /// Reads selected target bytes without changing their authored path representation.

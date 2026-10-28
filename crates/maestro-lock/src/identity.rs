@@ -52,6 +52,15 @@ fn lock_root() -> io::Result<PathBuf> {
     #[cfg(unix)]
     builder.mode(0o700);
     builder.create(&root)?;
+    #[cfg(test)]
+    crate::replace::tests::effect("ancestry_sync")?;
+    // Sync even existing ancestors: another creator may not have persisted them yet.
+    for parent in root.ancestors().skip(1) {
+        #[cfg(windows)]
+        crate::replace::sync_directory(parent)?;
+        #[cfg(not(windows))]
+        fs::File::open(parent)?.sync_all()?;
+    }
     Ok(root)
 }
 

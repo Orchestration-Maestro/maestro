@@ -25,9 +25,9 @@ impl SessionManager {
 
     /// Copy a source file's nonheader records into a new published native history.
     ///
-    /// The source is read with [`files::load_entries_from_file`] and converted by the
-    /// historical conversions before the current header is stamped; its file is never
-    /// rewritten. The new header keeps `source_path` exactly as authored as parent metadata.
+    /// The source is recovered and read under exclusion, then converted before the
+    /// current header is stamped. The new header keeps `source_path` exactly as
+    /// authored as parent metadata.
     ///
     /// # Errors
     /// Fails with `Cannot fork: source session file is empty or invalid: {source_path}`
@@ -50,7 +50,7 @@ impl SessionManager {
         agent_dir: &str,
         mut write: impl FnMut(&str, &[u8]) -> io::Result<()>,
     ) -> io::Result<Self> {
-        let mut entries = files::load_entries_from_file(source_path)?;
+        let mut entries = files::entries_from_bytes(&super::storage::read(source_path)?);
         if entries.is_empty() {
             return Err(invalid(&format!(
                 "Cannot fork: source session file is empty or invalid: {source_path}"
