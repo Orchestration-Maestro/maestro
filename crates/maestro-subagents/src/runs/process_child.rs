@@ -111,7 +111,7 @@ impl Run {
             "-p".into(),
             "--no-session".into(),
         ];
-        if let Some(model) = &agent.model {
+        if let Some(model) = agent.model.as_ref().filter(|model| !model.is_empty()) {
             args.extend(["--model".into(), model.clone()]);
         }
         if let Some(tools) = &agent.tools {
@@ -248,18 +248,26 @@ fn assistant(result: &mut SingleResult, message: &Value) {
         result.usage.context_tokens = number(usage, "totalTokens");
         result.usage.cost += usage["cost"]["total"].as_f64().unwrap_or(0.0);
     }
-    if result.model.is_none() {
-        result.model = message["model"].as_str().map(str::to_owned);
+    if result.model.as_deref().is_none_or(str::is_empty)
+        && let Some(model) = message["model"].as_str().filter(|model| !model.is_empty())
+    {
+        result.model = Some(model.into());
     }
-    if let Some(reason) = message["stopReason"].as_str() {
+    if let Some(reason) = message["stopReason"]
+        .as_str()
+        .filter(|reason| !reason.is_empty())
+    {
         result.stop_reason = Some(reason.into());
     }
-    if let Some(error) = message["errorMessage"].as_str() {
+    if let Some(error) = message["errorMessage"]
+        .as_str()
+        .filter(|error| !error.is_empty())
+    {
         result.error_message = Some(error.into());
     }
 }
 
 /// Reads a native token count, treating absent usage fields as zero.
-fn number(usage: &Value, key: &str) -> u64 {
-    usage[key].as_u64().unwrap_or(0)
+fn number(usage: &Value, key: &str) -> f64 {
+    usage[key].as_f64().unwrap_or(0.0)
 }

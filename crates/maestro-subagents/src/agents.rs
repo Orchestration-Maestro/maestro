@@ -122,7 +122,7 @@ fn load(api: &ExtensionAPI, directory: &str, source: &str) -> ExtensionResult<Ve
             continue;
         };
         let parsed = parse_frontmatter(api, &String::from_utf8_lossy(&bytes))?;
-        if let Some(agent) = definition(parsed, source, file_path) {
+        if let Some(agent) = definition(parsed, source, file_path)? {
             agents.push(agent);
         }
     }
@@ -134,13 +134,17 @@ fn definition(
     parsed: maestro_extensions_wasm::frontmatter::ParsedFrontmatter,
     source: &str,
     file_path: String,
-) -> Option<AgentConfig> {
+) -> ExtensionResult<Option<AgentConfig>> {
     let FrontmatterValue::Mapping(fields) = parsed.frontmatter else {
-        return None;
+        return Ok(None);
     };
-    let name = text(&fields, "name").filter(|value| !value.is_empty())?;
-    let description = text(&fields, "description").filter(|value| !value.is_empty())?;
-    let tools = text(&fields, "tools")
+    let Some(name) = text(&fields, "name").filter(|value| !value.is_empty()) else {
+        return Ok(None);
+    };
+    let Some(description) = text(&fields, "description").filter(|value| !value.is_empty()) else {
+        return Ok(None);
+    };
+    let tools = optional_text(&fields, "tools")?
         .map(|tools| {
             tools
                 .split(',')
@@ -150,15 +154,15 @@ fn definition(
                 .collect::<Vec<_>>()
         })
         .filter(|tools| !tools.is_empty());
-    Some(AgentConfig {
+    Ok(Some(AgentConfig {
         name,
         description,
         tools,
-        model: text(&fields, "model"),
+        model: optional_text(&fields, "model")?,
         system_prompt: parsed.body,
         source: source.into(),
         file_path,
-    })
+    }))
 }
 
 /// Reads a text member without treating malformed scalar types as agent names.
@@ -182,4 +186,20 @@ pub fn format_agent_list(agents: &[AgentConfig], max_items: usize) -> (String, u
         .collect::<Vec<_>>()
         .join("; ");
     (text, agents.len().saturating_sub(max_items))
+}
+
+/// Rejects malformed restrictions instead of silently enabling child defaults.
+fn optional_text(
+    fields: &[(String, FrontmatterValue)],
+    name: &str,
+) -> ExtensionResult<Option<String>> {
+    match fields
+        .iter()
+        .find(|(key, _)| key == name)
+        .map(|(_, value)| value)
+    {
+        None | Some(FrontmatterValue::Null) => Ok(None),
+        Some(FrontmatterValue::String(value)) => Ok(Some(value.clone())),
+        Some(_) => Err(format!("Agent field {name} must be text")),
+    }
 }

@@ -27,17 +27,17 @@ pub(crate) struct TaskItem {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Usage {
     /// Input tokens across turns.
-    pub input: u64,
+    pub input: f64,
     /// Output tokens across turns.
-    pub output: u64,
+    pub output: f64,
     /// Cached input tokens.
-    pub cache_read: u64,
+    pub cache_read: f64,
     /// Cached output tokens.
-    pub cache_write: u64,
+    pub cache_write: f64,
     /// Total reported cost.
     pub cost: f64,
     /// Most recent context size.
-    pub context_tokens: u64,
+    pub context_tokens: f64,
     /// Assistant messages observed.
     pub turns: u64,
 }

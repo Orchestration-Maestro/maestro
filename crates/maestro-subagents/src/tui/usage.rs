@@ -2,25 +2,17 @@
 use crate::runs::{SingleResult, Usage};
 
 /// Formats counts with the same thresholds as the tool's compact displays.
-fn tokens(count: u64) -> String {
-    if count < 1000 {
+fn tokens(count: f64) -> String {
+    if count < 1000.0 {
         return count.to_string();
     }
-    if count < 10_000 {
-        return decimal(rounded(count, 100), "k");
+    if count < 10_000.0 {
+        return format!("{:.1}k", count / 1000.0);
     }
-    if count < 1_000_000 {
-        return format!("{}k", rounded(count, 1000));
+    if count < 1_000_000.0 {
+        return format!("{:.0}k", (count / 1000.0).round());
     }
-    decimal(rounded(count, 100_000), "M")
-}
-/// Rounds a nonnegative count without overflowing its integer representation.
-fn rounded(count: u64, unit: u64) -> u64 {
-    count / unit + u64::from(count % unit >= unit / 2)
-}
-/// Writes the retained decimal digit of a scaled count.
-fn decimal(tenths: u64, suffix: &str) -> String {
-    format!("{}.{}{suffix}", tenths / 10, tenths % 10)
+    format!("{:.1}M", count / 1_000_000.0)
 }
 /// Formats only nonzero usage and the optional model name.
 pub(super) fn label(usage: &Usage, model: Option<&str>) -> String {
@@ -38,14 +30,14 @@ pub(super) fn label(usage: &Usage, model: Option<&str>) -> String {
         ("R", usage.cache_read),
         ("W", usage.cache_write),
     ] {
-        if count > 0 {
+        if count != 0.0 {
             parts.push(format!("{prefix}{}", tokens(count)));
         }
     }
     if usage.cost != 0.0 {
         parts.push(format!("${:.4}", usage.cost));
     }
-    if usage.context_tokens > 0 {
+    if usage.context_tokens > 0.0 {
         parts.push(format!("ctx:{}", tokens(usage.context_tokens)));
     }
     if let Some(model) = model {
