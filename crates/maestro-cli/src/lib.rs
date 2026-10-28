@@ -23,3 +23,6 @@ pub use startup::main::{MainOptions, main};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod workspace_commands;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod completion;

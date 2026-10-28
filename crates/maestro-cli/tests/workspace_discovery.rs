@@ -350,3 +350,76 @@ fn help_ignores_non_help_tokens_and_propagates_output_failures() {
     .unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
 }
+
+#[test]
+fn five_shell_completions_include_chat_and_nested_workspace_commands() {
+    for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        assert_eq!(
+            maestro_cli::completion::run_completion(&[shell.into()], &mut stdout, &mut stderr)
+                .unwrap(),
+            0
+        );
+        assert!(stderr.is_empty(), "{shell}");
+        let script = String::from_utf8(stdout).unwrap();
+        for word in [
+            "maestro",
+            "workspace",
+            "wait-output",
+            "live-handoff",
+            "action-manifest",
+            "--skill",
+            "--session",
+        ] {
+            assert!(script.contains(word), "{shell} missing {word}");
+        }
+        if shell == "zsh" {
+            assert!(script.contains("'--cwd["));
+            assert!(!script.contains("--cwd=["));
+            assert!(!script.contains("--direction=["));
+        }
+    }
+}
+
+#[test]
+fn completion_validates_usage_and_propagates_output_failures() {
+    for args in [
+        vec![],
+        vec!["tcsh"],
+        vec!["bash", "extra"],
+        vec!["--help", "extra"],
+    ] {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        assert_eq!(
+            maestro_cli::completion::run_completion(
+                &args.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                &mut stdout,
+                &mut stderr
+            )
+            .unwrap(),
+            2
+        );
+        assert!(stdout.is_empty());
+        let usage = String::from_utf8(stderr).unwrap();
+        assert!(usage.contains("bash|elvish|fish|powershell|zsh"));
+    }
+    for help in ["help", "--help", "-h"] {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        assert_eq!(
+            maestro_cli::completion::run_completion(&[help.into()], &mut stdout, &mut stderr)
+                .unwrap(),
+            0
+        );
+        assert!(stdout.is_empty());
+        assert!(!stderr.is_empty());
+    }
+    for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
+        let error = maestro_cli::completion::run_completion(
+            &[shell.into()],
+            &mut BrokenOutput,
+            &mut Vec::new(),
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe, "{shell}");
+    }
+}
