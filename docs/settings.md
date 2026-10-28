@@ -544,10 +544,12 @@ as described under [Read-only base layer](#read-only-base-layer).
 
 `maestro_daemon::settings::io` reads the supplied manager through
 `SettingsManager::effective_global_settings`: the persisted global base layer,
-then the accepted user document, then the base locks. This operation rereads the
-global layer on startup and each existing reload; a read failure retains the
-accepted layer and reports an error. With no layer, the result equals the raw
-global snapshot. Workspace preferences never use project settings, project base
+then the accepted user document, then the base locks. A registered settings
+decider then resolves that view and the locks are restored again, so no resolved
+value replaces a locked one. This operation rereads the global layer on startup
+and each existing reload; a read failure retains the accepted layer and reports an
+error. With no layer and no decider, the result equals the raw global snapshot.
+Workspace preferences never use project settings, project base
 layers or runtime chat overrides. Stored lock conflicts are nonfatal diagnostics;
 explicit refused edits remain failures. `load_config` consumes startup global
 errors and returns unrelated project errors separately. Read or parse failures

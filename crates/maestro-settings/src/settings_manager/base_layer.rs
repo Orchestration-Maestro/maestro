@@ -112,25 +112,22 @@ impl SettingsManager {
 
     /// Rereads the persisted global base layer and resolves accepted user preferences.
     /// Project settings, project layers and runtime overrides never enter this result.
-    /// Without a base layer this equals [`Self::get_global_settings`]. Read failures
-    /// retain the accepted layer and are reported by [`Self::drain_errors`].
+    /// The registered decider resolves the stored view, and the layer's locks are
+    /// restored before and after it runs. Without a base layer or decider this equals
+    /// [`Self::get_global_settings`]. Read failures retain the accepted layer and are
+    /// reported by [`Self::drain_errors`].
     #[must_use]
     pub fn effective_global_settings(&mut self) -> Settings {
         match self.storage.read_base_layer(SettingsScope::Global) {
             Ok(layer) => self.base_layers[SettingsScope::Global as usize] = layer,
             Err(error) => self.queue.record_error(SettingsScope::Global, error),
         }
-        let Some(layer) = self.base_layers[SettingsScope::Global as usize].as_ref() else {
-            return self.get_global_settings();
-        };
-        layer.compose_with(self.global.settings.clone(), |path| {
-            self.record_lock(
-                SettingsScope::Global,
-                layer,
-                path,
-                SettingsErrorKind::StoredValueIgnored,
-            );
-        })
+        let layer = self.get_global_base_layer();
+        Settings(self.compose_effective_settings(
+            layer,
+            layer.map_or_else(Map::new, |layer| layer.settings.0.clone()),
+            &[(SettingsScope::Global, &self.global.settings)],
+        ))
     }
 
     /// Queries the current layer, with a project layer taking precedence.
@@ -181,7 +178,11 @@ impl SettingsManager {
         else {
             return false;
         };
-        self.record_lock(scope, layer, locked, SettingsErrorKind::Failure);
+        self.queue.record(
+            scope,
+            SettingsErrorKind::Failure,
+            layer.lock_message(locked, "Edit refused").into(),
+        );
         true
     }
 
@@ -202,25 +203,6 @@ impl SettingsManager {
                 .map(|path| layer.lock_message(path, "Edit refused"))
         });
         message.map_or(Ok(()), Err)
-    }
-
-    /// Reports a constraint with the publisher's persisted provenance.
-    fn record_lock(
-        &self,
-        scope: SettingsScope,
-        layer: &BaseSettingsLayer,
-        path: &str,
-        kind: SettingsErrorKind,
-    ) {
-        let action = match kind {
-            SettingsErrorKind::Failure => "Edit refused",
-            SettingsErrorKind::StoredValueIgnored => "Stored value ignored",
-        };
-        let message = format!(
-            "{action}: `{path}` is locked by {} (recorded {}); starting Maestro refreshes the base layer",
-            layer.source, layer.recorded_at
-        );
-        self.queue.record(scope, kind, message.into());
     }
 
     /// Clears native nonfinite flags for presentation values supplied by base locks.
