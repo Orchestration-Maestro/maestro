@@ -50,6 +50,42 @@ execution selects registrations before applying the offline return.
 reading `MAESTRO_OFFLINE` whenever an operation consults offline mode. The flag
 accepts `1`, or `true` and `yes` in any ASCII letter case, and is never trimmed.
 
+## Resolved packages and pin integrity
+
+`resolve` and `resolve_extension_sources` return `ResolvedPaths::packages` beside
+resource lists. Each `ResolvedPackage` retains the authored source (including its
+pin), a kind-prefixed identity (`npm:`, `git:` or `local:`), the lookup scope and
+its installed path. Configured resolution keeps the project entry when user and
+project entries name the same identity, even with different pins. Explicit
+resolution retains source order and supports the temporary scope. Missing sources
+that are skipped produce no descriptor. Empty packages and packages with all
+resources filtered out still have descriptors; resource files are not needed to
+find their roots.
+
+`verify_pin(source, scope)` inspects an explicitly pinned Git source at its
+managed user or project location. `None` selects user scope. `GitPinStatus` reports
+the locally available expected commit, current HEAD and sorted relative changed
+paths. Missing checkouts or unavailable refs have absent commits and are never
+clean. Changes include the index, working tree, ignored files and other untracked
+files. Inspection does not fetch or change contents.
+
+`restore_pin(source, scope)` resets to the exact pinned commit and removes all
+untracked contents, including nested repositories, even when HEAD already matches.
+Read the status first to retain the paths for a restoration notice. Command
+failure attempts to recover the previous HEAD selection. If local restoration is
+unavailable or fails, online restoration prepares an ordinary installation in an
+owned sibling before replacing the checkout. Preparation failures leave the old
+checkout in place; failed publication attempts to restore it. A failed rollback
+reports the retained backup path. Offline restoration can repair a locally
+available commit but never acquires a missing checkout or commit.
+
+These operations do not edit settings. They reject local sources, npm sources,
+unpinned Git sources, symlinked managed paths and redirected Git metadata. They
+accept sources and scopes, never arbitrary cleanup paths. Restoration deliberately
+discards edits inside managed remote checkouts; use a local source for development.
+Ordinary `install` keeps its existing behavior and does not imply an integrity
+check.
+
 ## Progress
 
 `set_progress_callback` replaces or clears the callback; each emission reads the
