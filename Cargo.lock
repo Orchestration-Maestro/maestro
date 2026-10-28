@@ -3994,6 +3994,7 @@ dependencies = [
  "simd-adler32",
  "slab",
  "smallvec",
+ "socket2",
  "stable_deref_trait",
  "syn 2.0.119",
  "syn 3.0.6",
@@ -4146,6 +4147,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "rustix",
+ "socket2",
 ]
 
 [[package]]

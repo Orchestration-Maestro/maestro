@@ -1,7 +1,8 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
 use rustix::io::Errno;
-use rustix::net::{AddressFamily, SocketAddrUnix, SocketFlags, SocketType, connect, socket_with};
+use rustix::net::{SocketAddrUnix, connect};
+use socket2::{Domain, Socket, Type};
 use std::fs;
 use std::io;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
@@ -62,16 +63,9 @@ pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<
 
 /// Create a nonblocking Unix stream descriptor protected from exec inheritance.
 fn nonblocking_local_socket() -> io::Result<std::os::fd::OwnedFd> {
-    #[cfg(not(any(target_vendor = "apple", target_os = "aix", target_os = "haiku")))]
-    let flags = SocketFlags::CLOEXEC;
-    #[cfg(any(target_vendor = "apple", target_os = "aix", target_os = "haiku"))]
-    let flags = SocketFlags::empty();
-    let fd = socket_with(AddressFamily::UNIX, SocketType::STREAM, flags, None)?;
-    // These platforms cannot set close-on-exec atomically during socket creation.
-    #[cfg(any(target_vendor = "apple", target_os = "aix", target_os = "haiku"))]
-    rustix::io::fcntl_setfd(&fd, rustix::io::FdFlags::CLOEXEC)?;
-    rustix::io::ioctl_fionbio(&fd, true)?;
-    Ok(fd)
+    let socket = Socket::new(Domain::UNIX, Type::STREAM, None)?;
+    socket.set_nonblocking(true)?;
+    Ok(socket.into())
 }
 
 /// Bind without unlinking a name when the listener is dropped.

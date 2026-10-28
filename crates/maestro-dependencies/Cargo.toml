@@ -105,6 +105,7 @@ rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pt
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+socket2 = { version = "0.6.5", default-features = false, features = ["all"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
@@ -156,6 +157,7 @@ rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pt
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+socket2 = { version = "0.6.5", default-features = false, features = ["all"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
@@ -206,6 +208,7 @@ rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pt
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+socket2 = { version = "0.6.5", default-features = false, features = ["all"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
@@ -257,6 +260,7 @@ rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pt
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+socket2 = { version = "0.6.5", default-features = false, features = ["all"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
