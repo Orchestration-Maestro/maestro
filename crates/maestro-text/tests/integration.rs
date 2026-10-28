@@ -8,3 +8,5 @@ mod number_formatting;
 mod text_rules;
 mod utf8_decoding;
 mod utf8_streaming;
+
+mod shell_quote;

@@ -327,6 +327,12 @@ mod tests {
                 M::get_show_hardware_cursor,
                 M::set_show_hardware_cursor,
             ),
+            Toggle::new(
+                &["holdUncheckedText"],
+                Some(false),
+                M::get_hold_unchecked_text,
+                M::set_hold_unchecked_text,
+            ),
         ]
     }
 
@@ -1287,6 +1293,7 @@ mod tests {
         ("prompts", Kind::List, &[]),
         ("themes", Kind::List, &[]),
         ("enableSkillCommands", Kind::Flag, &[]),
+        ("holdUncheckedText", Kind::Flag, &[]),
         (
             "terminal",
             Kind::Record,
@@ -1368,7 +1375,8 @@ mod tests {
                 settings.get_quiet_startup(), settings.get_collapse_changelog(),
                 settings.get_enable_install_telemetry(), settings.get_enable_skill_commands(),
                 settings.get_show_images(), settings.get_show_terminal_progress(),
-                settings.get_image_auto_resize(), settings.get_block_images()],
+                settings.get_image_auto_resize(), settings.get_block_images(),
+                settings.get_hold_unchecked_text()],
             "numbers": [settings.get_compaction_reserve_tokens(), settings.get_compaction_keep_recent_tokens(),
                 settings.get_image_width_cells(), settings.get_editor_padding_x(),
                 settings.get_autocomplete_max_visible()],

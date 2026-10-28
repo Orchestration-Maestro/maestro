@@ -626,7 +626,7 @@ fn process_capture_consumers_may_declare_the_owner() {
 }
 
 #[test]
-fn process_leaf_cannot_depend_on_cancellation() {
+fn process_owner_cannot_depend_on_cancellation() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-process", "maestro-cancellation"]);
     for (kind, extra) in DECLARATIONS.iter().chain(&[
@@ -640,7 +640,11 @@ fn process_leaf_cannot_depend_on_cancellation() {
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("maestro-process must not depend on workspace crate maestro-cancellation".into()),
+            Err(if kind.ends_with("dev-dependencies") {
+                "internal dev dependency requires declared dependency-free test support: maestro-process -> maestro-cancellation".into()
+            } else {
+                "forbidden production dependency: maestro-process -> maestro-cancellation".into()
+            }),
             "{kind}{extra}"
         );
     }
@@ -3474,4 +3478,25 @@ fn guest_schema_validation_edge_is_native_development_only() {
         caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
+}
+
+#[test]
+fn native_process_and_guest_share_text_without_giving_text_dependencies() {
+    for owner in ["maestro-process", "maestro-extensions-wasm"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[owner, "maestro-text"]);
+        workspace.member(
+            owner,
+            owner,
+            r#"[dependencies]
+maestro-text = { path = "../maestro-text" }
+"#,
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    }
+    let text = support::policy::POLICY
+        .iter()
+        .find(|(name, _)| *name == "maestro-text")
+        .unwrap();
+    assert!(text.1.is_empty());
 }

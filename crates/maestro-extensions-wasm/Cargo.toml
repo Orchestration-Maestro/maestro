@@ -61,6 +61,11 @@ path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "dirty_repo_guard"
+path = "../../examples/extensions/dirty_repo_guard.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dynamic_tools"
 path = "../../examples/extensions/dynamic_tools.rs"
 crate-type = ["cdylib"]
@@ -239,6 +244,11 @@ path = "../../examples/extensions/space_invaders.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "ssh"
+path = "../../examples/extensions/ssh.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
 crate-type = ["cdylib"]
@@ -251,6 +261,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "tic_tac_toe"
+path = "../../examples/extensions/tic_tac_toe.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -308,6 +323,7 @@ path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+maestro-text = { path = "../maestro-text" }
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }
