@@ -530,7 +530,11 @@ Choosing a value applies it at once and saves it through the settings owner:
 session policies go to the session, which saves them, and the rest are written to
 the settings file. Image visibility and width, padding, completion height,
 thinking, the hardware cursor and the shrink policy update the retained rows,
-editor and terminal straight away. Turning skill commands on or off saves the
+editor and terminal straight away. One image choice rebuilds each retained tool
+row once, walking the transcript's children as they stand during the walk: a row
+added meanwhile is reached, and a cleared or replaced transcript leaves the walk
+on the rows it started with. The transport choice applies to the next model
+request of the running session. Turning skill commands on or off saves the
 choice and then installs a rebuilt completion provider on the editor, so the next
 completion there offers `/skill:` commands or leaves them out. Thinking visibility
 also rebuilds the transcript from the session's messages. Themes publish

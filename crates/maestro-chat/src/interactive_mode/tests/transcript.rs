@@ -741,7 +741,7 @@ pub(super) fn call(id: &str, name: &str) -> Value {
 }
 
 /// A stored result of call `id` with one text block.
-fn result(id: &str) -> Value {
+pub(super) fn result(id: &str) -> Value {
     json!({"role": "toolResult", "toolCallId": id, "toolName": "unknown_tool",
         "content": [{"type": "text", "text": "HISTORICAL_RESULT"}], "isError": false,
         "timestamp": 0})
