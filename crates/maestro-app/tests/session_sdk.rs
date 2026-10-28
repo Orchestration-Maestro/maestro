@@ -1219,3 +1219,49 @@ fn sdk_explicit_tools_are_admitted_before_initial_history() {
         assert!(manager.borrow().get_entries().is_empty());
     });
 }
+
+/// Refuses explicit SDK selections, retaining requested thinking before capability clamping.
+struct RefuseSdkSelection;
+impl maestro_settings::SettingsDecider for RefuseSdkSelection {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        match request {
+            maestro_settings::DecisionRequest::Model {
+                thinking_level: "high",
+                ..
+            }
+            | maestro_settings::DecisionRequest::ThinkingLevel("high") => {
+                Err("release refuses SDK selection".into())
+            }
+            _ => Ok(()),
+        }
+    }
+}
+
+/// SDK selections are explicit requests, not stored-value resolutions.
+#[test]
+fn sdk_explicit_selection_refuses_before_history_and_capability_clamp() {
+    on_task_set(|_| async {
+        let h = fixture(Auth::Key).await;
+        for explicit_model in [false, true] {
+            let mut options = options(&h, json!({}));
+            if explicit_model {
+                options.model = Some(h.model("faux-1"));
+            }
+            options.thinking_level = Some(ModelThinkingLevel::High);
+            let manager = options.session_manager.as_ref().unwrap().clone();
+            options
+                .settings_manager
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .register_decider(Arc::new(RefuseSdkSelection))
+                .unwrap();
+            let result = create_agent_session(options).await;
+            assert_eq!(
+                result.err().unwrap().message,
+                "release refuses SDK selection"
+            );
+            assert!(manager.borrow().get_entries().is_empty());
+        }
+    });
+}
