@@ -757,7 +757,7 @@ chain:
 9. **Defaults.** The manifest provides the reference's three chains as workflow
    files in its core area, with the reference's roles: `implement-and-review`
    (worker, reviewer, worker), `implement` (scout, planner, worker) and
-   `scout-and-plan` (scout, planner). No package bundles workflow files.
+   `scout-and-plan` (scout, planner). No base package bundles these default workflows.
 10. YAML is parsed by Maestro's existing YAML parser; the runner adds no YAML
     library.
 
@@ -1058,6 +1058,10 @@ every other extension is therefore unchanged, and conflicts resolve from that li
 as in the reference: the first registration wins for tools and flags, the later
 one for shortcuts, and duplicate commands get numbered names in list order. A base
 package resolves conflicts exactly as any other package does.
+
+Two corrections of reference defects, the pinned Git checkout and the atomic
+session rewrite, also apply in internal mode; see
+[Corrected reference defects](#corrected-reference-defects).
 
 Without a manifest, `holdUncheckedText` may still be set explicitly: its default
 changes nothing, and enabling it only withholds text until checked.
