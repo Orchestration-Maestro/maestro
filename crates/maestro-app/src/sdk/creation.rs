@@ -183,6 +183,10 @@ pub async fn create_agent_session(
         )),
     };
     let resource_loader = resources(&services, options.resources, options.offline).await?;
+    admit_requested_tools(
+        &services.settings_manager.borrow(),
+        options.tools.as_deref(),
+    )?;
     services
         .model_registry
         .set_base_model_files(resource_loader.get_model_files())
@@ -239,6 +243,22 @@ fn tool_construction(
         tools_manager: Arc::new(ToolsManager::new(bin_dir.clone(), None).with_offline(offline)),
         bin_dir,
     }
+}
+
+/// Admits explicit SDK tools before history creation or live tool publication.
+fn admit_requested_tools(
+    settings: &SettingsManager,
+    tools: Option<&[String]>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let Some(tools) = tools else {
+        return Ok(());
+    };
+    settings
+        .decide(&maestro_settings::DecisionRequest::Tools(tools))
+        .map_err(|message| {
+            settings.report_refusal(maestro_settings::SettingsScope::Global, message.clone());
+            DiagnosticErrorInfo::new(Some("ConfigurationRefusal".into()), message)
+        })
 }
 
 /// Loads resources only after their application-owned construction services are installed.
