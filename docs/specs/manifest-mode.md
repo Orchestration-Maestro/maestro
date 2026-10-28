@@ -770,10 +770,13 @@ chain:
 2. The group and name follow the organization's own structure. An organization
    whose source-hosting teams are grouped by area may use that grouping as
    `<group>` and the team as `<name>`.
-3. Ownership is repository data, outside the manifest root. The release's
-   `.github/CODEOWNERS` gives each group folder, each capability folder and every
-   other path its owning team. Sessions never read it; only the catalog's ownership
-   lookup does (M17.3), the one read outside the manifest root (M3).
+3. Ownership is repository data that already lives in `CODEOWNERS`. A copy under
+   the manifest root would be a second copy of the same data, and GitHub honours
+   `CODEOWNERS` only in `.github/`, the repository root or `docs/`, so the file
+   stays outside the manifest root. The release's `.github/CODEOWNERS` gives each
+   group folder, each capability folder and every other path its owning team.
+   Sessions never read it; only the catalog's ownership lookup does (M17.3), the
+   one read outside the manifest root (M3).
 4. A capability that needs its own release cycle is published as its own package
    and listed in the manifest's `packages` with a pin. Capabilities inside the
    release share the release's version.
