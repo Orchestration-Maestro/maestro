@@ -40,13 +40,17 @@ async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
     )
     .await
     .unwrap();
-    Rc::new(ExtensionRunner::<Local>::new(
+    let runner = Rc::new(ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(vec![owner])),
         runtime,
         super::session::runner_session(root.to_str().unwrap()).0,
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
-    ))
+    ));
+    let _remove = runner.on_error(Rc::new(|error| {
+        panic!("unexpected sandbox callback error: {error:?}")
+    }));
+    runner
 }
 
 #[cfg(target_os = "linux")]
