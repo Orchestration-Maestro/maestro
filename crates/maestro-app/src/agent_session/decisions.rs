@@ -45,6 +45,17 @@ fn preference(field: &str, value: serde_json::Value) -> SettingsChange {
 }
 
 impl<E: ExtensionExecution> AgentSession<E> {
+    /// Admits an active-tool set without publishing state or prompt changes.
+    pub(super) fn admit_tools(&self, names: &[String]) -> Result<(), DiagnosticErrorInfo> {
+        let settings = self.settings_manager.borrow();
+        settings
+            .decide(&DecisionRequest::Tools(names))
+            .map_err(|message| {
+                settings.report_refusal(SettingsScope::Global, message.clone());
+                refusal(message)
+            })
+    }
+
     /// Admits one behaviour preference before its live agent effect.
     pub(super) fn prepare_behaviour(
         &self,
