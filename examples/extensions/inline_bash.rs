@@ -1,4 +1,5 @@
 //! An opt-in input hook that expands `!{command}` with shell output before submission.
+// maestro-component: MAESTRO_INLINE_BASH_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

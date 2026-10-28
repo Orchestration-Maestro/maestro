@@ -2,8 +2,9 @@
 
 On `session_start`, a host with UI receives a custom header factory. Its retained
 view draws a block-character North Star over an M, with a `Custom header`
-subtitle. It uses the live theme supplied to the factory, ignores the render
-width and needs no image support. Headless startup makes no UI request.
+subtitle followed by the host version in a dimmed `v<version>` suffix. It uses
+the live theme supplied to the factory, ignores the render width and needs no
+image support. Headless startup makes no UI request.
 
 `/builtin-header` restores the built-in header and its keybinding hints, then
 reports `Built-in header restored`. The command forwards both requests even in a

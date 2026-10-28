@@ -188,47 +188,11 @@ pub(super) fn git_dir_is_bare(git_dir: &Path) -> bool {
         .is_some_and(|value| value.eq_ignore_ascii_case("true"))
 }
 
-/// Extract a simple case-insensitive repository configuration value.
+/// Extract a repository configuration value; the last assignment in the plain section wins.
 fn read_git_config_value(path: &Path, section: &str, key: &str) -> Option<String> {
-    let contents = read_text(path).ok()?;
-    let mut in_section = false;
-    for line in contents.lines().map(trim) {
-        if line.is_empty() || line.starts_with(['#', ';']) {
-            continue;
-        }
-        if let Some(name) = line
-            .strip_prefix('[')
-            .and_then(|line| line.split_once(']'))
-            .map(|(name, _)| trim(name))
-            .filter(|name| !name.contains('"'))
-        {
-            in_section = name.eq_ignore_ascii_case(section);
-            continue;
-        }
-        if !in_section {
-            continue;
-        }
-        if let Some((name, value)) = line.split_once('=')
-            && trim(name).eq_ignore_ascii_case(key)
-        {
-            return Some(trim(strip_git_config_comment(value)).to_owned());
-        }
-    }
-    None
-}
-
-/// Drop a configuration comment only when separated from its value by whitespace.
-fn strip_git_config_comment(value: &str) -> &str {
-    let value = trim(value);
-    for marker in ['#', ';'] {
-        if let Some((prefix, _)) = value.split_once(marker)
-            && prefix
-                .chars()
-                .next_back()
-                .is_some_and(maestro_text::is_whitespace_scalar)
-        {
-            return prefix;
-        }
-    }
-    value
+    let items = super::config::syntax::parse(&read_text(path).ok()?);
+    super::config::syntax::plain_entries(&items, section)
+        .filter(|(name, _)| name.eq_ignore_ascii_case(key))
+        .last()
+        .and_then(|(_, value)| value.map(str::to_owned))
 }

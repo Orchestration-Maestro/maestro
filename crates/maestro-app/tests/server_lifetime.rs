@@ -784,12 +784,14 @@ fn workspace_only_connections_refuse_session_commands() {
         use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output = Rc::new(move |line: &maestro_app::rpc_mode::RpcLine| {
-            written
-                .borrow_mut()
-                .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
-            Ok(())
-        });
+        let output = maestro_app::rpc_mode::RpcOutput::synchronous(Rc::new(
+            move |line: &maestro_app::rpc_mode::RpcLine| {
+                written
+                    .borrow_mut()
+                    .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
+                Ok(())
+            },
+        ));
         let options = RpcModeOptions {
             session: None,
             workspace: Some(Rc::new(ClosureWorkspace(no_workspace()))),
@@ -827,12 +829,14 @@ fn workspace_commands_without_provider_are_unknown() {
         use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output = Rc::new(move |line: &maestro_app::rpc_mode::RpcLine| {
-            written
-                .borrow_mut()
-                .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
-            Ok(())
-        });
+        let output = maestro_app::rpc_mode::RpcOutput::synchronous(Rc::new(
+            move |line: &maestro_app::rpc_mode::RpcLine| {
+                written
+                    .borrow_mut()
+                    .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
+                Ok(())
+            },
+        ));
         let input = Box::new(JsonlLineReader::new(
             b"{\"id\":\"workspace\",\"type\":\"ping\"}\n{\"id\":\"other\",\"type\":\"not_known\"}\n".as_slice(),
         ));
