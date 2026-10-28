@@ -141,7 +141,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   or workspace dependency.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
-  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
+  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
@@ -217,7 +217,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `oauth::OAuthCredentials` and `auth_storage::{ApiKeyCredential, AuthCredential,
   AuthStorageData, AuthSource, AuthStatus}`, re-exported by models and credentials,
   and the provider registration records `provider_config::{ProviderConfig<C>,
-  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, message-only diagnostic
+  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
   (models, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
@@ -247,7 +247,7 @@ Pure retained session-tree ordering, geometry, content extraction/search and raw
 re-exported through `maestro-app`; frontend filter, fold and selection state stay
 with their frontend.
 
-The guest authoring crate may depend on the request, entry, tool and JSON
+The guest authoring crate may depend on the request, entry, tool, JSON and text
 owners and never imports native session, tool or catalog runtimes. The terminal
 adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
 created, and so is `maestro-json`; the other declared leaf owners stay policy rows until their

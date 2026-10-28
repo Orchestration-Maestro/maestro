@@ -4119,7 +4119,6 @@ dependencies = [
 name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
- "base64 0.23.1",
  "chrono",
  "indexmap 2.14.2",
  "maestro-dependencies",
@@ -4127,13 +4126,13 @@ dependencies = [
  "maestro-json",
  "maestro-models",
  "maestro-request",
+ "maestro-text",
  "maestro-tool",
  "num-traits",
  "regex",
  "ryu-js",
  "serde",
  "serde_json",
- "sha2 0.11.0",
  "tokio",
  "wasmtime",
  "wasmtime-wasi",

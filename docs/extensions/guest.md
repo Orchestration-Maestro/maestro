@@ -1165,3 +1165,9 @@ baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
 and `wit_stream` byte-stream construction. Both generations use the same host
 context; neither introduces an extension-specific permission list. See
 [component operating environment](host_io.md) for access and platform limits.
+
+### Portable provider primitives
+
+`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
+framing; callers keep their UTF-8, BOM and event-dispatch policies.

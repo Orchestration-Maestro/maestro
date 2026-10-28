@@ -1,16 +1,14 @@
 //! Byte-framed server-sent events, decoded only after each complete line.
-use maestro_extensions_wasm::ExtensionResult;
+use maestro_extensions_wasm::{ByteLineDecoder, ExtensionResult};
 use serde_json::Value;
 
 /// One response's line and event framing state.
 #[derive(Default)]
 pub struct Decoder {
-    /// Bytes before the next line separator, including split UTF-8 sequences.
-    pending: Vec<u8>,
+    /// Shared raw-byte framing, including split UTF-8 sequences.
+    lines: ByteLineDecoder,
     /// Data fields awaiting a blank line.
     data: Vec<String>,
-    /// Whether a following LF belongs to the preceding CR.
-    after_cr: bool,
     /// Whether the first line has already been consumed.
     started: bool,
 }
@@ -27,27 +25,15 @@ impl Decoder {
     /// Returns malformed event JSON instead of accepting a partial payload.
     pub fn feed(&mut self, bytes: &[u8]) -> ExtensionResult<Vec<Value>> {
         let mut frames = Vec::new();
-        for byte in bytes {
-            let skip_lf = self.after_cr && *byte == b'\n';
-            self.after_cr = false;
-            if skip_lf {
-                continue;
-            }
-            match *byte {
-                b'\r' | b'\n' => {
-                    self.after_cr = *byte == b'\r';
-                    frames.extend(self.line()?);
-                }
-                byte => self.pending.push(byte),
-            }
+        for line in self.lines.decode(bytes) {
+            frames.extend(self.line(&line)?);
         }
         Ok(frames)
     }
 
     /// Handles one line, including comments, BOM and repeated data fields.
-    fn line(&mut self) -> ExtensionResult<Option<Value>> {
-        let bytes = std::mem::take(&mut self.pending);
-        let text = String::from_utf8_lossy(&bytes);
+    fn line(&mut self, bytes: &[u8]) -> ExtensionResult<Option<Value>> {
+        let text = String::from_utf8_lossy(bytes);
         let line = if self.started {
             &text
         } else {

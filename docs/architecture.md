@@ -43,7 +43,7 @@ application re-exports them as `markdown`. The dedicated conventions checker may
 consume the same parser's code-block source ranges for documentation checks.
 Tools may also depend directly on text for shared newline
 normalization. The guest authoring crate may depend on request,
-entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
+entry, tool, JSON and text, never on native session, tool or catalog runtimes. The table is not
 repeated here.
 
 Pure retained [session-tree projection](sessions/tree-projection.md) belongs to

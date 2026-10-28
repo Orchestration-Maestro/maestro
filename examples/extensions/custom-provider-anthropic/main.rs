@@ -6,9 +6,8 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    ExtensionAPI, ExtensionFuture, ExtensionResult, ModelCost, ModelInput, ProviderCallbacks,
-    ProviderConfig, ProviderModelConfig, StreamFunction, StreamOptionsInput,
-    create_assistant_message_event_stream,
+    ExtensionAPI, ExtensionFuture, ModelCost, ModelInput, ProviderCallbacks, ProviderConfig,
+    ProviderModelConfig, StreamFunction, StreamOptionsInput, create_assistant_message_event_stream,
 };
 use std::{
     rc::Rc,
@@ -17,8 +16,6 @@ use std::{
 
 /// Subscription authorization through the host's retained HTTP interface.
 mod oauth;
-/// Proof-key encoding shared by login and its controlled tests.
-mod pkce;
 /// Request conversion and ordered streamed results.
 mod stream;
 
@@ -28,7 +25,7 @@ pub fn custom_message_provider_extension(api: ExtensionAPI) -> ExtensionFuture<'
     Box::pin(async move {
         let provider = Rc::new(oauth::CustomAnthropic {
             io: api.native_io(),
-            entropy: Rc::new(verifier_bytes),
+            api: api.clone(),
             now: Rc::new(now_millis),
         });
         api.register_provider(
@@ -106,13 +103,6 @@ fn models() -> Vec<ProviderModelConfig> {
         compat: None,
     })
     .collect()
-}
-
-/// Takes exactly 32 secure verifier bytes from the existing WASI random interface.
-fn verifier_bytes() -> ExtensionResult<[u8; 32]> {
-    maestro_extensions_wasm::wasi::random::random::get_random_bytes(32)
-        .try_into()
-        .map_err(|_| "WASI random source did not return 32 verifier bytes".into())
 }
 
 /// Reads the component's wall clock in Unix epoch milliseconds.

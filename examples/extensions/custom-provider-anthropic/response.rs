@@ -3,8 +3,8 @@ use super::request;
 use maestro_extensions_wasm::{
     AssistantContent, AssistantMessage, AssistantMessageEvent as Event,
     AssistantMessageEventStream, Context, DoneReason, ErrorReason, ExtensionResult, Model,
-    ModelCost, Presence, SharedAssistantMessage, StopReason, StreamOptionsInput, TextContent,
-    ThinkingContent, ToolCall, Usage,
+    Presence, SharedAssistantMessage, StopReason, StreamOptionsInput, TextContent, ThinkingContent,
+    ToolCall, Usage, calculate_cost,
 };
 use serde_json::Value;
 use std::{
@@ -47,8 +47,8 @@ pub struct ResponseState {
     tools: Vec<String>,
     /// Whether response tool names need their authored spelling restored.
     subscribed: bool,
-    /// Prices from the supplied descriptor.
-    cost: ModelCost,
+    /// Supplied descriptor used for the shared cost estimate.
+    model: Model,
     /// Whether the provider completed the message before EOF.
     pub stopped: bool,
 }
@@ -89,7 +89,7 @@ impl ResponseState {
                     .and_then(|options| options.common().api_key.as_deref())
                     .unwrap_or_default(),
             ),
-            cost: model.cost.clone(),
+            model: model.clone(),
             stopped: false,
         }
     }
@@ -153,12 +153,7 @@ impl ResponseState {
         }
         usage.total_tokens =
             Presence::Present(usage.input + usage.output + usage.cache_read + usage.cache_write);
-        usage.cost.input = usage.input * self.cost.input / 1_000_000.0;
-        usage.cost.output = usage.output * self.cost.output / 1_000_000.0;
-        usage.cost.cache_read = usage.cache_read * self.cost.cache_read / 1_000_000.0;
-        usage.cost.cache_write = usage.cache_write * self.cost.cache_write / 1_000_000.0;
-        usage.cost.total =
-            usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
+        calculate_cost(&self.model, usage);
         Ok(())
     }
 

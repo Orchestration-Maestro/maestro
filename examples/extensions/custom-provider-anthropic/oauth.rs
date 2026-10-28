@@ -1,7 +1,7 @@
 //! Subscription sign-in through the host's HTTP and interaction interfaces.
 use maestro_extensions_wasm::{
-    AbortSignal, ExtensionFuture, ExtensionResult, Model, OAuthAuthInfo, OAuthCredentials,
-    OAuthLoginCallbacks, OAuthPrompt, OAuthProviderInterface,
+    AbortSignal, ExtensionAPI, ExtensionFuture, ExtensionResult, Model, OAuthAuthInfo,
+    OAuthCredentials, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderInterface, generate_pkce,
     http::{Request, Response},
     io::NativeIo,
 };
@@ -23,8 +23,8 @@ const REDIRECT_URI: &str = "https://console.anthropic.com/oauth/code/callback";
 pub struct CustomAnthropic {
     /// The host's independently retained HTTP operations.
     pub io: Rc<dyn NativeIo>,
-    /// Secure verifier bytes, supplied by WASI in the component.
-    pub entropy: Rc<dyn Fn() -> ExtensionResult<[u8; 32]>>,
+    /// Host capability used for the shared proof-key primitive.
+    pub api: ExtensionAPI,
     /// Current Unix epoch milliseconds.
     pub now: Rc<dyn Fn() -> f64>,
 }
@@ -56,9 +56,9 @@ impl OAuthProviderInterface for CustomAnthropic {
     ) -> ExtensionFuture<'static, OAuthCredentials> {
         let provider = self.clone();
         Box::pin(async move {
-            let (verifier, challenge) = super::pkce::generate((provider.entropy)()?);
+            let proof = generate_pkce(&provider.api)?;
             (callbacks.on_auth)(OAuthAuthInfo {
-                url: authorization_url(&verifier, &challenge),
+                url: authorization_url(&proof.verifier, &proof.challenge),
                 instructions: None,
             })?;
             let pasted = (callbacks.on_prompt)(OAuthPrompt {
@@ -70,7 +70,7 @@ impl OAuthProviderInterface for CustomAnthropic {
             let (code, state) = pasted
                 .split_once('#')
                 .ok_or("Authorization code must include state")?;
-            if state != verifier {
+            if state != proof.verifier {
                 return Err("Authorization state mismatch".into());
             }
             provider
@@ -78,7 +78,7 @@ impl OAuthProviderInterface for CustomAnthropic {
                     json!({
                         "grant_type":"authorization_code", "client_id":CLIENT_ID,
                         "code":code, "state":state, "redirect_uri":REDIRECT_URI,
-                        "code_verifier":verifier
+                        "code_verifier":proof.verifier
                     }),
                     callbacks.signal.clone(),
                     "exchange",

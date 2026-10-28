@@ -66,6 +66,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-entry",
             "maestro-tool",
             "maestro-json",
+            "maestro-text",
         ],
     ),
     (

@@ -60,7 +60,6 @@ resolving conflicts, then regenerate the table.
 | `confirm_destructive.rs` | Opt-in confirmation before replacing or forking a session. |
 | `custom-provider-anthropic/main.rs` | Opt-in registration of a custom message-stream provider. |
 | `custom-provider-anthropic/oauth.rs` | Subscription sign-in through the host's HTTP and interaction interfaces. |
-| `custom-provider-anthropic/pkce.rs` | Proof-key encoding for the provider's authorization flow. |
 | `custom-provider-anthropic/request.rs` | Conversation conversion and HTTP parameters for the custom message protocol. |
 | `custom-provider-anthropic/response.rs` | Ordered provider events reduced into one shared assistant message. |
 | `custom-provider-anthropic/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |

@@ -12,6 +12,10 @@ stable sorting and comparator lifetime.
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
   and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
   terminal input, tool output and message framing keep their own BOM policy.
+- **Byte-line framing.** `line_decoder::ByteLineDecoder` retains unfinished bytes and
+  ends lines at CR, LF and CRLF, emitting CR immediately and skipping one following
+  LF across chunks. `flush` returns a final unterminated line. HTTP and guest
+  provider readers share it; each keeps its UTF-8, BOM and event-dispatch policy.
 - **UTF-8 decoding.** `decode_utf8` removes one initial byte-order mark and uses
   lossy UTF-8 decoding for invalid bytes. Attachments and HTTP response readers
   share this decoder.

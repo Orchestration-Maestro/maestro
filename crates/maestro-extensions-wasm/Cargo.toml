@@ -311,6 +311,7 @@ crate-type = ["cdylib"]
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }
+maestro-text = { path = "../maestro-text" }
 maestro-entry = { path = "../maestro-entry" }
 maestro-request = { path = "../maestro-request" }
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "async-spawn", "std", "inter-task-wakeup"] }
@@ -318,12 +319,10 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
-base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
 regex.workspace = true
 ryu-js.workspace = true
-sha2 = { version = "=0.11.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-models = { path = "../maestro-models" }

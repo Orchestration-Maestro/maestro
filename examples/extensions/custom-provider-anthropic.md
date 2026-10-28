@@ -11,7 +11,8 @@ for example `custom-anthropic/claude-sonnet-4-5`.
 To use an API key, set `CUSTOM_ANTHROPIC_API_KEY` before starting the host. To
 use a subscription, run `/login custom-anthropic`, open the URL it shows, sign
 in, then paste the returned `code#state`. A state that does not match the issued
-proof key is rejected. Saved tokens count as expired five minutes early and
+proof key is rejected. Proof keys come from the guest's host-backed `generate_pkce`
+helper. Saved tokens count as expired five minutes early and
 refresh through the same token endpoint.
 
 Each request is one HTTP attempt with the conversation, tool schemas and the
