@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 use crate::support::Root;
+mod errors;
 use maestro_app::AgentSession;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};

@@ -11,6 +11,15 @@ assert args[args.index("--tools") + 1] == "read,ls", args
 with open(args[args.index("--append-system-prompt") + 1], encoding="utf-8") as prompt:
     role = prompt.read()
 assert role == "Private role prompt", role
+if args[-1] == "Task: fail":
+    sys.stderr.write("controlled failure")
+    sys.exit(7)
+if args[-1] in ("Task: provider-error", "Task: provider-abort"):
+    print(json.dumps({"type":"message_end","message":{"role":"assistant","content":[],"usage":{"totalTokens":19}}}))
+    reason = "error" if args[-1].endswith("error") else "aborted"
+    error = "controlled model failure" if reason == "error" else "controlled model abort"
+    print(json.dumps({"type": "message_end", "message": {"role": "assistant", "content": [], "stopReason": reason, "errorMessage": error}}))
+    sys.exit(0)
 print("not JSON\n\n")
 print(json.dumps({"type": "tool_result_end", "message": {"role": "toolResult", "content": [{"type": "text", "text": "read result"}]}}))
 for index in range(2):
