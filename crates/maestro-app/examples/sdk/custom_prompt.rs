@@ -10,8 +10,41 @@ fn main() -> Result<(), Error> {
 
 /// Return the assembled replacement and appended prompts.
 async fn run(sample: Sample) -> Result<Value, Error> {
-    let _options = sample.options()?;
-    Ok(json!([]))
+    std::fs::write(
+        sample.root.path().join("APPEND_SYSTEM.md"),
+        "Discovered append text",
+    )?;
+    let mut prompts = Vec::new();
+    for replace in [true, false] {
+        let mut options = sample.options()?;
+        if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
+            configure_prompt(resources, replace);
+        }
+        let created = maestro_app::create_agent_session(options).await?;
+        prompts.push(created.session.system_prompt());
+        created.session.dispose();
+    }
+    Ok(json!(prompts))
+}
+
+/// Select replacement or appended instructions on the real resource loader.
+fn configure_prompt(
+    resources: &mut maestro_app::ResourceLoaderOptions<maestro_models::Local>,
+    replace: bool,
+) {
+    if replace {
+        resources.system_prompt_override = Some(Box::new(|_| {
+            Some(
+            "You are a helpful assistant that speaks like a pirate.\nAlways end responses with \"Arrr!\"".into()
+        )
+        }));
+        resources.append_system_prompt_override = Some(Box::new(|_| Vec::new()));
+    } else {
+        resources.append_system_prompt_override = Some(Box::new(|mut base| {
+            base.push("## Additional Instructions\n- Always be concise\n- Use bullet points when listing things".into());
+            base
+        }));
+    }
 }
 
 #[cfg(test)]
