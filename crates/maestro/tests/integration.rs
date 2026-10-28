@@ -7,6 +7,7 @@ mod model_streams;
 mod native_io;
 mod qna_example;
 mod startup_modes;
+mod subagent_example;
 mod support;
 mod tic_tac_toe_example;
 pub mod tools_example;
