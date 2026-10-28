@@ -59,6 +59,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 return Ok(None);
             }
         }
+        self.check_package_operation(source, Some(scope), remove)?;
         let entries = if remove {
             self.source_removal(source, scope)?
         } else {

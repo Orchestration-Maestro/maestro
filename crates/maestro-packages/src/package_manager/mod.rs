@@ -315,7 +315,7 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
-        Box::pin(async move { self.acquire(source, scope).await.map(drop) })
+        Box::pin(async move { self.acquire(source, scope, None).await.map(drop) })
     }
     fn verify_pin<'a>(
         &'a self,
@@ -359,7 +359,7 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
-        Box::pin(self.release(source, scope))
+        Box::pin(self.release(source, scope, None))
     }
     fn remove_and_persist<'a>(
         &'a self,
