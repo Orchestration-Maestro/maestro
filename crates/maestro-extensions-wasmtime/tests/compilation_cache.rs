@@ -51,13 +51,25 @@ fn cached_compile(path: &Path) -> usize {
     cache.cache_hits()
 }
 
+/// Large components compiled once before the runtime tests start concurrently.
+const PREPARED_COMPONENTS: [&str; 3] = [
+    "MAESTRO_CONTEXT_COMPONENT",
+    "MAESTRO_HOOK_COMPONENT",
+    "MAESTRO_GIT_CHECKPOINT_COMPONENT",
+];
+
+#[test]
+#[ignore = "Run by the component setup before concurrent tests"]
+fn warm_prepared_components() {
+    for variable in PREPARED_COMPONENTS {
+        let path = std::env::var_os(variable).unwrap();
+        cached_compile(Path::new(&path));
+    }
+}
+
 #[test]
 fn prepared_components_hit_compilation_cache() {
-    for variable in [
-        "MAESTRO_CONTEXT_COMPONENT",
-        "MAESTRO_HOOK_COMPONENT",
-        "MAESTRO_GIT_CHECKPOINT_COMPONENT",
-    ] {
+    for variable in PREPARED_COMPONENTS {
         let path = std::env::var_os(variable).unwrap();
         assert!(
             cached_compile(Path::new(&path)) > 0,

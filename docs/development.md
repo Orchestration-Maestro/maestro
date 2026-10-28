@@ -521,8 +521,13 @@ on Windows, where the shell converts the search list to colon-separated paths.
 The example builds the author component, warms the Wasmtime compilation cache
 in the default user cache and exports its path to the tests' processes.
 The Git-pinned engine partitions cached code by host executable modification
-time, so setup does not warm another binary's entries; nextest processes of
-the same test binary reuse its compiled bytes after their first load.
+time. On Linux, the launcher therefore runs the runtime integration binary's
+ignored `compilation_cache::warm_prepared_components` test after exporting the
+prepared paths. It compiles the context, hook and Git-checkpoint components
+once before concurrent tests start. This runs in each shard, including after
+archive extraction changes executable timestamps. Later processes of that
+binary reuse these entries; `prepared_components_hit_compilation_cache` checks
+that every prepared component is a cache hit. Neither helper rebuilds a component.
 The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its

@@ -6,6 +6,22 @@ case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) paths=$PATH; separator=: ;;
     *) paths=${NEXTEST_LD_LIBRARY_PATH-}; separator=: ;;
 esac
+# Compile in the consuming executable's cache namespace, not only the setup example's.
+prepare() {
+    "$@"
+    [ -n "${NEXTEST_ENV-}" ] || return 0
+    while IFS= read -r entry; do
+        export "$entry"
+    done < "$NEXTEST_ENV"
+    test=compilation_cache::warm_prepared_components
+    for binary in "$directory"/deps/integration-*; do
+        [ -f "$binary" ] && [ -x "$binary" ] || continue
+        if "$binary" --list --exact "$test" | grep -Fq "$test: test"; then
+            "$binary" --ignored --exact "$test" --nocapture
+        fi
+    done
+}
+
 IFS=$separator
 for directory in $paths; do
     [ -d "$directory/deps" ] || continue
@@ -22,13 +38,17 @@ for directory in $paths; do
             crates/maestro-extensions-wasm/Cargo.toml Cargo.lock; do
             [ "$example" -nt "$source" ] || fresh=false
         done
-        [ "$fresh" = false ] || exec "$example"
+        if [ "$fresh" = true ]; then
+            prepare "$example"
+            exit 0
+        fi
     done
     profile=$(basename "$directory")
     [ "$profile" != debug ] || profile=dev
-    exec "${CARGO:-cargo}" run --quiet --locked -p maestro-extensions-wasm \
+    prepare "${CARGO:-cargo}" run --quiet --locked -p maestro-extensions-wasm \
         --example prepare_author_component --target-dir "$(dirname "$directory")" \
         --profile "$profile"
+    exit 0
 done
 echo 'Cannot resolve the nextest artifact directory from its library search path.' >&2
 exit 1
