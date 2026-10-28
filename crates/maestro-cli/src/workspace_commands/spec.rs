@@ -1,33 +1,33 @@
 //! Effect-free command metadata shared by help and shell completion.
 
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, ValueHint};
+
+mod agents;
+mod chat;
+mod local;
+mod panes;
+mod topology;
 
 /// Describe the complete command-line surface without consuming chat input.
 #[must_use]
 pub fn command() -> Command {
-    Command::new("maestro")
-        .about("Coding conversations and terminal workspaces")
-        .disable_help_subcommand(true)
-        .subcommand(daemon())
-        .subcommands(
-            [
-                ("attach", "Attach to a workspace daemon"),
-                ("status", "Show client and daemon status"),
-                ("api", "Inspect the workspace API"),
-                ("completion", "Generate shell completion scripts"),
-                ("settings", "Inspect workspace settings"),
-                ("workspace", "Manage workspaces"),
-                ("worktree", "Manage Git worktree workspaces"),
-                ("tab", "Manage tabs"),
-                ("pane", "Control terminal panes"),
-                ("agent", "Control recognized pane agents"),
-                ("terminal", "Attach to or observe terminal streams"),
-                ("notification", "Show workspace notifications"),
-                ("integration", "Manage agent integrations"),
-                ("action", "Inspect and run workspace actions"),
-            ]
-            .map(|(name, about)| Command::new(name).about(about)),
-        )
+    chat::configure(
+        Command::new("maestro")
+            .about("Coding conversations and terminal workspaces")
+            .disable_help_subcommand(true)
+            .subcommand(daemon())
+            .subcommand(local::attach())
+            .subcommands(local::discovery())
+            .subcommand(topology::collection("workspace", "workspace_id"))
+            .subcommand(topology::collection("tab", "tab_id"))
+            .subcommand(topology::worktree())
+            .subcommand(panes::command())
+            .subcommand(agents::command())
+            .subcommand(local::terminal())
+            .subcommands(local::notifications_and_integrations())
+            .subcommand(local::action())
+            .subcommands(local::packages()),
+    )
 }
 
 /// Describe the unified daemon lifecycle grammar.
@@ -87,4 +87,35 @@ pub(super) fn flag(name: &'static str) -> Arg {
 /// Describe an option with one value.
 pub(super) fn option(name: &'static str, value: &'static str) -> Arg {
     Arg::new(name).long(name).value_name(value)
+}
+
+/// Describe a required positional operand.
+fn required(name: &'static str) -> Arg {
+    Arg::new(name)
+        .value_name(name.to_ascii_uppercase())
+        .required(true)
+}
+
+/// Describe a native authored path without observing it.
+fn path(name: &'static str) -> Arg {
+    option(name, "PATH").value_hint(ValueHint::AnyPath)
+}
+
+/// Describe repeated environment assignments for a launched process.
+fn env() -> Arg {
+    option("env", "KEY=VALUE").action(ArgAction::Append)
+}
+
+/// Describe a terminal snapshot selection and display format.
+fn snapshot() -> [Arg; 3] {
+    [
+        option("source", "SOURCE").value_parser([
+            "visible",
+            "recent",
+            "recent-unwrapped",
+            "detection",
+        ]),
+        option("lines", "N"),
+        option("format", "FORMAT").value_parser(["text", "ansi"]),
+    ]
 }
