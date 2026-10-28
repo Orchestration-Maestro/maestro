@@ -3,6 +3,7 @@
 use super::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
 use crate::rpc_types::{workspace, workspace_schema};
 use maestro_daemon::api::{ApiRequestSender, RequestMessage};
+use std::cell::RefCell;
 use tokio::sync::{oneshot, watch};
 
 /// A command's typed result.
@@ -16,6 +17,8 @@ pub struct DaemonWorkspaceOperations {
     capabilities: Option<workspace_schema::ServerCapabilities>,
     /// Set once a stop was requested.
     stop: watch::Sender<bool>,
+    /// Completion of the first stop response, retained until shutdown drains it.
+    stop_write: RefCell<Option<oneshot::Receiver<()>>>,
 }
 
 impl DaemonWorkspaceOperations {
@@ -31,6 +34,15 @@ impl DaemonWorkspaceOperations {
             sender,
             capabilities,
             stop,
+            stop_write: RefCell::default(),
+        }
+    }
+
+    /// Waits until the first stop response's write attempt settles, if stop was requested.
+    pub async fn wait_for_stop_response(&self) {
+        let completion = self.stop_write.borrow_mut().take();
+        if let Some(completion) = completion {
+            let _ = completion.await;
         }
     }
 
@@ -74,6 +86,9 @@ impl WorkspaceOperations for DaemonWorkspaceOperations {
                 capabilities: self.capabilities.clone(),
             }),
             workspace::RpcCommand::ServerStop(_) => {
+                if !*self.stop.borrow() {
+                    *self.stop_write.borrow_mut() = Some(write_complete);
+                }
                 self.stop.send_replace(true);
                 Ok(workspace_schema::ResponseResult::Ok {})
             }

@@ -372,7 +372,9 @@ fn install_fetch(row: &Install, requests: &Arc<Mutex<Vec<Request>>>) -> Fetch {
 
 /// Expand only the recorded path and process placeholders.
 fn expand(text: &str, bin: &str) -> String {
-    text.replace("<BIN>", bin)
+    // The installer joins below the directory natively; the recording joins with `/`.
+    text.replace("<BIN>/", &format!("{bin}{}", std::path::MAIN_SEPARATOR))
+        .replace("<BIN>", bin)
         .replace("<PID>", &std::process::id().to_string())
 }
 
@@ -390,7 +392,11 @@ fn output_matches(row: &Install, output: &[u8], bin: &str) {
     }
     if let Some(last) = &row.last_line_prefix {
         let expected = format!("{prefix}{}", expand(last, bin));
-        assert!(output.starts_with(&expected), "{} output prefix", row.id);
+        assert!(
+            output.starts_with(&expected),
+            "{} output prefix: {output:?}",
+            row.id
+        );
         let detail = output
             .strip_prefix(&expected)
             .unwrap()
@@ -745,7 +751,8 @@ fn concurrent_installs_stage_in_separate_directories() {
         );
         assert_eq!(results, (None, None));
         let prefix = format!(
-            "Failed to download fd: Binary not found in archive: expected fd under {bin}/extract_tmp_fd_{}_",
+            "Failed to download fd: Binary not found in archive: expected fd under {bin}{}extract_tmp_fd_{}_",
+            std::path::MAIN_SEPARATOR,
             std::process::id()
         );
         let messages: Vec<_> = [first, second]

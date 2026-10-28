@@ -44,7 +44,11 @@ pub async fn run_server<C: FnMut() -> u128>(
     announce(&path, paths);
     let (sender, mut requests) = tokio::sync::mpsc::unbounded_channel();
     let (stop, mut stopped) = tokio::sync::watch::channel(false);
-    let operations = DaemonWorkspaceOperations::new(sender, Some(capabilities()), stop);
+    let operations = Rc::new(DaemonWorkspaceOperations::new(
+        sender,
+        Some(capabilities()),
+        stop,
+    ));
     let shutdown = async move {
         tokio::select! {
             () = shutdown => {}
@@ -52,8 +56,11 @@ pub async fn run_server<C: FnMut() -> u128>(
         }
     };
     tokio::select! {
-        () = app.run(paths, &mut requests, settings, shutdown) => {}
-        never = server.serve(Rc::new(operations)) => match never {},
+        () = async {
+            app.run(paths, &mut requests, settings, shutdown).await;
+            operations.wait_for_stop_response().await;
+        } => {}
+        never = server.serve(operations.clone()) => match never {},
     }
     drop(server);
     logging::shutdown(LOG_ROLE);

@@ -1,5 +1,5 @@
 //! The first-line deadline of a socket connection.
-use super::Admission;
+use super::{Admission, INITIAL_REQUEST_TIMEOUT};
 use maestro_app::rpc_mode::{RpcInput, RpcLineReader};
 use std::{
     future::Future,
@@ -38,9 +38,10 @@ fn socket_initial_admission_keeps_its_own_deadline() {
     paused(async {
         let (mut client, server) = tokio::io::duplex(64);
         let start = Instant::now();
-        let mut admission = Admission::new(server);
-        let mut next = admission.next_line();
+        let deadline = start + INITIAL_REQUEST_TIMEOUT;
         advance(Duration::from_secs(3)).await;
+        let mut admission = Admission::new(server, deadline);
+        let mut next = admission.next_line();
         client.write_all(b"{\"id\":").await.unwrap();
         assert!(poll(&mut next).is_pending(), "the partial line was read");
         advance(Duration::from_millis(1999)).await;
@@ -54,7 +55,7 @@ fn socket_initial_admission_keeps_its_own_deadline() {
         assert_eq!(start.elapsed(), Duration::from_secs(5));
 
         let (mut client, server) = tokio::io::duplex(64);
-        let mut admission = Admission::new(server);
+        let mut admission = Admission::new(server, Instant::now() + INITIAL_REQUEST_TIMEOUT);
         advance(Duration::from_secs(6)).await;
         client.write_all(b" {\"type\":\"ping\"} \n").await.unwrap();
         let mut next = admission.next_line();

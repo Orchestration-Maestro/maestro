@@ -10,6 +10,11 @@ macro_rules! native_helper_imports {
             &self,
             content: &str,
         ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument>;
+        /// Reads raw YAML through the same typed metadata transport.
+        fn native_yaml(
+            &self,
+            content: &str,
+        ) -> ExtensionResult<Vec<crate::bindings::maestro::extension::host::FrontmatterToken>>;
         /// Forwards ordinary helper operands synchronously.
         fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String>;
     };

@@ -19,7 +19,7 @@ pub enum FrontmatterValue {
     String(String),
     /// Ordered sequence.
     Sequence(Vec<Self>),
-    /// Canonical array-index keys first, then other keys in insertion order.
+    /// Ordered keys; header parsing enumerates array-index keys first.
     Mapping(Vec<(String, Self)>),
 }
 /// Resolved metadata and the native extracted body.
@@ -36,19 +36,28 @@ pub struct ParsedFrontmatter {
 /// Returns the native parser's cause and coordinates, or invalid tree framing.
 pub fn parse_frontmatter(api: &ExtensionAPI, content: &str) -> ExtensionResult<ParsedFrontmatter> {
     let document = api.native_frontmatter(content)?;
-    let mut values = document.values.into_iter();
-    let frontmatter = read_value(&mut values)?;
-    if values.next().is_some() {
-        return Err("Native metadata contains trailing values".into());
-    }
+    let frontmatter = read_document(document.values, true)?;
     Ok(ParsedFrontmatter {
         frontmatter,
         body: document.body,
     })
 }
+/// Checks that the typed framing contains exactly one complete value.
+fn read_document(
+    values: Vec<FrontmatterToken>,
+    canonical: bool,
+) -> ExtensionResult<FrontmatterValue> {
+    let mut values = values.into_iter();
+    let value = read_value(&mut values, canonical)?;
+    if values.next().is_some() {
+        return Err("Native metadata contains trailing values".into());
+    }
+    Ok(value)
+}
 /// Reconstructs only the typed value framing; YAML parsing stays in the host.
 fn read_value(
     values: &mut impl Iterator<Item = FrontmatterToken>,
+    canonical: bool,
 ) -> ExtensionResult<FrontmatterValue> {
     use FrontmatterValue as V;
     Ok(
@@ -59,15 +68,19 @@ fn read_value(
             FrontmatterToken::Text(value) => V::String(value),
             FrontmatterToken::Sequence(count) => V::Sequence(
                 (0..count)
-                    .map(|_| read_value(values))
+                    .map(|_| read_value(values, canonical))
                     .collect::<ExtensionResult<_>>()?,
             ),
             FrontmatterToken::Mapping(keys) => {
                 let entries = keys
                     .into_iter()
-                    .map(|key| Ok((key, read_value(values)?)))
+                    .map(|key| Ok((key, read_value(values, canonical)?)))
                     .collect::<ExtensionResult<Vec<_>>>()?;
-                V::Mapping(maestro_json::canonical_entries(entries))
+                V::Mapping(if canonical {
+                    maestro_json::canonical_entries(entries)
+                } else {
+                    entries
+                })
             }
         },
     )
@@ -79,4 +92,14 @@ fn read_value(
 /// Preserves malformed metadata causes and coordinates instead of silently stripping it.
 pub fn strip_frontmatter(api: &ExtensionAPI, content: &str) -> ExtensionResult<String> {
     api.helper("strip_frontmatter", &(content,))
+}
+
+/// Parses one YAML document, retaining null roots and authored mapping order.
+///
+/// Numbers retain signed zero, NaN and infinities through the typed host boundary.
+///
+/// # Errors
+/// Returns native parsing failures, including source coordinates.
+pub fn parse_yaml(api: &ExtensionAPI, content: &str) -> ExtensionResult<FrontmatterValue> {
+    read_document(api.native_yaml(content)?, false)
 }
