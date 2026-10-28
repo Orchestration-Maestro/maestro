@@ -178,6 +178,7 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
         .block_on(app.run(
             &paths,
             &mut tokio::sync::mpsc::unbounded_channel().1,
+            &mut crate::support::api::settings(),
             std::future::ready(()),
         ));
     assert!(app.state.should_quit.0);

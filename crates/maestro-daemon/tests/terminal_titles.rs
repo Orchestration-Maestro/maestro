@@ -268,6 +268,7 @@ async fn check_loop_projection(args: &[String]) {
     app.run(
         &maestro_daemon::paths::DaemonPaths::new("/unused", None).unwrap(),
         &mut tokio::sync::mpsc::unbounded_channel().1,
+        &mut crate::support::api::settings(),
         async {
             while hub.current_sequence() == 0 {
                 tokio::task::yield_now().await;

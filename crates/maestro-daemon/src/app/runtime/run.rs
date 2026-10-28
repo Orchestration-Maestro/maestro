@@ -14,6 +14,7 @@ impl<C: FnMut() -> u128> App<C> {
         &mut self,
         paths: &DaemonPaths,
         requests: &mut tokio::sync::mpsc::UnboundedReceiver<RequestMessage>,
+        settings: &mut maestro_settings::SettingsManager,
         shutdown: impl Future<Output = ()>,
     ) {
         tokio::pin!(shutdown);
@@ -31,7 +32,8 @@ impl<C: FnMut() -> u128> App<C> {
                     else { self.state.should_quit.0 = true; }
                 }
                 Some(request) = requests.recv() => {
-                    let response = self.handle_api_request(request.command).await;
+                    let response =
+                        self.handle_api_request(request.command, settings, paths).await;
                     let _ = request.respond_to.send(response);
                 }
                 () = self.launch.render_notify.notified() => {}

@@ -1,6 +1,7 @@
 //! The workspace daemon's API socket served in this process by `run_server`, and the daemon
 //! request adapter under one connection.
 #![cfg(target_os = "linux")]
+use maestro_app::SettingsManager;
 use maestro_app::daemon::api::client::{ConnectionTarget, DaemonClient};
 use maestro_app::daemon::api::{RequestMessage, RuntimeStatus, event_hub::EventHub};
 use maestro_app::daemon::app::App;
@@ -9,17 +10,20 @@ use maestro_app::daemon::app::construction::{
 };
 use maestro_app::daemon::paths::DaemonPaths;
 use maestro_app::daemon::render_signal::RenderSignal;
-use maestro_app::daemon::settings::model::Config;
+use maestro_app::daemon::settings::model::{Config, NewTerminalCwdConfig};
 use maestro_app::daemon::terminal_theme::TerminalTheme;
 use maestro_app::rpc_mode::{
     DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
 };
-use maestro_app::rpc_types::workspace::RpcResponse;
-use maestro_app::rpc_types::workspace_schema::{ErrorBody, ResponseResult, ServerCapabilities};
+use maestro_app::rpc_types::workspace::{Request, RpcResponse};
+use maestro_app::rpc_types::workspace_schema::{
+    AgentManifestInfo, ErrorBody, ResponseResult, ServerCapabilities, TabInfo, WorkspaceInfo,
+};
 use maestro_app::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_rpc::daemon::run_server;
 use maestro_test_directory::Scratch;
 use maestro_test_process::TestProcess;
+use serde_json::json;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::os::unix::{fs::FileTypeExt, fs::PermissionsExt, net::UnixStream};
 use std::path::{Path, PathBuf};
@@ -85,11 +89,21 @@ fn served<T: Send + 'static>(
     paths: &DaemonPaths,
     client: impl FnOnce(PathBuf) -> T + Send + 'static,
 ) -> T {
+    served_by(daemon(Path::new(&paths.api_socket_path())), paths, client)
+}
+
+/// Serves `app` as the daemon of `paths` through `run_server` while `client` runs on a
+/// blocking thread with the API socket's path; the daemon stops once the client returns.
+fn served_by<T: Send + 'static>(
+    mut app: App<fn() -> u128>,
+    paths: &DaemonPaths,
+    client: impl FnOnce(PathBuf) -> T + Send + 'static,
+) -> T {
     let socket = PathBuf::from(paths.api_socket_path());
     local(false, async {
-        let mut app = daemon(&socket);
+        let mut settings = SettingsManager::in_memory(maestro_app::Settings::default());
         let (stop, stopped) = oneshot::channel::<()>();
-        let mut server = pin!(run_server(&mut app, paths, async {
+        let mut server = pin!(run_server(&mut app, &mut settings, paths, async {
             drop(stopped.await);
         }));
         let polled = server
@@ -111,7 +125,14 @@ fn served<T: Send + 'static>(
 fn start(paths: &DaemonPaths) -> io::Result<()> {
     let socket = PathBuf::from(paths.api_socket_path());
     local(false, async {
-        run_server(&mut daemon(&socket), paths, std::future::ready(())).await
+        let mut settings = SettingsManager::in_memory(maestro_app::Settings::default());
+        run_server(
+            &mut daemon(&socket),
+            &mut settings,
+            paths,
+            std::future::ready(()),
+        )
+        .await
     })
 }
 
@@ -718,4 +739,401 @@ fn server_startup_announces_only_bound_resources() {
             assert_eq!(stderr.lines().collect::<Vec<_>>(), expected);
         }
     }
+}
+
+#[test]
+fn setup_entry() {
+    if maestro_app::daemon::app::construction::setup_entry().is_some() {
+        std::process::exit(1);
+    }
+}
+
+/// A daemon advertising `socket` whose panes start real `/bin/sh` shells in the temporary
+/// root through the setup entry `args` select.
+fn live_daemon(socket: &Path, args: &[String]) -> App<fn() -> u128> {
+    let mut app = daemon(socket);
+    app.launch.setup_entry.args = args.iter().map(Into::into).collect();
+    app.config.terminal.default_shell = "/bin/sh".into();
+    app.config.terminal.new_cwd = NewTerminalCwdConfig::Path(
+        maestro_test_directory::temporary_root()
+            .display()
+            .to_string(),
+    );
+    app
+}
+
+/// Runs `test` alone in a process of its own, serving a live daemon through `run_server`
+/// while `client` runs.
+fn served_live(test: &str, client: impl FnOnce(PathBuf) + Send + 'static) {
+    if maestro_test_process::run_alone(test).unwrap() {
+        return;
+    }
+    let root = Scratch::new().unwrap();
+    let paths = root_paths(root.path());
+    TestProcess::named("daemon_socket::setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            served_by(
+                live_daemon(Path::new(&paths.api_socket_path()), args),
+                &paths,
+                client,
+            );
+            Ok::<_, io::Error>(())
+        })
+        .unwrap();
+}
+
+/// Sends the wire-form `request` through the daemon client and returns its typed result.
+fn call(socket: &Path, request: serde_json::Value) -> Result<ResponseResult, ErrorBody> {
+    let request: Request = serde_json::from_value(request).unwrap();
+    DaemonClient::for_target(ConnectionTarget::SocketPath(socket.to_path_buf()))
+        .request(&request)
+        .unwrap()
+        .result
+}
+
+/// The workspace a single-workspace result reports.
+fn workspace_of(result: Result<ResponseResult, ErrorBody>) -> WorkspaceInfo {
+    match result {
+        Ok(ResponseResult::WorkspaceInfo { workspace }) => workspace,
+        other => panic!("expected a workspace: {other:?}"),
+    }
+}
+
+/// The workspaces a list result holds.
+fn workspaces_of(result: Result<ResponseResult, ErrorBody>) -> Vec<WorkspaceInfo> {
+    match result {
+        Ok(ResponseResult::WorkspaceList { workspaces }) => workspaces,
+        other => panic!("expected a workspace list: {other:?}"),
+    }
+}
+
+/// The tab a single-tab result reports.
+fn tab_of(result: Result<ResponseResult, ErrorBody>) -> TabInfo {
+    match result {
+        Ok(ResponseResult::TabInfo { tab }) => tab,
+        other => panic!("expected a tab: {other:?}"),
+    }
+}
+
+/// The tabs a list result holds.
+fn tabs_of(result: Result<ResponseResult, ErrorBody>) -> Vec<TabInfo> {
+    match result {
+        Ok(ResponseResult::TabList { tabs }) => tabs,
+        other => panic!("expected a tab list: {other:?}"),
+    }
+}
+
+/// A workspace command reaches the daemon `run_server` drives through its one queue and
+/// answers from that daemon's retained state.
+#[test]
+fn workspace_request_crosses_the_retained_daemon_channel() {
+    let root = Scratch::new().unwrap();
+    let paths = root_paths(root.path());
+    let mut app = daemon(Path::new(&paths.api_socket_path()));
+    app.state
+        .topology
+        .new_with_tab("/retained".into(), None, |_, _| Ok(()))
+        .unwrap();
+    served_by(app, &paths, |socket| {
+        let workspaces = workspaces_of(call(&socket, json!({"id": "l", "type": "workspace.list"})));
+        assert_eq!(workspaces.len(), 1);
+        assert_eq!(
+            (
+                workspaces[0].workspace_id.as_str(),
+                workspaces[0].label.as_str()
+            ),
+            ("w1", "retained")
+        );
+        let renamed = call(
+            &socket,
+            json!({"id": "r", "type": "workspace.rename", "workspace_id": "w1", "label": "kept"}),
+        );
+        assert_eq!(workspace_of(renamed).label, "kept");
+        let again = workspace_of(call(
+            &socket,
+            json!({"type": "workspace.get", "workspace_id": "w1"}),
+        ));
+        assert_eq!(again.label, "kept");
+    });
+}
+
+/// The identities of `workspaces`, in order.
+fn workspace_ids(workspaces: &[WorkspaceInfo]) -> Vec<&str> {
+    workspaces
+        .iter()
+        .map(|workspace| workspace.workspace_id.as_str())
+        .collect()
+}
+
+/// The identities of `tabs`, in order.
+fn tab_ids(tabs: &[TabInfo]) -> Vec<&str> {
+    tabs.iter().map(|tab| tab.tab_id.as_str()).collect()
+}
+
+/// Through `run_server` and the daemon client, workspace records keep their typed fields
+/// across create, list, get, focus, rename, move, metadata and close.
+#[test]
+fn socket_workspace_records_round_trip() {
+    served_live("socket_workspace_records_round_trip", |socket| {
+        let created = call(
+            &socket,
+            json!({"type": "workspace.create", "label": "first"}),
+        );
+        let Ok(ResponseResult::WorkspaceCreated {
+            workspace,
+            tab,
+            root_pane,
+        }) = created
+        else {
+            panic!("expected a created workspace: {created:?}")
+        };
+        assert_eq!(
+            (workspace.workspace_id.as_str(), workspace.label.as_str()),
+            ("w1", "first")
+        );
+        assert_eq!(
+            (tab.tab_id.as_str(), root_pane.pane_id.as_str()),
+            ("w1:t1", "w1:p1")
+        );
+        assert!(workspace.focused && root_pane.focused);
+        let second = call(&socket, json!({"type": "workspace.create", "focus": false}));
+        assert!(matches!(
+            second,
+            Ok(ResponseResult::WorkspaceCreated { .. })
+        ));
+        let listed = workspaces_of(call(&socket, json!({"type": "workspace.list"})));
+        assert_eq!(listed.iter().map(|w| w.number).collect::<Vec<_>>(), [1, 2]);
+        let get = json!({"type": "workspace.get", "workspace_id": "w1"});
+        assert_eq!(listed[0], workspace_of(call(&socket, get)));
+        assert_workspace_edits_round_trip(&socket);
+    });
+}
+
+/// Focus, rename, move, metadata and close answer with the workspace records they change.
+fn assert_workspace_edits_round_trip(socket: &Path) {
+    let focus = json!({"type": "workspace.focus", "workspace_id": "w2"});
+    assert!(workspace_of(call(socket, focus)).focused);
+    let rename = json!({"type": "workspace.rename", "workspace_id": "w2", "label": "second"});
+    assert_eq!(workspace_of(call(socket, rename)).label, "second");
+    let moved = json!({"type": "workspace.move", "workspace_id": "w2", "insert_index": 0});
+    assert_eq!(
+        workspace_ids(&workspaces_of(call(socket, moved))),
+        ["w2", "w1"]
+    );
+    let report = json!({
+        "type": "workspace.report_metadata",
+        "workspace_id": "w1",
+        "source": "user:test",
+        "tokens": {"summary": "ready"},
+        "seq": 9_007_199_254_740_993_u64,
+    });
+    assert_eq!(call(socket, report), Ok(ResponseResult::Ok {}));
+    let get = json!({"type": "workspace.get", "workspace_id": "w1"});
+    let tokens = workspace_of(call(socket, get)).tokens;
+    assert_eq!(tokens.get("summary").map(String::as_str), Some("ready"));
+    let close = json!({"type": "workspace.close", "workspace_id": "w1"});
+    assert_eq!(call(socket, close), Ok(ResponseResult::Ok {}));
+    let left = workspaces_of(call(socket, json!({"type": "workspace.list"})));
+    assert_eq!(workspace_ids(&left), ["w2"]);
+}
+
+/// Through `run_server`, tab records keep their typed fields across create, list, get,
+/// focus, rename, move and close.
+#[test]
+fn socket_tab_records_round_trip() {
+    served_live("socket_tab_records_round_trip", |socket| {
+        assert!(call(&socket, json!({"type": "workspace.create"})).is_ok());
+        let create = json!({"type": "tab.create", "focus": true, "label": "logs"});
+        let created = call(&socket, create);
+        let Ok(ResponseResult::TabCreated { tab, root_pane }) = created else {
+            panic!("expected a created tab: {created:?}")
+        };
+        assert_eq!(
+            (tab.tab_id.as_str(), tab.label.as_str(), tab.number),
+            ("w1:t2", "logs", 2)
+        );
+        assert_eq!(
+            (root_pane.pane_id.as_str(), root_pane.tab_id.as_str()),
+            ("w1:p2", "w1:t2")
+        );
+        assert!(tab.focused);
+        let list = json!({"type": "tab.list", "workspace_id": "w1"});
+        let listed = tabs_of(call(&socket, list));
+        assert_eq!(tab_ids(&listed), ["w1:t1", "w1:t2"]);
+        let get = json!({"type": "tab.get", "tab_id": "w1:t2"});
+        assert_eq!(listed[1], tab_of(call(&socket, get)));
+        let focus = json!({"type": "tab.focus", "tab_id": "w1:t1"});
+        assert!(tab_of(call(&socket, focus)).focused);
+        let rename = json!({"type": "tab.rename", "tab_id": "w1:t1", "label": "main"});
+        assert_eq!(tab_of(call(&socket, rename)).label, "main");
+        let moved = json!({"type": "tab.move", "tab_id": "w1:t1", "insert_index": 2});
+        assert_eq!(tab_ids(&tabs_of(call(&socket, moved))), ["w1:t2", "w1:t1"]);
+        let close = json!({"type": "tab.close", "tab_id": "w1:t2"});
+        assert_eq!(call(&socket, close), Ok(ResponseResult::Ok {}));
+        let left = tabs_of(call(&socket, json!({"type": "tab.list"})));
+        assert_eq!(tab_ids(&left), ["w1:t1"]);
+    });
+}
+
+/// A tab created over the socket without focus leaves the active tab as it was, while
+/// returning the new tab and its root pane.
+#[test]
+fn an_unfocused_socket_tab_keeps_the_existing_active_tab() {
+    served_live(
+        "an_unfocused_socket_tab_keeps_the_existing_active_tab",
+        |socket| {
+            assert!(call(&socket, json!({"type": "workspace.create"})).is_ok());
+            let created = call(
+                &socket,
+                json!({"type": "tab.create", "workspace_id": "w1", "focus": false}),
+            );
+            let Ok(ResponseResult::TabCreated { tab, root_pane }) = created else {
+                panic!("expected a created tab: {created:?}")
+            };
+            assert_eq!(
+                (tab.tab_id.as_str(), root_pane.tab_id.as_str()),
+                ("w1:t2", "w1:t2")
+            );
+            assert!(!tab.focused && !root_pane.focused);
+            let workspace = workspace_of(call(
+                &socket,
+                json!({"type": "workspace.get", "workspace_id": "w1"}),
+            ));
+            assert_eq!(workspace.active_tab_id, "w1:t1");
+            let listed = tabs_of(call(&socket, json!({"type": "tab.list"})));
+            assert_eq!(
+                listed.iter().map(|t| t.focused).collect::<Vec<_>>(),
+                [true, false]
+            );
+        },
+    );
+}
+
+/// Over the socket, a manifest reload picks up a changed local override and the status
+/// reports the selected override's path and version with every manifest field.
+#[test]
+fn socket_manifest_reload_reports_the_selected_override() {
+    let root = Scratch::new().unwrap();
+    let paths = root_paths(root.path());
+    let detection = PathBuf::from(paths.detection_catalog());
+    let codex = detection.parent().unwrap().join("codex.toml");
+    std::fs::create_dir_all(codex.parent().unwrap()).unwrap();
+    let document = |version: &str| {
+        format!(
+            "id = \"codex\"\nversion = \"{version}\"\n[[rules]]\nid = \"working\"\nstate = \"working\"\ncontains = [\"controlled working\"]\n"
+        )
+    };
+    std::fs::write(&codex, document("2026.10.21.1")).unwrap();
+    let app = daemon(Path::new(&paths.api_socket_path()));
+    let cache = ManifestCache::new(
+        Some(codex.parent().unwrap().to_path_buf()),
+        Some(paths.detection_catalog().into()),
+    )
+    .unwrap();
+    *app.state.manifests.write().unwrap() = cache;
+    let expected_source = codex.display().to_string();
+    served_by(app, &paths, move |socket| {
+        let codex_of = |manifests: Vec<AgentManifestInfo>| {
+            manifests
+                .into_iter()
+                .find(|info| info.agent == "codex")
+                .unwrap()
+        };
+        let status = call(&socket, json!({"type": "server.agent_manifests"}));
+        let Ok(ResponseResult::AgentManifestStatus {
+            last_check_unix,
+            last_result,
+            manifests,
+        }) = status
+        else {
+            panic!("expected the manifest status: {status:?}")
+        };
+        assert_eq!((last_check_unix, last_result), (None, None));
+        let before = codex_of(manifests);
+        assert_eq!(before.source, expected_source);
+        assert_eq!(before.source_kind, "local override");
+        assert_eq!(before.active_version.as_deref(), Some("2026.10.21.1"));
+        std::fs::write(&codex, document("2026.10.22.1")).unwrap();
+        let reloaded = call(&socket, json!({"type": "server.reload_agent_manifests"}));
+        let Ok(ResponseResult::AgentManifestReload { manifests }) = reloaded else {
+            panic!("expected the reloaded manifests: {reloaded:?}")
+        };
+        let after = codex_of(manifests);
+        assert_eq!(
+            after,
+            AgentManifestInfo {
+                active_version: Some("2026.10.22.1".into()),
+                ..before
+            }
+        );
+        let status = call(&socket, json!({"type": "server.agent_manifests"}));
+        let Ok(ResponseResult::AgentManifestStatus { manifests, .. }) = status else {
+            panic!("expected the manifest status: {status:?}")
+        };
+        assert_eq!(codex_of(manifests), after);
+    });
+}
+
+/// The variable carrying the startup directory into server mode.
+const STARTUP: &str = "MAESTRO_STARTUP_CWD";
+
+/// Server mode opens its first workspace in the directory `MAESTRO_STARTUP_CWD` names, once
+/// bound, and ignores the directory when the daemon already has a workspace.
+#[test]
+fn server_mode_opens_the_startup_directory() {
+    let test = "server_mode_opens_the_startup_directory";
+    if !maestro_test_process::selection().is_child() {
+        let startup = Scratch::new().unwrap();
+        for case in ["empty", "restored"] {
+            let output = TestProcess::current(test)
+                .unwrap()
+                .case(case)
+                .env(STARTUP, startup.path())
+                .nocapture()
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{case} failed:\n{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    }
+    let startup = PathBuf::from(std::env::var_os(STARTUP).unwrap());
+    let restored = maestro_test_process::selection().runs_case("restored");
+    let root = Scratch::new().unwrap();
+    let paths = root_paths(root.path());
+    TestProcess::named("daemon_socket::setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            let mut app = live_daemon(Path::new(&paths.api_socket_path()), args);
+            if restored {
+                app.state
+                    .topology
+                    .new_with_tab("/restored".into(), None, |_, _| Ok(()))
+                    .unwrap();
+            }
+            served_by(app, &paths, move |socket| {
+                let workspaces = workspaces_of(call(&socket, json!({"type": "workspace.list"})));
+                assert_eq!(workspaces.len(), 1);
+                let get = call(&socket, json!({"type": "tab.get", "tab_id": "w1:t1"}));
+                assert_eq!(tab_of(get).workspace_id, "w1");
+                if restored {
+                    assert_eq!(workspaces[0].label, "restored");
+                } else {
+                    assert!(workspaces[0].focused);
+                    let label = startup.file_name().unwrap().to_string_lossy().into_owned();
+                    assert_eq!(workspaces[0].label, label);
+                }
+            });
+            Ok::<_, io::Error>(())
+        })
+        .unwrap();
 }

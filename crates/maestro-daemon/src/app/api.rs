@@ -1,5 +1,6 @@
 //! Internal observations applied through daemon state and live process context.
 
+mod env;
 mod overlay;
 mod respawn;
 mod state_events;
@@ -23,6 +24,8 @@ impl<C: FnMut() -> u128> App<C> {
     pub async fn handle_api_request(
         &mut self,
         command: RpcCommand,
+        _settings: &mut maestro_settings::SettingsManager,
+        _paths: &crate::paths::DaemonPaths,
     ) -> Result<ResponseResult, ErrorBody> {
         self.drain_all_internal_events();
         self.sync_pending_terminal_titles().await;

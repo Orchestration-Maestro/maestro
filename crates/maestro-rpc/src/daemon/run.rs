@@ -22,6 +22,7 @@ const LOG_ROLE: &str = "daemon";
 /// serves the socket, already-exists for a file that is not a socket.
 pub async fn run_server<C: FnMut() -> u128>(
     app: &mut App<C>,
+    settings: &mut maestro_app::SettingsManager,
     paths: &DaemonPaths,
     shutdown: impl Future<Output = ()>,
 ) -> io::Result<()> {
@@ -46,7 +47,7 @@ pub async fn run_server<C: FnMut() -> u128>(
         }
     };
     tokio::select! {
-        () = app.run(paths, &mut requests, shutdown) => {}
+        () = app.run(paths, &mut requests, settings, shutdown) => {}
         never = server.serve(Rc::new(operations)) => match never {},
     }
     drop(server);
