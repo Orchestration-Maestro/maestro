@@ -22,6 +22,11 @@ path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "built_in_tool_renderer"
+path = "../../examples/extensions/built_in_tool_renderer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "commands"
 path = "../../examples/extensions/commands.rs"
 crate-type = ["cdylib"]
