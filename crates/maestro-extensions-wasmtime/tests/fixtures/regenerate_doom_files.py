@@ -34,11 +34,11 @@ def main():
             flags = []
             if name == "doom_sjlj_engine":
                 flags = ["-mllvm", "-wasm-enable-sjlj", "-mllvm",
-                         "-wasm-use-legacy-eh=false", "-lsetjmp", "-Wl,--wrap=I_Error"]
+                         "-wasm-use-legacy-eh=false", "-lsetjmp", "-Wl,--wrap=I_Error", "-Wl,--wrap=exit"]
             subprocess.run([str(Path(sdk) / "bin/clang"), "--target=wasm32-wasip2",
                             "-mexec-model=reactor", "-O2", "-DNDEBUG", *flags,
                             f"-ffile-prefix-map={work}=.", f"-ffile-prefix-map={repo}=.",
-                            f"-I{work}", str(source), str(work / "game.c"),
+                            f"-I{work}", f"-I{repo / 'examples/extensions/doom-overlay'}", str(source), str(work / "game.c"),
                             str(work / "game_component_type.o"), "-o", str(work / "raw.wasm")], check=True)
             output = work / fixture.name
             subprocess.run(["wasm-tools", "strip", str(work / "raw.wasm"), "-o", str(output)], check=True)
