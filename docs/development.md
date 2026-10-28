@@ -164,15 +164,18 @@ Build outputs remain in Cargo's resolved target directory.
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 19 loading exports and 49 contribution exports. Packaging
+inventory before invoking assertions, then checks each family in bounded pairs of fresh, isolated pages:
+26 execution exports, 49 loading exports and 194 contribution exports. Each
+pair settles before the next starts; a failure closes the browser, including
+the other in-flight page, and the server. Page-local error accounting and input
+bindings remain isolated; completion logs within a pair can arrive out of order. Packaging
 also builds the two runtime-module fixtures, each from its own manifest and lock
 with its own binding glue, into a copy of the fixture package. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAMILY` total, the unchanged `HOST` digest and
-`COMPLETE 94/94` on success. `PHASE` records
+`COMPLETE 269/269` on success. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
