@@ -143,8 +143,35 @@ off. Terminal and system notifications need an attached client, so the daemon an
 check. `server.reload_agent_manifests` reloads them and restarts detection in every
 pane.
 
-The other command families fail with `not_implemented` and
-`method not implemented yet` until the daemon handles them.
+## Pane topology commands
+
+The daemon answers `pane.list`, `current`, `get`, `focus`, `layout`, `process_info`,
+`neighbor`, `edges` and `focus_direction`. A pane target is its stable id, such as `w1:p2`,
+or an older spelling such as `w1-2`. `pane.get` and `pane.focus` fail with `pane_not_found`
+and `pane <id> not found` when the pane is gone. The other commands take an optional
+pane and use the focused pane of the active workspace when none is named; they fail
+with `pane_not_found` and `pane not found` when there is no such pane.
+
+- `pane.list` returns the panes of one workspace, or of every workspace, in tab order and
+  then split order. An unknown workspace fails with `workspace_not_found`.
+- `pane.current` returns the pane named in `caller_pane_id`, which lets a pane ask about
+  itself, or the focused pane when none is named.
+- `pane.focus` activates the pane's tab and workspace, marks the tab's panes seen and
+  returns to terminal input. A pane that already has focus still has its tab marked seen.
+- `pane.layout` returns the layout snapshot of the pane's tab: public ids, chrome cells,
+  dividers, focus and zoom. `neighbor`, `edges` and `focus_direction` return that
+  snapshot with their own answer. `neighbor` names the pane next to the source in a
+  direction, `edges` tells which sides of the view area the pane's cell touches, and
+  `focus_direction` moves focus to the neighbour, or reports `no_neighbor` and changes
+  nothing.
+- `pane.process_info` returns the shell's process id and the members of the foreground
+  process group with their names, command lines and working directories. A pane without
+  a live process fails with `pane_not_found`.
+
+A created workspace or tab publishes `layout_updated` after its created records.
+
+Every other command fails with `not_implemented` and `method not implemented yet` until
+the daemon handles it.
 
 ## Binary screen channel
 
