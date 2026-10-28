@@ -101,6 +101,8 @@ resolving conflicts, then regenerate the table.
 | `message_renderer.rs` | A `/status` command posts status notes, and the renderer it registers draws each one: the level in its theme color over the custom message background, and the host's local send time once the message is expanded. |
 | `minimal_mode.md` | Minimal mode |
 | `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
+| `modal_editor.md` | Modal editor |
+| `modal_editor.rs` | A modal editor in the style of vi. |
 | `model_status.md` | Model status |
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
