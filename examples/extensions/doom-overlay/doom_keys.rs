@@ -25,10 +25,50 @@ impl DoomKeys {
     pub const KEY_USE: u8 = 0xa2;
     /// Fire.
     pub const KEY_FIRE: u8 = 0xa3;
+    /// Escape or cancel a menu.
+    pub const KEY_ESCAPE: u8 = 27;
+    /// Confirm a menu choice.
+    pub const KEY_ENTER: u8 = 13;
+    /// Toggle the map.
+    pub const KEY_TAB: u8 = 9;
+    /// Function key F1.
+    pub const KEY_F1: u8 = 0x80 + 0x3b;
+    /// Function key F2.
+    pub const KEY_F2: u8 = 0x80 + 0x3c;
+    /// Function key F3.
+    pub const KEY_F3: u8 = 0x80 + 0x3d;
+    /// Function key F4.
+    pub const KEY_F4: u8 = 0x80 + 0x3e;
+    /// Function key F5.
+    pub const KEY_F5: u8 = 0x80 + 0x3f;
+    /// Function key F6.
+    pub const KEY_F6: u8 = 0x80 + 0x40;
+    /// Function key F7.
+    pub const KEY_F7: u8 = 0x80 + 0x41;
+    /// Function key F8.
+    pub const KEY_F8: u8 = 0x80 + 0x42;
+    /// Function key F9.
+    pub const KEY_F9: u8 = 0x80 + 0x43;
+    /// Function key F10.
+    pub const KEY_F10: u8 = 0x80 + 0x44;
+    /// Function key F11.
+    pub const KEY_F11: u8 = 0x80 + 0x57;
+    /// Function key F12.
+    pub const KEY_F12: u8 = 0x80 + 0x58;
+    /// Delete the preceding character.
+    pub const KEY_BACKSPACE: u8 = 127;
     /// Toggle pause.
     pub const KEY_PAUSE: u8 = 0xff;
+    /// Increase the screen size.
+    pub const KEY_EQUALS: u8 = 0x3d;
+    /// Decrease the screen size.
+    pub const KEY_MINUS: u8 = 0x2d;
     /// Run.
     pub const KEY_RSHIFT: u8 = 0xb6;
+    /// Right Control.
+    pub const KEY_RCTRL: u8 = 0x80 + 0x1d;
+    /// Right Alt.
+    pub const KEY_RALT: u8 = 0x80 + 0x38;
 }
 
 /// Maps plain and enhanced terminal keys to engine bytes.
