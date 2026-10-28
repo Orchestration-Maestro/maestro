@@ -1,8 +1,17 @@
 //! Workspace removal preserves logical active selection.
 
+#[cfg(test)]
+mod tests;
+
 use crate::app::state::{DaemonState, Mode};
 
 impl<C: FnMut() -> u128> DaemonState<C> {
+    /// Retires one non-final tab and its detached pane and terminal records.
+    #[cfg(test)]
+    pub(crate) fn retire_tab(&mut self, _workspace: usize, _tab: usize) -> bool {
+        self.topology.workspaces.is_empty()
+    }
+
     /// Closes the focused pane, returning whether confirmation deferred the close.
     pub fn close_pane(&mut self) -> bool {
         if let Some(index) = self.active
