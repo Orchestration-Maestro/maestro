@@ -156,6 +156,11 @@ path = "examples/sdk/prompt_templates.rs"
 test = true
 
 [[example]]
+name = "session_runtime"
+path = "examples/sdk/session_runtime.rs"
+test = true
+
+[[example]]
 name = "sessions"
 path = "examples/sdk/sessions.rs"
 test = true
