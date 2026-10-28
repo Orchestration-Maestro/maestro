@@ -62,6 +62,16 @@ async fn dispatch(
             let path = request["path"].as_str().ok_or("missing path")?;
             filesystem::operate(&request, &guest_path(&reporter, path)?).await?
         }
+        Some("link") => {
+            let target = request["target"].as_str().ok_or("missing target")?;
+            let link = request["link"].as_str().ok_or("missing link")?;
+            filesystem::link(
+                &request,
+                &guest_path(&reporter, target)?,
+                &guest_path(&reporter, link)?,
+            )
+            .await?
+        }
         Some("cwd") => filesystem::cwd(),
         Some("stdio") => {
             stdio::inherited(request["generation"].as_str().ok_or("missing generation")?).await?

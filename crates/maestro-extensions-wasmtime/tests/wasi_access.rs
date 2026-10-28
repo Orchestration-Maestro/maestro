@@ -811,3 +811,53 @@ async fn link_failures(host: &Harness, generation: &str, denied: Option<&Path>) 
         );
     }
 }
+
+#[test]
+fn component_creates_and_reads_link_targets() {
+    if maestro_test_process::run_alone("component_creates_and_reads_link_targets").unwrap() {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("outside Ω")).unwrap();
+    let target = scratch.path().join("outside Ω").join("bytes");
+    #[cfg(windows)]
+    let target = std::path::PathBuf::from(plain(&target));
+    std::fs::write(&target, b"linked\0\xff").unwrap();
+    let made = scratch.path().join("native link");
+    #[cfg(unix)]
+    let native = std::os::unix::fs::symlink(&target, &made);
+    #[cfg(windows)]
+    let native = std::os::windows::fs::symlink_file(&target, &made);
+    // An account the host refuses symbolic links has no link to read or create.
+    if let Err(error) = native {
+        eprintln!("skipped: {error}");
+        return;
+    }
+    let relative = Path::new("outside Ω").join("bytes");
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        let observed = host
+            .request(json!({"op":"link","generation":"p2","target":target,"link":made}))
+            .await;
+        assert_link(&observed, &target, "p2 absolute");
+        for (target, name) in [(&target, "absolute"), (&relative, "relative")] {
+            let link = scratch.path().join(format!("{name} component link"));
+            let observed = host
+                .request(json!({"op":"link","generation":"p3","target":target,"link":link}))
+                .await;
+            assert_link(&observed, target, &format!("p3 {name}"));
+            assert_eq!(&std::fs::read_link(&link).unwrap(), target, "p3 {name}");
+        }
+    });
+}
+
+/// A component reads the native target in its own spelling and the bytes behind it.
+fn assert_link(observed: &serde_json::Value, target: &Path, case: &str) {
+    let guest = maestro_extensions::helpers::guest_path(target.to_str().unwrap());
+    assert_eq!(observed["target"], guest, "{case}: {observed}");
+    assert_eq!(
+        observed["bytes"],
+        json!(b"linked\0\xff"),
+        "{case}: {observed}"
+    );
+}
