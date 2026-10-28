@@ -437,6 +437,39 @@ fn forced_remove_keeps_a_directory_whose_link_climbs_out_of_the_admin_folders() 
 
 #[cfg(unix)]
 #[test]
+fn forced_remove_keeps_a_directory_whose_link_climbs_out_through_a_symbolic_link() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    let other = scratch.path().join("other");
+    init_repo_with_commit(&other);
+    std::fs::create_dir(other.join(".git/child")).unwrap();
+    std::os::unix::fs::symlink(other.join(".git/child"), repo.join(".git/redirect")).unwrap();
+    let checkout = leftover_checkout(&scratch, &repo);
+    link_checkout(&checkout, &repo.join(".git/redirect/../worktrees/stale"));
+
+    let error = worktree::remove(&repo, &checkout, true).unwrap_err();
+
+    assert!(error.message().contains("not a working tree"), "{error}");
+    assert!(checkout.join("leftover").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn forced_remove_keeps_a_directory_whose_link_climbs_out_through_a_dangling_link() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    std::os::unix::fs::symlink(scratch.path().join("nowhere"), repo.join(".git/redirect")).unwrap();
+    let checkout = leftover_checkout(&scratch, &repo);
+    link_checkout(&checkout, &repo.join(".git/redirect/../worktrees/stale"));
+
+    let error = worktree::remove(&repo, &checkout, true).unwrap_err();
+
+    assert!(error.message().contains("not a working tree"), "{error}");
+    assert!(checkout.join("leftover").exists());
+}
+
+#[cfg(unix)]
+#[test]
 fn forced_remove_keeps_a_directory_linked_to_a_repository_whose_name_differs_by_one_byte() {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
     let scratch = Scratch::new().unwrap();
