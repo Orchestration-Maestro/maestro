@@ -667,6 +667,35 @@ read, so a cache built on the read is rebuilt on the next refresh. The bare-layo
 reftable checks of repository discovery use the same line syntax: the last assignment in
 a plain section wins and quoted values lose their quotes.
 
+### Worktree operations
+
+`maestro-daemon::git::worktree` holds the names, paths and Git commands behind creating,
+opening and removing a worktree. Every operation is a blocking call that runs `git` through
+`maestro-process` and returns Git's own message as a `WorktreeError` when it fails, so a
+caller runs it on a worker.
+
+`generated_branch_slug` turns a seed into `worktree/<adjective>-<noun>-<hex>`.
+`branch_to_path_slug` turns a branch into a folder name of lowercase ASCII letters and
+digits joined by single dashes, or `worktree` when none is left. `worktrees_root` resolves
+the authored `daemon.worktreesDirectory` (default `~/.maestro/worktrees`): an exact `~` or a
+leading `~/` expands against the home directory the caller supplies, which is the expansion
+that new workspace directories use, and a relative result lies below the current directory.
+`default_checkout_path` joins that root, the repository name and the branch folder.
+
+`add` checks out an existing local branch, or creates the branch from the base revision when
+none exists. The branch, path and base are operands, never options, so a base that starts
+with a dash is read as a revision. `remove` runs `git worktree remove`, with `--force` when
+asked. Without it Git refuses a checkout that holds modified or untracked files;
+`WorktreeError::is_dirty_checkout` recognizes that refusal and `checkout_has_dirty_files`
+lets a caller look first. When a forced removal gets "not a working tree" from Git, the
+directory is deleted only if Git does not list it and its `.git` link names an admin folder
+of the same repository, even when the caller holds the repository through a symbolic link.
+Any other directory stays and Git's message is returned.
+
+`list` returns the entries of `git worktree list --porcelain` with their branch and their
+bare, detached and prunable flags. Paths keep the bytes Git printed, including bytes that
+text cannot hold.
+
 ## Retained tab-bar status
 
 `App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,
