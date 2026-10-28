@@ -3,8 +3,14 @@ use super::{decode, encode};
 
 /// Runs one OAuth operation without interpreting its result in the adapter.
 pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
-    let (): () = decode(data)?;
-    encode(&operation)
+    match operation {
+        "oauth.generate_pkce" => {
+            let (): () = decode(data)?;
+            let key = maestro_models::generate_pkce().map_err(|error| error.message)?;
+            encode(&serde_json::json!({"verifier": key.verifier, "challenge": key.challenge}))
+        }
+        _ => Err(format!("Unknown native helper: {operation}")),
+    }
 }
 
 #[cfg(test)]

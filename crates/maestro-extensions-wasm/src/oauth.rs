@@ -114,6 +114,5 @@ pub struct Pkce {
 /// # Errors
 /// Returns the host's entropy failure or an invalid response.
 pub fn generate_pkce(api: &ExtensionAPI) -> ExtensionResult<Pkce> {
-    let _ = api;
-    Err("generate_pkce is not wired to the host".into())
+    api.helper("oauth.generate_pkce", &())
 }
