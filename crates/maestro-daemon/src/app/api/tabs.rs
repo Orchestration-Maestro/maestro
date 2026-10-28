@@ -9,7 +9,7 @@ use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, ResponseResult, TabCreateParams, TabInfo, TabMoveParams, TabRenameParams},
 };
-use std::{collections::HashSet, path::PathBuf};
+use std::path::PathBuf;
 
 impl<C: FnMut() -> u128> App<C> {
     /// Lists the tabs of one workspace, or of every workspace in display order.
@@ -156,21 +156,12 @@ impl<C: FnMut() -> u128> App<C> {
             });
             return Ok(ResponseResult::Ok {});
         }
-        let closing = &target.tabs[tab];
-        let panes: HashSet<_> = closing.panes.keys().copied().collect();
-        let terminals = closing
-            .panes
-            .values()
-            .map(|pane| pane.attached_terminal_id.clone())
-            .collect();
-        if !self.state.topology.workspaces[workspace].close_tab(tab) {
+        if !self.state.retire_tab(workspace, tab) {
             return Err(api_error(
                 "tab_close_failed",
                 format!("tab {id} could not be closed"),
             ));
         }
-        self.state.remove_plugin_pane_records(&panes);
-        self.state.remove_unattached_terminal_ids(terminals);
         self.shutdown_detached_terminal_runtimes().await;
         self.state.session_dirty = true;
         self.event_hub.push(EventData::TabClosed {

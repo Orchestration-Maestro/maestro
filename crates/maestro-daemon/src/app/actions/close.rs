@@ -7,9 +7,25 @@ use crate::app::state::{DaemonState, Mode};
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Retires one non-final tab and its detached pane and terminal records.
-    #[cfg(test)]
-    pub(crate) fn retire_tab(&mut self, _workspace: usize, _tab: usize) -> bool {
-        self.topology.workspaces.is_empty()
+    pub(crate) fn retire_tab(&mut self, workspace: usize, tab: usize) -> bool {
+        let Some(workspace) = self.topology.workspaces.get_mut(workspace) else {
+            return false;
+        };
+        let Some(closing) = workspace.tabs.get(tab) else {
+            return false;
+        };
+        let panes = closing.panes.keys().copied().collect();
+        let terminals = closing
+            .panes
+            .values()
+            .map(|pane| pane.attached_terminal_id.clone())
+            .collect();
+        if !workspace.close_tab(tab) {
+            return false;
+        }
+        self.remove_plugin_pane_records(&panes);
+        self.remove_unattached_terminal_ids(terminals);
+        true
     }
 
     /// Closes the focused pane, returning whether confirmation deferred the close.
@@ -77,18 +93,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             self.close_selected_workspace();
             return false;
         }
-        let Some(tab) = workspace.active_tab() else {
-            return false;
-        };
-        let panes = tab.panes.keys().copied().collect();
-        let terminals = tab
-            .panes
-            .values()
-            .map(|pane| pane.attached_terminal_id.clone())
-            .collect();
-        workspace.close_tab(workspace.active_tab);
-        self.remove_plugin_pane_records(&panes);
-        self.remove_unattached_terminal_ids(terminals);
+        let tab = workspace.active_tab;
+        self.retire_tab(index, tab);
         false
     }
 
