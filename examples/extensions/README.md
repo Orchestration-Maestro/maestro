@@ -112,6 +112,10 @@ resolving conflicts, then regenerate the table.
 | `question.rs` | An opt-in single-question tool with an inline custom answer. |
 | `question/render.rs` | Compact call and result rows using the host's unpadded text widget. |
 | `question/view.rs` | Retained option navigation with the host's multiline editor. |
+| `questionnaire.md` | Questionnaire |
+| `questionnaire.rs` | A questionnaire tool with selectable options and inline custom answers. |
+| `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
+| `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |
