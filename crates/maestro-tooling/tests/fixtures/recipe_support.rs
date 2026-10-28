@@ -121,14 +121,13 @@ impl Workspace {
             .arg(recipe)
             .env("MAESTRO_LOG", self.path().join("log"))
             .env("MAESTRO_CWD", self.path().join("cwd"))
-            .env(
-                "PATH",
-                format!(
-                    "{}:{}",
-                    self.path().join("bin").display(),
-                    std::env::var("PATH").unwrap()
-                ),
-            );
+            .env("PATH", {
+                // The fixture tools come first, joined with the host's list separator.
+                let inherited = std::env::var_os("PATH").unwrap();
+                let entries = std::iter::once(self.path().join("bin"))
+                    .chain(std::env::split_paths(&inherited));
+                std::env::join_paths(entries).unwrap()
+            });
         command
     }
 

@@ -90,6 +90,11 @@ fn leaf_fork_preserves_the_in_memory_active_branch() {
 
 /// A destination whose assistant and recorded selection both identify the second model.
 fn destination(h: &Harness) -> SessionManager {
+    destination_recording(h, "off")
+}
+
+/// The destination of [`destination`] with `thinking` as its recorded thinking level.
+fn destination_recording(h: &Harness, thinking: &str) -> SessionManager {
     let root = h.scratch.path().display().to_string();
     let cwd = format!("{root}/case-11/destination");
     std::fs::create_dir_all(&cwd).unwrap();
@@ -104,7 +109,7 @@ fn destination(h: &Harness) -> SessionManager {
         .append_message(serde_json::to_value(response).unwrap())
         .unwrap();
     manager.append_model_change("faux", "faux-2").unwrap();
-    manager.append_thinking_level_change("off").unwrap();
+    manager.append_thinking_level_change(thinking).unwrap();
     manager
 }
 
@@ -157,12 +162,13 @@ fn switch_restores_the_destination_model_and_thinking() {
             RuntimeOptions {
                 bootstrap_model: false,
                 persisted: true,
-                models: vec![("faux-1", true), ("faux-2", false)],
+                models: vec![("faux-1", true), ("faux-2", true)],
                 ..RuntimeOptions::default()
             },
         )
         .await;
-        let target = destination(&h);
+        // The recorded level differs from the medium default a reasoning model would take.
+        let target = destination_recording(&h, "high");
         runtime
             .switch_session(
                 target.get_session_file().unwrap(),
@@ -176,10 +182,7 @@ fn switch_restores_the_destination_model_and_thinking() {
             json!(runtime.session().model().read().unwrap().id),
             expected["destination"]["model"]
         );
-        assert_eq!(
-            json!(runtime.session().thinking_level()),
-            expected["destination"]["thinking"]
-        );
+        assert_eq!(json!(runtime.session().thinking_level()), json!("high"));
         runtime.dispose().await.unwrap();
     });
 }

@@ -564,7 +564,7 @@ async fn assert_option_execution(observed: &Value, request: &Value, defaults: &[
             if supplied {
                 calls.extend(
                     ["read.access", "read.mime", "read.read_file"]
-                        .map(|stage| json!([stage, format!("{cwd}/read.txt")])),
+                        .map(|stage| json!([stage, joined(cwd, "read.txt")])),
                 );
             }
             let expected = super::builtin_operations::native_read_case(
@@ -592,14 +592,19 @@ fn reset_matrix_files(root: &std::path::Path) {
     std::fs::write(root.join("read.txt"), include_bytes!("read_resize.png")).unwrap();
 }
 
+/// `name` below `cwd`, joined with the host separator as the native tools join it.
+fn joined(cwd: &str, name: &str) -> String {
+    std::path::Path::new(cwd).join(name).display().to_string()
+}
+
 /// Literal first-phase operands for families whose deeper behavior has separate witnesses.
 fn matrix_first_call(index: usize, cwd: &str) -> Value {
     let (stage, path) = match index {
-        2 => ("edit.access", format!("{cwd}/edit.txt")),
+        2 => ("edit.access", joined(cwd, "edit.txt")),
         3 => ("write.mkdir", cwd.to_owned()),
-        4 => ("grep.is_directory", format!("{cwd}/search")),
-        5 => ("find.exists", format!("{cwd}/search")),
-        6 => ("ls.exists", format!("{cwd}/search")),
+        4 => ("grep.is_directory", joined(cwd, "search")),
+        5 => ("find.exists", joined(cwd, "search")),
+        6 => ("ls.exists", joined(cwd, "search")),
         _ => panic!("not a failing matrix family"),
     };
     json!([stage, path])

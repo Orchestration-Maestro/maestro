@@ -381,7 +381,7 @@ fn main() {
     }
     if env::args().nth(1).as_deref() != Some("format") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
-            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
                 let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
                 assert!(output.status.success());
                 assert_eq!(output.stdout, b"formatted");
@@ -389,7 +389,7 @@ fn main() {
         }
     }
     if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
@@ -1610,8 +1610,16 @@ fn remove_input(path: &Path) {
 
 /// Assert that a failed copy names the input it could not read.
 fn assert_names_input(error: &io::Error, input: &Path) {
+    // Windows reads `/` and `\` as the same separator.
+    let spelled = |text: String| {
+        if cfg!(windows) {
+            text.replace('\\', "/")
+        } else {
+            text
+        }
+    };
     assert!(
-        error.to_string().contains(&input.display().to_string()),
+        spelled(error.to_string()).contains(&spelled(input.display().to_string())),
         "{error} does not name {}",
         input.display()
     );
@@ -1911,7 +1919,7 @@ fn maestro_asset_errors_keep_prior_copies() {
     );
     assert!(!destination.join("core/export-html/template.js").exists());
     fs::write(source.join("src/core/export-html/template.css"), "css").unwrap();
-    let image = source.join("src/modes/interactive/assets/mark.png");
+    let image = source.join("src/modes/interactive/assets").join("mark.png");
     fs::remove_file(&image).unwrap();
     assert!(
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
@@ -2193,13 +2201,13 @@ fn run_driver(fixture: &Fixture, test: &str, operation: &str) -> TestProcess {
         .env("PATH", fixture_path(fixture))
 }
 
-/// The fixture's controlled tool directory ahead of this process's `PATH`.
-fn fixture_path(fixture: &Fixture) -> String {
-    format!(
-        "{}:{}",
-        fixture.root.path().display(),
-        std::env::var("PATH").unwrap()
-    )
+/// The fixture's controlled tool directory ahead of this process's `PATH`, joined with the
+/// host's list separator.
+fn fixture_path(fixture: &Fixture) -> std::ffi::OsString {
+    let inherited = std::env::var_os("PATH").unwrap();
+    let entries =
+        std::iter::once(fixture.root.path().to_path_buf()).chain(std::env::split_paths(&inherited));
+    std::env::join_paths(entries).unwrap()
 }
 
 /// Resolve an executable through this process's `PATH`.
@@ -2283,9 +2291,33 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
                 &[],
             )
             .envs(
-                ["RUSTUP_HOME", "CARGO_HOME", "RUSTUP_AUTO_INSTALL"]
-                    .into_iter()
-                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+                // The child compiles a fixture, which on Windows needs the system locations
+                // its linker discovery and temporary files read.
+                [
+                    "RUSTUP_HOME",
+                    "CARGO_HOME",
+                    "RUSTUP_AUTO_INSTALL",
+                    "SYSTEMDRIVE",
+                    "COMSPEC",
+                    "PATHEXT",
+                    "PROGRAMDATA",
+                    "PROGRAMFILES",
+                    "PROGRAMFILES(X86)",
+                    "PROGRAMW6432",
+                    "COMMONPROGRAMFILES",
+                    "COMMONPROGRAMFILES(X86)",
+                    "COMMONPROGRAMW6432",
+                    "NUMBER_OF_PROCESSORS",
+                    "PROCESSOR_ARCHITECTURE",
+                    "OS",
+                    "USERPROFILE",
+                    "APPDATA",
+                    "LOCALAPPDATA",
+                    "TEMP",
+                    "TMP",
+                ]
+                .into_iter()
+                .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
             )
             .env("SYNTHETIC_TEST_API_KEY", "secret-value")
             .env("PATH", std::env::var_os("PATH").unwrap())
@@ -2310,21 +2342,21 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
 fn assert_hook_restages_only_captured_paths(driver: &str) {
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+    // Windows refuses a line break in a name, so there only the other spellings are staged.
+    let names: Vec<&str> = ["a space.rs", "line\nbreak.rs", "-dash.rs"]
+        .into_iter()
+        .filter(|name| !(cfg!(windows) && name.contains('\n')))
+        .collect();
+    let add = [&["add", "--"][..], &names].concat();
+    for name in names.iter().chain(&["unrelated.rs"]) {
         fs::write(fixture.root.path().join(name), "old").unwrap();
     }
-    git(
-        fixture.root.path(),
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
+    git(fixture.root.path(), &add);
     stage_deleted_path(fixture.root.path());
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+    for name in &names {
         fs::write(fixture.root.path().join(name), "staged").unwrap();
     }
-    git(
-        fixture.root.path(),
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
+    git(fixture.root.path(), &add);
     let output = run_hook(&fixture, driver)
         .env("MAESTRO_ACTIVE_SMOKE", "true")
         .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
@@ -2338,7 +2370,7 @@ fn assert_hook_restages_only_captured_paths(driver: &str) {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_commands_exclude_canary(&fixture);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+    for name in &names {
         let output = git(fixture.root.path(), &["show", &format!(":{name}")]);
         assert_eq!(output.stdout, b"formatted");
     }
@@ -3314,6 +3346,7 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     let sources = [
         "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
         "crates/maestro-extensions-wasm/src/tests/build.rs",
+        "crates/maestro-tooling/src/example_files.rs",
         "crates/maestro-extensions-wasm/Cargo.toml",
         "Cargo.lock",
     ];
@@ -3366,4 +3399,277 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
         String::from_utf8_lossy(&output.stderr)
     );
     stdout(&output)
+}
+
+/// Independent source files supply their own index rows without a second inventory.
+#[test]
+fn example_index_discovers_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    fs::create_dir_all(folder.join("nested")).unwrap();
+    let readme = folder.join("README.md");
+    fs::write(
+        &readme,
+        "Before\n<!-- example-index:start -->\nold\n<!-- example-index:end -->\nAfter\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("zebra.rs"),
+        "//! Zebra | tool.\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("alpha.rs"),
+        "//! Alpha command\n//! with a continuation.\n\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
+    fs::write(folder.join("nested.md"), "# Nested usage\n").unwrap();
+    fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
+    let cargo = Path::new("unused-cargo");
+    assert_eq!(
+        tooling::run(&["example-index".into()], cargo, root.path()).unwrap(),
+        std::process::ExitCode::SUCCESS
+    );
+    let rendered = fs::read_to_string(&readme).unwrap();
+    assert_eq!(
+        rendered,
+        "Before\n<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `alpha.md` | Alpha usage |\n| `alpha.rs` | Alpha command with a continuation. |\n| `nested.md` | Nested usage |\n| `nested/helper.rs` | A helper. |\n| `zebra.rs` | Zebra \\| tool. |\n<!-- example-index:end -->\nAfter\n"
+    );
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_ok()
+    );
+    fs::write(folder.join("beta.rs"), "//! Beta command.\n").unwrap();
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
+}
+
+/// The tracked repository index is exactly the table rendered from its files.
+#[test]
+fn shipped_example_index_matches_documentation() {
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    tooling::run(
+        &["example-index".into(), "--check".into()],
+        Path::new("unused-cargo"),
+        &checkout,
+    )
+    .unwrap();
+}
+
+/// Two new example test files enter the same generated module inventory independently.
+#[test]
+fn example_test_modules_discover_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["zebra_example.rs", "alpha_example.rs", "helper.rs"] {
+        fs::write(root.path().join(name), "// test fixture\n").unwrap();
+    }
+    let declarations = crate::example_test_modules::generate(root.path()).unwrap();
+    assert!(declarations.contains("mod alpha_example;"));
+    assert!(declarations.contains("mod zebra_example;"));
+    assert!(!declarations.contains("mod helper;"));
+    assert!(
+        declarations.find("alpha_example").unwrap() < declarations.find("zebra_example").unwrap()
+    );
+    assert!(!declarations.contains("#[path"));
+}
+
+/// Discovered modules retain ordinary nested-module lookup when compiled and run.
+#[test]
+fn example_test_modules_resolve_nested_modules() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tests = root.path().join("tests");
+    fs::create_dir_all(tests.join("nested_example")).unwrap();
+    fs::create_dir(root.path().join("generated")).unwrap();
+    fs::write(
+        tests.join("nested_example.rs"),
+        "mod child; pub(super) fn value() -> u8 { child::value() }",
+    )
+    .unwrap();
+    fs::write(
+        tests.join("nested_example/child.rs"),
+        "pub(super) fn value() -> u8 { 42 }",
+    )
+    .unwrap();
+    let generated = root.path().join("generated/modules.rs");
+    fs::write(
+        &generated,
+        crate::example_test_modules::generate(&tests).unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        root.path().join("tests.rs"),
+        format!(
+            "include!({generated:?}); example_tests!(); pub fn value() -> u8 {{ nested_example::value() }}"
+        ),
+    )
+    .unwrap();
+    let main = root.path().join("main.rs");
+    fs::write(
+        &main,
+        "mod tests; fn main() { assert_eq!(tests::value(), 42); }",
+    )
+    .unwrap();
+    let executable = root
+        .path()
+        .join(format!("nested{}", std::env::consts::EXE_SUFFIX));
+    let output = toolchain_support::command("rustc")
+        .arg(&main)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(Command::new(executable).status().unwrap().success());
+}
+
+/// A source-only addition supplies its build target, environment and setup selection.
+#[test]
+fn example_components_discover_source_only_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::create_dir(root.path().join("helpers")).unwrap();
+    fs::write(root.path().join("helpers/unmarked.rs"), "//! Helper.\n").unwrap();
+    let prepare = || {
+        let mut builds = Vec::new();
+        let entries = tooling::example_files::prepare(root.path(), |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        })
+        .unwrap();
+        (builds, entries)
+    };
+    assert_eq!(prepare(), (Vec::new(), String::new()));
+    fs::write(
+        root.path().join("fixture_example.rs"),
+        "//! Fixture.\n// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+    )
+    .unwrap();
+    assert_eq!(
+        prepare(),
+        (
+            vec![(
+                "fixture_example".to_owned(),
+                "MAESTRO_FIXTURE_COMPONENT".to_owned()
+            )],
+            "MAESTRO_FIXTURE_COMPONENT=/components/fixture_example.wasm\n".to_owned()
+        )
+    );
+    let config: toml::Value =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let filter = config["profile"]["default"]["scripts"][0]["filter"]
+        .as_str()
+        .unwrap();
+    assert!(filter.contains("test(/_example::/)"), "{filter}");
+    assert!(!filter.contains("qna_example::"), "{filter}");
+}
+
+/// Invalid environment markers never reach the component builder.
+#[test]
+fn example_components_reject_invalid_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for variable in [
+        "OTHER_FIXTURE_COMPONENT",
+        "MAESTRO_FIXTURE",
+        "MAESTRO_fixture_COMPONENT",
+        "MAESTRO_FIXTURE=VALUE_COMPONENT",
+        "MAESTRO_FIXTURE COMPONENT",
+    ] {
+        fs::write(
+            root.path().join("fixture.rs"),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+        let mut builds = Vec::new();
+        let error = tooling::example_files::prepare(root.path(), |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from("/components/fixture.wasm"))
+        })
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("invalid component variable: {variable}")
+        );
+        assert!(builds.is_empty(), "{builds:?}");
+    }
+}
+
+/// A repeated variable is rejected before its second build, even across files.
+#[test]
+fn example_components_reject_duplicate_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["first", "second"] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error = tooling::example_files::prepare(root.path(), |name, environment| {
+        builds.push((name.to_owned(), environment.to_owned()));
+        Ok(PathBuf::from(format!("/components/{name}.wasm")))
+    })
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+    );
+    assert_eq!(
+        builds,
+        [("first".to_owned(), "MAESTRO_FIXTURE_COMPONENT".to_owned())]
+    );
+}
+
+/// Builder failures retain their error and stop preparation before later targets.
+#[test]
+fn example_components_propagate_builder_failure() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for (name, variable) in [
+        ("first", "MAESTRO_FIRST_COMPONENT"),
+        ("second", "MAESTRO_SECOND_COMPONENT"),
+        ("third", "MAESTRO_THIRD_COMPONENT"),
+    ] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error = tooling::example_files::prepare(root.path(), |name, environment| {
+        builds.push((name.to_owned(), environment.to_owned()));
+        if name == "second" {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "fixture build refused",
+            ))
+        } else {
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        }
+    })
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(error.to_string(), "fixture build refused");
+    assert_eq!(
+        builds,
+        [
+            ("first".to_owned(), "MAESTRO_FIRST_COMPONENT".to_owned()),
+            ("second".to_owned(), "MAESTRO_SECOND_COMPONENT".to_owned()),
+        ]
+    );
 }

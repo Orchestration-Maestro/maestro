@@ -1,4 +1,5 @@
 //! The shared extension runtime: unbound stubs, the provider queue and the bound route.
+use super::provider_order::DeferredProviderOperation;
 use crate::types::{read, write};
 use crate::{
     EventError, ExtensionExecution,
@@ -7,6 +8,7 @@ use crate::{
         ProviderActions, ProviderConfig,
     },
 };
+use indexmap::IndexMap;
 use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
 #[cfg(target_arch = "wasm32")]
@@ -29,6 +31,8 @@ pub(crate) struct ProviderRoute<E: ExtensionExecution> {
     pub(crate) next: u64,
     /// Bound operations after the queue completes.
     pub(crate) bound: Option<BoundProviders<E>>,
+    /// Early factory operations waiting for their ordinary extension position.
+    pub(crate) deferred: IndexMap<String, Vec<DeferredProviderOperation>>,
 }
 
 /// Bound provider operations with the runner's catalog for absent ones.
@@ -76,12 +80,14 @@ pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionR
         construction: RwLock::new(None),
         #[cfg(not(target_arch = "wasm32"))]
         tool_construction: RwLock::new(None),
+        load_time: RwLock::new(None),
         state: ExtensionRuntimeState::default(),
         actions: RwLock::new(E::unbound_actions()),
         pending_provider_registrations: RwLock::new(BTreeMap::new()),
         providers: RwLock::new(ProviderRoute {
             next: 0,
             bound: None,
+            deferred: IndexMap::new(),
         }),
     })
 }
@@ -113,16 +119,18 @@ impl<E: ExtensionExecution> ExtensionRuntime<E> {
             drop(route);
             return bound.register_provider(name, config);
         }
+        let pending = PendingProviderRegistration {
+            name,
+            config,
+            extension_path: extension_path.unwrap_or_else(|| UNKNOWN_EXTENSION_PATH.to_owned()),
+        };
+        if let Some(operations) = route.deferred.get_mut(&pending.extension_path) {
+            operations.push(DeferredProviderOperation::Register(pending));
+            return Ok(());
+        }
         let id = route.next;
         route.next += 1;
-        let retired = write(&self.pending_provider_registrations).insert(
-            id,
-            PendingProviderRegistration {
-                name,
-                config,
-                extension_path: extension_path.unwrap_or_else(|| UNKNOWN_EXTENSION_PATH.to_owned()),
-            },
-        );
+        let retired = write(&self.pending_provider_registrations).insert(id, pending);
         drop(route);
         drop(retired);
         Ok(())
@@ -133,11 +141,23 @@ impl<E: ExtensionExecution> ExtensionRuntime<E> {
     /// # Errors
     /// Returns the bound operation's or the catalog's error after binding.
     pub fn unregister_provider(&self, name: &str) -> Result<(), EventError> {
-        let route = read(&self.providers);
+        self.unregister_provider_from(name, None)
+    }
+    /// Retains early removals with their factory until its ordinary position is reached.
+    pub(crate) fn unregister_provider_from(
+        &self,
+        name: &str,
+        path: Option<&str>,
+    ) -> Result<(), EventError> {
+        let mut route = write(&self.providers);
         if let Some(bound) = &route.bound {
             let bound = bound.clone();
             drop(route);
             return bound.unregister_provider(name);
+        }
+        if let Some(operations) = path.and_then(|path| route.deferred.get_mut(path)) {
+            operations.push(DeferredProviderOperation::Unregister(name.to_owned()));
+            return Ok(());
         }
         let removed: Vec<_> = write(&self.pending_provider_registrations)
             .extract_if(.., |_, pending| pending.name == name)
