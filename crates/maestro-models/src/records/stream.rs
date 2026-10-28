@@ -120,3 +120,19 @@ pub fn complete_simple_for<E: ProviderExecution>(
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
     completion(stream_simple_for::<E>(model, context, options, submit))
 }
+
+/// Invoke a chosen simple protocol while retaining the supplied model identity.
+///
+/// # Errors
+/// Returns missing registration or adapter setup failure immediately.
+pub fn stream_simple_via_for<E: ProviderExecution>(
+    api: &str,
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    resolve(api)?
+        .stream_simple
+        .call(model, context, E::submission(options, E::provided(submit)))
+}
