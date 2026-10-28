@@ -146,7 +146,7 @@ fn replacement_syncs_before_and_after_commit() {
     assert_eq!(
         observed.events,
         [
-            &["recovery_sync"][..],
+            &["ancestry_sync", "recovery_sync"][..],
             &committed[..],
             sync_phases(),
             &["recovery_sync"]
@@ -444,7 +444,10 @@ fn interrupted_publication_is_replayed_before_the_next_write() {
     EFFECTS.take();
     drop(crate::acquire_write(&target, true).unwrap());
     assert_eq!(fs::read(&target).unwrap(), b"intended");
-    assert_eq!(EFFECTS.take().events.first(), Some(&"recovery_sync"));
+    assert_eq!(
+        EFFECTS.take().events[..2],
+        ["ancestry_sync", "recovery_sync"]
+    );
 }
 
 #[test]

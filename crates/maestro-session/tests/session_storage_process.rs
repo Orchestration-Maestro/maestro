@@ -22,7 +22,6 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
         .unwrap();
     let path = manager.get_session_file().unwrap();
     let original = fs::read(path).unwrap();
-    let holder = maestro_lock::acquire_write(std::path::Path::new(path), true).unwrap();
     assert_eq!(fs::read(path).unwrap(), original);
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let child = TestProcess::current("append_waits_for_one_replacement_and_preserves_its_entry")
@@ -38,6 +37,8 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
     let (mut stream, _) = listener.accept().unwrap();
     let mut pid = [0; 4];
     stream.read_exact(&mut pid).unwrap();
+    let holder = maestro_lock::acquire_write(std::path::Path::new(path), true).unwrap();
+    stream.write_all(b"go").unwrap();
     let blocked = observe_waiter(u32::from_be_bytes(pid), &stream);
     holder.replace(&original, None).unwrap();
     let output = child.wait_with_output().unwrap();
@@ -83,6 +84,7 @@ fn append_child(path: &str) {
     let address = std::env::var("MAESTRO_SESSION_APPEND_ADDRESS").unwrap();
     let mut stream = TcpStream::connect(address).unwrap();
     stream.write_all(&std::process::id().to_be_bytes()).unwrap();
+    stream.read_exact(&mut [0; 2]).unwrap();
     manager
         .append_message(serde_json::json!({"role":"user","content":"after"}))
         .unwrap();
