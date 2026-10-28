@@ -566,8 +566,9 @@ unavailable, and the detached capability is the process's own session check.
 configuration reload reads through. `App::handle_api_request` applies every queued
 internal event before it answers, and marks render work for a command that changes
 what a view shows. It sets the quit flag for `server.stop`, answers the server,
-notification, workspace and tab commands, and answers every other command with
-`not_implemented`. Creating a workspace from the view goes through the same
+notification, workspace, tab, `worktree.list` and `worktree.open` commands, refuses the two
+that wait for Git (see [Worktree commands](#worktree-commands)), and answers every other
+command with `not_implemented`. Creating a workspace from the view goes through the same
 `workspace.create` handler.
 The [socket server](daemon-protocol.md#socket-server) section describes the
 connection rules.

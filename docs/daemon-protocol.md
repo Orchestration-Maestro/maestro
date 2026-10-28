@@ -145,6 +145,16 @@ off. Terminal and system notifications need an attached client, so the daemon an
 check. `server.reload_agent_manifests` reloads them and restarts detection in every
 pane.
 
+`worktree.list`, `worktree.open`, `worktree.create` and `worktree.remove` work on the
+repository of a workspace (`workspace_id`) or of an absolute directory (`cwd`).
+`worktree.create` and `worktree.remove` answer once Git has finished; the connection stays
+usable meanwhile, and a request for a checkout another request is working on fails with
+`worktree_operation_in_progress`. Removing a checkout that holds local changes fails with
+`dirty_worktree_requires_force` until the request sets `force`. Opening publishes
+`worktree.opened`. Creating publishes `workspace.created`, `tab.created` and
+`pane.created` for the new workspace, then `worktree.created`. Removing publishes
+`workspace.closed`, then `worktree.removed`.
+
 The other command families fail with `not_implemented` and
 `method not implemented yet` until the daemon handles them.
 
