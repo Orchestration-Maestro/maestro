@@ -370,6 +370,7 @@ exit 7
 "#]);
             let case = run_case(peer, vec![("Windows peer ready", "hello\r")]).await;
             assert_eq!(case.status.code(), Some(7));
+            assert!(case.raw.contains("Windows peer ready"));
             assert_eq!(case.steps, 1);
             assert_eq!(case.lifecycle, ["start", "stop"]);
         });
