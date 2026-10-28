@@ -282,6 +282,8 @@ pub(super) fn isolated(test: &str) -> bool {
     std::fs::create_dir(&caller_temporary).unwrap();
     let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
+        .nocapture()
+        .stderr(std::process::Stdio::inherit())
         .env_clear()
         .env("PATH", std::env::var_os("PATH").unwrap())
         .env("HOME", &root)
@@ -356,16 +358,41 @@ async fn session(local: Rc<tokio::task::LocalSet>) {
     let runner = session.extension_runner();
     let ui = Rc::new(Ui::default());
     runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
-    initialized(&runner, &ui).await;
-    let [http, socks_port] = ports(&runner).await;
-    restrictions(&runner, &root).await;
-    proxy_traffic(&runner, http, socks_port).await;
-    cancellation(&runner).await;
-    user_bash(&runner, &root).await;
-    event(&runner, false).await;
+    let [http, socks_port] = close_after(&runner, async {
+        eprintln!("sandbox: initialization");
+        initialized(&runner, &ui).await;
+        let controls = control_directories();
+        assert_eq!(
+            controls.len(),
+            1,
+            "retired control directories: {controls:?}"
+        );
+        eprintln!("sandbox: ports");
+        let ports = ports(&runner).await;
+        eprintln!("sandbox: filesystem");
+        restrictions(&runner, &root).await;
+        eprintln!("sandbox: proxies");
+        proxy_traffic(&runner, ports[0], ports[1]).await;
+        eprintln!("sandbox: cancellation");
+        cancellation(&runner).await;
+        eprintln!("sandbox: user bash");
+        user_bash(&runner, &root).await;
+        ports
+    })
+    .await;
+    assert!(control_directories().is_empty());
     for port in [http, socks_port] {
         assert!(TcpStream::connect(("127.0.0.1", port)).await.is_err());
     }
+}
+
+/// Observes only this checked child's own control artifacts.
+fn control_directories() -> Vec<std::path::PathBuf> {
+    std::fs::read_dir(std::env::var("TMPDIR").unwrap())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.join("unix-block.bpf").is_file())
+        .collect()
 }
 
 /// Exercises both protocols with the same loopback destination and deny rule.
@@ -373,8 +400,10 @@ async fn proxy_traffic(runner: &Rc<ExtensionRunner<Local>>, http: u16, socks_por
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let destination = listener.local_addr().unwrap().port();
     let echoed = tokio::task::spawn_local(echo(listener));
+    eprintln!("sandbox: allowed CONNECT");
     connect(http, destination, "127.0.0.1", true).await;
     connect(http, destination, "localhost", false).await;
+    eprintln!("sandbox: allowed SOCKS");
     socks(socks_port, destination, "127.0.0.1", true).await;
     socks(socks_port, destination, "localhost", false).await;
     assert_eq!(
@@ -415,4 +444,27 @@ mod lifecycle;
 /// Releases all initialized services before invalidating their application context.
 pub(super) async fn shutdown(runner: &ExtensionRunner<Local>) {
     event(runner, false).await;
+}
+
+/// Shuts down native services before propagating an assertion panic from the scenario.
+async fn close_after<F: Future>(runner: &ExtensionRunner<Local>, action: F) -> F::Output {
+    use std::{
+        future::poll_fn,
+        panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
+        task::Poll,
+    };
+    let mut action = std::pin::pin!(action);
+    let outcome = poll_fn(
+        |cx| match catch_unwind(AssertUnwindSafe(|| action.as_mut().poll(cx))) {
+            Ok(Poll::Pending) => Poll::Pending,
+            Ok(Poll::Ready(value)) => Poll::Ready(Ok(value)),
+            Err(error) => Poll::Ready(Err(error)),
+        },
+    )
+    .await;
+    event(runner, false).await;
+    match outcome {
+        Ok(value) => value,
+        Err(error) => resume_unwind(error),
+    }
 }
