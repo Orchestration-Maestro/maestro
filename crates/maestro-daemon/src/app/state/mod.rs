@@ -7,7 +7,7 @@ use maestro_detection::{
 };
 use maestro_workspace::terminal_id::TerminalId;
 use maestro_workspace::{
-    layout::{PaneId, PaneInfo},
+    layout::{PaneId, PaneInfo, Rect},
     workspace::WorkspaceTopology,
 };
 use std::{
@@ -240,11 +240,10 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         }
     }
 
-    /// Region of the surface in which panes are laid out.
+    /// Region in which panes are laid out: the headless surface at its configured size.
     #[must_use]
-    pub fn view_area(&self) -> maestro_workspace::layout::Rect {
-        let _ = self;
-        maestro_workspace::layout::Rect::default()
+    pub fn view_area(&self) -> Rect {
+        Rect::new(0, 0, self.headless_size.0, self.headless_size.1)
     }
 
     /// Estimates rows and columns from the first pane, or unattached dimensions.

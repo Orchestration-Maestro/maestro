@@ -55,28 +55,25 @@ impl Borders {
     /// Whether every edge of `other` is set.
     #[must_use]
     pub const fn contains(self, other: Self) -> bool {
-        let _ = other;
-        false
+        self.0 & other.0 == other.0
     }
 
     /// Whether no edge is set.
     #[must_use]
     pub const fn is_empty(self) -> bool {
-        false
+        self.0 == 0
     }
 
     /// Edges set in either flag set.
     #[must_use]
     pub const fn union(self, other: Self) -> Self {
-        let _ = other;
-        self
+        Self(self.0 | other.0)
     }
 
     /// Edges of `self` that `other` does not set.
     #[must_use]
     pub const fn without(self, other: Self) -> Self {
-        let _ = other;
-        self
+        Self(self.0 & !other.0)
     }
 }
 /// Split cells using multiply-then-round for the first extent.
