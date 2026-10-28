@@ -1,0 +1,170 @@
+# Push-only evidence; never merge this branch.
+name: Windows interactive qualification
+on:
+  push:
+    branches: [ci/2844-windows-*]
+permissions:
+  contents: read
+jobs:
+  native:
+    name: Windows probe
+    timeout-minutes: 150
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_BUILD_JOBS: 3
+      MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Pinned toolchain
+        run: |
+          rustup show
+          rustc --version --verbose
+          cargo --version
+      - name: Mise bootstrap
+        timeout-minutes: 10
+        run: |
+          # https://github.com/jdx/mise/releases/download/v2026.10.2/SHASUMS256.txt
+          version=2026.10.2
+          executable=mise
+          case "$(uname -s):$(uname -m)" in
+            Linux:x86_64) platform=linux-x64 digest=8f5f6660336f572830e33cd9b378d3131e529a0d4c4f0c553776be90a1ba302a ;;
+            Linux:aarch64) platform=linux-arm64 digest=8d230a5a23ac559ea24ec65280867f437000b37473d967a9bb954837592490a8 ;;
+            Darwin:arm64) platform=macos-arm64 digest=66d49acecca413c8b334922584982a4907a10588912829873d6c55d0c6d42612 ;;
+            Darwin:x86_64) platform=macos-x64 digest=1c6b3d4aaeba8d3b8b57e2d06e4b7825a5134b7aa6e97313bd99db6f22bac21f ;;
+            MINGW*:x86_64) platform=windows-x64.exe executable=mise.exe digest=15901d0b8e0cfe76c1c3b7de4194f929244f331ca3fdf183c2e3aa17ba31634c ;;
+            *) echo 'Unsupported mise runner host' >&2; exit 1 ;;
+          esac
+          url=https://github.com/jdx/mise/releases/download/v$version/mise-v$version-$platform
+          installed=$(mise --version 2>/dev/null | cut -d ' ' -f 1) || installed=
+          if [ "$installed" != "$version" ]; then
+            bin=$(mktemp -d "$RUNNER_TEMP/maestro-mise.XXXXXX")
+            curl --fail --location "$url" --output "$bin/$executable"
+            python3 - "$digest" "$bin/$executable" <<'PYTHON'
+          import hashlib
+          import sys
+          with open(sys.argv[2], 'rb') as source:
+              raise SystemExit(hashlib.file_digest(source, 'sha256').hexdigest() != sys.argv[1])
+          PYTHON
+            chmod +x "$bin/$executable"
+            "$bin/$executable" --version | grep "^$version "
+            export PATH="$bin:$PATH"
+            if [ "$executable" = mise.exe ]; then bin=$(cygpath -w "$bin"); fi
+            echo "$bin" >> "$GITHUB_PATH"
+          fi
+      - name: Caller tools
+        timeout-minutes: 10
+        run: |
+          if [ ! -f mise.toml ]; then
+            echo 'mise.toml: caller tools require a pinned tool configuration' >&2
+            exit 1
+          fi
+          mise install
+          mise bin-paths | while IFS= read -r bin; do
+            if [ "${OS:-}" = Windows_NT ]; then bin=$(cygpath -w "$bin"); fi
+            echo "$bin" >> "$GITHUB_PATH"
+          done
+      - name: Native search tools
+        run: |
+          bin=$(mktemp -d "$RUNNER_TEMP/maestro-search.XXXXXX")
+          curl --fail --location https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-pc-windows-msvc.zip --output "$bin/rg.zip"
+          python3 - "$bin" <<'PYTHON'
+          import hashlib
+          import pathlib
+          import sys
+          import zipfile
+          root = pathlib.Path(sys.argv[1])
+          archive = root / 'rg.zip'
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == '71b2fef860abe467217a538ff31de02f5258807c0129f771846f87bd029aafc5'
+          with zipfile.ZipFile(archive) as source:
+              names = [name for name in source.namelist() if name.endswith('/rg.exe')]
+              assert len(names) == 1
+              (root / 'rg.exe').write_bytes(source.read(names[0]))
+          PYTHON
+          export PATH="$bin:$PATH"
+          cygpath -w "$bin" >> "$GITHUB_PATH"
+          rg --version
+          fd --version
+          cargo nextest --version
+      - name: Locked fixture sources
+        run: |
+          cargo fetch --locked
+          cargo fetch --locked --manifest-path crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml
+          cargo fetch --locked --manifest-path crates/maestro-web/tests/fixtures/browser_modules/module_a/Cargo.toml
+          cargo fetch --locked --manifest-path crates/maestro-web/tests/fixtures/browser_modules/module_b/Cargo.toml
+      - name: Tests
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          names = '''ANTHROPIC_API_KEY ANTHROPIC_OAUTH_TOKEN OPENAI_API_KEY GEMINI_API_KEY
+          GROQ_API_KEY CEREBRAS_API_KEY XAI_API_KEY OPENROUTER_API_KEY ZAI_API_KEY
+          MISTRAL_API_KEY MINIMAX_API_KEY MINIMAX_CN_API_KEY KIMI_API_KEY HF_TOKEN
+          AI_GATEWAY_API_KEY OPENCODE_API_KEY COPILOT_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN
+          GOOGLE_APPLICATION_CREDENTIALS GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT
+          GOOGLE_CLOUD_LOCATION AWS_PROFILE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+          AWS_SESSION_TOKEN AWS_REGION AWS_DEFAULT_REGION AWS_BEARER_TOKEN_BEDROCK
+          AWS_CONTAINER_CREDENTIALS_RELATIVE_URI AWS_CONTAINER_CREDENTIALS_FULL_URI
+          AWS_WEB_IDENTITY_TOKEN_FILE BEDROCK_EXTENSIVE_MODEL_TEST FIREWORKS_API_KEY'''.split()
+          found = sorted(name for name in os.environ if name in names or name.endswith('_API_KEY'))
+          if found:
+              raise SystemExit('Credential variables present: ' + ', '.join(found))
+          PYTHON
+          native() { if [ "${OS:-}" = Windows_NT ]; then cygpath -m "$1"; else printf '%s\n' "$1"; fi; }
+          cargo_home=$(native "$(cd "${CARGO_HOME:-$HOME/.cargo}" && pwd)")
+          rustup_home=$(native "$(cd "${RUSTUP_HOME:-$HOME/.rustup}" && pwd)")
+          toolchain=$(rustup show active-toolchain)
+          isolation=$(mktemp -d "$RUNNER_TEMP/maestro-tests.XXXXXX")
+          mkdir "$isolation"/{home,tmp,config,data,cache,state,runtime,config-dirs,data-dirs}
+          isolation=$(native "$isolation")
+          system=()
+          if [ "${OS:-}" = Windows_NT ]; then
+            for name in SYSTEMROOT WINDIR COMSPEC PATHEXT SYSTEMDRIVE PROGRAMDATA PROGRAMFILES 'PROGRAMFILES(X86)' PROGRAMW6432 COMMONPROGRAMFILES 'COMMONPROGRAMFILES(X86)' COMMONPROGRAMW6432 NUMBER_OF_PROCESSORS PROCESSOR_ARCHITECTURE OS; do
+              if value=$(printenv "$name"); then system+=("$name=$value"); else echo "absent: $name"; fi
+            done
+            system+=(USERPROFILE="$isolation/home" APPDATA="$isolation/config" LOCALAPPDATA="$isolation/data")
+          fi
+          cat > "$isolation/nextest.toml" <<'TOML'
+          [profile.default]
+          slow-timeout = { period = "60s", terminate-after = 10 }
+          TOML
+          run_isolated() {
+          env -i "${system[@]}" PATH="$PATH" CARGO_HOME="$cargo_home" RUSTUP_HOME="$rustup_home" RUSTUP_TOOLCHAIN="${toolchain%% *}" \
+            HOME="$isolation/home" TMPDIR="$isolation/tmp" TMP="$isolation/tmp" TEMP="$isolation/tmp" \
+            XDG_CONFIG_HOME="$isolation/config" XDG_DATA_HOME="$isolation/data" \
+            XDG_CACHE_HOME="$isolation/cache" XDG_STATE_HOME="$isolation/state" \
+            XDG_RUNTIME_DIR="$isolation/runtime" XDG_CONFIG_DIRS="$isolation/config-dirs" \
+            XDG_DATA_DIRS="$isolation/data-dirs" MAESTRO_NO_LOCAL_LLM=1 CARGO_BUILD_JOBS=3 \
+            "$@"
+          }
+          run_isolated env | sort
+          step() {
+            git checkout -q "$2"
+            git log -1 --format="STEP $1 %H %s"
+            run_isolated cargo nextest run --tool-config-file "measure:$isolation/nextest.toml" --locked --no-fail-fast --no-capture "${@:3}" > "step-$1.log" 2>&1
+            status=$?
+            grep -E '^ *(PASS|FAIL|SKIP)|Summary|^PROBE|skipped|panicked|left:|right:' "step-$1.log" | head -80
+            echo "STEP-RESULT $1 exit=$status"
+            cat "step-$1.log" >> nextest.log
+          }
+          set +e
+          step red-root be50b205eb38060989e620c31d63705b4e29a86c -p maestro -E "test(windows_terminal)"
+          step red-footer fff038c0150977f8555f3187ce8d7bf61968e4f2 -p maestro-app -E "test(footer_native_poll_detects_a_replaced_table_on_windows)"
+          step green f5eec398ec1bc87b67f75c19057d8d9b4cd4d38a -p maestro -p maestro-app -E "test(windows_terminal) | test(footer_native)"
+          git checkout -q f5eec398ec1bc87b67f75c19057d8d9b4cd4d38a
+          run_isolated cargo clippy --locked -p maestro -p maestro-app --all-targets -- -D warnings > clippy.log 2>&1
+          echo "CLIPPY-RESULT exit=$?"
+          tail -40 clippy.log
+          cat clippy.log >> nextest.log
+          exit 0
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-2844
+          path: nextest.log
+          if-no-files-found: ignore
