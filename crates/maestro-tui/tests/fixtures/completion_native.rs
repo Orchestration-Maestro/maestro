@@ -36,4 +36,18 @@ impl Tree {
     pub fn directory(&self, name: &str) -> std::io::Result<()> {
         std::fs::create_dir(self.0.path().join(name))
     }
+    /// Whether this host keeps every authored path apart, asked before any is created. When
+    /// it does not, the groups it folds are reported under `label`.
+    ///
+    /// # Panics
+    /// Panics when the host cannot be probed.
+    #[cfg(unix)]
+    #[must_use]
+    pub fn keeps_apart(&self, label: &str, paths: &[&str]) -> bool {
+        let folded = self.0.folded_names(paths).expect("host probed");
+        if !folded.is_empty() {
+            eprintln!("{label} needs names this host keeps apart: {folded:?}");
+        }
+        folded.is_empty()
+    }
 }

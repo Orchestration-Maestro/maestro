@@ -21,6 +21,7 @@ fn main() -> Result<(), String> {
     let bash_spawn_hook = build::component("bash_spawn_hook", "MAESTRO_BASH_SPAWN_HOOK_COMPONENT")?;
     let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
     let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
+    let handoff = build::component("handoff", "MAESTRO_HANDOFF_COMPONENT")?;
     let tools = build::component("tools", "MAESTRO_TOOLS_COMPONENT")?;
     let shell = build::component("local_shell_component", "MAESTRO_LOCAL_SHELL_COMPONENT")?;
     let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
@@ -40,7 +41,7 @@ fn main() -> Result<(), String> {
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n",
+                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n",
                 path.display(),
                 context.display(),
                 shell.display(),
@@ -55,6 +56,7 @@ fn main() -> Result<(), String> {
                 tools.display(),
                 checkpoint.display(),
                 tool_override.display(),
+                handoff.display(),
                 qna.display(),
                 bash_spawn_hook.display()
             ),

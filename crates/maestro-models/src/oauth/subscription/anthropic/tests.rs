@@ -1461,7 +1461,8 @@ mod oauth_callback {
                 |listener| Box::pin(listener.accept()),
             )
             .await;
-            if expected == " " {
+            // A host without the second loopback address refuses that bind like a malformed one.
+            if expected == " " || std::net::TcpListener::bind((expected, 0)).is_err() {
                 assert!(result.is_err());
                 continue;
             }
