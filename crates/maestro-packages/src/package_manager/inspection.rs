@@ -107,7 +107,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         std::fs::create_dir_all(&parent)?;
         let mut stage = GitStaging::new(&parent)?;
         let result = async {
-            self.prepare_git_checkout(&git, stage.path()).await?;
+            self.prepare_git_checkout(&git, stage.path(), true).await?;
             let root = std::fs::canonicalize(stage.path())?;
             paths
                 .iter()

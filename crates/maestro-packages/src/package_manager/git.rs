@@ -44,23 +44,38 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         std::fs::create_dir_all(dirname(target))?;
         let mut stage = GitStaging::new(&dirname(target))?;
         let result = async {
-            self.prepare_git_checkout(git, stage.path()).await?;
+            self.prepare_git_checkout(git, stage.path(), false).await?;
             self.install_git_dependencies(stage.path()).await?;
             stage.publish(target)
         }
         .await;
         stage.finish(result)
     }
-    /// Clones and selects a checkout without executing dependency installation.
+    /// Clones and selects a checkout, disabling hooks for candidate inspection.
     pub(super) async fn prepare_git_checkout(
         &self,
         git: &GitSource,
         target: &str,
+        inspection: bool,
     ) -> io::Result<()> {
-        let clone = ["clone".to_owned(), git.repo.clone(), target.to_owned()];
+        let options = if inspection {
+            vec!["-c".to_owned(), "core.hooksPath=".to_owned()]
+        } else {
+            Vec::new()
+        };
+        let mut clone = options.clone();
+        clone.extend(["clone".to_owned(), git.repo.clone(), target.to_owned()]);
         self.run_command("git", &clone, None).await?;
         if let Some(reference) = &git.r#ref {
-            let checkout = ["checkout".to_owned(), reference.clone()];
+            let reference = if inspection {
+                self.local_git_pin(git, target)
+                    .await?
+                    .ok_or_else(|| io::Error::other("Candidate pin is unavailable"))?
+            } else {
+                reference.clone()
+            };
+            let mut checkout = options;
+            checkout.extend(["checkout".to_owned(), reference]);
             self.run_command("git", &checkout, Some(target)).await?;
         }
         Ok(())
