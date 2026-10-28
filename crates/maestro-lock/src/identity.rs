@@ -7,10 +7,13 @@ use std::{
     fmt::Write,
     fs, io,
     path::{Path, PathBuf},
-    sync::Mutex,
 };
 
+#[cfg(not(test))]
+use std::sync::Mutex;
+
 /// Whether this process has persisted the bounded private state ancestry.
+#[cfg(not(test))]
 static ROOT_SYNCED: Mutex<bool> = Mutex::new(false);
 
 /// Acquires canonical file-write exclusion and completes any interrupted publication.
@@ -56,9 +59,20 @@ fn lock_root() -> io::Result<PathBuf> {
     #[cfg(unix)]
     builder.mode(0o700);
     builder.create(&root)?;
-    let mut synced = ROOT_SYNCED
-        .lock()
-        .map_err(|error| io::Error::other(error.to_string()))?;
+    #[cfg(test)]
+    crate::replace::tests::with_ancestry_sync(|synced| sync_ancestry(&root, synced))?;
+    #[cfg(not(test))]
+    {
+        let mut synced = ROOT_SYNCED
+            .lock()
+            .map_err(|error| io::Error::other(error.to_string()))?;
+        sync_ancestry(&root, &mut synced)?;
+    }
+    Ok(root)
+}
+
+/// Persists the private directory chain once for the selected process namespace.
+fn sync_ancestry(root: &Path, synced: &mut bool) -> io::Result<()> {
     if !*synced {
         #[cfg(test)]
         crate::replace::tests::effect("ancestry_sync")?;
@@ -72,7 +86,7 @@ fn lock_root() -> io::Result<PathBuf> {
         }
         *synced = true;
     }
-    Ok(root)
+    Ok(())
 }
 
 /// Canonicalizes the selected entry, retaining any missing suffix.

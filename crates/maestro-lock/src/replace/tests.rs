@@ -16,6 +16,7 @@ struct Effects {
 }
 thread_local! {
     static EFFECTS: RefCell<Effects> = RefCell::default();
+    static ANCESTRY_SYNCED: RefCell<bool> = const { RefCell::new(false) };
     static ROOT: maestro_test_directory::Scratch = maestro_test_directory::Scratch::new().unwrap();
 }
 
@@ -889,4 +890,11 @@ fn interrupted_ancestry_is_synced_by_the_next_process_once() {
     .output()
     .unwrap();
     assert!(output.status.success(), "{output:?}");
+}
+
+/// Gives each disposable thread-local namespace its own first-acquisition state.
+pub(crate) fn with_ancestry_sync(
+    action: impl FnOnce(&mut bool) -> io::Result<()>,
+) -> io::Result<()> {
+    ANCESTRY_SYNCED.with_borrow_mut(action)
 }
