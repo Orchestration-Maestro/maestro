@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod built_in_tool_renderer;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
@@ -38,7 +39,6 @@ mod retained_contexts;
 mod startup;
 mod summarize_example;
 mod synchronous_reentry;
-mod truncated_tool_example;
 mod wasi_access;
 mod wasi_network;
 mod wasi_output;

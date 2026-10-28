@@ -8,7 +8,9 @@
 
 #[macro_use]
 mod port;
+mod abort_controller;
 mod agent;
+pub use abort_controller::AbortController;
 pub mod utils;
 #[cfg(target_arch = "wasm32")]
 pub use utils::event_stream::create_assistant_message_event_stream;
