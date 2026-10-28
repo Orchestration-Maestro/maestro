@@ -3455,6 +3455,41 @@ fn example_index_discovers_independent_additions() {
     assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
 }
 
+/// A directory entry point supplies the one row for its undocumented support files.
+#[test]
+fn example_index_summarizes_folder_entry_without_parsing_support_files() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    fs::create_dir_all(folder.join("game")).unwrap();
+    let readme = folder.join("README.md");
+    fs::write(
+        &readme,
+        "<!-- example-index:start -->\n<!-- example-index:end -->\n",
+    )
+    .unwrap();
+    for (name, source) in [
+        ("main.rs", "//! Game command.\n"),
+        ("engine.wit", "package sample:game;\n"),
+        ("engine.c", "#include <stdio.h>\n"),
+        ("build.py", "print('build')\n"),
+    ] {
+        fs::write(folder.join("game").join(name), source).unwrap();
+    }
+    assert_eq!(
+        tooling::run(
+            &["example-index".into()],
+            Path::new("unused-cargo"),
+            root.path()
+        )
+        .unwrap(),
+        std::process::ExitCode::SUCCESS,
+    );
+    assert_eq!(
+        fs::read_to_string(readme).unwrap(),
+        "<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `game/main.rs` | Game command. |\n<!-- example-index:end -->\n",
+    );
+}
+
 /// The tracked repository index is exactly the table rendered from its files.
 #[test]
 fn shipped_example_index_matches_documentation() {
