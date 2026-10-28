@@ -203,11 +203,11 @@ pub(super) async fn show(
     if state.borrow().status != "playing" {
         state.replace(BoardDetails::default());
     }
-    controls.active.set(true);
     api.set_session_name("Tic-Tac-Toe")?;
+    let ui = ctx.ui()?;
+    controls.active.set(true);
     let closing = controls.clone();
-    let result = ctx
-        .ui()?
+    let result = ui
         .custom(
             Rc::new(move |tui, theme, _, done, _| {
                 controls.tui.replace(Some(tui));
