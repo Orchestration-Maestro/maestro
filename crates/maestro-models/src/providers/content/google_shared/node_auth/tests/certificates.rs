@@ -10,6 +10,9 @@ use super::super::certificate_subject_token_supplier::CertificateSubjectTokenSup
 const CLIENT: &[u8] =
     include_bytes!("../../../../../../tests/fixtures/cloud-authentication/client.pem");
 const CA: &[u8] = include_bytes!("../../../../../../tests/fixtures/cloud-authentication/ca.pem");
+/// The authority of the controlled server's certificate, separate from the client authority.
+const SERVER_AUTHORITY: &[u8] =
+    include_bytes!("../../../../../../tests/fixtures/cloud-authentication/server-ca.pem");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -70,11 +73,11 @@ fn certificate_chain_prepends_or_retains_the_leaf() {
     }
 }
 
-/// Identity-bearing real client with only the controlled authority added to trust.
+/// Identity-bearing real client with only the controlled server authority added to trust.
 fn trusted_client(
     identity: reqwest::Identity,
 ) -> Result<crate::Fetch, google_cloud_auth::errors::CredentialsError> {
-    let root = reqwest::Certificate::from_pem(CA)
+    let root = reqwest::Certificate::from_pem(SERVER_AUTHORITY)
         .map_err(|_| super::super::base_external_client::invalid_token())?;
     let client = super::super::base_external_client::identity_client(identity)
         .add_root_certificate(root)

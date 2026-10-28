@@ -29,18 +29,25 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
+| `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints keyed by session entry, with confirmation before restoring on a fork. |
+| `handoff.rs` | A `/handoff <goal>` command that generates an editable prompt from the selected branch, then opens a parent-linked replacement session. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `input_transform.rs` | An `input` hook that rewrites `?quick` questions and handles `ping` and `time` locally. |
+| `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `notify.rs` | An opt-in `agent_end` desktop notification through OSC 777, Kitty OSC 99 or Windows PowerShell. |
 | `permission_gate.rs` | A `tool_call` hook that asks before illustrative dangerous bash commands and refuses them without UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
+| `preset.rs` | A `--preset` flag, `/preset` selector and Ctrl+Shift+U shortcut for named model, thinking, tool and prompt configurations. |
+| [`preset/config.rs`](preset/config.rs) | Layered configuration loading for `preset.rs`. |
+| [`preset/selector.rs`](preset/selector.rs) | Retained, themed preset selector for `preset.rs`. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `qna.rs` | A `/qna` command that extracts questions from the latest complete assistant reply into editable input, with a cancellable loader. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `send_user_message.rs` | `/ask`, `/steer`, `/followup` and `/askwith` commands that send ordinary, steering, follow-up and two-block user messages. |
 | `session_name.rs` | A `/session-name` command that sets the session's friendly name, or shows the name now in effect. |
@@ -51,9 +58,12 @@ inserts at its own place instead of appending at the end of each list.
 | `status_line.rs` | Session and turn hooks that show themed ready, in-progress and completed-turn footer status. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 | `titlebar_spinner.rs` | A braille title spinner every 80 ms while working; periodic work runs in a host-owned event tail, cancelled on restart, end or shutdown. |
+| `todo.rs` | A `todo` tool that stores snapshots in result details, restores the active branch and opens an interactive list with `/todos`. |
+| `todo/view.rs` | The todo example's themed tool rows and interactive list view. |
 | `tool_override.rs` | An opt-in audited `read` override that records attempts, refuses illustrative sensitive paths and displays the last twenty records with `/read-log`. |
 | `tools.rs` | A `/tools` settings view that enables or disables tools immediately and restores the selection from the current session branch. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `truncated_tool.rs` | An opt-in ripgrep search tool that applies the host's line/byte limits, saves complete truncated output to a temporary file, and renders calls and results. |
 | `widget_placement.rs` | Widgets above and below the editor, requested on every session start when the host has a UI. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
@@ -84,6 +94,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_header_component_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
@@ -96,11 +108,17 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- git_checkpoint_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- handoff_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- input_transform_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -108,9 +126,13 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- preset_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- qna_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -126,6 +148,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- titlebar_spinner_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- todo_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- tool_override_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tool_override_
@@ -135,6 +159,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- tools_component_changes_native_session_and_restores_branch
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- truncated_tool_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasmtime --test integration -- truncated_tool_component_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- user_delivery_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -168,6 +196,24 @@ Build it with the command above using `--example commands`. The controlled
 component is opt-in and needs a component-enabled host; browsing commands also
 needs that host's selector and confirmation UI.
 
+### What the custom header example does
+
+On `session_start`, a host with UI receives a custom header factory. Its retained
+view draws a block-character North Star over an M, with a `Custom header`
+subtitle. It uses the live theme supplied to the factory, ignores the render
+width and needs no image support. Headless startup makes no UI request.
+
+`/builtin-header` restores the built-in header and its keybinding hints, then
+reports `Built-in header restored`. The command forwards both requests even in a
+headless host, where the host decides how to handle them. A later session start
+installs the custom header again.
+
+The controlled run builds and instantiates the component, supplies the session
+and theme observations, renders its retained view and invokes its reset command.
+It needs no provider, credentials or installation. Loading the component into an
+application is opt-in and needs that application's component runtime; displaying
+the header also needs an interactive UI host.
+
 ### What the file trigger example does
 
 Create `/tmp/agent-trigger.txt` before loading the component into a native host
@@ -193,6 +239,26 @@ no credentials or paid service: the component run uses a loopback provider. Test
 create the fixed path exclusively and refuse to touch a file already there. The
 nextest file-trigger group runs those tests one at a time; do not run separate
 file-trigger test commands concurrently.
+
+### What the truncated search tool does
+
+Build with `--example truncated_tool`, then load the component into a Unix
+component-enabled host with `rg` on its `PATH`. The opt-in `rg` tool searches the
+supplied directory (or the session's current directory), with an optional file
+glob. Patterns, paths and globs are literal process arguments, not shell text.
+
+Results retain the first 2,000 lines or 50 KB, whichever limit is reached first.
+When truncated, the tool awaits a queued write of the complete output to
+`maestro-rg-*/output.txt` in the host's temporary directory before returning its
+path and omitted line/byte counts. Expanded results show the first 20 lines and
+the full-output path. No matches and search errors have separate outcomes.
+
+Search output can contain private file contents. Temporary artifacts remain on
+disk so the read tool can open them; remove their directories when no longer
+needed. Loading and searching are opt-in; no provider or paid service is needed
+for the controlled runs above. Those runs use disposable files and a controlled
+search process through the production component runtime. They need
+`/usr/bin/python3`, not ripgrep.
 
 ### What the shutdown example does
 
@@ -432,6 +498,21 @@ that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.
 
+### What the model status example does
+
+`model_select` reads the selection the host reports. On an explicit selection or
+a cycle it notifies `Model: {provider}/{id}` with info severity; restoring a
+saved selection skips the notification. Every selection then sets the `model`
+status to `🤖 {id}` and writes the previous and selected identifiers and
+the selection source to standard output. An absent previous model reads `none`.
+Repeated and unchanged selections are reported too.
+
+The example makes no model or provider call and paints no footer; a host that
+shows the status decides where it goes. `model_status_component_runs_selection_hook`
+instantiates the built component and checks its host requests and its standard
+output against the recorded selections. Loading the component into an application
+is opt-in and needs that application's component runtime.
+
 ### What the widget placement example does
 
 On every `session_start`, `widget_placement` reads the host's current UI
@@ -478,6 +559,52 @@ Loading the built component
 is opt-in and needs a component-enabled interactive host with custom UI and
 settings widgets; loading it permits changes to that session's active tools and
 configuration entries.
+
+### What the preset example does
+
+Build with `--example preset` in the build command above. The component reads
+`presets.json` in `MAESTRO_CODING_AGENT_DIR` (default `~/.maestro/agent`) and
+`<cwd>/.maestro/presets.json` at session start. A project entry replaces the whole
+global entry with the same name. Missing files are ignored; unreadable files,
+invalid JSON or invalid field types report a diagnostic and leave the other
+layer available.
+
+Each file maps names to optional `provider`, `model`, `thinkingLevel`, `tools`
+and `instructions` fields. For example:
+
+```json
+{
+  "plan": {
+    "thinkingLevel": "high",
+    "tools": ["read", "grep", "find", "ls"],
+    "instructions": "Understand the problem before proposing changes."
+  }
+}
+```
+
+`--preset plan` applies the preset before session startup completes, including
+model selection. `/preset plan` selects it directly; `/preset` opens **Select
+Preset**. Ctrl+Shift+U cycles names in sorted order, including `(none)` to clear.
+Clearing restores the model, thinking level and tools captured before the first
+application. Without a snapshot it restores `read`, `bash`, `edit` and `write`.
+Unknown models, missing authentication and unknown tools produce warnings;
+nonempty valid tool selections still apply. Empty or wholly invalid tool lists
+leave the host's tools unchanged.
+
+Active instructions append to the supplied system prompt. The footer shows
+`preset:<name>`. Turn-start entries retain the active name, including a cleared
+choice, on the current branch. Session start and tree navigation restore only
+the newest name on that branch, without reapplying model or tool settings.
+The flag takes precedence over the saved name.
+
+Loading is opt-in and needs a component-enabled native host with filesystem and
+environment access; browsing the selector also needs custom UI and retained
+widgets. Adding `provider` and `model` selects that exact configured registry
+entry and needs its authentication for real requests. This example changes
+session settings and appends session entries, but writes no configuration file.
+Real prompts can incur provider charges. The `preset_` controlled runs use
+read-only fixture files, supplied registry replies and terminal input; they
+need no credentials, installation or paid services.
 
 ### What the input transform example does
 
@@ -562,6 +689,28 @@ The example starts no process and reads no files. A title-write or name-read
 failure ends the callback or animation with the host's error; tail errors go to
 the host's event-bus reporter.
 
+### What the branch-aware todo example does
+
+The `todo` tool accepts `list`, `add` with nonempty `text`, `toggle` with an `id`,
+and `clear`. Text is kept verbatim, including whitespace. Every result carries
+all items and the next identifier in its details, even when an action reports an
+error. Clearing removes all items and restarts identifiers at one. These are
+session-history snapshots, not files and not the default todo package.
+
+On `session_start` and `session_tree`, the example replays only `todo` tool
+results on the host's current branch. The newest snapshot wins; a branch without
+one starts empty. Tool rows show themed calls and results, with five items in a
+collapsed list and all items when expanded.
+
+`/todos` shows all items and their completion count. Escape or Ctrl+C closes the
+view. Without UI it reports `/todos requires interactive mode`. Build with
+`--example todo`; `todo/view.rs` is its support module, not a separate target.
+The controlled `todo_` runs invoke the registered callbacks with supplied branch,
+terminal, helper and theme inputs. They need no provider, credentials or files.
+Loading the component is opt-in and needs a component-enabled host; the list view
+also needs that host's custom UI, key and terminal-width helpers. Using the tool
+through a real model can incur provider charges.
+
 ### What the Git checkpoint example does
 
 Build with `--example git_checkpoint` using the command above. Loading it is
@@ -591,3 +740,48 @@ Git's unreachable objects. There is no persistent recovery catalog, automatic
 reset, stash push, or built-in checkpoint policy. The controlled runs load the
 built component through the production runner in disposable repositories with
 scripted UI choices. They need Git but no provider, credentials or paid service.
+
+### What the handoff example does
+
+`/handoff <goal>` selects the current branch's conversation. After compaction it
+uses the latest summary, the kept prefix and subsequent messages. Message and
+compaction entries are included; settings, labels and other entry kinds are not.
+It asks the selected model for a focused prompt, shows a cancellable loader, and
+opens **Edit handoff prompt** for review.
+Only response text enters the draft, with a newline between text blocks.
+
+Accepting the editor opens a new session with the current session file as its
+parent. The replacement context puts the edited prompt in that session's editor
+and reports `Handoff ready. Submit when ready.` It does not submit the prompt.
+Cancelling generation or the editor leaves the session alone; a host veto of
+replacement reports `New session cancelled` without writing to another editor.
+Missing credentials or generation failures report `Cancelled`; the generation
+error is also written to the host's error output.
+
+Build with `--example handoff` using the command above. Loading it is opt-in and
+requires a component-enabled interactive host with custom UI, editor dialogs,
+event tails and session replacement. Real generation sends the selected history
+and goal to the configured model and requires that provider's API key; it can
+incur charges. The controlled `handoff_` run uses an in-memory provider, history,
+credentials and terminal, with no network calls or extension installation.
+
+### What the question extractor does
+
+`/qna` reads the latest complete assistant reply on the current branch. It skips
+non-text blocks and joins text blocks with newlines, without trimming them. An
+incomplete newest assistant reply is rejected rather than replaced with an older
+one. A reply without text blocks is skipped; a reply with one empty text block
+reports that no assistant messages were found.
+
+The command replaces the editor with a cancellable bordered loader while the
+selected model extracts questions. Escape cancels the view. Missing credentials,
+completion failures and aborted responses report `Cancelled` and leave the editor
+unchanged. A completed extraction replaces the editor text exactly as returned,
+so the user can fill in answers before submitting. Closing the view disposes the
+loader and releases its pending extraction.
+
+Build with `--example qna` using the command above. Loading is opt-in and needs a
+component-enabled interactive host, a selected model and its configured API key.
+A real extraction sends the assistant reply to that provider and can incur
+charges. The controlled `qna_` runs use a loopback provider and supplied terminal
+input; they require no credentials, paid service or installation.
