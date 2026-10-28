@@ -126,6 +126,11 @@ path = "examples/sdk/context_files.rs"
 test = true
 
 [[example]]
+name = "custom_model"
+path = "examples/sdk/custom_model.rs"
+test = true
+
+[[example]]
 name = "custom_prompt"
 path = "examples/sdk/custom_prompt.rs"
 test = true
