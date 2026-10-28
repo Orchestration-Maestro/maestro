@@ -64,6 +64,8 @@ resolving conflicts, then regenerate the table.
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
+| `dirty_repo_guard.md` | Dirty repo guard |
+| `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |
 | `dynamic_tools.rs` | Dynamic tools: one echo tool registered when a session starts, and a command that adds more echo tools while the session runs. |
 | `event_bus.md` | Event bus |

@@ -95,7 +95,10 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
-- **Lock:** A policy entry fixing a value that local layers cannot change.
+- **Lock:** A policy entry that fixes a value or refuses local additions of a
+  resource kind. A lock never loosens another rule.
+- **Lock name:** A `locked` entry that names something other than a settings key:
+  the prompts, the providers or a resource kind that has no settings key.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.
