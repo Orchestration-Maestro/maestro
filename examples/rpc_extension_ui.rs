@@ -600,7 +600,11 @@ case "$line" in *'"id":"approval"'*'"confirmed":true'*) ;; *) exit 12;; esac
             assert!(case.status.success(), "peer status: {}", case.status);
             assert_eq!(case.steps, 1);
             let output = maestro_app::strip_ansi(&case.raw).unwrap();
-            let output = output.replace("\r\n", "\n");
+            let output = output
+                .lines()
+                .map(str::trim_end)
+                .collect::<Vec<_>>()
+                .join("\n");
             assert!(
                 output.contains("Dangerous command: sudo echo first\n\necho second"),
                 "approval lost command line breaks: {output:?}"
