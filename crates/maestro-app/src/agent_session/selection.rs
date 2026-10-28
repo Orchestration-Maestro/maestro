@@ -232,19 +232,27 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Sets and saves how steering messages are delivered.
-    pub fn set_steering_mode(&self, mode: QueueMode) {
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal before changing live delivery or preferences.
+    pub fn set_steering_mode(&self, mode: QueueMode) -> Result<(), DiagnosticErrorInfo> {
         self.agent.set_steering_mode(mode);
         self.settings_manager
             .borrow_mut()
             .set_steering_mode(delivery_mode(mode));
+        Ok(())
     }
 
     /// Sets and saves how follow-up messages are delivered.
-    pub fn set_follow_up_mode(&self, mode: QueueMode) {
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal before changing live delivery or preferences.
+    pub fn set_follow_up_mode(&self, mode: QueueMode) -> Result<(), DiagnosticErrorInfo> {
         self.agent.set_follow_up_mode(mode);
         self.settings_manager
             .borrow_mut()
             .set_follow_up_mode(delivery_mode(mode));
+        Ok(())
     }
 
     /// Announces a model change to extensions, unless the identity is unchanged.

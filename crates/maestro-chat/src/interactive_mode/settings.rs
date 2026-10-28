@@ -83,15 +83,17 @@ impl InteractiveMode {
             on_block_images_change: self.save_setting(SettingsManager::set_block_images),
             on_enable_skill_commands_change: self
                 .fallible_setting_callback(Self::settings_skill_commands),
-            on_steering_mode_change: self.setting_callback(|mode, value| {
+            on_steering_mode_change: self.fallible_setting_callback(|mode, value| {
                 mode.runtime_host
                     .session()
-                    .set_steering_mode(queue_mode(&value));
+                    .set_steering_mode(queue_mode(&value))?;
+                Ok(())
             }),
-            on_follow_up_mode_change: self.setting_callback(|mode, value| {
+            on_follow_up_mode_change: self.fallible_setting_callback(|mode, value| {
                 mode.runtime_host
                     .session()
-                    .set_follow_up_mode(queue_mode(&value));
+                    .set_follow_up_mode(queue_mode(&value))?;
+                Ok(())
             }),
             on_transport_change: self.setting_callback(Self::settings_transport),
             on_thinking_level_change: self.fallible_setting_callback(Self::settings_thinking),

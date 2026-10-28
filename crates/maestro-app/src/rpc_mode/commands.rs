@@ -121,7 +121,7 @@ impl SessionConnection {
             Command::ExportHtml { output_path } => self.export_html(output_path.as_deref())?,
             Command::SwitchSession { session_path } => self.switch_session(&session_path).await?,
             Command::Fork { entry_id } => self.fork(&entry_id).await?,
-            other => read_or_apply(&session, &other),
+            other => read_or_apply(&session, &other)?,
         };
         Ok(Answer::Data(data))
     }
@@ -320,40 +320,39 @@ fn set_session_name(session: &AgentSession, name: &str) -> Result<Answer, Failur
     Ok(Answer::Data(RpcData::Empty))
 }
 
-/// Applies a setting or reads the session for a command that cannot fail; a command
-/// answered elsewhere applies nothing.
-fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> RpcData {
+/// Applies a setting or reads the session; commands answered elsewhere apply nothing.
+fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> Result<RpcData, Failure> {
     use RpcSessionCommand as Command;
     match *command {
-        Command::SetSteeringMode { mode } => session.set_steering_mode(mode),
-        Command::SetFollowUpMode { mode } => session.set_follow_up_mode(mode),
+        Command::SetSteeringMode { mode } => session.set_steering_mode(mode)?,
+        Command::SetFollowUpMode { mode } => session.set_follow_up_mode(mode)?,
         Command::SetAutoCompaction { enabled } => session.set_auto_compaction_enabled(enabled),
         Command::SetAutoRetry { enabled } => session.set_auto_retry_enabled(enabled),
         Command::AbortRetry => session.abort_retry(),
         Command::AbortBash => session.abort_bash(),
         Command::GetForkMessages => {
-            return RpcData::ForkMessages(RpcForkMessages {
+            return Ok(RpcData::ForkMessages(RpcForkMessages {
                 messages: session.get_user_messages_for_forking(),
-            });
+            }));
         }
         Command::GetLastAssistantText => {
-            return RpcData::LastAssistantText(RpcLastAssistantText {
+            return Ok(RpcData::LastAssistantText(RpcLastAssistantText {
                 text: session
                     .get_last_assistant_text()
                     .map_or(Presence::Missing, Presence::Present),
-            });
+            }));
         }
         Command::GetMessages => {
-            return RpcData::Messages(RpcMessages {
+            return Ok(RpcData::Messages(RpcMessages {
                 messages: session.messages(),
-            });
+            }));
         }
         Command::GetCommands => {
-            return RpcData::Commands(RpcCommandList {
+            return Ok(RpcData::Commands(RpcCommandList {
                 commands: session.get_commands(),
-            });
+            }));
         }
         _ => {}
     }
-    RpcData::Empty
+    Ok(RpcData::Empty)
 }

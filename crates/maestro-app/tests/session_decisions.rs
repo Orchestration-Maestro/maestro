@@ -124,6 +124,8 @@ fn rpc_selection_refusals_preserve_history_and_return_the_message() {
             json!({"type":"cycle_model"}),
             json!({"type":"set_thinking_level","level":"high"}),
             json!({"type":"cycle_thinking_level"}),
+            json!({"type":"set_steering_mode", "mode":"all"}),
+            json!({"type":"set_follow_up_mode", "mode":"all"}),
         ] {
             let reply = client.ask(&command.to_string()).await;
             assert_eq!(reply["success"], false);
@@ -311,5 +313,36 @@ fn extension_selection_propagates_listener_failure_named_configuration_refusal()
             model_view(&h.model("think"))
         );
         assert_ne!(history(&h.session), before);
+    });
+}
+
+/// Behaviour admission precedes both live queue mode and preference publication.
+#[test]
+fn refused_queue_modes_preserve_agent_and_preferences() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let settings = h.session.settings_manager();
+        settings
+            .borrow_mut()
+            .register_decider(Arc::new(Refuse::default()))
+            .unwrap();
+        let modes = (h.session.steering_mode(), h.session.follow_up_mode());
+        let preferences = settings.borrow().get_global_settings();
+        let next = |mode| {
+            if mode == maestro_app::QueueMode::All {
+                maestro_app::QueueMode::OneAtATime
+            } else {
+                maestro_app::QueueMode::All
+            }
+        };
+        h.session.set_steering_mode(next(modes.0)).unwrap_err();
+        h.session.set_follow_up_mode(next(modes.1)).unwrap_err();
+        assert_eq!(
+            (h.session.steering_mode(), h.session.follow_up_mode()),
+            modes
+        );
+        assert_eq!(settings.borrow().get_global_settings(), preferences);
+        assert_eq!(settings.borrow_mut().drain_errors().len(), 2);
+        assert!(h.events.borrow().is_empty());
     });
 }

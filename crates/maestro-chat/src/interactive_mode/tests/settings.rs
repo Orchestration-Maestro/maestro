@@ -140,8 +140,12 @@ fn settings_snapshot_reads_live_session_and_preferences() {
             .await;
             let session = world.host.session();
             session.set_auto_compaction_enabled(true);
-            session.set_steering_mode(maestro_app::QueueMode::All);
-            session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
+            session
+                .set_steering_mode(maestro_app::QueueMode::All)
+                .unwrap();
+            session
+                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .unwrap();
             let levels = session.get_available_thinking_levels();
             open(&world);
             let config = world.mode.settings_config().unwrap();
@@ -357,8 +361,12 @@ fn settings_session_modes_use_distinct_live_policies() {
         async |directory| {
             let world = settings_world(directory, |_| {}).await;
             let session = world.host.session();
-            session.set_steering_mode(maestro_app::QueueMode::All);
-            session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
+            session
+                .set_steering_mode(maestro_app::QueueMode::All)
+                .unwrap();
+            session
+                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .unwrap();
             let list = open(&world);
             choose(&list, "Steering", 0);
             assert_eq!(session.steering_mode(), maestro_app::QueueMode::OneAtATime);
