@@ -37,6 +37,49 @@ fn expression(fragment: &str) -> Option<(&str, &str)> {
     (!command.is_empty()).then_some((prefix, command))
 }
 
+/// Executes one command and retains its full replacement beside its notification preview.
+async fn expand(api: &ExtensionAPI, command: &str) -> ExtensionResult<(String, String)> {
+    let args = ["-c".into(), command.into()];
+    let executed = api
+        .exec(
+            "bash",
+            &args,
+            Some(ExecOptions {
+                timeout: Some(30_000.0),
+                ..ExecOptions::default()
+            }),
+        )
+        .await;
+    let result = match executed {
+        Ok(result) => result,
+        Err(error) => {
+            return Ok((
+                format!("[error: {error}]"),
+                format!("!{{{command}}} ({error}) -> \"\""),
+            ));
+        }
+    };
+    let selected = if result.stdout.is_empty() {
+        &result.stderr
+    } else {
+        &result.stdout
+    };
+    let output = trim(api, selected)?.to_owned();
+    let status = if result.code != 0 && !result.stderr.is_empty() {
+        format!(" (exit code {})", result.code)
+    } else {
+        String::new()
+    };
+    let preview: String = output.chars().take(50).collect();
+    let suffix = if preview.len() < output.len() {
+        "..."
+    } else {
+        ""
+    };
+    let summary = format!("!{{{command}}}{status} -> \"{preview}{suffix}\"");
+    Ok((output, summary))
+}
+
 /// Expands original input fragments without rescanning command output.
 async fn input(
     api: &ExtensionAPI,
@@ -59,21 +102,10 @@ async fn input(
             result.push_str(fragment);
             continue;
         };
-        let args = ["-c".into(), command.into()];
-        let output = api
-            .exec(
-                "bash",
-                &args,
-                Some(ExecOptions {
-                    timeout: Some(30_000.0),
-                    ..ExecOptions::default()
-                }),
-            )
-            .await?;
-        let output = trim(api, &output.stdout)?;
+        let (output, summary) = expand(api, command).await?;
         result.push_str(prefix);
-        result.push_str(output);
-        summaries.push(format!("!{{{command}}} -> \"{output}\""));
+        result.push_str(&output);
+        summaries.push(summary);
     }
     let decision = if summaries.is_empty() {
         InputEventResult::Continue
