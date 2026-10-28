@@ -368,10 +368,16 @@ fn five_shell_completions_include_chat_and_nested_workspace_commands() {
             "wait-output",
             "live-handoff",
             "action-manifest",
-            "--skill",
-            "--session",
         ] {
             assert!(script.contains(word), "{shell} missing {word}");
+        }
+        let options = if shell == "fish" {
+            ["-l skill", "-l session"]
+        } else {
+            ["--skill", "--session"]
+        };
+        for option in options {
+            assert!(script.contains(option), "{shell} missing {option}");
         }
         if shell == "zsh" {
             assert!(script.contains("'--cwd["));
