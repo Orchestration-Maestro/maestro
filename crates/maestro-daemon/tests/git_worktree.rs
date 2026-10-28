@@ -355,6 +355,20 @@ fn forced_remove_clears_a_leftover_checkout_of_the_repository() {
     assert!(!checkout.exists());
 }
 
+#[cfg(unix)]
+#[test]
+fn forced_remove_clears_a_leftover_checkout_when_the_repository_is_reached_through_a_link() {
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    let checkout = leftover_checkout(&scratch, &repo);
+    let linked = scratch.path().join("linked-repo");
+    std::os::unix::fs::symlink(&repo, &linked).unwrap();
+
+    worktree::remove(&linked, &checkout, true).unwrap();
+
+    assert!(!checkout.exists());
+}
+
 #[test]
 fn forced_remove_keeps_an_unrelated_replacement_directory() {
     let scratch = Scratch::new().unwrap();
