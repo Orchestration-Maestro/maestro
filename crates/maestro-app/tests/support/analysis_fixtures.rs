@@ -84,10 +84,21 @@ pub fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
     directory.to_owned()
 }
 
+/// The working directory `cwd` as the usage report resolves it: `/project` is `D:\\project`
+/// on Windows.
+pub fn resolved(cwd: &str) -> String {
+    maestro_path::resolve_with(
+        &[&[cwd]],
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
+    )
+    .expect("the process directory is readable")
+    .remove(0)
+}
+
 /// A directory beneath `base`'s home, created.
 pub fn home(base: &str, relative: &str) -> String {
-    let directory = Path::new(base).join("home/.maestro/agent").join(relative);
-    let text = directory.display().to_string();
+    let text = maestro_path::join(&[base, "home/.maestro/agent", relative]);
     std::fs::create_dir_all(&text).expect("the fixture directory is creatable");
     text
 }

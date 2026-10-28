@@ -92,18 +92,8 @@ fn run_with_collision(
 fn replacement_syncs_before_and_after_commit() {
     let observed = run(None);
     assert!(observed.result.unwrap().dir_sync.is_none());
-    assert_eq!(
-        observed.events,
-        [
-            "create",
-            "write_all",
-            "file_sync",
-            "close",
-            "rename",
-            "parent_open",
-            "parent_sync"
-        ]
-    );
+    let committed = ["create", "write_all", "file_sync", "close", "rename"];
+    assert_eq!(observed.events, [&committed[..], sync_phases()].concat());
     assert_eq!(observed.bytes, b"new");
     assert_eq!(observed.entries, 1);
 }
@@ -150,9 +140,19 @@ fn replacement_errors_before_commit_keep_old_bytes() {
     fs::remove_dir_all(dir).unwrap();
 }
 
+/// The directory-sync phases this host reaches. Windows refuses to open a directory as
+/// a file, so the sync after the open never runs there and the refusal is tolerated.
+fn sync_phases() -> &'static [&'static str] {
+    if File::open(".").is_ok() {
+        &["parent_open", "parent_sync"]
+    } else {
+        &["parent_open"]
+    }
+}
+
 #[test]
 fn committed_directory_sync_failure_is_reported_as_success() {
-    for phase in ["parent_open", "parent_sync"] {
+    for &phase in sync_phases() {
         let observed = run(Some((phase, io::ErrorKind::Other)));
         assert_eq!(
             observed.result.unwrap().dir_sync.unwrap().kind(),
@@ -166,7 +166,7 @@ fn committed_directory_sync_failure_is_reported_as_success() {
 
 #[test]
 fn unsupported_directory_sync_is_tolerated() {
-    for phase in ["parent_open", "parent_sync"] {
+    for &phase in sync_phases() {
         for kind in [
             io::ErrorKind::Unsupported,
             io::ErrorKind::InvalidInput,

@@ -1398,30 +1398,54 @@ pub fn hold_first_answer(
 
 /// `value` with every `(from, to)` spelling replaced, in order, in its strings.
 pub fn substituting(value: Value, paths: &[(&str, &str)]) -> Value {
+    mapping_strings(value, &|text| {
+        paths
+            .iter()
+            .fold(text, |text, (from, to)| text.replace(from, to))
+    })
+}
+
+/// `value` with `map` applied to each of its strings.
+fn mapping_strings(value: Value, map: &impl Fn(String) -> String) -> Value {
     match value {
-        Value::String(text) => json!(
-            paths
-                .iter()
-                .fold(text, |text, (from, to)| text.replace(from, to))
-        ),
+        Value::String(text) => json!(map(text)),
         Value::Array(items) => items
             .into_iter()
-            .map(|item| substituting(item, paths))
+            .map(|item| mapping_strings(item, map))
             .collect(),
         Value::Object(fields) => Value::Object(
             fields
                 .into_iter()
-                .map(|(key, item)| (key, substituting(item, paths)))
+                .map(|(key, item)| (key, mapping_strings(item, map)))
                 .collect(),
         ),
         other => other,
     }
 }
 
+/// `value` with each `(path, placeholder)` path spelled as its placeholder, as the recorded
+/// cases spell it. On Windows a string that names a placeholder also spells its native
+/// separators `/`, as the recordings do.
+pub fn as_recorded(value: Value, paths: &[(&str, &str)]) -> Value {
+    mapping_strings(value, &|text| {
+        let text = paths.iter().fold(text, |text, (path, placeholder)| {
+            text.replace(path, placeholder)
+        });
+        let named = paths
+            .iter()
+            .any(|(_, placeholder)| text.contains(placeholder));
+        if cfg!(windows) && named {
+            text.replace('\\', "/")
+        } else {
+            text
+        }
+    })
+}
+
 /// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
 pub fn with_placeholders(value: Value, h: &Harness) -> Value {
     let root = h.scratch.path().display().to_string();
-    substituting(value, &[(&root, "$ROOT")])
+    as_recorded(value, &[(&root, "$ROOT")])
 }
 
 /// The agent run and message events, as the session's listeners would see them.

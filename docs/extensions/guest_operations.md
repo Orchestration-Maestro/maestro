@@ -511,6 +511,13 @@ order. YAML parsing remains entirely native.
 native parser causes and coordinates. Ordinary text is not trimmed; a present
 header selects the native trimmed body and newline normalization.
 
+`frontmatter::parse_yaml(&api, content)` reads one complete YAML document through
+the same native parser. It returns `FrontmatterValue` directly, retains empty/null
+roots and authored mapping order, and accepts scalar and sequence roots. Numbers
+retain signed zero, NaN and infinities without JSON conversion. Multiple documents
+are rejected with native causes and source coordinates. Header extraction and
+null-to-empty-map normalization apply only to `parse_frontmatter`.
+
 ### Conversation and output
 
 `convert_to_llm` delegates application-message projection to the native session

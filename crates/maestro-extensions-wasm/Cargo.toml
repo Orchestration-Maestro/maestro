@@ -31,6 +31,11 @@ name = "context_bridge"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_compaction"
+path = "../../examples/extensions/custom_compaction.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "custom_footer"
 path = "../../examples/extensions/custom_footer.rs"
 crate-type = ["cdylib"]
@@ -90,6 +95,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "local_shell_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "minimal_mode"
+path = "../../examples/extensions/minimal_mode.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -179,8 +189,18 @@ path = "../../examples/extensions/snake.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "space_invaders"
+path = "../../examples/extensions/space_invaders.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "summarize"
+path = "../../examples/extensions/summarize.rs"
 crate-type = ["cdylib"]
 
 [[example]]
