@@ -119,6 +119,11 @@ path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "interactive_shell"
+path = "../../examples/extensions/interactive_shell.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "local_shell_component"
 crate-type = ["cdylib"]
 

@@ -93,6 +93,8 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `interactive_shell.md` | Interactive shell |
+| `interactive_shell.rs` | Opt-in interactive user shell commands with full terminal access. |
 | `mac_system_theme.md` | Mac system theme |
 | `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
 | `message_renderer.md` | Message renderer |
