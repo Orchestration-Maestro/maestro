@@ -40,6 +40,20 @@ pub enum DecisionRequest<'a> {
     },
     /// A requested thinking level before capability clamping.
     ThinkingLevel(&'a str),
+    /// Explicit acquisition of a package source.
+    PackageInstall {
+        /// The authored package source, including its requested pin.
+        source: &'a str,
+        /// The selected raw configuration scope.
+        scope: SettingsScope,
+    },
+    /// Explicit removal of a package source.
+    PackageRemove {
+        /// The authored package source.
+        source: &'a str,
+        /// The selected raw configuration scope.
+        scope: SettingsScope,
+    },
     /// A one-level merge into the runtime preference view.
     RuntimeOverrides(&'a Settings),
 }

@@ -22,6 +22,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<SourceAcquisition> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        self.check_package_operation(source, Some(scope), false)?;
         let parsed = sources::parse(source);
         let message = format!("Installing {source}...");
         self.with_progress(ProgressAction::Install, source, message, async {
@@ -57,6 +58,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        self.check_package_operation(source, Some(scope), true)?;
         let parsed = sources::parse(source);
         let message = format!("Removing {source}...");
         self.with_progress(ProgressAction::Remove, source, message, async {

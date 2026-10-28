@@ -13,10 +13,17 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
         remove: bool,
     ) -> io::Result<Option<(PreparedSettingsEdit, bool)>> {
-        if !self.options.settings_manager.borrow().has_decider() {
-            return Ok(None);
-        }
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        {
+            let settings = self.options.settings_manager.borrow();
+            let layer = match scope {
+                InstalledSourceScope::User => settings.get_global_base_layer(),
+                InstalledSourceScope::Project => settings.get_base_layer(),
+            };
+            if !settings.has_decider() && layer.is_none() {
+                return Ok(None);
+            }
+        }
         let entries = if remove {
             self.source_removal(source, scope)?
         } else {
@@ -50,5 +57,81 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 io::Error::new(io::ErrorKind::PermissionDenied, message)
             })?;
         Ok(Some((edit, modified)))
+    }
+}
+
+impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Admits package intent against its scoped publisher and persisted required sources.
+    pub(super) fn check_package_operation(
+        &self,
+        source: &str,
+        scope: Option<InstalledSourceScope>,
+        remove: bool,
+    ) -> io::Result<()> {
+        let scope = scope.unwrap_or(InstalledSourceScope::User);
+        let settings = self.options.settings_manager.borrow();
+        let (raw_scope, layer) = match scope {
+            InstalledSourceScope::User => (SettingsScope::Global, settings.get_global_base_layer()),
+            InstalledSourceScope::Project => (SettingsScope::Project, settings.get_base_layer()),
+        };
+        let result = self
+            .check_package_layer(source, scope, remove, layer)
+            .and_then(|()| {
+                let request = if remove {
+                    DecisionRequest::PackageRemove {
+                        source,
+                        scope: raw_scope,
+                    }
+                } else {
+                    DecisionRequest::PackageInstall {
+                        source,
+                        scope: raw_scope,
+                    }
+                };
+                settings
+                    .decide(&request)
+                    .map_err(|message| io::Error::new(io::ErrorKind::PermissionDenied, message))
+            });
+        if let Err(error) = &result {
+            settings.report_refusal(raw_scope, error.to_string());
+        }
+        result
+    }
+    /// Enforces persisted package locks and compares required sources by package identity.
+    fn check_package_layer(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+        remove: bool,
+        layer: Option<&maestro_settings::BaseSettingsLayer>,
+    ) -> io::Result<()> {
+        let Some(layer) = layer else {
+            return Ok(());
+        };
+        let forbidden = if remove {
+            let requested = super::configuration::identity(source, &self.options.cwd)?;
+            super::configuration::packages(layer.settings.clone())?
+                .iter()
+                .try_fold(false, |required, entry| {
+                    let stored = super::configuration::entry_source(entry)?;
+                    Ok::<_, io::Error>(
+                        required
+                            || super::configuration::identity(stored, &self.base(scope))?
+                                == requested,
+                    )
+                })?
+        } else {
+            layer.is_key_path_locked("packages", &[])
+        };
+        if forbidden {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                format!(
+                    "Package operation refused: {source} is governed by {} (recorded {})",
+                    layer.source, layer.recorded_at
+                ),
+            ));
+        }
+        Ok(())
     }
 }
