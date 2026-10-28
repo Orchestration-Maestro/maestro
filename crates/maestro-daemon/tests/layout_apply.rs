@@ -139,7 +139,7 @@ fn a_leaf_command_runs_with_its_directory_and_environment() {
         async |app| {
             add_workspaces(app, &["/tabs"]);
             let scratch = Scratch::new().unwrap();
-            let script = "printf 'seen:<%s>|<%s>|<%s>\\n' \"$ROLE\" \"$MAESTRO_PANE_ID\" \"$PWD\"; \
+            let script = "printf '\\nseen:<%s>|<%s>|<%s>\\n' \"$ROLE\" \"$MAESTRO_PANE_ID\" \"$PWD\"; \
                           exec sleep 60";
             let leaf = json!({
                 "type": "pane", "cwd": scratch.path(), "env": {"ROLE": "tests"},
