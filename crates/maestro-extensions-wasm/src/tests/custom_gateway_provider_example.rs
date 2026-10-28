@@ -17,6 +17,18 @@ use std::{
     rc::Rc,
 };
 
+/// The documented greeting loads the component file without a package manifest.
+#[test]
+fn custom_gateway_provider_greeting_command_loads_the_component_file() {
+    let guide = include_str!("../../../../examples/extensions/custom-provider-gitlab-duo.md");
+    let command = guide
+        .lines()
+        .find(|line| line.starts_with("maestro -e "))
+        .unwrap();
+    let extension = command.split_whitespace().nth(2).unwrap();
+    assert_eq!(extension, "./gateway/custom_gateway_provider.wasm");
+}
+
 /// The proof key the controlled host answers with (RFC 7636 appendix B).
 const VERIFIER: &str = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
 /// The challenge that belongs to [`VERIFIER`].
