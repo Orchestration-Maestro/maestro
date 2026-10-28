@@ -3,8 +3,8 @@
 #![cfg(target_os = "linux")]
 use crate::support::{
     api::{
-        TestApp, add_tab, add_workspaces, answer, event_names, events_after, root_pane,
-        wait_for_line, with_live_daemon,
+        TestApp, add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
+        wait_for_line, with_live_daemon, workspace_ids,
     },
     layouts::{balanced, chain, shell, sleeper, split},
 };
@@ -453,6 +453,77 @@ fn shell_leaves_start_the_configured_shell_without_a_launch_command() {
                     .all(|pane| pane.command.is_none())
             );
             assert_eq!(app.terminal_runtimes.len(), 2);
+        },
+    );
+}
+
+/// A leaf that creates `gate` when its pane is hung up and runs on until it is terminated, so
+/// the pane takes a while to stop.
+fn holds_until_terminated(gate: &Path) -> Value {
+    json!({
+        "type": "pane",
+        "command": ["/bin/sh", "-c", "trap 'touch \"$0\"' HUP; while :; do sleep 0.05; done", gate]
+    })
+}
+
+/// A leaf that exits as soon as `gate` exists.
+fn exits_once_seen(gate: &Path) -> Value {
+    json!({
+        "type": "pane",
+        "command": ["/bin/sh", "-c", "while [ ! -e \"$0\" ]; do sleep 0.02; done", gate]
+    })
+}
+
+#[test]
+fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
+    with_live_daemon(
+        "layout_apply::a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace",
+        async |app| {
+            add_workspaces(app, &["/tabs"]);
+            let scratch = Scratch::new().unwrap();
+            let gate = scratch.path().join("hangup");
+            let holder = apply_wire(&holds_until_terminated(&gate), &json!({"tab_id": "w1:t1"}));
+            applied(answer(app, holder).await);
+            let replacement = apply_wire(&exits_once_seen(&gate), &json!({"tab_id": "w1:t2"}));
+            assert_eq!(
+                answer(app, replacement).await,
+                failure("layout_apply_failed", "new layout tab disappeared")
+            );
+            assert!(workspace_ids(app).is_empty());
+        },
+    );
+}
+
+#[test]
+fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout() {
+    with_live_daemon(
+        "layout_apply::a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout",
+        async |app| {
+            add_workspaces(app, &["/first", "/second", "/third"]);
+            let scratch = Scratch::new().unwrap();
+            let gate = scratch.path().join("hangup");
+            let leaving = apply_wire(&exits_once_seen(&gate), &json!({"tab_id": "w1:t1"}));
+            applied(answer(app, leaving).await);
+            let holder = apply_wire(&holds_until_terminated(&gate), &json!({"tab_id": "w2:t1"}));
+            applied(answer(app, holder).await);
+            let replacement = apply_wire(&sleeper(), &json!({"tab_id": "w2:t2"}));
+            let layout = applied(answer(app, replacement).await);
+            assert_eq!(
+                (layout.workspace_id.as_str(), layout.tab_id.as_str()),
+                ("w2", "w2:t3")
+            );
+            assert_eq!(workspace_ids(app), ["w2", "w3"]);
+            let closed: Vec<_> = events_after(app, 0)
+                .into_iter()
+                .filter_map(|event| match event {
+                    EventData::TabClosed {
+                        tab_id,
+                        workspace_id,
+                    } if tab_id == "w2:t2" => Some(workspace_id),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(closed, ["w2"]);
         },
     );
 }
