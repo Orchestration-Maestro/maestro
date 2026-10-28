@@ -3518,7 +3518,8 @@ fn example_index_renders_targets_and_components() {
     );
 }
 
-/// A malformed marker, two markers in one source and one variable in two sources are rejected.
+/// A malformed marker, two markers in one source, one variable in two sources and the shared
+/// author's variable are rejected.
 #[test]
 fn example_index_rejects_malformed_and_duplicate_markers() {
     let marker = "// Tests receive this component's path in";
@@ -3533,6 +3534,7 @@ fn example_index_rejects_malformed_and_duplicate_markers() {
             ("alpha.rs", format!("{marker} MAESTRO_A_COMPONENT.\n")),
             ("beta.rs", format!("{marker} MAESTRO_A_COMPONENT.\n")),
         ],
+        vec![("alpha.rs", format!("{marker} MAESTRO_AUTHOR_COMPONENT.\n"))],
     ] {
         let root = maestro_test_directory::Scratch::new().unwrap();
         example_checkout(root.path());
