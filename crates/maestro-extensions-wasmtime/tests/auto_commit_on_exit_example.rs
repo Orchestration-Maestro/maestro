@@ -300,3 +300,46 @@ fn auto_commit_on_exit_component_stays_silent_when_commit_fails() {
         );
     });
 }
+
+/// Global commit hooks cannot change the result of the component's disposable Git tests.
+#[cfg(unix)]
+#[test]
+fn auto_commit_on_exit_component_ignores_global_hooks() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let root = Scratch::new().unwrap();
+    let hooks = root.path().join("hooks");
+    std::fs::create_dir(&hooks).unwrap();
+    let hook = hooks.join("pre-commit");
+    std::fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
+    std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let config = root.path().join("global.gitconfig");
+    git(
+        root.path(),
+        &[
+            "config",
+            "--file",
+            config.to_str().unwrap(),
+            "core.hooksPath",
+            hooks.to_str().unwrap(),
+        ],
+    );
+    let output = maestro_test_process::TestProcess::named(
+        maestro_test_process::test_name(
+            auto_commit_on_exit_component_titles_commit_with_newest_reply,
+        )
+        .unwrap(),
+    )
+    .unwrap()
+    .env("GIT_CONFIG_NOSYSTEM", "1")
+    .env("GIT_CONFIG_GLOBAL", &config)
+    .nocapture()
+    .output()
+    .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
