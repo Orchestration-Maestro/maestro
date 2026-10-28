@@ -1,4 +1,5 @@
 //! Opt-in interactive user shell commands with full terminal access.
+// maestro-component: MAESTRO_INTERACTIVE_SHELL_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

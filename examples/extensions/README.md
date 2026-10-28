@@ -27,12 +27,19 @@ steps.
    script discovers these files; do not add a `mod` line to `src/tests.rs`.
 4. Add a `[[example]]` block to that crate's manifest in alphabetical order,
    with the source path and `crate-type = ["cdylib"]`.
-5. Run `just example-index`, then run the example's controlled tests.
+5. For a prepared test component, add
+   `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening docs. The
+   file stem names its Cargo target. Native executable test modules use the
+   `<name>_example` suffix so the setup filter selects them automatically.
+6. Run `just example-index`, then run the example's controlled tests.
 
 The table below is generated from each Rust file's opening documentation and
 Markdown page's heading. Do not edit its rows by hand. `just example-index-check`
 checks that it is current. Keep descriptions and run commands in the example's
 own files, not in this page or `docs/examples.md`.
+
+The component setup reads source markers at run time; it has no shared example
+list. See [adding an example](../../docs/examples.md).
 
 Cargo needs an explicit target for each out-of-package component. Those manifest
 blocks and the tracked table remain shared edits; alphabetical neighbours can
@@ -48,6 +55,8 @@ resolving conflicts, then regenerate the table.
 <!-- example-index:start -->
 | File | Provides |
 | --- | --- |
+| `auto_commit_on_exit.md` | Auto-commit on exit |
+| `auto_commit_on_exit.rs` | Opt-in commit of a changed Git working tree when the session shuts down, titled with the first line of the newest assistant reply. |
 | `bash_spawn_hook.md` | Bash spawn hook |
 | `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |

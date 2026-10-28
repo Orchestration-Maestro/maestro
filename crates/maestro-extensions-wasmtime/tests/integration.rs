@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod auto_commit_on_exit_example;
 mod bash_spawn_hook_example;
 mod built_in_tool_renderer;
 mod canonical_api;
@@ -49,6 +50,9 @@ mod wasi_support;
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;
 mod support;
+
+#[path = "support/example_process.rs"]
+mod example_process;
 
 #[path = "../../maestro-extensions/tests/support/model.rs"]
 mod model_support;
