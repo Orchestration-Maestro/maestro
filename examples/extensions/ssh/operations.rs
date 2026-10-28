@@ -1,7 +1,7 @@
 //! SSH observations supplied to the original native coding-tool owners.
 use maestro_extensions_wasm::{
     BashOperations, DiagnosticErrorInfo, EditOperations, ExtensionAPI, ExtensionResult,
-    OperationFuture, ReadOperations, ToolsOptions, WriteOperations,
+    OperationFuture, ReadOperations, ToolsOptions, WriteOperations, tools::path_utils,
 };
 use std::rc::Rc;
 
@@ -107,7 +107,8 @@ impl Remote {
     /// Reuses native child streaming, cancellation and deadlines for the SSH command.
     pub fn bash(&self) -> ExtensionResult<BashOperations> {
         let local = self.api.create_local_bash_operations(None)?;
-        let remote = self.clone();
+        let mut remote = self.clone();
+        remote.local_cwd = path_utils::resolve(&self.api, &[&self.local_cwd])?;
         Ok(BashOperations {
             exec: Rc::new(move |command, cwd, options| {
                 let command = format!("cd {} && {command}", quote(&remote.path(&cwd)));
@@ -119,16 +120,18 @@ impl Remote {
 
     /// Supplies only the selected tool's effects; all algorithms stay with their owners.
     pub fn options(&self, name: &str) -> ExtensionResult<ToolsOptions> {
+        let mut remote = self.clone();
+        remote.local_cwd = path_utils::resolve(&self.api, &[&self.local_cwd])?;
         let mut options = ToolsOptions::default();
         match name {
-            "read" => options.read.operations = Some(self.read()),
-            "write" => options.write.operations = Some(self.write()),
+            "read" => options.read.operations = Some(remote.read()),
+            "write" => options.write.operations = Some(remote.write()),
             "edit" => {
-                let read = self.read();
+                let read = remote.read();
                 options.edit.operations = Some(EditOperations {
                     read_file: read.read_file,
                     access: read.access,
-                    write_file: self.write().write_file,
+                    write_file: remote.write().write_file,
                 });
             }
             "bash" => options.bash.operations = Some(self.bash()?),
