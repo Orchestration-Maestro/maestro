@@ -1433,6 +1433,21 @@ impl maestro_settings::SettingsDecider for RefusePackageEdit {
     }
 }
 
+/// Allows package intent but refuses its derived preference edit.
+struct RefusePackageSettingsEdit;
+impl maestro_settings::SettingsDecider for RefusePackageSettingsEdit {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(
+            request,
+            maestro_settings::DecisionRequest::SettingsEdit { .. }
+        ) {
+            Err("release refuses package settings".into())
+        } else {
+            Ok(())
+        }
+    }
+}
+
 /// No child, progress callback or project file precedes a refused package edit.
 #[test]
 fn refused_package_edits_have_no_acquisition_or_removal_effects() {
@@ -1442,7 +1457,7 @@ fn refused_package_edits_have_no_acquisition_or_removal_effects() {
             fixture
                 .settings
                 .borrow_mut()
-                .register_decider(Arc::new(RefusePackageEdit))
+                .register_decider(Arc::new(RefusePackageSettingsEdit))
                 .unwrap();
             let before = fixture.settings.borrow().get_global_settings();
             let result = if remove {
@@ -1450,7 +1465,10 @@ fn refused_package_edits_have_no_acquisition_or_removal_effects() {
             } else {
                 block_on(fixture.manager.install_and_persist("npm:pkg", Some(scope)))
             };
-            assert_eq!(result.unwrap_err().to_string(), "release refuses packages");
+            assert_eq!(
+                result.unwrap_err().to_string(),
+                "release refuses package settings"
+            );
             assert!(fixture.calls().is_empty());
             assert!(fixture.phases().is_empty());
             assert!(!std::path::Path::new(&fixture.project(".maestro/npm")).exists());

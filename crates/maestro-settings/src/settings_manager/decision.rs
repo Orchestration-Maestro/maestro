@@ -153,7 +153,8 @@ impl PreparedSettingsEdit {
     /// Supplies the recomputed list for the already-admitted delta.
     ///
     /// # Errors
-    /// Returns an error if the scope or key differs from the admitted list.
+    /// Returns an error unless exactly one admitted edit has an array value and
+    /// retains its scope and key.
     pub fn with_recomputed_list(
         mut self,
         scope: SettingsScope,

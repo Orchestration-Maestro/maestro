@@ -171,7 +171,7 @@ struct Recorded {
 ///
 /// # Errors
 /// Returns agent-directory, catalog, history, resource loading or documentation-path
-/// failures, and the failures of [`AgentSession::new`].
+/// failures, publisher admission refusals, and the failures of [`AgentSession::new`].
 pub async fn create_agent_session(
     options: CreateAgentSessionOptions,
 ) -> Result<CreateAgentSessionResult, DiagnosticErrorInfo> {

@@ -176,7 +176,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// prompt for them; unknown names are skipped.
     ///
     /// # Errors
-    /// Returns the documentation-path failure of the default prompt.
+    /// Returns publisher admission refusals or the documentation-path failure of
+    /// the default prompt.
     pub fn set_active_tools_by_name(
         &self,
         tool_names: &[String],
