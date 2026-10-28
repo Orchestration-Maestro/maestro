@@ -143,8 +143,11 @@ or flush borrows its stream only for that call.
 
 `startup::main` selects what a run does before any frontend starts, in the
 order the authored arguments decide it. `bootstrap` picks the presentation mode
-from the parsed mode, the print request and the stdin kind; any run that is not
-the interactive frontend reserves standard output first. Parser diagnostics,
+from the parsed mode, the print request and the stdin kind, and says whether the
+run needs standard output reserved, which every mode but the interactive
+frontend does; the entry point reserves it. In JSON mode the prompts run in
+order and each session event is streamed as a JSON line; text print mode writes
+the final answer after the prompts. Parser diagnostics,
 settings failures and conflicting fork flags are written with their exact
 prefix and style, and each reporting step returns the status that ends the run
 when the problem is fatal. The session directory comes from the authored

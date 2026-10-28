@@ -119,6 +119,11 @@ path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "interactive_shell"
+path = "../../examples/extensions/interactive_shell.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "local_shell_component"
 crate-type = ["cdylib"]
 
@@ -198,6 +203,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "questionnaire"
 path = "../../examples/extensions/questionnaire.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "rainbow_editor"
+path = "../../examples/extensions/rainbow_editor.rs"
 crate-type = ["cdylib"]
 
 [[example]]

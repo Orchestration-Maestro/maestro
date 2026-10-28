@@ -25,6 +25,8 @@ files and refreshes the registry, replaying dynamic providers. An empty base tha
 was already empty leaves the current catalog untouched. Session construction and
 reload use this operation for base-package contributions.
 
+[Configure custom models](models/custom.md) walks through editing `models.json`,
+local endpoints, field defaults and compatibility settings.
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
 ## Errors
