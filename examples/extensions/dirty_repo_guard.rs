@@ -86,6 +86,10 @@ fn guard(
 }
 
 /// Registers the session guards with the supplied host.
+///
+/// # Errors
+///
+/// The returned future fails if the host rejects a guard registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
