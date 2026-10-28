@@ -55,6 +55,12 @@ write failure leaves the original unchanged. A directory-sync warning after
 publication is returned separately from failure. Reload or restart the workspace
 daemon to use the restored defaults.
 
+The CLI presentation function `workspace_commands::settings::run_reset_keys`
+validates the arguments after `settings reset-keys`, calls the application
+operation, and prints the backup path and reload guidance. Extra arguments return
+2 without file access. Application errors retain their cause and return 1;
+output errors propagate to the executable.
+
 ### Check collisions
 
 Rebinding a key does not remove it from other actions. For example:

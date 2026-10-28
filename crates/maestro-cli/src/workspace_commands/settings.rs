@@ -1,4 +1,5 @@
 //! Presentation of application-owned workspace settings operations.
+use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
 use std::io::{self, Write};
 
 /// Validate and present a multiplexer keybinding reset beneath the supplied root.
@@ -15,9 +16,28 @@ pub fn run_reset_keys(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> io::Result<i32> {
-    let _ = (args, agent_dir, timestamp, stdout, stderr);
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "reset presentation is unavailable",
-    ))
+    if !args.is_empty() {
+        writeln!(stderr, "usage: maestro settings reset-keys")?;
+        return Ok(2);
+    }
+    let reset = match reset_multiplexer_keybindings(agent_dir, timestamp) {
+        Ok(reset) => reset,
+        Err(error) => {
+            writeln!(
+                stderr,
+                "could not reset keybindings in {agent_dir}: {error}"
+            )?;
+            return Ok(1);
+        }
+    };
+    writeln!(stdout, "Created backup: {}", reset.backup_path.display())?;
+    writeln!(stdout, "Removed {} multiplexer overrides.", reset.removed)?;
+    writeln!(
+        stdout,
+        "Run `maestro daemon reload` or restart the daemon to apply the defaults."
+    )?;
+    if let Some(error) = reset.dir_sync {
+        writeln!(stderr, "Keybindings reset; directory sync warning: {error}")?;
+    }
+    Ok(0)
 }
