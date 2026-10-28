@@ -266,6 +266,38 @@ async fn remote_shell(runner: &Rc<ExtensionRunner<Local>>, cwd: &Path) {
     assert!(bytes.windows(3).any(|text| text == b"out"));
     assert!(bytes.windows(3).any(|text| text == b"err"));
     shell_interruptions(operations.as_ref(), cwd.to_str().unwrap()).await;
+    #[cfg(unix)]
+    remote_only_shell(operations.as_ref(), cwd).await;
+}
+
+/// Runs a remote-only directory without making it a local launch prerequisite.
+#[cfg(unix)]
+async fn remote_only_shell(operations: &dyn maestro_app::BashOperations<Local>, cwd: &Path) {
+    let local = cwd.join("remote-only");
+    let remote = fixture("remote/remote-only");
+    assert!(!local.exists());
+    std::fs::create_dir(&remote).unwrap();
+    let mut bytes = Vec::new();
+    let mut sink = |chunk: &[u8]| bytes.extend_from_slice(chunk);
+    let result = operations
+        .exec(
+            "pwd",
+            local.to_str().unwrap(),
+            maestro_app::BashExecOptions {
+                on_data: &mut sink,
+                signal: None,
+                timeout: None,
+                env: None,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(result.exit_code, Some(0.0));
+    assert_eq!(
+        String::from_utf8(bytes).unwrap().trim(),
+        remote.to_str().unwrap()
+    );
+    assert!(!local.exists());
 }
 
 /// Cancels a live child on its output and supplies an immediately ready native deadline.
