@@ -389,3 +389,24 @@ fn creation_mode_maps_only_owner_write_to_windows_readonly() {
     assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
     EFFECTS.take();
 }
+
+#[test]
+fn interrupted_publication_is_replayed_before_the_next_write() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let target = root.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("target_write", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    assert_eq!(
+        replace(&target, b"intended", Replace::default())
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::Interrupted
+    );
+    assert_eq!(fs::read(&target).unwrap(), b"before");
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
+}

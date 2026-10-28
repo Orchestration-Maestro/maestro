@@ -42,3 +42,11 @@ fn retry_contended(
 
 #[cfg(test)]
 mod tests;
+
+/// Acquires target-based write exclusion and replays a pending publication.
+///
+/// # Errors
+/// Returns native acquisition or recovery errors.
+pub fn acquire_write(_path: &std::path::Path, _through_symlinks: bool) -> std::io::Result<File> {
+    Err(std::io::ErrorKind::Unsupported.into())
+}

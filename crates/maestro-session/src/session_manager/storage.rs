@@ -22,6 +22,8 @@ pub fn rewrite_session_file(
         if Sha256::digest(&current).as_slice() != expected {
             return Ok(Some(current));
         }
+        #[cfg(test)]
+        tests::compared();
         match fs::OpenOptions::new().write(true).open(path) {
             Ok(file) => drop(file),
             Err(error) if error.kind() == io::ErrorKind::NotFound => (),
@@ -61,3 +63,6 @@ pub(super) fn read(path: &str) -> io::Result<Vec<u8>> {
         result => result,
     }
 }
+
+#[cfg(test)]
+mod tests;
