@@ -343,3 +343,41 @@ fn candidate_reads_local_branch_before_colliding_tag_like_installation() {
     );
     assert_eq!(files, vec![Some(b"branch candidate".to_vec())]);
 }
+
+#[test]
+fn candidate_reads_colliding_revision_expression_like_installation() {
+    let Some(_) = crate::resolution_support::case_in_child("colliding-expression", |_| vec![])
+    else {
+        return;
+    };
+    let fixture = RetryFixture::new("ordinary");
+    fixture.use_local_clone();
+    fixture.repo.commit("branch candidate");
+    git(&fixture.repo.seed, &["tag", "main", &fixture.repo.original]);
+    git(&fixture.repo.seed, &["push", "origin", "--tags"]);
+    let source = "git:github.com/acme/tool@main~1";
+    let installed = fixture
+        .run(
+            fixture
+                .manager
+                .resolve_extension_sources(&[source.into()], Some(SourceScope::Temporary)),
+        )
+        .unwrap()
+        .packages
+        .remove(0)
+        .installed_path;
+    let files = fixture
+        .run(
+            fixture
+                .manager
+                .read_candidate_files(source, &["content".into()]),
+        )
+        .unwrap();
+    assert_eq!(
+        files,
+        vec![Some(
+            std::fs::read(Path::new(&installed).join("content")).unwrap()
+        )]
+    );
+    assert_eq!(files, vec![Some(b"initial".to_vec())]);
+}
