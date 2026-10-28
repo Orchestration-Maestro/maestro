@@ -22,6 +22,11 @@ path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "border_status_editor"
+path = "../../examples/extensions/border_status_editor.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "built_in_tool_renderer"
 path = "../../examples/extensions/built_in_tool_renderer.rs"
 crate-type = ["cdylib"]

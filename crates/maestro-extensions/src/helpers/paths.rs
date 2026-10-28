@@ -19,6 +19,13 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
             &maestro_tools::path_utils::expand_path(&path).map_err(|error| error.to_string())?,
         );
     }
+    if operation == "paths.shorten_path" {
+        let (path,): (String,) = decode(data)?;
+        return encode(
+            &maestro_tools::output::render_utils::shorten_path(Some(&path))
+                .map_err(|error| error.to_string())?,
+        );
+    }
     if operation == "paths.guest_path" {
         let (path,): (String,) = decode(data)?;
         return encode(&guest_path(&path));
@@ -223,6 +230,34 @@ mod tests {
         ] {
             let data = serde_json::to_string(&(prefix,)).unwrap();
             assert!(call("paths.make_temp_dir", &data).is_err(), "{prefix:?}");
+        }
+    }
+
+    /// The host home becomes `~` only for itself and the paths below it, never for a
+    /// sibling that merely starts with the same characters.
+    #[test]
+    fn shorten_path_abbreviates_only_home_and_descendants() {
+        let test = "shorten_path_abbreviates_only_home_and_descendants";
+        let home = || {
+            std::collections::BTreeMap::from([("HOME", "/home/al"), ("USERPROFILE", "/home/al")])
+        };
+        let selected = maestro_test_process::run_per_environment(test, ["home"], |_| home());
+        if selected.unwrap().is_none() {
+            return;
+        }
+        let home = maestro_tools::path_utils::expand_path("~").unwrap();
+        for (path, expected) in [
+            (home.clone(), "~".to_owned()),
+            (format!("{home}/project"), "~/project".to_owned()),
+            (format!("{home}ice"), format!("{home}ice")),
+            ("/work".to_owned(), "/work".to_owned()),
+        ] {
+            let data = serde_json::to_string(&(&path,)).unwrap();
+            assert_eq!(
+                call("paths.shorten_path", &data),
+                Ok(serde_json::to_string(&expected).unwrap()),
+                "{path:?}"
+            );
         }
     }
 
