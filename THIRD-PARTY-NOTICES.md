@@ -773,12 +773,14 @@ same license. The workspace, tab, launch environment, notification, manifest and
 metadata command handlers in `app/api/` and `app/api_helpers.rs` derive from the
 application API modules, with typed results instead of encoded response text.
 The pane geometry with chrome, layout snapshots, pane topology handlers, pane
-mutation handlers (split, resize, swap, zoom, move and close) and pane input, rename,
-read and agent report handlers in `app/layout.rs`, `app/api/panes.rs`,
-`app/api/panes/` and `app/api/reads.rs`, and the zoom, close and move-recovery state
+mutation handlers (split, resize, swap, zoom, move and close), pane input, rename,
+read and agent report handlers, and the layout export, apply and split ratio handlers
+in `app/layout.rs`, `app/api/panes.rs`, `app/api/panes/`, `app/api/reads.rs` and
+`app/api/layouts/`, and the zoom, close and move-recovery state
 operations and report events in `app/actions/` and `events.rs`, derive from the
-application API and interface modules, with one view-area owner instead of a view field
-and one read service instead of a copy for each reader.
+application API and interface modules, with one view-area owner instead of a view field,
+one read service instead of a copy for each reader and one launch record for every new
+root process.
 The API socket server and server mode in `crates/maestro-rpc/src/daemon/`
 and the daemon request adapter in `crates/maestro-app/src/rpc_mode/daemon.rs` derive
 from the API server and headless server modules. Changes include the shared

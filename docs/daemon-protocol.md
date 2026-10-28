@@ -265,6 +265,39 @@ with `pane_not_found` and `pane <id> not found`.
   `invalid_metadata_ttl`, `invalid_state_label`, `metadata_token_limit` and
   `metadata_sequence_source_limit`.
 
+## Layout commands
+
+The daemon also answers `layout.export`, `layout.apply` and `layout.set_split_ratio`. A
+layout is a tree: a split has a `direction` (`right` or `down`), the first child's `ratio`
+and two children; a pane leaf has its `pane_id`, `label`, `cwd`, `command` (a program and
+its arguments, run without a shell) and `env`. An answer carries the workspace, the tab,
+`zoomed`, the focused pane and the tree.
+
+- `layout.export` describes the tab named by `tab_id`, the tab holding `pane_id`, or the
+  active tab when neither is named. Naming both, or a tab or pane that is gone, fails with
+  `layout_not_found` and `layout target not found`. A pane's `command` is the one it was
+  launched with, and its `cwd` is the live directory when its process runs.
+- `layout.set_split_ratio` sets the ratio of the split reached by `path`, which lists `false`
+  for the first child and `true` for the second from the root. The ratio is kept between
+  0.1 and 0.9. The answer is the tab's layout, after `layout_updated`. A ratio that is not
+  finite fails with `invalid_ratio`, and a path that reaches no split with
+  `split_not_found`; nothing is published then.
+- `layout.apply` builds `root` as a new tab, starting one process per leaf. It goes to
+  `workspace_id`, to the workspace of `tab_id`, or to the active workspace, and with
+  `tab_id` the new tab replaces that tab once it stands. Naming both fails with
+  `invalid_target`; a missing tab or workspace fails with `tab_not_found` or
+  `workspace_not_found`. The first leaf starts in its `cwd`, else in the directory the
+  configured new-terminal policy picks from the replaced tab's focused pane or the
+  workspace's focused pane; any other leaf starts in its `cwd`, else where the pane it
+  splits runs. `tab_label` names the tab; a replacing tab keeps the name of the tab it
+  replaces when none is given. The new tab becomes active with `focus`, or when it replaces
+  the active tab. A tree of more than 24 panes or 16 levels, an empty `command`, a bad
+  `env` or a ratio that is not finite fails with `invalid_layout` before anything starts.
+  A process that cannot start fails with `layout_apply_failed`, and the tab built so far
+  is removed again, leaving the replaced tab as it was. A success publishes `tab_closed`
+  for a replaced tab, `tab_created`, `pane_created` for each pane in layout order, and
+  `layout_updated`.
+
 ## Binary screen channel
 
 Binary is explicitly selected at connection creation, using `Hello`/`Welcome` on
