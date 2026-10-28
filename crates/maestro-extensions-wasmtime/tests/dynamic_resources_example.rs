@@ -13,14 +13,16 @@ fn dynamic_resources_component_returns_shared_paths() {
     let scratch = Scratch::new().unwrap();
     super::components::local(async {
         for name in ["original", "relocated # Ω"] {
-            check_installation(&scratch.path().join(name)).await;
+            check_installation(&scratch.path().join(name), "resources.wasm").await;
         }
+        #[cfg(unix)]
+        check_installation(&scratch.path().join("backslash leaf"), "dyn\\copy.wasm").await;
     });
 }
 
 /// Runs each discovery reason against the same installed instance.
-async fn check_installation(directory: &std::path::Path) {
-    let artifact = directory.join("resources.wasm");
+async fn check_installation(directory: &std::path::Path, leaf: &str) {
+    let artifact = directory.join(leaf);
     super::components::place("MAESTRO_DYNAMIC_RESOURCES_COMPONENT", &artifact);
     let bus = create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no tails")),

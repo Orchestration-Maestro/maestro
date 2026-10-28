@@ -3639,6 +3639,16 @@ fn example_index_reads_support_metadata() {
             Some("Loaded skill description"),
         ),
         (
+            "literal.md",
+            "---\ndescription: |\n  Line one\n  Line two\n---\nBody\n",
+            Some("Line one Line two"),
+        ),
+        (
+            "folded.md",
+            "---\ndescription: >\n  Folded\n  description\n---\nBody\n",
+            Some("Folded description"),
+        ),
+        (
             "dynamic.md",
             "---\ndescription: 'Prompt | description'\n---\nSummarize.\n",
             Some("Prompt \\| description"),
