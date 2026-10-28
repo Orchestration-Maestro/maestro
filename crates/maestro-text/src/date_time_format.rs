@@ -213,8 +213,10 @@ fn representative(locale: &Locale) -> io::Result<Option<&'static str>> {
             return Err(invalid());
         }
     }
+    let language_region = format!("{}-{region}", locale.id.language);
     let cycle = hours
-        .get(region.as_str())
+        .get(language_region.as_str())
+        .or_else(|| hours.get(region.as_str()))
         .or_else(|| hours.get("001"))
         .ok_or_else(invalid)?;
     Ok(Some(if *cycle == "h12" { "US" } else { "FR" }))
