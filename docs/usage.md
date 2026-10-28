@@ -267,7 +267,7 @@ scalar options keep the last value; resource paths and appended prompts accumula
 | `--help`, `-h` | Show help and loaded extension flags |
 | `--version`, `-v` | Show the build version |
 | `--verbose` | Expand startup output even with `quietStartup` |
-| `--offline` | Limit startup network work, except missing chat search-helper downloads (see [Environment](#environment)); does not block model/tool network access |
+| `--offline` | Disable startup network operations, including missing search-helper downloads; does not block model/tool network access |
 | `--system-prompt <text-or-file>` | Replace the default prompt; otherwise discover `SYSTEM.md` |
 | `--append-system-prompt <text-or-file>` | Repeatable appended text; otherwise discover `APPEND_SYSTEM.md` |
 
@@ -375,10 +375,9 @@ subject to [stored-key precedence](credentials.md) and
 
 The lower-level hosted-service operations treat any nonempty offline variable as
 offline when no caller selection is supplied. CLI startup selects its boolean
-once. Use `MAESTRO_OFFLINE=1 maestro` to prevent startup search-helper downloads.
-With that variable unset, `--offline` alone can still contact GitHub to download
-missing `fd` and `rg` helpers during interactive startup; see the
-[startup forwarding bug](https://github.com/Orchestration-Maestro/maestro/issues/2857).
+once. Both `maestro --offline` and `MAESTRO_OFFLINE=1 maestro` prevent downloads
+of missing `fd` and `rg` helpers during interactive startup. Installed helpers
+and commands already on `PATH` remain available.
 Offline mode is not a network sandbox. The empty compiled service origin prevents
 hosted requests independently of these preferences.
 
