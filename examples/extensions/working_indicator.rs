@@ -1,4 +1,5 @@
 //! A command that selects static, animated, hidden or default working indicators.
+// maestro-component: MAESTRO_WORKING_INDICATOR_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

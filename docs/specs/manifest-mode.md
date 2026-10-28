@@ -24,9 +24,9 @@ Maestro runs in one of two modes, chosen by settings.
 Manifest mode is a capability of the default-on `maestro-manifest` base package,
 a package crate in this workspace released with Maestro. The core holds no
 manifest code. It gains five generic hooks (H1 to H5, see
-[Core hooks](#core-hooks)) that any package may use, and the manifest package is
-their first user. Every manifest-mode behaviour is an owner-approved difference
-with no reference source, listed in
+[Core hooks](#core-hooks)) and one generic setting that any package may use, and
+the manifest package is their first user. Every manifest-mode behaviour is a
+difference with no reference source, listed in
 [Differences with no reference source](#differences-with-no-reference-source).
 
 The same **authored artifacts** work without a manifest. A user or a project
@@ -48,23 +48,29 @@ must not be changed locally (an approved model list, a privacy setting, mandator
 standards), while developers still personalise everything else and try new
 artifacts locally before proposing them. Urgent fixes must reach running laptops
 quickly, and a bad release must be reversible. Today each developer configures
-Maestro by hand, nothing is enforced, nothing tells a developer which configuration
-is active, and Maestro cannot explain the organization's configuration when asked.
+Maestro by hand, nothing is enforced, nothing stops an agent from running a
+destructive command or passing personal data to a provider, nothing tells a
+developer which configuration is active, and Maestro cannot explain the
+organization's configuration when asked.
 
 ## Solution
 
 Settings name one manifest release, for example
 `"manifest": "git:github.com/org/maestro-manifests@v1.4.0"`. The manifest package
-installs that release with the ordinary package installer, reads its areas and
-publishes a base settings layer and its policy through the core hooks. The session
-is built from five layers: engine defaults, the manifest, the user, the project and
-the run. The policy decides which local changes are allowed, and every governed
-change is checked before it has any effect. Teams ship capabilities: one package
-per team area, bundling roles, skills, instructions, prompt templates and
-workflows. A broken manifest makes the manifest package fail its load, which stops
-agent sessions with the exact fix. `/manifest update` moves the pin forward or back,
-a release can declare a minimum that every laptop takes at its next session start,
-and running sessions check for new releases at an interval the organization sets.
+installs that release with the ordinary package installer, reads its areas from the
+release's manifest root and publishes a base settings layer and its policy through
+the core hooks. The session is built from five layers: engine defaults, the
+manifest, the user, the project and the run. The policy decides which local changes
+are allowed, and every governed change is checked before it has any effect. Teams
+ship capabilities: one package per team area, bundling roles, skills,
+instructions, prompt templates and workflows. Guard rules in the manifest's core
+area confirm destructive commands,
+refuse writes to protected paths, replace personal data with markers and withhold
+prompt injection from the model. A broken manifest makes the manifest package fail
+its load, which stops agent sessions with the exact fix. `/manifest update` moves
+the pin forward or back, a release can declare a minimum that every laptop takes at
+its next session start, and running sessions check for new releases at an interval
+the organization sets.
 The interactive startup and `/manifest status` show which manifest is active, and
 Maestro's own documentation describes every manifest artifact, so the agent can
 answer questions about it.
@@ -111,7 +117,10 @@ answer questions about it.
 27. As a team, I want to ship skills, prompt templates, extensions, themes and workflows in the manifest, so that developers get them without installing packages.
 28. As a developer, I want to add my own skills, templates, workflows and extensions and to shadow optional manifest ones, so that I can personalise and experiment.
 29. As an administrator, I want required resources that cannot be disabled, shadowed or dropped by discovery flags, so that mandatory capabilities stay active.
-30. As an administrator, I want to forbid local extensions, skills, prompt templates, packages, workspace actions or browser contributions, so that only reviewed code and instructions run.
+30. As an administrator, I want to forbid local additions of any resource kind
+    (extensions, skills, prompt templates, themes, packages, workspace actions,
+    browser contributions, workflows, roles, instructions and MCP servers), so that
+    only reviewed code and instructions run.
 31. As a developer, I want `maestro config` to toggle optional manifest resources with the same filters I use for packages, so that I control my working set.
 32. As an administrator, I want the manifest to declare packages that every developer gets, so that shared packages need no per-developer install.
 33. As a team, I want my area to be one capability that bundles roles, skills, instructions, prompt templates and workflows, so that a developer selects it by name.
@@ -130,7 +139,12 @@ answer questions about it.
 43. As a developer resuming a session, I want a recorded model outside the policy replaced by the policy's choice with the usual fallback message, so that edited session files cannot bypass the policy.
 44. As an administrator, I want to lock or bound agent-behaviour settings (transport, steering, follow-up, compaction, branch summary, retry, skill commands, image resizing, thinking budgets), so that agent behaviour and spend are governed.
 45. As a privacy officer, I want to force image blocking and disable install telemetry, so that no environment variable or setting turns them back on.
-46. As a developer, I want presentation, keybindings, machine paths, credentials and my theme choice to stay mine, so that the manifest never governs my terminal or secrets.
+46. As an administrator, I want to lock any presentation key, one keybinding
+    action, a machine path or the session directory, whether the changelog shows
+    at start, and the credential sources allowed per provider, so that every
+    governed surface can be fixed while the manifest still never holds a secret. A
+    developer keeps each surface until it is locked, and a lock on one leaves the
+    others free.
 47. As an administrator, I want the main agent's tools limited by the manifest's role definition, so that developers can drop tools but never add tools beyond it.
 48. As an administrator, I want local extensions unable to replace a locked prompt, activate forbidden tools, register providers under a provider lock or change model and thinking outside the policy.
 
@@ -172,6 +186,18 @@ answer questions about it.
 73. As a developer, I want to raise a role's thinking or choose its model within the manifest's bounds through my settings, so that I tune roles without editing the manifest (delivered with the authored-agent consumer).
 74. As an administrator, I want the manifest to supply MCP servers that local gateway options cannot drop, with credentials kept local (delivered with the MCP base package).
 
+### Guards
+
+75. As a security reviewer, I want every guard rule to be a regular expression in a manifest file, so that I review and approve each rule by pull request.
+76. As a security reviewer, I want each rule to carry text it must match and text it must not match, checked at every load and in required CI, so that I see proof that the expression does what it says.
+77. As an administrator, I want commands that match a destructive-command rule to ask before they run and to be refused when no one can answer, so that an agent cannot delete or overwrite by accident.
+78. As an administrator, I want writes and edits to protected paths refused, so that agents never change secret files or repository internals.
+79. As a privacy officer, I want personal data replaced by a marker in tool output and prompts before the model sees them, and in agent output before it is saved or sent again, so that it never reaches a provider or a session file through Maestro.
+80. As a security reviewer, I want tool output that matches a prompt-injection rule withheld from the model with the reason, so that fetched content cannot instruct the agent.
+81. As a developer, I want guards only when a manifest is selected, so that Maestro without a manifest behaves as before.
+82. As a privacy officer, I want guarded replies to appear only once they are complete and checked, so that personal data never shows on screen or in event streams.
+83. As a privacy officer, I want every saved session cleaned when guard rules first apply and whenever they change, so that no personal data stays at rest.
+
 ## Behaviour contract
 
 ### M1 — Selection
@@ -184,7 +210,8 @@ answer questions about it.
    mode.
 3. The source must be a Git source pinned to a ref (a tag or a commit), so that every
    start can verify the release (M2.5). An npm source, a local path, an unpinned
-   source or a wrong-typed value is an invalid selection (M9).
+   source or a wrong-typed value is an invalid selection (M9). The source names the
+   whole repository and no folder in it: the manifest root is fixed (M3).
 4. The manifest package reads the selection from the raw user and project settings
    documents through the settings readers (H5), before any manifest loads. With one
    value, that value is used. With two values naming the same identity, the project
@@ -214,8 +241,9 @@ answer questions about it.
 3. A pinned Git release whose checkout is not at its ref is checked out at the ref
    (corrected defect). A pin change made by a pull request therefore takes effect at
    the next start.
-4. A release that is installed but contains no resources is valid; absence of
-   files is not a missing release.
+4. A release whose manifest root contains no resources is valid; absence of
+   files is not a missing release. A release with no manifest root is invalid
+   (M3, M9).
 5. **Integrity.** At every session start the manifest package checks that the
    release checkout is clean and at its pinned commit: the working tree matches the
    commit, with no modified, added, deleted or untracked files, and the checked-out
@@ -231,12 +259,22 @@ answer questions about it.
 
 ### M3 — Layout and reading
 
-The manifest is read as areas, found by location. Maestro reads no area
-descriptor; ownership records in a manifest repository are repository data.
+A release keeps its manifest content in one folder, `manifests/`: the **manifest
+root**. Maestro reads nothing outside the manifest root, except the catalog's
+ownership lookup in the release's `CODEOWNERS` (M16.3, M17.3), which is repository
+data and never manifest content. Documentation, schemas, catalog blueprints, CI
+files and the README are repository tooling outside the root and are never read as
+manifest content. Every other path in this specification that names manifest
+content is relative to the manifest root. One repository holds one manifest, with
+one manifest root, and the `manifest` setting stays a plain pinned Git source (M1).
 
-| Area | Location | Loaded |
+The manifest is read as areas, found by location under the manifest root. Maestro
+reads no area descriptor; ownership records in a manifest repository are
+repository data.
+
+| Area | Location under the manifest root | Loaded |
 |---|---|---|
-| Common | the release root | always, first |
+| Common | the manifest root itself | always, first |
 | Standards | `standards/<domain>/` | always, every domain, in directory-name order |
 | Core | `core/` | always |
 | Languages | `languages/<name>/` | when listed in `manifestAreas`, in list order |
@@ -253,20 +291,25 @@ Every area may contain:
 | `settings/settings.json` | A settings layer using the ordinary settings keys (M4) |
 | `settings/policy.json` | Policy (M4) |
 
+Only the common area may contain `CHANGELOG.md`, the release's changelog (M10.6,
+M11.3).
+
 Only the core area may contain `SYSTEM.md` (base system prompt), the role named
 `maestro` (the main agent's persona and tools), `llm/models.json` (model file in the
-ordinary models format) and `backends/mcp/mcp.json` (MCP servers, M13).
+ordinary models format), `backends/mcp/mcp.json` (MCP servers, M13) and
+`guards/*.yaml` (guard files, [M20](#m20--guards)).
 
 A capability is one package: its folder holds a `package.json` and its own
 resources ([M16](#m16--capabilities-and-ownership)). `<group>` and `<name>` are
 lowercase, hyphenated and at most 64 characters each.
 
 `manifestAreas` is a list of `languages/<name>` and `capabilities/<group>/<name>`
-entries. Its value resolves like any setting: the manifest's common, standards and
-core settings give the default, then user, then project. A listed area that does
-not exist, an entry with another prefix, or a `manifestAreas`, `manifest`,
-`minimumRelease` or `updateCheckMinutes` value or constraint inside a language area
-or capability makes the manifest invalid. Duplicate entries load once.
+entries, relative to the manifest root. Its value resolves like any setting: the
+manifest's common, standards and core settings give the default, then user, then
+project. A listed area that does not exist, an entry with another prefix, or a
+`manifestAreas`, `manifest`, `minimumRelease` or `updateCheckMinutes` value or
+constraint inside a language area or capability makes the manifest invalid.
+Duplicate entries load once.
 
 Settings layers combine in area order with the ordinary one-level merge. The
 manifest's settings must not set the resource path keys `extensions`, `skills`,
@@ -308,18 +351,22 @@ invalid):
 
 | Member | Class | Meaning |
 |---|---|---|
-| `locked` | L | Each entry is a settings key path (dotted for nested members) or one of the lock names `systemPrompt`, `appendSystemPrompt`, `providers`. The locked value is the manifest's settings value, or the engine default when the manifest sets none; a `manifest` lock fixes the manifest's own identity (M1). |
+| `locked` | L | Each entry is a settings key path (dotted for nested members), one of the lock names `systemPrompt`, `appendSystemPrompt`, `providers`, `workflows`, `agents`, `instructions`, `mcpServers`, or one of three paths that exist only in the base layer because their local form is not a setting: `keybindings.<action>`, `showChangelog` and `credentials.<provider>`. The locked value is the manifest's settings value, or the engine default when the manifest sets none; a `manifest` lock fixes the manifest's own identity (M1). |
 | `bounds` | B | `min` and/or `max` for numeric keys and for thinking levels (order: off < minimal < low < medium < high < xhigh). |
 | `models` | B (allowed set) | Model patterns in the `enabledModels` syntax. Every model selection must match. |
-| `required` | A | Paths relative to the release root. A resource at or under a required path is required. A required workflow also requires its references (M15). How required instructions stay present is settled with the rules system. |
+| `required` | A | Paths relative to the manifest root. A resource at or under a required path is required. A required workflow also requires its references (M15). How required instructions stay present is settled with the rules system. |
 | `roles` | L/B per role | `locked` (`model`, `thinking`, `tools`), `bounds.thinking`, `models` for one role (M12). |
 | `credentialHeaders` | Credential classification | Header names added to the default credential list (M7); additions from every selected area combine. |
 | `minimumRelease` | Release floor | The lowest release a laptop may run (M11). A release version; Git tags compare as semantic versions after an optional leading `v`. Common and core areas only. |
 | `updateCheckMinutes` | Check interval | Minutes between release checks in a running session (M11). A non-negative integer; default 30; `0` checks at session start only. Common and core areas only. |
 
-Governed keys and what the manifest may do with them:
+Every configuration surface a manifest can govern is lockable. A lock never
+loosens anything: it fixes a value or refuses local additions, and every other rule
+(bounds, allowed models, required entries, and the stored-value and
+explicit-request rules below) still applies. Governed keys and what the manifest
+may do with them:
 
-| Keys | Manifest may |
+| Keys and lock names | Manifest may |
 |---|---|
 | `defaultProvider`, `defaultModel` | lock; constrain through `models`; default |
 | `defaultThinkingLevel` | lock; bound; default |
@@ -328,7 +375,8 @@ Governed keys and what the manifest may do with them:
 | `transport`, `steeringMode`, `followUpMode`, `enableSkillCommands`, `images.autoResize` | lock; default |
 | `compaction.{enabled,reserveTokens,keepRecentTokens}`, `branchSummary.{reserveTokens,skipPrompt}`, `retry.{enabled,maxRetries,baseDelayMs}`, `retry.provider.{timeoutMs,maxRetries,maxRetryDelayMs}` | lock; bound (numeric members only); default |
 | `images.blockImages`, `enableInstallTelemetry` | lock (normally to `true` and `false`); default |
-| `packages`, `extensions`, `skills`, `prompts`, `actions`, `contributions` | lock (no local additions); require entries |
+| `holdUncheckedText` | lock; default (locked to `true` whenever a guard rule targets `agent-output` or `tool-output`, M20.7) |
+| `packages`, `extensions`, `skills`, `prompts`, `themes`, `actions`, `contributions`, `workflows`, `agents`, `instructions`, `mcpServers` | lock (no local additions); require entries |
 | `manifest`, `manifestAreas`, `manifestAutoUpdate` | lock; default (`manifestAreas`, `manifestAutoUpdate`) |
 | `multiplexer.tabBarRight` | lock; default |
 | `multiplexer.allowNested` | lock; default |
@@ -337,17 +385,50 @@ Governed keys and what the manifest may do with them:
 | `multiplexer.remote.manageSshConfig` | lock; default |
 | `update.versionCheck` | lock; default |
 | `update.channel` | lock; default |
-| `theme`, `themes`, `shellCommandPrefix` | default only |
-| every other key (presentation, keybindings, machine paths, session directory, changelog state, credentials) | nothing: user-only |
+| `shellPath`, `sessionDir`, `daemon.paneShell`, `daemon.worktreesDirectory` | lock (a location, written in the key's own path syntax; the manifest holds a value only as the lock's value) |
+| `npmCommand` | lock (the package-manager argument vector, program and arguments; the manifest holds a value only as the lock's value) |
+| `keybindings.<action>` | lock (one named action; other actions stay free) |
+| `showChangelog` | lock (whether the changelog shows at start) |
+| `credentials.<provider>` | lock (the credential sources allowed for one provider) |
+| `theme`, `themes`, `shellCommandPrefix` and every other key of the settings schema that no row names (the presentation keys) | lock; default |
 
 `actions` and `contributions` are governed once their resource kinds are collected.
-Workflows and roles have no lock on local additions: a local
-workflow runs every step through the ordinary model, tool and role policy, so it
-gains no power the user lacks.
+The kinds `workflows`, `agents`, `instructions` and `mcpServers` are lock names, not
+settings keys: their local form is a folder or a configuration file. `themes` is a
+resource-path key: a manifest sets no value for it (M3), and its lock stops local
+themes like the other kinds in its row (M6.4). Two keys take no `locked` entry: `lastChangelogVersion`, which is state
+Maestro writes, and `roles.<role>.{model,thinking}`, which the policy's `roles`
+member governs (M12). Guard rules take none either (M20).
 
-Invariants: a lock or bound on a default-only or user-only key, on an unknown key,
-or a bound on a non-numeric, non-thinking key makes the manifest invalid. The
-manifest package holds the governed-key table; the core holds none.
+Invariants: a lock on an unknown key or on a key without a lock meaning, and a bound
+on a non-numeric, non-thinking key, make the manifest invalid; so does a manifest
+value for a location or command key (`shellPath`, `npmCommand`, `sessionDir`,
+`daemon.paneShell`, `daemon.worktreesDirectory`) that `locked` does not name; a
+lock name outside the `locked` row is an unknown key. The manifest package holds
+the governed-key table; the core holds none.
+
+#### Lock meanings
+
+Each lock below applies the stored-value and explicit-request rules that follow
+this section; the columns say what they mean for that lock. A diagnostic and a
+refusal name the lock and the manifest. The first four rows extend the
+local-addition locks of M6.4 to kinds that have their own owners.
+
+| Lock | Meaning | Stored values | Explicit requests | Owner |
+|---|---|---|---|---|
+| `workflows` | Only the manifest's workflows exist. A required workflow is the by-value lock: it cannot be shadowed (M15.6). | Workflow files in the configuration root's `workflows/` and the project's `workflows/` are ignored with a diagnostic. | An option that adds a workflow file refuses the run. Running a manifest workflow is unaffected. | Workflow runner of the subagent capability |
+| `agents` | Only the manifest's roles exist. A required role is the by-value lock: it cannot be shadowed (M12.1). | Role files in the configuration root's `agents/` and the nearest project `agents/` are ignored with a diagnostic, so a workflow's `agentScope` resolves manifest roles only. | An option that adds a role file refuses the run. | Subagents package |
+| `instructions` | Only the manifest's installed copies are instruction files. A required instruction is the by-value lock: its copy stays present and refreshed (M5.3). | Instruction files in the configuration root's `instructions/` and the project's `instructions/` that the manifest package did not install are ignored with a diagnostic. Context files (`AGENTS.md`, `CLAUDE.md`) are not instruction files and still load. | An option that adds an instruction file refuses the run. `/manifest install` of the manifest's own file stays allowed. | Rules system loads; the manifest package installs and refreshes |
+| `mcpServers` | Only the manifest's servers exist. A required server is the by-value lock: it cannot be dropped (M13). | Servers defined in the user's and the project's gateway configuration are ignored with a diagnostic. | A gateway option that adds a server refuses the run. | MCP package |
+| presentation keys (`theme`, `themes`, `shellCommandPrefix` and the rest) | The key has the manifest's value, or the engine default when the manifest sets none. | A user or project value is replaced by the locked value with a diagnostic. | `/settings`, a setter or a flag that sets a different value is refused. | Settings owner (H1); frontends render |
+| `keybindings.<action>` | The binding of one named action is the manifest's (a string or a list of strings, the forms `keybindings.json` accepts), or the action's default when the manifest sets none. Other actions stay free. | The user's `keybindings.json` entry for that action is ignored with a diagnostic; every other entry applies. The file is never rewritten. | An SDK or extension call that sets that action's binding is refused. | Application's keybinding loader; frontends render |
+| `shellPath`, `sessionDir`, `daemon.paneShell`, `daemon.worktreesDirectory` | The program or folder is the manifest's value, written in the syntax the key already reads: an absolute path, and `~` or `~/` where the key accepts home-relative paths. For `sessionDir`, new session files are stored only there. | A user or project value is replaced with a diagnostic. Session files stored elsewhere stay where they are. | A flag or environment override that names a different value is refused (`--session-dir` and `MAESTRO_CODING_AGENT_SESSION_DIR` for `sessionDir`), and so is `--session <path>` naming a file outside the locked folder. A location equal to the locked one after the key's own expansion is accepted; the comparison is lexical. | Settings owner (H1); the session manager and the process launchers read the effective value; the daemon reads it through H3 |
+| `npmCommand` | The package-manager command is the manifest's argument vector: the program and every argument after it, for example `["mise", "exec", "node@20", "--", "npm"]`. The program is resolved as the key resolves it today, so it need not be an absolute path. | A user or project vector is replaced as a whole with a diagnostic; arguments are never merged or dropped. | A setter, settings edit or SDK call that sets a different vector is refused. A vector equal to the locked one, entry by entry and in order, is accepted. | Settings owner (H1); the package manager reads the effective vector |
+| `showChangelog` | The changelog entries since the last run show at interactive start (`true`, as today) or never show (`false`). `lastChangelogVersion` is state Maestro writes, not a preference, so a lock on it is invalid; this is the nearest useful lock, and the state stays Maestro's and is written as before. | The key exists only in the base layer; the user's files cannot set it. | A settings edit of the key is refused. `/changelog` still shows the full changelog on request under either value. | Settings owner (H1); the interactive start reads the effective value |
+| `credentials.<provider>` | The sources Maestro may use for one provider: any of `environment` (the provider's environment variable), `command` (a key produced by a `!` command), `signIn` (sign-in tokens) and `storedFile` (a literal key, whether stored by login, written in the model file or passed with `--api-key`). Secrets are never manifest values, so this is the nearest useful lock. A value naming a secret or another source makes the manifest invalid. | A stored record or environment variable of an excluded source is ignored with a diagnostic. The credentials file is never rewritten by a read. | Storing a key or tokens of an excluded source (a pasted key when only `signIn` is allowed), `--api-key` when `storedFile` is excluded, and an SDK or extension write of one are refused before any file changes. | Credentials owner (`AuthStorage`), asked through the decision hook (H2) |
+
+Guard rules are locked both ways without an entry: every rule comes from the
+manifest (by value), and no local guard file or setting exists to add one (M20).
 
 Combining areas, in area order: locks join, and a later area that sets a different
 value for a key an earlier area locked, or locks it with a different value, makes
@@ -375,10 +456,10 @@ Stored values and explicit requests differ:
 
 The manifest package decides governed changes through the decision hook (H2).
 Every owner asks the hook before its own effect, except package commands, which
-run before packages load (`main.ts:431–436`). Before any package effect, they use
+run before packages load. Before any package effect, they use
 the persisted base layer for the operation's scope (H1): `install` refuses when
 `packages` is locked, and `remove` refuses an identity listed in that layer's
-`packages` entries, before deleting any file (`core/package-manager.ts:991–993`).
+`packages` entries, before deleting any file.
 The package commands reuse the core's base-layer enforcement (H1); they hold no
 manifest policy logic.
 
@@ -407,10 +488,21 @@ the daemon only reads the persisted global layer, because it hosts no extensions
    digest each copy came from. At every session start a copy whose content no
    longer matches its release file is refreshed from the release and listed in the
    same restore notice (M2.5); when a newer release changes an installed file, the
-   copy is updated with it. Loading
-   instruction files, `applyTo` and always-apply rules belong to the rules system
-   ([Out of scope](#out-of-scope)); the context-file loader and `--no-context-files`
-   keep their foundation meaning here.
+   copy is updated with it.
+
+   Instructions are locked both ways. **By value:** an instruction at or under a
+   `required` path has its copy installed, in the selection's scope, whenever it is
+   missing at session start, listed in the same notice, and refreshed like any
+   installed copy; no local file, flag or setting removes it. **No local
+   additions:** an `instructions` lock stops local instruction files other than the
+   installed copies (M4). The rules system honours both: it loads every required
+   copy, even when a flag or setting turns instruction loading off, and under the
+   lock it loads only installed copies. The manifest package installs and
+   refreshes; it does not load.
+
+   Loading instruction files, `applyTo` and always-apply rules belong to the rules
+   system ([Out of scope](#out-of-scope)); the context-file loader and
+   `--no-context-files` keep their foundation meaning here.
 4. Date, cwd, skills block, tool snippets and guidelines keep their existing
    assembly.
 
@@ -418,8 +510,8 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 
 1. Each selected area root is contributed as a package-origin source with the
    selection's source string and scope (H4), so manifest resources rank below
-   project and user resources. Their base directory is the release root, so
-   filters and `maestro config` patterns are relative to the release root.
+   project and user resources. Their base directory is the manifest root, so
+   filters and `maestro config` patterns are relative to the manifest root.
 2. The selection's object filters apply with the ordinary filter semantics. A filter
    that disables a required resource is ignored with a diagnostic; `maestro config`
    refuses to write one.
@@ -428,12 +520,14 @@ the daemon only reads the persisted global layer, because it hosts no extensions
    `--no-prompt-templates`, `--no-extensions`, `--no-themes`) and SDK override
    callbacks never remove a required resource; a required resource missing after
    overrides refuses construction.
-4. A lock on `extensions`, `skills`, `prompts`, `packages`, `actions` or
-   `contributions` stops local additions of that kind: settings entries and
-   automatic user and project folders are ignored with a diagnostic, and explicit
-   flags (`-e`, `--skill`, `--prompt-template`) refuse the run. Forbidden local
-   components are excluded before they execute, because base packages load first
-   (H4).
+4. A lock on `extensions`, `skills`, `prompts`, `themes`, `packages`, `actions`,
+   `contributions`, `workflows`, `agents`, `instructions` or `mcpServers` stops
+   local additions of that kind: settings entries and automatic user and project
+   folders and files are ignored with a diagnostic, and explicit flags and options
+   that add one (`-e`, `--skill`, `--prompt-template`, `--theme`) refuse the run.
+   Forbidden local components are excluded before they execute, because base
+   packages load first (H4). The last four kinds have owners beyond the resource
+   loader; [Lock meanings](#lock-meanings) names each.
 5. The manifest's `packages` entries are required packages. They install in the
    selection's scope and are collected after the area roots at package precedence,
    in the same startup (H4). A missing required package refuses sessions. Removing
@@ -441,10 +535,18 @@ the daemon only reads the persisted global layer, because it hosts no extensions
    before any file is deleted. With no persisted layer, package commands retain
    foundation behaviour; the next session start installs a removed required
    package again. A forbidden local addition is excluded before execution (M6.4).
+   Startup installs include the transitive required-package closure through the
+   same package-manager install operation as explicit selections (M16.5), in the
+   selection's scope, with one operation and one settings write. Satisfying
+   installed packages in that scope are reused. The whole closure passes source,
+   version and cycle checks and the applicable M4/M6.4 policy before any install;
+   a missing requirement or any refusal installs nothing and refuses the session
+   with its reason. Required manifest packages remain protected from removal,
+   including combined removal (M16.5).
 6. Optional resources that fail to load are skipped with the ordinary warning. A
    required resource that fails to load refuses sessions.
 7. Themes from the manifest are offered; the manifest's `theme` value is a default
-   the user may change.
+   the user may change unless `theme` is locked.
 
 ### M7 — Models and thinking
 
@@ -462,7 +564,8 @@ the daemon only reads the persisted global layer, because it hosts no extensions
    `Proxy-Authorization`, extended by `credentialHeaders` in the manifest's policy.
    Other headers accept literal values, including `Content-Type: application/json`,
    and keep ordinary environment and command resolution. Local credentials and key
-   flags are unchanged.
+   flags are unchanged, except that a `credentials.<provider>` lock excludes the
+   sources it does not list (M4).
 3. **Selection.** Every path that selects a model passes `models`: the initial
    default, `--provider`/`--model`, `--models`, SDK options, `/model`, model
    cycling (scoped and unscoped candidates are filtered), RPC model commands,
@@ -502,7 +605,7 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 | No manifest named | Internal mode |
 | Invalid selection (not pinned, local, wrong type) | The manifest package fails its load; agent sessions refuse |
 | Release missing and not installable (offline, network, authentication) | The manifest package fails its load; agent sessions refuse |
-| Invalid manifest: malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
+| Invalid manifest: no manifest root, malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, invalid guard file, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
 | Missing required package, or a required resource that fails to load | Agent sessions refuse |
 | Optional resource that fails to load | Skipped with the ordinary warning |
 | A kind absent from the manifest | No manifest layer for that kind; engine defaults apply |
@@ -512,9 +615,10 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 A failed load uses the foundation's extension-load failure: the error is reported as
 `Failed to load extension "<path>": <message>` and the program exits with status 1
 in every mode. The message names the settings file that selects the manifest, the
-source, the problem and the fix, and no model request is made. There is no silent
-fallback to internal mode or to an earlier copy; unrepairable drift uses the last
-accepted composition with a warning (M2.5).
+source, the problem and the fix, and no model request is made. For a release with
+no manifest root the problem reads `release <ref> has no manifests/ folder`. There
+is no silent fallback to internal mode or to an earlier copy; unrepairable drift
+uses the last accepted composition with a warning (M2.5).
 
 Before failing its load at session start for a broken pinned release, the manifest
 package checks for a newer release of the same identity. If that release loads
@@ -531,8 +635,7 @@ persisted layer for their scope (H1), even when the manifest is broken; with non
 they retain foundation behaviour. A changed selection keeps the old layer until
 the next session start refreshes it. `--version`, `list`, viewing config and
 editing unlocked settings remain available. `--help` runs after runtime creation
-but before load errors are reported (`main.ts:609–620,654–658`), so a broken
-manifest does not prevent help.
+but before load errors are reported, so a broken manifest does not prevent help.
 
 Every construction of session services (start, new session, resume, fork, import,
 switching to another working directory) recomposes the manifest and refuses on
@@ -556,7 +659,8 @@ permission comparisons; a start runs on it only for unrepairable drift (M2.5).
    entry and the manifest.
 6. `/manifest status` shows the active release, the settings file that selects it,
    the newest known release, the minimum release, and the changelog entries between
-   the active and newest releases read from the candidate's `CHANGELOG.md`.
+   the active and newest releases read from the `CHANGELOG.md` in the candidate's
+   manifest root.
 7. RPC and JSON output gain no fields.
 
 ### M11 — Updates
@@ -571,13 +675,13 @@ permission comparisons; a start runs on it only for unrepairable drift (M2.5).
    `MAESTRO_OFFLINE`; offline keeps the current pin with a warning. A newer release
    shows a notice in that session; a required one says that it applies at the next
    start and that `/manifest update` applies it now.
-3. **Inspection.** A check lists the source's releases and reads the newest
-   candidate's common `settings/policy.json`, core `core/settings/policy.json` and
-   `CHANGELOG.md` through the package operations (H5) in the temporary package
-   scope, without the install step. The two policy files are optional; their
-   `minimumRelease` values combine in area order under M4 (the higher floor wins)
-   before the check decides whether the release is required. Inspection runs no
-   lifecycle script, build step or component.
+3. **Inspection.** A check lists the source's releases and reads, from the newest
+   candidate's manifest root, the common `settings/policy.json`, the core
+   `core/settings/policy.json` and `CHANGELOG.md` through the package operations
+   (H5) in the temporary package scope, without the install step. The two policy
+   files are optional; their `minimumRelease` values combine in area order under M4
+   (the higher floor wins) before the check decides whether the release is
+   required. Inspection runs no lifecycle script, build step or component.
 4. **Required releases.** When the newest release's `minimumRelease` is above the
    active pin, the release is required. At the next session start it applies
    without asking unless it grows permissions; then the user is asked, and declining
@@ -616,7 +720,8 @@ permission comparisons; a start runs on it only for unrepairable drift (M2.5).
 1. Roles are discovered by the subagents package from the user's `agents/` folder,
    the nearest project `agents/` folder and the selected manifest areas. User and
    project roles shadow optional manifest roles by name; required roles cannot be
-   shadowed. Project roles keep the reference's confirmation before they run.
+   shadowed. Under an `agents` lock the user's and the project's role files are
+   ignored (M4). Project roles keep the reference's confirmation before they run.
 2. A role's `model`, `thinking` and `tools` come from its frontmatter, constrained by
    `roles.<role>` in the policy. `tools` is always narrow-only.
 3. The user setting `roles.<role>.model` and `roles.<role>.thinking` override a
@@ -628,20 +733,30 @@ permission comparisons; a start runs on it only for unrepairable drift (M2.5).
 ### M13 — MCP servers (delivered with the MCP base package)
 
 The core `backends/mcp/mcp.json`, in the MCP package's own configuration format, is
-the gateway's lowest configuration source. Local servers and their credentials stay
-local. Exclusive or explicit gateway configuration options cannot drop a required
-manifest server.
+the gateway's lowest configuration source. The MCP package honours two locks.
+
+- **By value.** A required manifest server cannot be dropped: no exclusive or
+  explicit gateway configuration option removes it, and it wins a name collision
+  with a local server as any required resource does (M6.3).
+- **No local additions.** An `mcpServers` lock stops local server definitions (M4):
+  the servers the user and the project configure for the gateway are ignored with a
+  diagnostic, and an explicit gateway option that adds one refuses the run.
+
+Credentials for the manifest's servers stay local; a manifest never holds a secret
+(M7.2).
 
 ### M14 — Authored artifacts
 
 Each artifact kind has one format. `U` is the configuration root
 (`~/.maestro/agent` by default), `Pj` is the project's `.maestro` folder and `A` is a
-selected manifest area.
+selected manifest area. Every path in the Manifest column is relative to the
+manifest root (M3).
 
 | Artifact kind | Format | Local | Manifest | Read by |
 |---|---|---|---|---|
 | Settings | ordinary settings JSON | `U/settings.json`, `Pj/settings.json` | `A/settings/settings.json` | settings owner |
 | Policy | `policy.json` (M4) | none | `A/settings/policy.json` | manifest package |
+| Guards | `maestro.guards/v1` YAML (M20) | none | `core/guards/*.yaml` | manifest package |
 | System prompt | Markdown | `U/SYSTEM.md`, `Pj/SYSTEM.md` | `core/SYSTEM.md` | resource loader |
 | Appended prompt | Markdown | `U/APPEND_SYSTEM.md`, `Pj/APPEND_SYSTEM.md` | body of `core/agents/maestro.md` | resource loader |
 | Instructions | Markdown with `applyTo` frontmatter | `U/instructions/`, `Pj/instructions/` (installed copies) | `A/instructions/*.instructions.md` | rules system; installed by the manifest package |
@@ -654,9 +769,11 @@ selected manifest area.
 | Theme | theme JSON | `U/themes/`, `Pj/themes/` | `A/themes/` | resource loader |
 | Models | `models.json` | `U/models.json` | `core/llm/models.json` | model registry |
 
-Credentials, keybindings, sessions, caches, sockets and other runtime state stay
-local and have no manifest form. A file moves between a local folder and a manifest
-area without edits. Shadowing replaces a whole definition by name; there is no
+Sessions, caches, sockets and other runtime state stay local and have no manifest
+form. Keybindings, machine paths and the session directory have a manifest form
+only as the value of a lock (M4). Credentials have none: a credential lock names
+sources, never secrets. A file moves between a local folder and a manifest area
+without edits. Shadowing replaces a whole definition by name; there is no
 field-wise merge of roles or workflows.
 
 ### M15 — Workflows
@@ -706,33 +823,42 @@ chain:
 6. **Discovery and precedence.** Workflows come from the selected manifest areas
    in area order, then the user's `workflows/`, then the project's `workflows/`. A
    later definition with the same name replaces an earlier one, except that a
-   required manifest workflow cannot be shadowed. Project workflows that name project roles keep the
-   reference's confirmation before project roles run.
+   required manifest workflow cannot be shadowed. Under a `workflows` lock only the
+   manifest areas contribute and the local files are ignored with a diagnostic
+   (M4). Project workflows that name project roles keep the reference's
+   confirmation before project roles run.
 7. **Required workflows.** A required workflow's roles, prompt files and other
-   referenced files resolve only from its own release; local definitions with the
-   same names do not apply to it.
+   referenced files resolve only from its own release's manifest root; local
+   definitions with the same names do not apply to it.
 8. **Running.** The runner lets a user run, list and show workflows with their
    sources, and lets the agent check a workflow file, so a user can ask Maestro to
    write, check and run one. Chains and parallel tasks use the subagent tool's own
-   loop: `{previous}` passing, the parallel limits and stop-on-failure.
+   loop: `{previous}` passing, the parallel limits and stop-on-failure. Every step
+   runs through the ordinary model, tool and role policy, so a workflow gains no
+   power its runner lacks.
 9. **Defaults.** The manifest provides the reference's three chains as workflow
    files in its core area, with the reference's roles: `implement-and-review`
    (worker, reviewer, worker), `implement` (scout, planner, worker) and
-   `scout-and-plan` (scout, planner). No package bundles workflow files.
+   `scout-and-plan` (scout, planner). No base package bundles these default workflows.
 10. YAML is parsed by Maestro's existing YAML parser; the runner adds no YAML
     library.
 
 ### M16 — Capabilities and ownership
 
 1. A capability is one package inside a manifest release, at
-   `capabilities/<group>/<name>/`, with its own `package.json` and resources. It is
-   selected by `capabilities/<group>/<name>` in `manifestAreas`.
+   `capabilities/<group>/<name>/` in the manifest root, with its own `package.json`
+   and resources. It is selected by `capabilities/<group>/<name>` in
+   `manifestAreas`.
 2. The group and name follow the organization's own structure. An organization
    whose source-hosting teams are grouped by area may use that grouping as
    `<group>` and the team as `<name>`.
-3. Ownership is repository data. The release's `.github/CODEOWNERS` gives each group
-   folder, each capability folder and every other path its owning team. Sessions
-   never read it; the catalog does (M17).
+3. Ownership is repository data that already lives in `CODEOWNERS`. A copy under
+   the manifest root would be a second copy of the same data, and GitHub honours
+   `CODEOWNERS` only in `.github/`, the repository root or `docs/`, so the file
+   stays outside the manifest root. The release's `.github/CODEOWNERS` gives each
+   group folder, each capability folder and every other path its owning team.
+   Sessions never read it; only the catalog's ownership lookup does (M17.3), the
+   one read outside the manifest root (M3).
 4. A capability that needs its own release cycle is published as its own package
    and listed in the manifest's `packages` with a pin. Capabilities inside the
    release share the release's version.
@@ -742,25 +868,72 @@ chain:
    by the owning package and applied with the package owner's filter semantics
    through a host-backed call (H5).
 
+   A package requirement uses that same source grammar, including pins. The
+   existing package-manager install operation resolves the transitive closure for
+   the chosen entry in its selected scope, installs each missing package once and
+   persists the selection with one settings write. Already installed packages in
+   that scope satisfying a requirement are reused; another scope does not satisfy
+   it. CLI install, SDK calls, catalog selection (M17.4) and startup required
+   installs (M6.5) use this one operation, not a second resolver.
+
+   Before installing anything or writing settings, the operation checks the whole
+   closure. A missing requirement refuses with the missing source and its
+   requirer. A cycle refuses with the cycle's packages in order, ending at its
+   starting package. Requirements on one package that no single version satisfies
+   refuse with both requirers and their requirements. An incompatible installed
+   version refuses with the installed package and version and the conflicting
+   requirer and requirement; it is never silently replaced. Every addition must
+   pass M4/M6.4 policy, using H1's persisted layer for early commands; a refusal
+   names the lock or other constraint, including a `packages` lock or a source
+   outside the allowed set. Each such refusal states its reason and installs
+   nothing, leaving settings unchanged.
+
+   The existing remove operation refuses to remove a package required by another
+   installed package in the same scope. It names every dependent, transitively,
+   and offers one explicit step to remove the package and all those dependents
+   together. Only that explicit request performs the combined removal through the
+   same operation and one settings write; it first checks policy for every package
+   to be removed. Required manifest packages cannot be removed this way. A refusal
+   deletes nothing and leaves settings unchanged. CLI and SDK removal use the
+   same operation. CLI, SDK and catalog listings use the existing scoped package
+   listing and report actual installed state without installing packages. The
+   daemon retains H3's global-only policy view and gains no package resolver;
+   any package operation exposed through it uses these same operations and the
+   applicable persisted global layer.
+
 ### M17 — Catalog data (delivered with the catalog)
 
 1. **Blueprints.** The manifest package declares one catalog blueprint per artifact
    kind, as data: manifest release, capability group, capability, policy, role,
    workflow, instruction, alongside the existing package, skill and prompt kinds.
-   A blueprint lists the entry's properties (name, description, source area,
-   release, required, locked, modified locally) and its relations.
+   A blueprint lists the entry's properties (name, description, source area as its
+   path under the manifest root, release, required, locked, modified locally) and
+   its relations.
 2. **Relations.** A release requires packages and contains areas; a capability
    group contains capabilities; a capability provides skills, prompts, roles,
    instructions and workflows; a workflow uses roles and prompts; a policy locks,
-   bounds or requires entries; every entry is owned by a team.
+   bounds or requires entries; every entry is owned by a team. A package requires
+   packages through the same `requires` relation as a release, not a new schema.
+   A skill or workflow inherits its package's requirements.
 3. **Ownership.** Every entry's owning team comes from the release's `CODEOWNERS`,
-   applied the way the source host applies it: the last matching pattern wins.
-   An entry with no matching pattern shows as unowned.
+   applied the way the source host applies it to the entry's path in the
+   repository (the manifest root's folder, then the entry's path under it): the
+   last matching pattern wins. An entry with no matching pattern shows as unowned.
+   This is the catalog's only read outside the manifest root (M3).
 4. **Views.** Each entry gets a card with its properties, owner and relations; the
    catalog draws the dependency graph from the relations, so a team sees what its
-   capability provides and what depends on it.
+   capability provides and what depends on it. Choosing an entry adds its
+   transitive required packages through M16.5 in the selection's scope. Before
+   installation the catalog lists every package to be added and which entry
+   requires it, including transitive requirers, and asks for one confirmation for
+   the whole selection. Packages already satisfying requirements are shown as
+   reused, not additions. Cancellation changes nothing. After installation it
+   reports what was installed; an installation failure reports the real partial
+   state rather than claiming success or rolling back. A preflight refusal shows
+   its reason and installs nothing.
 5. Locked entries are read-only in the catalog, and edits go through their owners.
-   The catalog reads the installed release when a page opens and keeps no copy.
+   When a page opens, the catalog reads the installed release's manifest root and
+   the ownership file (item 3); it keeps no copy.
 
 ### M18 — Documentation
 
@@ -774,30 +947,209 @@ chain:
    the `manifest` skill also names the active release's `docs/` folder. The
    system prompt's documentation list is unchanged.
 3. Each manifest release documents itself: a `README.md` and one page per artifact
-   kind under `docs/`.
+   kind under `docs/`. These sit outside the manifest root and are never read as
+   manifest content; the `manifest` skill only points the agent at them.
 
 ### M19 — Schemas and checks
 
 1. **One schema per artifact kind.** The manifest package publishes a JSON Schema
-   for `settings/policy.json`, the workflow file, role and instruction frontmatter
-   and a capability's `package.json`. The schemas are generated from the same Rust
-   types the package uses to read those files, so the published rules and the
-   loading rules cannot drift. Generation uses `schemars` and validation uses
-   `jsonschema`, both already pinned in the workspace. YAML and frontmatter are
-   converted to their JSON value before validation.
-2. **In the manifest repository.** The generated schemas live under `schemas/`. A
-   pre-commit hook validates every artifact against them, so a malformed file
-   cannot be committed. A required pull-request check runs the same validation,
-   fails when the committed schemas differ from freshly generated ones, and loads
-   the release with Maestro (`maestro -p "/manifest status"` on the pull request's
-   commit), so a malformed or broken release cannot merge.
+   for `settings/policy.json`, the workflow file, the guard file, role and
+   instruction frontmatter and a capability's `package.json`. The schemas are
+   generated from the same Rust types the package uses to read those files, so the
+   published rules and the loading rules cannot drift. Generation uses `schemars`
+   and validation uses `jsonschema`, both already pinned in the workspace. YAML and
+   frontmatter are converted to their JSON value before validation.
+2. **In the manifest repository.** The generated schemas live under `schemas/`,
+   outside the manifest root. A pre-commit hook validates every artifact in the
+   manifest root against them, so a malformed file cannot be committed. A required
+   pull-request check runs the same validation, fails when the committed schemas
+   differ from freshly generated ones, and loads the release with Maestro
+   (`maestro -p "/manifest status"` on the pull request's commit), so a malformed or
+   broken release cannot merge.
 3. **Tests.** Every schema has fixtures that must pass and fixtures that must fail,
    covering each member, each wrong JSON kind and each unknown member.
 
+### M20 — Guards
+
+Guards check commands, paths and text against rules kept in the manifest's core
+area, and block, confirm, redact or warn. Security reviewers approve every rule by
+pull request, and each rule carries the examples that prove what it matches. Guards
+run only in manifest mode, in every session that loads the manifest package. There
+is no local guard file and no setting that adds, removes or disables a rule; rules
+change only with the manifest. Guards are therefore locked both ways without a lock
+entry: by value, because every rule comes from the manifest, and against local
+additions, because nothing local can add one. `guards` is not a lock name.
+
+1. **Files.** Each `core/guards/<family>.yaml` file in the manifest root has two
+   members: `apiVersion` (`maestro.guards/v1`) and `rules`, a non-empty list.
+   `<family>` is lowercase and hyphenated, at most 64 characters, and names the
+   rule family, for example
+   `destructive-commands`, `protected-paths`, `pii` or `prompt-injection`. The
+   manifest package reads files in file-name order and rules in list order.
+
+   ```yaml
+   apiVersion: maestro.guards/v1
+   rules:
+     - id: canada-sin
+       description: Canadian social insurance number
+       regex: '\b\d{3}[- ]?\d{3}[- ]?\d{3}\b'
+       action: redact
+       appliesTo: [tool-output, agent-output, prompt]
+       examples:
+         match: ['SIN 046-454-286']
+         noMatch: ['order 12345']
+   ```
+
+2. **Rules.** Every member is required.
+
+   | Member | Meaning |
+   |---|---|
+   | `id` | Lowercase and hyphenated, at most 64 characters, unique across all guard files |
+   | `description` | One line, shown in every refusal, confirmation and warning the rule causes |
+   | `regex` | A regular expression in the syntax of the workspace's `regex` crate. Matching takes linear time in the text's length. Inline flags such as `(?i)` and `(?m)` set case and line behaviour; look-around and back-references do not exist in this syntax |
+   | `action` | `block`, `confirm`, `redact` or `warn` (item 4) |
+   | `appliesTo` | A non-empty list of targets (item 3) |
+   | `examples` | `match`, a non-empty list of strings the expression must match, and `noMatch`, a non-empty list of strings it must not match |
+
+   An unknown or missing member, a duplicate `id`, an expression that does not
+   compile, an action that does not allow one of the rule's targets, or an example
+   that does not behave as listed makes the manifest invalid (M9). The manifest
+   package checks the examples every time it loads the manifest, so the
+   pull-request check that loads the release (M19.2) checks them too.
+
+3. **Targets.** Guards never check images.
+
+   | Target | Text checked | Checked |
+   |---|---|---|
+   | `command` | The `command` argument of the `bash` tool, and the user's `!` and `!!` shell commands | Before the command runs |
+   | `path` | The `path` argument of the `write` and `edit` tools, as given | Before the tool runs |
+   | `tool-output` | Each text block of a tool result, every string in its details, such as an edit's diff, and the output of the user's `!` and `!!` commands | Before the completed result or output reaches the model, the screen or the session file; partial results and output are withheld (item 7) |
+   | `agent-output` | Each text and thinking block of an assistant message | When the message ends, before it is shown, saved or sent again (item 7) |
+   | `prompt` | Each text block of a user message from every route: typed prompts, steering and follow-up messages, SDK and RPC prompts, after prompt-template and skill expansion | When the message ends, before it is saved or sent |
+
+   The guard checks the output of the user's shell commands through the existing
+   user-shell hook: it supplies the command's execution through the host's local
+   shell operation and returns the checked output. An earlier extension that
+   handles a user shell command itself takes it outside the guard (item 6).
+
+   Every agent request to the provider is checked again with the same
+   `tool-output`, `agent-output` and `prompt` rules through the existing context
+   hook. The check covers every message the request carries, including summaries,
+   the output of the user's shell commands and sessions saved before the manifest
+   was selected.
+
+   Compaction and branch summaries go through the existing session-before-compact
+   and session-before-tree hooks, through which an extension supplies the summary.
+   When any rule targets `tool-output`, `agent-output` or `prompt`, the guard
+   supplies it: it checks the messages to summarize with their targets' rules and
+   any previous summary with `agent-output` rules, and checks custom instructions
+   from `/compact` or branch summarization with `prompt` rules. It generates the
+   summary from the checked text with the compaction-generation host operation,
+   checks the result with `agent-output` rules and returns it. This covers manual
+   and automatic compaction, split-turn summaries and branch summaries. Because
+   guards run last (item 6), the guard's summary replaces a summary an earlier
+   extension supplied.
+   If generation or checking fails, the guard reports the guard name and cause
+   through the existing extension error path, using the same warning channel as
+   other extension failures, and returns `cancel: true` instead of throwing. The
+   cancellation result gains no reason field; manual compaction keeps its existing
+   `Compaction cancelled` text. No unchecked fallback summary is generated, saved
+   or shown.
+
+4. **Actions.** Each rule names its own action. The manifest's files set the usual
+   choices: `confirm` for destructive commands, `block` for protected paths,
+   `redact` for personal data and `block` for prompt injection.
+   - **`block`.** A `command` or `path` match refuses the tool call with
+     `Blocked by guard <id>: <description>`, and the interactive mode shows the same
+     text as a warning. A user shell command that matches does not run; its output
+     is that text. A `tool-output` match replaces the result's text with
+     `Tool output withheld by guard <id>: <description>`, replaces its details with
+     null and marks the result as an error, so the model learns why. A user shell
+     command's output that matches is replaced by
+     `Output withheld by guard <id>: <description>`. An `agent-output` match
+     replaces the message's text and thinking with
+     `Response withheld by guard <id>: <description>`. A `prompt` match replaces the
+     message's text with `Prompt withheld by guard <id>: <description>`, and the
+     interactive mode shows the same text as a warning.
+   - **`confirm`** (`command` and `path` only). The interactive mode shows the
+     description with the command or path, and offers `Yes` and `No`. `No` refuses
+     as `block` does, with the reason `Blocked by user`. Print mode, JSON mode and
+     RPC without a user interface refuse as `block` does.
+   - **`redact`** (`tool-output`, `agent-output` and `prompt` only). Each match
+     becomes `[<FAMILY>:<id>]`, where `<FAMILY>` is the file's family in capitals,
+     for example `[PII:canada-sin]`, in text and thinking blocks, in user shell
+     output and in every string in a tool result's details. A thinking block that
+     changes drops its provider signature and is replayed as plain unsigned text
+     through the existing conversation projection.
+   - **`warn`.** The operation goes ahead unchanged, and a warning names the rule.
+5. **Several matching rules.** Every rule for a target matches against the
+   original text. A matching `block` rule wins, then a matching `confirm` rule; the
+   first such rule in file and list order names the refusal or the question. When
+   neither matches, collect all `redact` match ranges from the original text and
+   merge overlapping ranges, including transitively overlapping ones. Replace
+   each merged range once with the marker of the first contributing rule in file
+   and list order; disjoint ranges keep their own markers. Replacement text is
+   never matched again. The warnings of matching `warn` rules are shown unless
+   the operation is refused.
+6. **Other extensions.** The manifest package is the lowest package source in the
+   extension list (H4), so its guard hooks run after every other extension's hooks
+   for the same event. Guards therefore check the final command, path, result and
+   message that Maestro acts on, including changes other extensions made. Other
+   extensions see each value before the guards do, and an extension that handles
+   an operation itself, for example by supplying a user shell command's result,
+   takes that operation outside the guards. Extensions keep full user permissions
+   (M8.5); guards check what the agent and the user send through Maestro.
+7. **Saved sessions and streams.** Session files keep what the guards return:
+   redacted text, withheld results and withheld responses. When any rule targets
+   `agent-output` or `tool-output`, the manifest package sets `holdUncheckedText`
+   to `true` in its base layer and locks it (H1). While the setting is `true`, the
+   session sends no unchecked assistant text in any listener payload: text deltas,
+   message-start payloads (including a completed reply when no start event
+   arrived), message snapshots and nested model-event snapshots are all covered.
+   Each reply's text reaches the interactive view, JSON and RPC event streams and
+   SDK listeners only when its message ends, after the guards have checked it.
+   Thinking text is held the same way and arrives with its message. Tool-call and
+   tool status events still stream, with assistant text and thinking omitted from
+   their accompanying snapshots. Partial tool-result content and details are
+   withheld from progress events, and so is the output of a running user shell
+   command; listeners receive the completed result or output only after the guards
+   have checked it. Emitted snapshots do not share unchecked
+   mutable text or details with listeners. `/settings` shows the setting as locked,
+   like any locked value.
+   With the setting `false`, the default, streaming is unchanged.
+8. **Saved sessions.** At each session start under rules that target
+   `tool-output`, `agent-output` or `prompt`, the manifest package checks saved
+   session files in the background with the same rules as live text. It checks
+   every file at the first guarded start and whenever those rules change;
+   otherwise it checks only new files or files whose bytes changed since their
+   last check. It rewrites each file that changes through the session owner's
+   single conditional rewrite, which replaces the file atomically.
+   Every session append and rewrite waits for the same stable sidecar file's
+   exclusive lock through the lock component's waiting acquisition, using
+   `std::fs::File::lock` (dependency authorization: [#2906](https://github.com/Orchestration-Maestro/maestro/issues/2906)).
+   Settings keep their bounded acquisition. The operating system releases the
+   lock when its holder exits; no separate stale-lock recovery is needed. Each
+   holder keeps the lock for one write only. Ordinary writers hold it only while
+   opening, writing and closing the file. If a
+   writer runs on an async executor thread, it waits where the existing
+   synchronous session write already runs, without a new blocking pool. The
+   conditional rewrite holds the lock across one file's final re-read, hash
+   comparison and atomic replacement. The package reads and checks a file before requesting
+   the rewrite; if the hash of those bytes differs from the locked re-read, it
+   reads and checks again. This hash check covers the window from the first read
+   to taking the lock. An append attempted after the final comparison waits until
+   replacement finishes, then appends to the published file. The sweep record in
+   the configuration root's state, next to the persisted base layers, keeps the
+   digest of the rules last applied and, for each session file, the hash of its
+   bytes after it was last checked. An unchanged rule digest skips only files
+   whose bytes still match their recorded hash; a changed digest checks all files.
+   The original text is not kept.
+
 ## Core hooks
 
-The core gains five generic hooks. None reads a manifest, knows the manifest's
-governed-key table, or combines areas; the manifest package does that.
+The core gains five generic hooks and one generic setting, `holdUncheckedText`
+(M20.7). None reads a manifest, knows the manifest's governed-key table, or
+combines areas; the manifest package does that.
 
 | Hook | Owner | Behaviour | Without a publisher |
 |---|---|---|---|
@@ -805,7 +1157,7 @@ governed-key table, or combines areas; the manifest package does that.
 | H2 Decision hook | `maestro-settings`, `maestro-app` operations and resource collection | One registered decider is asked before the first effect of governed operations (M4), when stored values resolve, and during resource collection for local additions, required collisions and required entries. Early package commands use H1's persisted layer instead. A refusal carries the message to show. | No decider; foundation order |
 | H3 Daemon view | `maestro-daemon` configuration read | The workspace daemon reads the persisted global base layer plus the user settings with locks applied, never project settings. | Today's raw user read |
 | H4 Load-time contributions | `maestro-app` resource loader | Base packages load before every other extension and keep their ordinary place in the extension list. During their load a base package may contribute package sources, base prompt inputs (base system prompt, base append text) and model files ranked before the user's. The context-file loader is unchanged. Contributed package sources install and load in the same startup. Only one package may publish H1 and H2. | Foundation single pass |
-| H5 Host operations | `maestro-app` host operations | Extends the planned settings-reader and package-root facades: read raw user and project settings, list resolved packages with identity, scope and installed path, acquire a pinned source, list a source's releases, verify a release checkout is clean and at its pinned commit and restore it when it is not, read files from a candidate in the temporary scope, write a value through the settings owner, apply package filter semantics, and parse a YAML document with the existing parser. | Unused |
+| H5 Host operations | `maestro-app` host operations | Extends the planned settings-reader and package-root facades: read raw user and project settings, list resolved packages with identity, scope and installed path, acquire a pinned source, list a source's releases, verify a release checkout is clean and at its pinned commit and restore it when it is not, read files from a candidate in the temporary scope, write a value through the settings owner, apply package filter semantics, parse a YAML document with the existing parser, list saved sessions, and rewrite a saved session's entries through the session owner. | Unused |
 
 ### Persisted base layers
 
@@ -828,37 +1180,76 @@ packages install again (M6.5, H4).
 Base packages load before other extensions (H4). Base packages are Maestro
 additions. They keep their ordinary place in the extension list as the lowest
 package source, and the list keeps the reference's order: command-line extensions
-first, then project, user and package resources by precedence
-(`core/resource-loader.ts:395-399`, `core/package-manager.ts:162-177,2314`). The
-order of every other extension is therefore unchanged, and conflicts resolve from
-that list as in the reference: the first registration wins for tools and flags
-(`core/extensions/runner.ts:374-383,397-406`), the later one for shortcuts
-(`runner.ts:449-455`), and duplicate commands get numbered names in list order
-(`runner.ts:520-545`). A base package resolves conflicts exactly as any other
-package does.
+first, then project, user and package resources by precedence. The order of
+every other extension is therefore unchanged, and conflicts resolve from that list
+as in the reference: the first registration wins for tools and flags, the later
+one for shortcuts, and duplicate commands get numbered names in list order. A base
+package resolves conflicts exactly as any other package does.
+
+Two corrections of reference defects, the pinned Git checkout and the atomic
+session rewrite, also apply in internal mode; see
+[Corrected reference defects](#corrected-reference-defects).
+
+Without a manifest, `holdUncheckedText` may still be set explicitly: its default
+changes nothing, and enabling it only withholds text until checked.
+
+Package requirement resolution and dependent-aware removal (M16.5) apply in both
+modes. Without a manifest, the same package-manager operations resolve transitive
+requirements, reuse satisfying installed packages, refuse missing requirements,
+cycles and version conflicts before effects, and require explicit combined
+removal of installed dependents. Package commands still enforce any persisted
+policy layer (H1), without reading a manifest or requiring a selection.
 
 ## Implementation decisions
 
-- **Placement.** The core holds only H1 to H5. This workspace gains one default-on
-  base package, a package crate released with Maestro like the other base packages
-  ([packages](packages.md#base-packages)): `maestro-manifest` (selection,
-  acquisition, area reading, prompt composition, instruction installation, policy
-  decoding and combination, decisions, `/manifest`, release checks, catalog
-  kinds). No core crate depends on it. Workflow files run on the runner of Maestro's subagent
-  capability; roles stay with `maestro-subagents`; MCP servers stay with
-  `maestro-mcp`. Authored content, including instructions and the default
-  workflows, lives in manifests, not in packages.
+- **Placement.** The core holds only H1 to H5 and the `holdUncheckedText` setting.
+  This workspace gains one default-on base package, a package crate released with
+  Maestro like the other base packages ([packages](packages.md#base-packages)):
+  `maestro-manifest` (selection, acquisition, area reading, prompt composition,
+  instruction installation, policy decoding and combination, decisions, guards,
+  `/manifest`, release checks, catalog kinds). No core crate depends on it.
+  Workflow files run on the runner of Maestro's subagent capability; roles stay
+  with `maestro-subagents`; MCP servers stay with `maestro-mcp`. Authored content,
+  including instructions and the default workflows, lives in manifests, not in
+  packages.
 - **Packages talk through existing routes.** The manifest package shares its
   selected area roots and required paths with the subagent capability (roles and
   workflow runner) over the extension event bus. No package copies another's
   parsing, matching or paths.
 - **Validation is loading.** The manifest package validates while it loads; a broken
   manifest fails the load. There is no separate checker command or binary.
+- **Guards.** Matching is one pure module in the manifest package: rules and text
+  in, a decision out, with no I/O and no hook types. A thin layer registers the
+  existing tool-call, user-shell, tool-result, message-end and context hooks and
+  applies the decision. Summaries go through the existing session-before-compact
+  and session-before-tree hooks: the guard supplies each summary, generated from
+  checked text with the compaction-generation host operation, so the context and
+  message-end hooks keep their existing coverage. User shell output is checked
+  through the user-shell hook's supplied local shell operation. Saved sessions are
+  cleaned with two host operations over the session owner's existing listing and
+  its single conditional rewrite. Every append and rewrite caller uses the same
+  session-owned file exclusion (M20.8). Expressions compile with the
+  workspace's existing `regex` crate. `holdUncheckedText` is read in exactly one
+  place, the agent session's listener emission boundary for every event that
+  carries assistant text or partial tool-result content or details, not only
+  message updates. That boundary withholds partial results rather than checking
+  progress snapshots with guard rules. The interactive view, JSON
+  and RPC modes and SDK listeners all read that emission, so none withholds text
+  itself. No other package matches guard rules; a package that reacts to guarded
+  work builds on the manifest package's behaviour instead of matching again.
 - **Settings base layer.** Every rebuild (construction, reload, overrides, edits)
   applies the base layer, then the ordinary one-level user and project merge, then
-  locked paths, then stored-value decisions. There is no new settings scope and no
-  change to raw scopes or the write queue. Decisions run outside the queue and
-  storage locks.
+  locked paths, then stored-value decisions, then locked paths again. One settings-owned
+  composition function owns this order. There is no new settings scope or change to raw scopes or the write queue. Decisions run
+  outside the queue and storage locks.
+- **Locks beyond settings values.** The three base-layer-only paths
+  (`keybindings.<action>`, `showChangelog`, `credentials.<provider>`) use the same
+  base layer. The manifest package shares the lock names that concern another
+  package (`workflows`, `agents`, `instructions`, `mcpServers`) over the same event
+  bus that shares the area roots, and each owner ignores and refuses locally. The
+  application operations that set a binding, store a credential or choose a session
+  folder ask the decision hook (H2) like every other governed operation; frontends
+  render and check nothing.
 - **Packages.** The package owner gains release listing for one source and the
   corrected Git pin check. Source parsing stays single.
 - **Catalog.** The model registry accepts an ordered list of model files; the
@@ -881,6 +1272,13 @@ package does.
 - Use synthetic current-format manifest fixtures checked into the tests, with
   every policy class, area kind, workflow form and failure case. No private or
   captured organization configuration is a fixture.
+- Manifest root: a fixture release that also holds files beside the root
+  (documentation, schemas, a README and a decoy `core/` folder with a `SYSTEM.md`,
+  a policy and a guard file) loads only the root's content: the decoys change no
+  resource, prompt, policy or guard. A release with no manifest root fails the
+  load, so agent sessions refuse, with the message M9 gives. Release inspection
+  and `/manifest status` read `CHANGELOG.md` from the root, and the ownership file
+  is the catalog's only read outside it.
 - Every refused request asserts that memory, pending edits, files, session
   history and emitted events are unchanged, not only the error text.
 - Package commands: a persisted `packages` lock refuses install, and required
@@ -892,6 +1290,82 @@ package does.
   the old layer until start replaces it; clearing the selection removes it.
   Project layers stay in configuration-root state, keyed by project root; global
   and project checks never use each other's layer.
+- Package requirements: exercise the existing install operation through CLI,
+  SDK, catalog selection and startup required installs (M6.5), in user and project
+  scopes. Exercise CLI and SDK installation, reuse, preflight refusals and
+  dependent-aware removal both with and without a manifest; package-command
+  policy refusals use the persisted layer. A transitive chain installs all required
+  packages; a diamond installs its shared requirement once. Each selection is one
+  operation and one settings write. A satisfying installed version in the selected scope is reused without
+  reinstalling; an installation in another scope does not satisfy it. Catalog
+  preview names every addition and its requirer, confirms once and reports the
+  installed result; cancellation changes nothing. Listings report actual scoped
+  state without effects; daemon-routed operations keep H3's global policy view.
+  A missing requirement names its source and requirer; a cycle names its ordered
+  loop; incompatible requirements name both requirers; an incompatible installed
+  version names that version and the conflicting requirer and is not replaced.
+  A `packages` lock and a forbidden source each name the refusing constraint.
+  Every preflight refusal installs nothing and leaves settings and files
+  unchanged, including at startup, where it refuses session construction.
+  Removal of a required package names every direct and transitive installed
+  dependent and changes nothing. Its offered explicit combined-removal step
+  removes exactly that package and its dependents in that scope with one settings
+  write, leaving unrelated packages alone. A required manifest package or lock
+  blocking any member refuses the entire combined removal before deletion.
+- Workflow lock: with `workflows` locked, a workflow file in the configuration
+  root and one in the project are ignored with a diagnostic and do not list, show
+  or run, an option that adds one refuses the run with nothing changed, and a
+  required workflow still wins a name collision; unlocked, both load.
+- Role lock: with `agents` locked, role files in the configuration root and the
+  project are ignored with a diagnostic, a workflow's `agentScope: both` resolves
+  manifest roles only, and an option that adds a role file refuses the run;
+  unlocked, they load.
+- Instruction lock: with `instructions` locked, a local instruction file that is
+  not an installed copy is ignored with a diagnostic, an option that adds one
+  refuses the run, installed copies and a context file still load, and
+  `/manifest install` of the manifest's own file succeeds. A required instruction
+  whose copy was deleted or edited is installed or refreshed at the next start and
+  listed in the restore notice, even with instruction loading turned off.
+- MCP lock: with `mcpServers` locked, servers in the user's and the project's
+  gateway configuration are ignored with a diagnostic and a gateway option that
+  adds one refuses the run; with it unlocked they load, and an exclusive gateway
+  option never drops a required manifest server in either case.
+- Guards come only from the manifest: a `guards` entry in `locked` makes the
+  manifest invalid, and no settings key, environment variable or local file adds,
+  removes or disables a rule.
+- Presentation locks: with `theme`, `shellCommandPrefix` and one other
+  presentation key locked, a stored user value is replaced by the manifest's with
+  a diagnostic and the file is unchanged, `/settings` and a setter refuse a
+  different value before any change. Unlocked keys of the same kind stay free.
+- Theme resource lock: with `themes` locked, local theme folders are ignored with
+  a diagnostic and `--theme` refuses the run. No manifest `themes` value is set;
+  unlocked, local themes load.
+- Keybinding lock: with one action locked, the user's `keybindings.json` entry for
+  it is ignored with a diagnostic while the entry for another action applies, an
+  SDK or extension rebind of the locked action is refused with no change, and the
+  file is not rewritten.
+- Machine-path lock: with `shellPath` locked, a stored user value is replaced with
+  a diagnostic, a flag naming a different program is refused, and one naming the
+  locked value is accepted. With `npmCommand` locked to
+  `["mise", "exec", "node@20", "--", "npm"]`, a stored vector is replaced as
+  a whole with a diagnostic, a setter that changes or drops one argument is
+  refused, and the identical vector is accepted. A manifest value for either key
+  that `locked` does not name makes the manifest invalid.
+- Session-directory lock: with `sessionDir` locked to `~/org-sessions`, a stored
+  value is replaced with a diagnostic, new sessions are created only there,
+  `--session-dir`, `MAESTRO_CODING_AGENT_SESSION_DIR` and `--session <path>`
+  naming another location are refused, and the same location spelled with
+  the expanded home folder is accepted; existing session files are not moved.
+- Changelog lock: with `showChangelog` locked to `false`, an unseen release shows
+  no changelog at start while `lastChangelogVersion` is written as before and
+  `/changelog` still shows the full text; locked to `true`, the unseen entries
+  show; a settings edit of the key is refused, and a lock on
+  `lastChangelogVersion` makes the manifest invalid.
+- Credential lock: with `signIn` the only source allowed for a provider, a stored
+  key and the provider's environment variable are ignored with a diagnostic, a
+  pasted key at login and `--api-key` are refused before any file changes, sign-in
+  still works, and the credentials file stays byte-identical. A value naming a
+  secret or an unknown source makes the manifest invalid.
 - Broken-release repair: a clean newer release of the same identity applies at
   start; permission growth asks, and refusal or a headless run with growth stops
   with the fix. Compare against the last accepted composition; without one, list
@@ -907,6 +1381,66 @@ package does.
   names), and accept environment or command references in credential positions.
 - Workflow runs use the reference's faux provider for agent steps; command steps run
   real programs in a temporary folder.
+- Guards: the matching module is tested with rules and text only, for every action,
+  target and precedence case. Overlapping redactions use a name rule matching
+  `Alice Jones` followed by an address rule matching `Alice Jones, [^\n]+` on
+  `Alice Jones, 10 Main St`: the result is `[PII:name]`, with no address left.
+  Reverse the rule order and expect `[PII:address]`; disjoint matches keep their
+  own markers. Each target is then tested through the real host
+  with a fixture manifest: a confirmed and a refused destructive command, a
+  headless refusal, a refused user shell command, a refused protected-path write,
+  a redacted tool result and assistant message as saved in the session file, an
+  edit result whose diff carries personal data, a withheld injected tool result,
+  and a typed prompt, a steering message, a follow-up message and an expanded
+  prompt template, each redacted in the session file and in the faux provider's
+  request. An earlier extension that edits a tool call's arguments has the edited
+  arguments checked. A failing example, an expression that does not compile, a
+  duplicate id, an empty `noMatch` list and `confirm` on a text target each fail the
+  load. With `holdUncheckedText` set to `true`, no unchecked assistant text,
+  thinking, partial tool output (content or details) or running user shell output
+  reaches the interactive, JSON, RPC or SDK listeners in any payload: test text and
+  thinking deltas, a terminal-only response whose message start carries the
+  completed reply, and tool-call updates whose snapshots also contain text.
+  Tool-call and tool status events still arrive; message end delivers only the
+  checked text and thinking, and the completed tool result contains only checked
+  content and details. Include a partial tool result with `SIN 046-454-286` in both
+  its text and details.
+  With `false`, the events are byte-identical to today's.
+- Summary guards: resume a session saved before manifest selection with personal
+  data in user, assistant and tool messages and in a previous summary. Manual and
+  automatic compaction, including split-turn summaries, and branch summaries send
+  only checked text to the faux provider. A summary response that matches a rule
+  is checked before the guard returns it, and the guard's summary replaces one an
+  earlier extension supplied. `/compact SIN 046-454-286` and branch-summary
+  instructions containing the same text are checked with prompt rules before
+  reaching the provider. A guard generation failure (including a provider timeout)
+  or check failure reports the guard name and cause through the existing extension
+  error warning channel and returns `cancel: true`, without throwing or adding a
+  reason field; no unchecked fallback is generated, saved or emitted. Test warning
+  delivery on both summary routes without a UI, and verify that manual compaction
+  retains its existing `Compaction cancelled` text.
+  The summary path itself leaves existing entries unchanged; item 8 cleans them.
+- Thinking, shell output and saved sessions: a thinking block with personal data
+  is held until its message ends, saved redacted and replayed as unsigned text to
+  the faux provider. A user shell command's output is held while it runs, saved
+  redacted and withheld on a `block` match; an earlier extension that handles the
+  command itself is not checked. A sweep rewrites every saved session that holds
+  matching text and leaves clean files byte-identical. With the same rule digest,
+  it skips files whose bytes match their recorded hashes but checks new or changed
+  files; a rule change checks all files again. Run with guards, save a session
+  without a manifest, then select the same rules again: that file is cleaned.
+  The sweep reads and checks again when another process appends during the check.
+  Attempt an append from another
+  process after the final hash comparison but before replacement: it waits for
+  publication, then its entry survives in the rewritten file. Hold a writer's
+  lock through a slow synchronization beyond the bounded acquisition's entire
+  retry window: an append waits for at most one concurrent write, finishes
+  afterwards and leaves its entry intact. Exercise every append and rewrite caller
+  under the same exclusion.
+  A terminated lock holder does not prevent a later writer from acquiring the
+  lock. A plain single-process append shows no visible delay: measure once with
+  and without the coordination and record the numbers in the implementation pull
+  request. A crash between writing and replacing leaves the previous file whole.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -915,8 +1449,10 @@ package does.
 - Schemas: generated schemas equal the committed ones, and every fixture passes or
   fails as marked.
 - Internal-mode equality is tested: with no selection, resources, prompt, model,
-  tools, settings writes and JSON/RPC output equal the foundation behaviour, and no
-  manifest path is read.
+  tools, settings writes and JSON/RPC output equal the foundation behaviour except
+  for the three [internal-mode changes](#internal-mode-changes): base-package
+  loading, explicitly enabled `holdUncheckedText`, and package requirement
+  resolution with dependent-aware removal (M16.5). No manifest path is read.
 - Prior art: settings behaviour and reload tests, configured-source and pinned
   package checks, resource-loader precedence cases, catalog composition and
   provider lifecycle tests, startup listing and selector tests, extension host
@@ -924,16 +1460,17 @@ package does.
 
 ## Differences with no reference source
 
-Each item is an owner-approved difference.
+Each item is a deliberate difference from the reference.
 
 1. The `manifest` setting, its self-lock and the user-first reading of a locked
    selection.
 2. The manifest layer between engine defaults and user settings, and the areas and
-   their order, including capabilities.
+   their order, including capabilities, all under one manifest root.
 3. The `manifestAreas` setting.
 4. `settings/policy.json`: locks, bounds, the model allowed set, required entries,
    role constraints, credential headers, the minimum release and the check
-   interval, and the lock names `systemPrompt`, `appendSystemPrompt` and `providers`.
+   interval, and the lock names `systemPrompt`, `appendSystemPrompt`, `providers`,
+   `workflows`, `agents`, `instructions` and `mcpServers`.
 5. Stored-value resolution and refusal of explicit requests before their effects.
 6. Refusing agent sessions on a broken manifest.
 7. The `[Manifest]` startup section, `/manifest status` and the lock markers in
@@ -950,8 +1487,27 @@ Each item is an owner-approved difference.
 15. Git-only manifest sources and the release integrity repair at every start.
 16. Generated JSON Schemas for artifact kinds and their pre-commit and pull-request
     checks.
+17. Guards (M20): rule files in the manifest, the `maestro.guards/v1` format,
+    redaction, and the personal-data and prompt-injection families. Confirming
+    destructive commands and refusing protected paths follow the reference's
+    example extensions, with their patterns taken from the manifest instead of the
+    code. Checking thinking and user shell output, and cleaning saved sessions
+    when guard rules apply or change. The `holdUncheckedText` setting, which
+    withholds assistant text, thinking, partial tool-result content and details,
+    and running user shell output until they have been checked, while status
+    events still flow.
+18. Package-to-package `requires` resolution through the existing install
+    operation, transitive selection, cycle and version refusals, and explicit
+    combined removal of dependents (M6.5, M16.5, M17.2, M17.4).
+19. A lock on every governed configuration surface: each presentation key, one
+    keybinding action, each machine path and the session directory, whether the
+    changelog shows at start, and the credential sources allowed per provider
+    (`keybindings.<action>`, `showChangelog` and `credentials.<provider>` exist
+    only in the base layer), and the local-addition locks for workflows, roles,
+    instructions and MCP servers. A lock fixes a value or refuses local additions
+    and never loosens another rule.
 
-## Corrected reference defect
+## Corrected reference defects
 
 A pinned Git source whose checkout is not at its ref is never checked out at the
 ref: installation returns early because the checkout folder exists, and the Git
@@ -959,6 +1515,12 @@ installation path excludes the ref. A pin change in settings therefore keeps the
 old files, while a pinned npm source is reinstalled on a version mismatch. The
 package owner checks a pinned Git checkout against its ref and checks out the ref
 when they differ. This also corrects internal mode.
+
+A session file rewrite wrote the file in place, so a crash during the write left
+a partial session file. Session writers also ran without file-write exclusion,
+so a rewrite could lose a concurrent append. The session owner's single rewrite
+now replaces the file atomically, and every append and rewrite coordinates
+through the same file-write exclusion. This also corrects internal mode.
 
 ## Runtime mechanics not copied
 
@@ -984,10 +1546,12 @@ owners keep their ordering and accepted-write semantics.
 - Bounded `loop` workflow steps and nested workflows, until a later delivery
   registers them.
 - The rules system that loads instruction files (always-apply rules, a listed
-  rulebook read on demand, `applyTo` and stream rules) and how required manifest
-  instructions stay present. It is specified separately; this specification only
-  supplies and installs the files.
+  rulebook read on demand, `applyTo` and stream rules). It is specified separately;
+  this specification supplies, installs and refreshes the files and states the
+  locks the rules system honours (M5.3).
 - New RPC or JSON fields.
+- Guards without a manifest, local guard files and settings that change guards;
+  and detection other than regular expressions.
 - Manifest mode in the browser application.
 
 ## Glossary
@@ -1002,8 +1566,12 @@ Add to `CONTEXT.md`:
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
 - **Manifest package:** The default-on base package that selects, installs, reads
   and enforces a manifest through the core hooks.
-- **Manifest area:** One folder of a manifest (common, standard, core, language or
-  capability) whose content enters the manifest layer in a fixed order.
+- **Manifest root:** The one folder of a release, `manifests/`, that holds all of
+  its manifest content. Maestro reads manifest content only from it; documentation,
+  schemas and CI stay outside.
+- **Manifest area:** The manifest root itself (the common area) or one folder under
+  it (standard, core, language or capability) whose content enters the manifest
+  layer in a fixed order.
 - **Capability:** A manifest area that is one package bundling a team's roles,
   skills, instructions, prompt templates and workflows, selected by name.
 - **Capability group:** The folder that groups capabilities, usually after the
@@ -1015,14 +1583,24 @@ Add to `CONTEXT.md`:
   locally and in a manifest.
 - **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
   file.
+- **Guard:** A manifest rule that blocks, confirms, redacts or warns on a command, a
+  path or text, from a `maestro.guards/v1` file in the manifest's core area.
+- **Guard family:** The set of guard rules in one guard file, named by the file,
+  such as personal data or destructive commands.
 - **Base layer:** A read-only settings document with locked keys, published by a
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties
   and the relations its entries have.
+- **Requires:** The catalog relation from a release or package to a package it
+  needs. Skills and workflows inherit their package's requirements; selecting an
+  entry installs the transitive required-package closure in its scope.
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
-- **Lock:** A policy entry fixing a value that local layers cannot change.
+- **Lock:** A policy entry that fixes a value or refuses local additions of a
+  resource kind. A lock never loosens another rule.
+- **Lock name:** A `locked` entry that names something other than a settings key:
+  the prompts, the providers or a resource kind that has no settings key.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.

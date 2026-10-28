@@ -234,3 +234,12 @@ pub(super) fn identity<'a>(source: &'a str, base: &str) -> io::Result<Identity<'
         Source::Npm { name, .. } => Identity::Npm(name),
     })
 }
+
+/// Projects the same kind-specific identity used by precedence selection.
+pub(super) fn identity_text(source: &str, base: &str) -> io::Result<String> {
+    Ok(match identity(source, base)? {
+        Identity::Npm(name) => format!("npm:{name}"),
+        Identity::Git(host, path) => format!("git:{host}/{path}"),
+        Identity::Local(path) => format!("local:{path}"),
+    })
+}

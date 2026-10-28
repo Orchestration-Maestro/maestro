@@ -30,8 +30,9 @@ and publishes them as the toolkit's registry. The footer metadata watches the
 session's working directory. Last, the themes the session's resource loader has
 loaded are registered and the configured `theme` is selected, so a loaded theme
 wins over a shipped one with the same name. The setting is read after the loader
-answers. A failure to read the bindings, build the footer's collator or load the
-fallback theme is returned. The constructed mode installs its rebinding and its
+answers. An unreadable or malformed bindings file is skipped and the default
+bindings apply; a failure to find the agent directory, build the footer's collator
+or load the fallback theme is returned. The constructed mode installs its rebinding and its
 [extension UI reset](extension-ui.md#session-replacement) on the runtime, both
 holding the mode weakly.
 
@@ -429,7 +430,8 @@ The agent's events drive the working row and the transcript:
 - an agent start forgets the registered tool calls, shows terminal progress when
   `terminal.showTerminalProgress` is set, and replaces the working row in the status
   rows, unless an extension hid it: the indicator in the accent colour beside the
-  muted working message, painted by the theme in effect when it is drawn;
+  muted working message, painted by the theme in effect when the row last updated
+  its frame or message;
 - a message start adds a custom or user message to the transcript, the user one
   also rebuilding the pending rows; an assistant message starts one streaming row
   that keeps the message it shows; a tool result adds nothing;
@@ -452,11 +454,13 @@ The agent's events drive the working row and the transcript:
   row's renderer as the tool returned them, with a missing value kept apart from
   null;
 - an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
-  stops the working row and empties the status rows, removes an unfinished
+  stops the working row and empties the status rows when a working row is shown,
+  removes an unfinished
   streaming row and forgets the registered calls; completed rows stay. A requested
   shutdown then runs through the graceful owner; otherwise the mode requests a frame.
 
-Rows change in place, so each frame rewrites only from its first changed row.
+Rows change in place, so an incremental frame rewrites only from its first changed
+row. A resize can force a full redraw instead.
 
 Extensions control the working row and the thinking label through the extension UI
 host:
@@ -581,7 +585,9 @@ The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
 session's next thinking level. It shows `Thinking level: <level>` as a status line
 and refreshes the footer and editor border; when the model cannot reason it shows
 `Current model does not support thinking` and changes nothing else. A recording
-failure goes to the terminal runtime's error route.
+failure goes to the terminal runtime's error route. `/thinking` opens the level
+picker and `/thinking <level>` sets a level directly; see
+[the thinking level command](commands.md#thinking-level).
 
 The model cycle keys (`app.model.cycleForward` and `app.model.cycleBackward`,
 Ctrl+P and Shift+Ctrl+P by default) select the next or previous scoped model, or

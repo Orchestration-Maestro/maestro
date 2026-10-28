@@ -12,8 +12,23 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "auto_commit_on_exit"
+path = "../../examples/extensions/auto_commit_on_exit.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "bash_spawn_hook"
+path = "../../examples/extensions/bash_spawn_hook.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "bookmark"
 path = "../../examples/extensions/bookmark.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "built_in_tool_renderer"
+path = "../../examples/extensions/built_in_tool_renderer.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -22,7 +37,32 @@ path = "../../examples/extensions/commands.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "confirm_destructive"
+path = "../../examples/extensions/confirm_destructive.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "context_bridge"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "custom_compaction"
+path = "../../examples/extensions/custom_compaction.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "custom_footer"
+path = "../../examples/extensions/custom_footer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "custom_header"
+path = "../../examples/extensions/custom_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "dirty_repo_guard"
+path = "../../examples/extensions/dirty_repo_guard.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -38,6 +78,21 @@ crate-type = ["cdylib"]
 [[example]]
 name = "file_trigger"
 path = "../../examples/extensions/file_trigger.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "git_checkpoint"
+path = "../../examples/extensions/git_checkpoint.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "github_issue_autocomplete"
+path = "../../examples/extensions/github_issue_autocomplete.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "handoff"
+path = "../../examples/extensions/handoff.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -59,7 +114,32 @@ name = "hook_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "input_transform"
+path = "../../examples/extensions/input_transform.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "local_shell_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "mac_system_theme"
+path = "../../examples/extensions/mac_system_theme.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "message_renderer"
+path = "../../examples/extensions/message_renderer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "minimal_mode"
+path = "../../examples/extensions/minimal_mode.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "model_status"
+path = "../../examples/extensions/model_status.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -76,6 +156,11 @@ path = "../../examples/extensions/notify.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "overlay_test"
+path = "../../examples/extensions/overlay_test.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "permission_gate"
 path = "../../examples/extensions/permission_gate.rs"
 crate-type = ["cdylib"]
@@ -86,6 +171,11 @@ path = "../../examples/extensions/pirate.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "preset"
+path = "../../examples/extensions/preset.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "prompt_customizer"
 path = "../../examples/extensions/prompt_customizer.rs"
 crate-type = ["cdylib"]
@@ -93,6 +183,21 @@ crate-type = ["cdylib"]
 [[example]]
 name = "protected_paths"
 path = "../../examples/extensions/protected_paths.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "qna"
+path = "../../examples/extensions/qna.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "question"
+path = "../../examples/extensions/question.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "questionnaire"
+path = "../../examples/extensions/questionnaire.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -129,8 +234,18 @@ path = "../../examples/extensions/snake.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "space_invaders"
+path = "../../examples/extensions/space_invaders.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "summarize"
+path = "../../examples/extensions/summarize.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -139,8 +254,23 @@ path = "../../examples/extensions/system_prompt_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "tic_tac_toe"
+path = "../../examples/extensions/tic_tac_toe.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "timed_confirm"
+path = "../../examples/extensions/timed_confirm.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "titlebar_spinner"
 path = "../../examples/extensions/titlebar_spinner.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "todo"
+path = "../../examples/extensions/todo.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -156,6 +286,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "trigger_compact"
 path = "../../examples/extensions/trigger_compact.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "truncated_tool"
+path = "../../examples/extensions/truncated_tool.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -194,7 +329,9 @@ serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+num-traits.workspace = true
 regex.workspace = true
+ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-models = { path = "../maestro-models" }

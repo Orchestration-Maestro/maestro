@@ -74,7 +74,7 @@ enum Step {
         /// How many steps to skip.
         steps: usize,
     },
-    /// Returns the event's system prompt followed by this text.
+    /// Appends text to the event's prompt, input or tool-result content.
     Suffix(String),
 }
 
@@ -92,6 +92,8 @@ enum Observation {
     ContextPrompt,
     /// The prompt, images and prompt options of an agent start.
     Agent,
+    /// The input text, images and source.
+    Input,
     /// The tool call's path argument.
     ToolPath,
     /// Whether the event's signal is aborted.
@@ -293,6 +295,7 @@ fn observe(
             "images": encoded(&start.images)?,
             "options": encoded(&start.system_prompt_options)?,
         })),
+        (Observation::Input, ExtensionEvent::Input(input)) => encoded(input),
         (Observation::ToolPath, ExtensionEvent::ToolCall(call)) => {
             Ok(call.input.decode::<Value>().map_err(|e| e.to_string())?["path"].clone())
         }
@@ -365,15 +368,23 @@ fn skipping(event: &ExtensionEvent, prompt: &str, steps: usize) -> usize {
     }
 }
 
-/// The agent start's system prompt followed by `suffix`, returned as its result.
+/// Appends `suffix` to the prompt, input text or tool-result content and returns it.
 fn suffixed(event: &ExtensionEvent, suffix: &str) -> ExtensionResult<ExtensionEventResult> {
-    let ExtensionEvent::BeforeAgentStart(start) = event else {
-        return Err("only an agent start has a system prompt".into());
+    let value = match event {
+        ExtensionEvent::BeforeAgentStart(start) => {
+            json!({ "systemPrompt": format!("{}{suffix}", start.system_prompt) })
+        }
+        ExtensionEvent::Input(input) => {
+            json!({ "action": "transform", "text": format!("{}{suffix}", input.text) })
+        }
+        ExtensionEvent::ToolResult(tool) => {
+            let mut content = tool.content.clone();
+            content.push(decoded(json!({ "type": "text", "text": suffix }))?);
+            json!({ "content": content })
+        }
+        _ => return Err("event has no text to extend".into()),
     };
-    let prompt = format!("{}{suffix}", start.system_prompt);
-    Ok(ExtensionEventResult::BeforeAgentStart(decoded(
-        json!({ "systemPrompt": prompt }),
-    )?))
+    result(event, value)
 }
 
 /// The event's own message, payload or messages, returned as its result.

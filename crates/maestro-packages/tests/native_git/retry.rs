@@ -85,9 +85,9 @@ impl RetryFixture {
         let remote = self.repo.remote.to_string_lossy().into_owned();
         let hook = self.effects.run_hook.borrow().clone().unwrap();
         *self.effects.run_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
-            if args.first().is_some_and(|arg| arg == "clone") {
+            if let Some(index) = args.iter().position(|arg| arg == "clone") {
                 let mut local = args.to_vec();
-                local[1].clone_from(&remote);
+                local[index + 1].clone_from(&remote);
                 return hook(command, &local, cwd);
             }
             hook(command, args, cwd)
@@ -128,13 +128,18 @@ async fn execute(
         }
         return Ok(Some(0));
     }
-    if *fail.borrow() == "selection-recovery" && call.args[0] == "symbolic-ref" {
+    let operation = if call.args[0] == "-c" {
+        &call.args[2]
+    } else {
+        &call.args[0]
+    };
+    if *fail.borrow() == "selection-recovery" && operation == "symbolic-ref" {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             "selection restoration rejected",
         ));
     }
-    if fail.borrow().as_str() == call.args[0] {
+    if fail.borrow().as_str() == operation {
         fail.borrow_mut().clear();
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
@@ -144,7 +149,7 @@ async fn execute(
     let result = native
         .run_command(&call.command, &call.args, call.cwd.as_deref())
         .await?;
-    if *fail.borrow() == "after-checkout" && call.args[0] == "checkout" {
+    if *fail.borrow() == "after-checkout" && operation == "checkout" {
         fail.borrow_mut().clear();
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
@@ -214,12 +219,26 @@ fn configure_layout(repo: &Repository, layout: &str) {
 }
 
 /// Forwards captured commands through the native transport.
-fn configure_capture(effects: &Effects, native: Rc<NativePackageOperations>) {
+fn configure_capture(effects: &Rc<Effects>, native: Rc<NativePackageOperations>) {
     let capture = native;
+    let observed = Rc::downgrade(effects);
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
         let (command, args, cwd) = (command.to_owned(), args.to_vec(), cwd.map(str::to_owned));
         let native = capture.clone();
+        let env = observed
+            .upgrade()
+            .unwrap()
+            .operands
+            .borrow()
+            .last()
+            .unwrap()
+            .2
+            .clone();
         Box::pin(async move {
+            let env: Vec<_> = env
+                .iter()
+                .map(|(key, value)| (key.as_str(), value.as_str()))
+                .collect();
             native
                 .run_command_capture(
                     &command,
@@ -227,7 +246,7 @@ fn configure_capture(effects: &Effects, native: Rc<NativePackageOperations>) {
                     maestro_packages::CommandCaptureOptions {
                         cwd: cwd.as_deref(),
                         timeout: None,
-                        env: &[],
+                        env: &env,
                     },
                 )
                 .await

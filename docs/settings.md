@@ -4,7 +4,7 @@
 [settings guide](sessions/settings.md) explains them by topic; this page is the
 single authority for defaults. A
 `SettingsManager` loads both scopes through a replaceable raw-text storage,
-answers typed reads from memory, publishes every edit immediately and persists
+answers typed reads from memory, publishes admitted edits immediately and persists
 edits through one ordered queue. Every public item lives in the `settings_manager`
 module and is re-exported at the crate root.
 
@@ -28,6 +28,19 @@ let mut settings = SettingsManager::in_memory(Settings::default());
 settings.set_theme("light".into());
 assert_eq!(settings.get_theme().as_deref(), Some("light"));
 ```
+
+## Contents
+
+1. [Reading](#reading)
+2. [Host decisions](#host-decisions)
+3. [Writing](#writing)
+4. [Storage](#storage)
+5. [Saved text](#saved-text)
+6. [Stored-format conversions](#stored-format-conversions)
+7. [Preferences](#preferences)
+8. [Example](#example)
+9. [Workspace preference records](#workspace-preference-records)
+10. [Nested preference edits](#nested-preference-edits)
 
 ## Reading
 
@@ -77,12 +90,118 @@ key that holds an object in both scopes merges one level deep. Arrays, scalars a
 ```
 
 `apply_overrides` merges runtime preferences onto the effective settings the same
-way. Overrides are never saved. Any setter, and `reload`, rebuilds the effective
-settings and discards them.
+way. Overrides are never saved. Any accepted setter, and `reload`, rebuilds the
+effective settings and discards them.
+
+### Read-only base layer
+
+A publisher can supply a `BaseSettingsLayer`: a settings document, dotted locked
+paths, a source release and its recorded time. `publish_base_layer(scope, layer)`
+replaces that scope's layer; `None` clears it. `get_base_layer` borrows the current
+layer. A project layer takes precedence over a global layer.
+
+Effective settings merge the base, global and project documents in that order,
+using the same one-level merge. Locked paths then take the base value; an absent
+base leaf uses the getter's engine default. Raw scope snapshots, pending edits
+and saved preferences never include the base. Stored conflicts produce diagnostics
+through `drain_errors`, without rewriting either preference file. Reload retains
+the accepted layer and keeps the ordinary failed-scope rules.
+
+Setters and runtime overrides refuse a locked path before changing memory,
+pending edits or the write queue. A batch with one locked member is refused as a
+whole, including an edit that replaces or removes a locked leaf's parent. Refusal
+records one diagnostic naming the path, source release, recorded time and how to
+refresh it. Setter signatures are unchanged. `is_key_path_locked(field, keys)`
+lets a caller check a literal path before its own effects; it also detects locks
+on ancestors and descendants, but not siblings.
+
+Publication uses the existing write queue; `flush` waits for its persistence and
+`drain_errors` reports failures. A fresh manager reads persisted layers without a
+publisher. The native adapter stores the global record in
+`<agent_dir>/base-settings.json` and project records in
+`<agent_dir>/state/base-settings.json`, keyed by the lexically normalized absolute
+project root. Project state never enters the project folder. Clearing a record
+leaves an empty slot in the state file. Without a persisted or published layer,
+no additional file is opened or created.
+
+`SettingsStorage::read_base_layer` and `write_base_layer` are the persistence seam.
+Their defaults retain no record, so existing custom adapters remain valid. The
+in-memory adapter retains both scope records; the native adapter reuses its
+existing file transaction and sidecar lock. This owner does not read a manifest,
+validate policy or decide which settings may be governed.
+
+## Host decisions
+
+A host that needs to constrain preferences can register one `SettingsDecider`
+with `SettingsManager::register_decider`. The publisher owns its constraints;
+the settings manager owns registration, admission and persistence. This is a
+host interface, not a guest component registration. Runtime model and thinking
+changes use it through the application, including their RPC and extension
+setters. Without a decider, operations keep their ordinary behaviour; read-only
+base locks still apply.
+
+### Registration and refusal
+
+1. Implement `SettingsDecider::decide` and register the handle before applying
+   runtime overrides. Native handles use `Arc` and require `Send + Sync`; a
+   browser host uses `Rc`. Registration rebuilds the current effective view.
+2. Return `Ok(())` to admit a `DecisionRequest`, or `Err(message)` to refuse it.
+   Callbacks run synchronously, outside the persistence queue and storage locks.
+3. Read refusal from a fallible operation's result. Settings setters keep their
+   void signatures and put the message in `drain_errors` instead.
+
+A second registration returns `A settings decider is already registered` and
+retains the first publisher. There is no chain of deciders.
+
+| Request | Data offered to the decider |
+| --- | --- |
+| `SettingsEdit` | Scope and every literal path with its requested value, or absence for removal |
+| `RuntimeOverrides` | Runtime settings before the one-level merge |
+| `Model` | Provider, model ID and requested thinking before capability clamping |
+| `ThinkingLevel` | Requested thinking before capability clamping |
+
+A refused edit changes no accepted scope, runtime override, pending edit or
+saved file. Runtime model and thinking refusal also leaves active state,
+history and change notifications untouched. Admission does not add rollback:
+an I/O failure after admission keeps the owner's ordinary failure behaviour.
+
+### Stored values
+
+`SettingsDecider::resolve` receives only the mutable effective view and returns
+diagnostic messages. The manager calls it after base values, scope merging and
+locks, and when applying an admitted runtime override. It restores locked values
+again after the callback, so resolution cannot weaken a lock. The callback may
+change the view but never receives the raw scopes or persistence queue. Its messages
+use the existing settings error channel. Reads and resolution never rewrite
+stored conflicting values.
+
+The [decision tests](../crates/maestro-settings/tests/settings_decisions.rs)
+show a refusing publisher and a stored-value resolver through the public
+manager. They also check duplicate registration and stored-value preservation.
+
+### Preflighted application writes
+
+An owner whose operation has effects before its settings save calls
+`prepare_operation`. It supplies the request, scope and all derived settings
+paths before the first effect. The settings owner asks the decider and checks
+base locks, then returns a `PreparedSettingsEdit` without publishing or queuing
+anything.
+
+Keep the token with that operation and consume it with `apply_prepared_edit` at
+the original save position. `split_at` separates admitted edits when an operation
+has more than one save position; apply those parts in their original order. Use
+the preparing manager, before another explicit operation. Dropping a token saves
+nothing. Applying it does not ask the decider again.
+
+Model selection admits requested thinking before the model capability clamp.
+A locked thinking default remains unchanged while the active level can clamp
+lower. The model change skips only the derived write to that locked key; its
+other effects keep their order. Without that lock, derived thinking-default
+saves keep their ordinary behaviour.
 
 ## Writing
 
-Every setter publishes the new value to memory before it returns, then queues one
+An admitted setter publishes the new value to memory before it returns, then queues one
 save of its scope; a scope whose load failed is never saved (see Failures). The
 queue is shared by both scopes and runs saves in order on a background thread (the
 browser runs the same saves on its task queue), so no runtime is needed to start a
@@ -265,6 +384,15 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `steeringMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `followUpMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `transport` | string | `auto` | `sse`, `websocket`, `websocket-cached` or `auto`; any other text, including empty, is kept |
+| `holdUncheckedText` | boolean | `false` | Withhold assistant text, thinking and partial tool output from session listeners until they are checked |
+
+`holdUncheckedText` only withholds, and at its default it changes nothing. While it is
+`true`, the session tells its listeners (the interactive view, the JSON and RPC modes and
+SDK subscribers) nothing of a response's text or thinking until the message ends, and
+nothing of a tool's partial content or details until the tool result is complete.
+Tool-call and status events still arrive. A snapshot that carries a tool call keeps its
+text and thinking blocks in place, emptied. The message end delivers the message as the
+extensions left it, and extension hooks see every event as before.
 
 ### Terminal and images
 
@@ -511,9 +639,10 @@ are commented out so the host/build default still applies. The guide uses JSONC;
 
 ## Nested preference edits
 
-`SettingsManager::set_global_key_path` addresses a literal top-level field and
-nested keys. Pass `Some(value)` to set the leaf, including JSON null, or `None`
-to remove it. An empty key slice addresses the field itself. New values publish
+`SettingsManager::set_key_path(scope, field, keys, value)` edits a literal
+top-level field and nested keys in `SettingsScope::Global` or
+`SettingsScope::Project`. `set_global_key_path` is the global-only shorthand.
+Pass `Some(value)` to set the leaf, including JSON null, or `None` to remove it. An empty key slice addresses the field itself. New values publish
 immediately; `flush` waits for queued writes and `drain_errors` reports failures.
 Each write merges the edited leaf into fresh storage under the existing lock,
 so independent writers can change sibling preferences without losing updates.
@@ -521,3 +650,25 @@ Whole-field and object-key setters still replace the value they address.
 
 Use `set_global_key_paths` when several leaves form one change. The batch publishes
 once and reaches storage in one write, so readers cannot observe half a change.
+
+Scoped edits use the same locked-path refusal and failed-load protection as typed
+setters. A refused edit leaves memory and storage unchanged and records a scoped
+error. A failed save keeps the accepted value visible and its edit pending for a
+later save; take the failure with `drain_errors`.
+
+`flush` returns a future that does not borrow the manager. When the manager is
+shared through a `RefCell`, release the borrow before awaiting it:
+
+```rust
+# use maestro_settings::{Settings, SettingsManager, SettingsScope};
+# use serde_json::json;
+# async fn example() {
+let settings = std::cell::RefCell::new(SettingsManager::in_memory(Settings::default()));
+settings.borrow_mut().set_key_path(
+    SettingsScope::Project, "custom", &["enabled"], Some(json!(true)),
+);
+let pending = settings.borrow().flush();
+pending.await;
+let errors = settings.borrow_mut().drain_errors();
+# }
+```

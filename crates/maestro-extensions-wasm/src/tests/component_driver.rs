@@ -71,6 +71,19 @@ impl ComponentDriver {
         }
     }
 
+    /// Publishes literal theme replies for the running component's renderer.
+    pub(super) fn publish_theme(
+        &mut self,
+        palette: super::theme_host::Palette,
+    ) -> Result<(), String> {
+        started(&mut self.harness)
+            .map_err(|error| error.to_string())?
+            .observed()
+            .themes
+            .publish("dark", palette);
+        Ok(())
+    }
+
     /// Reads what the host observed; nothing before the component started.
     fn observed<T: Default>(&self, read: impl FnOnce(&Observed) -> T) -> T {
         self.harness
@@ -1493,4 +1506,6 @@ async fn shell_pending(
     proceed.send(()).unwrap();
 }
 
+mod custom_footer_example;
+mod message_renderer_example;
 pub(crate) mod schema_qualification;

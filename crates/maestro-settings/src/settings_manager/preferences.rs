@@ -3,7 +3,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-mod thread_bound {
+use super::BaseSettingsLayer;
+
+pub(super) mod thread_bound {
     //! Marks storage adapters that the queue worker may own.
 
     /// Native adapters must be shareable with the queue worker thread.
@@ -78,6 +80,33 @@ pub(super) fn share(storage: impl SettingsStorage + 'static) -> SettingsStorageH
 
 /// Raw-text storage for one scope at a time.
 pub trait SettingsStorage: thread_bound::StorageThreadBound {
+    /// Reads the last published base layer for this scope.
+    /// Adapters without base-layer persistence return no layer by default.
+    ///
+    /// # Errors
+    ///
+    /// Returns a storage or decoding failure without changing preferences.
+    fn read_base_layer(
+        &self,
+        _scope: SettingsScope,
+    ) -> Result<Option<BaseSettingsLayer>, SettingsStorageError> {
+        Ok(None)
+    }
+
+    /// Replaces or clears the persisted base record without editing raw preferences.
+    /// The default retains no record; adapters can opt into persistence.
+    ///
+    /// # Errors
+    ///
+    /// Returns an acquire, encoding or write failure.
+    fn write_base_layer(
+        &self,
+        _scope: SettingsScope,
+        _layer: Option<&BaseSettingsLayer>,
+    ) -> Result<(), SettingsStorageError> {
+        Ok(())
+    }
+
     /// Runs `update` exactly once, synchronously, with the current raw text
     /// (`None` when the scope has never been written), unless the adapter fails
     /// to acquire its exclusion or to read first; it then returns that failure

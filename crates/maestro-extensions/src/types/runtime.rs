@@ -85,6 +85,8 @@ pub struct ExtensionRuntime<E: ExtensionExecution = Threaded> {
     /// Application-supplied native search and shell construction owners.
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) tool_construction: RwLock<Option<crate::ToolConstruction>>,
+    /// The single host-admitted channel open only while base factories load.
+    pub(crate) load_time: RwLock<Option<crate::loader::LoadTimeState>>,
     /// Flag values and the registration activity guard.
     pub(crate) state: ExtensionRuntimeState,
     /// The bound operations; not-initialized until a runner binds.

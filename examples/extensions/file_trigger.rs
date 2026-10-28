@@ -1,4 +1,5 @@
 //! An opt-in file watcher that sends external triggers to the conversation.
+// maestro-component: MAESTRO_FILE_TRIGGER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -14,6 +15,10 @@ use std::{cell::RefCell, rc::Rc};
 const TRIGGER_FILE: &str = "/tmp/agent-trigger.txt";
 
 /// Sends nonempty text, clearing the file only after the host accepts the message.
+///
+/// # Errors
+/// Returns the failure to read or clear the trigger file, or the host's refusal of the
+/// message.
 fn inject(api: &ExtensionAPI) -> ExtensionResult<()> {
     let bytes = std::fs::read(TRIGGER_FILE).map_err(|error| error.to_string())?;
     let content = String::from_utf8_lossy(&bytes);
@@ -38,6 +43,10 @@ fn inject(api: &ExtensionAPI) -> ExtensionResult<()> {
 }
 
 /// Replaces the previous registration through the native watch owner.
+///
+/// # Errors
+/// Returns the native watch failure, or a UI availability, lookup or notification
+/// failure.
 fn start_watch(
     api: &ExtensionAPI,
     ctx: &ExtensionContext,
@@ -62,6 +71,10 @@ fn start_watch(
 }
 
 /// Registers the startup and shutdown hooks that own one watch.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses a handler
+/// registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

@@ -383,6 +383,13 @@ pub fn call(
     method: &str,
     operands: &Value,
 ) -> Result<(), String> {
+    let captured = observed
+        .stdout
+        .as_ref()
+        .map(|stdout| stdout.contents().len());
+    if let Some(captured) = captured {
+        observed.log(format!("captured {captured}"));
+    }
     observed.log(format!("ui {key} {method} {operands}"));
     let error = observed.ui.settle().err();
     let error = error.or_else(|| observed.ui.refusal(method));
@@ -1366,6 +1373,7 @@ impl host::HostTui for State {
         &mut self,
         _: Resource<Tui>,
     ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        // shortcut: redraw requests only; use a real frame writer for other requests.
         Ok(Ok(self.push(super::widget_component::WidgetResource(0))?))
     }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {

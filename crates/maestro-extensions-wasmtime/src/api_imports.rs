@@ -9,6 +9,21 @@ use wasmtime::{
 };
 use wasmtime_wasi::WasiView;
 
+/// Installs the one synchronous load-time input route on the original local API.
+fn add_load_time<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "contribute-load-time",
+        |store: StoreContextMut<'_, T>, (payload,): (String,)| {
+            Ok((store
+                .data()
+                .api()
+                .read(|reply| Request::ContributeLoadTime(payload, reply)),))
+        },
+    )
+}
+
 /// Store access to its original API endpoint, never to a local registration facade.
 pub(crate) trait ApiView: WasiView {
     /// Borrows the Store-safe endpoint retained during initialization.
@@ -20,6 +35,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_values(host)?;
+    add_load_time(host)?;
     add_providers(host)?;
     for (name, request) in [
         ("append-entry", Request::Append as fn(_, _, _) -> _),

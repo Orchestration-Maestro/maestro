@@ -1,5 +1,7 @@
 # Credentials
 
+For login, API keys and cloud configuration, start with [provider setup](providers.md).
+
 `maestro-credentials` keeps stored credentials, resolves credential values and
 ordered headers, selects request keys, logs in to OAuth providers, refreshes
 expired OAuth tokens and formats login guidance.
