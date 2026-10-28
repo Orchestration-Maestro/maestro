@@ -4,8 +4,10 @@ use std::ffi::OsString;
 use std::fmt::Write;
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::ExitCode;
+
+use super::example_files;
 
 /// Opening marker for the generated table.
 const START: &str = "<!-- example-index:start -->";
@@ -39,9 +41,7 @@ fn render(folder: &Path, before: &str) -> io::Result<String> {
     let (_, suffix) = rest
         .split_once(END)
         .ok_or_else(|| io::Error::other("missing example index end marker"))?;
-    let mut files = Vec::new();
-    collect(folder, &mut files)?;
-    files.sort_by_cached_key(|path| path.to_string_lossy().replace('\\', "/"));
+    let files = example_files::collect(folder)?;
     let mut result = format!("{prefix}{START}\n| File | Provides |\n| --- | --- |\n");
     for file in files {
         let relative = file.strip_prefix(folder).map_err(io::Error::other)?;
@@ -51,20 +51,6 @@ fn render(folder: &Path, before: &str) -> io::Result<String> {
     }
     write!(result, "{END}{suffix}").map_err(io::Error::other)?;
     Ok(result)
-}
-
-/// Gather documented files recursively, including helpers and usage pages.
-fn collect(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
-    for entry in fs::read_dir(folder)? {
-        let entry = entry?;
-        let kind = entry.file_type()?;
-        if kind.is_dir() {
-            collect(&entry.path(), files)?;
-        } else if kind.is_file() && entry.file_name() != "README.md" {
-            files.push(entry.path());
-        }
-    }
-    Ok(())
 }
 
 /// Read the initial Rust documentation paragraph or Markdown page heading.
