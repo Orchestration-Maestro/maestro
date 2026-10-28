@@ -280,14 +280,22 @@ async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
 /// Read peer bytes after readiness, including the shutdown EOF.
 ///
 /// A closed listener answers bytes written after its close with a reset, which some hosts,
-/// macOS among them, report before the end of stream, so a reset also reads as the end.
+/// macOS among them, report before the end of stream, and Windows may report as an aborted
+/// connection, so either also reads as the end.
 async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
     loop {
         peer.readable().await.unwrap();
         match peer.try_read(bytes) {
             Ok(count) => return count,
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
-            Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => return 0,
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::ConnectionAborted | std::io::ErrorKind::ConnectionReset
+                ) =>
+            {
+                return 0;
+            }
             Err(error) => panic!("{error}"),
         }
     }

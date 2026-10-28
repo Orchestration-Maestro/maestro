@@ -15,6 +15,9 @@ pub(super) fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Va
                 let parsed = maestro_extensions_wasm::frontmatter::parse_frontmatter(api, text)?;
                 Ok(json!({"frontmatter":value(parsed.frontmatter),"body":parsed.body}))
             }
+            Some("fm.parseYaml") => Ok(value(maestro_extensions_wasm::frontmatter::parse_yaml(
+                api, text,
+            )?)),
             Some("fm.stripFrontmatter") => Ok(json!(
                 maestro_extensions_wasm::frontmatter::strip_frontmatter(api, text)?
             )),

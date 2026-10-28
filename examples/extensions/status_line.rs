@@ -11,6 +11,10 @@ use std::rc::Rc;
 use maestro_extensions_wasm::{ExtensionAPI, ExtensionEvent, ExtensionFuture, ExtensionHandler};
 
 /// Registers session readiness and a turn count shared by this factory's hooks.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses a handler
+/// registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     let turn_count = Cell::new(0_u64);
