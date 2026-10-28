@@ -3782,6 +3782,7 @@ dependencies = [
  "maestro-json",
  "maestro-listeners",
  "maestro-listing",
+ "maestro-lock",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",

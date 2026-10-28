@@ -38,6 +38,23 @@ defaults; it does not keep the previous working bindings. The loader does not
 rewrite the file. [Reload](chat/commands.md#reload) also reloads resources and
 extensions, clears the draft, and refuses to run during streaming or compaction.
 
+### Reset multiplexer overrides
+
+The native application operation
+`presentation_data::keybindings::reset_multiplexer_keybindings(agent_dir, timestamp)`
+reads `keybindings.json` from the supplied agent directory. The timestamp is Unix
+time in seconds. It creates `keybindings.json.bak-<timestamp>` exclusively and
+syncs the exact original bytes before publishing the edited document atomically.
+An existing backup is never overwritten.
+
+Only top-level action IDs beginning with `multiplexer.` are removed. Chat and
+unknown entries keep their JSON values. The input must be a UTF-8 JSON object;
+malformed or non-object input fails without changing the file. Publication
+follows existing symlinks and preserves target permissions. A backup or precommit
+write failure leaves the original unchanged. A directory-sync warning after
+publication is returned separately from failure. Reload or restart the workspace
+daemon to use the restored defaults.
+
 ### Check collisions
 
 Rebinding a key does not remove it from other actions. For example:

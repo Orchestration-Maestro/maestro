@@ -1,5 +1,10 @@
 //! Backup and publication of application keybinding resets.
-use std::{io, path::PathBuf};
+use serde_json::{Map, Value};
+use std::{
+    fs::{self, OpenOptions},
+    io::{self, Write},
+    path::{Path, PathBuf},
+};
 
 /// A completed reset and any postcommit durability warning.
 #[derive(Debug)]
@@ -24,9 +29,37 @@ pub fn reset_multiplexer_keybindings(
     agent_dir: &str,
     timestamp: u64,
 ) -> io::Result<KeybindingsReset> {
-    let _ = (agent_dir, timestamp);
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "keybinding reset is unavailable",
-    ))
+    let path = Path::new(agent_dir).join("keybindings.json");
+    let original = fs::read_to_string(&path)?;
+    let mut raw: Map<String, Value> = maestro_json::object::from_str(&original)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+    let before = raw.len();
+    raw.retain(|key, _| !key.starts_with("multiplexer."));
+    let mut updated = maestro_json::pretty_object(&raw).map_err(io::Error::other)?;
+    updated.push('\n');
+    let backup_path = path.with_file_name(format!("keybindings.json.bak-{timestamp}"));
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut backup = options.open(&backup_path)?;
+    backup.write_all(original.as_bytes())?;
+    backup.sync_all()?;
+    drop(backup);
+    let committed = maestro_lock::replace(
+        &path,
+        updated.as_bytes(),
+        maestro_lock::Replace {
+            through_symlinks: true,
+            creation_mode: None,
+        },
+    )?;
+    Ok(KeybindingsReset {
+        backup_path,
+        removed: before - raw.len(),
+        dir_sync: committed.dir_sync,
+    })
 }
