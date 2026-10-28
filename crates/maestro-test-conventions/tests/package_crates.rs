@@ -216,3 +216,74 @@ fn package_components_keep_the_single_export_out_of_the_library() {
             .contains("public factory")
     );
 }
+
+#[test]
+fn package_export_aliases_cannot_create_a_second_export_set() {
+    let workspace = Workspace::new();
+    package(&workspace, "maestro-subagents", "");
+    workspace.list(&[("maestro-subagents", "package")]);
+    for import in [
+        "use maestro_extensions_wasm::export_extension as guest;",
+        "use maestro_extensions_wasm::{export_extension as guest};",
+    ] {
+        support::source(
+            &workspace,
+            "maestro-subagents",
+            "src/lib.rs",
+            &format!("pub fn factory() {{}}\n{import}\nguest!(factory);\n"),
+        );
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("export_extension belongs only")
+        );
+    }
+}
+
+#[test]
+fn package_factories_may_be_explicit_public_reexports() {
+    let workspace = Workspace::new();
+    package(&workspace, "maestro-subagents", "");
+    workspace.list(&[("maestro-subagents", "package")]);
+    support::source(
+        &workspace,
+        "maestro-subagents",
+        "src/registration.rs",
+        "pub fn register() {}\n",
+    );
+    support::source(
+        &workspace,
+        "maestro-subagents",
+        "src/lib.rs",
+        "mod registration;\npub use registration::register as factory;\n",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn package_factories_follow_the_actual_library_target() {
+    let workspace = Workspace::new();
+    package(&workspace, "maestro-subagents", "");
+    workspace.list(&[("maestro-subagents", "package")]);
+    let manifest = workspace
+        .root
+        .path()
+        .join("crates/maestro-subagents/Cargo.toml");
+    let contents = std::fs::read_to_string(&manifest)
+        .unwrap()
+        .replace("[lib]", "[lib]\npath = \"src/api.rs\"");
+    std::fs::write(manifest, contents).unwrap();
+    support::source(&workspace, "maestro-subagents", "src/api.rs", "");
+    assert!(
+        check_workspace(workspace.root.path())
+            .unwrap_err()
+            .contains("public factory")
+    );
+    support::source(
+        &workspace,
+        "maestro-subagents",
+        "src/api.rs",
+        "pub fn factory() {}\n",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
