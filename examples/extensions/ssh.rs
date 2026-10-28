@@ -1,4 +1,5 @@
 //! Opt-in SSH operations for the native coding tools.
+// maestro-component: MAESTRO_SSH_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
