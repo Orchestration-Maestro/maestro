@@ -508,8 +508,33 @@ Explicit selection ignores inherited socket overrides. Implicit API overrides
 win over client-only overrides; either avoids validating an unused inherited
 name. Attach, stop and restart guidance names the selected daemon and warns that
 stopping exits pane processes. A custom API socket is retained in restart
-guidance. Selection does not dispatch commands, launch a process or implement
-graceful stop.
+guidance. Selection does not dispatch commands or launch a process.
+
+`instances::stop_session` sends one `server.stop` request to the selected API
+socket, then waits until neither the API socket nor the client socket accepts a
+connection. The whole stop has one 15 s budget, enough for a slow graceful
+shutdown. A reply that never arrives, an empty reply or a dropped connection
+proves nothing, so the stop keeps checking the sockets. A refusal from the daemon,
+an undecodable reply or another transport failure ends the stop with that error.
+At the deadline the error names every socket that still accepts connections.
+
+## Daemon client and status
+
+`api::client::DaemonClient` keeps one endpoint: a named-daemon selection or an
+explicit socket path, kept exactly as given. Each request opens its own
+connection, writes one canonical line and reads one reply line. Ordinary requests
+set no timeout. `request_value_with_timeout` applies the supplied duration to
+both the send and the receive of that connection, and a zero duration fails with
+the platform's invalid-input error. `request` decodes the shared response and
+returns a failure with its correlation, command, code and message.
+
+Status is a live ping, never a file. `DaemonClient::status` and
+`api::read_runtime_status_at` return the daemon's version, protocol and
+capabilities. The reader returns no status for an absent socket, a refused
+connection or a daemon that does not answer in time; any other failure keeps its
+original diagnostic. `platform::current_process_is_detached_server_daemon`
+reports whether the process leads its own session, which is how a detached
+daemon runs.
 
 ## Environment names
 

@@ -153,9 +153,10 @@ HUP and native stdout/stderr disconnection errors take the emergency route:
 remove handlers, kill tracked children and exit 129, without draining, restoring
 the terminal or disposing the application runtime. EIO, broken-pipe and
 not-connected errors select this route; input errors and other output errors
-keep their existing handling. During graceful disposal, a second termination or
-hangup signal takes its native default action. Windows console-close integration
-is not provided by this mode.
+keep their existing handling. During graceful disposal, once the mode's signal
+handlers are removed and no other registration in the process is live, a later
+termination or hangup signal takes its native default action. Windows
+console-close integration is not provided by this mode.
 
 At agent end, a requested shutdown follows transient-row cleanup through this
 same graceful owner instead of requesting a final frame. Extension requests reach
@@ -173,12 +174,16 @@ the resource diagnostics described below.
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
 inside the working directory shows its relative path (`.` for the directory
-itself), and any other file its absolute path. The expanded form puts each path on
-its own row. Paths resolve lexically, without reading the filesystem. A leading
-home directory is shown as `~`; a home directory that is empty or `/` abbreviates
-nothing, so paths stay as written. The home directory is looked up only when a
-full path is shown, so a listing of prompts alone needs none. When that lookup
-fails, the listing reports the failure.
+itself), and any other file, including one whose relative path would start with
+`..`, keeps its full path. The compact form resolves paths lexically, without
+reading the filesystem; the expanded form puts each path on its own row in the
+spelling the loader supplied. A leading home directory is shown as `~`; a home
+directory that is empty or `/` abbreviates nothing, so paths stay as written. The
+home directory is looked up whenever a listing prepares a path that shows it
+abbreviated. Every section prepares its expanded body even while it shows only its
+compact form, so a listing of context files, or of skills outside a package, needs
+the lookup when only names or relative paths show. An empty listing or one of
+prompts alone needs none. When that lookup fails, the listing reports the failure.
 
 `[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
 templates. The compact form is one row of skill names, or of prompt names with a
@@ -186,7 +191,8 @@ leading `/`, trimmed and sorted for the current locale. The expanded form groups
 entries under `project`, `user` and `path` (command-line and temporary resources).
 Within each scope it lists plain paths first, then each package source with its
 entries, all sorted for the locale. A package entry is shown relative to its
-package root, or else by its path inside the npm or Git package directory. Prompts
+package root, or else by its path inside the npm or Git package directory, or
+else by its full path with the home directory shown as `~`. Prompts
 show their `/name`; when several templates share a file, the last one's name is
 shown.
 
@@ -289,9 +295,11 @@ on the transcript, completes no waiting input and enters no history. `/export`,
 `/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
 only on normal completion, leaving text written during a rejected operation intact.
 Import confirmation and directory retry reuse the native dialogs, and its
-replacement is [bound](#session-binding) before the replay. Near spellings are
-prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
-`/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
+replacement is [bound](#session-binding) before the replay. The submission is trimmed
+first, so `/export` followed only by a tab runs the command and a submission of white
+space alone is dropped. Near spellings are prompt text, so `/exporter notes.jsonl`,
+`/export<Tab>path`, `/share extra`, `/important`, `/import<Tab>path` and `/copyx`
+reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
@@ -329,8 +337,9 @@ for it.
 
 ## Session replay
 
-`render_initial_messages` rebuilds the transcript from the session's current
-context. Each message is shown by its existing component:
+`render_initial_messages` appends the session's current context to the transcript and
+clears nothing first; the rebuild after the thinking shortcut clears the transcript and
+then replays the same way. Each message is shown by its existing component:
 
 - user text, with its text blocks joined without a separator; a skill block shows
   as a collapsible skill row followed by any text after it as a separate user row;
@@ -569,8 +578,11 @@ up.
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
 every expandable transcript row: loaded-resource sections, tool rows, shell runs,
-summaries, skill rows and custom messages. The walk uses the transcript's rows as they are when it starts, so
-a row a renderer appends during the walk is reached, and a row it removes is not.
+summaries, skill rows and custom messages. The walk goes through the child array the
+transcript holds when it starts, one position at a time: a row a renderer appends to
+that array is reached when its position comes up, and a row it removes before then
+is not. Replacing or clearing the transcript during the walk does not stop it, which
+finishes over the array it started with.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript, puts a streaming row back after it with the new visibility

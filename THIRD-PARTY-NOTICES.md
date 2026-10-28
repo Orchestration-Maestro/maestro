@@ -828,9 +828,13 @@ and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
-The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`
-and its tests derive from the API client under the same license. It reuses the
-shared JSONL framing and caller-supplied daemon selection.
+The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`,
+the live status in `api/status.rs`, the graceful stop in `instances/stop.rs` and
+their tests derive from the API client, API status and session sources under the
+same license. They reuse the shared JSONL framing and caller-supplied daemon
+selection. The status read also treats a Unix receive timeout as no status.
+The detached-daemon check in `crates/maestro-process/src/foreground.rs` derives
+from the platform module and uses safe process-id calls.
 
 The environment vocabulary, structured events, synchronized rotating file writer
 and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,

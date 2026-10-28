@@ -19,6 +19,24 @@ impl Edit {
             .try_fold(document.get(field)?, |value, key| value.get(key))
     }
 
+    /// Removes the first non-object ancestor of an absent locked preference.
+    pub(super) fn remove_malformed_ancestor(&self, mut document: &mut Map<String, Value>) -> bool {
+        let Some((_, parents)) = self.0.split_last() else {
+            return false;
+        };
+        for parent in parents {
+            if document.get(parent).is_some_and(|value| !value.is_object()) {
+                document.shift_remove(parent);
+                return true;
+            }
+            let Some(Value::Object(next)) = document.get_mut(parent) else {
+                return false;
+            };
+            document = next;
+        }
+        false
+    }
+
     /// Sets or removes precisely this preference without copying stale sibling values.
     pub(super) fn apply(&self, mut document: &mut Map<String, Value>, value: Option<Value>) {
         let Some((key, parents)) = self.0.split_last() else {
