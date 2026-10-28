@@ -145,7 +145,11 @@ impl SessionManager {
     /// Propagates native reads, conversion, rewrite and selected identity errors.
     pub fn set_session_file(&mut self, session_file: &str) -> io::Result<()> {
         let path = absolute(session_file)?;
-        let bytes = super::storage::read(&path)?;
+        let bytes = if self.persist {
+            super::storage::read(&path)?
+        } else {
+            super::storage::read_native(std::path::Path::new(&path))?
+        };
         self.install(path, bytes)
     }
 

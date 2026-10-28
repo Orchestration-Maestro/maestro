@@ -85,8 +85,47 @@ fn finish_creation(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<b
         let _ = (permissions, mode);
         true
     };
-    // Read-only mode follows the completed byte sync; writable staging cannot prove it.
+    if matches {
+        sync_creation(path, &file)?;
+    }
     Ok(matches)
+}
+
+/// Persists verified creation metadata before retiring its recovery record.
+fn sync_creation(path: &Path, file: &File) -> io::Result<()> {
+    #[cfg(windows)]
+    {
+        let permissions = file.metadata()?.permissions();
+        let mut writable = permissions.clone();
+        #[expect(
+            clippy::permissions_set_readonly_false,
+            reason = "clears only the Windows read-only attribute on a verified recovered creation"
+        )]
+        writable.set_readonly(false);
+        fs::set_permissions(path, writable)?;
+        let result = (|| {
+            let writable = OpenOptions::new().write(true).open(path)?;
+            writable.sync_all()?;
+            writable.set_permissions(permissions.clone())?;
+            sync_creation_mode(&writable)
+        })();
+        if result.is_err() {
+            fs::set_permissions(path, permissions)?;
+        }
+        result
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        sync_creation_mode(file)
+    }
+}
+
+/// Synchronizes final creation permissions, retaining the interruption boundary.
+fn sync_creation_mode(file: &File) -> io::Result<()> {
+    #[cfg(test)]
+    crate::replace::tests::effect("mode_sync")?;
+    file.sync_all()
 }
 
 /// Opens an existing writable target without truncating or following a replaced link.
@@ -169,9 +208,7 @@ fn write_target(
     file.sync_all()?;
     if let Some(mode) = mode {
         apply_creation_mode(&file, mode)?;
-        #[cfg(test)]
-        crate::replace::tests::effect("mode_sync")?;
-        file.sync_all()?;
+        sync_creation_mode(&file)?;
     }
     Ok(())
 }

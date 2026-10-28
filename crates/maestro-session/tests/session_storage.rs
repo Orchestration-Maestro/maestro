@@ -131,7 +131,15 @@ fn stage_interrupted_history(path: &std::path::Path, bytes: &[u8]) -> std::path:
     record.write_all(&[0; 5]).unwrap();
     record.write_all(bytes).unwrap();
     record.sync_all().unwrap();
-    fs::File::open(&root).unwrap().sync_all().unwrap();
+    let sync = fs::File::open(&root).and_then(|file| file.sync_all());
+    #[cfg(windows)]
+    let sync = sync.or_else(|error| match error.kind() {
+        std::io::ErrorKind::Unsupported
+        | std::io::ErrorKind::InvalidInput
+        | std::io::ErrorKind::PermissionDenied => Ok(()),
+        _ => Err(error),
+    });
+    sync.unwrap();
     root.join(name)
 }
 

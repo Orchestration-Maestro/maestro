@@ -43,7 +43,7 @@ pub(super) fn read(path: &str) -> io::Result<Vec<u8>> {
 }
 
 /// Reads selected target bytes without changing their authored path representation.
-fn read_native(path: &Path) -> io::Result<Vec<u8>> {
+pub(super) fn read_native(path: &Path) -> io::Result<Vec<u8>> {
     match fs::read(path) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
         result => result,

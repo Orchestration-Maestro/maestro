@@ -7,11 +7,15 @@ uses the operating system's exclusive file lock. Exiting releases ownership.
 ## Recoverable byte publication
 
 The lock owner resolves the write target and hashes its canonical native path
-with SHA-256. For a missing file it uses the canonical parent plus the leaf.
+with SHA-256. For a missing path it uses the deepest existing canonical ancestor plus the
+remaining components.
 Lock and recovery files live in `~/.maestro/state/file-locks`, never under a
 configuration-root override. Home selection uses `HOME` on Unix when present,
 otherwise the account home directory. Processes sharing a target must share
-that home; overriding it selects a different lock namespace. Different hard-link
+that home; overriding it selects a different lock namespace. On the first
+acquisition in each process, Maestro syncs its three state directories and the
+home directory before admitting a writer. It never opens ancestors above home.
+A failed sync is retried on the next acquisition. Different hard-link
 names are separate identities, so concurrent writes through them are outside this
 contract.
 

@@ -7,12 +7,16 @@ use std::{
     fmt::Write,
     fs, io,
     path::{Path, PathBuf},
+    sync::Mutex,
 };
+
+/// Whether this process has persisted the bounded private state ancestry.
+static ROOT_SYNCED: Mutex<bool> = Mutex::new(false);
 
 /// Acquires canonical file-write exclusion and completes any interrupted publication.
 ///
-/// Missing files use their canonical parent plus leaf. Following final symbolic
-/// links is selected by the caller; authored paths are never modified.
+/// Missing paths use their deepest existing canonical ancestor. The caller
+/// selects whether to follow final symbolic links; authored paths are never modified.
 ///
 /// # Errors
 /// Returns native resolution, lock or recovery errors before admitting the writer.
@@ -52,21 +56,26 @@ fn lock_root() -> io::Result<PathBuf> {
     #[cfg(unix)]
     builder.mode(0o700);
     builder.create(&root)?;
-    #[cfg(test)]
-    crate::replace::tests::effect("ancestry_sync")?;
-    // Sync even existing ancestors: another creator may not have persisted them yet.
-    for parent in root.ancestors().skip(1) {
+    let mut synced = ROOT_SYNCED
+        .lock()
+        .map_err(|error| io::Error::other(error.to_string()))?;
+    if !*synced {
         #[cfg(test)]
-        crate::replace::tests::ancestry_directory(parent);
-        #[cfg(windows)]
-        crate::replace::sync_directory(parent)?;
-        #[cfg(not(windows))]
-        fs::File::open(parent)?.sync_all()?;
+        crate::replace::tests::effect("ancestry_sync")?;
+        for directory in root.ancestors().take(4) {
+            #[cfg(test)]
+            crate::replace::tests::ancestry_directory(directory);
+            #[cfg(windows)]
+            crate::replace::sync_directory(directory)?;
+            #[cfg(not(windows))]
+            fs::File::open(directory)?.sync_all()?;
+        }
+        *synced = true;
     }
     Ok(root)
 }
 
-/// Canonicalizes the selected entry, including a missing final component.
+/// Canonicalizes the selected entry, retaining any missing suffix.
 fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
     let target = if follow {
         resolve_write_target(path)?
@@ -79,14 +88,24 @@ fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => (),
         Err(error) => return Err(error),
     }
-    let leaf = target
-        .file_name()
-        .ok_or_else(|| io::Error::other("replacement target has no file name"))?;
-    let parent = target
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    Ok(fs::canonicalize(parent)?.join(leaf))
+    let mut parent = target.parent();
+    while let Some(ancestor) = parent {
+        let directory = if ancestor.as_os_str().is_empty() {
+            Path::new(".")
+        } else {
+            ancestor
+        };
+        match fs::canonicalize(directory) {
+            Ok(canonical) => {
+                return Ok(canonical.join(target.strip_prefix(ancestor).map_err(io::Error::other)?));
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => parent = ancestor.parent(),
+            Err(error) => return Err(error),
+        }
+    }
+    Err(io::Error::other(
+        "replacement target has no existing ancestor",
+    ))
 }
 
 /// Resolves at most forty final-component links, including dangling targets.
