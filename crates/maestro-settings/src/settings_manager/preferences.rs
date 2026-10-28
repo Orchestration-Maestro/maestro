@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 
 use super::BaseSettingsLayer;
 
-mod thread_bound {
+pub(super) mod thread_bound {
     //! Marks storage adapters that the queue worker may own.
 
     /// Native adapters must be shareable with the queue worker thread.
