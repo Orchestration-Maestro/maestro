@@ -110,6 +110,10 @@ resolving conflicts, then regenerate the table.
 | `snake.rs` | Play Snake in a custom terminal view, saving a paused game in session entries. |
 | `snake/game.rs` | Snake positions, food and the state stored in session entries. |
 | `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
+| `space_invaders.md` | Space invaders |
+| `space_invaders.rs` | Play Space Invaders in a custom terminal view with session-entry saves. |
+| `space_invaders/game.rs` | Retained game records and one deterministic simulation tick. |
+| `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
 | `summarize.md` | Summarize |

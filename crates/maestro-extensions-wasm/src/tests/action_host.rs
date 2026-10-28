@@ -13,6 +13,8 @@ pub struct Bank {
     pub helpers: std::collections::HashMap<String, Value>,
     /// Rejection before action effects.
     pub error: Option<String>,
+    /// Rejects the next session entry before recording it.
+    pub entry_error: Option<String>,
 }
 impl Bank {
     /// Replace host state through an acknowledged entry.

@@ -11,9 +11,12 @@ use super::{
 use crate::bindings::host_side::{
     exports::maestro::extension::guest::Guest, maestro::extension::host,
 };
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 use wasmtime::component::{Accessor, Resource};
 
@@ -26,6 +29,8 @@ pub struct Script {
     pub frames: Vec<Vec<String>>,
     /// Terminal input delivered in order.
     pub inputs: Vec<String>,
+    /// Expected recoverable errors keyed by input index; the view stays open afterward.
+    pub input_errors: BTreeMap<usize, String>,
     /// Native waits to complete before each frame; empty leaves tails with the caller.
     pub ticks: Vec<usize>,
     /// Terminal columns supplied to every render.
@@ -39,6 +44,7 @@ impl Default for Script {
             width: Some(13.0),
             frames: vec![vec!["custom 23".into()]; 2],
             inputs: vec!["commit".into()],
+            input_errors: BTreeMap::new(),
         }
     }
 }
@@ -263,7 +269,9 @@ async fn drive_view(
                     ),
                 )
                 .await?;
-            if let Err(error) = result {
+            if let Some(error) = script.input_errors.get(&index) {
+                assert_eq!(result, Err(error.clone()));
+            } else if let Err(error) = result {
                 return Ok(Err(error));
             }
         }
