@@ -1,19 +1,11 @@
 //! Native waits cross the compiled guest and production request pump.
 #![cfg(test)]
+use super::example_process::run;
 use maestro_extensions::{
     Cancellation, ExtensionRunner, Local, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory,
 };
 use std::{rc::Rc, sync::RwLock, time::Duration};
-
-/// Runs with a controlled native clock on the caller-owned local executor.
-fn run(action: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
-}
 
 /// Loads the actual authored component through the shipped artifact factory.
 async fn loaded() -> ExtensionRunner<Local> {

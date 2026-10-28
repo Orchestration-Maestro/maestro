@@ -1945,12 +1945,36 @@ impl Harness {
         Ok((harness, stdout))
     }
 
-    /// Instantiates a component on `state` and runs its factory.
+    /// Instantiates a supplied compiled component whose host refuses every registration with
+    /// `error`, and returns the harness beside the outcome of the factory's start.
+    pub async fn from_compiled_refusing(
+        engine: &Engine,
+        component: &Component,
+        error: &str,
+    ) -> wasmtime::Result<(Self, Result<(), String>)> {
+        let mut state = State::new();
+        state.observed.registrations.error = Some(error.to_owned());
+        Box::pin(Self::start_reporting(engine, component, state)).await
+    }
+
+    /// Instantiates a component on `state` and runs its factory, failing when the factory fails.
     async fn start_on(
         engine: &Engine,
         component: &Component,
         state: State,
     ) -> wasmtime::Result<Self> {
+        let (harness, outcome) = Box::pin(Self::start_reporting(engine, component, state)).await?;
+        reported(outcome)?;
+        Ok(harness)
+    }
+
+    /// Instantiates a component on `state` and runs its factory, returning the harness beside
+    /// the factory's own outcome so a refused start can still be observed.
+    async fn start_reporting(
+        engine: &Engine,
+        component: &Component,
+        state: State,
+    ) -> wasmtime::Result<(Self, Result<(), String>)> {
         let origin = Arc::new(OnceLock::new());
         let linker = component_linker(engine)?;
         let mut store = Store::new(engine, state);
@@ -1960,12 +1984,10 @@ impl Harness {
         store.data_mut().schema_origin = Some(origin);
         store.data_mut().guest = Some(exports.clone());
         let started = exports.clone();
-        reported(
-            store
-                .run_concurrent(async |accessor| started.call_start(accessor).await)
-                .await??,
-        )?;
-        Ok(Self { store, exports })
+        let outcome = store
+            .run_concurrent(async |accessor| started.call_start(accessor).await)
+            .await??;
+        Ok((Self { store, exports }, outcome))
     }
 
     /// Start another author instance using the same host resources and store.

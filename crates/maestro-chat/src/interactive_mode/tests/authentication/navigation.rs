@@ -7,7 +7,7 @@ use super::{
     notes, panel_rows, picker, quiet_browser, saved_path, settle, sign_in_to, storage, stored_key,
     subscribe,
 };
-use super::{World, isolated, started_with};
+use super::{World, isolated, isolated_case, started_with};
 use crate::AuthType;
 use maestro_app::{AuthCredential, OAuthCredentials, OAuthError};
 use maestro_theme::ThemeColor;
@@ -132,8 +132,11 @@ fn key_rows(world: &World) -> Vec<(String, String, String)> {
 
 #[test]
 fn login_provider_rows_keep_method_identity_and_name_order() {
-    isolated(
+    // The rows follow English collation, as the logout listing does; the pin states it.
+    isolated_case(
         "login_provider_rows_keep_method_identity_and_name_order",
+        "child",
+        &[("LC_ALL", "en_US.UTF-8")],
         async |directory| {
             let world = started_with(directory, None).await;
             named_catalog(&world);
