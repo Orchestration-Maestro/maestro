@@ -10,6 +10,7 @@ use crate::tests::{
     theme_host::{Palette, Reply},
 };
 use serde_json::{Value, json};
+use std::collections::BTreeMap;
 
 /// Adapter selected only by the test runner.
 enum Host {
@@ -138,6 +139,7 @@ fn script(host: &mut Host, inputs: &[&str], states: &[&str]) {
             width: None,
             columns: 80,
             inputs: inputs.iter().map(|s| (*s).into()).collect(),
+            input_errors: BTreeMap::new(),
             frames: states.iter().map(|s| frames[*s].clone()).collect(),
             ticks: vec![],
         });

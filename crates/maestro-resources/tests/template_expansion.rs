@@ -27,7 +27,9 @@ enum Node<'a> {
 fn at(root: &str, path: &str) -> String {
     match path {
         "/" => root.into(),
-        path if path.starts_with('/') => format!("{root}{path}"),
+        path if path.starts_with('/') => {
+            format!("{root}{}", path.replace('/', std::path::MAIN_SEPARATOR_STR))
+        }
         path => path.into(),
     }
 }
@@ -853,8 +855,14 @@ fn prompt_hints_retain_optional_string_values() {
             include_defaults: false,
         })
         .unwrap();
-        let paths: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.path)).collect();
-        let bases: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.base)).collect();
+        let paths: Vec<_> = expected
+            .iter()
+            .map(|t| support::under(dir.0.path(), t.path))
+            .collect();
+        let bases: Vec<_> = expected
+            .iter()
+            .map(|t| support::under(dir.0.path(), t.base))
+            .collect();
         let expected: Vec<_> = expected
             .iter()
             .zip(&paths)

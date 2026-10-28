@@ -1158,6 +1158,12 @@ impl host::Host for State {
             body: "body".into(),
         }))
     }
+    fn native_yaml(
+        &mut self,
+        _content: String,
+    ) -> wasmtime::Result<Result<Vec<host::FrontmatterToken>, String>> {
+        Ok(Err("raw YAML requires the production helper host".into()))
+    }
     fn native_helper(
         &mut self,
         operation: String,
@@ -1559,6 +1565,9 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let Some(error) = self.observed.actions.entry_error.take() {
+            return self.routed(Err(error));
+        }
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {

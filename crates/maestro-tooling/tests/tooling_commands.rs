@@ -381,7 +381,7 @@ fn main() {
     }
     if env::args().nth(1).as_deref() != Some("format") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
-            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
                 let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
                 assert!(output.status.success());
                 assert_eq!(output.stdout, b"formatted");
@@ -389,7 +389,7 @@ fn main() {
         }
     }
     if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
@@ -1610,8 +1610,16 @@ fn remove_input(path: &Path) {
 
 /// Assert that a failed copy names the input it could not read.
 fn assert_names_input(error: &io::Error, input: &Path) {
+    // Windows reads `/` and `\` as the same separator.
+    let spelled = |text: String| {
+        if cfg!(windows) {
+            text.replace('\\', "/")
+        } else {
+            text
+        }
+    };
     assert!(
-        error.to_string().contains(&input.display().to_string()),
+        spelled(error.to_string()).contains(&spelled(input.display().to_string())),
         "{error} does not name {}",
         input.display()
     );
@@ -1911,7 +1919,7 @@ fn maestro_asset_errors_keep_prior_copies() {
     );
     assert!(!destination.join("core/export-html/template.js").exists());
     fs::write(source.join("src/core/export-html/template.css"), "css").unwrap();
-    let image = source.join("src/modes/interactive/assets/mark.png");
+    let image = source.join("src/modes/interactive/assets").join("mark.png");
     fs::remove_file(&image).unwrap();
     assert!(
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
@@ -2193,13 +2201,13 @@ fn run_driver(fixture: &Fixture, test: &str, operation: &str) -> TestProcess {
         .env("PATH", fixture_path(fixture))
 }
 
-/// The fixture's controlled tool directory ahead of this process's `PATH`.
-fn fixture_path(fixture: &Fixture) -> String {
-    format!(
-        "{}:{}",
-        fixture.root.path().display(),
-        std::env::var("PATH").unwrap()
-    )
+/// The fixture's controlled tool directory ahead of this process's `PATH`, joined with the
+/// host's list separator.
+fn fixture_path(fixture: &Fixture) -> std::ffi::OsString {
+    let inherited = std::env::var_os("PATH").unwrap();
+    let entries =
+        std::iter::once(fixture.root.path().to_path_buf()).chain(std::env::split_paths(&inherited));
+    std::env::join_paths(entries).unwrap()
 }
 
 /// Resolve an executable through this process's `PATH`.
@@ -2283,9 +2291,33 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
                 &[],
             )
             .envs(
-                ["RUSTUP_HOME", "CARGO_HOME", "RUSTUP_AUTO_INSTALL"]
-                    .into_iter()
-                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+                // The child compiles a fixture, which on Windows needs the system locations
+                // its linker discovery and temporary files read.
+                [
+                    "RUSTUP_HOME",
+                    "CARGO_HOME",
+                    "RUSTUP_AUTO_INSTALL",
+                    "SYSTEMDRIVE",
+                    "COMSPEC",
+                    "PATHEXT",
+                    "PROGRAMDATA",
+                    "PROGRAMFILES",
+                    "PROGRAMFILES(X86)",
+                    "PROGRAMW6432",
+                    "COMMONPROGRAMFILES",
+                    "COMMONPROGRAMFILES(X86)",
+                    "COMMONPROGRAMW6432",
+                    "NUMBER_OF_PROCESSORS",
+                    "PROCESSOR_ARCHITECTURE",
+                    "OS",
+                    "USERPROFILE",
+                    "APPDATA",
+                    "LOCALAPPDATA",
+                    "TEMP",
+                    "TMP",
+                ]
+                .into_iter()
+                .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
             )
             .env("SYNTHETIC_TEST_API_KEY", "secret-value")
             .env("PATH", std::env::var_os("PATH").unwrap())
@@ -2310,21 +2342,21 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
 fn assert_hook_restages_only_captured_paths(driver: &str) {
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+    // Windows refuses a line break in a name, so there only the other spellings are staged.
+    let names: Vec<&str> = ["a space.rs", "line\nbreak.rs", "-dash.rs"]
+        .into_iter()
+        .filter(|name| !(cfg!(windows) && name.contains('\n')))
+        .collect();
+    let add = [&["add", "--"][..], &names].concat();
+    for name in names.iter().chain(&["unrelated.rs"]) {
         fs::write(fixture.root.path().join(name), "old").unwrap();
     }
-    git(
-        fixture.root.path(),
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
+    git(fixture.root.path(), &add);
     stage_deleted_path(fixture.root.path());
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+    for name in &names {
         fs::write(fixture.root.path().join(name), "staged").unwrap();
     }
-    git(
-        fixture.root.path(),
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
+    git(fixture.root.path(), &add);
     let output = run_hook(&fixture, driver)
         .env("MAESTRO_ACTIVE_SMOKE", "true")
         .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
@@ -2338,7 +2370,7 @@ fn assert_hook_restages_only_captured_paths(driver: &str) {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_commands_exclude_canary(&fixture);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+    for name in &names {
         let output = git(fixture.root.path(), &["show", &format!(":{name}")]);
         assert_eq!(output.stdout, b"formatted");
     }
