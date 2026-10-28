@@ -41,6 +41,11 @@ path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_message_provider"
+path = "../../examples/extensions/custom-provider-anthropic/main.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dynamic_tools"
 path = "../../examples/extensions/dynamic_tools.rs"
 crate-type = ["cdylib"]
@@ -248,9 +253,11 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 regex.workspace = true
 ryu-js.workspace = true
+sha2 = { version = "=0.11.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-models = { path = "../maestro-models" }

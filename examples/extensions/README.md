@@ -29,6 +29,13 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `commands.rs` | A `/commands [extension\|prompt\|skill]` selector for the host's slash commands, with argument completion and optional source-path display. |
 | `confirm_destructive.rs` | Confirmation before starting a new session, switching away from user history or forking. |
+| `custom-provider-anthropic/main.rs` | An opt-in `custom-anthropic` provider with two models, its own message stream, `CUSTOM_ANTHROPIC_API_KEY` configuration and subscription login. |
+| `custom-provider-anthropic/oauth.rs` | Subscription login with a pasted authorization code, and token exchange and refresh, for `main.rs`. |
+| `custom-provider-anthropic/pkce.rs` | The SHA-256 proof key and challenge for that login. |
+| `custom-provider-anthropic/request.rs` | Message, tool, thinking and header conversion for one HTTP request. |
+| `custom-provider-anthropic/response.rs` | Streamed text, thinking, tool-call, usage and cost events gathered into one assistant message. |
+| `custom-provider-anthropic/sse.rs` | Server-sent event framing over raw response bytes. |
+| `custom-provider-anthropic/stream.rs` | One request's HTTP call, status check, cancellation and final result. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
@@ -99,6 +106,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_header_component_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- custom_message_provider_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro --test integration -- custom_message_provider_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -842,3 +853,32 @@ The controlled `confirm_destructive_` runs replay scripted history and UI answer
 through both the in-process adapter and the built component. They need no
 provider, credentials, filesystem changes or extension installation. A host
 rejection propagates unchanged instead of becoming an approval.
+
+### What the custom message provider does
+
+Build with `--example custom_message_provider` using the command above. Loading
+is opt-in and needs a component-enabled host with native HTTP. The example
+registers the `custom-anthropic` provider with the `custom-anthropic-api`
+protocol at `https://api.anthropic.com`, and two reasoning models that accept
+text and images: `claude-opus-4-5` and `claude-sonnet-4-5`. Each has a
+200,000-token context window and 64,000 output tokens. Select one with `/model`,
+for example `custom-anthropic/claude-sonnet-4-5`.
+
+To use an API key, set `CUSTOM_ANTHROPIC_API_KEY` before starting the host. To
+use a subscription, run `/login custom-anthropic`, open the URL it shows, sign
+in, then paste the returned `code#state`. A state that does not match the issued
+proof key is rejected. Saved tokens count as expired five minutes early and
+refresh through the same token endpoint.
+
+Each request is one HTTP attempt with the conversation, tool schemas and the
+requested thinking budget. Without a limit, a request asks for a third of the
+model's output tokens. The response streams text, thinking and tool calls, then
+usage and a cost from the model's prices. A missing key fails before any HTTP
+request, and cancelling settles the message as aborted. A non-success status ends
+the message with `HTTP <status>` and the response body, so the session's automatic
+retry handles rate limits and server errors. The example does not retry on its
+own.
+
+Real logins and requests reach the provider and can incur charges. The
+controlled `custom_message_provider_` runs use loopback HTTP and scripted login
+input; they need no credentials or paid service.

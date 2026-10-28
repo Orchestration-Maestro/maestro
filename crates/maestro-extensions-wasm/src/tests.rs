@@ -62,6 +62,7 @@ mod tui_ui;
 mod fixtures;
 mod custom_header_example;
 pub(crate) mod custom_host;
+mod custom_message_provider;
 pub(crate) mod editor_component;
 mod editor_driver;
 pub(crate) mod editor_host;
