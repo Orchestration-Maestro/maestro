@@ -555,6 +555,66 @@ impl Controlled {
     }
 }
 
+impl Controlled {
+    /// The catalog's selection for the model supplier a context captured.
+    fn catalog_model(&self, model: &super::reader_host::Reader) -> ExtensionResult<Option<String>> {
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow().catalog.selected_model(model)
+    }
+    /// Whether the scripted session is idle.
+    fn catalog_idle(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.idle)
+    }
+    /// The cancellation signal the scripted session lends, when it has one.
+    fn catalog_signal(&self) -> ExtensionResult<Option<Signal>> {
+        self.observed.borrow().catalog.check()?;
+        let flag = self.observed.borrow().catalog.flag.clone();
+        Ok(flag.map(|flag| Signal {
+            flag: Flag(flag),
+            lease: Lease::new(&self.observed),
+        }))
+    }
+    /// Records one context abort.
+    fn catalog_abort(&self) -> ExtensionResult<()> {
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context abort");
+        Ok(())
+    }
+    /// Whether the scripted session has queued messages.
+    fn catalog_pending(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.queued)
+    }
+    /// Records one context shutdown.
+    fn catalog_shutdown(&self) -> ExtensionResult<()> {
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context shutdown");
+        Ok(())
+    }
+    /// The scripted context usage.
+    fn catalog_usage(&self) -> ExtensionResult<Option<crate::ContextUsage>> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self
+            .observed
+            .borrow()
+            .catalog
+            .data
+            .usage
+            .as_ref()
+            .map(|u| crate::ContextUsage {
+                tokens: u.tokens,
+                context_window: u.context_window,
+                percent: u.percent,
+            }))
+    }
+    /// The scripted system prompt.
+    fn catalog_prompt(&self) -> ExtensionResult<String> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    }
+}
+
 /// Records one dialog through the controlled host, waits while it is held pending, records
 /// whether its signal is aborted by then and answers its supplied decision.
 async fn ui_dialog(
@@ -2475,64 +2535,28 @@ impl Imports for Controlled {
         })
     }
     fn model(&self, context: &Context) -> ExtensionResult<Option<String>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed
-            .borrow()
-            .catalog
-            .selected_model(&context.model)
+        self.catalog_model(&context.model)
     }
-    fn is_idle(&self, context: &Context) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.idle)
+    fn is_idle(&self, _: &Context) -> ExtensionResult<bool> {
+        self.catalog_idle()
     }
-    fn signal(&self, context: &Context) -> ExtensionResult<Option<Signal>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let flag = self.observed.borrow().catalog.flag.clone();
-        Ok(flag.map(|flag| Signal {
-            flag: Flag(flag),
-            lease: Lease::new(&self.observed),
-        }))
+    fn signal(&self, _: &Context) -> ExtensionResult<Option<Signal>> {
+        self.catalog_signal()
     }
-    fn abort(&self, context: &Context) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context abort");
-        Ok(())
+    fn abort(&self, _: &Context) -> ExtensionResult<()> {
+        self.catalog_abort()
     }
-    fn has_pending_messages(&self, context: &Context) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.queued)
+    fn has_pending_messages(&self, _: &Context) -> ExtensionResult<bool> {
+        self.catalog_pending()
     }
-    fn shutdown(&self, context: &Context) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context shutdown");
-        Ok(())
+    fn shutdown(&self, _: &Context) -> ExtensionResult<()> {
+        self.catalog_shutdown()
     }
-    fn get_context_usage(&self, context: &Context) -> ExtensionResult<Option<crate::ContextUsage>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self
-            .observed
-            .borrow()
-            .catalog
-            .data
-            .usage
-            .as_ref()
-            .map(|u| crate::ContextUsage {
-                tokens: u.tokens,
-                context_window: u.context_window,
-                percent: u.percent,
-            }))
+    fn get_context_usage(&self, _: &Context) -> ExtensionResult<Option<crate::ContextUsage>> {
+        self.catalog_usage()
     }
-    fn get_system_prompt(&self, context: &Context) -> ExtensionResult<String> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    fn get_system_prompt(&self, _: &Context) -> ExtensionResult<String> {
+        self.catalog_prompt()
     }
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
         self.observed.borrow().catalog.check()?;
@@ -2557,67 +2581,31 @@ impl Imports for Controlled {
         })
     }
     fn command_model(&self, context: &CommandContext) -> ExtensionResult<Option<String>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed
-            .borrow()
-            .catalog
-            .selected_model(&context.model)
+        self.catalog_model(&context.model)
     }
-    fn command_is_idle(&self, context: &CommandContext) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.idle)
+    fn command_is_idle(&self, _: &CommandContext) -> ExtensionResult<bool> {
+        self.catalog_idle()
     }
-    fn command_signal(&self, context: &CommandContext) -> ExtensionResult<Option<Signal>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let flag = self.observed.borrow().catalog.flag.clone();
-        Ok(flag.map(|flag| Signal {
-            flag: Flag(flag),
-            lease: Lease::new(&self.observed),
-        }))
+    fn command_signal(&self, _: &CommandContext) -> ExtensionResult<Option<Signal>> {
+        self.catalog_signal()
     }
-    fn command_abort(&self, context: &CommandContext) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context abort");
-        Ok(())
+    fn command_abort(&self, _: &CommandContext) -> ExtensionResult<()> {
+        self.catalog_abort()
     }
-    fn command_has_pending_messages(&self, context: &CommandContext) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.queued)
+    fn command_has_pending_messages(&self, _: &CommandContext) -> ExtensionResult<bool> {
+        self.catalog_pending()
     }
-    fn command_shutdown(&self, context: &CommandContext) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context shutdown");
-        Ok(())
+    fn command_shutdown(&self, _: &CommandContext) -> ExtensionResult<()> {
+        self.catalog_shutdown()
     }
     fn command_get_context_usage(
         &self,
-        context: &CommandContext,
+        _: &CommandContext,
     ) -> ExtensionResult<Option<crate::ContextUsage>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self
-            .observed
-            .borrow()
-            .catalog
-            .data
-            .usage
-            .as_ref()
-            .map(|u| crate::ContextUsage {
-                tokens: u.tokens,
-                context_window: u.context_window,
-                percent: u.percent,
-            }))
+        self.catalog_usage()
     }
-    fn command_get_system_prompt(&self, context: &CommandContext) -> ExtensionResult<String> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    fn command_get_system_prompt(&self, _: &CommandContext) -> ExtensionResult<String> {
+        self.catalog_prompt()
     }
     fn registry_get_all(&self, resource: &Reader) -> ExtensionResult<String> {
         resource
