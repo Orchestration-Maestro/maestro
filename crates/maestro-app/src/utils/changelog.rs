@@ -106,7 +106,8 @@ fn is_decimal_byte(byte: u8) -> bool {
     byte.is_ascii_digit() || matches!(byte, b'+' | b'-' | b'e' | b'E')
 }
 
-/// Whether two numeric components hold the same value, counting a missing value as different.
+/// Whether two numeric components order as equal; a component that is not a number never
+/// matches, because the partial ordering leaves it unordered.
 fn same(left: f64, right: f64) -> bool {
     left.partial_cmp(&right) == Some(std::cmp::Ordering::Equal)
 }

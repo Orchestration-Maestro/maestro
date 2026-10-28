@@ -36,7 +36,8 @@ pub use maestro_catalog::{
 
 pub use maestro_models::models_are_equal;
 
-/// Provider identifier resolved when no model is chosen, shared with the catalog selector.
+/// Maps each provider identifier to its default model identifier, shared with the catalog
+/// selector.
 pub use maestro_catalog::DEFAULT_MODEL_PER_PROVIDER;
 
 /// Shipped provider labels, shared with registry display-name lookups.
