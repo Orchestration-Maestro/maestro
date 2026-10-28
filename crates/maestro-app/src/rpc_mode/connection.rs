@@ -2,6 +2,7 @@
 //! until the input ends or the connection shuts down.
 use super::commands::Reply;
 use super::lifecycle::{Finish, Lifecycle};
+use super::output::Transport;
 use super::ui::RpcUi;
 use super::{
     RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, RpcSessionOptions,
@@ -349,7 +350,10 @@ impl Connection {
     pub(super) fn write(self: &Rc<Self>, record: RpcRecord<'_>) -> io::Result<()> {
         let written = RpcLine::new(&record)
             .map_err(io::Error::from)
-            .and_then(|line| (self.output)(&line));
+            .and_then(|line| match &self.output.0 {
+                Transport::Synchronous(output) => output(&line),
+                Transport::Asynchronous => Err(io::ErrorKind::Unsupported.into()),
+            });
         written.map_err(|error| {
             let reported = io::Error::new(error.kind(), error.to_string());
             self.fail(error);

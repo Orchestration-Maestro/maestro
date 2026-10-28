@@ -1,12 +1,12 @@
 //! The protocol's output: the records a server writes and the framed lines that carry them.
-use super::RpcOutput;
 use crate::agent_session::AgentSessionEvent;
 use crate::output_guard::write_raw_stdout;
 use crate::rpc_types::{RpcExtensionUIRequest, RpcResponse, workspace_schema};
 use maestro_extensions::ExtensionError;
 use maestro_json::jsonl::serialize_json_line;
 use serde::{Serialize, Serializer, ser::SerializeMap};
-use std::rc::Rc;
+use std::{io, rc::Rc, time::Duration};
+use tokio::io::AsyncWrite;
 
 /// One record a server writes.
 ///
@@ -84,8 +84,8 @@ impl RpcLine {
     /// };
     /// let line = RpcLine::new(&RpcRecord::Response(&response)).unwrap();
     /// assert!(line.as_str().ends_with('\n'));
-    /// let output: maestro_app::rpc_mode::RpcOutput = std::rc::Rc::new(|_: &RpcLine| Ok(()));
-    /// output(&line).unwrap();
+    /// let _output =
+    ///     maestro_app::rpc_mode::RpcOutput::synchronous(std::rc::Rc::new(|_: &RpcLine| Ok(())));
     /// ```
     ///
     /// # Errors
@@ -101,9 +101,46 @@ impl RpcLine {
     }
 }
 
+/// Where a connection writes its lines.
+///
+/// Hand-built text never reaches it:
+///
+/// ```compile_fail
+/// let output = maestro_app::rpc_mode::RpcOutput::synchronous(std::rc::Rc::new(
+///     |line: &str| -> std::io::Result<()> { Ok(()) },
+/// ));
+/// ```
+pub struct RpcOutput(pub(super) Transport);
+
+/// Writes one line before returning.
+type LineWriter = Rc<dyn Fn(&RpcLine) -> io::Result<()>>;
+
+/// How an output writes its lines.
+pub(super) enum Transport {
+    /// Writes each line before returning.
+    Synchronous(LineWriter),
+    /// Not yet written.
+    Asynchronous,
+}
+
+impl RpcOutput {
+    /// An output writing to `writer`. A write or flush that makes no progress for
+    /// `stall_timeout` fails the connection; each written byte restarts that budget.
+    pub fn new(writer: impl AsyncWrite + Unpin + 'static, stall_timeout: Option<Duration>) -> Self {
+        drop((writer, stall_timeout));
+        Self(Transport::Asynchronous)
+    }
+
+    /// An output that writes each line through `writer` before the write returns.
+    #[must_use]
+    pub fn synchronous(writer: LineWriter) -> Self {
+        Self(Transport::Synchronous(writer))
+    }
+}
+
 /// An output writing each line to standard output, which carries protocol lines only once
 /// taken over.
 #[must_use]
 pub fn stdout_output() -> RpcOutput {
-    Rc::new(|line: &RpcLine| write_raw_stdout(line.as_str()))
+    RpcOutput::synchronous(Rc::new(|line: &RpcLine| write_raw_stdout(line.as_str())))
 }

@@ -295,7 +295,10 @@ impl Connection {
         let events = Rc::new(move |event: workspace_schema::EventData| {
             write_to(&connection, RpcRecord::WorkspaceEvent(&event))
         });
-        let result = workspace.execute(workspace_command, events).await;
+        let (_attempted, write_complete) = tokio::sync::oneshot::channel();
+        let result = workspace
+            .execute(workspace_command, events, write_complete)
+            .await;
         RpcResponse::Workspace(Box::new(workspace::RpcResponse {
             id,
             command,

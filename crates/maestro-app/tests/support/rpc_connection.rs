@@ -4,7 +4,7 @@
 use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::answer;
 use maestro_app::rpc_mode::{
-    RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcProcessPort, WorkspaceEventSink,
+    RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcOutput, RpcProcessPort, WorkspaceEventSink,
     WorkspaceOperations,
 };
 use maestro_app::rpc_types::{workspace, workspace_schema};
@@ -81,6 +81,7 @@ impl WorkspaceOperations for ClosureWorkspace {
         &self,
         command: workspace::RpcCommand,
         events: WorkspaceEventSink,
+        _write_complete: tokio::sync::oneshot::Receiver<()>,
     ) -> RpcFuture<WorkspaceResult> {
         Box::pin(std::future::ready((self.0)(command, events)))
     }
@@ -227,13 +228,13 @@ pub fn unspawned(
     };
     let failing_writes = Rc::new(std::cell::Cell::new(false));
     let failing = Rc::clone(&failing_writes);
-    let output = Rc::new(move |line: &RpcLine| {
+    let output = RpcOutput::synchronous(Rc::new(move |line: &RpcLine| {
         if failing.get() {
             return Err(io::Error::other("write failed"));
         }
         written.send(line.as_str().to_owned()).unwrap();
         Ok(())
-    });
+    }));
     let reader = Box::new(MemoryReader { inputs: received });
     let peer = Peer {
         inputs: Some(inputs),
