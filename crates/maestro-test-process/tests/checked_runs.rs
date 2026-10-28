@@ -785,7 +785,10 @@ fn alone_runs_the_test_once_in_a_fresh_one_test_process() {
             return;
         }
         let arguments: Vec<_> = std::env::args().skip(1).collect();
-        assert_eq!(arguments, ["--exact", &format!("checked_runs::{name}")]);
+        assert_eq!(
+            arguments,
+            ["--exact", &format!("checked_runs::{name}"), "--nocapture"]
+        );
         return;
     }
     let scratch = Scratch::new().unwrap();
@@ -818,6 +821,36 @@ fn alone_reports_the_failing_body_with_its_streams() {
         return;
     }
     panic!("the isolated body failed");
+}
+
+#[test]
+fn alone_passing_body_writes_a_diagnostic() {
+    if std::env::var_os("MTP_ALONE_DIAGNOSES").is_none() {
+        return;
+    }
+    if run_alone("alone_passing_body_writes_a_diagnostic").unwrap() {
+        return;
+    }
+    println!("ALONE-BODY-STDOUT");
+    eprintln!("ALONE-BODY-DIAGNOSTIC");
+}
+
+#[test]
+fn alone_success_forwards_only_the_body_diagnostics() {
+    let output = TestProcess::named("checked_runs::alone_passing_body_writes_a_diagnostic")
+        .unwrap()
+        .nocapture()
+        .env("MTP_ALONE_DIAGNOSES", "1")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", text(&output.stdout));
+    let stderr = text(&output.stderr);
+    assert!(
+        stderr.contains("ALONE-BODY-DIAGNOSTIC")
+            && !stderr.contains("ALONE-BODY-STDOUT")
+            && !stderr.contains("running 1 test"),
+        "{stderr}"
+    );
 }
 
 #[test]

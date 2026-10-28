@@ -26,6 +26,7 @@ mod fallback;
 #[path = "support/isolation.rs"]
 mod isolation;
 mod model_cli_resolution;
+mod model_file_layers;
 mod model_initial_choice;
 mod model_locale_ordering;
 mod model_reference_matching;
