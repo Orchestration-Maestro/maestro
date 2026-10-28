@@ -9,7 +9,8 @@ use maestro_daemon::settings::{
     tab_bar::TabBarRightEntryConfig,
 };
 use maestro_settings::{
-    BaseSettingsLayer, InMemorySettingsStorage, SettingsManager, SettingsScope, SettingsStorage,
+    BaseSettingsLayer, InMemorySettingsStorage, SettingsErrorKind, SettingsManager, SettingsScope,
+    SettingsStorage,
 };
 use serde_json::{Value, json};
 
@@ -580,4 +581,46 @@ fn daemon_typed_constructor_retains_ui_on_first_invalid_no_layer_reload() {
     put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
     block_on(app.reload_config(&mut manager, Path::new(".")));
     assert!(!app.config.ui.mouse_capture.0);
+}
+
+/// Attempts to replace a locked channel while resolving an unlocked daemon setting.
+struct ResolveDaemonGlobal;
+
+impl maestro_settings::SettingsDecider for ResolveDaemonGlobal {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn resolve(&self, settings: &mut maestro_settings::Settings) -> Vec<String> {
+        settings.0["update"]["channel"] = json!("stable");
+        settings.0["daemon"]["paneShell"] = json!("resolved-global");
+        Vec::new()
+    }
+}
+
+#[test]
+fn daemon_global_view_resolves_stored_values_and_restores_locks_after_decider() {
+    let (storage, user) = persisted_layers();
+    let mut manager = SettingsManager::from_storage(storage);
+    manager
+        .register_decider(Arc::new(ResolveDaemonGlobal))
+        .unwrap();
+    let settings = manager.effective_global_settings();
+    assert_eq!(settings.0["daemon"]["paneShell"], json!("resolved-global"));
+    assert_eq!(settings.0["update"]["channel"], json!("preview"));
+    assert_eq!(settings.0["multiplexer"]["mouseCapture"], json!(false));
+    assert_eq!(
+        serde_json::to_value(manager.get_global_settings()).unwrap(),
+        user
+    );
+    assert!(
+        manager
+            .drain_errors()
+            .iter()
+            .all(|error| error.kind == SettingsErrorKind::StoredValueIgnored)
+    );
+    let (loaded, errors) = load_config(&mut manager, Path::new("."));
+    assert!(errors.is_empty());
+    assert_eq!(loaded.config.terminal.default_shell, "resolved-global");
+    assert_eq!(loaded.config.update.channel, UpdateChannelConfig::Preview);
 }
