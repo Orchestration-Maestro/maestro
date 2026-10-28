@@ -119,3 +119,8 @@ test = true
 [[example]]
 name = "rpc_client_demo"
 path = "examples/rpc_client_demo/main.rs"
+
+[[example]]
+name = "minimal"
+path = "examples/sdk/minimal.rs"
+test = true
