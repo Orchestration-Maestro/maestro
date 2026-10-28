@@ -322,13 +322,12 @@ impl SettingsManager {
     /// listeners until checked (default false).
     #[must_use]
     pub fn get_hold_unchecked_text(&self) -> bool {
-        let _ = self.flag("holdUncheckedText");
-        false
+        self.flag("holdUncheckedText").unwrap_or(false)
     }
 
     /// Withholds or delivers unchecked assistant text and tool output.
-    pub fn set_hold_unchecked_text(&mut self, _value: bool) {
-        self.set_global("holdUncheckedText", false);
+    pub fn set_hold_unchecked_text(&mut self, value: bool) {
+        self.set_global("holdUncheckedText", value);
     }
 
     /// Returns the custom shell path, if any.
