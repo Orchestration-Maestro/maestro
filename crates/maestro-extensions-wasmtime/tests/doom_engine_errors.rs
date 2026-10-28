@@ -63,3 +63,5 @@ fn engine_fatal_error_returns_without_poisoning_instance() -> wasmtime::Result<(
             Ok(())
         })
 }
+
+mod real;
