@@ -201,6 +201,8 @@ resolving conflicts, then regenerate the table.
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
 | `with-deps.md` | With deps |
 | `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
+| `working_indicator.md` | Working indicator |
+| `working_indicator.rs` | A command that selects static, animated, hidden or default working indicators. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->

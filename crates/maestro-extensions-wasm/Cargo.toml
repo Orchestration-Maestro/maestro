@@ -354,6 +354,11 @@ path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "working_indicator"
+path = "../../examples/extensions/working_indicator.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
