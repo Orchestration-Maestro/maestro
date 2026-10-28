@@ -3536,3 +3536,43 @@ fn example_test_modules_resolve_nested_modules() {
     );
     assert!(Command::new(executable).status().unwrap().success());
 }
+
+/// A source-only addition supplies its build target, environment and setup selection.
+#[test]
+fn example_components_discover_source_only_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::create_dir(root.path().join("helpers")).unwrap();
+    fs::write(root.path().join("helpers/unmarked.rs"), "//! Helper.\n").unwrap();
+    let prepare = || {
+        let mut builds = Vec::new();
+        let entries = tooling::example_files::prepare(root.path(), |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        })
+        .unwrap();
+        (builds, entries)
+    };
+    assert_eq!(prepare(), (Vec::new(), String::new()));
+    fs::write(
+        root.path().join("fixture_example.rs"),
+        "//! Fixture.\n// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+    )
+    .unwrap();
+    assert_eq!(
+        prepare(),
+        (
+            vec![(
+                "fixture_example".to_owned(),
+                "MAESTRO_FIXTURE_COMPONENT".to_owned()
+            )],
+            "MAESTRO_FIXTURE_COMPONENT=/components/fixture_example.wasm\n".to_owned()
+        )
+    );
+    let config: toml::Value =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let filter = config["profile"]["default"]["scripts"][0]["filter"]
+        .as_str()
+        .unwrap();
+    assert!(filter.contains("test(/_example::/)"), "{filter}");
+    assert!(!filter.contains("qna_example::"), "{filter}");
+}
