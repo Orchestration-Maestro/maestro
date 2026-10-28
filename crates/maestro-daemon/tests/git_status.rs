@@ -2,9 +2,9 @@
 #![cfg(test)]
 use crate::repository_support::{init_repo_with_commit, run_git};
 use maestro_daemon::git::{
-    discovery::{git_rev_parse_verify, git_space_metadata},
+    discovery::git_rev_parse_verify,
     status::{
-        GitHeadIdentity, GitStatusCacheEntry, git_status_cache_key, git_status_cache_key_for_space,
+        GitHeadIdentity, GitStatusCacheEntry, git_status_cache_key,
         git_status_snapshot_for_cwd_with_demand,
     },
 };
@@ -60,6 +60,9 @@ fn write_tracked_repository(root: &Path) {
 #[cfg(target_os = "linux")]
 #[test]
 fn space_cache_key_keeps_a_non_utf8_checkout_path() {
+    use maestro_daemon::git::{
+        discovery::git_space_metadata, status::git_status_cache_key_for_space,
+    };
     use std::os::unix::ffi::OsStringExt;
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory
