@@ -5,8 +5,9 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    BashResult, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, Presence, UserBashEventResult,
+    BashResult, Container, CustomFactoryOutcome, ExtensionAPI, ExtensionComponent,
+    ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult,
+    Presence, TUI, UserBashEventResult,
 };
 use std::rc::Rc;
 
@@ -132,6 +133,7 @@ fn result(output: String, code: i32) -> ExtensionEventResult {
 fn on_event(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
+    api: ExtensionAPI,
 ) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::UserBash(event) = event else {
@@ -147,14 +149,96 @@ fn on_event(
         if !ctx.has_ui()? {
             return Ok(Some(result("(interactive commands require TUI)".into(), 1)));
         }
-        Ok(None)
+        let command = forced.map_or_else(
+            || event.command.clone(),
+            |command| command.trim().to_owned(),
+        );
+        let cwd = ctx.cwd()?;
+        let completion = ctx
+            .ui()?
+            .custom(
+                Rc::new(move |tui, _, _, done, _| {
+                    let (api, cwd, command) = (api.clone(), cwd.clone(), command.clone());
+                    Ok(CustomFactoryOutcome::Async(Box::pin(async move {
+                        let completion = run(&tui, &api, cwd, command).await;
+                        done(completion)?;
+                        Ok(ExtensionComponent {
+                            component: (&Container::new()?).into(),
+                            dispose: None,
+                            set_expanded: None,
+                            width: None,
+                        })
+                    })))
+                }),
+                None,
+            )
+            .await?
+            .unwrap_or(Ok(None));
+        Ok(Some(completed(completion)))
     })
+}
+
+/// Runs with inherited descriptors, always attempting terminal restoration before returning.
+async fn run(
+    tui: &TUI,
+    api: &ExtensionAPI,
+    cwd: String,
+    command: String,
+) -> ExtensionResult<Option<i32>> {
+    tui.stop()?;
+    let completion = async {
+        tui.terminal()?.write("\x1b[2J\x1b[H")?;
+        let shell = std::env::var("SHELL")
+            .ok()
+            .filter(|shell| !shell.is_empty())
+            .unwrap_or_else(|| "/bin/sh".into());
+        let io = api.native_io();
+        let child = io
+            .spawn(
+                shell,
+                vec!["-c".into(), command],
+                maestro_extensions_wasm::child_process::SpawnOptions {
+                    cwd: Some(cwd),
+                    stdio: [maestro_extensions_wasm::child_process::Stdio::Inherit; 3],
+                    ..Default::default()
+                },
+            )
+            .await?;
+        Ok(child.wait().await?.code)
+    }
+    .await;
+    let restarted = tui.start();
+    let redrawn = tui.request_render(true);
+    restarted?;
+    redrawn?;
+    completion
+}
+
+/// Keeps native errors visible while preventing fallback execution of the same command.
+fn completed(completion: ExtensionResult<Option<i32>>) -> ExtensionEventResult {
+    match completion {
+        Ok(Some(0)) => result("(interactive command completed successfully)".into(), 0),
+        Ok(code) => {
+            let display = code.map_or_else(|| "null".into(), |code| code.to_string());
+            result(
+                format!("(interactive command exited with code {display})"),
+                code.unwrap_or(1),
+            )
+        }
+        Err(error) => result(format!("(interactive command failed: {error})"), 1),
+    }
 }
 
 /// Registers interactive user shell handling.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
-    Box::pin(async move { api.on("user_bash", Rc::new(on_event)) })
+    Box::pin(async move {
+        let registered = api.clone();
+        api.on(
+            "user_bash",
+            Rc::new(move |event, ctx| on_event(event, ctx, registered.clone())),
+        )
+    })
 }
 
 #[cfg(target_arch = "wasm32")]
