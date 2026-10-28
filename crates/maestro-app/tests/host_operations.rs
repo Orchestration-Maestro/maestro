@@ -132,6 +132,7 @@ impl Probe {
                 local.clone(),
                 Rc::new(|_| Box::pin(async { Ok(None) })),
             );
+            resources.offline = Some(true);
             let captured = observed.clone();
             resources.extension_factories.push(Rc::new(move |api| {
                 Box::pin(record_operations(api, operations.clone(), captured.clone()))
@@ -219,4 +220,66 @@ fn factory_acquisition_selects_exact_pin_and_scope_without_editing_settings() {
         );
     }
     assert_eq!(probe.settings.borrow().get_global_settings(), before);
+}
+
+#[test]
+fn factory_integrity_restores_dirty_and_moved_pins_and_retains_native_failures() {
+    let probe = Probe::new(json!({"untouched": null}), json!({}));
+    let target = std::path::Path::new(&probe.agent_dir).join("git/example.test/team/repo");
+    let pin = git_command::pinned_repository(&target);
+    let before = probe.settings.borrow().get_global_settings();
+    for revision in ["pin", "main"] {
+        git_command::git(&target, &["checkout", revision]);
+        assert_repaired(&probe, &target, &pin);
+    }
+    let source = "https://example.test/team/repo@pin".to_owned();
+    let result = probe.run(vec![
+        HostOperation::VerifyPin("./developer".into(), OperationScope::User),
+        HostOperation::RestorePin("./developer".into(), OperationScope::User),
+        HostOperation::VerifyPin(source.clone(), OperationScope::Project),
+        HostOperation::RestorePin(source, OperationScope::Project),
+    ]);
+    assert_eq!(
+        result,
+        vec![
+            Err("Integrity requires a pinned Git source".into()),
+            Err("Integrity requires a pinned Git source".into()),
+            Ok(json!({"expectedCommit":null, "headCommit":null, "changedPaths":[], "clean":false})),
+            Err("Pinned checkout could not be restored offline".into()),
+        ]
+    );
+    assert_eq!(probe.settings.borrow().get_global_settings(), before);
+}
+
+/// Verifies the exact native status, repairs the checkout, then observes clean contents.
+fn assert_repaired(probe: &Probe, target: &std::path::Path, pin: &str) {
+    let head = git_command::git(target, &["rev-parse", "HEAD"]);
+    std::fs::write(target.join("content"), "dirty").unwrap();
+    std::fs::remove_file(target.join("retained")).unwrap();
+    std::fs::write(target.join("added"), "staged").unwrap();
+    git_command::git(target, &["add", "added"]);
+    std::fs::write(target.join("untracked"), "untracked").unwrap();
+    let source = "https://example.test/team/repo@pin".to_owned();
+    let result = probe.run(vec![
+        HostOperation::VerifyPin(source.clone(), OperationScope::User),
+        HostOperation::RestorePin(source.clone(), OperationScope::User),
+        HostOperation::VerifyPin(source, OperationScope::User),
+    ]);
+    assert_eq!(
+        result,
+        vec![
+            Ok(
+                json!({"expectedCommit":pin, "headCommit":head, "changedPaths":["added", "content", "retained", "untracked"], "clean":false})
+            ),
+            Ok(serde_json::Value::Null),
+            Ok(json!({"expectedCommit":pin, "headCommit":pin, "changedPaths":[], "clean":true})),
+        ]
+    );
+    assert_eq!(
+        std::fs::read_to_string(target.join("content")).unwrap(),
+        "pinned"
+    );
+    assert!(target.join("retained").exists());
+    assert!(!target.join("added").exists());
+    assert!(!target.join("untracked").exists());
 }
