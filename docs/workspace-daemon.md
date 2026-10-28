@@ -692,9 +692,9 @@ directory is deleted only if Git does not list it and its `.git` link names an a
 of the same repository, even when the caller holds the repository through a symbolic link.
 Any other directory stays and Git's message is returned.
 
-`list` returns the entries of `git worktree list --porcelain` with their branch and their
+`list` returns the entries of `git worktree list --porcelain -z` with their branch and their
 bare, detached and prunable flags. Paths keep the bytes Git printed, including bytes that
-text cannot hold.
+text cannot hold and line breaks.
 
 ## Retained tab-bar status
 

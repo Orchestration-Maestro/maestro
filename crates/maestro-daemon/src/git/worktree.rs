@@ -76,7 +76,7 @@ impl fmt::Display for WorktreeError {
 
 impl std::error::Error for WorktreeError {}
 
-/// One entry of `git worktree list --porcelain`.
+/// One entry of `git worktree list --porcelain -z`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExistingWorktree {
     /// The checkout directory as Git printed it.
@@ -92,22 +92,22 @@ pub struct ExistingWorktree {
 }
 
 impl ExistingWorktree {
-    /// Parses the output of `git worktree list --porcelain`.
+    /// Parses the output of `git worktree list --porcelain -z`.
     ///
-    /// Entries are separated by blank lines; lines before the first `worktree` line of an
+    /// Every field ends with a NUL byte and an empty field ends an entry, so a path keeps each
+    /// byte Git printed, line breaks included. Fields before the first `worktree` field of an
     /// entry belong to no entry.
     #[must_use]
     pub fn parse_porcelain(output: &[u8]) -> Vec<Self> {
         let mut entries = Vec::new();
         let mut current: Option<Self> = None;
-        for line in output.split(|byte| *byte == b'\n') {
-            let line = line.strip_suffix(b"\r").unwrap_or(line);
-            if line.iter().all(u8::is_ascii_whitespace) {
+        for field in output.split(|byte| *byte == 0) {
+            if field.is_empty() {
                 entries.extend(current.take());
-            } else if let Some(path) = line.strip_prefix(b"worktree ") {
+            } else if let Some(path) = field.strip_prefix(b"worktree ") {
                 entries.extend(current.replace(Self::at(path_from_bytes(path))));
             } else if let Some(entry) = current.as_mut() {
-                entry.read_attribute(line);
+                entry.read_attribute(field);
             }
         }
         entries.extend(current);
@@ -374,7 +374,7 @@ pub fn checkout_has_dirty_files(path: &Path) -> Result<bool, WorktreeError> {
 /// # Errors
 /// Returns Git's message when `git worktree list` fails.
 pub fn list(repo_root: &Path) -> Result<Vec<ExistingWorktree>, WorktreeError> {
-    let args = [os("worktree"), os("list"), os("--porcelain")];
+    let args = [os("worktree"), os("list"), os("--porcelain"), os("-z")];
     run(repo_root, "worktree list", &args).map(|stdout| ExistingWorktree::parse_porcelain(&stdout))
 }
 
