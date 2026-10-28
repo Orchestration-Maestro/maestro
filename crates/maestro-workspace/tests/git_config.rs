@@ -482,6 +482,29 @@ fn hasconfig_include_chain_that_defines_a_remote_url_is_skipped() {
 }
 
 #[test]
+fn hasconfig_include_nesting_a_remote_defining_hasconfig_include_is_skipped() {
+    let checkout = Checkout::new(FORK_URL);
+    let user = checkout.write(
+        "user.gitconfig",
+        &format!("{TRACKING}{FORK_CONDITION}user-included.cfg\n"),
+    );
+    checkout.write(
+        "user-included.cfg",
+        &format!(
+            "{FORK_CONDITION}nested-remote.cfg\n[branch \"main\"]\n\tremote = included\n\tmerge = refs/heads/main\n"
+        ),
+    );
+    checkout.write(
+        "nested-remote.cfg",
+        "[remote \"included\"]\n\turl = https://example.test/included.git\n",
+    );
+    assert_eq!(
+        checkout.observe_with_user(&[&user]).unwrap().remote,
+        "origin"
+    );
+}
+
+#[test]
 fn worktree_remote_urls_do_not_satisfy_hasconfig() {
     let checkout = Checkout::new(&format!(
         "[extensions]\n\tworktreeConfig = true\n{TRACKING}"
