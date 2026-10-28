@@ -32,7 +32,7 @@ impl Sample {
         std::fs::write(
             root.path().join("models.json"),
             serde_json::to_vec(&json!({
-                "providers": {"faux": {"api": provider.api, "apiKey": "sample-key", "models": [{
+                "providers": {"faux": {"baseUrl": provider.models[0].base_url, "api": provider.api, "apiKey": "sample-key", "models": [{
                     "id": provider.models[0].id, "name": "Offline sample", "reasoning": false,
                     "input": ["text"], "contextWindow": 128_000, "maxTokens": 4096,
                     "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
