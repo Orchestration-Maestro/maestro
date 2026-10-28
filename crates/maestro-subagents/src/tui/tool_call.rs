@@ -16,7 +16,14 @@ fn path<'a>(args: &'a Value, default: &'a str) -> &'a str {
 }
 /// Shortens a home-prefixed authored spelling for display only.
 fn shorten(path: &str, home: &str) -> String {
-    path.strip_prefix(home)
+    if home.is_empty() {
+        return path.into();
+    }
+    if path == home {
+        return "~".into();
+    }
+    path.strip_prefix(home.trim_end_matches(['/', '\\']))
+        .filter(|suffix| suffix.is_empty() || suffix.starts_with('/') || suffix.starts_with('\\'))
         .map_or_else(|| path.into(), |suffix| format!("~{suffix}"))
 }
 /// Formats the built-in tools and a bounded JSON fallback for other names.
