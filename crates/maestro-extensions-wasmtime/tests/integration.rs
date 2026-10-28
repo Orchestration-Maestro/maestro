@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod border_status_editor_example;
 mod built_in_tool_renderer;
 mod canonical_api;
 mod canonical_callbacks;
