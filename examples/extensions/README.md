@@ -31,6 +31,7 @@ inserts at its own place instead of appending at the end of each list.
 | `confirm_destructive.rs` | Confirmation before starting a new session, switching away from user history or forking. |
 | `custom_footer.rs` | A `/footer` command that toggles a footer with token usage, cost, model and Git branch. |
 | `custom_header.rs` | A themed startup illustration and a `/builtin-header` command that restores the built-in header and keybinding hints. The guest interface exposes no version, so the subtitle omits it. |
+| `dirty_repo_guard.rs` | Confirmation before a new session, a session switch or a fork while Git reports uncommitted files, with refusal when the host has no UI. |
 | `dynamic_tools.rs` | A `session_start` handler that registers one echo tool, and a `/add-echo-tool` command that registers more while the session runs. |
 | `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `file_trigger.rs` | An opt-in watcher of `/tmp/agent-trigger.txt` that sends nonempty contents as a custom message and requests a response. |
@@ -99,6 +100,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_footer_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_header_component_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- dirty_repo_guard_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- dynamic_tools_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -842,3 +845,24 @@ The controlled `confirm_destructive_` runs replay scripted history and UI answer
 through both the in-process adapter and the built component. They need no
 provider, credentials, filesystem changes or extension installation. A host
 rejection propagates unchanged instead of becoming an approval.
+
+### What the dirty repository guard does
+
+Build with `--example dirty_repo_guard` using the command above. Loading is
+opt-in and needs a component-enabled native host with Git on `PATH`. The guard
+only reads repository state: it runs `git status --porcelain` in the host's
+working directory and never commits, stashes or resets anything.
+
+Before a new session, a session switch or a fork, the guard counts the nonempty
+lines of that status output. When the status run fails, for example outside a
+repository or without Git, or the tree is clean, the change goes ahead without a
+question. With uncommitted files and no UI, the change is cancelled. With UI, a selector asks
+**Start a new session with N uncommitted file(s)?**, or names **Switch
+sessions** or **Fork** instead, and offers **Continue** and **Cancel and commit
+first**. Only **Continue** lets the change go ahead. Any other answer, or
+dismissing the selector, shows the warning `Cancelled. Commit the changes, then
+try again.` and cancels the change.
+
+The controlled runs deliver every case to the in-process adapter and to the
+built component with scripted status results and selector answers. They run no
+Git command and need no provider, credentials or installation.
