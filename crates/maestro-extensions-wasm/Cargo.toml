@@ -238,6 +238,7 @@ path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+maestro-package = { path = "../maestro-package" }
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }

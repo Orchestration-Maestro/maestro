@@ -10,17 +10,7 @@ pub struct ResolvedResource {
     pub metadata: PathMetadata,
 }
 /// One selected package, even when none of its resources are enabled.
-#[derive(Debug, PartialEq, Eq)]
-pub struct ResolvedPackage {
-    /// Original source spelling, including its pin.
-    pub source: String,
-    /// Kind-prefixed identity independent of the pin.
-    pub identity: String,
-    /// Scope used to resolve the contents.
-    pub scope: SourceScope,
-    /// Existing package contents.
-    pub installed_path: String,
-}
+pub type ResolvedPackage = maestro_package::ResolvedPackage<SourceScope>;
 /// Resources separated by their discovery kind.
 #[derive(Default)]
 pub struct ResolvedPaths {

@@ -445,11 +445,12 @@ and runs no Git or npm command itself.
 - `resolve` lists the configured packages; when both scopes name one identity, the
   project's entry wins. `resolve_extension_sources(sources, scope)` resolves sources
   the extension chose itself, in one scope, and never writes them to settings. Each
-  descriptor holds `source`, `identity`, `scope` and `installedPath`. A package
-  without resources is listed too.
+  typed `ResolvedPackage` descriptor holds `source`, `identity`, `scope` and
+  `installed_path`. A package without resources is listed too.
 - `install(source, scope)` acquires a source at its pin without editing settings.
-- `verify_pin(source, scope)` reports `expectedCommit`, `headCommit`,
-  `changedPaths` and `clean` for a pinned Git checkout and changes nothing.
+- `verify_pin(source, scope)` returns a typed `GitPinStatus` with
+  `expected_commit`, `head_commit`, `changed_paths` and `is_clean()` for a pinned
+  Git checkout and changes nothing.
   `restore_pin(source, scope)` returns the checkout to its pinned commit and removes
   changed and untracked files.
 

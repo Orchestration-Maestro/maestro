@@ -51,7 +51,7 @@ impl ExtensionOperations {
                     .packages
                     .verify_pin(&source, Some(installed_scope(scope)))
                     .await
-                    .map(|status| pin_status(&status)),
+                    .and_then(|status| serde_json::to_value(status).map_err(std::io::Error::other)),
                 HostOperation::RestorePin(source, scope) => owners
                     .packages
                     .restore_pin(&source, Some(installed_scope(scope)))
@@ -80,20 +80,7 @@ impl ExtensionOperations {
                     .await?
             }
         };
-        Ok(Value::Array(
-            resolved
-                .packages
-                .into_iter()
-                .map(|package| {
-                    serde_json::json!({
-                        "source": package.source,
-                        "identity": package.identity,
-                        "scope": package.scope,
-                        "installedPath": package.installed_path,
-                    })
-                })
-                .collect(),
-        ))
+        serde_json::to_value(resolved.packages).map_err(std::io::Error::other)
     }
 }
 
@@ -103,15 +90,4 @@ fn installed_scope(scope: OperationScope) -> maestro_packages::InstalledSourceSc
         OperationScope::User => maestro_packages::InstalledSourceScope::User,
         OperationScope::Project => maestro_packages::InstalledSourceScope::Project,
     }
-}
-
-/// Keeps the owner's exact observations and its own cleanliness decision.
-fn pin_status(status: &maestro_packages::GitPinStatus) -> Value {
-    let clean = status.is_clean();
-    serde_json::json!({
-        "expectedCommit": status.expected_commit,
-        "headCommit": status.head_commit,
-        "changedPaths": status.changed_paths,
-        "clean": clean,
-    })
 }

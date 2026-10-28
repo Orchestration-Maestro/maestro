@@ -37,21 +37,31 @@ async fn packages(api: &ExtensionAPI) -> Value {
     let user = OperationScope::User;
     let project = OperationScope::Project;
     let results = [
-        packages.resolve().await,
+        packages.resolve().await.map(|value| json!(value)),
         packages
             .install(source, project)
             .await
             .map(|()| Value::Null),
         packages
             .resolve_extension_sources(vec![source.into()], project)
-            .await,
-        packages.verify_pin(source, user).await,
+            .await
+            .map(|value| json!(value)),
+        packages
+            .verify_pin(source, user)
+            .await
+            .map(|value| json!(value)),
         packages
             .restore_pin(source, user)
             .await
             .map(|()| Value::Null),
-        packages.verify_pin(source, user).await,
-        packages.verify_pin("./developer", user).await,
+        packages
+            .verify_pin(source, user)
+            .await
+            .map(|value| json!(value)),
+        packages
+            .verify_pin("./developer", user)
+            .await
+            .map(|value| json!(value)),
     ];
     results
         .into_iter()
