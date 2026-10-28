@@ -56,6 +56,8 @@ resolving conflicts, then regenerate the table.
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
 | `confirm_destructive.md` | Confirm destructive |
 | `confirm_destructive.rs` | Opt-in confirmation before replacing or forking a session. |
+| `custom_compaction.md` | Custom compaction |
+| `custom_compaction.rs` | Summarizes the complete prepared conversation with a separately selected model. |
 | `custom_footer.md` | Custom footer |
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
@@ -76,6 +78,8 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `minimal_mode.md` | Minimal mode |
+| `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
 | `model_status.md` | Model status |
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
@@ -108,8 +112,14 @@ resolving conflicts, then regenerate the table.
 | `snake.rs` | Play Snake in a custom terminal view, saving a paused game in session entries. |
 | `snake/game.rs` | Snake positions, food and the state stored in session entries. |
 | `snake/render.rs` | The game's bordered, two-column terminal cells and input hints. |
+| `space_invaders.md` | Space invaders |
+| `space_invaders.rs` | Play Space Invaders in a custom terminal view with session-entry saves. |
+| `space_invaders/game.rs` | Retained game records and one deterministic simulation tick. |
+| `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
+| `summarize.md` | Summarize |
+| `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `titlebar_spinner.md` | Titlebar spinner |

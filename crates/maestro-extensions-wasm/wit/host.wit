@@ -170,6 +170,7 @@ interface host {
     /// Preorder metadata values, with container lengths and numbers kept outside JSON.
     variant frontmatter-token { null, boolean(bool), number(f64), text(string), sequence(u32), mapping(list<string>) }
     record frontmatter-document { values: list<frontmatter-token>, body: string }
+    native-yaml: func(content: string) -> result<list<frontmatter-token>, string>;
     native-frontmatter: func(content: string) -> result<frontmatter-document, string>;
     /// Synchronous ordinary helper operands; metadata numbers use a separate typed boundary.
     native-helper: func(operation: string, data: string) -> result<string, string>;
@@ -1034,8 +1035,6 @@ interface host {
     }
     /// Resolution outcome, separate from an import failure.
     variant resolved-request-auth { ok(request-auth), error(string) }
-    /// Independently retained accepted credentials and their original backend.
-    /// Independently retained native OAuth implementation.
     enum oauth-callback { auth, prompt, progress, manual, select, key, models, refresh, login }
     resource oauth-interaction {
         options: func() -> tuple<bool, bool, bool>;
@@ -1044,6 +1043,7 @@ interface host {
         input: async func(phase: oauth-callback, data: string) -> result<option<string>, string>;
     }
     record local-oauth-callback { target: u32, phase: oauth-callback, data: string, interaction: option<oauth-interaction> }
+    /// Independently retained native OAuth implementation.
     resource oauth-provider {
         login: async func(callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<string, string>;
         info: func() -> result<string, string>;
@@ -1051,6 +1051,7 @@ interface host {
         refresh-token: async func(credentials: string) -> result<string, string>;
         modify-models: func(data: string) -> import-route;
     }
+    /// Independently retained accepted credentials and their original backend.
     resource auth-storage {
         login: async func(provider: string, callbacks: borrow<callback>, options: tuple<bool, bool, bool>, signal: option<borrow<abort-signal>>) -> result<_, string>;
         get-oauth-providers: func() -> result<list<oauth-provider>, string>;

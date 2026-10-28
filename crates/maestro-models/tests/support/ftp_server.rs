@@ -483,6 +483,10 @@ fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
 ///
 /// Closing with the client's bytes unread would answer them with a reset, and some hosts,
 /// macOS among them, report that reset to the client before the end of stream it follows.
+///
+/// # Errors
+/// Returns the write shutdown or read failure, except the broken pipe, reset, aborted and
+/// not-connected errors of a peer that already closed, which end the stream normally.
 fn end_stream(mut stream: &TcpStream) -> std::io::Result<()> {
     if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
         return if vanished(&error) { Ok(()) } else { Err(error) };
@@ -667,11 +671,9 @@ fn accept_until_stopped(
         let script = &scenarios[served.min(last)];
         served += 1;
         if let Err(error) = session(control, script, observed) {
-            // A client that went away mid-reply is a completed session, not a peer failure.
-            if !matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) {
+            // A client that went away mid-reply is a completed session, not a peer failure;
+            // Windows reports the closed connection as aborted rather than reset.
+            if !vanished(&error) {
                 return Err(error);
             }
             // A client that closed its connection took its control connection with it.
