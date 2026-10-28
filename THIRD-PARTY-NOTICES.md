@@ -1330,3 +1330,9 @@ lockfree-object-pool 0.1.6 retains its
 [Boost Software License 1.0 notice](docs/licenses/author-tools/lockfree-object-pool.txt).
 Versions and licence choices are recorded in the
 [repository-tooling library guide](docs/libraries/repository-tooling.md#external-browser-author-tools).
+
+## Command discovery libraries
+
+Command metadata and shell completions use clap 4.6.7 and clap_complete 4.6.5,
+licensed under MIT OR Apache-2.0. Their clap_builder, clap_lex and anstyle
+runtime dependencies use MIT OR Apache-2.0 as well.
