@@ -27,6 +27,7 @@ mod handoff_example;
 mod lifetimes;
 mod listener_prefixes;
 mod load_time_contributions;
+mod minimal_mode_example;
 mod module_location;
 mod native_helpers;
 mod native_io;
@@ -77,6 +78,7 @@ mod model_signal_selection;
 mod tool_override_example;
 mod tui_capabilities;
 
+mod custom_compaction_example;
 mod custom_ui;
 mod model_lifetimes;
 

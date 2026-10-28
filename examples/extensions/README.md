@@ -54,6 +54,8 @@ resolving conflicts, then regenerate the table.
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
 | `confirm_destructive.md` | Confirm destructive |
 | `confirm_destructive.rs` | Opt-in confirmation before replacing or forking a session. |
+| `custom_compaction.md` | Custom compaction |
+| `custom_compaction.rs` | Summarizes the complete prepared conversation with a separately selected model. |
 | `custom_footer.md` | Custom footer |
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
@@ -76,6 +78,8 @@ resolving conflicts, then regenerate the table.
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `mac_system_theme.md` | Mac system theme |
 | `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
+| `minimal_mode.md` | Minimal mode |
+| `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
 | `model_status.md` | Model status |
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
