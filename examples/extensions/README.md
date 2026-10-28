@@ -70,6 +70,8 @@ resolving conflicts, then regenerate the table.
 | `file_trigger.rs` | An opt-in file watcher that sends external triggers to the conversation. |
 | `git_checkpoint.md` | Git checkpoint |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints for restoring code when forking a conversation. |
+| `github_issue_autocomplete.md` | GitHub issue autocomplete |
+| `github_issue_autocomplete.rs` | Opt-in issue completion backed by the GitHub CLI and the current editor provider. |
 | `handoff.md` | Handoff |
 | `handoff.rs` | Generates an editable prompt from the current branch for a new, parent-linked session. |
 | `hello.md` | Hello |
