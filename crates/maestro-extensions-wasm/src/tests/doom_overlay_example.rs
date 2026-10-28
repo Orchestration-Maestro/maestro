@@ -227,6 +227,43 @@ fn doom_overlay_retains_frames_keys_and_clock_across_pause_resume() -> Result<()
     Ok(())
 }
 
+/// Enhanced confirmation keys reach game prompts with or without Shift.
+#[test]
+fn doom_overlay_forwards_enhanced_confirmation_keys() -> Result<(), String> {
+    let mut host = host()?;
+    for (data, key) in [
+        ("\u{1b}[121u", "y"),
+        ("\u{1b}[121;2u", "shift+y"),
+        ("\u{1b}[110u", "n"),
+        ("\u{1b}[110;2u", "shift+n"),
+    ] {
+        host.observed().actions.value[format!("keys.matches_key {}", json!([data, key]))] =
+            json!(true);
+    }
+    play(
+        &mut host,
+        (
+            vec![
+                frame(8, 1, 0, 0),
+                frame(8, 1, 121, 255),
+                frame(8, 1, 121, 255),
+                frame(8, 1, 110, 255),
+                frame(8, 1, 110, 255),
+                frame(8, 1, 255, 0),
+            ],
+            8,
+        ),
+        &[
+            "\u{1b}[121u",
+            "\u{1b}[121;2u",
+            "\u{1b}[110u",
+            "\u{1b}[110;2u",
+            "q",
+        ],
+        vec![1, 0, 0, 0, 0, 0],
+    )
+}
+
 /// Standard synthetic bytes accept only their own complete SHA-256 digest.
 #[test]
 fn checksum_accepts_exact_bytes_and_rejects_modified_body() {
