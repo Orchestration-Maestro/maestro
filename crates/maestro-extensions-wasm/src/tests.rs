@@ -35,6 +35,7 @@ mod application_messages;
 pub(crate) mod author;
 mod authored_editor;
 mod authored_streams;
+mod background;
 mod basic_ui;
 mod build;
 mod bus_callbacks;

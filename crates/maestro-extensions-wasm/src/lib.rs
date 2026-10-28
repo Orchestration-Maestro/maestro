@@ -21,6 +21,8 @@ pub use editor_component::{
 };
 mod event_bus;
 pub use event_bus::*;
+mod background;
+pub use background::{Background, BackgroundTask};
 mod bash_executor;
 pub mod tools;
 pub use bash_executor::*;
