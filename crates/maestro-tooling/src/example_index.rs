@@ -96,7 +96,12 @@ fn table(folder: &Path) -> io::Result<String> {
     for file in files {
         let relative = file.strip_prefix(folder).map_err(io::Error::other)?;
         let name = relative.to_string_lossy().replace('\\', "/");
-        let summary = summary(&file)?.replace('|', "\\|");
+        let summary = summary(&file)?
+            .lines()
+            .map(str::trim)
+            .collect::<Vec<_>>()
+            .join(" ")
+            .replace('|', "\\|");
         writeln!(result, "| `{name}` | {summary} |").map_err(io::Error::other)?;
     }
     Ok(result)

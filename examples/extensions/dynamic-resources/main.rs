@@ -7,6 +7,7 @@
 // Tests receive this component's path in MAESTRO_DYNAMIC_RESOURCES_COMPONENT.
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionEventResult, ExtensionFuture, Presence, ResourcesDiscoverResult,
+    tools::path_utils,
 };
 use std::rc::Rc;
 
@@ -14,13 +15,13 @@ use std::rc::Rc;
 #[must_use]
 pub fn dynamic_resources_extension(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        let mut directory =
+        let location =
             std::env::var("MAESTRO_EXTENSION_PATH").map_err(|error| error.to_string())?;
-        // The path belongs to the host, which may use either directory separator.
-        let separator = directory
-            .rfind(['/', '\\'])
-            .ok_or("missing component directory")?;
-        directory.truncate(separator + 1);
+        let leaf = path_utils::basename(&api, &location)?;
+        let directory = location
+            .strip_suffix(&leaf)
+            .ok_or("missing component filename")?
+            .to_owned();
         api.on(
             "resources_discover",
             Rc::new(move |_, _| {
