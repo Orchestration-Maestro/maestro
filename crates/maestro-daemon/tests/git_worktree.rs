@@ -181,12 +181,12 @@ bare
 
 #[test]
 fn porcelain_listing_ignores_a_stanza_without_a_path_and_a_missing_final_blank_line() {
-    let output =
-        b"HEAD abc\nbranch refs/heads/orphan\n\nworktree /repo/last\nbranch refs/heads/last";
+    let output = b"HEAD abc\nbranch refs/heads/orphan\n\nworktree /repo/last\ndetached";
     let parsed = ExistingWorktree::parse_porcelain(output);
     assert_eq!(parsed.len(), 1);
     assert_eq!(parsed[0].path, PathBuf::from("/repo/last"));
-    assert_eq!(parsed[0].branch.as_deref(), Some("last"));
+    assert_eq!(parsed[0].branch, None);
+    assert!(parsed[0].is_detached);
 }
 
 #[test]
