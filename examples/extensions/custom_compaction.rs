@@ -230,6 +230,10 @@ async fn on_compact(
 }
 
 /// Registers custom compaction for this explicitly loaded extension.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses the
+/// `session_before_compact` handler registration, so the extension adds no custom summary.
 #[must_use]
 pub fn custom_compaction(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

@@ -1,4 +1,5 @@
 //! An opt-in conversation summary shown in a custom Markdown view.
+// maestro-component: MAESTRO_SUMMARIZE_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,

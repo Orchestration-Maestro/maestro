@@ -1780,6 +1780,8 @@ pub struct Scripted {
     pub error: Option<String>,
     /// Input and output tokens; 100 and 50 when absent.
     pub usage: Option<(f64, f64)>,
+    /// Whether the stream sends only the terminal event, so the response arrives whole.
+    pub terminal_only: bool,
 }
 
 impl Scripted {
@@ -1795,6 +1797,14 @@ impl Scripted {
     pub fn failure(error: &str) -> Self {
         Self {
             error: Some(error.into()),
+            ..Self::default()
+        }
+    }
+
+    /// A call of the tool named `echo` with `text`.
+    pub fn echo_call(text: &str) -> Self {
+        Self {
+            tool_calls: vec![("echo".into(), json!({"text": text}))],
             ..Self::default()
         }
     }
@@ -1814,7 +1824,8 @@ fn scripted_stream(
         let index = requests.0.borrow().len() % responses.len();
         requests.0.borrow_mut().push(context);
         let stream = maestro_models::AssistantMessageEventStream::new();
-        stream_with_deltas(&stream, scripted_message(&responses[index]));
+        let response = &responses[index];
+        stream_with_deltas(&stream, scripted_message(response), response.terminal_only);
         Box::pin(std::future::ready(Ok(stream)))
     })
 }
@@ -1864,11 +1875,22 @@ fn scripted_message(response: &Scripted) -> AssistantMessage {
 }
 
 /// Pushes `message` onto `stream` block by block, each with its start, deltas of up to four
-/// characters and its end, then its terminal event.
+/// characters and its end, then its terminal event; only the terminal event when
+/// `terminal_only`.
 fn stream_with_deltas(
     stream: &maestro_models::AssistantMessageEventStream,
     message: AssistantMessage,
+    terminal_only: bool,
 ) {
+    if !terminal_only {
+        stream_blocks(stream, &message);
+    }
+    stream_terminal(stream, message);
+}
+
+/// Pushes the start of `message`, then each block with its start, deltas of up to four
+/// characters and its end.
+fn stream_blocks(stream: &maestro_models::AssistantMessageEventStream, message: &AssistantMessage) {
     use maestro_models::{AssistantContent, AssistantMessageEvent as Event};
     let mut partial = AssistantMessage {
         content: Vec::new(),
@@ -1899,6 +1921,14 @@ fn stream_with_deltas(
         }
         stream.push(block_end(block, index, &snapshot(&partial)));
     }
+}
+
+/// Pushes the terminal event of `message`: its completion, or its failure.
+fn stream_terminal(
+    stream: &maestro_models::AssistantMessageEventStream,
+    message: AssistantMessage,
+) {
+    use maestro_models::AssistantMessageEvent as Event;
     let failed = matches!(message.stop_reason, StopReason::Error | StopReason::Aborted);
     let reason = message.stop_reason.clone();
     let message = Arc::new(RwLock::new(message));

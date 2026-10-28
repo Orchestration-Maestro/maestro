@@ -5,6 +5,8 @@ assistant message's tool calls. It ignores other entries, images, thinking and
 tool results. Empty conversations report `No conversation text found` when a UI
 is available. Otherwise it requests a concise, structured summary from
 `openai/gpt-5.2` with `reasoningEffort: high`, using the catalog's key and headers.
+The model comes from the configured model registry rather than a built-in table, so
+the request endpoint matches the authentication that registry supplies.
 Missing model or authentication details produce warnings only when a UI is
 available. Completion errors return to the host unchanged.
 

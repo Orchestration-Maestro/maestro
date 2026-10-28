@@ -35,6 +35,7 @@ impl WorkspaceOperations for ClosureWorkspace {
         &self,
         command: workspace::RpcCommand,
         events: WorkspaceEventSink,
+        _write_complete: tokio::sync::oneshot::Receiver<()>,
     ) -> RpcFuture<WorkspaceResult> {
         Box::pin(std::future::ready((self.0)(command, events)))
     }
