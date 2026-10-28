@@ -167,8 +167,8 @@ enum Running {
     Queued {
         /// Admits lines; `None` once the output finished.
         frames: RefCell<Option<mpsc::UnboundedSender<Frame>>>,
-        /// The writer task, until the output finished.
-        task: RefCell<Option<JoinHandle<()>>>,
+        /// The writer task, retained through draining so cancellation can abort it.
+        task: RefCell<JoinHandle<()>>,
     },
 }
 
@@ -187,7 +187,7 @@ impl Writer {
         });
         Self(Running::Queued {
             frames: RefCell::new(Some(frames)),
-            task: RefCell::new(Some(task)),
+            task: RefCell::new(task),
         })
     }
 
@@ -216,20 +216,20 @@ impl Writer {
     pub(super) async fn finish(&self) {
         if let Running::Queued { frames, task } = &self.0 {
             frames.borrow_mut().take();
-            let task = task.borrow_mut().take();
-            if let Some(task) = task {
-                drop(task.await);
-            }
+            drop(
+                std::future::poll_fn(|context| {
+                    std::pin::Pin::new(&mut *task.borrow_mut()).poll(context)
+                })
+                .await,
+            );
         }
     }
 }
 
 impl Drop for Writer {
     fn drop(&mut self) {
-        if let Running::Queued { task, .. } = &mut self.0
-            && let Some(task) = task.get_mut().take()
-        {
-            task.abort();
+        if let Running::Queued { task, .. } = &mut self.0 {
+            task.get_mut().abort();
         }
     }
 }
