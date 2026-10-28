@@ -4,7 +4,7 @@
 //! new console, and that copy starts the executable with the console input buffer as its
 //! standard input and a pipe as its standard output.
 #![cfg(windows)]
-use crate::support::Root;
+use crate::support::{ChildGuard, Root};
 use maestro_test_process::on_console;
 use std::{
     fs::OpenOptions,
@@ -28,7 +28,8 @@ fn presents(root: &Root, args: &[&str], marker: &str) {
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
-    let mut stdout = child.stdout.take().unwrap();
+    let child = ChildGuard(&mut child);
+    let mut stdout = child.0.stdout.take().unwrap();
     let (mut bytes, mut chunk) = (Vec::new(), [0; 4096]);
     while !String::from_utf8_lossy(&bytes).contains(marker) {
         let count = stdout.read(&mut chunk).unwrap();
@@ -37,8 +38,8 @@ fn presents(root: &Root, args: &[&str], marker: &str) {
         }
         bytes.extend_from_slice(&chunk[..count]);
     }
-    child.kill().unwrap();
-    child.wait().unwrap();
+    child.0.kill().unwrap();
+    child.0.wait().unwrap();
     let output = String::from_utf8_lossy(&bytes);
     assert!(output.contains(marker), "{marker} never shown: {output:?}");
 }
