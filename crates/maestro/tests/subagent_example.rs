@@ -7,6 +7,7 @@ mod errors;
 mod render;
 mod trust;
 use maestro_app::AgentSession;
+#[cfg(unix)]
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc, sync::OnceLock};
@@ -246,6 +247,7 @@ fn subagent_discovery_accepts_a_dot_named_markdown_definition() {
     run(|local| {
         Box::pin(async move {
             let root = Root::new();
+            controlled_role(&root, "agent/agents");
             agent(&root.path("agent/agents"), ".md", "hidden");
             let session = loaded(&root, local).await;
             let result = execute(&session, json!({})).await;
@@ -261,6 +263,7 @@ fn subagent_discovery_accepts_a_dot_named_markdown_definition() {
 }
 
 #[test]
+#[cfg(unix)]
 fn subagent_tool_restrictions_use_the_host_whitespace_set() {
     if child_fixture(
         "subagent_example::subagent_tool_restrictions_use_the_host_whitespace_set",
