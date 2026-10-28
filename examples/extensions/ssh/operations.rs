@@ -22,34 +22,40 @@ pub(super) struct Remote {
 
 impl Remote {
     /// Maps a complete host directory prefix to the remote directory’s POSIX spelling.
-    fn path(&self, path: &str) -> String {
-        let windows = !self.local_cwd.starts_with('/')
-            && (self.local_cwd.starts_with("\\\\")
-                || self.local_cwd.as_bytes().get(1) == Some(&b':'));
+    fn path(&self, path: &str) -> ExtensionResult<String> {
+        let local_cwd = path_utils::resolve(&self.api, &[&self.local_cwd])?;
+        let local_path = path_utils::resolve(&self.api, &[path])?;
+        let windows = !local_cwd.starts_with('/')
+            && (local_cwd.starts_with("\\\\") || local_cwd.as_bytes().get(1) == Some(&b':'));
         let local_cwd = if windows {
-            self.local_cwd.replace('\\', "/")
+            local_cwd.replace('\\', "/")
         } else {
-            self.local_cwd.clone()
+            local_cwd
         };
         let local_path = if windows {
-            path.replace('\\', "/")
+            local_path.replace('\\', "/")
         } else {
-            path.to_owned()
+            local_path
         };
-        local_path
+        Ok(local_path
             .strip_prefix(local_cwd.trim_end_matches('/'))
             .filter(|suffix| suffix.is_empty() || suffix.starts_with('/'))
-            .map_or_else(|| path.to_owned(), |suffix| format!("{}{suffix}", self.cwd))
+            .map_or_else(|| path.to_owned(), |suffix| format!("{}{suffix}", self.cwd)))
     }
 
     /// Carries child diagnostics through the tool owner's structured error interface.
     fn operation(
         &self,
-        command: String,
+        path: &str,
+        command: &str,
         input: Option<String>,
     ) -> OperationFuture<'static, Vec<u8>> {
+        let path = self.path(path);
+        let command = command.to_owned();
         let remote = self.clone();
         Box::pin(async move {
+            let path = path.map_err(DiagnosticErrorInfo::error)?;
+            let command = format!("{command} {}", quote(&path));
             execute(&remote.api, &remote.host, command, input)
                 .await
                 .map_err(DiagnosticErrorInfo::error)
@@ -57,8 +63,13 @@ impl Remote {
     }
 
     /// Discards successful output for access checks and file-changing operations.
-    fn unit(&self, command: String, input: Option<String>) -> OperationFuture<'static, ()> {
-        let work = self.operation(command, input);
+    fn unit(
+        &self,
+        path: &str,
+        command: &str,
+        input: Option<String>,
+    ) -> OperationFuture<'static, ()> {
+        let work = self.operation(path, command, input);
         Box::pin(async move { work.await.map(|_| ()) })
     }
 
@@ -68,22 +79,15 @@ impl Remote {
         let access = self.clone();
         let image = self.clone();
         ReadOperations {
-            read_file: Rc::new(move |path| {
-                read.operation(format!("cat -- {}", quote(&read.path(&path))), None)
-            }),
-            access: Rc::new(move |path| {
-                access.unit(format!("test -r {}", quote(&access.path(&path))), None)
-            }),
+            read_file: Rc::new(move |path| read.operation(&path, "cat --", None)),
+            access: Rc::new(move |path| access.unit(&path, "test -r", None)),
             detect_image_mime_type: Some(Rc::new(move |path| image.image(&path))),
         }
     }
 
     /// Treats unavailable or unrecognized image metadata as text.
     fn image(&self, path: &str) -> OperationFuture<'static, Option<String>> {
-        let work = self.operation(
-            format!("file --mime-type -b -- {}", quote(&self.path(path))),
-            None,
-        );
+        let work = self.operation(path, "file --mime-type -b --", None);
         Box::pin(async move { Ok(work.await.ok().and_then(|bytes| classify(&bytes))) })
     }
 
@@ -92,46 +96,41 @@ impl Remote {
         let write = self.clone();
         let mkdir = self.clone();
         WriteOperations {
-            write_file: Rc::new(move |path, content| {
-                write.unit(
-                    format!("cat > {}", quote(&write.path(&path))),
-                    Some(content),
-                )
-            }),
-            mkdir: Rc::new(move |path| {
-                mkdir.unit(format!("mkdir -p -- {}", quote(&mkdir.path(&path))), None)
-            }),
+            write_file: Rc::new(move |path, content| write.unit(&path, "cat >", Some(content))),
+            mkdir: Rc::new(move |path| mkdir.unit(&path, "mkdir -p --", None)),
         }
     }
 
     /// Reuses native child streaming, cancellation and deadlines for the SSH command.
     pub fn bash(&self) -> ExtensionResult<BashOperations> {
         let local = self.api.create_local_bash_operations(None)?;
-        let mut remote = self.clone();
-        remote.local_cwd = path_utils::resolve(&self.api, &[&self.local_cwd])?;
+        let remote = self.clone();
         Ok(BashOperations {
             exec: Rc::new(move |command, cwd, options| {
-                let command = format!("cd {} && {command}", quote(&remote.path(&cwd)));
-                let command = format!("exec ssh -- {} {}", quote(&remote.host), quote(&command));
-                (local.exec)(command, remote.local_cwd.clone(), options)
+                let path = remote.path(&cwd);
+                let host = remote.host.clone();
+                let exec = Rc::clone(&local.exec);
+                Box::pin(async move {
+                    let command = format!("cd {} && {command}", quote(&path?));
+                    let command = format!("exec ssh -- {} {}", quote(&host), quote(&command));
+                    exec(command, cwd, options).await
+                })
             }),
         })
     }
 
     /// Supplies only the selected tool's effects; all algorithms stay with their owners.
     pub fn options(&self, name: &str) -> ExtensionResult<ToolsOptions> {
-        let mut remote = self.clone();
-        remote.local_cwd = path_utils::resolve(&self.api, &[&self.local_cwd])?;
         let mut options = ToolsOptions::default();
         match name {
-            "read" => options.read.operations = Some(remote.read()),
-            "write" => options.write.operations = Some(remote.write()),
+            "read" => options.read.operations = Some(self.read()),
+            "write" => options.write.operations = Some(self.write()),
             "edit" => {
-                let read = remote.read();
+                let read = self.read();
                 options.edit.operations = Some(EditOperations {
                     read_file: read.read_file,
                     access: read.access,
-                    write_file: remote.write().write_file,
+                    write_file: self.write().write_file,
                 });
             }
             "bash" => options.bash.operations = Some(self.bash()?),
