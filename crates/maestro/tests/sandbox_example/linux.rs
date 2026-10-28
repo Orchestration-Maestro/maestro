@@ -17,6 +17,8 @@ struct Ui {
     messages: RefCell<Vec<String>>,
     /// Latest sandbox status.
     status: RefCell<Option<String>>,
+    /// Severity of each notification.
+    kinds: RefCell<Vec<Option<NotificationType>>>,
 }
 impl ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {
@@ -31,8 +33,9 @@ impl ExtensionUIContextPort for Ui {
             .unwrap(),
         ))
     }
-    fn notify(&self, message: String, _: Option<NotificationType>) -> Result<(), EventError> {
+    fn notify(&self, message: String, kind: Option<NotificationType>) -> Result<(), EventError> {
         self.messages.borrow_mut().push(message);
+        self.kinds.borrow_mut().push(kind);
         Ok(())
     }
     fn set_status(&self, key: String, text: Option<String>) -> Result<(), EventError> {
@@ -267,7 +270,7 @@ async fn user_bash(runner: &ExtensionRunner<Local>, root: &Path) {
 }
 
 /// Runs the selected case below one disposable parent, with distinct caller and sandbox temp paths.
-fn isolated(test: &str) -> bool {
+pub(super) fn isolated(test: &str) -> bool {
     if std::env::var_os("MAESTRO_SANDBOX_CHILD").is_some() {
         return false;
     }
@@ -405,4 +408,11 @@ async fn initialized(runner: &ExtensionRunner<Local>, ui: &Ui) {
         .unwrap();
     assert!(ui.messages.borrow().last().unwrap().contains("127.0.0.1"));
     assert!(ui.messages.borrow().last().unwrap().contains("localhost"));
+}
+
+mod lifecycle;
+
+/// Releases all initialized services before invalidating their application context.
+pub(super) async fn shutdown(runner: &ExtensionRunner<Local>) {
+    event(runner, false).await;
 }

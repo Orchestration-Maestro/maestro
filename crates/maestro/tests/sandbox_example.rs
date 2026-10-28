@@ -34,6 +34,10 @@ mod linux;
 
 #[test]
 fn sandbox_registers_opt_in_controls_and_bash_override() {
+    #[cfg(target_os = "linux")]
+    if linux::isolated("sandbox_registers_opt_in_controls_and_bash_override") {
+        return;
+    }
     run(|local| async move {
         let root = super::support::Root::new();
         let session = loaded(&root, local).await;
@@ -44,6 +48,8 @@ fn sandbox_registers_opt_in_controls_and_bash_override() {
         assert_eq!(tools.len(), 1);
         assert_eq!(tools[0].metadata().definition.name, "bash");
         assert_eq!(tools[0].metadata().label, "bash (sandboxed)");
+        #[cfg(target_os = "linux")]
+        linux::shutdown(&runner).await;
         session.dispose();
     });
 }
