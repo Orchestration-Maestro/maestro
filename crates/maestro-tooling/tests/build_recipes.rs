@@ -142,7 +142,6 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
-#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
@@ -171,6 +170,24 @@ fn maestro_test_recipes_forward_literal_arguments() {
             format!("cargo nextest|run|{selection}|{suffix}\n")
         };
         assert_eq!(workspace.log(), expected, "{recipe}");
+    }
+}
+
+#[test]
+fn maestro_forwarded_arguments_stay_out_of_recipe_echo() {
+    for recipe in ["models-test", "run-source"] {
+        let workspace = Workspace::new();
+        let output = workspace
+            .command(recipe)
+            .arg("fake-secret-do-not-echo")
+            .env("MAESTRO_COMMAND_OUTPUT", "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains("controlled command stderr"), "{stderr}");
+        assert!(!stderr.contains("fake-secret-do-not-echo"), "{stderr}");
+        assert!(String::from_utf8_lossy(&output.stdout).contains("controlled command stdout"));
     }
 }
 
@@ -1286,7 +1303,6 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
 }
 
 #[test]
-#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_source_recipes_preserve_invocation_directory() {
     let workspace = Workspace::new();
     let outside = workspace.path().join("outside");
@@ -1297,7 +1313,14 @@ fn maestro_source_recipes_preserve_invocation_directory() {
             .arg(workspace.path().join("justfile"))
             .arg(recipe)
             .current_dir(&outside)
-            .args(["", "a space", "'quoted'", "\u{feff}\u{85}\u{2003}"])
+            .args([
+                "",
+                "a space",
+                "'quoted'",
+                "unmatched'quote",
+                "$(exit 91); * $HOME",
+                "\u{feff}\u{85}\u{2003}",
+            ])
             .output()
             .unwrap();
         assert!(
@@ -1314,7 +1337,7 @@ fn maestro_source_recipes_preserve_invocation_directory() {
     let manifest = format!("{}/Cargo.toml", workspace.path().display());
     let log = workspace.log();
     for recipe in ["run-source", "run-source-windows"] {
-        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{manifest}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}")), "{log}");
+        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{manifest}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|unmatched'quote|$(exit 91); * $HOME|\u{feff}\u{85}\u{2003}")), "{log}");
     }
 }
 
