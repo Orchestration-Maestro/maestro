@@ -3577,3 +3577,99 @@ fn example_components_discover_source_only_additions() {
     assert!(filter.contains("test(/_example::/)"), "{filter}");
     assert!(!filter.contains("qna_example::"), "{filter}");
 }
+
+/// Invalid environment markers never reach the component builder.
+#[test]
+fn example_components_reject_invalid_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for variable in [
+        "OTHER_FIXTURE_COMPONENT",
+        "MAESTRO_FIXTURE",
+        "MAESTRO_fixture_COMPONENT",
+        "MAESTRO_FIXTURE=VALUE_COMPONENT",
+        "MAESTRO_FIXTURE COMPONENT",
+    ] {
+        fs::write(
+            root.path().join("fixture.rs"),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+        let mut builds = Vec::new();
+        let error = tooling::example_files::prepare(root.path(), |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from("/components/fixture.wasm"))
+        })
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("invalid component variable: {variable}")
+        );
+        assert!(builds.is_empty(), "{builds:?}");
+    }
+}
+
+/// A repeated variable is rejected before its second build, even across files.
+#[test]
+fn example_components_reject_duplicate_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["first", "second"] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error = tooling::example_files::prepare(root.path(), |name, environment| {
+        builds.push((name.to_owned(), environment.to_owned()));
+        Ok(PathBuf::from(format!("/components/{name}.wasm")))
+    })
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+    );
+    assert_eq!(
+        builds,
+        [("first".to_owned(), "MAESTRO_FIXTURE_COMPONENT".to_owned())]
+    );
+}
+
+/// Builder failures retain their error and stop preparation before later targets.
+#[test]
+fn example_components_propagate_builder_failure() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for (name, variable) in [
+        ("first", "MAESTRO_FIRST_COMPONENT"),
+        ("second", "MAESTRO_SECOND_COMPONENT"),
+        ("third", "MAESTRO_THIRD_COMPONENT"),
+    ] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error = tooling::example_files::prepare(root.path(), |name, environment| {
+        builds.push((name.to_owned(), environment.to_owned()));
+        if name == "second" {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "fixture build refused",
+            ))
+        } else {
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        }
+    })
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(error.to_string(), "fixture build refused");
+    assert_eq!(
+        builds,
+        [
+            ("first".to_owned(), "MAESTRO_FIRST_COMPONENT".to_owned()),
+            ("second".to_owned(), "MAESTRO_SECOND_COMPONENT".to_owned()),
+        ]
+    );
+}
