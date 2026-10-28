@@ -8,6 +8,19 @@ use serde_json::{Value, json};
 use std::rc::Rc;
 use tokio::io::AsyncReadExt;
 
+/// The exit code a killed child reports: Windows ends it with code 1, while a child a
+/// signal ended on Unix has no code and reports 0.
+const KILLED: i32 = if cfg!(windows) { 1 } else { 0 };
+
+/// Whether a read saw the child's end of a socket close. Windows resets the connection of
+/// a killed process instead of closing it.
+fn closed(read: &std::io::Result<usize>) -> bool {
+    match read {
+        Ok(read) => *read == 0,
+        Err(error) => error.kind() == std::io::ErrorKind::ConnectionReset,
+    }
+}
+
 /// Drives the native component on its caller-owned local runtime.
 fn run(action: impl std::future::Future<Output = ()>) {
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -166,11 +179,13 @@ async fn assert_ended_by(socket: tokio::net::TcpStream, boundary: tokio::time::I
     tokio::time::advance(after.saturating_duration_since(tokio::time::Instant::now())).await;
     let mut socket = socket.into_std().unwrap();
     socket.set_nonblocking(false).unwrap();
-    let read =
-        tokio::task::spawn_blocking(move || std::io::Read::read(&mut socket, &mut [0; 1]).unwrap())
-            .await
-            .unwrap();
-    assert_eq!(read, 0, "the child ended once the boundary passed");
+    let read = tokio::task::spawn_blocking(move || std::io::Read::read(&mut socket, &mut [0; 1]))
+        .await
+        .unwrap();
+    assert!(
+        closed(&read),
+        "the child ended once the boundary passed: {read:?}"
+    );
 }
 
 /// Lets a pending child finish normally.
@@ -257,7 +272,7 @@ fn exec_preaborted_signal_is_forwarded() {
         let result = pending(&runner, json!({"signal":"preaborted"}), release).await;
         assert_eq!(
             serde_json::from_str::<Value>(&result).unwrap(),
-            json!({"stdout":"", "stderr":"", "code":0, "killed":true})
+            json!({"stdout":"", "stderr":"", "code":KILLED, "killed":true})
         );
     });
 }
@@ -332,7 +347,7 @@ fn exec_caller_signal_cancels_pending_child() {
         .await;
         assert_eq!(
             serde_json::from_str::<Value>(&result).unwrap(),
-            json!({"stdout":"partial-out", "stderr":"partial-err", "code":0, "killed":true, "before":false, "notified":1, "after":true})
+            json!({"stdout":"partial-out", "stderr":"partial-err", "code":KILLED, "killed":true, "before":false, "notified":1, "after":true})
         );
     });
 }
@@ -376,7 +391,7 @@ fn exec_deadline_is_optional_and_milliseconds() {
     run(async {
         let (_owner, runner, events) = observed().await;
         let finished = json!({"stdout":"", "stderr":"", "code":0, "killed":false});
-        let expired = json!({"stdout":"", "stderr":"", "code":0, "killed":true});
+        let expired = json!({"stdout":"", "stderr":"", "code":KILLED, "killed":true});
         for options in [
             json!({"cwd":""}),
             json!({"cwd":"", "timeout":null}),
@@ -567,7 +582,7 @@ fn signal_aliases_and_overlaps_keep_other_calls_alive() {
         assert_eq!(super::abort_observers::labels(&observations), ["relay"]);
         assert_eq!(
             newer.await.unwrap(),
-            json!({"stdout":"", "stderr":"", "code":0, "killed":true, "before":false, "notified":1, "after":true})
+            json!({"stdout":"", "stderr":"", "code":KILLED, "killed":true, "before":false, "notified":1, "after":true})
         );
         super::abort_observers::signal_command(&runner, "barrier").await;
         assert!(released("newer"));
@@ -665,7 +680,7 @@ fn exec_term_resistance_uses_existing_escalation() {
         let result = execution.await.unwrap();
         assert_eq!(
             result,
-            json!({"stdout":"partial-out", "stderr":"partial-err", "code":0, "killed":true, "before":false, "notified":1, "after":true})
+            json!({"stdout":"partial-out", "stderr":"partial-err", "code":KILLED, "killed":true, "before":false, "notified":1, "after":true})
         );
     });
 }
@@ -771,7 +786,8 @@ fn returned_shell_abort_survives_event_handler_return() {
             (execution.await.unwrap_err().to_string(), held)
         };
         assert_eq!(error, "aborted");
-        assert_eq!(held.read(&mut [0; 1]).await.unwrap(), 0, "the child ended");
+        let read = held.read(&mut [0; 1]).await;
+        assert!(closed(&read), "the child ended: {read:?}");
         assert_eq!(chunks, [b"partial-out".to_vec(), b"partial-err".to_vec()]);
         super::abort_observers::signal_command(&runner, "barrier").await;
         assert!(!super::abort_observers::released(&owner, "shell"));

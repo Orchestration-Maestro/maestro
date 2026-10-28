@@ -44,7 +44,14 @@ fn scope_slashes_globstar_and_dot_rules_remain_distinct() {
 
 #[test]
 fn scope_escaping_is_not_path_normalization() {
-    replay(&["case_029", "case_030", "case_031", "case_032", "case_033"]);
+    replay(&["case_029", "case_030", "case_031", "case_032"]);
+    // The glob reads `\\` in a model id as a separator on Windows, as minimatch does there,
+    // so the recorded single match of `a/b*` holds only where `\\` stays part of the name.
+    if cfg!(windows) {
+        eprintln!("premise not met: this host reads `\\` in a matched name as a separator");
+    } else {
+        replay(&["case_033"]);
+    }
 }
 
 #[test]

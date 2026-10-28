@@ -359,6 +359,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
+    "maestro-lock",
     "maestro-models",
     "maestro-packages",
     "maestro-process",
@@ -494,7 +495,6 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
             dependencies: &[],
         });
     }
-    let dependencies = POLICY.iter().find(|row| row.0 == name)?.1;
     Some(Rule {
         class: if matches!(
             name,
@@ -511,7 +511,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
         } else {
             "core"
         },
-        dependencies,
+        dependencies: POLICY.iter().find(|row| row.0 == name)?.1,
     })
 }
 

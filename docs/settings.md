@@ -384,6 +384,15 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `steeringMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `followUpMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `transport` | string | `auto` | `sse`, `websocket`, `websocket-cached` or `auto`; any other text, including empty, is kept |
+| `holdUncheckedText` | boolean | `false` | Withhold assistant text, thinking and partial tool output from session listeners until they are checked |
+
+`holdUncheckedText` only withholds, and at its default it changes nothing. While it is
+`true`, the session tells its listeners (the interactive view, the JSON and RPC modes and
+SDK subscribers) nothing of a response's text or thinking until the message ends, and
+nothing of a tool's partial content or details until the tool result is complete.
+Tool-call and status events still arrive. A snapshot that carries a tool call keeps its
+text and thinking blocks in place, emptied. The message end delivers the message as the
+extensions left it, and extension hooks see every event as before.
 
 ### Terminal and images
 
@@ -630,9 +639,10 @@ are commented out so the host/build default still applies. The guide uses JSONC;
 
 ## Nested preference edits
 
-`SettingsManager::set_global_key_path` addresses a literal top-level field and
-nested keys. Pass `Some(value)` to set the leaf, including JSON null, or `None`
-to remove it. An empty key slice addresses the field itself. New values publish
+`SettingsManager::set_key_path(scope, field, keys, value)` edits a literal
+top-level field and nested keys in `SettingsScope::Global` or
+`SettingsScope::Project`. `set_global_key_path` is the global-only shorthand.
+Pass `Some(value)` to set the leaf, including JSON null, or `None` to remove it. An empty key slice addresses the field itself. New values publish
 immediately; `flush` waits for queued writes and `drain_errors` reports failures.
 Each write merges the edited leaf into fresh storage under the existing lock,
 so independent writers can change sibling preferences without losing updates.
@@ -640,3 +650,25 @@ Whole-field and object-key setters still replace the value they address.
 
 Use `set_global_key_paths` when several leaves form one change. The batch publishes
 once and reaches storage in one write, so readers cannot observe half a change.
+
+Scoped edits use the same locked-path refusal and failed-load protection as typed
+setters. A refused edit leaves memory and storage unchanged and records a scoped
+error. A failed save keeps the accepted value visible and its edit pending for a
+later save; take the failure with `drain_errors`.
+
+`flush` returns a future that does not borrow the manager. When the manager is
+shared through a `RefCell`, release the borrow before awaiting it:
+
+```rust
+# use maestro_settings::{Settings, SettingsManager, SettingsScope};
+# use serde_json::json;
+# async fn example() {
+let settings = std::cell::RefCell::new(SettingsManager::in_memory(Settings::default()));
+settings.borrow_mut().set_key_path(
+    SettingsScope::Project, "custom", &["enabled"], Some(json!(true)),
+);
+let pending = settings.borrow().flush();
+pending.await;
+let errors = settings.borrow_mut().drain_errors();
+# }
+```

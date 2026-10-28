@@ -2314,6 +2314,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
 
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
+    assert!(owner_callers().contains(&"maestro-lock"));
     support_inventory_matches_contract(
         OWNER,
         support::policy::TEST_PROCESS_CALLERS,

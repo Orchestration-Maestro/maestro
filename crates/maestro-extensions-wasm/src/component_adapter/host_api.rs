@@ -210,6 +210,12 @@ impl<I: Imports> ExtensionHost for Host<I> {
     ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
         self.0.native_frontmatter(content)
     }
+    fn native_yaml(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<Vec<crate::bindings::maestro::extension::host::FrontmatterToken>> {
+        self.0.native_yaml(content)
+    }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.0.native_helper(operation, data)
     }

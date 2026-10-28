@@ -166,12 +166,11 @@ impl Harness {
     }
 }
 
-/// Runs Git only inside an exclusively owned disposable repository.
+/// Runs Git only inside an exclusively owned disposable repository, with the environment
+/// the example's own Git commands inherit.
 fn git(path: &Path, args: &[&str]) -> String {
     let output = Command::new("git")
         .current_dir(path)
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .args(args)
         .output()
         .unwrap();
@@ -181,6 +180,24 @@ fn git(path: &Path, args: &[&str]) -> String {
         String::from_utf8_lossy(&output.stderr)
     );
     String::from_utf8(output.stdout).unwrap()
+}
+
+/// Runs the calling test again in a child whose Git commands, the example's included, read no
+/// system or global configuration; returns `true` in the parent once that child passed.
+fn isolated(test: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return false;
+    }
+    let status = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .case("*")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .nocapture()
+        .status()
+        .unwrap();
+    assert!(status.success(), "{test}: {status}");
+    true
 }
 
 /// Runs native process futures on their caller-owned local executor.
@@ -201,9 +218,32 @@ fn selection() -> Value {
     ])
 }
 
+/// The example's Git commands see the disposable repository's own configuration alone.
+#[test]
+fn git_checkpoint_component_reads_only_repository_configuration() {
+    if isolated("git_checkpoint_component_reads_only_repository_configuration") {
+        return;
+    }
+    run(async {
+        let h = Harness::new().await;
+        let scopes = git(
+            h.root.path(),
+            &["config", "--list", "--show-scope", "--show-origin"],
+        );
+        eprintln!("{scopes}");
+        assert!(
+            scopes.lines().all(|line| line.starts_with("local\t")),
+            "{scopes}"
+        );
+    });
+}
+
 /// Captures replace per-entry objects and restore the selected tracked-file contents.
 #[test]
 fn git_checkpoint_component_tracks_entries_and_applies_latest_stash() {
+    if isolated("git_checkpoint_component_tracks_entries_and_applies_latest_stash") {
+        return;
+    }
     run(async {
         let h = Harness::new().await;
         let first = h.track().await;
@@ -243,6 +283,9 @@ fn git_checkpoint_component_tracks_entries_and_applies_latest_stash() {
 /// Missing checkpoints, headless operation and nonaffirmative choices never restore files.
 #[test]
 fn git_checkpoint_component_requires_checkpoint_ui_and_yes() {
+    if isolated("git_checkpoint_component_requires_checkpoint_ui_and_yes") {
+        return;
+    }
     run(async {
         let h = Harness::new().await;
         h.write("untracked entry\n");
@@ -275,6 +318,9 @@ fn git_checkpoint_component_requires_checkpoint_ui_and_yes() {
 /// Agent completion clears references while leaving the remembered entry available.
 #[test]
 fn git_checkpoint_component_clears_checkpoints_but_keeps_current_entry() {
+    if isolated("git_checkpoint_component_clears_checkpoints_but_keeps_current_entry") {
+        return;
+    }
     run(async {
         let h = Harness::new().await;
         let id = h.track().await;

@@ -548,9 +548,12 @@ paths may re-export the same moved types, not retain a second implementation.
 
 `maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
 locks. Waiting acquisition uses the operating system's file lock, which is released
-when the holder exits. It also owns byte-oriented atomic replacement: an
-exclusive temporary sibling is written, synced, closed and renamed before the
-parent directory is synced. Workspace snapshot storage and detection catalog publication use this operation;
+when the holder exits. It also owns byte-oriented atomic replacement: a
+short exclusive temporary sibling is written, synced, closed and renamed before the
+parent directory is synced. Replacement preserves existing native permissions;
+a supplied creation mode applies only to missing files. Unix creation applies
+permission bits before first visibility; Windows maps only owner-write to the
+read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
 feature owners retain serialization and symbolic-link policy. File creation for
 lock acquisition, permissions, in-place settings/credentials persistence, unlocking
 policy and asynchronous credential acquisition remain with settings and
@@ -728,7 +731,7 @@ fixtures, and it is excluded from the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
 and `maestro-tui-crossterm`; a
@@ -748,7 +751,9 @@ completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
 `TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
-temporary directory unless its case sets one.
+temporary directory unless its case sets one. `local_zone_follows_tz()` states the
+premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
+Windows reads its system zone, so such a test reports the premise and returns there.
 
 ### Test directory owner
 
@@ -771,9 +776,11 @@ optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
-root's canonical path. `temporary_root()` reports that parent for tests that
-observe it without owning it. `Scratch::new_in(parent)` preserves native path-join
-spelling, including relative and non-Unicode parents. Both return `io::Result`,
+root's canonical path; on Windows that path drops the verbatim `\\?\` prefix
+of a drive path, so `/` keeps separating components. `temporary_root()` reports
+that parent for tests that observe it without owning it.
+`Scratch::new_in(parent)` preserves native path-join spelling, including relative
+and non-Unicode parents. Both return `io::Result`,
 use PID/atomic-sequence candidates and exclusive `create_dir`, retry only
 `AlreadyExists`, and never delete a colliding entry. The borrowed `path()` stays
 owned by `Scratch`; drop attempts recursive removal without panicking, including
@@ -999,8 +1006,9 @@ only converter. Inside that owner the supplied schema is indexed once: a data-on
 document holds each authored node's kind against the node's identity, a small context owns
 only the named definitions visible on the current conversion call path, and each stage and
 kind keeps its own module (conversion, instantiation, evaluation, comparison, object
-property modifiers). The stages receive the operands they act on, never the conversion
-context or a projection shared between kinds. Serialization writes the supplied JSON
+property modifiers). Structural comparison and evaluation receive only the operands they
+act on, never the conversion context or a projection shared between kinds; conversion and
+instantiation also receive the conversion context. Serialization writes the supplied JSON
 alone: providers, persisted JSON
 and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
 text. The guest carries the declared kinds only inside its opaque internal registration

@@ -87,6 +87,7 @@ mod footer_metadata;
 mod footer_support;
 mod footer_watch;
 mod helper_launches;
+mod hold_unchecked_text_checks;
 mod install_reporting;
 mod installation_kind;
 #[cfg(not(target_arch = "wasm32"))]
