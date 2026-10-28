@@ -8,7 +8,8 @@ which drives Maestro as a child process, lives here in `rpc_client`
 ([RPC client](../client.md)).
 
 [Session observations](lifecycle.md) describes name publication and finalized
-message replacements.
+message replacements. The [executable examples](examples.md) cover model selection,
+resources, tools, credentials, persistence and runtime replacement.
 
 ## Choose the integration boundary
 

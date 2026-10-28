@@ -36,5 +36,7 @@ neither Maestro nor credentials.
 
 For the interactive Rust flow, see the application-owned
 [`rpc_client_demo`](../../crates/maestro-app/examples/rpc_client_demo/main.rs).
-Other SDK examples are listed in the
-[examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074).
+
+The [embedding examples guide](../../docs/application/examples.md) lists thirteen
+executable in-process Rust samples, with controlled model requests and
+disposable configuration. Run one with `cargo run -p maestro-app --example minimal`.
