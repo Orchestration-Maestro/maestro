@@ -2,6 +2,7 @@
 
 use super::super::App;
 use crate::{api::RequestMessage, paths::DaemonPaths};
+use maestro_settings::SettingsManager;
 use maestro_workspace::terminal_id::TerminalId;
 use std::{future::Future, time::Instant};
 
@@ -10,10 +11,12 @@ impl<C: FnMut() -> u128> App<C> {
     /// answering each workspace command from `requests` in arrival order.
     ///
     /// The caller supplies shutdown readiness; transport and frontend arms share this loop.
+    /// `settings` is the retained settings owner a configuration reload reads through.
     pub async fn run(
         &mut self,
         paths: &DaemonPaths,
         requests: &mut tokio::sync::mpsc::UnboundedReceiver<RequestMessage>,
+        settings: &mut SettingsManager,
         shutdown: impl Future<Output = ()>,
     ) {
         tokio::pin!(shutdown);
@@ -31,7 +34,8 @@ impl<C: FnMut() -> u128> App<C> {
                     else { self.state.should_quit.0 = true; }
                 }
                 Some(request) = requests.recv() => {
-                    let response = self.handle_api_request(request.command).await;
+                    let response =
+                        self.handle_api_request(request.command, settings, paths).await;
                     let _ = request.respond_to.send(response);
                 }
                 () = self.launch.render_notify.notified() => {}
@@ -60,7 +64,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Releases detached owners after the event batch has released topology borrows.
-    async fn shutdown_detached_terminal_runtimes(&mut self) {
+    pub(in crate::app) async fn shutdown_detached_terminal_runtimes(&mut self) {
         for terminal in std::mem::take(&mut self.state.terminal_runtime_shutdowns) {
             self.shutdown_terminal_runtime(&terminal).await;
         }

@@ -448,6 +448,7 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     block_on(app.run(
         &paths,
         &mut tokio::sync::mpsc::unbounded_channel().1,
+        &mut crate::support::api::settings(),
         std::future::ready(()),
     ));
     assert!(!Path::new(&paths.history_path()).exists());
@@ -486,6 +487,7 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
         block_on(app.run(
             &paths,
             &mut tokio::sync::mpsc::unbounded_channel().1,
+            &mut crate::support::api::settings(),
             std::future::ready(()),
         ));
         assert_eq!(
@@ -524,6 +526,7 @@ fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_sn
             block_on(app.run(
                 &paths,
                 &mut tokio::sync::mpsc::unbounded_channel().1,
+                &mut crate::support::api::settings(),
                 std::future::ready(()),
             ));
         }

@@ -2,9 +2,9 @@
 //! recovery cases: the announced events, the rebuilt history and the stored entries.
 #![cfg(not(target_arch = "wasm32"))]
 use super::session_harness::{
-    Auth, Harness, HarnessOptions, agent_ended, answer, assistant, case, harness, load_history,
-    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon,
-    summary_provider, summary_result, usage, user,
+    Auth, Harness, HarnessOptions, agent_ended, answer, as_recorded, assistant, case, harness,
+    load_history, message_text, on_paused_task_set, recorded_number, script_responses,
+    start_and_abandon, summary_provider, summary_result, usage, user,
 };
 use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_app::agent_session::CompactionReason;
@@ -1213,18 +1213,13 @@ fn manual_compaction_without_credentials_reports_the_key_message() {
         let docs = maestro_app::configuration::config::get_docs_path().unwrap();
         match refused {
             Ok(_) => panic!("the compaction was expected to be refused"),
-            Err(error) => {
-                let expected = expected["refused"]["error"]
-                    .as_str()
-                    .unwrap()
-                    .replace("$DOCS", &docs);
-                assert_eq!(error.message, expected);
-            }
+            Err(error) => assert_eq!(
+                as_recorded(json!(error.message), &[(&docs, "$DOCS")]),
+                expected["refused"]["error"]
+            ),
         }
-        let docs = maestro_app::configuration::config::get_docs_path().unwrap();
-        let observed = events_view(&h).to_string().replace(&docs, "$DOCS");
         assert_eq!(
-            serde_json::from_str::<Value>(&observed).unwrap(),
+            as_recorded(events_view(&h), &[(&docs, "$DOCS")]),
             without_kept_identity(&expected["events"])
         );
         assert_eq!(messages_view(&h), expected["messages"]);

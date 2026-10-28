@@ -14,7 +14,7 @@ use crate::{
 pub use maestro_detection::manifest::ManifestCache;
 use maestro_process::pty::PtySize;
 /// The child-setup entry and process detection policy of [`PaneLaunchInputs`].
-pub use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
+pub use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode, setup_entry};
 use maestro_workspace::layout::PaneId;
 use std::{
     collections::HashMap,
@@ -102,6 +102,7 @@ impl<C: FnMut() -> u128> App<C> {
             last_render_at: None,
             last_presentation_at: None,
             toast_deadline: None,
+            last_api_notification_at: None,
             event_rx,
             next_auto_update_check: None,
             next_agent_manifest_update_check: None,

@@ -14,9 +14,12 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         self.topology
             .workspaces
             .iter()
-            .position(|workspace| workspace.id == id)
-            .or_else(|| id.strip_prefix("w_")?.parse::<usize>().ok()?.checked_sub(1))
-            .or_else(|| id.parse::<usize>().ok()?.checked_sub(1))
+            .position(|workspace| {
+                #[cfg(test)]
+                crate::tests::record_workspace_work();
+                workspace.id == id
+            })
+            .or_else(|| parse_positional_workspace_id(id))
     }
 
     /// Resolves stable `w1:t2` numbers or historical positional tab spellings.
@@ -123,4 +126,14 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         let (workspace, pane) = self.parse_pane_id(id)?;
         (self.public_pane_id(workspace, pane).as_deref() == Some(id)).then_some((workspace, pane))
     }
+}
+
+/// Resolves a historical `w_N` or bare `N` workspace spelling to its display position,
+/// without checking that position.
+pub(crate) fn parse_positional_workspace_id(id: &str) -> Option<usize> {
+    id.strip_prefix("w_")
+        .unwrap_or(id)
+        .parse::<usize>()
+        .ok()?
+        .checked_sub(1)
 }

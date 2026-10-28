@@ -27,18 +27,22 @@ called.
 
 Before binding, preparation creates parents, rejects a live listener with
 `maestro server is already running (socket busy at {path})`, and removes stale
-socket entries. A connection failure that is not stale does not authorize
-unlinking: preparation reads the entry's type without following a link, and when
-that entry is not a socket it preserves the entry and returns `AlreadyExists`. A
-link to a live listener takes the live-listener branch.
+socket entries. Preparation inspects the entry in two cases only: a stale
+connection failure (connection refused, not found or timed out) and a native
+not-a-socket failure. Every other connection failure is returned unchanged and
+nothing is inspected. Inspection reads the entry's type without following a link,
+and when that entry is not a socket it preserves the entry and returns
+`AlreadyExists`. A link to a live listener takes the live-listener branch.
 
 The not-a-socket test follows the native error, because the general error kind does
-not separate these cases. An ordinary file reports a native not-a-socket failure,
-which admits the entry inspection; a datagram socket reports a native
-wrong-protocol failure with that same general kind, and preparation keeps its
-exact native error and socket identity. A real socket that fails any other way
-keeps that failure too. Only a stale connection failure removes a socket.
-Unclassified errors propagate unchanged.
+not separate these cases on macOS. There an ordinary file reports a native
+not-a-socket failure, which admits the entry inspection, and a datagram socket
+reports a native wrong-protocol failure with that same general kind; preparation
+keeps the datagram socket's exact native error and socket identity. On Linux an
+ordinary file reports connection refused, so it is admitted through the stale case,
+while a datagram socket still reports wrong-protocol. On both platforms the ordinary
+file is preserved and preparation returns `AlreadyExists`. Only a stale connection
+failure removes a socket.
 
 Binding disables automatic pathname removal on listener drop. The caller records
 `SocketFileIdentity` and can remove the pathname if its current device and inode
@@ -534,13 +538,16 @@ daemon runs.
 
 ## Server mode
 
-`maestro_rpc::daemon::run_server` takes the daemon's `App`, its `DaemonPaths` and a
-shutdown future. It installs the file log for the `daemon` role, filtered by a valid
-`MAESTRO_LOG` directive, and binds the API socket at `DaemonPaths::api_socket_path`.
+`maestro_rpc::daemon::run_server` takes the daemon's `App`, its `SettingsManager`, its
+`DaemonPaths` and a shutdown future. It installs the file log for the `daemon` role,
+filtered by a valid `MAESTRO_LOG` directive, and binds the API socket at
+`DaemonPaths::api_socket_path`.
 The socket is readable and writable by its owner only. A stale socket is replaced; a
 live one fails the start as address-in-use, and a file that is not a socket is kept.
-After binding, the server logs `maestro server started` and writes three lines to
-standard error:
+After binding, a daemon without workspaces opens one in the directory
+`MAESTRO_STARTUP_CWD` names, focused; a daemon that already has workspaces ignores it.
+Panes never inherit the variable. The server then logs `maestro server started` and
+writes three lines to standard error:
 
 ```text
 maestro server running; you can use any maestro CLI command in another terminal.
@@ -555,9 +562,13 @@ future resolves or a client sends `server.stop`. Afterwards the server removes i
 socket, unless another file has replaced it. Ping reports live handoff as
 unavailable, and the detached capability is the process's own session check.
 
-`App::run` takes the request queue the socket feeds. `App::handle_api_request`
-applies every queued internal event before it answers. It sets the quit flag for
-`server.stop` and answers every command without a handler with `not_implemented`.
+`App::run` takes the request queue the socket feeds and the settings owner a
+configuration reload reads through. `App::handle_api_request` applies every queued
+internal event before it answers, and marks render work for a command that changes
+what a view shows. It sets the quit flag for `server.stop`, answers the server,
+notification, workspace and tab commands, and answers every other command with
+`not_implemented`. Creating a workspace from the view goes through the same
+`workspace.create` handler.
 The [socket server](daemon-protocol.md#socket-server) section describes the
 connection rules.
 
