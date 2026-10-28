@@ -54,7 +54,8 @@ fn startup_child_default_keeps_explicit_marker_overlay() {
 /// Captured stdout of a command whose environment the caller edited.
 ///
 /// The fixture supplies the unrelated `ONLY` itself and then removes it, so an edit that
-/// sets the key still shows through while the caller's environment never reaches the child.
+/// sets the key still shows through while the caller's own `ONLY` value cannot leak into
+/// the child.
 fn edited(edit: impl FnOnce(&mut Command)) -> String {
     let mut command = Command::new("sh");
     command.args(["-c", "printf '%s|%s' \"$MAESTRO_CODING_AGENT\" \"$ONLY\""]);
