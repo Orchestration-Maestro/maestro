@@ -6,6 +6,7 @@ mod config;
 mod config_io;
 #[cfg(unix)]
 mod creation;
+mod git_refresh;
 mod pane_info;
 mod runtime;
 mod session;
@@ -56,6 +57,8 @@ pub struct App<C> {
     pub copy_feedback_deadline: Option<std::time::Instant>,
     /// Status producers retained across internal event passes.
     tab_bar_status: tab_bar_status::TabBarStatus,
+    /// Repository status refresh scheduling and its cache.
+    git_refresh: git_refresh::GitRefresh,
     /// Accepted preferences shared by creation and replacement process launches.
     pub config: crate::settings::model::Config,
     /// Caller-supplied process entry and shared runtime adapters.
