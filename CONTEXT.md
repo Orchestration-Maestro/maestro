@@ -64,8 +64,12 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
 - **Manifest package:** The default-on base package that selects, installs, reads
   and enforces a manifest through the core hooks.
-- **Manifest area:** One folder of a manifest (common, standard, core, language or
-  capability) whose content enters the manifest layer in a fixed order.
+- **Manifest root:** The one folder of a release, `manifests/`, that holds all of
+  its manifest content. Maestro reads manifest content only from it; documentation,
+  schemas and CI stay outside.
+- **Manifest area:** The manifest root itself (the common area) or one folder under
+  it (standard, core, language or capability) whose content enters the manifest
+  layer in a fixed order.
 - **Capability:** A manifest area that is one package bundling a team's roles,
   skills, instructions, prompt templates and workflows, selected by name.
 - **Capability group:** The folder that groups capabilities, usually after the
@@ -88,7 +92,10 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
-- **Lock:** A policy entry fixing a value that local layers cannot change.
+- **Lock:** A policy entry that fixes a value or refuses local additions of a
+  resource kind. A lock never loosens another rule.
+- **Lock name:** A `locked` entry that names something other than a settings key:
+  the prompts, the providers or a resource kind that has no settings key.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.

@@ -561,3 +561,7 @@ host's installation facts, not the component's inherited environment.
 time zone. It returns the en-US pattern `M/D/YYYY, h:mm:ss AM`, including seconds,
 with unpadded month, day and hour fields on a twelve-hour clock. It does not select
 other locale patterns. The guest carries no time-zone data; host failures remain errors.
+
+`utils::local_time_string(&api, timestamp)` formats an instant, given in milliseconds
+since the Unix epoch, as the host's local time in the same twelve-hour form,
+`h:mm:ss AM`. An instant outside the host's calendar reads as `Invalid Date`.

@@ -12,6 +12,11 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "bash_spawn_hook"
+path = "../../examples/extensions/bash_spawn_hook.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "bookmark"
 path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
@@ -48,6 +53,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "custom_header"
 path = "../../examples/extensions/custom_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "dirty_repo_guard"
+path = "../../examples/extensions/dirty_repo_guard.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -113,6 +123,11 @@ path = "../../examples/extensions/mac_system_theme.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "message_renderer"
+path = "../../examples/extensions/message_renderer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "minimal_mode"
 path = "../../examples/extensions/minimal_mode.rs"
 crate-type = ["cdylib"]
@@ -168,6 +183,16 @@ crate-type = ["cdylib"]
 [[example]]
 name = "qna"
 path = "../../examples/extensions/qna.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "question"
+path = "../../examples/extensions/question.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "questionnaire"
+path = "../../examples/extensions/questionnaire.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -294,6 +319,7 @@ serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+num-traits.workspace = true
 regex.workspace = true
 ryu-js.workspace = true
 
