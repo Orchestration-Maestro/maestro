@@ -240,3 +240,55 @@ fn controlled_role(root: &Root, directory: &str) {
     std::fs::create_dir_all(root.path(directory)).unwrap();
     std::fs::write(root.path(directory).join("role.md"), "---\nname: role\ndescription: Controlled child\nmodel: controlled-model\ntools: read, ls\n---\nPrivate role prompt\n").unwrap();
 }
+
+#[test]
+fn subagent_discovery_accepts_a_dot_named_markdown_definition() {
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            agent(&root.path("agent/agents"), ".md", "hidden");
+            let session = loaded(&root, local).await;
+            let result = execute(&session, json!({})).await;
+            assert!(
+                result["content"][0]["text"]
+                    .as_str()
+                    .unwrap()
+                    .contains("hidden (user)"),
+                "{result}"
+            );
+        })
+    });
+}
+
+#[test]
+fn subagent_tool_restrictions_use_the_host_whitespace_set() {
+    if child_fixture(
+        "subagent_example::subagent_tool_restrictions_use_the_host_whitespace_set",
+        None,
+    )
+    .is_some()
+    {
+        return;
+    }
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            controlled_role(&root, "agent/agents");
+            let path = root.path("agent/agents/role.md");
+            let content = std::fs::read_to_string(&path)
+                .unwrap()
+                .replace("tools: read, ls", "tools: \"\u{feff}read\u{feff}, ls\"");
+            std::fs::write(path, content).unwrap();
+            let session = loaded(&root, local).await;
+            let result = execute(&session, json!({"agent":"role","task":"inspect"})).await;
+            assert_eq!(result["details"]["results"][0]["exitCode"], 0, "{result}");
+            assert!(
+                result["content"][0]["text"]
+                    .as_str()
+                    .unwrap()
+                    .starts_with("Task: inspect"),
+                "{result}"
+            );
+        })
+    });
+}
