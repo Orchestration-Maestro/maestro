@@ -104,7 +104,7 @@ fn missing_directory_selector_opens_on_a_console() {
         |command| command,
         || {
             let root = Root::new();
-            let session = root.path("agent/gone.jsonl");
+            let session = root.path("project/gone.jsonl");
             let header = serde_json::json!({
                 "type": "session",
                 "version": 3,
