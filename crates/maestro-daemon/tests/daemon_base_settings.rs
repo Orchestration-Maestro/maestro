@@ -739,6 +739,7 @@ fn daemon_reload_resolution_diagnostic_applies_user_preferences() {
     manager
         .register_decider(Arc::new(ResolutionDiagnostic))
         .unwrap();
+    manager.drain_errors();
     storage
         .with_lock(SettingsScope::Global, &mut |_| {
             Ok(Some(r#"{"daemon":{"paneShell":"user-shell"}}"#.into()))
@@ -749,4 +750,79 @@ fn daemon_reload_resolution_diagnostic_applies_user_preferences() {
     assert_eq!(report.status, ConfigReloadStatus::Partial);
     assert_eq!(current.config.terminal.default_shell, "user-shell");
     assert_eq!(report.diagnostics, vec!["stored preferences resolved"]);
+}
+
+/// Emits a diagnostic only when recovery resolves the empty-user base view.
+struct FallbackDiagnostic;
+
+impl maestro_settings::SettingsDecider for FallbackDiagnostic {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn resolve(&self, settings: &mut maestro_settings::Settings) -> Vec<String> {
+        if settings.0.contains_key("multiplexer") {
+            Vec::new()
+        } else {
+            vec!["fallback preferences resolved".into(); 2]
+        }
+    }
+}
+
+/// Supplies a malformed UI area so its recovery alone emits a resolution message.
+fn fallback_diagnostic_manager() -> SettingsManager {
+    let storage = Arc::new(InMemorySettingsStorage::new());
+    storage
+        .with_lock(SettingsScope::Global, &mut |_| {
+            Ok(Some(r#"{"multiplexer":{"sidebarWidth":"bad"}}"#.into()))
+        })
+        .unwrap();
+    storage
+        .write_base_layer(SettingsScope::Global, Some(&layer(json!({}), &[])))
+        .unwrap();
+    let mut manager = SettingsManager::from_storage(storage);
+    manager
+        .register_decider(Arc::new(FallbackDiagnostic))
+        .unwrap();
+    manager
+}
+
+/// Startup returns each fallback diagnostic once and leaves none queued.
+#[test]
+fn daemon_startup_collects_fallback_only_resolution_diagnostics() {
+    let mut manager = fallback_diagnostic_manager();
+    let (loaded, errors) = load_config(&mut manager, Path::new("."));
+    assert!(errors.is_empty());
+    assert_eq!(
+        loaded
+            .diagnostics
+            .iter()
+            .filter(|message| *message == "fallback preferences resolved")
+            .count(),
+        1
+    );
+    assert!(manager.drain_errors().is_empty());
+}
+
+/// Live recovery returns each fallback diagnostic once and leaves none queued.
+#[test]
+fn daemon_live_load_collects_fallback_only_resolution_diagnostics() {
+    use maestro_daemon::settings::io::{AcceptedAreas, load_live_config};
+    let mut manager = fallback_diagnostic_manager();
+    let (loaded, errors) = block_on(load_live_config(
+        &mut manager,
+        &AcceptedAreas::default(),
+        Path::new("."),
+    ));
+    assert!(errors.is_empty());
+    let loaded = loaded.unwrap();
+    assert_eq!(
+        loaded
+            .diagnostics
+            .iter()
+            .filter(|message| *message == "fallback preferences resolved")
+            .count(),
+        1
+    );
+    assert!(manager.drain_errors().is_empty());
 }
