@@ -36,11 +36,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 
 ## Optional replacement
 
-The request hook can return a replacement payload instead of `Ok(None)`. After
-writing the record, return `ExtensionEventResult::BeforeProviderRequest` containing
-a `JsonText` value. For example, in the `BeforeProviderRequest` branch, parse
-`event.payload`, set `payload["temperature"] = serde_json::json!(0)`, then return
+The request hook can return a replacement payload. In the registered callback,
+replace `map(|()| None)` with `and_then(...)` so a successful append can return a
+result. Match `ExtensionEvent::BeforeProviderRequest`, parse `event.payload` as
+`serde_json::Value`, set `payload["temperature"] = serde_json::json!(0)`, then return
 `Ok(Some(ExtensionEventResult::BeforeProviderRequest(payload.to_string().into())))`.
-Import `ExtensionEventResult` from `maestro_extensions_wasm`. The response hook
-still returns `Ok(None)`. The shipped example only logs; it does not change model
-settings.
+Import `ExtensionEventResult` from `maestro_extensions_wasm`. Return `Ok(None)` for
+response events. The shipped example only logs; it does not change model settings.
