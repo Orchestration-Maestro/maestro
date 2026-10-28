@@ -20,13 +20,18 @@ fn piloted() -> TestApp {
 
 /// Makes the Pi integration report a session and then work, which anchors its authority.
 fn anchored(app: &mut TestApp) {
+    anchored_under(app, "maestro:pi");
+}
+
+/// Makes the Pi integration report a session and then work under the spelling `source`.
+fn anchored_under(app: &mut TestApp, source: &str) {
     let session = json!({
-        "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": "maestro:pi",
+        "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": source,
         "agent": "pi", "agent_session_path": SESSION, "session_start_source": "startup",
         "seq": 1
     });
     accepted(app, session);
-    let mut working = report("maestro:pi", "pi", "working");
+    let mut working = report(source, "pi", "working");
     working["message"] = json!("thinking");
     working["agent_session_path"] = json!(SESSION);
     working["seq"] = json!(2);
@@ -76,15 +81,7 @@ fn an_official_report_adds_its_session_identity_to_the_pane_record() {
     let reported = pane(&mut app);
     assert_eq!(reported.agent.as_deref(), Some("pi"));
     assert_eq!(reported.agent_status, AgentStatus::Working);
-    assert_eq!(
-        reported.agent_session,
-        Some(AgentSessionInfo {
-            source: "maestro:pi".into(),
-            agent: "pi".into(),
-            kind: AgentSessionRefKind::Path,
-            value: SESSION.into(),
-        })
-    );
+    assert_eq!(reported.agent_session, Some(pi_session()));
 }
 
 #[test]
@@ -199,4 +196,49 @@ fn a_stale_sequence_is_ignored() {
     stale["seq"] = json!(3);
     accepted(&mut app, stale);
     assert_eq!(pane(&mut app).agent_status, AgentStatus::Working);
+}
+
+/// The session identity Pi's official integration reports, under its canonical source.
+fn pi_session() -> AgentSessionInfo {
+    AgentSessionInfo {
+        source: "maestro:pi".into(),
+        agent: "pi".into(),
+        kind: AgentSessionRefKind::Path,
+        value: SESSION.into(),
+    }
+}
+
+#[test]
+fn a_session_report_under_the_legacy_source_records_the_identity() {
+    let mut app = piloted();
+    let session = json!({
+        "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": "herdr:pi",
+        "agent": "pi", "agent_session_path": SESSION, "session_start_source": "startup",
+        "seq": 1
+    });
+    accepted(&mut app, session);
+    assert_eq!(pane(&mut app).agent_session, Some(pi_session()));
+}
+
+#[test]
+fn a_state_report_under_the_legacy_source_carries_the_identity() {
+    let mut app = piloted();
+    anchored_under(&mut app, "herdr:pi");
+    let reported = pane(&mut app);
+    assert_eq!(reported.agent_status, AgentStatus::Working);
+    assert_eq!(reported.agent_session, Some(pi_session()));
+}
+
+#[test]
+fn an_official_release_under_the_legacy_source_keeps_the_process() {
+    let mut app = piloted();
+    anchored(&mut app);
+    let release = json!({
+        "type": "pane.release_agent", "pane_id": "w1:p1", "source": "herdr:pi", "agent": "pi",
+        "seq": 3
+    });
+    accepted(&mut app, release);
+    let kept = pane(&mut app);
+    assert_eq!(kept.agent.as_deref(), Some("pi"));
+    assert_eq!(kept.agent_status, AgentStatus::Working);
 }

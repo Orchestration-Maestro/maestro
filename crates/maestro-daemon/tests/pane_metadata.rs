@@ -204,6 +204,62 @@ fn a_report_ignored_after_the_process_exit_does_not_advance_the_sequence() {
 }
 
 #[test]
+fn legacy_and_canonical_source_spellings_share_one_sequence() {
+    for (fresh, stale) in [
+        ("maestro:claude", "herdr:claude"),
+        ("herdr:claude", "maestro:claude"),
+    ] {
+        let mut app = daemon_with_workspaces(&["/one"]);
+        detect(&mut app, Agent::Claude, AgentState::Idle);
+        let newest = report(
+            fresh,
+            json!({"title": "new", "tokens": {"summary": "new"}, "seq": 10}),
+        );
+        accepted(&mut app, newest);
+        let older = report(
+            stale,
+            json!({"title": "old", "tokens": {"summary": "old"}, "seq": 9}),
+        );
+        accepted(&mut app, older);
+        let kept = pane(&mut app);
+        assert_eq!(kept.title.as_deref(), Some("new"), "{fresh} then {stale}");
+        assert_eq!(kept.tokens["summary"], "new", "{fresh} then {stale}");
+        accepted(
+            &mut app,
+            report(stale, json!({"title": "newer", "seq": 11})),
+        );
+        assert_eq!(pane(&mut app).title.as_deref(), Some("newer"));
+        let sources: Vec<_> = terminal_of(&app).agent_metadata.keys().collect();
+        assert_eq!(sources, ["maestro:claude"], "{fresh} then {stale}");
+    }
+}
+
+#[test]
+fn a_legacy_guard_spelling_is_ignored_after_the_process_exit_without_advancing_the_sequence() {
+    let mut app = daemon_with_workspaces(&["/one"]);
+    detect(&mut app, Agent::Claude, AgentState::Idle);
+    let exit_at = Instant::now() + Duration::from_millis(1);
+    let exited = update(Some(Agent::Claude), AgentState::Idle, true);
+    observe(&mut app, exited, exit_at);
+    let gone = update(None, AgentState::Unknown, false);
+    observe(&mut app, gone, exit_at + Duration::from_millis(1));
+    let stale = titled(json!({
+        "source": "custom:meta", "applies_to_source": "herdr:claude", "title": "stale", "seq": 200
+    }));
+    accepted(&mut app, stale);
+    let back = update(Some(Agent::Claude), AgentState::Idle, false);
+    observe(&mut app, back, exit_at + Duration::from_millis(2));
+    let fresh = titled(json!({
+        "source": "custom:meta", "applies_to_source": "maestro:claude", "title": "fresh", "seq": 1
+    }));
+    accepted(&mut app, fresh);
+    let title = terminal_of(&app).agent_metadata["custom:meta"]
+        .title
+        .as_deref();
+    assert_eq!(title, Some("fresh"));
+}
+
+#[test]
 fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
     let mut app = daemon_with_workspaces(&["/one"]);
     pilot(&mut app, AgentState::Idle);
@@ -250,6 +306,32 @@ fn text_is_cleaned_and_state_labels_are_matched_without_case() {
         "{title:?}"
     );
     assert_eq!(reported.state_labels["working"], "busybee");
+}
+
+#[test]
+fn presentation_text_and_token_values_are_cleaned_alike() {
+    let mut app = daemon_with_workspaces(&["/one"]);
+    detect(&mut app, Agent::Pi, AgentState::Idle);
+    let cases = [
+        (
+            format!("  tab\there {}  ", "x".repeat(100)),
+            format!("tabhere {}", "x".repeat(72)),
+        ),
+        (format!("{} tail", "a".repeat(79)), "a".repeat(79)),
+    ];
+    for (raw, kept) in cases {
+        let wire = titled(json!({"agent": "pi", "title": raw, "tokens": {"summary": raw}}));
+        accepted(&mut app, wire);
+        let reported = pane(&mut app);
+        assert_eq!(reported.title.as_deref(), Some(kept.as_str()), "{raw:?}");
+        assert_eq!(reported.tokens["summary"], kept, "{raw:?}");
+    }
+    let blank = " \u{7}\n ";
+    let wire = titled(json!({"agent": "pi", "title": blank, "tokens": {"summary": blank}}));
+    accepted(&mut app, wire);
+    let reported = pane(&mut app);
+    assert_eq!(reported.title, Some("a".repeat(79)));
+    assert!(reported.tokens.is_empty());
 }
 
 #[test]
