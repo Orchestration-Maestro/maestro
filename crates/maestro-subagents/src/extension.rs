@@ -41,6 +41,7 @@ struct Params {
 
 /// Builds the tool over the supplied host capabilities.
 pub(crate) fn tool(api: ExtensionAPI) -> ToolDefinition {
+    let render_api = api.clone();
     ToolDefinition {
         metadata: ToolMetadata {
             name: "subagent".into(), label: "Subagent".into(),
@@ -48,7 +49,9 @@ pub(crate) fn tool(api: ExtensionAPI) -> ToolDefinition {
             parameters: schema().into(), prompt_snippet: Presence::Missing,
             prompt_guidelines: Presence::Missing, render_shell: Presence::Missing, execution_mode: Presence::Missing,
         },
-        prepare_arguments: None, render_call: None, render_result: None,
+        prepare_arguments: None,
+        render_call: Some(Rc::new(|args, theme, _, _| crate::tui::render::call(args.as_ref(), &theme))),
+        render_result: Some(Rc::new(move |result, options, theme, _, _| crate::tui::render::result(&result, options, &theme, &render_api))),
         execute: Rc::new(move |_, params, signal, update, ctx| {
             let api = api.clone();
             Box::pin(async move { execute(api, params, signal, update, ctx).await })

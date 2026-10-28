@@ -6,6 +6,8 @@ pub mod agents;
 mod extension;
 /// Child observations and native process isolation.
 mod runs;
+/// Retained tool presentation.
+mod tui;
 
 use maestro_extensions_wasm::{ExtensionAPI, ExtensionFuture};
 
