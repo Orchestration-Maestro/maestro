@@ -185,8 +185,8 @@ async fn run(
     cwd: String,
     command: String,
 ) -> ExtensionResult<Option<i32>> {
-    tui.stop()?;
     let completion = async {
+        tui.stop()?;
         tui.terminal()?.write("\x1b[2J\x1b[H")?;
         let shell = std::env::var("SHELL")
             .ok()
