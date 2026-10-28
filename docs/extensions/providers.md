@@ -135,7 +135,7 @@ Callbacks are Rust values in `config.callbacks`, never serialized JSON.
 
 | Provider field | What to supply |
 | --- | --- |
-| `name` | Optional display label; otherwise account metadata or provider ID supplies it. An empty label is retained. |
+| `name` | Optional display label; otherwise account metadata, a built-in display label, or the provider ID supplies it, in that order. An empty label is retained. |
 | `baseUrl`, `api` | Endpoint and protocol fallback for models. A URL alone does not choose a wire format. |
 | `apiKey` | Literal, environment-variable name, or `!`-prefixed secret command. Prefer an environment name or helper outside fixtures. |
 | `headers` | Ordered request-header expressions, using the same configured-value forms as keys. |
@@ -203,8 +203,10 @@ when connecting a real identity system.
    credentials to the request key; it may compute a key rather than return `access`.
 5. Return `None` from `modify_models` if unchanged, or a replacement model list
    for account-specific endpoints/capabilities. Preserve unrelated providers when
-   transforming the supplied list. Registration/loading invokes a supplied modifier
-   when stored OAuth credentials exist; a transform error can leave prior effects.
+   transforming the supplied list. Loading invokes a supplied modifier when stored
+   OAuth credentials exist. Immediate registration also requires a nonempty incoming
+   model list; OAuth-only and endpoint-only registrations do not invoke it.
+   A transform error can leave prior effects.
 
 After registration, enter `/login`, choose **Use a subscription**, then choose
 the provider. `/login` takes no provider argument. The application's credential owner saves
