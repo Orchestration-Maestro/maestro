@@ -195,6 +195,53 @@ fn browser_cached_sources_keep_unchanged_timestamps() {
 }
 
 #[test]
+fn browser_check_scenario() {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut transcript = recipe_support::transcript();
+    transcript.seek(SeekFrom::End(0)).unwrap();
+    for (name, step) in [
+        (
+            "valid sources",
+            browser_author_checks_accept_valid_sources as fn(),
+        ),
+        ("formatting repair", browser_check_repairs_formatting),
+        (
+            "adjacent locks",
+            browser_author_check_preserves_adjacent_locks,
+        ),
+        (
+            "invalid fixture syntax",
+            browser_checks_reject_invalid_fixture_syntax,
+        ),
+        (
+            "invalid library syntax",
+            browser_checks_reject_invalid_library_syntax,
+        ),
+        ("fixture warnings", browser_checks_reject_fixture_warnings),
+        (
+            "native checks",
+            browser_native_checks_keep_inputs_and_refuse_bad_sources,
+        ),
+    ] {
+        if let Err(failure) = std::panic::catch_unwind(step) {
+            let reason = failure
+                .downcast_ref::<String>()
+                .map(String::as_str)
+                .or_else(|| failure.downcast_ref::<&str>().copied())
+                .unwrap_or("non-text panic");
+            panic!("browser-check step {name}: {reason}");
+        }
+    }
+    let mut text = String::new();
+    transcript.read_to_string(&mut text).unwrap();
+    assert_eq!(
+        text.matches("phase: browser setup / lock open").count(),
+        1,
+        "browser checks must share one fixture: {text}"
+    );
+}
+
+#[test]
 fn browser_check_repairs_formatting() {
     let browser = Browser::cached();
     browser.workspace_sources();
