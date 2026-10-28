@@ -10,8 +10,56 @@ fn main() -> Result<(), Error> {
 
 /// Exercise in-memory history and a persisted exchange through the public SDK.
 async fn run(sample: Sample) -> Result<Value, Error> {
-    let _options = sample.options()?;
-    Ok(json!({}))
+    use maestro_app::{PromptOptions, SessionManager, create_agent_session};
+    use maestro_models::{FauxAssistantMessageOptions, FauxResponseStep, faux_assistant_message};
+    use std::{cell::RefCell, rc::Rc};
+    let options = sample.options()?;
+    let supplied = Rc::clone(options.session_manager.as_ref().ok_or("missing manager")?);
+    let memory = create_agent_session(options).await?;
+    let mut result = json!({"memoryFile": memory.session.session_file(),
+        "explicitManager": Rc::ptr_eq(memory.session.session_manager(), &supplied)});
+    memory.session.dispose();
+    let mut options = sample.options()?;
+    options.session_manager = None;
+    let created = create_agent_session(options).await?;
+    result["newFile"] = json!(created.session.session_file());
+    sample
+        .provider
+        .set_responses(vec![FauxResponseStep::Message(Box::new(
+            faux_assistant_message("Remembered.", FauxAssistantMessageOptions::default()),
+        ))]);
+    created
+        .session
+        .prompt("Remember this.", PromptOptions::default())
+        .await?;
+    created.session.dispose();
+    let cwd = sample.root.path().display().to_string();
+    let continued = SessionManager::continue_recent(&cwd, None, &cwd)?;
+    let mut options = sample.options()?;
+    options.session_manager = Some(Rc::new(RefCell::new(continued)));
+    let continued = create_agent_session(options).await?;
+    result["continuedFile"] = json!(continued.session.session_file());
+    continued.session.dispose();
+    let sessions = SessionManager::list(&cwd, None, &cwd, None).await?;
+    result["count"] = json!(sessions.len());
+    let info = sessions.first().ok_or("session was not listed")?;
+    result["firstMessage"] = json!(info.first_message);
+    let mut options = sample.options()?;
+    options.session_manager = Some(Rc::new(RefCell::new(SessionManager::open(
+        &info.path, None, None,
+    )?)));
+    let opened = create_agent_session(options).await?;
+    result["openedFile"] = json!(opened.session.session_file());
+    result["openedMessages"] = json!(
+        opened
+            .session
+            .messages()
+            .read()
+            .map_err(|error| error.to_string())?
+            .len()
+    );
+    opened.session.dispose();
+    Ok(result)
 }
 
 #[cfg(test)]
