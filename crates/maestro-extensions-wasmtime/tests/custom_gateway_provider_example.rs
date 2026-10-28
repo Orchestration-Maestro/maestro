@@ -101,7 +101,7 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
         };
         self.calls.lock().unwrap().push(json!({
             "model": call.model, "context": call.context, "common": options.common,
-            "reasoning": options.reasoning
+            "reasoning": options.reasoning, "budgets": options.thinking_budgets
         }));
         let stream = AssistantMessageEventStream::new();
         let mut content = vec![AssistantContent::Text(faux_text("Hello there friend"))];
@@ -216,6 +216,16 @@ impl Harness {
             .read()
             .unwrap()
             .clone()
+    }
+
+    /// The models the component registered, in catalog order.
+    fn gateway_models(&self) -> Vec<Model> {
+        let all = self.registry.get_all();
+        let all = all.read().unwrap();
+        all.iter()
+            .map(|model| model.read().unwrap().clone())
+            .filter(|model| model.provider == "gitlab-duo")
+            .collect()
     }
 
     /// Streams one simple request for a registered model and drains it.
@@ -451,7 +461,7 @@ fn custom_gateway_provider_registers_the_reference_models_and_sign_in() {
                 })
             );
         }
-        assert_eq!(harness.registry.get_all().read().unwrap().len(), 6);
+        assert_eq!(harness.gateway_models().len(), 6);
         let sign_in = get_oauth_provider("gitlab-duo").unwrap();
         assert_eq!((sign_in.id(), sign_in.name()), ("gitlab-duo", "GitLab Duo"));
         harness.bus.clear();
@@ -734,13 +744,8 @@ async fn probe(harness: &Harness, arguments: &[&str]) -> Result<Vec<String>, Str
         .unwrap_or(DEFAULT_MODEL);
     let Some(model) = harness.registry.find("gitlab-duo", id) else {
         let available: Vec<String> = harness
-            .registry
-            .get_all()
-            .read()
-            .unwrap()
-            .iter()
-            .map(|model| model.read().unwrap().clone())
-            .filter(|model| model.provider == "gitlab-duo")
+            .gateway_models()
+            .into_iter()
             .map(|model| model.id)
             .collect();
         return Err(format!(
@@ -774,11 +779,11 @@ async fn probe(harness: &Harness, arguments: &[&str]) -> Result<Vec<String>, Str
 /// What the probe prints for one event, if anything.
 fn printed(event: &Value) -> Option<String> {
     Some(match event["type"].as_str()? {
-        "thinking_start" => "[Thinking]".to_owned(),
-        "thinking_end" => "\n[/Thinking]\n".to_owned(),
+        "thinking_start" => "[Thinking]\n".to_owned(),
+        "thinking_end" => "\n[/Thinking]\n\n".to_owned(),
         "thinking_delta" | "text_delta" => event["delta"].as_str()?.to_owned(),
-        "error" => format!("\nError: {}", event["error"]["errorMessage"].as_str()?),
-        "done" => format!("\n\nDone! {}", event["reason"].as_str()?),
+        "error" => format!("\nError: {}\n", event["error"]["errorMessage"].as_str()?),
+        "done" => format!("\n\nDone! {}\n", event["reason"].as_str()?),
         _ => return None,
     })
 }
@@ -799,7 +804,7 @@ fn custom_gateway_provider_probe_greets_with_the_stored_sign_in() {
         );
         assert_eq!(
             probe(&harness, &["gpt-5-codex"]).await.unwrap().concat(),
-            "[Thinking]\ngreeting\n[/Thinking]\n\nHello there friend\n\nDone! stop"
+            "[Thinking]\ngreeting\n[/Thinking]\n\nHello there friend\n\nDone! stop\n"
         );
         let call = harness
             .openai
