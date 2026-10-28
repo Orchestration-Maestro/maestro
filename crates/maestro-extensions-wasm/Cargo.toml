@@ -108,6 +108,11 @@ name = "local_shell_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "mac_system_theme"
+path = "../../examples/extensions/mac_system_theme.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "minimal_mode"
 path = "../../examples/extensions/minimal_mode.rs"
 crate-type = ["cdylib"]

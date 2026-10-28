@@ -80,6 +80,8 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `mac_system_theme.md` | Mac system theme |
+| `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
 | `minimal_mode.md` | Minimal mode |
 | `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
 | `model_status.md` | Model status |
@@ -122,6 +124,7 @@ resolving conflicts, then regenerate the table.
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
+| `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `timed_confirm.md` | Timed confirm |
