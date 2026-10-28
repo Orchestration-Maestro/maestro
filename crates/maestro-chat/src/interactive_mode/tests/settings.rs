@@ -1608,3 +1608,40 @@ fn settings_theme_cancel_replays_the_saved_theme_without_persisting() {
         },
     );
 }
+
+/// Refuses explicit behaviour edits while allowing tool refresh candidates.
+struct RefuseBehaviour;
+impl maestro_app::SettingsDecider for RefuseBehaviour {
+    fn decide(&self, request: &maestro_app::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(request, maestro_app::DecisionRequest::SettingsEdit { .. }) {
+            return Err("release refuses behaviour changes".into());
+        }
+        Ok(())
+    }
+}
+
+/// A refused transport selection cannot escape through the live agent field.
+#[test]
+fn refused_transport_selection_preserves_live_agent_and_settings() {
+    isolated(
+        "refused_transport_selection_preserves_live_agent_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            let before = session.agent().transport.read().unwrap().clone();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            choose(&list, "Transport", 0);
+            assert_eq!(*session.agent().transport.read().unwrap(), before);
+            assert_eq!(
+                session.settings_manager().borrow().get_transport(),
+                saved(&before)
+            );
+            drop(world.runtime.settle());
+        },
+    );
+}
