@@ -54,6 +54,7 @@ resolving conflicts, then regenerate the table.
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
 | `custom_footer.md` | Custom footer |
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
+| `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
 | `dynamic_tools.md` | Dynamic tools |
 | `dynamic_tools.rs` | Dynamic tools: one echo tool registered when a session starts, and a command that adds more echo tools while the session runs. |
 | `event_bus.md` | Event bus |
@@ -62,6 +63,7 @@ resolving conflicts, then regenerate the table.
 | `file_trigger.rs` | An opt-in file watcher that sends external triggers to the conversation. |
 | `git_checkpoint.md` | Git checkpoint |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints for restoring code when forking a conversation. |
+| `handoff.rs` | Generates an editable prompt from the current branch for a new, parent-linked session. |
 | `hello.md` | Hello |
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |

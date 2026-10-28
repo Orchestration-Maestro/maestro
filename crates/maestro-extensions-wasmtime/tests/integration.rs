@@ -23,6 +23,7 @@ mod extension_guide;
 mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
+mod handoff_example;
 mod lifetimes;
 mod listener_prefixes;
 mod module_location;

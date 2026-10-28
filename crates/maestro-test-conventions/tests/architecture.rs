@@ -2528,6 +2528,28 @@ fn extension_and_rpc_test_edges_are_native() {
 }
 
 #[test]
+fn session_lock_edge_is_scoped() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-session", "maestro-lock"]);
+    check_permitted_declarations(&workspace, "maestro-session", &["maestro-lock"]);
+
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-models", "maestro-lock"]);
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-models",
+            "maestro-models",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("forbidden production dependency: maestro-models -> maestro-lock".into()),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
 fn detection_catalog_uses_atomic_replacement() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-lock"]);
