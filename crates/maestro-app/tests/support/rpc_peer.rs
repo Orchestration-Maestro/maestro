@@ -4,7 +4,7 @@ use crate::child::Scratch;
 use crate::native::install_executable;
 use maestro_app::{RpcClient, RpcClientOptions};
 use serde_json::Value;
-use std::{future::Future, path::Path, pin::Pin, rc::Rc, task::Poll};
+use std::{path::Path, rc::Rc};
 use tokio::sync::mpsc;
 
 /// The executable: helpers for the test's program, then the program.
@@ -89,12 +89,6 @@ pub async fn next_of(events: &mut mpsc::UnboundedReceiver<Value>, kind: &str) ->
             return event;
         }
     }
-}
-
-/// Polls `future` once without a waker.
-pub fn poll_once<F: Future + ?Sized>(future: Pin<&mut F>) -> Poll<F::Output> {
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    future.poll(&mut context)
 }
 
 /// Keeps a paused clock from advancing on its own, as a running blocking task does, until

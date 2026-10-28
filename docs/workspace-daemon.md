@@ -508,8 +508,33 @@ Explicit selection ignores inherited socket overrides. Implicit API overrides
 win over client-only overrides; either avoids validating an unused inherited
 name. Attach, stop and restart guidance names the selected daemon and warns that
 stopping exits pane processes. A custom API socket is retained in restart
-guidance. Selection does not dispatch commands, launch a process or implement
-graceful stop.
+guidance. Selection does not dispatch commands or launch a process.
+
+`instances::stop_session` sends one `server.stop` request to the selected API
+socket, then waits until neither the API socket nor the client socket accepts a
+connection. The whole stop has one 15 s budget, enough for a slow graceful
+shutdown. A reply that never arrives, an empty reply or a dropped connection
+proves nothing, so the stop keeps checking the sockets. A refusal from the daemon,
+an undecodable reply or another transport failure ends the stop with that error.
+At the deadline the error names every socket that still accepts connections.
+
+## Daemon client and status
+
+`api::client::DaemonClient` keeps one endpoint: a named-daemon selection or an
+explicit socket path, kept exactly as given. Each request opens its own
+connection, writes one canonical line and reads one reply line. Ordinary requests
+set no timeout. `request_value_with_timeout` applies the supplied duration to
+both the send and the receive of that connection, and a zero duration fails with
+the platform's invalid-input error. `request` decodes the shared response and
+returns a failure with its correlation, command, code and message.
+
+Status is a live ping, never a file. `DaemonClient::status` and
+`api::read_runtime_status_at` return the daemon's version, protocol and
+capabilities. The reader returns no status for an absent socket, a refused
+connection or a daemon that does not answer in time; any other failure keeps its
+original diagnostic. `platform::current_process_is_detached_server_daemon`
+reports whether the process leads its own session, which is how a detached
+daemon runs.
 
 ## Environment names
 
@@ -634,6 +659,38 @@ the checkout root. A linked worktree's automatic label names the checkout, not
 the repository group. Display operations read admitted labels without repeating
 filesystem discovery. Root-terminal metadata can select a newer admitted label
 without changing the workspace's retained fallback directory.
+
+## Git and worktrees
+
+### Branch tracking configuration
+
+`maestro-workspace::workspace::git::config::read_branch_config` reads the remote and
+merge reference of a branch. Files apply in Git's order: the user files the caller
+supplies, then the repository file in the shared metadata directory, then the checkout's
+`config.worktree` when the repository file turns on `extensions.worktreeConfig`. The
+extension is read from the repository file alone, as Git does, and its last value wins.
+`ConfigEnvironment::from_variables` builds the user list from `XDG_CONFIG_HOME` and the
+home directory; the reader itself reads no environment variable.
+
+Includes apply where they appear. A file already being read is not entered again inside
+itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
+`gitdir/i`, `onbranch` and `hasconfig:remote.*.url`. A `hasconfig` include is skipped when
+it, or a file it includes, sets a remote URL, and URLs set in the worktree file never
+satisfy the condition. For `gitdir`, `gitdir/i` and `onbranch` patterns, `*` and `?`
+stop at `/`, `**` crosses it and a trailing `/` means everything below. URL conditions
+allow wildcards across `/`. Matching takes time proportional to the pattern length
+times the text length.
+
+The fetch refspecs of the tracked remote map the merge reference to its local tracking
+reference. A remote of `.` tracks the merge reference itself, a remote without refspecs
+uses `+refs/heads/*:refs/remotes/<remote>/*`, and a negative refspec removes no mapping
+because it only filters what a fetch downloads.
+
+A read keeps what it saw of each file. `ConfigRead::is_current` turns false after an
+edit, a newly created include, a retargeted symbolic link or a file that could not be
+read, so a cache built on the read is rebuilt on the next refresh. The bare-layout and
+reftable checks of repository discovery use the same line syntax: the last assignment in
+a plain section wins and quoted values lose their quotes.
 
 ## Retained tab-bar status
 

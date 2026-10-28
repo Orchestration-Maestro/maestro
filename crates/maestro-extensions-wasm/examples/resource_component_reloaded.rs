@@ -1,5 +1,5 @@
 //! An alternate resource collection installed at the same component path.
-// Tests receive this component's path in MAESTRO_RESOURCE_RELOADED_COMPONENT.
+// maestro-component: MAESTRO_RESOURCE_RELOADED_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

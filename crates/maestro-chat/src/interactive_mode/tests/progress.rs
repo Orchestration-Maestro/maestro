@@ -23,7 +23,7 @@ use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},
     path::Path,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -1538,6 +1538,17 @@ fn recording_handler(captured: &Captured, name: &'static str) -> CommandHandler 
     })
 }
 
+/// Runs `edit` on the extension while it is still loaded; the handler holds it weakly, since
+/// the extension owns the handler.
+fn edit_extension(
+    extension: &Weak<RwLock<Extension<Local>>>,
+    edit: impl FnOnce(&Rc<RwLock<Extension<Local>>>),
+) {
+    if let Some(loaded) = extension.upgrade() {
+        edit(&loaded);
+    }
+}
+
 /// The handler of `cmd`: it records its text, makes the case's edit, replaces the session
 /// when the case asks, and waits or fails as the case configures.
 fn command_handler(
@@ -1546,7 +1557,7 @@ fn command_handler(
     captured: &Captured,
 ) -> CommandHandler {
     let captured = captured.clone();
-    let extension = Rc::clone(extension);
+    let extension = Rc::downgrade(extension);
     let mode = Rc::downgrade(&world.mode);
     Rc::new(move |arguments: String, context: ExtensionCommandContext| {
         captured.record("command", &format!("/cmd {arguments}"));
@@ -1556,10 +1567,12 @@ fn command_handler(
                     mode.editor.set_text("replaced draft");
                 }
             }
-            Edit::AddCommand => {
-                register_command(&extension, "late", recording_handler(&captured, "late"));
-            }
-            Edit::RemoveCommand => drop(extension.write().unwrap().commands.shift_remove("late")),
+            Edit::AddCommand => edit_extension(&extension, |loaded| {
+                register_command(loaded, "late", recording_handler(&captured, "late"));
+            }),
+            Edit::RemoveCommand => edit_extension(&extension, |loaded| {
+                drop(loaded.write().unwrap().commands.shift_remove("late"));
+            }),
             Edit::None => {}
         }
         let captured = captured.clone();
@@ -1710,13 +1723,56 @@ fn assert_flush(world: &World, captured: &Captured, expected: &FlushExpected) {
     assert_eq!(world.mode.editor.get_text(), expected.editor);
 }
 
-/// Delivers one recorded captured batch inside a Tokio set and checks what it left.
+/// What one flush case built, held weakly so the case can check that dropping its world
+/// releases all of it.
+struct Released {
+    /// The mode under test.
+    mode: Weak<super::super::InteractiveMode>,
+    /// Each session the case ran, the one the mode started with first.
+    sessions: Vec<Weak<AgentSession>>,
+    /// The extension that owns the case's commands.
+    extension: Weak<RwLock<Extension<Local>>>,
+}
+
+impl Released {
+    /// The mode, its starting session and that session's first loaded extension.
+    fn of(world: &World) -> Self {
+        let session = world.mode.runtime_host.session();
+        Self {
+            mode: Rc::downgrade(&world.mode),
+            extension: Rc::downgrade(&session.resource_loader().get_extensions().extensions[0]),
+            sessions: vec![Rc::downgrade(&session)],
+        }
+    }
+
+    /// Also tracks the session the mode runs now, which a replacement changes.
+    fn track_current(&mut self, world: &World) {
+        self.sessions
+            .push(Rc::downgrade(&world.mode.runtime_host.session()));
+    }
+
+    /// Fails when anything the case built is still alive.
+    fn assert_gone(&self) {
+        assert!(self.mode.upgrade().is_none(), "the mode outlives the case");
+        assert!(
+            self.extension.upgrade().is_none(),
+            "the extension outlives the case"
+        );
+        for session in &self.sessions {
+            assert!(session.upgrade().is_none(), "a session outlives the case");
+        }
+    }
+}
+
+/// Delivers one recorded captured batch inside a Tokio set, checks what it left and that
+/// dropping the world releases the mode, its sessions and the extension.
 async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpected) {
     let captured = Captured::default();
     if input.faults.delayed {
         captured.delay();
     }
-    let (world, _removal) = flush_world(directory, input, &captured).await;
+    let (world, removal) = flush_world(directory, input, &captured).await;
+    let mut released = Released::of(&world);
     world.mode.editor.set_text("draft");
     if input.faults.refuses() && !input.replace {
         seed_session(&world, &captured);
@@ -1754,6 +1810,9 @@ async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpect
     }
     until(&world, &captured, || world.runtime.futures() == 0).await;
     assert_flush(&world, &captured, expected);
+    released.track_current(&world);
+    drop((world, removal, captured));
+    released.assert_gone();
 }
 
 #[test]
@@ -1961,8 +2020,8 @@ fn compaction_flush_real_session_rejects_without_duplicate_tail() {
 }
 
 #[test]
-fn compaction_flush_work_is_linear() {
-    const TEST: &str = "compaction_flush_work_is_linear";
+fn compaction_flush_delivers_each_message_once() {
+    const TEST: &str = "compaction_flush_delivers_each_message_once";
     isolated(TEST, async |directory| {
         for count in [32, 64, 128] {
             let captured = Captured::default();
@@ -1979,7 +2038,8 @@ fn compaction_flush_work_is_linear() {
             let (world, _removal) = flush_world(directory, &input, &captured).await;
             run_flush(&world, &input.local, true);
             until(&world, &captured, || world.runtime.futures() == 0).await;
-            // Every message reaches the session once, and nothing is walked twice.
+            // Every message reaches the session once at each size. The walk's own cost is not
+            // measured here: no test-owned callback runs per visited message.
             let log = captured.log.borrow().clone();
             assert_eq!(log.len(), count);
             let unique: std::collections::BTreeSet<&String> = log.iter().collect();

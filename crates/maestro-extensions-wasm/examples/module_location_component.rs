@@ -1,5 +1,5 @@
 //! Author component that contributes resources installed beside its own artifact.
-// Tests receive this component's path in MAESTRO_LOCATION_COMPONENT.
+// maestro-component: MAESTRO_LOCATION_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

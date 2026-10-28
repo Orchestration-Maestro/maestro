@@ -4,7 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-// Tests receive this component's path in MAESTRO_DYNAMIC_RESOURCES_COMPONENT.
+// maestro-component: MAESTRO_DYNAMIC_RESOURCES_COMPONENT
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionEventResult, ExtensionFuture, Presence, ResourcesDiscoverResult,
     tools::path_utils,

@@ -10,7 +10,8 @@ pub use settings_manager::{
     MessageDeliveryMode, PackageSource, PreparedSettingsEdit, ProviderRetrySettings,
     ResolvedBranchSummarySettings, ResolvedCompactionSettings, ResolvedProviderRetrySettings,
     ResolvedRetrySettings, RetrySettings, Settings, SettingsChange, SettingsDecider,
-    SettingsDeciderHandle, SettingsError, SettingsListEntry, SettingsManager, SettingsScope,
-    SettingsStorage, SettingsStorageError, SettingsStorageHandle, SettingsUpdate, TerminalSettings,
-    ThinkingBudgetsSettings, ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
+    SettingsDeciderHandle, SettingsError, SettingsErrorKind, SettingsListEntry, SettingsManager,
+    SettingsScope, SettingsStorage, SettingsStorageError, SettingsStorageHandle, SettingsUpdate,
+    TerminalSettings, ThinkingBudgetsSettings, ThinkingLevel, TransportSetting, TreeFilterMode,
+    WarningSettings,
 };

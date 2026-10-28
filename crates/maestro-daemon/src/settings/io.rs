@@ -2,6 +2,7 @@
 
 mod ignored;
 mod reload;
+mod retention;
 
 #[cfg(target_os = "linux")]
 pub(crate) use reload::apply_loaded;
@@ -15,6 +16,7 @@ use serde_json::Value;
 
 use super::model::{Config, LoadedConfig};
 use ignored::{Decoder, Segment, ValueRef, format_path, path_key};
+pub use retention::AcceptedAreas;
 
 /// Client experimental keys stored alongside interface preferences.
 const EXPERIMENTAL_KEYS: &[&str] = &[
@@ -46,6 +48,7 @@ pub fn project_global_settings(settings: &Settings, agent_dir: &Path) -> LoadedC
         config: Config::default(),
         diagnostics: Vec::new(),
         invalid_sections: Vec::new(),
+        accepted_areas: AcceptedAreas::default(),
     };
     project_areas(settings, &mut loaded);
     unknown_namespace_keys(
@@ -71,65 +74,69 @@ pub fn project_global_settings(settings: &Settings, agent_dir: &Path) -> LoadedC
 /// Decode each original area independently after selecting its stored keys.
 fn project_areas(settings: &Settings, loaded: &mut LoadedConfig) {
     let mux = settings.0.get("multiplexer");
-    let daemon = settings.0.get("daemon");
-    let update = settings.0.get("update");
     macro_rules! area {
         ($field:ident, $root:literal, $value:expr) => {
             if let Some(value) = decode_area($value, $root, stringify!($field), loaded) {
                 loaded.config.$field = value;
+                loaded.accepted_areas.remember(stringify!($field), settings);
             }
         };
     }
     let empty = Value::Object(serde_json::Map::new());
-    project_onboarding(mux, loaded);
+    project_onboarding(settings, loaded);
     area!(theme, "multiplexer.theme", nested(mux, "theme", &empty));
     area!(remote, "multiplexer.remote", nested(mux, "remote", &empty));
     area!(ui, "multiplexer", ui_values(mux));
     area!(
         terminal,
         "daemon",
-        selected(daemon, &["paneShell", "paneShellMode", "newPaneCwd"])
+        selected(
+            settings,
+            "daemon",
+            &["paneShell", "paneShellMode", "newPaneCwd"]
+        )
     );
     area!(
         session,
         "daemon",
-        selected(daemon, &["resumeAgentsOnRestore"])
+        selected(settings, "daemon", &["resumeAgentsOnRestore"])
     );
     area!(
         server,
         "daemon",
-        selected(daemon, &["headlessCols", "headlessRows"])
+        selected(settings, "daemon", &["headlessCols", "headlessRows"])
     );
     area!(
         advanced,
         "daemon",
-        selected(daemon, &["scrollbackLimitBytes"])
+        selected(settings, "daemon", &["scrollbackLimitBytes"])
     );
     area!(
         worktrees,
         "daemon",
-        selected(daemon, &["worktreesDirectory"])
+        selected(settings, "daemon", &["worktreesDirectory"])
     );
     area!(
         update,
         "update",
         combined(
-            selected(update, &["channel", "versionCheck"]),
-            selected(daemon, &["detectionCatalogCheck"])
+            selected(settings, "update", &["channel", "versionCheck"]),
+            selected(settings, "daemon", &["detectionCatalogCheck"])
         )
     );
     area!(
         experimental,
         "multiplexer",
         combined(
-            selected(mux, EXPERIMENTAL_KEYS),
-            selected(daemon, &["paneHistory"])
+            selected(settings, "multiplexer", EXPERIMENTAL_KEYS),
+            selected(settings, "daemon", &["paneHistory"])
         )
     );
 }
 
 /// Optional onboarding still requires its enclosing namespace to be an object.
-fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig) {
+fn project_onboarding(settings: &Settings, loaded: &mut LoadedConfig) {
+    let mux = settings.0.get("multiplexer");
     if mux.is_some_and(|value| !value.is_object()) {
         reject_area("onboarding", "multiplexer must be an object", loaded);
     } else if let Some(value) = decode_area(
@@ -139,6 +146,7 @@ fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig) {
         loaded,
     ) {
         loaded.config.onboarding = value;
+        loaded.accepted_areas.remember("onboarding", settings);
     }
 }
 
@@ -152,8 +160,12 @@ fn nested<'a>(container: Option<&'a Value>, key: &str, fallback: &'a Value) -> V
 }
 
 /// Select flattened keys for one original semantic area.
-fn selected<'a>(container: Option<&'a Value>, keys: &[&str]) -> ValueRef<'a> {
-    match container {
+fn selected<'a>(
+    settings: &'a Settings,
+    root: &'static str,
+    keys: &'static [&'static str],
+) -> ValueRef<'a> {
+    match settings.0.get(root) {
         None => ValueRef::Fields(Vec::new()),
         Some(Value::Object(values)) => ValueRef::Fields(
             values
@@ -199,8 +211,8 @@ fn combined<'a>(first: ValueRef<'a>, second: ValueRef<'a>) -> ValueRef<'a> {
 /// Decode once and publish ignored paths only after the complete area succeeds.
 fn decode_area<T: DeserializeOwned>(
     value: ValueRef<'_>,
-    root: &str,
-    area: &str,
+    root: &'static str,
+    area: &'static str,
     loaded: &mut LoadedConfig,
 ) -> Option<T> {
     let ignored = RefCell::new(Vec::new());

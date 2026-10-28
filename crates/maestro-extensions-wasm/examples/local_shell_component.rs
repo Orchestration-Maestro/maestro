@@ -1,5 +1,5 @@
 //! Author component exercising native local shell construction and returned operations.
-// Tests receive this component's path in MAESTRO_LOCAL_SHELL_COMPONENT.
+// maestro-component: MAESTRO_LOCAL_SHELL_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

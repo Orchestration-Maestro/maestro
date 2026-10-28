@@ -771,6 +771,10 @@ metadata expiry, configuration reload and session scheduling in
 `crates/maestro-daemon/src/app/` derive from the application modules under the
 same license. Workspace attention ordering derives from the workspace aggregate
 module. The daemon's repository queries reuse workspace-owned discovery.
+The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config.rs`
+and its submodules derives from the repository configuration module under the same
+license. Changes include one include walk in place of three, wildcard matching with path
+rules in bounded time, and supplied user files and home directory.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
@@ -824,9 +828,13 @@ and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
-The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`
-and its tests derive from the API client under the same license. It reuses the
-shared JSONL framing and caller-supplied daemon selection.
+The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`,
+the live status in `api/status.rs`, the graceful stop in `instances/stop.rs` and
+their tests derive from the API client, API status and session sources under the
+same license. They reuse the shared JSONL framing and caller-supplied daemon
+selection. The status read also treats a Unix receive timeout as no status.
+The detached-daemon check in `crates/maestro-process/src/foreground.rs` derives
+from the platform module and uses safe process-id calls.
 
 The environment vocabulary, structured events, synchronized rotating file writer
 and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,

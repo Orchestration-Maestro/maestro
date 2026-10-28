@@ -1,5 +1,5 @@
 //! Play tic-tac-toe through a command and sequential atomic tools.
-// Tests receive this component's path in MAESTRO_TIC_TAC_TOE_COMPONENT.
+// maestro-component: MAESTRO_TIC_TAC_TOE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

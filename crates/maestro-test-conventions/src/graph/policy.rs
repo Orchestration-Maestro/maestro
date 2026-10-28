@@ -309,7 +309,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 ];
 
 /// Internal development edges permitted beyond the production table on any target.
-pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[("maestro-tui-crossterm", "maestro-brand")];
+pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-tui-crossterm", "maestro-brand"),
+    ("maestro-extensions-wasm", "maestro-listing"),
+];
 
 /// Permitted development edges that only a native, non-optional declaration may use.
 pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
@@ -331,9 +334,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
 
 /// Whether the policy permits this internal development edge between the two crates.
 pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
-    [DEVELOPMENT, NATIVE_DEVELOPMENT]
-        .iter()
-        .any(|edges| edges.contains(&(from, to)))
+    DEVELOPMENT.contains(&(from, to)) || NATIVE_DEVELOPMENT.contains(&(from, to))
 }
 
 /// Foundation utility that native crates may use beyond their table row.
@@ -466,7 +467,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
         && !matches!(
             name,
             "maestro-watch"
-                | "maestro-lock"
                 | "maestro-process"
                 | "maestro-listing"
                 | "maestro-pattern"
@@ -474,7 +474,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"
-                | "maestro-extensions-wasmtime"
                 | "maestro-test-terminal"
                 | "maestro-text"
                 | "maestro-json"

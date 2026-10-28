@@ -13,6 +13,11 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "auto_commit_on_exit"
+path = "../../examples/extensions/auto_commit_on_exit.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "bash_spawn_hook"
 path = "../../examples/extensions/bash_spawn_hook.rs"
 crate-type = ["cdylib"]
@@ -120,6 +125,11 @@ path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "interactive_shell"
+path = "../../examples/extensions/interactive_shell.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "local_shell_component"
 crate-type = ["cdylib"]
 
@@ -136,6 +146,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "minimal_mode"
 path = "../../examples/extensions/minimal_mode.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "modal_editor"
+path = "../../examples/extensions/modal_editor.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -177,6 +192,11 @@ path = "../../examples/extensions/preset.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "project_rules"
+path = "../../examples/extensions/project_rules.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "prompt_customizer"
 path = "../../examples/extensions/prompt_customizer.rs"
 crate-type = ["cdylib"]
@@ -184,6 +204,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "protected_paths"
 path = "../../examples/extensions/protected_paths.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "provider_payload"
+path = "../../examples/extensions/provider_payload.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -199,6 +224,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "questionnaire"
 path = "../../examples/extensions/questionnaire.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "rainbow_editor"
+path = "../../examples/extensions/rainbow_editor.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -325,6 +355,7 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+maestro-listing = { path = "../maestro-listing" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
 regex.workspace = true

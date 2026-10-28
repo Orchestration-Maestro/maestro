@@ -3,6 +3,7 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod auto_commit_on_exit_example;
 mod bash_spawn_hook_example;
 mod built_in_tool_renderer;
 mod canonical_api;
@@ -27,6 +28,7 @@ mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
 mod handoff_example;
+mod interactive_shell_example;
 mod lifetimes;
 mod listener_prefixes;
 mod load_time_contributions;
@@ -35,6 +37,7 @@ mod module_location;
 mod native_helpers;
 mod native_io;
 mod overlay_test_example;
+mod project_rules_example;
 mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
@@ -49,6 +52,9 @@ mod wasi_support;
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;
 mod support;
+
+#[path = "support/example_process.rs"]
+mod example_process;
 
 #[path = "../../maestro-extensions/tests/support/model.rs"]
 mod model_support;
