@@ -40,6 +40,8 @@ pub enum DecisionRequest<'a> {
     },
     /// A requested thinking level before capability clamping.
     ThinkingLevel(&'a str),
+    /// A requested active-tool set, or one candidate during automatic registry refresh.
+    Tools(&'a [String]),
     /// Explicit acquisition of a package source.
     PackageInstall {
         /// The authored package source, including its requested pin.

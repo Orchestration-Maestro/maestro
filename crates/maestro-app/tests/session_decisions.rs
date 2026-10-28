@@ -346,3 +346,66 @@ fn refused_queue_modes_preserve_agent_and_preferences() {
         assert!(h.events.borrow().is_empty());
     });
 }
+
+/// Explicit tool activation refuses before either the active tools or prompt changes.
+#[test]
+fn refused_tool_activation_preserves_tools_prompt_and_history() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        h.session
+            .settings_manager()
+            .borrow_mut()
+            .register_decider(Arc::new(Refuse::default()))
+            .unwrap();
+        let tools = h.session.get_active_tool_names();
+        let prompt = h.session.system_prompt();
+        let entries = history(&h.session);
+        assert_refused(h.session.set_active_tools_by_name(&["bash".into()]));
+        assert_eq!(h.session.get_active_tool_names(), tools);
+        assert_eq!(h.session.system_prompt(), prompt);
+        assert_eq!(history(&h.session), entries);
+        assert!(h.events.borrow().is_empty());
+    });
+}
+
+/// A publisher keeping the shell tool outside the active ceiling.
+struct NoShell;
+impl SettingsDecider for NoShell {
+    fn decide(&self, request: &DecisionRequest<'_>) -> Result<(), String> {
+        if let DecisionRequest::Tools(names) = request
+            && names.iter().any(|name| name == "bash")
+        {
+            return Err("release forbids the shell tool".into());
+        }
+        Ok(())
+    }
+}
+
+/// Automatic refresh retains forbidden definitions but never activates them.
+#[test]
+fn tool_refresh_keeps_forbidden_tools_registered_and_inactive() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        h.session
+            .settings_manager()
+            .borrow_mut()
+            .register_decider(Arc::new(NoShell))
+            .unwrap();
+        h.session.reload().await.unwrap();
+        assert!(h.session.get_tool_definition("bash").is_some());
+        assert!(
+            !h.session
+                .get_active_tool_names()
+                .iter()
+                .any(|name| name == "bash")
+        );
+        let errors = h.session.settings_manager().borrow_mut().drain_errors();
+        assert_eq!(
+            errors
+                .iter()
+                .filter(|error| error.error.to_string() == "release forbids the shell tool")
+                .count(),
+            1
+        );
+    });
+}
