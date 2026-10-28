@@ -1,6 +1,6 @@
 //! Packaged component tools through real SDK session loading and reload.
 use crate::support::{Root, session::component_session};
-use maestro_app::{AgentSession, PromptOptions};
+use maestro_app::AgentSession;
 use serde_json::{Value, json};
 use std::rc::Rc;
 
@@ -53,10 +53,7 @@ fn sdk_loads_and_reloads_packaged_component_tools() {
             package.join("index.wasm"),
         )
         .unwrap();
-        session
-            .prompt("/observe-resources reload", PromptOptions::default())
-            .await
-            .unwrap();
+        session.reload().await.unwrap();
         assert!(
             !session
                 .get_active_tool_names()
