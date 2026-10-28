@@ -1,10 +1,12 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
 use rustix::io::Errno;
+use rustix::net::{AddressFamily, SocketAddrUnix, SocketFlags, SocketType, connect, socket_with};
 use std::fs;
 use std::io;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 /// The owned listener returned by the local-socket library.
 pub type LocalListener = interprocess::local_socket::Listener;
@@ -39,6 +41,38 @@ pub struct SocketFileIdentity {
 pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
     use interprocess::local_socket::{GenericFilePath, prelude::*};
     LocalStream::connect(path.to_fs_name::<GenericFilePath>()?)
+}
+
+/// Connect a Unix filesystem socket before the deadline, returning a blocking stream.
+///
+/// An expired deadline still permits one nonblocking attempt, so probes can distinguish
+/// an absent endpoint from a full accept queue without extending the caller's budget.
+///
+/// # Errors
+/// Returns path or connection errors, or timed-out while the accept queue stays full.
+pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
+    let address = SocketAddrUnix::new(path)?;
+    let fd = socket_with(
+        AddressFamily::UNIX,
+        SocketType::STREAM,
+        SocketFlags::NONBLOCK,
+        None,
+    )?;
+    loop {
+        match connect(&fd, &address) {
+            Ok(()) | Err(Errno::ISCONN) => break,
+            Err(Errno::AGAIN | Errno::INPROGRESS | Errno::ALREADY | Errno::INTR) => {}
+            Err(error) => return Err(error.into()),
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(io::ErrorKind::TimedOut.into());
+        }
+        std::thread::sleep(remaining.min(Duration::from_millis(1)));
+    }
+    let stream = std::os::unix::net::UnixStream::from(fd);
+    stream.set_nonblocking(false)?;
+    Ok(LocalStream::UdSocket(stream.into()))
 }
 
 /// Bind without unlinking a name when the listener is dropped.
