@@ -35,7 +35,7 @@ fn tic_tac_toe_command_and_sequential_siblings_use_the_native_runner() {
     });
 }
 
-/// Plays one human mark followed by five tool calls in the same assistant response.
+/// Plays a human mark, then five accepted sibling calls interleaved with three errors.
 async fn exercise(session: Rc<AgentSession>) {
     assert_eq!(
         session.get_active_tool_names(),
@@ -80,16 +80,46 @@ async fn exercise(session: Rc<AgentSession>) {
         .unwrap();
     ui.input("\x1b");
     opened.await.unwrap();
+    reopen(&session).await;
     unsubscribe();
     let requests = worker.join().unwrap();
     assert!(
         requests[2]["messages"][0]["content"]
             .to_string()
-            .contains("Tic-Tac-Toe (you are Player O)"),
+            .contains("Tic-tac-toe: play O"),
         "{}",
         requests[2]
     );
     session.dispose();
+}
+
+/// Reopens the retained branch after runner errors before and after valid snapshots.
+async fn reopen(session: &Rc<AgentSession>) {
+    session.reload().await.unwrap();
+    let runner = session.extension_runner();
+    let command = runner.get_command("tic-tac-toe").unwrap();
+    let (reopened_ui, ready) = ui::Ui::new();
+    session
+        .bind_extensions(ExtensionBindings {
+            ui_context: Some(ExtensionUIContext::new(reopened_ui.clone()).into()),
+            ..ExtensionBindings::default()
+        })
+        .await
+        .unwrap();
+    let context = runner.create_command_context();
+    let mut reopened = tokio::task::spawn_local(async move {
+        (command.command.handler)(String::new(), context)
+            .await
+            .unwrap();
+    });
+    tokio::select! {
+        ready = ready => ready.unwrap(),
+        result = &mut reopened => panic!("command closed before opening: {result:?}"),
+    }
+    let board = maestro_app::strip_ansi(&reopened_ui.render(80).join("\n")).unwrap();
+    assert!(board.contains('╳') && board.contains('◯'), "{board}");
+    reopened_ui.input("\x1b");
+    reopened.await.unwrap();
 }
 
 /// Verifies each persisted sibling result, not just final tool metadata.
@@ -101,8 +131,20 @@ fn snapshots(session: &AgentSession) -> Value {
         .iter()
         .filter(|entry| entry["message"]["role"] == "toolResult")
         .collect();
-    assert_eq!(results.len(), 5);
-    for (result, (row, col)) in results.iter().zip([(1, 0), (2, 0), (2, 1), (2, 2), (0, 0)]) {
+    assert_eq!(results.len(), 8);
+    let errors: Vec<_> = results
+        .iter()
+        .filter(|result| result["message"]["isError"] == true)
+        .collect();
+    assert_eq!(errors.len(), 3);
+    for error in errors {
+        assert_eq!(error["message"]["details"], json!({}));
+    }
+    let results: Vec<_> = results
+        .into_iter()
+        .filter(|result| result["message"]["isError"] == false)
+        .collect();
+    for (result, (row, col)) in results.iter().zip([(1, 0), (1, 1), (2, 1), (2, 2), (0, 0)]) {
         assert_eq!(
             result["message"]["details"]["agentCursorRow"], row,
             "{result}"
@@ -157,7 +199,7 @@ fn provider() -> (String, std::thread::JoinHandle<Vec<Value>>) {
             let (mut stream, _) = listener.accept().unwrap();
             requests.push(super::support::provider::request(&mut stream));
             let delta = if index == 0 {
-                let calls: Vec<_> = ["move_down","move_down","move_right","move_right","play"].iter().enumerate().map(|(index,action)| json!({"index":index,"id":format!("game-{index}"),"type":"function","function":{"name":"tic_tac_toe","arguments":json!({"action":action}).to_string()}})).collect();
+                let calls: Vec<_> = ["move_down","move_right","play","move_down","move_right","play","play","invalid"].iter().enumerate().map(|(index,action)| json!({"index":index,"id":format!("game-{index}"),"type":"function","function":{"name":"tic_tac_toe","arguments":json!({"action":action}).to_string()}})).collect();
                 json!({"tool_calls":calls})
             } else {
                 json!({"content":"Your turn, X!"})
@@ -184,4 +226,27 @@ fn finished(session: &AgentSession) -> (impl Fn(), oneshot::Receiver<()>) {
         }
     }));
     (unsubscribe, end)
+}
+
+/// Ordinary runner errors render their text without snapshot details for either tool.
+#[test]
+fn tic_tac_toe_error_rows_do_not_require_board_snapshots() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    local.block_on(&runtime, async {
+        let root = super::support::Root::new();
+        let session = super::support::session::component_session(
+            &root,
+            local.clone(),
+            std::env::var("MAESTRO_TIC_TAC_TOE_COMPONENT").expect("nextest author-component setup"),
+            Some(NoTools::Builtin),
+            super::support::widgets(),
+        )
+        .await;
+        renderers::errors(&session);
+        session.dispose();
+    });
 }

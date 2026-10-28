@@ -126,3 +126,47 @@ fn context<'a>(
         is_error: false,
     }
 }
+
+/// Error artifacts have no board, even when the user expands their result row.
+pub(super) fn errors(session: &AgentSession) {
+    for tool in session.extension_runner().get_all_registered_tools() {
+        let args = json!({"action":"play"});
+        let rows = ToolRendererState::default();
+        let mut context = context(&args, &rows);
+        context.is_error = true;
+        let blocks = serde_json::from_value::<Vec<maestro_app::UserBlock>>(
+            json!([{"type":"text","text":"It is not your turn."}]),
+        )
+        .unwrap();
+        let details = json!({});
+        let prepared = tool
+            .definition
+            .renderer_binding()
+            .unwrap()
+            .render_result
+            .unwrap()
+            .prepare(ToolRenderResultLike {
+                content: &blocks,
+                details: Some(&details),
+                terminate: None,
+                is_error: Some(true),
+            })
+            .unwrap();
+        for expanded in [false, true] {
+            let view = prepared
+                .render(
+                    ToolRenderResultOptions {
+                        expanded,
+                        is_partial: false,
+                    },
+                    &super::ui::theme(),
+                    &context,
+                )
+                .unwrap();
+            let text = maestro_app::strip_ansi(&view.try_render(80).unwrap().join("\n")).unwrap();
+            assert!(text.contains("It is not your turn."), "{text}");
+            assert!(text.contains('✗'));
+            assert!(!text.contains('◯'));
+        }
+    }
+}
