@@ -405,7 +405,21 @@ fn resolve_model(
     if recorded.has_messages
         && let Some((provider, model_id)) = &recorded.model
     {
-        if let Some(model) = restore_saved_model(registry, provider, model_id).map_err(thrown)? {
+        let stored = maestro_settings::Settings(
+            serde_json::json!({"defaultProvider": provider, "defaultModel": model_id})
+                .as_object()
+                .cloned()
+                .unwrap_or_default(),
+        );
+        let resolved = services
+            .settings_manager
+            .borrow()
+            .resolve_stored_values(&stored);
+        if resolved.0.get("defaultProvider") == stored.0.get("defaultProvider")
+            && resolved.0.get("defaultModel") == stored.0.get("defaultModel")
+            && let Some(model) =
+                restore_saved_model(registry, provider, model_id).map_err(thrown)?
+        {
             return Ok((Some(model), None));
         }
         fallback_message = Some(format!("Could not restore model {provider}/{model_id}"));
@@ -448,6 +462,11 @@ fn resolve_thinking_level(
     recorded: Option<ModelThinkingLevel>,
     model: Option<&Arc<RwLock<Model>>>,
 ) -> ModelThinkingLevel {
+    let recorded = if explicit.is_none() {
+        recorded.map(|level| resolve_recorded_thinking(settings, &level))
+    } else {
+        None
+    };
     let level = explicit.or(recorded).unwrap_or_else(|| {
         settings
             .get_default_thinking_level()
@@ -457,6 +476,28 @@ fn resolve_thinking_level(
     model.map_or(ModelThinkingLevel::Off, |model| {
         clamp_thinking_level(&read(model), level)
     })
+}
+
+/// Resolves a recorded level through stored-value policy before capability clamping.
+fn resolve_recorded_thinking(
+    settings: &SettingsManager,
+    level: &ModelThinkingLevel,
+) -> ModelThinkingLevel {
+    let stored = maestro_settings::Settings(
+        [(
+            String::from("defaultThinkingLevel"),
+            Value::String(saved_level(level).as_str().into()),
+        )]
+        .into_iter()
+        .collect(),
+    );
+    settings
+        .resolve_stored_values(&stored)
+        .0
+        .get("defaultThinkingLevel")
+        .and_then(Value::as_str)
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(DEFAULT_THINKING_LEVEL)
 }
 
 /// Records the model and thinking level a new history starts with, or the thinking level a
