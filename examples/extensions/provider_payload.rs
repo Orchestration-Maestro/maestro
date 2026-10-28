@@ -1,4 +1,5 @@
 //! Opt-in logging of provider request payloads and response status and headers.
+// maestro-component: MAESTRO_PROVIDER_PAYLOAD_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

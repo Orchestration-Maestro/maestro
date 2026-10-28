@@ -7,7 +7,7 @@ use crate::watching;
 use maestro_app::presentation_data::footer_data_provider::{
     FooterDataProvider, FooterFileStats, ReadonlyFooterDataProvider,
 };
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
@@ -705,7 +705,7 @@ fn footer_disposal_keeps_other_provider_polling() {
     second.dispose();
     assert_eq!(e.live_polls(), 0);
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn native_runtime() -> (tokio::runtime::Runtime, Rc<tokio::task::LocalSet>) {
     (
         crate::support::io_runtime(),
@@ -861,6 +861,50 @@ fn footer_native_poll_detects_change_time() {
     native_poll_callback_teardown(false);
     native_poll_overdue_teardown(true);
     native_poll_overdue_teardown(false);
+}
+/// Windows has no stable file change time, so a rewrite is seen through the modification
+/// time, which also stands in for the change time.
+#[cfg(windows)]
+#[test]
+fn footer_native_poll_detects_a_replaced_table_on_windows() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let (path, staged) = (
+        root.path().join("tables.list"),
+        root.path().join("tables.new"),
+    );
+    std::fs::write(&path, "content").unwrap();
+    let (runtime, local) = native_runtime();
+    let ops = NativeFooterOperations::new(local.clone());
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let mut watch = ops.watch_file(
+        path.to_str().unwrap(),
+        Duration::from_millis(250),
+        Rc::new(move |now, prev| {
+            tx.send((now, prev)).unwrap();
+        }),
+    );
+    std::fs::write(&staged, "CONTENT").unwrap();
+    std::fs::File::options()
+        .write(true)
+        .open(&staged)
+        .unwrap()
+        .set_times(
+            std::fs::FileTimes::new().set_modified(std::time::UNIX_EPOCH + Duration::from_secs(1)),
+        )
+        .unwrap();
+    std::fs::rename(&staged, &path).unwrap();
+    local.block_on(&runtime, async {
+        let (now, prev): (FooterFileStats, FooterFileStats) = rx.recv().await.unwrap();
+        assert_eq!(now.mtime_ms.to_bits(), 1000.0_f64.to_bits());
+        assert_eq!(now.ctime_ms.to_bits(), now.mtime_ms.to_bits());
+        assert_eq!(prev.ctime_ms.to_bits(), prev.mtime_ms.to_bits());
+        assert_eq!(now.size.to_bits(), prev.size.to_bits());
+        watch.close().unwrap();
+        drop(watch);
+        assert!(rx.recv().await.is_none());
+    });
+    drop(ops);
+    finish_native(&runtime, local);
 }
 #[cfg(unix)]
 fn native_query(
@@ -1046,7 +1090,7 @@ fn cwd_plain_completion() {
     p.dispose();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn finish_native(runtime: &tokio::runtime::Runtime, local: Rc<tokio::task::LocalSet>) {
     let local = Rc::try_unwrap(local).expect("all native effect owners released");
     runtime.block_on(local);

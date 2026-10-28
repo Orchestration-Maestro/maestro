@@ -165,14 +165,6 @@ fn recorded_echo_tool(runs: Rc<RefCell<Vec<String>>>) -> ToolDefinitionHandle {
     sdk_definition(definition)
 }
 
-/// The scripted call of the echo tool with `text`.
-fn echo_call(text: &str) -> Scripted {
-    Scripted {
-        tool_calls: vec![("echo".into(), json!({"text": text}))],
-        ..Scripted::default()
-    }
-}
-
 /// Harness options over the scripted stream answering `responses`.
 fn scripted(responses: Vec<Scripted>) -> HarnessOptions {
     HarnessOptions {
@@ -347,7 +339,7 @@ fn recovered_tool_only_turn_settles_before_follow_up() {
             custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
             ..scripted(vec![
                 Scripted::failure("overloaded_error"),
-                echo_call("hello"),
+                Scripted::echo_call("hello"),
                 Scripted::text("final answer"),
                 Scripted::text("follow-up answer"),
             ])
@@ -416,7 +408,7 @@ fn tool_turn_keeps_event_sequence() {
         let runs = Rc::new(RefCell::new(Vec::new()));
         let h = harness(HarnessOptions {
             custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
-            ..scripted(vec![echo_call("hello"), Scripted::text("done")])
+            ..scripted(vec![Scripted::echo_call("hello"), Scripted::text("done")])
         })
         .await;
         let order = event_order(&h.session);
