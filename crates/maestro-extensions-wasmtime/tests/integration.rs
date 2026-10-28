@@ -17,6 +17,7 @@ mod completion_providers;
 mod component_events;
 mod component_loading;
 mod components;
+mod custom_gateway_provider_example;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
