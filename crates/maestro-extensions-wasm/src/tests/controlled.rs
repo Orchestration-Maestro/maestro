@@ -1654,6 +1654,8 @@ impl Imports for Controlled {
     }
     fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
         Box::pin(async move {
+            let hold = self.observed.borrow_mut().bus.emission_holds.pop_front();
+            super::observed::pause(hold).await;
             self.callback_emit(&super::bus_host::Emitter { key: 0 }, &channel, &data)
         })
     }
