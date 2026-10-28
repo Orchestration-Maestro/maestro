@@ -447,7 +447,7 @@ fn interrupted_publication_is_replayed_before_the_next_write() {
     assert_eq!(fs::read(&target).unwrap(), b"intended");
     assert_eq!(
         EFFECTS.take().events[..2],
-        ["ancestry_sync", "recovery_sync"]
+        ["recovery_sync", "target_write"]
     );
 }
 
