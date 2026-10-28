@@ -1,5 +1,5 @@
 //! Recoverable byte publication preserving native file identity.
-#[cfg(test)]
+#[cfg(all(test, unix))]
 use crate::identity::resolve_write_target;
 use std::{
     fs::{self, File},
