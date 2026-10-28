@@ -232,6 +232,8 @@ pub struct State {
     clock: Option<Clock>,
     /// Host-side resources by handle.
     pub table: ResourceTable,
+    /// Reports delivery of caller-owned cancellation to a pending component dialog.
+    pub abort_notice: Option<oneshot::Sender<()>>,
     /// What the host observed.
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
@@ -332,6 +334,7 @@ impl State {
             wasi: builder.build(),
             clock,
             table: ResourceTable::new(),
+            abort_notice: None,
             observed: Observed::default(),
             guest: None,
             schema_origin: None,
@@ -344,6 +347,9 @@ impl State {
             .get_mut(&Resource::<Flag>::new_borrow(flag))?
             .0
             .store(true, std::sync::atomic::Ordering::SeqCst);
+        if let Some(notice) = self.abort_notice.take() {
+            let _ = notice.send(());
+        }
         Ok(())
     }
 

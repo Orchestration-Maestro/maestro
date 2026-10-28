@@ -70,6 +70,8 @@ resolving conflicts, then regenerate the table.
 | `file_trigger.rs` | An opt-in file watcher that sends external triggers to the conversation. |
 | `git_checkpoint.md` | Git checkpoint |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints for restoring code when forking a conversation. |
+| `github_issue_autocomplete.md` | GitHub issue autocomplete |
+| `github_issue_autocomplete.rs` | Opt-in issue completion backed by the GitHub CLI and the current editor provider. |
 | `handoff.md` | Handoff |
 | `handoff.rs` | Generates an editable prompt from the current branch for a new, parent-linked session. |
 | `hello.md` | Hello |
@@ -78,6 +80,8 @@ resolving conflicts, then regenerate the table.
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
+| `mac_system_theme.md` | Mac system theme |
+| `mac_system_theme.rs` | Follows the macOS system appearance through the host's theme interface. |
 | `minimal_mode.md` | Minimal mode |
 | `minimal_mode.rs` | Opt-in minimal tool rows with full expanded output. |
 | `model_status.md` | Model status |
@@ -122,8 +126,11 @@ resolving conflicts, then regenerate the table.
 | `structured_output.rs` | A final structured answer returned by a terminating tool. |
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
+| `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
+| `timed_confirm.md` | Timed confirm |
+| `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |
 | `titlebar_spinner.rs` | Animates the terminal title while the agent works, restoring it when work stops. |
 | `todo.md` | Todo |

@@ -10,3 +10,4 @@ mod startup_modes;
 mod structured_output_example;
 mod support;
 pub mod tools_example;
+mod truncated_tool_example;
