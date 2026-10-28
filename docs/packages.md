@@ -89,6 +89,30 @@ discards edits inside managed remote checkouts; use a local source for developme
 Ordinary `install` keeps its existing behavior and does not imply an integrity
 check.
 
+## Release inspection
+
+`list_releases(source)` lists a Git source's tags in name order, pairing each name
+with its peeled commit ID. Annotated and lightweight tags each produce one row.
+An untagged repository returns an empty list. The caller chooses the release;
+this operation does not apply version policy or change a checkout.
+
+`read_candidate_files(source, paths)` requires an explicit Git pin. It clones and
+selects that candidate in an exclusively owned directory below the temporary
+package scope, reads the requested relative files, then removes the staging
+directory before returning. Results preserve input order and raw bytes; a missing
+file is `None`. Absolute paths, parent traversal and links outside the candidate
+are rejected. Read and cleanup failures are returned.
+
+Candidate inspection does not install dependencies, run lifecycle scripts, build
+code or load extensions. Each call has its own checkout, so alternating pins
+cannot change an installed checkout or the ordinary temporary checkout. An
+accepted candidate still installs through `install` with normal dependency
+preparation.
+
+Release inspection rejects non-Git sources and reports remote failures. Offline
+mode returns `NotConnected` without running a command rather than treating an
+unavailable release list as an empty repository. Settings stay unchanged.
+
 ## Progress
 
 `set_progress_callback` replaces or clears the callback; each emission reads the
