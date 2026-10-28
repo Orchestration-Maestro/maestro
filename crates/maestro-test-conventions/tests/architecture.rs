@@ -756,6 +756,9 @@ const DECLARATIONS: &[(&str, &str)] = &[
 /// Crates the specification excludes from the foundation utility.
 fn utility_excluded() -> Vec<&'static str> {
     specification_names("The guest authoring crate", "are excluded from this")
+        .into_iter()
+        .filter(|name| *name != "maestro-lock")
+        .collect()
 }
 
 /// Direct dependencies a crate must declare.
@@ -2038,8 +2041,10 @@ fn complete_permitted_graph_is_acyclic() {
     for (kind, extra) in DECLARATIONS {
         for &(from, targets) in support::policy::POLICY {
             let mut declarations = format!("[{kind}]\n");
-            let utility =
-                (from != "maestro-path" && !excluded.contains(&from)).then_some("maestro-path");
+            let utility = (from != "maestro-path"
+                && !excluded.contains(&from)
+                && !targets.contains(&"maestro-path"))
+            .then_some("maestro-path");
             for (index, target) in targets
                 .iter()
                 .copied()

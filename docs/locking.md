@@ -1,45 +1,40 @@
 # File-lock acquisition
 
-`maestro_lock::acquire` returns the supplied file after acquiring an exclusive lock.
-It makes at most ten attempts, waiting 20 ms only between contended attempts.
-The final contention error or the first non-contention error is returned unchanged.
-The waits are requested delays, not a wall-clock completion deadline.
+`maestro_lock::acquire` retains bounded acquisition of a caller-opened file:
+up to ten attempts, with 20 ms between contended attempts. Waiting acquisition
+uses the operating system's exclusive file lock. Exiting releases ownership.
 
-Callers own opening, permissions, persistence and unlocking. Settings and credentials
-delegate synchronous acquisition here; asynchronous credential acquisition remains
-with [credentials](credentials.md). Browser compilation does not provide browser
-file locking.
+## Recoverable byte publication
 
-## Atomic replacement
+The lock owner resolves the write target and hashes its canonical native path
+with SHA-256. For a missing file it uses the canonical parent plus the leaf.
+Lock and recovery files live in `~/.maestro/state/file-locks`, never under a
+configuration-root override. Home selection uses `HOME` on Unix when present,
+otherwise the account home directory. Processes sharing a target must share
+that home; overriding it selects a different lock namespace.
 
-`maestro_lock::replace` publishes supplied bytes through an exclusively created
-sibling file with a short name independent of the target leaf. It writes and
-syncs that file, closes it, renames it over the target,
-then opens and syncs the parent directory. Precommit failures return the native
-error and remove only a temporary file created by this call.
+`maestro_lock::replace` and path-based acquisition share that identity and
+recovery owner. Before any append or rewrite, the holder replays a pending
+recovery copy, refusing a mismatched target identity. Each holder performs at
+most one caller-requested write.
 
-Replacement preserves the effective existing file's native permissions. On Unix,
-the temporary file is created with those permission bits filtered by the umask;
-the exact bits are restored after writing and before sync and publication.
-`Replace::creation_mode` selects permission bits for a missing file. Existing
-native permissions take precedence. On Unix the requested bits are passed to
-exclusive creation, so the sibling is never more permissive than requested;
-any bits removed by the umask are restored before publication. Without a
-selection, new files use the platform's normal creation permissions.
+Replacement writes the intended new bytes to an exclusively created private
+file in the lock root, syncs it, renames it to the recovery name and syncs the
+root. On Windows, the recovery file is flushed but unsupported directory sync
+is tolerated, relying on the filesystem journal for the rename. Only then does it truncate and write the target in place. It syncs the
+target before deleting the copy and syncing the root again. A failed or killed
+writer leaves the copy for the next holder to complete, not roll back.
 
-On Windows, creation mode uses only the owner-write bit: an absent bit makes
-the published file read-only. Other bits are ignored; no ACL is configured.
-Replacing a symbolic-link entry does not copy permissions from its referent.
-Permissions here are those represented by `std::fs::Permissions`, not ownership
-or additional access-control metadata.
+In-place writing preserves ownership, ACLs, native permissions and hard links.
+Existing read-only targets still refuse writable opens. Creation mode applies
+only to missing targets. Default creation permissions are unchanged. An explicit
+creation mode is recorded in the recovery header: a new target starts owner-only
+and writable, its bytes are synced, then the requested mode is applied and synced
+before recovery deletion. Symbolic-link policy remains with the caller.
+Uncoordinated readers can observe an in-progress write; recovery is guaranteed
+on the next coordinated acquisition, not on an arbitrary native read.
 
-`Replace::through_symlinks` chooses whether to follow final-component symbolic
-links. Relative links resolve against their parent; dangling targets are allowed.
-A chain still unresolved after 40 links fails before temporary-file creation.
-When following is disabled, publication replaces the supplied directory entry.
-
-After rename, publication has committed. Unexpected directory-open or sync errors
-are returned as `Committed::dir_sync`, not as failed writes. Unsupported,
-invalid-input and permission-denied directory sync errors are tolerated.
-Serialization, logging and save scheduling remain with callers. The operation
-provides neither a multi-file transaction nor locking between concurrent writers.
+Settings and credentials retain their bounded acquisition and existing in-place
+writes. Workspace snapshots, detection catalogs and session rewrites use the
+shared recoverable publication operation. Serialization and scheduling remain
+with callers; no background recovery service is added.

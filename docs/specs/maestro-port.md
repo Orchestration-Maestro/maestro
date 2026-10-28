@@ -340,7 +340,7 @@ from the optional foundation utility described below.
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
-| `maestro-lock` | guard file writes | — | below 0 |
+| `maestro-lock` | guard file writes | `maestro-path` | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
@@ -535,8 +535,9 @@ matching) may depend on it. Catalog owns model-scope selection and reuses the gl
 Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
-`maestro-watch` and `maestro-lock` are core leaves below layer 0, with no
-workspace dependencies, including the path utility. Only theme and application
+`maestro-watch` is a core leaf below layer 0 without workspace dependencies.
+`maestro-lock` is below layer 0 and depends only on `maestro-path`, which owns
+`native_homedir`; it uses the existing external `sha2 =0.11.0` for target identity. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection and session
 may depend on lock.
 
@@ -547,16 +548,14 @@ paths may re-export the same moved types, not retain a second implementation.
 
 `maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
 locks. Waiting acquisition uses the operating system's file lock, which is released
-when the holder exits. It also owns byte-oriented atomic replacement: a
-short exclusive temporary sibling is written, synced, closed and renamed before the
-parent directory is synced. Replacement preserves existing native permissions;
-a supplied creation mode applies only to missing files. Unix creation applies
-permission bits before first visibility; Windows maps only owner-write to the
-read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
-feature owners retain serialization and symbolic-link policy. File creation for
-lock acquisition, permissions, in-place settings/credentials persistence, unlocking
-policy and asynchronous credential acquisition remain with settings and
-credentials. Neither leaf introduces a common background runtime, scheduler,
+when the holder exits. It also owns recoverable in-place byte publication, canonical target identity
+and the per-user lock root described in [file locking](../locking.md).
+A durable copy of the intended bytes is replayed by the next holder after an
+interrupted write. Native ownership, access controls and hard links survive.
+Workspace snapshot storage, detection catalogs and session rewrites use this
+operation; feature owners retain serialization and symbolic-link policy.
+Settings and credentials retain their existing bounded, in-place persistence.
+Neither leaf introduces a common background runtime, scheduler,
 retry policy or listener framework. Feature-specific timing, process,
 subscription and teardown semantics and current public capabilities are retained.
 
@@ -650,7 +649,8 @@ Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers
-take supplied directory observations and add no global environment, filesystem service,
+take supplied directory observations, except `native_homedir` reads the native
+home environment and account entry. They add no filesystem service,
 directory cache, scheduler or workspace dependency.
 
 ### Native feature unifier

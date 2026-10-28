@@ -1072,10 +1072,16 @@ additions, because nothing local can add one. `guards` is not a lock name.
    every file at the first guarded start and whenever those rules change;
    otherwise it checks only new files or files whose bytes changed since their
    last check. It rewrites each file that changes through the session owner's
-   single conditional rewrite, which replaces the file atomically.
-   Every session append and rewrite waits for the same stable sidecar file's
+   single conditional rewrite, which writes in place with durable roll-forward recovery.
+   Every session append and rewrite waits for the same canonical target's
    exclusive lock through the lock component's waiting acquisition, using
    `std::fs::File::lock` (dependency authorization: [#2906](https://github.com/Orchestration-Maestro/maestro/issues/2906)).
+   The lock owner hashes the canonical target with SHA-256; a missing file uses
+   its canonical parent plus its leaf. Bounded names under
+   `~/.maestro/state/file-locks` do not depend on the session leaf length or the
+   configuration root. Symbolic-link aliases share exclusion without changing
+   authored manager paths. Processes must share the same account home directory;
+   overriding that home selects another lock namespace.
    Settings keep their bounded acquisition. The operating system releases the
    lock when its holder exits; no separate stale-lock recovery is needed. Each
    holder keeps the lock for one write only. Ordinary writers hold it only while
@@ -1083,11 +1089,16 @@ additions, because nothing local can add one. `guards` is not a lock name.
    writer runs on an async executor thread, it waits where the existing
    synchronous session write already runs, without a new blocking pool. The
    conditional rewrite holds the lock across one file's final re-read, hash
-   comparison and atomic replacement. The package reads and checks a file before requesting
+   comparison and recoverable in-place write. The package reads and checks a file before requesting
    the rewrite; if the hash of those bytes differs from the locked re-read, it
    reads and checks again. This hash check covers the window from the first read
    to taking the lock. An append attempted after the final comparison waits until
-   replacement finishes, then appends to the published file. The sweep record in
+   publication finishes, then appends to the published file. Before truncation,
+   the writer publishes the intended bytes as a private recovery copy in the lock
+   root, syncing its file and directory. It syncs the target before removing the
+   copy. Every holder replays a pending copy before its own append or rewrite,
+   refusing a copy whose target identity does not match. Native file identity,
+   ownership and access controls remain intact. The sweep record in
    the configuration root's state, next to the persisted base layers, keeps the
    digest of the rules last applied and, for each session file, the hash of its
    bytes after it was last checked. An unchanged rule digest skips only files
@@ -1360,7 +1371,8 @@ changes nothing, and enabling it only withholds text until checked.
   A terminated lock holder does not prevent a later writer from acquiring the
   lock. A plain single-process append shows no visible delay: measure once with
   and without the coordination and record the numbers in the implementation pull
-  request. A crash between writing and replacing leaves the previous file whole.
+  request. A crash before target writing leaves the previous file whole; the next
+  holder replays the durable intended bytes before its own write.
 - Integrity: a modified, deleted or untracked file in the release checkout, and a
   checkout moved off its pinned commit, are each restored at start and listed in
   the notice; an edited instruction copy is refreshed; a clean checkout loads with
@@ -1434,7 +1446,7 @@ when they differ. This also corrects internal mode.
 A session file rewrite wrote the file in place, so a crash during the write left
 a partial session file. Session writers also ran without file-write exclusion,
 so a rewrite could lose a concurrent append. The session owner's single rewrite
-now replaces the file atomically, and every append and rewrite coordinates
+now writes in place with durable roll-forward recovery, and every append and rewrite coordinates
 through the same file-write exclusion. This also corrects internal mode.
 
 ## Runtime mechanics not copied
