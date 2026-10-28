@@ -1002,9 +1002,9 @@ Each admitted name becomes an `Echo <name>` tool whose description names its
 prefix, and whose execution answers `<prefix><message>` with the registered name
 and prefix as details. The factory keeps one set of admitted names, inserts a
 name before asking the host to register it, and keeps that name when the request
-fails, so a retry reports `Tool already registered: <name>` rather than replacing
-the tool the first call registered. It never asks whether the host reports UI
-availability before requesting a notification.
+fails. A refused request admits no tool, so a retry reports
+`Tool already registered: <name>` without asking the host again. It never asks
+whether the host reports UI availability before requesting a notification.
 
 It is opt-in like the other shipped extensions: its crate's tests replay the
 recorded sequences through the built component in a controlled host, and
