@@ -31,6 +31,8 @@ enum Answer {
     Bytes(&'static [u8]),
     /// Reads the request and keeps the connection open without replying.
     Hold,
+    /// Sends a reply in fragments for longer than the stop budget.
+    Fragments,
     /// Closes the connection without reading the request.
     Close,
 }
@@ -102,6 +104,10 @@ fn serve(
             Answer::Hold => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
                 held = Some(stream);
+            }
+            Answer::Fragments => {
+                BufReader::new(&mut stream).read_line(&mut request)?;
+                send_fragments(&mut stream);
             }
             Answer::Close => drop(stream),
         }
@@ -330,4 +336,143 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
     );
     assert_eq!(api.finish().request, STOP_LINE);
     client.finish();
+}
+
+#[test]
+fn stopped_information_describes_the_overridden_endpoint() {
+    let root = Scratch::new().unwrap();
+    let mut selection = named(&root, "overridden");
+    let decoy = Endpoint::bind(Path::new(&selection.api_socket_path), None, None);
+    let overridden = root.path().join("override.sock");
+    selection.api_socket_path = overridden.to_str().unwrap().to_owned();
+    let api = Endpoint::bind(&overridden, Some(Answer::Bytes(STOPPED)), Some(0));
+    let info = stop_session(&selection).unwrap();
+    api.finish();
+    decoy.finish();
+    assert_eq!(info.socket_path, selection.api_socket_path);
+    assert!(!info.running);
+}
+
+/// Sends a single typed-response witness through the stop endpoint.
+fn stop_reply(bytes: &'static [u8]) -> Result<(), String> {
+    let root = Scratch::new().unwrap();
+    let selection = named(&root, "typed");
+    let api = Endpoint::bind(
+        Path::new(&selection.api_socket_path),
+        Some(Answer::Bytes(bytes)),
+        Some(0),
+    );
+    let result = stop_with_timeout(&selection, SHORT);
+    api.finish();
+    result
+}
+
+#[test]
+fn empty_objects_are_not_stop_responses() {
+    assert!(stop_reply(b"{}\n").is_err());
+}
+
+#[test]
+fn successful_stop_replies_ignore_extra_error_members() {
+    let response = b"{\"type\":\"response\",\"command\":\"server.stop\",\"success\":true,\"data\":{\"type\":\"ok\"},\"error\":\"ignored\"}\n";
+    assert_eq!(stop_reply(response), Ok(()));
+}
+
+#[test]
+fn fragmented_stop_replies_do_not_extend_the_deadline() {
+    let root = Scratch::new().unwrap();
+    let selection = named(&root, "fragments");
+    let api = Endpoint::bind(
+        Path::new(&selection.api_socket_path),
+        Some(Answer::Fragments),
+        None,
+    );
+    let start = Instant::now();
+    let result = stop_with_timeout(&selection, SHORT);
+    let elapsed = start.elapsed();
+    api.finish();
+    assert!(result.is_err());
+    assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
+}
+
+/// Keeps bytes arriving without a line ending until the peer closes or the reply ends.
+fn send_fragments(stream: &mut UnixStream) {
+    for _ in 0..30 {
+        if stream.write_all(b" ").is_err() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+/// Fills an unaccepted listener, which remains available for a controlled interval.
+fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
+    use maestro_ipc::local_socket::connect_local_stream_until;
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let listener = UnixListener::bind(path).unwrap();
+    let mut clients = Vec::new();
+    loop {
+        let result = connect_local_stream_until(path, Instant::now() + SHORT);
+        let Ok(LocalStream::UdSocket(stream)) = result else {
+            break;
+        };
+        if stream.inner().peer_addr().is_err() {
+            break;
+        }
+        clients.push(stream);
+    }
+    let path = path.to_owned();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(300));
+        for _ in &clients {
+            listener.accept().unwrap();
+        }
+        drop(listener);
+        drop(clients);
+        std::fs::remove_file(path).unwrap();
+    })
+}
+
+#[test]
+fn saturated_initial_connections_keep_the_stop_deadline() {
+    let root = Scratch::new().unwrap();
+    let selection = named(&root, "full");
+    let peer = saturated_endpoint(Path::new(&selection.api_socket_path));
+    let start = Instant::now();
+    let result = stop_with_timeout(&selection, SHORT);
+    let elapsed = start.elapsed();
+    peer.join().unwrap();
+    assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
+    assert_eq!(
+        result,
+        Err(still_reachable(
+            "full",
+            &[Path::new(&selection.api_socket_path)]
+        ))
+    );
+}
+
+#[test]
+fn saturated_client_probes_keep_the_stop_deadline() {
+    let root = Scratch::new().unwrap();
+    let selection = named(&root, "full-client");
+    let api = Endpoint::bind(
+        Path::new(&selection.api_socket_path),
+        Some(Answer::Bytes(STOPPED)),
+        Some(0),
+    );
+    let peer = saturated_endpoint(&selection.client_socket_path);
+    let start = Instant::now();
+    let result = stop_with_timeout(&selection, SHORT);
+    let elapsed = start.elapsed();
+    api.finish();
+    peer.join().unwrap();
+    assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
+    assert_eq!(
+        result,
+        Err(still_reachable(
+            "full-client",
+            &[&selection.client_socket_path]
+        ))
+    );
 }

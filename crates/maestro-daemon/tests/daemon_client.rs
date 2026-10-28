@@ -578,3 +578,19 @@ fn status_failures_keep_their_diagnostics(root: &Path) {
         assert_eq!(error.to_string(), cause.to_string());
     }
 }
+
+#[test]
+fn status_preserves_inaccessible_parent_errors() {
+    let root = Scratch::new().unwrap();
+    let parent = root.path().join("inaccessible");
+    std::fs::create_dir(&parent).unwrap();
+    let socket = parent.join("api.sock");
+    let _listener = UnixListener::bind(&socket).unwrap();
+    let Some(_restore) = maestro_test_directory::deny(&parent, 0).unwrap() else {
+        return;
+    };
+    let native = socket.try_exists().unwrap_err();
+    let error = read_runtime_status_at(&socket, TIMEOUT).unwrap_err();
+    assert_eq!(error.kind(), native.kind());
+    assert_eq!(error.to_string(), native.to_string());
+}

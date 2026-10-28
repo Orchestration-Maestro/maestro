@@ -31,6 +31,23 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
     LocalStream::connect(path.to_fs_name::<GenericFilePath>()?)
 }
 
+/// Connect within the time remaining before the supplied deadline.
+///
+/// # Errors
+/// Returns path, connection or deadline-expiration errors.
+pub fn connect_local_stream_until(
+    path: &Path,
+    deadline: std::time::Instant,
+) -> io::Result<LocalStream> {
+    use interprocess::local_socket::{ConnectOptions, GenericFilePath, prelude::*};
+    ConnectOptions::new()
+        .name(path.to_fs_name::<GenericFilePath>()?)
+        .wait_mode(interprocess::ConnectWaitMode::Timeout(
+            deadline.saturating_duration_since(std::time::Instant::now()),
+        ))
+        .connect_sync()
+}
+
 /// Bind without unlinking a name when the listener is dropped.
 ///
 /// # Errors
