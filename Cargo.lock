@@ -4124,6 +4124,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
+ "maestro-listing",
  "maestro-models",
  "maestro-request",
  "maestro-tool",

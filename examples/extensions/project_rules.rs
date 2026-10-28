@@ -22,14 +22,19 @@ const RULES_DIR: &str = ".claude/rules";
 
 /// Collects the Markdown files below `dir`, folder by folder in name order, each path led by `prefix`.
 fn find_markdown_files(dir: &Path, prefix: &str, found: &mut Vec<String>) -> io::Result<()> {
-    let mut entries = match std::fs::read_dir(dir) {
-        Ok(entries) => entries.collect::<io::Result<Vec<_>>>()?,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+    match std::fs::metadata(dir) {
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+            ) =>
+        {
+            return Ok(());
+        }
         Err(error) => return Err(error),
-    };
-    // File systems return entries in their own order; sorting keeps the prompt stable.
-    entries.sort_by_key(std::fs::DirEntry::file_name);
-    for entry in entries {
+        Ok(_) => {}
+    }
+    for entry in maestro_listing::read_dir(dir)? {
         let relative = format!("{prefix}{}", entry.file_name().to_string_lossy());
         let kind = entry.file_type()?;
         if kind.is_dir() {
@@ -57,7 +62,7 @@ fn append_rules(rules: &[String], event: &ExtensionEvent) -> Option<ExtensionEve
         BeforeAgentStartEventResult {
             message: Presence::Missing,
             system_prompt: Presence::Present(format!(
-                "{}\n\n## Project Rules\n\nThe following project rules are available in {RULES_DIR}/:\n\n{}\n\nWhen working on tasks related to these rules, use the read tool to load the relevant rule files for guidance.\n",
+                "{}\n\n## Project Rules\n\nProject rule files in {RULES_DIR}/:\n\n{}\n\nUse the read tool to load any rule files that apply to your task for guidance.\n",
                 event.system_prompt,
                 list.join("\n")
             )),
@@ -78,7 +83,7 @@ fn scan(
     *rules.borrow_mut() = found;
     if count > 0 {
         ctx.ui()?.notify(
-            &format!("Found {count} rule(s) in {RULES_DIR}/"),
+            &format!("Project rules: {count} file(s) in {RULES_DIR}/"),
             Some(NotificationType::Info),
         )?;
     }
