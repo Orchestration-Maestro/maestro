@@ -82,6 +82,8 @@ resolving conflicts, then regenerate the table.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `inline_bash.md` | Inline bash expansion |
+| `inline_bash.rs` | An opt-in input hook that expands `!{command}` with shell output before submission. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `mac_system_theme.md` | Mac system theme |

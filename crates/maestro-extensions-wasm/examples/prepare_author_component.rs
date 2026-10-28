@@ -28,6 +28,7 @@ fn main() -> Result<(), String> {
     let native_io = build::component("native_io_component", "MAESTRO_NATIVE_IO_COMPONENT")?;
     let file_trigger = build::component("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT")?;
     let checkpoint = build::component("git_checkpoint", "MAESTRO_GIT_CHECKPOINT_COMPONENT")?;
+    let inline_bash = build::component("inline_bash", "MAESTRO_INLINE_BASH_COMPONENT")?;
     let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
     let wasi = build::component("wasi_capabilities", "MAESTRO_WASI_COMPONENT")?;
     let helpers = build::component("helper_capabilities", "MAESTRO_HELPER_COMPONENT")?;
@@ -43,7 +44,7 @@ fn main() -> Result<(), String> {
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_SUMMARIZE_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n\
+                 MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_SUMMARIZE_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_INLINE_BASH_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n\
                  MAESTRO_TRUNCATED_TOOL_COMPONENT={}\n",
                 path.display(),
                 context.display(),
@@ -61,6 +62,7 @@ fn main() -> Result<(), String> {
                 checkpoint.display(),
                 tool_override.display(),
                 handoff.display(),
+                inline_bash.display(),
                 qna.display(),
                 bash_spawn_hook.display(),
                 truncated_tool.display()
