@@ -7,6 +7,7 @@ use crate::{
     events::AppEvent,
     terminal::state::SessionStartReport,
 };
+use maestro_detection::agents::normalize_agent_source;
 use maestro_protocol::schema::{
     ErrorBody, PaneClearAgentAuthorityParams, PaneReleaseAgentParams, PaneReportAgentParams,
     PaneReportAgentSessionParams, ResponseResult,
@@ -29,15 +30,16 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Result<ResponseResult, ErrorBody> {
         let (_, pane_id) = self.target_pane(&params.pane_id)?;
         let agent_label = reported_agent_label(&params.agent)?;
+        let source = normalize_agent_source(params.source);
         self.handle_internal_event(AppEvent::HookStateReported {
             pane_id,
             session_ref: session_ref_from_report(
-                &params.source,
+                &source,
                 &agent_label,
                 params.agent_session_id,
                 params.agent_session_path,
             ),
-            source: params.source,
+            source,
             agent_label,
             state: params.state,
             message: params.message,
@@ -56,16 +58,17 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Result<ResponseResult, ErrorBody> {
         let (_, pane_id) = self.target_pane(&params.pane_id)?;
         let agent_label = reported_agent_label(&params.agent)?;
+        let source = normalize_agent_source(params.source);
         self.handle_internal_event(AppEvent::AgentSessionReported {
             pane_id,
             report: SessionStartReport {
                 session_ref: session_ref_from_report(
-                    &params.source,
+                    &source,
                     &agent_label,
                     params.agent_session_id,
                     params.agent_session_path,
                 ),
-                source: params.source,
+                source,
                 agent_label,
                 seq: params.seq,
                 session_start_source: normalize_session_start_source(params.session_start_source),
@@ -103,7 +106,7 @@ impl<C: FnMut() -> u128> App<C> {
         let agent_label = reported_agent_label(&params.agent)?;
         self.handle_internal_event(AppEvent::HookAgentReleased {
             pane_id,
-            source: params.source,
+            source: normalize_agent_source(params.source),
             known_agent: maestro_detection::agents::parse_agent_label(&agent_label),
             agent_label,
             seq: params.seq,

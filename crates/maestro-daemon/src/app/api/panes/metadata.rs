@@ -15,6 +15,7 @@ use crate::{
     events::AppEvent,
     terminal::state::{AgentMetadataReport, TerminalState},
 };
+use maestro_detection::agents::normalize_agent_source;
 use maestro_protocol::schema::{ErrorBody, PaneReportMetadataParams, ResponseResult};
 use maestro_workspace::metadata_tokens::MAX_SEQUENCE_SOURCES;
 use std::{collections::HashMap, time::Instant};
@@ -78,6 +79,13 @@ fn normalize_state_labels(
     Ok(kept)
 }
 
+/// Checks a reporter's source name and gives it its canonical provenance spelling.
+fn canonical_source(value: &str) -> Result<String, ErrorBody> {
+    normalize_metadata_source(value)
+        .map(normalize_agent_source)
+        .map_err(|message| api_error("invalid_metadata_source", message))
+}
+
 /// Refuses a report that sets and clears one field, or that asks for nothing.
 fn check_request(report: &ValidReport, set: [bool; 3]) -> Result<(), ErrorBody> {
     let presentation = &report.presentation;
@@ -107,8 +115,7 @@ fn validate(params: PaneReportMetadataParams) -> Result<ValidReport, ErrorBody> 
         .as_deref()
         .map(reported_agent_label)
         .transpose()?;
-    let source = normalize_metadata_source(&params.source)
-        .map_err(|message| api_error("invalid_metadata_source", message))?;
+    let source = canonical_source(&params.source)?;
     let set = [
         params.title.is_some(),
         params.display_agent.is_some(),
@@ -127,9 +134,8 @@ fn validate(params: PaneReportMetadataParams) -> Result<ValidReport, ErrorBody> 
     let applies_to_source = params
         .applies_to_source
         .as_deref()
-        .map(normalize_metadata_source)
-        .transpose()
-        .map_err(|message| api_error("invalid_metadata_source", message))?;
+        .map(canonical_source)
+        .transpose()?;
     let report = ValidReport {
         presentation: AgentMetadataReport {
             source,
