@@ -47,7 +47,7 @@ fn tool_override_registered_callbacks_follow_host_paths() -> Result<(), String> 
                 json!({"error":true}),
             ),
         ] {
-            host.observe().actions.value = json!({"paths.resolve":path});
+            host.observe().actions.value = json!({"paths.resolve":path, "paths.guest_path":path});
             let encoded = exports
                 .invoke_tool(
                     key,
@@ -68,7 +68,8 @@ fn tool_override_registered_callbacks_follow_host_paths() -> Result<(), String> 
                 assert_eq!(value["content"][0]["text"], "second Ω");
             }
         }
-        host.observe().actions.value = json!({"is_whitespace_char":false});
+        host.observe().actions.value =
+            json!({"is_whitespace_char":false, "paths.guest_path":FIXTURE});
         let key = host.observed().callback("command read-log")?;
         exports
             .invoke_command(key, String::new(), host.command_context("/controlled"))
@@ -92,8 +93,7 @@ fn tool_override_large_text_clips_at_whole_scalars() -> Result<(), String> {
             env!("CARGO_MANIFEST_DIR"),
             "/../../docs/specs/maestro-port.md"
         );
-        host.observe().actions.value =
-            json!({"config.get_agent_dir":"/unused-agent", "paths.resolve":path});
+        host.observe().actions.value = json!({"config.get_agent_dir":"/unused-agent", "paths.resolve":path, "paths.guest_path":path});
         let exports = crate::component_adapter::Exports::new(host.clone());
         exports.start::<ToolOverride>().await?;
         let key = host.observed().callback("tool read")?;

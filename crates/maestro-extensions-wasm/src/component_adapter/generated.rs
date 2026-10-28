@@ -295,6 +295,7 @@ impl Imports for Generated {
         on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
         register_command(name: &str, description: Option<&str>, completions: Option<&host::Callback>, handler: &host::Callback) -> ExtensionResult<()> => host::register_command;
         register_shortcut(shortcut: &str, description: Option<&str>, handler: &host::Callback) -> ExtensionResult<()> => host::register_shortcut;
+        contribute_load_time(contributions: &str) -> ExtensionResult<()> => host::contribute_load_time;
         register_flag(name: &str, options: &FlagOptions) -> ExtensionResult<()> => host::register_flag;
         get_flag(name: &str) -> ExtensionResult<Option<FlagValue>> => host::get_flag;
     } }
