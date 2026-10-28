@@ -104,9 +104,11 @@ pub struct GitUpstreamIdentity {
     pub oid: Option<String>,
 }
 
-/// A configuration read for one branch.
+/// A configuration read for one branch of one checkout.
 #[derive(Debug, Clone)]
 struct TrackingRead {
+    /// The checkout whose metadata was read; a retargeted `.git` marker makes this stale.
+    info: GitWorktreeInfo,
     /// The branch whose section was read.
     branch: String,
     /// What the read found and the files it depended on.
@@ -227,9 +229,14 @@ impl Repository<'_> {
         let previous = cached
             .and_then(|entry| entry.fingerprint.as_ref())
             .and_then(|fingerprint| fingerprint.tracking.as_ref())
-            .filter(|tracking| tracking.branch == branch && tracking.read.is_current());
+            .filter(|tracking| {
+                tracking.info == *self.info
+                    && tracking.branch == branch
+                    && tracking.read.is_current()
+            });
         let tracking = previous.cloned().unwrap_or_else(|| TrackingRead {
             read: read_branch_config(self.info, &branch, environment),
+            info: self.info.clone(),
             branch,
         });
         let upstream = self.upstream(&tracking);
