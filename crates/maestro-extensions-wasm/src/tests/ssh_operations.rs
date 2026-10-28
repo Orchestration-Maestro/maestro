@@ -82,7 +82,7 @@ fn ssh_maps_forward_slash_unc_prefix_using_host_resolution() -> ExtensionResult<
     super::block_on((read.read_file)(r"\\server\share\work\note.txt".into())).unwrap();
     assert_eq!(
         host.observed().native_io.launches.last().unwrap().1[2],
-        "cat -- '/srv/note.txt'"
+        format!("cat -- {}", transport::quote("/srv/note.txt"))
     );
     Ok(())
 }
