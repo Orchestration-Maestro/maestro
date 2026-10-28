@@ -154,3 +154,128 @@ fn nested_batch_publishes_one_complete_storage_update() {
         json!({"name":"gruvbox","autoSwitch":false})
     );
 }
+
+/// Scoped literal edits publish immediately without changing the other scope.
+#[test]
+fn scoped_paths_keep_null_removal_and_scope_isolation() {
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        let storage = crate::support::ControlledStorage::new();
+        let seed = r#"{"custom":{"literal.key":{"remove":1,"keep":2}}}"#;
+        storage.inject(SettingsScope::Global, seed);
+        storage.inject(SettingsScope::Project, seed);
+        let manager = std::cell::RefCell::new(SettingsManager::from_storage(storage.clone()));
+        manager
+            .borrow_mut()
+            .set_key_path(scope, "custom", &["literal.key", "remove"], None);
+        manager.borrow_mut().set_key_path(
+            scope,
+            "custom",
+            &["literal.key", "null"],
+            Some(Value::Null),
+        );
+        manager
+            .borrow_mut()
+            .set_key_path(scope, "absent", &["parent", "leaf"], None);
+        let flush = manager.borrow().flush();
+        let accepted = match scope {
+            SettingsScope::Global => manager.borrow().get_global_settings(),
+            SettingsScope::Project => manager.borrow().get_project_settings(),
+        };
+        assert_eq!(
+            accepted.0,
+            json!({"custom":{"literal.key":{"keep":2,"null":null}}})
+                .as_object()
+                .unwrap()
+                .clone()
+        );
+        block_on(flush);
+        let other = match scope {
+            SettingsScope::Global => SettingsScope::Project,
+            SettingsScope::Project => SettingsScope::Global,
+        };
+        assert_eq!(storage.text(other).as_deref(), Some(seed));
+        block_on(manager.borrow_mut().reload());
+        let saved: Value = serde_json::from_str(&storage.text(scope).unwrap()).unwrap();
+        assert_eq!(saved, Value::Object(accepted.0));
+        assert!(manager.borrow_mut().drain_errors().is_empty());
+    }
+}
+
+/// Independent scoped writers merge into fresh storage rather than stale snapshots.
+#[test]
+fn scoped_paths_preserve_fresh_document_members() {
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        let storage = crate::support::ControlledStorage::new();
+        storage.inject(scope, r#"{"custom":{"left":0,"right":0},"unknown":true}"#);
+        let mut first = SettingsManager::from_storage(storage.clone());
+        let mut second = SettingsManager::from_storage(storage.clone());
+        first.set_key_path(scope, "custom", &["left"], Some(json!(1)));
+        block_on(first.flush());
+        second.set_key_path(scope, "custom", &["right"], Some(json!(2)));
+        block_on(second.flush());
+        assert_eq!(
+            serde_json::from_str::<Value>(&storage.text(scope).unwrap()).unwrap(),
+            json!({"custom":{"left":1,"right":2},"unknown":true})
+        );
+        second.set_key_path(scope, "custom", &[], None);
+        block_on(second.flush());
+        assert_eq!(
+            serde_json::from_str::<Value>(&storage.text(scope).unwrap()).unwrap(),
+            json!({"unknown":true})
+        );
+        assert!(first.drain_errors().is_empty());
+        assert!(second.drain_errors().is_empty());
+    }
+}
+
+/// Failed scoped writes leave accepted edits visible and report their scope once.
+#[test]
+fn scoped_paths_drain_persistence_failures() {
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        let storage = crate::support::ControlledStorage::new();
+        let mut manager = SettingsManager::from_storage(storage.clone());
+        storage.script_writes(&[false]);
+        manager.set_key_path(scope, "theme", &[], Some(json!("accepted")));
+        assert_eq!(manager.get_theme().as_deref(), Some("accepted"));
+        block_on(manager.flush());
+        assert!(storage.text(scope).is_none());
+        let errors = manager.drain_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].scope, scope);
+        assert_eq!(errors[0].error.to_string(), "controlled failure");
+        assert!(manager.drain_errors().is_empty());
+        manager.set_key_path(scope, "custom", &[], Some(json!(true)));
+        block_on(manager.flush());
+        assert_eq!(
+            serde_json::from_str::<Value>(&storage.text(scope).unwrap()).unwrap(),
+            json!({"theme":"accepted","custom":true})
+        );
+    }
+}
+
+/// Scoped edits cannot bypass the base layer's locked-path refusal.
+#[test]
+fn scoped_paths_refuse_locked_preferences() {
+    for scope in [SettingsScope::Global, SettingsScope::Project] {
+        let storage = crate::support::ControlledStorage::new();
+        let mut manager = SettingsManager::from_storage(storage.clone());
+        manager.publish_base_layer(
+            SettingsScope::Global,
+            Some(maestro_settings::BaseSettingsLayer {
+                settings: crate::support::settings(json!({"custom":{"locked":1}})),
+                locked: ["custom.locked".into()].into_iter().collect(),
+                source: "config".into(),
+                recorded_at: "now".into(),
+            }),
+        );
+        block_on(manager.flush());
+        manager.set_key_path(scope, "custom", &[], None);
+        block_on(manager.flush());
+        assert!(manager.get_global_settings().0.is_empty());
+        assert!(manager.get_project_settings().0.is_empty());
+        assert!(storage.writes().is_empty());
+        let errors = manager.drain_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].scope, scope);
+    }
+}

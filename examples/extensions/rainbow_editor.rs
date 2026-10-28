@@ -1,4 +1,5 @@
 //! Highlights `ultrathink` in the editor with an animated rainbow shine.
+// maestro-component: MAESTRO_RAINBOW_EDITOR_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

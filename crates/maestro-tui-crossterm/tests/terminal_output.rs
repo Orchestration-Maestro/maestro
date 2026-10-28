@@ -740,7 +740,7 @@ fn native_output_restores_output_flags() {
             if case >= 4 {
                 rustix::stdio::dup2_stdin(stdout()).unwrap();
             }
-            let original = fcntl_getfl(stdout()).unwrap();
+            let original = support::stdout_flags();
             let flags = if case % 2 == 0 {
                 original
             } else {
@@ -751,13 +751,16 @@ fn native_output_restores_output_flags() {
                 let mut terminal = queued_terminal(&rig, &output).await;
                 assert!(fcntl_getfl(stdout()).unwrap().contains(OFlags::NONBLOCK));
                 terminal.write("flags").unwrap();
+                // Some hosts' drain of a terminal waits until its reader takes this output.
+                let reader = Capture(output.0.try_clone().unwrap());
+                let collector = collect_bytes(reader, "flags\x1b[?2004l".len());
                 if case % 4 < 2 {
                     terminal.stop().unwrap();
                 } else {
                     drop(terminal);
                 }
-                assert_eq!(fcntl_getfl(stdout()).unwrap(), flags);
-                assert_eq!(output.take(), "flags\x1b[?2004l");
+                assert_eq!(support::stdout_flags(), flags);
+                assert_eq!(collector.join().unwrap(), b"flags\x1b[?2004l");
             });
         });
     }
@@ -899,7 +902,7 @@ fn native_output_writer_drains_then_closes_admission() {
         let rig = Rig::paused();
         let _input = pipe_input();
         let output = pipe_output();
-        let flags = fcntl_getfl(stdout()).unwrap();
+        let flags = support::stdout_flags();
         rig.run(async {
             let mut terminal = queued_terminal(&rig, &output).await;
             let mut writer = terminal.output_writer().unwrap();
@@ -912,7 +915,7 @@ fn native_output_writer_drains_then_closes_admission() {
             expected.extend_from_slice(b"\xff\0external\x1b[?2004l");
             let collector = collect_bytes(output, expected.len());
             terminal.stop().unwrap();
-            assert_eq!(fcntl_getfl(stdout()).unwrap(), flags);
+            assert_eq!(support::stdout_flags(), flags);
             assert_eq!(collector.join().unwrap(), expected);
             assert!(terminal.output_writer().is_none());
             assert_closed_writer(&mut writer);

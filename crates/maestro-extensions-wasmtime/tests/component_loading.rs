@@ -92,6 +92,8 @@ fn component_paths_use_the_domain_loader() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     let cwd = spelled(root);
+    let decoy = root.join(".maestro").join("extensions").join("decoy.wasm");
+    place(HOOKS, &decoy);
     for (component, directory) in [(LOCATION, "first"), (HOOKS, "second"), (LOCATION, "third")] {
         place(component, &root.join(directory).join("index.wasm"));
     }
@@ -99,6 +101,21 @@ fn component_paths_use_the_domain_loader() {
         ["first", "second", "third"].map(|name| spelled(&root.join(name).join("index.wasm")));
     local(async {
         let bus = TracedBus::new();
+        let discovered = discover_and_load_extensions(
+            &[],
+            &cwd,
+            &spelled(&root.join("agent")),
+            &bus.controller,
+            &loader(),
+        )
+        .await
+        .unwrap();
+        assert!(discovered.errors.is_empty());
+        assert_eq!(discovered.extensions.len(), 1);
+        assert_eq!(
+            discovered.extensions[0].read().unwrap().resolved_path,
+            spelled(&decoy)
+        );
         let empty = load_extensions(Vec::new(), &cwd, &bus.controller, &loader())
             .await
             .unwrap();
@@ -544,11 +561,15 @@ async fn refreshes_bound_tools(
 ) {
     let refreshed = Rc::new(std::cell::Cell::new(0));
     let counted = refreshed.clone();
+    let refreshed_tools = Rc::new(RefCell::new(Vec::new()));
+    let captured = refreshed_tools.clone();
+    let active = Rc::downgrade(runner);
     runner
         .bind_core(
             ExtensionActions {
                 refresh_tools: Rc::new(move || {
                     counted.set(counted.get() + 1);
+                    captured.replace(active.upgrade().unwrap().get_all_registered_tools());
                     Ok(())
                 }),
                 ..<Local as maestro_extensions::ExtensionExecution>::unbound_actions()
@@ -565,10 +586,29 @@ async fn refreshes_bound_tools(
     .await
     .unwrap();
     assert_eq!(refreshed.get(), 1);
-    let names: Vec<_> = runner
-        .get_all_registered_tools()
-        .iter()
-        .map(|tool| tool.definition.metadata().definition.name)
-        .collect();
-    assert_eq!(names, ["shared", "own", "late"]);
+    let wrapped = {
+        let registered = refreshed_tools.borrow();
+        let names: Vec<_> = registered
+            .iter()
+            .map(|tool| tool.definition.metadata().definition.name)
+            .collect();
+        assert_eq!(names, ["shared", "own", "late"]);
+        maestro_extensions::wrap_registered_tool(&registered[2], runner.clone())
+    };
+    let result = (wrapped.execute)(
+        "late-call".into(),
+        json!({"n":3}),
+        None,
+        Some(Rc::new(|_| {})),
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(result.content).unwrap(),
+        json!([{"type":"text","text":"late"}])
+    );
+    assert_eq!(
+        result.details,
+        Some(json!({"id":"late-call","params":{"n":3}}))
+    );
 }

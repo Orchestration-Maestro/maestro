@@ -276,12 +276,18 @@ fn assert_pack_rows(
 
 #[test]
 fn startup_selector_request_builds_existing_component() {
+    use crate::settings_selection_support::plain;
     use maestro_app::presentation_data::input_selectors::ExtensionSelectorRequest;
     use maestro_tui::{Component, get_keybindings};
     use std::{cell::RefCell, rc::Rc};
     let _admission = crate::registry::REGISTRY.lock().unwrap();
     let _restore = crate::registry::Restore(get_keybindings());
-    let (ui, terminal, factory) = extension_dialog_support::startup_host();
+    let extension_dialog_support::StartupHost {
+        ui,
+        terminal,
+        factory,
+        runtime,
+    } = extension_dialog_support::startup_host();
     let seen = Rc::new(RefCell::new(Vec::new()));
     let (selecting, cancelling) = (seen.clone(), seen.clone());
     let view = factory(ExtensionSelectorRequest {
@@ -297,7 +303,14 @@ fn startup_selector_request_builds_existing_component() {
     let first = ui.render(80).join("\n");
     assert!(first.contains("Continue") && first.contains("Cancel"));
     ui.start().unwrap();
+    runtime.settle().unwrap();
+    let painted = plain(&terminal.writes().concat());
+    assert!(painted.contains("→ Continue") && painted.contains("  Cancel"));
+    terminal.clear_writes();
     terminal.send_input("\u{e}");
+    runtime.settle().unwrap();
+    let moved = plain(&terminal.writes().concat());
+    assert!(moved.contains("→ Cancel") && moved.contains("  Continue"));
     terminal.send_input("\u{19}");
     terminal.send_input("\u{18}");
     assert_eq!(seen.borrow().as_slice(), ["Cancel", "cancelled"]);

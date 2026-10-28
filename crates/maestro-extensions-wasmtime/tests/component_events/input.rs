@@ -124,3 +124,44 @@ async fn chained(
     }
     (outcome(observed, &run), recorded)
 }
+
+#[test]
+fn component_input_chains_text_preserves_images_and_forwards_sources() {
+    super::local(async {
+        let harness = Harness::load().await;
+        let run = harness
+            .prepare(
+                "input",
+                &[
+                    vec![json!([{"observe":"input"}, {"suffix":"[1]"}])],
+                    vec![json!([{"observe":"input"}, {"suffix":"[2]"}])],
+                ],
+            )
+            .await;
+        for (source, name) in [
+            (InputSource::Interactive, "interactive"),
+            (InputSource::Rpc, "rpc"),
+            (InputSource::Extension, "extension"),
+        ] {
+            let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
+            let result = run
+                .runner
+                .emit_input("X", &mut images, source)
+                .await
+                .unwrap();
+            assert_eq!(
+                encoded(&result),
+                transform("X[1][2]", Some(json!([image("old")])))
+            );
+            assert_eq!(encoded(&images), json!([image("old")]));
+            assert_eq!(
+                harness.bus.take(),
+                [
+                    json!({"text":"X", "images":[image("old")], "source":name}),
+                    json!({"text":"X[1]", "images":[image("old")], "source":name}),
+                ]
+            );
+            assert_eq!(run.errors(), json!([]));
+        }
+    });
+}

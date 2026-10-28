@@ -1,5 +1,11 @@
 # Extension component bindings
 
+The shipped `custom_footer` example uses the workspace's `ryu-js =1.0.3`
+(Apache-2.0) as a development dependency to format token counts and dollar costs.
+For example, 1,250 tokens display as `1.3k`, and a cost of `$0.0625` displays as
+`$0.063`.
+The formatter is not a normal dependency of the guest library.
+
 `maestro-extensions-wasm` uses `wit-bindgen =0.62.0` with defaults disabled and
 `macros`, `realloc`, `async`, `async-spawn`, `std` and `inter-task-wakeup` enabled.
 

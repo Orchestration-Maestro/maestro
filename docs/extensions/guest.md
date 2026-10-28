@@ -651,9 +651,10 @@ Other extension-assigned Infinity or NaN fails encoding with
 failure or other encoded part is retained. Numeric-looking text remains text.
 
 The request body of `before_provider_request`, its replacement, tool-execution arguments
-and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+and results, tool-result input and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
-Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+Tool schemas are `maestro_request::parameter_schema::ParameterSchema` values inside the
+tool metadata, not quoted JSON documents. Thinking levels
 cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
 Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
@@ -1047,7 +1048,7 @@ sends user messages the way a user types them. `/ask` sends an ordinary message,
 which starts a turn, and reports `Agent is busy. Use /steer or /followup
 instead.` while the agent is working. `/steer` sends an ordinary message while
 idle and a steering message while the agent is working, so that message reaches
-the request in flight. `/followup` sends an ordinary message while idle and
+the next model request. `/followup` sends an ordinary message while idle and
 otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
 it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
 respond concisely.`, so the second instruction arrives with the request.
@@ -1148,6 +1149,10 @@ edits made through any of its clones.
 See [native helpers](guest_operations.md) for synchronous terminal operations.
 
 ## Standard operating-system interfaces
+
+`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+under the host's temporary root, with mode `0700` on Unix and the default
+Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
 
 Rust standard-library environment, file and byte I/O use the host's WASI 0.2
 baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI

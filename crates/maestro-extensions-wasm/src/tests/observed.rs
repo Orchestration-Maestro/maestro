@@ -105,6 +105,8 @@ pub struct Observed {
     pub compactions: usize,
     /// Ordinary action controls.
     pub actions: super::action_host::Bank,
+    /// Host helper operations and their literal encoded operands.
+    pub helper_calls: Vec<(String, String)>,
     /// Registration transport observations and supplied flag replies.
     pub registrations: super::registration_host::Bank,
     /// Event-channel observations.
@@ -147,6 +149,8 @@ pub struct Observed {
     hold: VecDeque<Hold>,
     /// Whether the next session operation fails without running its continuation.
     reject_session: bool,
+    /// Captured standard output of the guest, when the host installed one.
+    pub stdout: Option<wasmtime_wasi::p2::pipe::MemoryOutputPipe>,
 }
 
 impl Observed {
@@ -183,11 +187,23 @@ impl Observed {
         self.live = self.live.saturating_sub(1);
     }
 
+    /// Every callback identity this isolated host issued, including those already dropped.
+    pub fn identities(&self) -> std::ops::RangeInclusive<u32> {
+        1..=self.next
+    }
+
     /// Hands out a fresh callback identity.
     pub fn next_identity(&mut self) -> u32 {
         self.next += 1;
         self.lend();
         self.next
+    }
+
+    /// Identities the controlled host still owns, including widget style callbacks.
+    pub fn live_identities(&self) -> Vec<u32> {
+        (1..=self.next)
+            .filter(|id| !self.dropped.contains(id))
+            .collect()
     }
 
     /// Records that the extension dropped an identity.

@@ -15,32 +15,21 @@ use maestro_cli::{
     startup::main::presentation::MissingSessionCwdPresentation,
 };
 use maestro_theme::{Collator, NativeThemeWatchOperations, ThemeState, supports_color};
-use maestro_tui::TUI;
-#[cfg(unix)]
-use maestro_tui::TerminalImage;
+use maestro_tui::{TUI, TerminalImage};
 use std::{io, rc::Rc};
 use tokio::task::LocalSet;
 
 /// The frame-writer factory shared by both selector hosts.
 fn writer(local: Rc<LocalSet>) -> Rc<dyn Fn(Option<bool>) -> io::Result<TUI>> {
-    #[cfg(unix)]
-    {
-        Rc::new(move |cursor| {
-            let (terminal, runtime) =
-                maestro_cli::input::selector::native_terminal(Rc::clone(&local));
-            Ok(TUI::new(
-                terminal,
-                runtime,
-                TerminalImage::default(),
-                cursor,
-            ))
-        })
-    }
-    #[cfg(not(unix))]
-    {
-        drop(local);
-        Rc::new(|_| Err(crate::modes::unsupported_terminal()))
-    }
+    Rc::new(move |cursor| {
+        let (terminal, runtime) = maestro_cli::input::selector::native_terminal(Rc::clone(&local));
+        Ok(TUI::new(
+            terminal,
+            runtime,
+            TerminalImage::default(),
+            cursor,
+        ))
+    })
 }
 
 /// The native writer and explicit process-exit operation of a selector.
@@ -73,8 +62,8 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
                 callbacks,
             ));
             Ok(PresentedSelector {
-                component: component.clone(),
-                focus: component,
+                focus: component.get_resource_list().clone(),
+                component,
             })
         }),
     }
@@ -155,3 +144,6 @@ pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSession
         presenter,
     }
 }
+
+#[cfg(test)]
+mod tests;

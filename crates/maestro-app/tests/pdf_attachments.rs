@@ -210,6 +210,7 @@ fn pdf_font_and_text_corpus_keeps_approved_engine_results() {
             _ => None,
         }))
         .chain(support::pdf::text_show_files())
+        .chain(support::pdf::AARCH64_PREVIEWS.map(support::pdf::aarch64_preview))
         .chain([
             "documents.json".into(),
             "routes.json".into(),

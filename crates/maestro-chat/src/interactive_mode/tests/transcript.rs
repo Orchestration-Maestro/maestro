@@ -17,6 +17,7 @@ use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
 use serde_json::json;
 use std::cell::Cell;
+use std::rc::Weak;
 use std::{cell::RefCell, collections::BTreeMap, path::Path, rc::Rc};
 
 /// The recorded palette and every recorded transcript case.
@@ -284,6 +285,15 @@ fn register_walker(
     .unwrap();
 }
 
+/// Asserts the transcript and every row a walk made are released.
+fn assert_released((transcript, rows): &(Weak<Container>, Vec<Weak<dyn Component>>)) {
+    assert!(transcript.upgrade().is_none(), "the transcript is released");
+    assert!(
+        rows.iter().all(|row| row.upgrade().is_none()),
+        "the rows are released"
+    );
+}
+
 /// A transcript edit the first renderer makes while it is expanded.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -355,6 +365,14 @@ fn transcript_expansion_keeps_the_captured_child_array_live() {
                 .collect();
             assert_eq!(left, expected.children);
             assert_eq!(world.runtime.pending(), expected.renders);
+            let released = (
+                Rc::downgrade(&chat),
+                made.iter().map(Rc::downgrade).collect(),
+            );
+            rows.borrow_mut().clear();
+            slot.replace(None);
+            drop((made, chat, runner, world));
+            assert_released(&released);
         }
     });
 }

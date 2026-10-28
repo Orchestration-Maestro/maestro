@@ -189,7 +189,7 @@ pub struct Scenario {
     pub replies: Option<(&'static [&'static str], Dribble)>,
     /// The completion reply of a transfer, sent in pieces.
     pub completion: Option<Dribble>,
-    /// Close the control connection right after the greeting.
+    /// End the control connection's output right after the greeting.
     pub hang_up: bool,
 }
 
@@ -388,7 +388,7 @@ fn session(control: TcpStream, scenario: &Scenario, observed: &Observed) -> std:
         None => reply(&mut control, scenario.greeting)?,
     }
     if scenario.hang_up {
-        return Ok(());
+        return end_stream(&control.stream);
     }
     let mut data: Option<TcpListener> = None;
     loop {
@@ -476,11 +476,23 @@ fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
     // A client that closed the connection first ends the dialogue just as surely as one that
     // read every byte, so the observation covers both shapes.
     observed.data_closed.store(true, Ordering::SeqCst);
-    if let Err(error) = stream.stream.shutdown(std::net::Shutdown::Write) {
+    end_stream(&stream.stream)
+}
+
+/// Close the write side of `stream` and read what the client still sends until it closes.
+///
+/// Closing with the client's bytes unread would answer them with a reset, and some hosts,
+/// macOS among them, report that reset to the client before the end of stream it follows.
+///
+/// # Errors
+/// Returns the write shutdown or read failure, except the broken pipe, reset, aborted and
+/// not-connected errors of a peer that already closed, which end the stream normally.
+fn end_stream(mut stream: &TcpStream) -> std::io::Result<()> {
+    if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
         return if vanished(&error) { Ok(()) } else { Err(error) };
     }
     let mut exhausted = Vec::new();
-    match stream.stream.read_to_end(&mut exhausted) {
+    match stream.read_to_end(&mut exhausted) {
         Err(error) if vanished(&error) => Ok(()),
         other => other.map(drop),
     }
@@ -659,11 +671,9 @@ fn accept_until_stopped(
         let script = &scenarios[served.min(last)];
         served += 1;
         if let Err(error) = session(control, script, observed) {
-            // A client that went away mid-reply is a completed session, not a peer failure.
-            if !matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) {
+            // A client that went away mid-reply is a completed session, not a peer failure;
+            // Windows reports the closed connection as aborted rather than reset.
+            if !vanished(&error) {
                 return Err(error);
             }
             // A client that closed its connection took its control connection with it.

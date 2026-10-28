@@ -3,6 +3,7 @@
 
 mod checked_runs;
 mod environment_groups;
+mod windows_console;
 
 use std::ffi::OsStr;
 use std::fmt::Write as _;

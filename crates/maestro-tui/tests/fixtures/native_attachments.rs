@@ -100,10 +100,11 @@ pub(crate) async fn native_cases(group: &str) {
         serde_json::from_str(include_str!("native_attachments.json")).unwrap();
     for case in cases.iter().filter(|c| c.group == group) {
         let tree = Tree::new().unwrap();
-        entries(
-            &tree,
-            &case.names.iter().map(String::as_str).collect::<Vec<_>>(),
-        );
+        let names: Vec<_> = case.names.iter().map(String::as_str).collect();
+        if !tree.keeps_apart(&case.id, &names) {
+            continue;
+        }
+        entries(&tree, &names);
         if case.id == "hidden_git" {
             std::fs::write(tree.path().join(".gitignore"), "").unwrap();
         }

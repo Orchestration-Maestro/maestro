@@ -3,7 +3,9 @@
 mod accessors;
 mod base_layer;
 mod change;
+mod composition;
 mod conversion;
+mod decision;
 mod entries;
 #[cfg(not(target_arch = "wasm32"))]
 mod file_storage;
@@ -20,11 +22,14 @@ use std::future::Future;
 use serde_json::{Map, Value};
 
 use change::{Change, Edit};
-use conversion::{convert, merge_one_level, parse_document};
+use conversion::{convert, parse_document};
 use maestro_json::pretty_object;
 use persistence::Queue;
 
 pub use base_layer::BaseSettingsLayer;
+pub use decision::{
+    DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsDecider, SettingsDeciderHandle,
+};
 pub use entries::{FilteredPackage, PackageSource, SettingsListEntry};
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_storage::FileSettingsStorage;
@@ -63,6 +68,16 @@ struct NotANumber {
 }
 
 impl NotANumber {
+    /// Retains typed results only where composition kept their JSON null representation.
+    fn retaining_nulls(&self, document: &Map<String, Value>) -> Self {
+        Self {
+            editor_padding_x: self.editor_padding_x
+                && document.get("editorPaddingX") == Some(&Value::Null),
+            autocomplete_max_visible: self.autocomplete_max_visible
+                && document.get("autocompleteMaxVisible") == Some(&Value::Null),
+        }
+    }
+
     /// The results that a document does not define itself.
     fn unless_defined_by(&self, document: &Map<String, Value>) -> Self {
         Self {
@@ -78,6 +93,8 @@ impl NotANumber {
 pub struct SettingsManager {
     /// Where scopes are loaded from and saved to.
     storage: SettingsStorageHandle,
+    /// The sole session publisher; decisions run outside persistence locks.
+    decider: Option<SettingsDeciderHandle>,
     /// Read-only published layers, in global/project order.
     base_layers: [Option<BaseSettingsLayer>; 2],
     /// The accepted global scope.
@@ -103,6 +120,7 @@ impl SettingsManager {
         let queue = Queue::new(storage.clone());
         let mut manager = Self {
             storage,
+            decider: None,
             base_layers: [None, None],
             global: Scope::default(),
             project: Scope::default(),
@@ -178,12 +196,24 @@ impl SettingsManager {
 
     /// Layers runtime preferences over the effective settings without saving them.
     pub fn apply_overrides(&mut self, overrides: Settings) {
-        if self.refuse_changes(SettingsScope::Global, &Change::overrides(&overrides.0)) {
+        if self.refuse_changes(SettingsScope::Global, &Change::overrides(&overrides.0))
+            || self.refuse_request(
+                SettingsScope::Global,
+                &DecisionRequest::RuntimeOverrides(&overrides),
+            )
+        {
             return;
         }
-        self.effective_nan = self.effective_nan.unless_defined_by(&overrides.0);
+        let Settings(overrides) = overrides;
+        self.effective_nan = self.effective_nan.unless_defined_by(&overrides);
         let effective = std::mem::take(&mut self.effective);
-        self.effective = merge_one_level(effective, overrides.0);
+        self.effective = self.compose_effective_settings(
+            self.get_base_layer(),
+            effective,
+            &[(SettingsScope::Global, &overrides)],
+        );
+        self.effective_nan = self.effective_nan.retaining_nulls(&self.effective);
+        self.apply_base_nan_locks();
     }
 
     /// Returns a future that completes once every write queued so far has run.
@@ -239,18 +269,30 @@ impl SettingsManager {
         let base = self
             .get_base_layer()
             .map_or_else(Map::new, |layer| layer.settings.0.clone());
-        let global = merge_one_level(base, self.global.settings.clone());
-        self.effective = merge_one_level(global, self.project.settings.clone());
+        self.effective = self.compose_effective_settings(
+            self.get_base_layer(),
+            base,
+            &[
+                (SettingsScope::Global, &self.global.settings),
+                (SettingsScope::Project, &self.project.settings),
+            ],
+        );
         self.effective_nan = self.accepted_nan.unless_defined_by(&self.project.settings);
-        self.apply_base_locks();
+        self.effective_nan = self.effective_nan.retaining_nulls(&self.effective);
+        self.apply_base_nan_locks();
     }
 
     /// Publishes edits to a scope immediately and queues one save of them unless
     /// the scope's load failed.
     fn edit(&mut self, scope: SettingsScope, changes: Vec<Change>) {
-        if self.refuse_changes(scope, &changes) {
+        if self.refuse_edit(scope, &changes) {
             return;
         }
+        self.edit_accepted(scope, changes);
+    }
+
+    /// Publishes an already checked request, preserving the ordinary save order.
+    fn edit_accepted(&mut self, scope: SettingsScope, changes: Vec<Change>) {
         let document = &mut self.scope_mut(scope).settings;
         let edits: Vec<Edit> = changes
             .into_iter()

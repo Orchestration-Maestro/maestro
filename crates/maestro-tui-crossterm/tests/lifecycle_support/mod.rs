@@ -13,7 +13,7 @@ use rustix::fs::{OFlags, fcntl_getfl};
 use rustix::io::read;
 use rustix::process::{Resource, Rlimit, Signal, getpid, getrlimit, kill_process, setrlimit};
 use rustix::stdio::{dup2_stdin, stdin};
-use rustix::termios::{Termios, tcgetattr};
+use rustix::termios::{LocalModes, Termios, tcgetattr};
 use tokio::runtime::Builder;
 
 use crate::support::{Feed, Inputs, Resizes, Rig, pty, set_size, until};
@@ -165,7 +165,11 @@ pub fn window_change() {
 
 /// The attributes of standard input as text, for exact before-and-after comparison.
 pub fn stdin_attributes() -> String {
-    format!("{:?}", attributes(stdin()))
+    let mut attributes = attributes(stdin());
+    // Some kernels set this when canonical input comes back, to retype pending input at the
+    // next read. It is the kernel's state, not an attribute a terminal saves or restores.
+    attributes.local_modes.remove(LocalModes::PENDIN);
+    format!("{attributes:?}")
 }
 
 /// The terminal attributes of `fd`.
