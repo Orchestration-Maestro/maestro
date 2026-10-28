@@ -42,12 +42,7 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// Returns path or connection errors, or timed-out while the accept queue stays full.
 pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
     let address = SocketAddrUnix::new(path)?;
-    let fd = socket_with(
-        AddressFamily::UNIX,
-        SocketType::STREAM,
-        SocketFlags::NONBLOCK,
-        None,
-    )?;
+    let fd = nonblocking_local_socket()?;
     loop {
         match connect(&fd, &address) {
             Ok(()) | Err(Errno::ISCONN) => break,
@@ -63,6 +58,16 @@ pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<
     let stream = std::os::unix::net::UnixStream::from(fd);
     stream.set_nonblocking(false)?;
     Ok(LocalStream::UdSocket(stream.into()))
+}
+
+/// Create an unconnected nonblocking Unix stream descriptor.
+fn nonblocking_local_socket() -> io::Result<std::os::fd::OwnedFd> {
+    Ok(socket_with(
+        AddressFamily::UNIX,
+        SocketType::STREAM,
+        SocketFlags::NONBLOCK,
+        None,
+    )?)
 }
 
 /// Bind without unlinking a name when the listener is dropped.
