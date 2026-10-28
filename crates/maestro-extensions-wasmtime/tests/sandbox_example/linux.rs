@@ -118,6 +118,11 @@ async fn restrictions(runner: &Rc<ExtensionRunner<Local>>, root: &Path) {
         "new-secret"
     );
     assert_eq!(bash(runner, "cat .env.created").await, "");
+    let _socket = std::os::unix::net::UnixListener::bind(root.join("host.sock")).unwrap();
+    assert_eq!(
+        bash(runner, "if socat -u /dev/null UNIX-CONNECT:host.sock 2>/dev/null; then echo bypass; else echo blocked; fi").await,
+        "blocked\n"
+    );
 }
 
 /// Echoes only the two admitted proxy connections; denied attempts must never arrive.
