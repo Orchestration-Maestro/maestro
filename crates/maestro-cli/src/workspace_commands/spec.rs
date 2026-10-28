@@ -119,3 +119,18 @@ fn snapshot() -> [Arg; 3] {
         option("format", "FORMAT").value_parser(["text", "ansi"]),
     ]
 }
+
+/// Write help for an exact command path ending in `--help` or `-h`.
+///
+/// Arguments exclude the executable name. Returns false without output when the
+/// tokens are not an exact help request. The caller supplies the shipped skill path.
+///
+/// # Errors
+/// Returns output errors unchanged.
+pub fn write_requested_help(
+    _args: &[String],
+    _skill_path: &str,
+    _output: &mut dyn std::io::Write,
+) -> std::io::Result<bool> {
+    Ok(false)
+}

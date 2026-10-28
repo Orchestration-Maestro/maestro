@@ -64,6 +64,33 @@ fn workspace_metadata_unifies_daemon_verbs() {
 }
 
 const VALID_COMMANDS: &[&[&str]] = &[
+    &["action", "link", "/actions", "--disabled"],
+    &["action", "remove", "build"],
+    &["action", "enable", "build"],
+    &["action", "disable", "build"],
+    &[
+        "action",
+        "manifests",
+        "--action-manifest",
+        "build",
+        "--json",
+    ],
+    &["action", "list", "--action-manifest", "build"],
+    &[
+        "action",
+        "invoke",
+        "build.test",
+        "--action-manifest",
+        "build",
+    ],
+    &["action", "log", "list", "--action-manifest", "build"],
+    &[
+        "attach",
+        "--remote",
+        "host",
+        "--remote-keybindings",
+        "server",
+    ],
     &[
         "workspace",
         "report-metadata",
@@ -124,7 +151,7 @@ const VALID_COMMANDS: &[&[&str]] = &[
         "action",
         "pane",
         "open",
-        "--package",
+        "--action-manifest",
         "build",
         "--placement",
         "zoomed",
@@ -139,6 +166,7 @@ const VALID_COMMANDS: &[&[&str]] = &[
 ];
 
 const INVALID_COMMANDS: &[&[&str]] = &[
+    &["daemon", "delete"],
     &["agent", "prompt", "reviewer", "check", "--until", "idle"],
     &["agent", "rename", "reviewer"],
     &["agent", "rename", "reviewer", "worker", "--clear"],
@@ -225,4 +253,100 @@ fn command_metadata_reuses_agent_and_integration_vocabularies() {
         })
         .collect();
     assert_eq!(values, expected);
+}
+
+/// Collect every command path, including the root, through the metadata boundary.
+fn command_paths(command: &clap::Command, path: &[String], paths: &mut Vec<Vec<String>>) {
+    assert!(
+        command.get_about().is_some(),
+        "missing description for {path:?}"
+    );
+    paths.push(path.to_vec());
+    for child in command.get_subcommands() {
+        let mut path = path.to_vec();
+        path.push(child.get_name().to_owned());
+        command_paths(child, &path, paths);
+    }
+}
+
+#[test]
+fn help_renders_every_command_path_without_startup() {
+    let root = command();
+    let mut paths = Vec::new();
+    command_paths(&root, &[], &mut paths);
+    for path in paths {
+        for flag in ["--help", "-h"] {
+            let mut args = path.clone();
+            args.push(flag.to_owned());
+            let mut bytes = Vec::new();
+            assert!(
+                maestro_cli::workspace_commands::spec::write_requested_help(
+                    &args,
+                    "/package/docs/skills/workspace/SKILL.md",
+                    &mut bytes
+                )
+                .unwrap(),
+                "{args:?}"
+            );
+            let help = String::from_utf8(bytes).unwrap();
+            assert!(
+                help.contains(&format!("Usage: maestro {}", path.join(" "))),
+                "{args:?}: {help}"
+            );
+            let mut selected = &root;
+            for name in &path {
+                selected = selected.find_subcommand(name).unwrap();
+            }
+            assert_eq!(
+                help.contains("Workspace skill: /package/docs/skills/workspace/SKILL.md"),
+                path.is_empty() || selected.has_subcommands(),
+                "{args:?}: {help}"
+            );
+            if path.is_empty() {
+                assert!(help.contains("--session <PATH|ID>"));
+                assert!(help.contains("--skill <VALUE>"));
+            }
+        }
+    }
+}
+
+/// An output stream that refuses every write with the original pipe error.
+struct BrokenOutput;
+impl std::io::Write for BrokenOutput {
+    fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+        Err(std::io::ErrorKind::BrokenPipe.into())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[test]
+fn help_ignores_non_help_tokens_and_propagates_output_failures() {
+    for args in [
+        vec![],
+        vec!["pane"],
+        vec!["pane", "unknown", "--help"],
+        vec!["pane", "--", "--help"],
+        vec!["pane", "read", "w1:p1", "--help"],
+        vec!["pane", "--help", "read"],
+    ] {
+        let mut output = Vec::new();
+        assert!(
+            !maestro_cli::workspace_commands::spec::write_requested_help(
+                &args.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                "/skill",
+                &mut output
+            )
+            .unwrap()
+        );
+        assert!(output.is_empty());
+    }
+    let error = maestro_cli::workspace_commands::spec::write_requested_help(
+        &["--help".into()],
+        "/skill",
+        &mut BrokenOutput,
+    )
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
 }
