@@ -212,12 +212,38 @@ fn checked(name: &str, cases: &[&str]) {
     }
 }
 
-/// Module, working-directory and home candidates keep their priority.
+/// Module candidates take precedence over every later location.
 #[test]
-fn doom_wad_search_uses_existing_files_in_order() {
+fn doom_wad_search_module_precedes_later_locations() {
+    checked("doom_wad_search_module_precedes_later_locations", &["0"]);
+}
+/// Lowercase working-directory candidates take precedence over every later location.
+#[test]
+fn doom_wad_search_cwd_lowercase_precedes_later_locations() {
     checked(
-        "doom_wad_search_uses_existing_files_in_order",
-        &["0", "1", "2", "3", "4"],
+        "doom_wad_search_cwd_lowercase_precedes_later_locations",
+        &["1"],
+    );
+}
+/// Uppercase working-directory candidates take precedence over every later location.
+#[test]
+fn doom_wad_search_cwd_uppercase_precedes_later_locations() {
+    checked(
+        "doom_wad_search_cwd_uppercase_precedes_later_locations",
+        &["2"],
+    );
+}
+/// Home candidates take precedence over every later location.
+#[test]
+fn doom_wad_search_home_precedes_later_locations() {
+    checked("doom_wad_search_home_precedes_later_locations", &["3"]);
+}
+/// Hidden home-directory candidates take precedence over every later location.
+#[test]
+fn doom_wad_search_home_dotdoom_precedes_later_locations() {
+    checked(
+        "doom_wad_search_home_dotdoom_precedes_later_locations",
+        &["4"],
     );
 }
 /// An explicit path bypasses discovery and download.
@@ -230,12 +256,28 @@ fn doom_wad_explicit_path_overrides_discovery() {
 fn doom_wad_download_rejects_checksum_mismatch() {
     checked("doom_wad_download_rejects_checksum_mismatch", &["mismatch"]);
 }
-/// HTTP and body failures leave no cache or opened view.
+/// A missing explicit path leaves no cache or opened view.
 #[test]
-fn doom_wad_failures_notify_without_partial_cache() {
+fn doom_wad_missing_path_notifies_without_partial_cache() {
     checked(
-        "doom_wad_failures_notify_without_partial_cache",
-        &["missing", "mismatch", "http-error", "stream-error"],
+        "doom_wad_missing_path_notifies_without_partial_cache",
+        &["missing"],
+    );
+}
+/// An HTTP failure leaves no cache or opened view.
+#[test]
+fn doom_wad_http_error_notifies_without_partial_cache() {
+    checked(
+        "doom_wad_http_error_notifies_without_partial_cache",
+        &["http-error"],
+    );
+}
+/// A body failure leaves no cache or opened view.
+#[test]
+fn doom_wad_stream_error_notifies_without_partial_cache() {
+    checked(
+        "doom_wad_stream_error_notifies_without_partial_cache",
+        &["stream-error"],
     );
 }
 /// Headless invocation performs no filesystem-dependent startup or request.
