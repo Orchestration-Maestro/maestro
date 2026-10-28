@@ -4,6 +4,7 @@ mod conversation;
 mod fuzzy;
 mod keys;
 mod paths;
+pub use paths::guest_path;
 mod time;
 mod tools;
 

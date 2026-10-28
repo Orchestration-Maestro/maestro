@@ -233,5 +233,5 @@ later extensions are not consulted. A renderer receives the shared
 `CustomMessage<T>`, the `MessageRenderOptions` and the live theme, and returns a
 component or `None` to keep the default rendering. Registration follows the
 same activity rules as other registrations.
-The [message renderer example](../../examples/extensions/README.md#what-the-message-renderer-example-does)
+The [message renderer example](../../examples/extensions/message_renderer.md)
 registers one from a component and sends the messages it draws.

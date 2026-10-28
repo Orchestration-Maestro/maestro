@@ -247,6 +247,17 @@ fn run(
     Some(String::from_utf8_lossy(&finished.stdout).into_owned())
 }
 
+/// Whether the copy route starts at the controlled programs and the terminal sequence. On a
+/// host with a system clipboard the route reaches that clipboard first, outside the child's
+/// control, so the copy cases report the premise there instead of writing the real clipboard.
+fn clipboard_route_controlled(test: &str) -> bool {
+    let controlled = !cfg!(any(target_os = "macos", windows));
+    if !controlled {
+        eprintln!("{test} needs a host whose copy route starts at the controlled programs");
+    }
+    controlled
+}
+
 /// The directory the child's temporary artifacts are created in.
 fn temp_root() -> PathBuf {
     PathBuf::from(std::env::var(ENV_TEMP).unwrap())
@@ -530,6 +541,9 @@ fn copy_refuses_when_no_assistant_text() {
 #[test]
 fn copy_uses_current_last_assistant_and_reports_result() {
     const TEST: &str = "copy_uses_current_last_assistant_and_reports_result";
+    if !clipboard_route_controlled(TEST) {
+        return;
+    }
     let cases: Vec<(History, Copied)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 6);
     let Some(stdout) = run(TEST, "child", None, async |directory| {
@@ -571,6 +585,9 @@ fn copy_uses_current_last_assistant_and_reports_result() {
 #[test]
 fn copy_reports_clipboard_failure() {
     const TEST: &str = "copy_reports_clipboard_failure";
+    if !clipboard_route_controlled(TEST) {
+        return;
+    }
     let Some(stdout) = run(TEST, "child", None, async |directory| {
         // Beyond the terminal fallback's 100000 encoded bytes with no desktop route.
         let world = with_messages(directory, &[answer(&"a".repeat(90_000))]).await;
