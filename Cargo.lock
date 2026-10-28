@@ -4148,6 +4148,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-extensions",
  "maestro-models",
+ "maestro-path",
  "maestro-session",
  "maestro-test-directory",
  "maestro-test-process",

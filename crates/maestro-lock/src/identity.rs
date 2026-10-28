@@ -80,29 +80,10 @@ fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
 
 /// Resolves at most forty final-component links, including dangling targets.
 pub(crate) fn resolve_write_target(path: &Path) -> io::Result<PathBuf> {
-    let mut current = path.to_path_buf();
-    for _ in 0..40 {
-        let meta = match fs::symlink_metadata(&current) {
-            Ok(meta) => meta,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(current),
-            Err(error) => return Err(error),
-        };
-        if !meta.file_type().is_symlink() {
-            return Ok(current);
-        }
-        let link = fs::read_link(&current)?;
-        current = if link.is_absolute() {
-            link
-        } else {
-            current
-                .parent()
-                .unwrap_or_else(|| Path::new("."))
-                .join(link)
-        };
-    }
-    if fs::symlink_metadata(&current).is_ok_and(|meta| meta.file_type().is_symlink()) {
-        Err(io::Error::other("symbolic link chain exceeds 40 links"))
-    } else {
-        Ok(current)
-    }
+    maestro_path::resolve_final_links(path, |current| match fs::symlink_metadata(current) {
+        Ok(meta) if meta.file_type().is_symlink() => fs::read_link(current).map(Some),
+        Ok(_) => Ok(None),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error),
+    })
 }

@@ -139,6 +139,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   Shared path helpers take supplied directory observations
   and add no filesystem service, directory cache, scheduler or workspace dependency.
   `native_homedir` alone reads the native home environment and account entry.
+  Final-link traversal uses a supplied observation callback; the utility owns
+  relative-target joining and the forty-link bound, while callers retain native
+  link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline

@@ -9,14 +9,17 @@
 //! an authored path to [`std::path::PathBuf`] only at a file-system call.
 //! [`normalize_native`] shares segment reduction with these string operations
 //! when a native filesystem path must retain non-UTF-8 components.
+//! [`resolve_final_links`] traverses native link targets supplied by the caller.
 //!
 //! The [`posix`] and [`win32`] modules behave the same on every platform. The
 //! crate root re-exports the flavor of the compile target; the POSIX-only
 //! [`posix::parse`] is also re-exported on targets other than Windows.
 
+mod links;
 mod os;
 mod path;
 
+pub use links::resolve_final_links;
 pub use os::{homedir, native_homedir};
 pub use path::{
     Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, win32,

@@ -1,5 +1,6 @@
 //! Opt-in commit of a changed Git working tree when the session shuts down, titled with the
 //! first line of the newest assistant reply.
+// maestro-component: MAESTRO_AUTO_COMMIT_ON_EXIT_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
