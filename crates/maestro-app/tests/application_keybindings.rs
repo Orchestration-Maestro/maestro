@@ -648,3 +648,30 @@ fn effective_snapshots_are_owned_and_inherited_operations_stay_available() {
         assert!(!manager.matches("\x18", "future.action"));
     }
 }
+
+#[test]
+fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
+    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("keybindings.json");
+    let original = b"{\n  \"app.exit\": \"ctrl+d\",\n  \"unknown\": {\"kept\":true},\n  \"multiplexer.focus\": [\"alt+h\"],\n  \"multiplexer.\": null,\n  \"multiplexer\": 42\n}\n";
+    std::fs::write(&path, original).unwrap();
+    let reset =
+        reset_multiplexer_keybindings(scratch.path().to_str().unwrap(), 1_700_000_000).unwrap();
+    assert_eq!(
+        reset.backup_path,
+        scratch.path().join("keybindings.json.bak-1700000000")
+    );
+    assert_eq!(std::fs::read(&reset.backup_path).unwrap(), original);
+    assert_eq!(reset.removed, 2);
+    assert!(reset.dir_sync.is_none());
+    let actual: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    assert_eq!(
+        actual,
+        serde_json::json!({
+            "app.exit": "ctrl+d", "unknown": {"kept": true}, "multiplexer": 42
+        })
+    );
+    let manager = KeybindingsManager::create(scratch.path().to_str()).unwrap();
+    assert!(manager.matches("\u{4}", "app.exit"));
+}
