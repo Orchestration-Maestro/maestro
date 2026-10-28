@@ -153,6 +153,8 @@ enum Place {
     Root(String),
     /// A native final name that the string-based interface cannot represent.
     InvalidName,
+    /// The final-component chain exceeds the lookup bound.
+    Loop,
 }
 
 /// Finds the native directory that holds `path` below the root, and the name to use in it.
@@ -164,7 +166,13 @@ enum Place {
 fn parent(path: String, follow: bool) -> io::Result<Place> {
     let native = PathBuf::from(native_path(&format!("/{path}")));
     let native = if follow {
-        maestro_path::resolve_final_links(&native, |path| Ok(std::fs::read_link(path).ok()))?
+        // The observer cannot fail; an error here means the link bound was exceeded.
+        let Ok(target) =
+            maestro_path::resolve_final_links(&native, |path| Ok(std::fs::read_link(path).ok()))
+        else {
+            return Ok(Place::Loop);
+        };
+        target
     } else {
         native
     };

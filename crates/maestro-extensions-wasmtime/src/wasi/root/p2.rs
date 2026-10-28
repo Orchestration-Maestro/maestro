@@ -30,6 +30,7 @@ impl View<'_> {
         match wasmtime_wasi::runtime::spawn_blocking(move || parent(path, follow)).await? {
             Place::Native(dir, name) => Ok(self.hold(dir, name)?),
             Place::InvalidName => Err(ErrorCode::IllegalByteSequence.into()),
+            Place::Loop => Err(ErrorCode::Loop.into()),
             Place::Root(path) => Ok((fd, path, None)),
         }
     }
