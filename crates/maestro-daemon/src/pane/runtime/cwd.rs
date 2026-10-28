@@ -1,9 +1,6 @@
 //! Directory observations preserve their native spelling and binding time.
 use super::PaneRuntime;
-use maestro_process::{
-    foreground::ForegroundJob,
-    pty::foreground::{self, ProcessDetectionMode},
-};
+use maestro_process::pty::foreground::{self, ProcessDetectionMode};
 use std::{path::PathBuf, sync::atomic::Ordering};
 use tokio::task::JoinError;
 
@@ -20,12 +17,6 @@ impl PaneRuntime {
         (pid > 0).then_some(pid)
     }
 
-    /// Live members of the foreground process group, as the detection mode observes them.
-    #[must_use]
-    pub fn foreground_job(&self) -> Option<ForegroundJob> {
-        foreground::foreground_job(self.child_pid()?, self.shared.process_detection_mode)
-    }
-
     /// Runs `read` over the direct child on the blocking pool, where the synchronous process
     /// reads belong; the answer is `None` while the pane has no child.
     ///
@@ -35,10 +26,13 @@ impl PaneRuntime {
         &self,
         read: impl FnOnce(u32, ProcessDetectionMode) -> T + Send + 'static,
     ) -> Result<Option<T>, JoinError> {
-        let observed = self
-            .child_pid()
-            .map(|pid| read(pid, self.shared.process_detection_mode));
-        std::future::ready(Ok(observed)).await
+        let Some(pid) = self.child_pid() else {
+            return Ok(None);
+        };
+        let mode = self.shared.process_detection_mode;
+        tokio::task::spawn_blocking(move || read(pid, mode))
+            .await
+            .map(Some)
     }
 
     /// Returns an admitted report first, without checking that directory again.
@@ -73,7 +67,7 @@ impl PaneRuntime {
             .or_else(|| foreground::foreground_process_group_id(pid))
             .and_then(absolute_process_cwd);
         let member = || {
-            self.foreground_job()?
+            foreground::foreground_job(pid, self.shared.process_detection_mode)?
                 .processes
                 .into_iter()
                 .filter(|process| process.pid != pid)

@@ -4,7 +4,10 @@ use super::{
     super::App,
     responses::{api_error, pane_not_found, pane_unresolved},
 };
-use maestro_process::foreground::ForegroundProcess;
+use maestro_process::{
+    foreground::ForegroundProcess,
+    pty::foreground::{self, ProcessDetectionMode},
+};
 use maestro_protocol::{
     rpc_types::RpcCommand,
     schema::{
@@ -31,13 +34,22 @@ struct Located {
 fn process_record(process: ForegroundProcess) -> PaneProcessInfoProcess {
     PaneProcessInfoProcess {
         pid: process.pid,
-        cwd: maestro_process::pty::foreground::process_cwd(process.pid)
-            .map(|cwd| cwd.display().to_string()),
+        cwd: foreground::process_cwd(process.pid).map(|cwd| cwd.display().to_string()),
         name: process.name,
         argv0: process.argv0,
         argv: process.argv,
         cmdline: process.cmdline,
     }
+}
+
+/// Reads the foreground group of `child` with each member's directory; the reads block.
+fn observe_foreground(
+    child: u32,
+    mode: ProcessDetectionMode,
+) -> Option<(u32, Vec<PaneProcessInfoProcess>)> {
+    let job = foreground::foreground_job(child, mode)?;
+    let processes = job.processes.into_iter().map(process_record).collect();
+    Some((job.process_group_id, processes))
 }
 
 impl<C: FnMut() -> u128> App<C> {
@@ -59,6 +71,7 @@ impl<C: FnMut() -> u128> App<C> {
             RpcCommand::PaneLayout(params) => self.handle_pane_layout(params.pane_id.as_deref()),
             RpcCommand::PaneProcessInfo(params) => {
                 self.handle_pane_process_info(params.pane_id.as_deref())
+                    .await
             }
             RpcCommand::PaneNeighbor(params) => self.handle_pane_neighbor(&params),
             RpcCommand::PaneEdges(params) => self.handle_pane_edges(&params),
@@ -122,7 +135,10 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Copies the pane's process facts into the protocol record.
-    fn handle_pane_process_info(&self, pane_id: Option<&str>) -> Result<ResponseResult, ErrorBody> {
+    async fn handle_pane_process_info(
+        &self,
+        pane_id: Option<&str>,
+    ) -> Result<ResponseResult, ErrorBody> {
         let (workspace, pane) = self.optional_pane(pane_id)?;
         let runtime = self
             .state
@@ -132,16 +148,24 @@ impl<C: FnMut() -> u128> App<C> {
             .and_then(|target| target.terminal_id(pane))
             .and_then(|terminal| self.terminal_runtimes.get(terminal))
             .ok_or_else(pane_unresolved)?;
-        let job = runtime.foreground_job();
+        let observed = runtime
+            .observe_processes(observe_foreground)
+            .await
+            .map_err(|error| {
+                api_error(
+                    "internal_error",
+                    format!("process observation failed: {error}"),
+                )
+            })?
+            .flatten();
+        let (group, processes) = observed.map_or((None, Vec::new()), |(id, list)| (Some(id), list));
         Ok(ResponseResult::PaneProcessInfo {
             process_info: PaneProcessInfo {
                 pane_id: self.public_pane(workspace, pane)?,
                 shell_pid: runtime.child_pid(),
-                foreground_process_group_id: job.as_ref().map(|job| job.process_group_id),
+                foreground_process_group_id: group,
                 tty: None,
-                foreground_processes: job
-                    .map(|job| job.processes.into_iter().map(process_record).collect())
-                    .unwrap_or_default(),
+                foreground_processes: processes,
             },
         })
     }
