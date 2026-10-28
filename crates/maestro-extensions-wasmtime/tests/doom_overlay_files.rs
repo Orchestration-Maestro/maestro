@@ -214,7 +214,10 @@ async fn run(empty: bool) {
     assert_eq!(files(&root.join("home")), before_home);
     assert_eq!(files(&project), before_project);
     if empty {
-        assert!(result.is_err());
+        assert!(
+            result.is_ok(),
+            "a rejected startup is reported through the UI"
+        );
         assert!(
             std::fs::read_dir(root.join("temporary"))
                 .unwrap()
