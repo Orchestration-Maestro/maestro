@@ -49,6 +49,49 @@ fn tic_tac_toe_initial_board_and_out_of_turn_play() -> Result<(), String> {
     Ok(())
 }
 
+/// Rejected session naming never enables game guidance for a later ordinary prompt.
+#[test]
+fn tic_tac_toe_failed_setup_leaves_prompt_unchanged() -> Result<(), String> {
+    let mut host = Harness::example("tic_tac_toe")?;
+    host.observed().catalog.data.has_ui = true;
+    host.observed().readers.control(
+        &json!({"bind":{"replies":[{"method":"getBranch","args":[null],"value":[]}]}}).to_string(),
+    );
+    host.observed().actions.error = Some("session naming refused".into());
+    let command = host.observed().callback("command tic-tac-toe")?;
+    assert_eq!(
+        super::example_support::invoke_command_on_component(&mut host, command, "", false),
+        Err("session naming refused".into())
+    );
+    host.observed().actions.error = None;
+    let key = host.observed().callback("event before_agent_start")?;
+    let capabilities = super::host_family::guest::Capabilities {
+        ctx: host.ordinary("/work").map_err(|e| e.to_string())?,
+        signal: None,
+    };
+    let event = json!({"type":"before_agent_start","prompt":"ordinary prompt",
+        "systemPrompt":"original instructions","systemPromptOptions":{"cwd":"/work"}});
+    let exports = host.exports.clone();
+    let delivered = super::block_on(host.store.run_concurrent(async |accessor| {
+        exports
+            .call_invoke_event(
+                accessor,
+                super::host::borrow(key),
+                event.to_string(),
+                capabilities,
+            )
+            .await
+    }))
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())??;
+    assert_eq!(
+        super::documents::Answer::of(super::host_family::delivery(delivered))?.ended,
+        super::documents::Ended::Returned(None)
+    );
+    super::example_support::released_component(&mut host)?;
+    Ok(())
+}
+
 /// Supplies branch entries to the registered reconstruction callback.
 fn restore(host: &mut Harness, name: &str, branch: &Value) -> Result<(), String> {
     host.observed().readers.control(
