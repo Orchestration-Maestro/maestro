@@ -1,14 +1,13 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, request,
-    with_live_daemon, workspace_ids,
+    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group,
+    request, with_live_daemon, workspace_ids,
 };
 use maestro_daemon::app::state::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, WorkspaceInfo};
-use maestro_workspace::workspace::WorktreeSpaceMembership;
 use serde_json::json;
 use std::path::PathBuf;
 
@@ -43,17 +42,6 @@ fn navigation(app: &TestApp) -> (Option<String>, String) {
         app.state.active.map(|index| workspaces[index].id.clone()),
         workspaces[app.state.selected].id.clone(),
     )
-}
-
-/// Makes the workspace at `index` a member of the repository group `key`.
-fn join_group(app: &mut TestApp, index: usize, key: &str, linked: bool) {
-    app.state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
-        key: key.into(),
-        label: "repo".into(),
-        repo_root: "/repo".into(),
-        checkout_path: format!("/repo-{index}").into(),
-        is_linked_worktree: linked,
-    });
 }
 
 #[test]
