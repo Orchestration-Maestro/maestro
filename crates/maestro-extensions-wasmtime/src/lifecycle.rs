@@ -83,6 +83,8 @@ pub(crate) struct State {
     callbacks: Callbacks,
     /// The original retained pub.
     pub(crate) exports: Option<Arc<Exports>>,
+    /// The directory behind the one filesystem root the instance lists.
+    root: wasmtime_wasi::filesystem::Dir,
 }
 impl State {
     /// Constructs the one instance state before canonical linking.
@@ -97,12 +99,25 @@ impl State {
     ) -> wasmtime::Result<Self> {
         Ok(Self {
             installation,
-            wasi: crate::wasi::build(path, output)?,
+            wasi: crate::wasi::build(path, output),
+            root: crate::wasi::root::open()?,
             table: ResourceTable::new(),
             api,
             callbacks,
             exports: None,
         })
+    }
+}
+impl State {
+    /// The standard filesystem beside the directory behind its root.
+    pub(crate) fn root_view(&mut self) -> crate::wasi::root::View<'_> {
+        crate::wasi::root::View {
+            fs: wasmtime_wasi::filesystem::WasiFilesystemCtxView {
+                ctx: self.wasi.filesystem(),
+                table: &mut self.table,
+            },
+            root: &self.root,
+        }
     }
 }
 impl WasiView for State {
@@ -133,6 +148,7 @@ impl crate::callback_imports::CallbackView for State {
 pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
     wasmtime_wasi::p3::add_to_linker(&mut *linker)?;
+    crate::wasi::root::link(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
     crate::helper_imports::add_to_linker(&mut host)?;
