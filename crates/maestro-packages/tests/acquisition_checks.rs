@@ -1434,3 +1434,84 @@ fn refused_package_edits_have_no_acquisition_or_removal_effects() {
         }
     }
 }
+
+/// A scoped persisted policy with one required package and optional package lock.
+fn package_layer(locked: bool) -> maestro_settings::BaseSettingsLayer {
+    maestro_settings::BaseSettingsLayer {
+        settings: serde_json::from_value(json!({"packages":["npm:pkg@1"]})).unwrap(),
+        locked: if locked {
+            ["packages".into()].into()
+        } else {
+            std::collections::BTreeSet::default()
+        },
+        source: "organization@1".into(),
+        recorded_at: "2026-10-28".into(),
+    }
+}
+
+/// Every public acquisition/removal surface checks its governing layer before progress.
+#[test]
+fn package_policy_checks_scope_and_required_identity_before_effects() {
+    for (project_layer, scope) in [
+        (false, User),
+        (false, Project),
+        (true, User),
+        (true, Project),
+    ] {
+        for (persist, remove) in [(false, false), (false, true), (true, false), (true, true)] {
+            let fixture = Fixture::new(&json!({"packages":["npm:pkg@2"]}));
+            fixture
+                .settings
+                .borrow_mut()
+                .publish_base_layer(SettingsScope::Global, Some(package_layer(true)));
+            if project_layer {
+                let mut layer = package_layer(false);
+                layer.settings = maestro_settings::Settings::default();
+                fixture
+                    .settings
+                    .borrow_mut()
+                    .publish_base_layer(SettingsScope::Project, Some(layer));
+            }
+            let source = "npm:pkg@2";
+            let result = match (persist, remove) {
+                (true, true) => {
+                    block_on(fixture.manager.remove_and_persist(source, Some(scope))).map(drop)
+                }
+                (true, false) => block_on(fixture.manager.install_and_persist(source, Some(scope))),
+                (false, true) => block_on(fixture.manager.remove(source, Some(scope))),
+                (false, false) => block_on(fixture.manager.install(source, Some(scope))),
+            };
+            if project_layer && scope == Project {
+                result.unwrap();
+            } else {
+                let error = result.unwrap_err().to_string();
+                assert!(error.contains("organization@1"), "{error}");
+                assert!(error.contains("2026-10-28"), "{error}");
+                assert!(fixture.calls().is_empty());
+                assert!(fixture.phases().is_empty());
+                assert!(!std::path::Path::new(&fixture.project(".maestro/npm")).exists());
+            }
+        }
+    }
+}
+
+/// Direct SDK operations also ask the installed decider before emitting progress.
+#[test]
+fn direct_package_operations_ask_decider_before_effects() {
+    let fixture = Fixture::new(&json!({}));
+    fixture
+        .settings
+        .borrow_mut()
+        .register_decider(Arc::new(RefusePackageEdit))
+        .unwrap();
+    for remove in [false, true] {
+        let result = if remove {
+            block_on(fixture.manager.remove("npm:pkg", None))
+        } else {
+            block_on(fixture.manager.install("npm:pkg", None))
+        };
+        assert_eq!(result.unwrap_err().to_string(), "release refuses packages");
+        assert!(fixture.calls().is_empty());
+        assert!(fixture.phases().is_empty());
+    }
+}
