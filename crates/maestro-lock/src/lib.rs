@@ -22,6 +22,7 @@ pub fn acquire(file: File) -> Result<File, TryLockError> {
 /// # Errors
 /// Propagates native lock acquisition errors.
 pub fn acquire_waiting(file: File) -> std::io::Result<File> {
+    file.lock()?;
     Ok(file)
 }
 
