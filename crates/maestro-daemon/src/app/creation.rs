@@ -395,6 +395,7 @@ impl<C: FnMut() -> u128> App<C> {
         self.event_hub
             .push(maestro_protocol::events::EventData::WorkspaceCreated { workspace });
         self.emit_tab_and_pane_created_events(tab, root_pane);
+        self.emit_layout_updated_event(index, 0);
     }
 
     /// Publishes a new tab and its root pane.
@@ -404,6 +405,7 @@ impl<C: FnMut() -> u128> App<C> {
         };
         if let Some(root_pane) = self.root_pane_info(workspace, tab).await {
             self.emit_tab_and_pane_created_events(tab_record, root_pane);
+            self.emit_layout_updated_event(workspace, tab);
         }
     }
 

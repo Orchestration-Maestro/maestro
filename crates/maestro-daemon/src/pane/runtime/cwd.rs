@@ -1,6 +1,6 @@
 //! Directory observations preserve their native spelling and binding time.
 use super::PaneRuntime;
-use maestro_process::pty::foreground;
+use maestro_process::{foreground::ForegroundJob, pty::foreground};
 use std::{path::PathBuf, sync::atomic::Ordering};
 
 /// Reads an absolute native process directory without a filesystem traversal check.
@@ -14,6 +14,12 @@ impl PaneRuntime {
     pub fn child_pid(&self) -> Option<u32> {
         let pid = self.shared.child_pid.load(Ordering::Acquire);
         (pid > 0).then_some(pid)
+    }
+
+    /// Live members of the foreground process group, as the detection mode observes them.
+    #[must_use]
+    pub fn foreground_job(&self) -> Option<ForegroundJob> {
+        foreground::foreground_job(self.child_pid()?, self.shared.process_detection_mode)
     }
 
     /// Returns an admitted report first, without checking that directory again.
@@ -48,7 +54,7 @@ impl PaneRuntime {
             .or_else(|| foreground::foreground_process_group_id(pid))
             .and_then(absolute_process_cwd);
         let member = || {
-            foreground::foreground_job(pid, self.shared.process_detection_mode)?
+            self.foreground_job()?
                 .processes
                 .into_iter()
                 .filter(|process| process.pid != pid)

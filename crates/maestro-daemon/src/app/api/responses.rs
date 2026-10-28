@@ -22,3 +22,13 @@ pub(super) fn workspace_not_found(workspace_id: &str) -> ErrorBody {
 pub(super) fn tab_not_found(tab_id: &str) -> ErrorBody {
     api_error("tab_not_found", format!("tab {tab_id} not found"))
 }
+
+/// The failure for an explicit pane target that names no live pane.
+pub(super) fn pane_not_found(pane_id: &str) -> ErrorBody {
+    api_error("pane_not_found", format!("pane {pane_id} not found"))
+}
+
+/// The failure for a pane that cannot be resolved because no target names one.
+pub(super) fn pane_unresolved() -> ErrorBody {
+    api_error("pane_not_found", "pane not found")
+}
