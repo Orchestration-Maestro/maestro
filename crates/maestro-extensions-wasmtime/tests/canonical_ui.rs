@@ -949,7 +949,7 @@ async fn painter(
 }
 
 /// A row's render context: completed arguments, an expanded row and a redraw counter.
-fn row_context<'a>(
+pub(super) fn row_context<'a>(
     args: &'a Value,
     rows: &'a maestro_extensions::ToolRendererState,
     redraws: &Rc<std::cell::Cell<u32>>,

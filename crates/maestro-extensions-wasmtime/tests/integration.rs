@@ -27,6 +27,7 @@ mod handoff_example;
 mod lifetimes;
 mod listener_prefixes;
 mod load_time_contributions;
+mod minimal_mode_example;
 mod module_location;
 mod native_helpers;
 mod native_io;
