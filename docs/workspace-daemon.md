@@ -675,7 +675,9 @@ with the cache entry to keep. The entry carries a fingerprint: what `HEAD` names
 and its commit, or a detached commit) and, when the counts are wanted, the branch's
 upstream and its commit. Loose references are read first, then `packed-refs`; reftable
 storage is read through the `git` command. The tracking configuration comes from
-`read_branch_config` and is kept while `ConfigRead::is_current` holds.
+`read_branch_config` and is kept while `ConfigRead::is_current` holds and the discovered
+checkout is the one it was read for, so a `.git` file retargeted to other metadata is read
+again.
 
 `git rev-list --left-right --count` runs through the process owner only when the
 fingerprint differs from the cached one; otherwise the cached counts are reused. A
