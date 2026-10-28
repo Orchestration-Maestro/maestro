@@ -259,8 +259,8 @@ build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
-Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
+Repository tooling (`maestro-tooling`) is development-only and never shipped. It
+may use the resource owner for authored metadata, the optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
