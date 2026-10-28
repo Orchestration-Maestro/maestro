@@ -46,7 +46,7 @@ fn trim_link(bytes: &[u8]) -> &[u8] {
 
 /// Join a metadata link to its base without decoding native Unix path components.
 ///
-/// Segments stay as authored, so the result can still be followed link by link.
+/// `..` segments stay as authored, so the result can still be followed link by link.
 fn authored_link(base: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
     #[cfg(unix)]
     let target = {
@@ -139,9 +139,9 @@ pub(super) fn git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> 
     git_dir_for_root(root, DiscoveryPolicy::Workspace, resolve_link)
 }
 
-/// Locate a directory's metadata marker, leaving a `.git` link target as authored.
+/// Locate a directory's metadata marker, preserving `..` in a `.git` link target.
 ///
-/// A link file resolves to its target without checking that the target exists, and `.` and `..`
+/// A link file resolves to its target without checking that the target exists, and `..`
 /// segments stay in it. A caller that acts on the folder the link names follows the target link
 /// by link, because a symbolic link before a `..` changes which folder the segment leaves.
 ///

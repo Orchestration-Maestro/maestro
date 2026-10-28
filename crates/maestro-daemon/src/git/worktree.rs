@@ -367,7 +367,7 @@ fn links_to_repository(repo_root: &Path, path: &Path) -> bool {
 /// The folder `path` names on disk: its longest existing prefix canonicalized, links followed
 /// before any `..` after them, plus the segments that do not exist yet.
 ///
-/// Returns `None` when a segment that does not exist is followed by `.` or `..`, because no
+/// Returns `None` when a segment that does not exist is followed by `..`, because no
 /// folder is then named.
 fn resolve_through_links(path: &Path) -> Option<PathBuf> {
     let (prefix, resolved) = path
