@@ -31,6 +31,7 @@ fn replacement_handles_relative_and_extensionless_paths() {
         b"new bytes",
         Replace {
             through_symlinks: true,
+            ..Replace::default()
         },
     )
     .unwrap();
@@ -42,7 +43,8 @@ fn replacement_handles_relative_and_extensionless_paths() {
             std::path::Path::new("/"),
             b"no",
             Replace {
-                through_symlinks: true
+                through_symlinks: true,
+                ..Replace::default()
             }
         )
         .is_err()
@@ -71,6 +73,7 @@ fn replacement_handles_relative_and_extensionless_paths() {
             b"native",
             Replace {
                 through_symlinks: false,
+                ..Replace::default()
             },
         )
         .unwrap();
@@ -108,6 +111,7 @@ fn replacement_preserves_long_and_dangling_chains() {
             b"published",
             Replace {
                 through_symlinks: true,
+                ..Replace::default()
             },
         );
         if count == 41 {
@@ -149,6 +153,7 @@ fn replacement_can_replace_link_entry_when_following_is_disabled() {
         b"followed",
         Replace {
             through_symlinks: true,
+            ..Replace::default()
         },
     )
     .unwrap();
@@ -159,6 +164,7 @@ fn replacement_can_replace_link_entry_when_following_is_disabled() {
         b"entry",
         Replace {
             through_symlinks: false,
+            ..Replace::default()
         },
     )
     .unwrap();
@@ -190,6 +196,7 @@ fn replacement_rejects_cycles_without_touching_disk() {
             b"no",
             Replace {
                 through_symlinks: true,
+                ..Replace::default()
             },
         );
         assert_eq!(
@@ -211,4 +218,21 @@ fn replacement_rejects_cycles_without_touching_disk() {
             if pair { 2 } else { 1 }
         );
     }
+}
+
+#[test]
+fn replacement_accepts_a_full_length_target_leaf() {
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let target = dir.path().join("x".repeat(255));
+    if let Err(error) = fs::write(&target, b"old") {
+        assert!(fs::write(dir.path().join("control"), b"control").is_ok());
+        eprintln!("host refuses a 255-byte leaf: {error}");
+        return;
+    }
+    replace(&target, b"published", Replace::default()).unwrap();
+    assert_eq!(fs::read(&target).unwrap(), b"published");
+    fs::remove_file(&target).unwrap();
+    replace(&target, b"created", Replace::default()).unwrap();
+    assert_eq!(fs::read(target).unwrap(), b"created");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
 }
