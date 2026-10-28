@@ -2,6 +2,7 @@
 
 mod agents;
 mod api;
+mod api_helpers;
 mod config;
 mod config_io;
 #[cfg(unix)]

@@ -123,7 +123,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         self.active = (!self.topology.workspaces.is_empty()).then_some(self.selected);
     }
     /// Retains a parent-group confirmation request without changing topology.
-    fn confirm_implicit_worktree_group_close(&mut self, index: usize) -> bool {
+    pub(crate) fn confirm_implicit_worktree_group_close(&mut self, index: usize) -> bool {
         if self.confirm_close.0 && self.workspace_close_indices(index).len() >= 2 {
             self.selected = index;
             self.mode = Mode::ConfirmClose;
