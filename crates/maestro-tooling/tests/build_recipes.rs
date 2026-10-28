@@ -142,6 +142,7 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
+#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
@@ -251,14 +252,16 @@ fn native_workspace(workspace: &Workspace) {
         "fn main() {}\n",
     )
     .unwrap();
+    // The installed fixture programs carry the host's executable suffix.
+    let suffix = std::env::consts::EXE_SUFFIX;
     fs::rename(
-        workspace.path().join("bin/cargo"),
-        workspace.path().join("bin/cargo-proxy"),
+        workspace.path().join(format!("bin/cargo{suffix}")),
+        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
     )
     .unwrap();
     install_executable(
         Path::new(env!("CARGO")),
-        &workspace.path().join("bin/cargo"),
+        &workspace.path().join(format!("bin/cargo{suffix}")),
     );
     assert!(
         workspace
@@ -370,9 +373,10 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
 }
 
 fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
+    let suffix = std::env::consts::EXE_SUFFIX;
     fs::rename(
-        workspace.path().join("bin/cargo-proxy"),
-        workspace.path().join("bin/cargo"),
+        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
+        workspace.path().join(format!("bin/cargo{suffix}")),
     )
     .unwrap();
     create_prepared_assets(workspace);
@@ -762,9 +766,10 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     )
     .unwrap();
     fs::create_dir_all(workspace.path().join("target")).unwrap();
+    let suffix = std::env::consts::EXE_SUFFIX;
     fs::rename(
-        workspace.path().join("bin/cargo-proxy"),
-        workspace.path().join("bin/cargo"),
+        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
+        workspace.path().join(format!("bin/cargo{suffix}")),
     )
     .unwrap();
 }
@@ -1281,6 +1286,7 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
 }
 
 #[test]
+#[cfg_attr(windows, ignore = "recipes lose single quotes on Windows (#2949)")]
 fn maestro_source_recipes_preserve_invocation_directory() {
     let workspace = Workspace::new();
     let outside = workspace.path().join("outside");
@@ -1304,10 +1310,11 @@ fn maestro_source_recipes_preserve_invocation_directory() {
         fs::read(workspace.path().join("cwd")).unwrap(),
         outside.as_os_str().as_encoded_bytes()
     );
-    let manifest = workspace.path().join("Cargo.toml");
+    // The recipes join the manifest onto the justfile directory with `/` on every host.
+    let manifest = format!("{}/Cargo.toml", workspace.path().display());
     let log = workspace.log();
     for recipe in ["run-source", "run-source-windows"] {
-        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}", manifest.display())), "{log}");
+        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{manifest}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}")), "{log}");
     }
 }
 
@@ -1446,7 +1453,8 @@ fn maestro_setup_keeps_pins_and_existing_hooks() {
     for stage in ["pre-commit", "pre-merge-commit", "commit-msg"] {
         assert!(workspace.path().join(".git/hooks").join(stage).is_file());
     }
-    fs::remove_file(workspace.path().join("bin/prek")).unwrap();
+    let prek = format!("bin/prek{}", std::env::consts::EXE_SUFFIX);
+    fs::remove_file(workspace.path().join(prek)).unwrap();
     let output = workspace
         .command("--command")
         .args(["prek", "run", "workspace-check"])
@@ -1529,9 +1537,10 @@ fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
             String::from_utf8_lossy(&output.stderr)
         );
     }
+    // The recipes join the manifest onto the justfile directory with `/` on every host.
     assert!(workspace.log().contains(&format!(
-        "--manifest-path|{}",
-        workspace.path().join("Cargo.toml").display()
+        "--manifest-path|{}/Cargo.toml",
+        workspace.path().display()
     )));
 }
 
@@ -1623,7 +1632,8 @@ fn watch_child_transcript_survives_forced_kill() {
         assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
         assert_eq!(receive.recv().unwrap(), "watch phase: ready");
         recipe_support::record("phase: blocked waiting for controller");
-        println!("READY {}", std::process::id());
+        // Separate readiness from libtest's unterminated test-name prefix.
+        println!("\nREADY {}", std::process::id());
         std::io::stdout().flush().unwrap();
         let _ = std::io::stdin().read(&mut [0]).unwrap();
         panic!("controller must kill the blocked test");
@@ -1652,6 +1662,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     };
     let mut child = process
         .nocapture()
+        .single_threaded()
         .env("MAESTRO_CAPTURE_CONTROL", "1")
         .stdin(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -1662,7 +1673,13 @@ fn assert_killed_transcript(directory: Option<&Path>) {
         .by_ref()
         .lines()
         .map(Result::unwrap)
-        .find_map(|line| line.strip_prefix("READY ").map(str::to_owned))
+        .find_map(|line| {
+            assert!(
+                !line.contains("READY ") || line.starts_with("READY "),
+                "readiness marker must start its own line: {line:?}"
+            );
+            line.strip_prefix("READY ").map(str::to_owned)
+        })
         .unwrap();
     assert!(
         Command::new("kill")

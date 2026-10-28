@@ -78,7 +78,7 @@ pub mod fuzzy;
 pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};
 /// Native metadata parsing with complete typed values.
 pub mod frontmatter;
-pub use frontmatter::{parse_frontmatter, strip_frontmatter};
+pub use frontmatter::{parse_frontmatter, parse_yaml, strip_frontmatter};
 /// Native application installation identity.
 pub mod config;
 mod tui;

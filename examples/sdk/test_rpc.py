@@ -74,6 +74,36 @@ assert sys.stdin.buffer.read() == b""
         self.assertEqual(records[-1]["id"], "prompt")
         self.assertIn("agent_end", [record["type"] for record in records])
 
+    def test_prompt_keeps_reading_after_acceptance_until_agent_end(self):
+        result = self.run_peer('''
+state = json.loads(sys.stdin.buffer.readline())
+print(json.dumps({"type": "response", "id": state["id"], "success": True}), flush=True)
+prompt = json.loads(sys.stdin.buffer.readline())
+assert prompt["id"] == "prompt"
+for record in [
+    {"type": "response", "id": "prompt", "success": True},
+    {"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "Later"}},
+    {"type": "agent_end", "messages": []},
+]:
+    print(json.dumps(record), flush=True)
+assert sys.stdin.buffer.read() == b""
+''', "--prompt", "Check fixture")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        records = [json.loads(line) for line in result.stdout.split(b"\n") if line]
+        kinds = [record["type"] for record in records]
+        self.assertEqual(kinds[-1], "agent_end")
+        self.assertLess(kinds.index("response", 1), kinds.index("agent_end"))
+
+    def test_prompt_accepted_then_eof_fails_without_agent_end(self):
+        result = self.run_peer('''
+state = json.loads(sys.stdin.buffer.readline())
+print(json.dumps({"type": "response", "id": state["id"], "success": True}), flush=True)
+sys.stdin.buffer.readline()
+print(json.dumps({"type": "response", "id": "prompt", "success": True}), flush=True)
+''', "--prompt", "Check fixture")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"EOF", result.stderr)
+
     def test_nonzero_child_exit_fails_after_a_successful_response(self):
         result = self.run_peer('''
 request = json.loads(sys.stdin.buffer.readline())

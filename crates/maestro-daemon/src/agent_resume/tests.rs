@@ -185,27 +185,36 @@ fn session_reference_limits_use_utf8_bytes_and_literal_argv() {
     ] {
         assert_eq!(AgentSessionRef::id(value).is_some(), valid);
     }
+    // An absolute path starts at a drive on Windows; every case keeps its byte length.
+    let root = if cfg!(windows) { "C:/" } else { "/" };
+    let limit = 4096 - root.len();
     for (value, valid) in [
         (String::new(), false),
         ("relative.jsonl".into(), false),
-        (format!("/{}", "x".repeat(4095)), true),
-        (format!("/{}", "x".repeat(4096)), false),
-        (format!("/{}x", "é".repeat(2047)), true),
-        (format!("/{}", "é".repeat(2048)), false),
-        ("/修复🙂".into(), true),
-        ("/bad\npath".into(), false),
+        (format!("{root}{}", "x".repeat(limit)), true),
+        (format!("{root}{}", "x".repeat(limit + 1)), false),
+        (format!("{root}{}x", "é".repeat((limit - 1) / 2)), true),
+        (format!("{root}{}", "é".repeat(limit / 2 + 1)), false),
+        (format!("{root}修复🙂"), true),
+        (format!("{root}bad\npath"), false),
     ] {
         assert_eq!(AgentSessionRef::path(value).is_some(), valid);
     }
     snapshot_provenance_and_literal_resume();
+    let session = format!("{root}session");
     for (source, agent, kind, value) in [
         ("maestro:claude", "codex", AgentSessionRefKind::Id, "id"),
-        ("custom:pi", "pi", AgentSessionRefKind::Path, "/session"),
+        (
+            "custom:pi",
+            "pi",
+            AgentSessionRefKind::Path,
+            session.as_str(),
+        ),
         (
             "maestro:claude",
             "claude",
             AgentSessionRefKind::Path,
-            "/session",
+            session.as_str(),
         ),
         ("maestro:pi", "pi", AgentSessionRefKind::Path, "relative"),
         ("maestro:pi", "pi", AgentSessionRefKind::Id, ""),
@@ -215,20 +224,16 @@ fn session_reference_limits_use_utf8_bytes_and_literal_argv() {
 }
 
 fn snapshot_provenance_and_literal_resume() {
-    let canonical = session_ref_from_snapshot(
-        "maestro:pi",
-        "pi",
-        AgentSessionRefKind::Path,
-        "/修复🙂; literal.jsonl",
-    )
-    .unwrap();
-    let alias = session_ref_from_snapshot(
-        "herdr:pi",
-        "pi",
-        AgentSessionRefKind::Path,
-        "/修复🙂; literal.jsonl",
-    )
-    .unwrap();
+    // An absolute path starts at a drive on Windows.
+    let literal = if cfg!(windows) {
+        "C:/修复🙂; literal.jsonl"
+    } else {
+        "/修复🙂; literal.jsonl"
+    };
+    let canonical =
+        session_ref_from_snapshot("maestro:pi", "pi", AgentSessionRefKind::Path, literal).unwrap();
+    let alias =
+        session_ref_from_snapshot("herdr:pi", "pi", AgentSessionRefKind::Path, literal).unwrap();
     assert_eq!(alias, canonical);
     assert_eq!(canonical.source, "maestro:pi");
     assert_eq!(canonical.agent, "pi");
@@ -236,10 +241,10 @@ fn snapshot_provenance_and_literal_resume() {
     for snapshot in [canonical, alias] {
         let resume = plan(&snapshot.source, &snapshot.agent, &snapshot.session_ref).unwrap();
         assert_eq!(resume.agent, "pi");
-        assert_eq!(resume.argv, ["pi", "--session", "/修复🙂; literal.jsonl"]);
+        assert_eq!(resume.argv, ["pi", "--session", literal]);
         assert_eq!(
             resume.dedupe_key,
-            "maestro:pi\0pi\0Path\0/修复🙂; literal.jsonl"
+            format!("maestro:pi\0pi\0Path\0{literal}")
         );
     }
 }

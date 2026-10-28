@@ -52,7 +52,7 @@ impl InteractiveMode {
 
     /// Builds the working row: the extension's indicator, or the toolkit's own in the accent
     /// colour, beside the muted working message, both painted by the theme published when
-    /// they are drawn.
+    /// the loader last updated its frame or message.
     pub(super) fn create_working_loader(&self) -> Loader {
         let color = |role: ThemeColor| -> Rc<dyn Fn(&str) -> String> {
             let theme = self.themes.theme();
