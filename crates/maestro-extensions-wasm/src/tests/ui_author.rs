@@ -5,18 +5,18 @@
     clippy::excessive_nesting
 )]
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use maestro_extensions_wasm::{
-    AbortListener, AbortSignal, CallbackEmitter, CallbackEmitterPort, CommandOptions,
-    CompactOptions, Component, ComponentDisposer, ComponentFactory, ComponentView, ExtensionAPI,
-    ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult, ExtensionUIContext,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterData, FooterFactory, NotificationType,
-    SignalPort, Subscription, SubscriptionPort, TerminalInputResult, Text, Theme, ThemeSelection,
-    ThemeSetResult, ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderResult,
-    WidgetPlacement, WorkingIndicatorOptions, is_focusable,
+    AbortController, AbortListener, AbortSignal, CallbackEmitter, CallbackEmitterPort,
+    CommandOptions, CompactOptions, Component, ComponentDisposer, ComponentFactory, ComponentView,
+    ExtensionAPI, ExtensionComponent, ExtensionContext, ExtensionEvent, ExtensionResult,
+    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterData,
+    FooterFactory, NotificationType, SignalPort, Subscription, TerminalInputResult, Text, Theme,
+    ThemeSelection, ThemeSetResult, ToolDefinition, ToolRenderCall, ToolRenderContext,
+    ToolRenderResult, WidgetPlacement, WorkingIndicatorOptions, is_focusable,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -461,24 +461,19 @@ pub enum Dialog {
     },
 }
 
-/// A caller-owned cancellation whose listeners run when it aborts.
+/// A public controller with a capture count witnessing dialog listener cleanup.
 #[derive(Default)]
 pub struct Controller {
-    /// Whether it was aborted.
-    aborted: Cell<bool>,
-    /// Live listeners by registration.
-    listeners: RefCell<Vec<(usize, AbortListener)>>,
-    /// Next registration.
-    next: Cell<usize>,
+    /// The caller-owned cancellation used by the dialog.
+    inner: AbortController,
+    /// One extra strong reference per live listener capture.
+    captures: Rc<()>,
 }
 
-/// The caller signal port over a shared controller.
+/// The caller signal port tracking the lifetime of each delegated listener.
 struct Caller(Rc<Controller>);
 
-/// Removes one listener from its controller.
-struct Removal(Weak<Controller>, usize);
-
-/// Emissions of an authored abort are discarded.
+/// Emissions from unrelated authored UI callbacks are discarded.
 struct Silent;
 
 impl CallbackEmitterPort for Silent {
@@ -487,48 +482,23 @@ impl CallbackEmitterPort for Silent {
     }
 }
 
-impl SubscriptionPort for Removal {
-    fn unsubscribe(&self) -> ExtensionResult<()> {
-        if let Some(controller) = self.0.upgrade() {
-            controller
-                .listeners
-                .borrow_mut()
-                .retain(|(id, _)| *id != self.1);
-        }
-        Ok(())
-    }
-}
-
 impl SignalPort for Caller {
     fn aborted(&self) -> bool {
-        self.0.aborted.get()
+        self.0.inner.signal().aborted()
     }
     fn subscribe(&self, listener: AbortListener) -> ExtensionResult<Subscription> {
-        let id = self.0.next.replace(self.0.next.get() + 1);
-        self.0.listeners.borrow_mut().push((id, listener));
-        Ok(Subscription::new(Rc::new(Removal(
-            Rc::downgrade(&self.0),
-            id,
-        ))))
+        let capture = Rc::clone(&self.0.captures);
+        self.0.inner.signal().subscribe(Rc::new(move |emitter| {
+            let _ = &capture;
+            listener(emitter)
+        }))
     }
 }
 
 impl Controller {
-    /// Aborts once and runs the listeners registered at that moment.
+    /// Aborts through the public caller-owned controller.
     fn abort(&self) -> ExtensionResult<()> {
-        if self.aborted.replace(true) {
-            return Ok(());
-        }
-        let listeners: Vec<AbortListener> = self
-            .listeners
-            .borrow()
-            .iter()
-            .map(|(_, listener)| Rc::clone(listener))
-            .collect();
-        for listener in listeners {
-            listener(CallbackEmitter::new(&Silent))?;
-        }
-        Ok(())
+        self.inner.abort()
     }
 }
 
@@ -580,7 +550,7 @@ fn stop_listening(label: &str, unsubscribe: bool) -> ExtensionResult<Value> {
 fn abort_kept(index: usize) -> ExtensionResult<Value> {
     let controller = KEPT.with_borrow(|kept| kept.get(index).cloned());
     let controller = controller.ok_or("unknown kept signal")?;
-    let listeners = controller.listeners.borrow().len();
+    let listeners = Rc::strong_count(&controller.captures) - 1;
     controller.abort()?;
     Ok(json!({ "listeners": listeners }))
 }
