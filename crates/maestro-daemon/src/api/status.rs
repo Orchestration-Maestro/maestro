@@ -27,7 +27,7 @@ pub fn read_runtime_status_at(
     socket_path: &Path,
     timeout: Duration,
 ) -> io::Result<Option<RuntimeStatus>> {
-    if !socket_path.exists() {
+    if !socket_path.try_exists()? {
         return Ok(None);
     }
     let client = DaemonClient::for_target(ConnectionTarget::SocketPath(socket_path.to_owned()));

@@ -1,13 +1,13 @@
 //! A graceful stop of the selected daemon through its API socket.
 
-use super::{DEFAULT_SESSION_NAME, Selection, SessionInfo, is_running_at, session_info};
+use super::{DEFAULT_SESSION_NAME, Selection, SessionInfo};
 use crate::api::client::request_line;
-use maestro_ipc::local_socket::{LocalStream, LocalStreamExt, connect_local_stream};
+use maestro_ipc::local_socket::{LocalStream, LocalStreamExt, connect_local_stream_until};
 use maestro_protocol::{
-    rpc_types::{Request, RpcCommand},
+    rpc_types::{Request, RpcCommand, RpcResponse},
     schema::EmptyParams,
 };
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, Read, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -27,7 +27,17 @@ const MIN_SOCKET_TIMEOUT: Duration = Duration::from_millis(1);
 /// diagnostic once the 15 s budget is spent.
 pub fn stop_session(selection: &Selection) -> Result<SessionInfo, String> {
     stop_with_timeout(selection, STOP_WAIT_TIMEOUT)?;
-    Ok(session_info(&selection.paths))
+    Ok(SessionInfo {
+        name: selection
+            .paths
+            .name()
+            .unwrap_or(DEFAULT_SESSION_NAME)
+            .to_owned(),
+        default: selection.paths.name().is_none(),
+        running: false,
+        socket_path: selection.api_socket_path.clone(),
+        session_dir: selection.paths.data_dir(),
+    })
 }
 
 /// Sends the stop request and waits for both selected sockets within one deadline.
@@ -38,18 +48,19 @@ fn stop_with_timeout(selection: &Selection, timeout: Duration) -> Result<(), Str
         selection.paths.name().unwrap_or(DEFAULT_SESSION_NAME)
     );
     let api = Path::new(&selection.api_socket_path);
-    let stream = connect_local_stream(api).map_err(|error| {
-        format!(
-            "{label} is not running or cannot be reached at {}: {error}",
-            api.display()
-        )
-    })?;
-    if let Some(response) = send_stop_request(stream, deadline)?
-        && let Some(error) = response.get("error")
-    {
-        return Err(error
-            .as_str()
-            .map_or_else(|| error.to_string(), str::to_owned));
+    match connect_local_stream_until(api, deadline) {
+        Ok(stream) => {
+            if let Some(response) = send_stop_request(stream, deadline)? {
+                response.result.map_err(|error| error.message)?;
+            }
+        }
+        Err(error) if connection_back_pressure(&error) => {}
+        Err(error) => {
+            return Err(format!(
+                "{label} is not running or cannot be reached at {}: {error}",
+                api.display()
+            ));
+        }
     }
     let endpoints = [api, selection.client_socket_path.as_path()];
     if wait_until_stopped_until(&endpoints, deadline) {
@@ -57,7 +68,7 @@ fn stop_with_timeout(selection: &Selection, timeout: Duration) -> Result<(), Str
     }
     let reachable: Vec<String> = endpoints
         .iter()
-        .filter(|path| is_running_at(path))
+        .filter(|path| is_reachable_until(path, deadline))
         .map(|path| path.display().to_string())
         .collect();
     Err(format!(
@@ -71,7 +82,7 @@ fn stop_with_timeout(selection: &Selection, timeout: Duration) -> Result<(), Str
 fn send_stop_request(
     mut stream: LocalStream,
     deadline: Instant,
-) -> Result<Option<serde_json::Value>, String> {
+) -> Result<Option<RpcResponse>, String> {
     let Some(write_timeout) = socket_timeout_until(deadline) else {
         return Ok(None);
     };
@@ -101,19 +112,37 @@ fn exchange_stop_request(
     };
     stream.write_all(request_line(&request)?.as_bytes())?;
     stream.flush()?;
-    let Some(read_timeout) = socket_timeout_until(deadline) else {
-        return Ok(None);
-    };
-    if let Err(error) = stream.set_recv_timeout(Some(read_timeout)) {
-        return if stop_timeout_error_allows_wait(&error) {
-            Ok(None)
-        } else {
-            Err(error)
+    read_stop_reply(stream, deadline)
+}
+
+/// Re-arms each native read from the same absolute deadline, including partial lines.
+fn read_stop_reply(stream: &mut LocalStream, deadline: Instant) -> io::Result<Option<String>> {
+    let mut line = Vec::new();
+    loop {
+        let Some(timeout) = socket_timeout_until(deadline) else {
+            return Ok(None);
         };
+        if let Err(error) = stream.set_recv_timeout(Some(timeout)) {
+            return if stop_timeout_error_allows_wait(&error) {
+                Ok(None)
+            } else {
+                Err(error)
+            };
+        }
+        let mut bytes = [0; 1024];
+        let read = stream.read(&mut bytes)?;
+        let end = bytes[..read].iter().position(|byte| *byte == b'\n');
+        line.extend_from_slice(&bytes[..end.map_or(read, |end| end + 1)]);
+        if read == 0 || end.is_some() {
+            break;
+        }
     }
-    let mut line = String::new();
-    let read = BufReader::new(stream).read_line(&mut line)?;
-    Ok((read != 0).then_some(line))
+    if line.is_empty() {
+        return Ok(None);
+    }
+    String::from_utf8(line)
+        .map(Some)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
 }
 
 /// A timeout the platform cannot set leaves the outcome to the sockets' reachability.
@@ -137,7 +166,11 @@ fn stop_request_error_allows_wait(error: &io::Error) -> bool {
 
 /// Probes until no endpoint accepts a connection or the deadline passes.
 fn wait_until_stopped_until(endpoints: &[&Path], deadline: Instant) -> bool {
-    let stopped = || endpoints.iter().all(|path| !is_running_at(path));
+    let stopped = || {
+        endpoints
+            .iter()
+            .all(|path| !is_reachable_until(path, deadline))
+    };
     while Instant::now() < deadline {
         if stopped() {
             return true;
@@ -145,6 +178,22 @@ fn wait_until_stopped_until(endpoints: &[&Path], deadline: Instant) -> bool {
         std::thread::sleep(STOP_WAIT_POLL.min(deadline.saturating_duration_since(Instant::now())));
     }
     stopped()
+}
+
+/// A full accept queue is reachable even though no connection completed in time.
+fn connection_back_pressure(error: &io::Error) -> bool {
+    matches!(
+        error.kind(),
+        io::ErrorKind::TimedOut | io::ErrorKind::WouldBlock
+    )
+}
+
+/// Probes without blocking past the stop deadline; back-pressure is not shutdown.
+fn is_reachable_until(path: &Path, deadline: Instant) -> bool {
+    match connect_local_stream_until(path, deadline) {
+        Ok(_) => true,
+        Err(error) => connection_back_pressure(&error),
+    }
 }
 
 /// The native timeout for the time left before `deadline`, if any is left.
