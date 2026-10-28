@@ -294,7 +294,7 @@ fn section(result: &SingleResult, mode: &str, theme: &Theme) -> ExtensionResult<
 /// Appends a nonempty usage label to the caller's line collection.
 fn append_usage(
     lines: &mut Vec<String>,
-    value: &crate::runs::Usage,
+    value: &crate::runs::UsageStats,
     model: Option<&str>,
     theme: &Theme,
 ) -> ExtensionResult<()> {

@@ -25,7 +25,7 @@ pub(crate) struct TaskItem {
 /// Additive usage plus the last observed context size.
 #[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct Usage {
+pub(crate) struct UsageStats {
     /// Input tokens across turns.
     pub input: f64,
     /// Output tokens across turns.
@@ -59,7 +59,7 @@ pub(crate) struct SingleResult {
     /// Captured error output.
     pub stderr: String,
     /// Accumulated usage.
-    pub usage: Usage,
+    pub usage: UsageStats,
     /// Selected or first reported model.
     pub model: Option<String>,
     /// Last reported stop reason.
@@ -79,7 +79,7 @@ impl SingleResult {
             exit_code: -1,
             messages: Vec::new(),
             stderr: String::new(),
-            usage: Usage::default(),
+            usage: UsageStats::default(),
             model: None,
             stop_reason: None,
             error_message: None,

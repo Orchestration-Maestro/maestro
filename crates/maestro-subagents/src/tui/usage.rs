@@ -1,5 +1,5 @@
 //! Usage labels retain each child's last context size and aggregate additive counts.
-use crate::runs::{SingleResult, Usage};
+use crate::runs::{SingleResult, UsageStats};
 
 /// Formats counts with the same thresholds as the tool's compact displays.
 fn tokens(count: f64) -> String {
@@ -15,7 +15,7 @@ fn tokens(count: f64) -> String {
     format!("{:.1}M", count / 1_000_000.0)
 }
 /// Formats only nonzero usage and the optional model name.
-pub(super) fn label(usage: &Usage, model: Option<&str>) -> String {
+pub(super) fn label(usage: &UsageStats, model: Option<&str>) -> String {
     let mut parts = Vec::new();
     if usage.turns > 0 {
         parts.push(format!(
@@ -46,8 +46,8 @@ pub(super) fn label(usage: &Usage, model: Option<&str>) -> String {
     parts.join(" ")
 }
 /// Sums additive fields, deliberately excluding context sizes from different children.
-pub(super) fn total(results: &[SingleResult]) -> Usage {
-    let mut total = Usage::default();
+pub(super) fn total(results: &[SingleResult]) -> UsageStats {
+    let mut total = UsageStats::default();
     for result in results {
         total.input += result.usage.input;
         total.output += result.usage.output;

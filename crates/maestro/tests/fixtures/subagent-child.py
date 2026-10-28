@@ -36,7 +36,7 @@ if args[-1] in ("Task: provider-error", "Task: provider-abort"):
     print(json.dumps({"type": "message_end", "message": {"role": "assistant", "content": [], "stopReason": reason, "errorMessage": error}}))
     sys.exit(0)
 print("not JSON\n\n")
-print(json.dumps({"type": "tool_result_end", "message": {"role": "toolResult", "content": [{"type": "text", "text": "read result"}]}}))
+print(json.dumps({"type": "message_end", "message": {"role": "toolResult", "toolCallId":"controlled-read", "toolName":"read", "isError":False, "timestamp":0, "content": [{"type": "text", "text": "read result"}]}}))
 for index in range(2):
     usage = {"input": 10 if index == 0 else 2, "output": 3 if index == 0 else 5, "cacheRead": 2, "cacheWrite": 3, "cost": {"total": 0.001 if index == 0 else 0.002}, "totalTokens": 19}
     text = "earlier" if index == 0 else f"{args[-1]};role={role};cwd={os.path.basename(os.getcwd())}"
