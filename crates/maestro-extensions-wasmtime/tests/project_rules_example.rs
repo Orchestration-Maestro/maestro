@@ -141,9 +141,7 @@ fn with_rules(base: &str, rules: &[&str]) -> String {
         .map(|rule| format!("- .claude/rules/{rule}"))
         .collect();
     format!(
-        "{base}\n\n## Project Rules\n\nThe following project rules are available in \
-         .claude/rules/:\n\n{}\n\nWhen working on tasks related to these rules, use the read \
-         tool to load the relevant rule files for guidance.\n",
+        "{base}\n\n## Project Rules\n\nProject rule files in .claude/rules/:\n\n{}\n\nUse the read tool to load any rule files that apply to your task for guidance.\n",
         list.join("\n")
     )
 }
@@ -151,7 +149,7 @@ fn with_rules(base: &str, rules: &[&str]) -> String {
 /// The notification a session start shows for `count` rules.
 fn found(count: usize) -> Vec<Value> {
     vec![json!([
-        format!("Found {count} rule(s) in .claude/rules/"),
+        format!("Project rules: {count} file(s) in .claude/rules/"),
         "info"
     ])]
 }
@@ -241,5 +239,21 @@ fn project_rules_component_reports_an_unreadable_rules_path() {
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].0, "session_start");
         assert!(!errors[0].1.is_empty());
+    });
+}
+
+/// A regular file above the rules path makes it missing and clears the previous scan.
+#[test]
+fn project_rules_component_clears_rules_when_parent_is_a_file() {
+    run(async {
+        let harness = Harness::new().await;
+        harness.write("one.md", "rule\n");
+        assert_eq!(harness.start().await.len(), 1);
+        assert!(harness.prompt("Base").await.is_some());
+        std::fs::remove_dir_all(harness.root.path().join(".claude")).unwrap();
+        std::fs::write(harness.root.path().join(".claude"), "not a folder").unwrap();
+        assert!(harness.start().await.is_empty());
+        assert_eq!(harness.prompt("Base").await, None);
+        assert!(harness.errors.borrow().is_empty());
     });
 }
