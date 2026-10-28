@@ -1142,10 +1142,20 @@ fn sdk_restoration_resolves_recorded_values_without_rewriting_history() {
             &h,
             json!({"defaultProvider":"faux", "defaultModel":"faux-1"}),
         );
-        let mut manager = seeded(&h.cwd, "faux", "blocked", Some("high"));
+        let manager = seeded(&h.cwd, "faux", "blocked", Some("high"));
         let file = h.scratch.path().join("recorded.jsonl");
-        manager.set_session_file(file.to_str().unwrap()).unwrap();
-        let manager = Rc::new(RefCell::new(manager));
+        let lines = manager
+            .get_header()
+            .into_iter()
+            .chain(manager.get_entries())
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
+        std::fs::write(&file, lines).unwrap();
+        let manager = Rc::new(RefCell::new(
+            SessionManager::open(file.to_str().unwrap(), None, None).unwrap(),
+        ));
         let before = std::fs::read(&file).unwrap();
         options.session_manager = Some(Rc::clone(&manager));
         let settings = options.settings_manager.as_ref().unwrap().clone();
