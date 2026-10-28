@@ -12,6 +12,11 @@ use maestro_extensions_wasm::{
 use std::rc::Rc;
 
 /// Registers the sibling resources during discovery.
+///
+/// # Errors
+///
+/// The returned future fails if the component path is unavailable, its filename
+/// cannot be resolved, or the discovery handler cannot be registered.
 #[must_use]
 pub fn dynamic_resources_extension(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
