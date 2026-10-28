@@ -1,6 +1,7 @@
 //! Validation keeps the complete JSON root of a tool call's arguments.
 use std::collections::BTreeMap;
 
+use crate::json_equivalence::equivalent;
 use maestro_models::{
     ParameterSchema, SchemaKind, Tool, ToolCall, validate_tool_arguments, validate_tool_call,
 };
@@ -63,27 +64,6 @@ fn invocation(row: &Row) -> ToolCall {
         name: "root".into(),
         arguments: row.input.clone(),
         thought_signature: None,
-    }
-}
-
-/// Compare JSON values, treating numbers by their binary64 value.
-fn equivalent(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
-        (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| equivalent(left, right))
-        }
-        (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| equivalent(left, right)))
-        }
-        _ => left == right,
     }
 }
 

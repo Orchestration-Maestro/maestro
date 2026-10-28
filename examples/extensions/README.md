@@ -64,6 +64,8 @@ resolving conflicts, then regenerate the table.
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
+| `dirty_repo_guard.md` | Dirty repo guard |
+| `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |
 | `dynamic_tools.rs` | Dynamic tools: one echo tool registered when a session starts, and a command that adds more echo tools while the session runs. |
 | `event_bus.md` | Event bus |
@@ -145,6 +147,12 @@ resolving conflicts, then regenerate the table.
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
+| `tic_tac_toe.md` | Tic-tac-toe |
+| `tic_tac_toe.rs` | Play tic-tac-toe through a command and sequential atomic tools. |
+| `tic_tac_toe/game.rs` | Board snapshots shared by the tools and session reconstruction. |
+| `tic_tac_toe/prompt.rs` | Turn instructions added only while the interactive game is active. |
+| `tic_tac_toe/render.rs` | Themed boards, move banners and final-game banners. |
+| `tic_tac_toe/ui.rs` | The human's private cursor and the retained interactive game view. |
 | `timed_confirm.md` | Timed confirm |
 | `timed_confirm.rs` | Timed confirmation, selection and caller-owned cancellation through the host UI. |
 | `titlebar_spinner.md` | Titlebar spinner |
