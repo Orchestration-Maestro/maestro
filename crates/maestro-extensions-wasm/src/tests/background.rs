@@ -139,7 +139,7 @@ impl Drop for Driver {
 }
 
 /// Polls once without a watchdog or a wall-clock dependency.
-fn poll(tail: &mut ExtensionFuture<'static, ()>) -> Poll<Result<(), String>> {
+fn poll<T>(tail: &mut ExtensionFuture<'_, T>) -> Poll<Result<T, String>> {
     tail.as_mut().poll(&mut Context::from_waker(Waker::noop()))
 }
 
@@ -193,5 +193,48 @@ fn background_task_reports_a_refused_announcement() -> Result<(), String> {
     assert_eq!(poll(&mut tail), Poll::Ready(Ok(())));
     assert_eq!(driver.done(), [json!("ran")]);
     assert_eq!(driver.host.observed().bus.tails.len(), 1);
+    Ok(())
+}
+
+/// Deferred announcements retain their own jobs even when delivered in reverse order.
+#[test]
+fn background_tasks_started_together_each_run() -> Result<(), String> {
+    let host = Controlled::default();
+    let api = super::bus_callbacks::captured_api(&host)?;
+    let background = Background::new(api.events())?;
+    let work = |name| {
+        let events = api.events();
+        Box::pin(async move { events.emit("witness.done", json!(name)).await })
+            as ExtensionFuture<'static, ()>
+    };
+    let (gate_a, entered_a, open_a) = super::observed::gate();
+    let (gate_b, entered_b, open_b) = super::observed::gate();
+    host.observe().bus.emission_holds.extend([gate_a, gate_b]);
+    let mut start_a = background.spawn(work("a"));
+    let mut start_b = background.spawn(work("b"));
+    assert!(poll(&mut start_a).is_pending());
+    assert!(poll(&mut start_b).is_pending());
+    super::block_on(entered_a).unwrap();
+    super::block_on(entered_b).unwrap();
+    open_b.send(()).unwrap();
+    let task_b = super::block_on(start_b)?;
+    open_a.send(()).unwrap();
+    let task_a = super::block_on(start_a)?;
+    let tails = host.observed().bus.tails.clone();
+    assert_eq!(tails.len(), 2, "each announcement owns a tail");
+    for tail in tails {
+        super::block_on(Exports::<Controlled>::invoke_tail(tail))?;
+    }
+    assert_eq!(done(&host.observed()), [json!("b"), json!("a")]);
+    drop((task_a, task_b));
+    let listener = host.observed().bus.listeners[0].1;
+    super::example_support::release_all(
+        &host,
+        &[
+            format!("event bus {listener}"),
+            "bus tail".into(),
+            "bus tail".into(),
+        ],
+    );
     Ok(())
 }
