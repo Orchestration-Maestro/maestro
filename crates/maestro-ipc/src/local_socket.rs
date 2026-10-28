@@ -60,14 +60,18 @@ pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<
     Ok(LocalStream::UdSocket(stream.into()))
 }
 
-/// Create an unconnected nonblocking Unix stream descriptor.
+/// Create a nonblocking Unix stream descriptor protected from exec inheritance.
 fn nonblocking_local_socket() -> io::Result<std::os::fd::OwnedFd> {
-    Ok(socket_with(
-        AddressFamily::UNIX,
-        SocketType::STREAM,
-        SocketFlags::NONBLOCK,
-        None,
-    )?)
+    #[cfg(not(any(target_vendor = "apple", target_os = "aix", target_os = "haiku")))]
+    let flags = SocketFlags::CLOEXEC;
+    #[cfg(any(target_vendor = "apple", target_os = "aix", target_os = "haiku"))]
+    let flags = SocketFlags::empty();
+    let fd = socket_with(AddressFamily::UNIX, SocketType::STREAM, flags, None)?;
+    // These platforms cannot set close-on-exec atomically during socket creation.
+    #[cfg(any(target_vendor = "apple", target_os = "aix", target_os = "haiku"))]
+    rustix::io::fcntl_setfd(&fd, rustix::io::FdFlags::CLOEXEC)?;
+    rustix::io::ioctl_fionbio(&fd, true)?;
+    Ok(fd)
 }
 
 /// Bind without unlinking a name when the listener is dropped.
