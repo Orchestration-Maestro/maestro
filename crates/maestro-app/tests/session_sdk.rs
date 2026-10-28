@@ -1106,3 +1106,74 @@ fn session_tool_services_survive_resource_reload() {
         assert_eq!(*seen.borrow(), 2);
     });
 }
+
+/// Resolves recorded settings without admitting them as explicit changes.
+struct ResolveRecorded;
+impl maestro_settings::SettingsDecider for ResolveRecorded {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+    fn resolve(&self, settings: &mut maestro_settings::Settings) -> Vec<String> {
+        let mut diagnostics = Vec::new();
+        if settings.0.get("defaultModel") == Some(&json!("blocked")) {
+            settings.0.insert("defaultModel".into(), json!("faux-1"));
+            diagnostics.push("release resolves recorded model".into());
+        }
+        if settings.0.get("defaultThinkingLevel") == Some(&json!("high")) {
+            settings
+                .0
+                .insert("defaultThinkingLevel".into(), json!("low"));
+            diagnostics.push("release bounds recorded thinking".into());
+        }
+        diagnostics
+    }
+}
+
+/// Restored model and thinking values resolve in memory; the original history stays intact.
+#[test]
+fn sdk_restoration_resolves_recorded_values_without_rewriting_history() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            models: vec![("faux-1", true), ("blocked", true)],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let mut options = options(
+            &h,
+            json!({"defaultProvider":"faux", "defaultModel":"faux-1"}),
+        );
+        let mut manager = seeded(&h.cwd, "faux", "blocked", Some("high"));
+        let file = h.scratch.path().join("recorded.jsonl");
+        manager.set_session_file(file.to_str().unwrap()).unwrap();
+        let manager = Rc::new(RefCell::new(manager));
+        let before = std::fs::read(&file).unwrap();
+        options.session_manager = Some(Rc::clone(&manager));
+        let settings = options.settings_manager.as_ref().unwrap().clone();
+        settings
+            .borrow_mut()
+            .register_decider(Arc::new(ResolveRecorded))
+            .unwrap();
+        let created = create(options).await;
+        assert_eq!(selected(&created), "faux/faux-1");
+        assert_eq!(created.session.thinking_level(), ModelThinkingLevel::Low);
+        assert!(
+            created
+                .model_fallback_message
+                .as_ref()
+                .unwrap()
+                .contains("Could not restore model faux/blocked")
+        );
+        assert_eq!(std::fs::read(&file).unwrap(), before);
+        let errors = settings.borrow_mut().drain_errors();
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.error.to_string() == "release resolves recorded model")
+        );
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.error.to_string() == "release bounds recorded thinking")
+        );
+    });
+}
