@@ -38,7 +38,7 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
 /// # Errors
 /// Returns discovery, invalid or duplicate marker, source-reading or build failures.
 pub fn prepare(
-    folder: &Path,
+    folders: &[PathBuf],
     mut build: impl FnMut(&str, &str) -> io::Result<PathBuf>,
 ) -> io::Result<String> {
     let mut result = String::new();
@@ -46,6 +46,9 @@ pub fn prepare(
         String::from("MAESTRO_AUTHOR_COMPONENT"),
         String::from("MAESTRO_CONTEXT_COMPONENT"),
     ]);
+    let folder = folders
+        .first()
+        .ok_or_else(|| io::Error::other("missing example root"))?;
     for file in collect(folder)? {
         if file.extension().is_none_or(|extension| extension != "rs") {
             continue;
