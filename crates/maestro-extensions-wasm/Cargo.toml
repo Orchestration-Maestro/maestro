@@ -181,6 +181,11 @@ path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "provider_payload"
+path = "../../examples/extensions/provider_payload.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "qna"
 path = "../../examples/extensions/qna.rs"
 crate-type = ["cdylib"]
