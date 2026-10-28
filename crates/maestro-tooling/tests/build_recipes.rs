@@ -1623,7 +1623,8 @@ fn watch_child_transcript_survives_forced_kill() {
         assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
         assert_eq!(receive.recv().unwrap(), "watch phase: ready");
         recipe_support::record("phase: blocked waiting for controller");
-        println!("READY {}", std::process::id());
+        // Separate readiness from libtest's unterminated test-name prefix.
+        println!("\nREADY {}", std::process::id());
         std::io::stdout().flush().unwrap();
         let _ = std::io::stdin().read(&mut [0]).unwrap();
         panic!("controller must kill the blocked test");
@@ -1652,6 +1653,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     };
     let mut child = process
         .nocapture()
+        .single_threaded()
         .env("MAESTRO_CAPTURE_CONTROL", "1")
         .stdin(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -1662,7 +1664,13 @@ fn assert_killed_transcript(directory: Option<&Path>) {
         .by_ref()
         .lines()
         .map(Result::unwrap)
-        .find_map(|line| line.strip_prefix("READY ").map(str::to_owned))
+        .find_map(|line| {
+            assert!(
+                !line.contains("READY ") || line.starts_with("READY "),
+                "readiness marker must start its own line: {line:?}"
+            );
+            line.strip_prefix("READY ").map(str::to_owned)
+        })
         .unwrap();
     assert!(
         Command::new("kill")

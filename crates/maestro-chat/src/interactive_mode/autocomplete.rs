@@ -283,7 +283,9 @@ impl InteractiveMode {
     pub(super) async fn prepare_search_tools(&self) -> Result<(), Box<dyn std::error::Error>> {
         let directory =
             maestro_app::configuration::config::paths::get_bin_dir(&maestro_app::get_agent_dir()?);
-        let manager = maestro_app::agent_session::ToolsManager::new(directory, None);
+        let manager =
+            maestro_app::agent_session::ToolsManager::new(directory, self.options.fetch.clone())
+                .with_offline(self.runtime_host.services().offline);
         let color = io::stdout().is_terminal();
         let mut fd_output = io::stdout();
         let mut rg_output = io::stdout();

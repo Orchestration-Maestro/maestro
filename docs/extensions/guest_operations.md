@@ -535,6 +535,10 @@ with the host platform's path rules. It reduces `.` and `..` segments and
 trailing separators without filesystem lookup, Unicode-space replacement or
 `~`/`@` expansion.
 
+`tools::path_utils::guest_path(&api, path)` spells a native host path the way the
+component's standard library opens it. Windows drive and share paths change,
+Unix paths do not; see [the operating environment](host_io.md).
+
 `config::version(&api)` reads the application installation identity supplied at
 host composition. It does not use the component package version. Native hosts
 supply an `Installation { version, agent_dir }` to

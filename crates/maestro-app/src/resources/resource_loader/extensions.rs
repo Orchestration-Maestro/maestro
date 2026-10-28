@@ -4,11 +4,10 @@ use super::{DefaultResourceLoader, overrides::apply};
 use crate::utils::lock::{read, write};
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
-    create_event_bus_for, create_extension_runtime, load_extension_from_factory,
-    load_extensions_with_runtime,
+    create_event_bus_for, load_extension_from_factory, load_extensions_with_runtime,
 };
 use maestro_models::{Execution, Local, Threaded};
-use maestro_resources::is_local_path;
+use maestro_resources::{canonicalize_path, is_local_path};
 use std::{
     collections::HashMap,
     io,
@@ -117,34 +116,109 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
     /// Loads path extensions, then inline factories on the same runtime, reports conflicts
     /// and missing explicit paths, applies the override and stores the result with each
     /// extension's provenance.
-    pub(super) async fn load_extension_resources(&self, paths: Vec<String>) -> io::Result<()> {
-        let runtime = create_extension_runtime::<E>();
-        if let Some(services) = &self.options.tool_construction {
-            runtime.set_tool_construction(services.clone());
+    pub(super) async fn load_extension_resources(
+        &self,
+        paths: Vec<String>,
+        mut result: LoadExtensionsResult<E>,
+    ) -> io::Result<()> {
+        let base_attempted = !result.extensions.is_empty() || !result.errors.is_empty();
+        if base_attempted {
+            write(&result.runtime.flag_values).clear();
         }
-        let auth_root = self.agent_dir.clone();
-        let models_root = self.agent_dir.clone();
-        runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
-            auth_path: Arc::new(move || {
-                Ok(crate::configuration::config::paths::get_auth_path(
-                    &auth_root,
-                ))
+        result = if base_attempted {
+            self.load_ordered_paths(paths, result).await?
+        } else {
+            load_extensions_with_runtime(
+                paths,
+                &self.cwd,
+                &self.event_bus,
+                &self.options.module_loader,
+                result.runtime,
+            )
+            .await?
+        };
+        if base_attempted {
+            restore_flag_defaults(&result);
+        }
+        self.load_inline_factories(&mut result).await;
+        result.errors.extend(conflicts(&result));
+        for path in &self.options.additional_extension_paths {
+            if is_local_path(path) && !Path::new(&self.resolve_resource_path(path)?).exists() {
+                result.errors.push(ExtensionLoadError {
+                    path: path.clone(),
+                    error: format!("Extension path does not exist: {path}"),
+                });
+            }
+        }
+        if base_attempted {
+            restore_flag_defaults(&result);
+        }
+        let result = apply(self.options.extensions_override.as_ref(), result);
+        self.apply_extension_provenance(&result)?;
+        self.state.borrow_mut().extensions = Rc::new(result);
+        Ok(())
+    }
+
+    /// Reuses early factories at their canonical ordinary slots, exposing each prefix's defaults.
+    async fn load_ordered_paths(
+        &self,
+        paths: Vec<String>,
+        mut result: LoadExtensionsResult<E>,
+    ) -> io::Result<LoadExtensionsResult<E>> {
+        let base = std::mem::take(&mut result.extensions);
+        let mut by_path: HashMap<_, _> = base
+            .iter()
+            .map(|extension| (canonicalize_path(&read(extension).path), extension.clone()))
+            .collect();
+        let failed: HashMap<_, _> = result
+            .errors
+            .iter()
+            .map(|error| (canonicalize_path(&error.path), error.path.clone()))
+            .collect();
+        for path in paths {
+            let canonical = canonicalize_path(&path);
+            if let Some(extension) = by_path.remove(&canonical) {
+                let path = read(&extension).path.clone();
+                result
+                    .runtime
+                    .replay_provider_operations(&path)
+                    .map_err(io::Error::other)?;
+                result.extensions.push(extension);
+                restore_flag_defaults(&result);
+                continue;
+            }
+            if let Some(path) = failed.get(&canonical) {
+                result
+                    .runtime
+                    .replay_provider_operations(path)
+                    .map_err(io::Error::other)?;
+                continue;
+            }
+            let loaded = load_extensions_with_runtime(
+                vec![path],
+                &self.cwd,
+                &self.event_bus,
+                &self.options.module_loader,
+                result.runtime.clone(),
+            )
+            .await?;
+            result.extensions.extend(loaded.extensions);
+            result.errors.extend(loaded.errors);
+        }
+        result
+            .runtime
+            .replay_remaining_provider_operations()
+            .map_err(io::Error::other)?;
+        result.extensions.extend(
+            base.into_iter().filter(|extension| {
+                by_path.contains_key(&canonicalize_path(&read(extension).path))
             }),
-            models_path: Arc::new(move || {
-                Ok(crate::configuration::config::paths::get_models_path(
-                    &models_root,
-                ))
-            }),
-            config_values: crate::runtime::agent_session_services::native_config_values(),
-        });
-        let mut result = load_extensions_with_runtime(
-            paths,
-            &self.cwd,
-            &self.event_bus,
-            &self.options.module_loader,
-            runtime,
-        )
-        .await?;
+        );
+        Ok(result)
+    }
+
+    /// Runs inline factories after every path factory on the same runtime.
+    async fn load_inline_factories(&self, result: &mut LoadExtensionsResult<E>) {
         for (index, factory) in self.options.extension_factories.iter().enumerate() {
             let path = format!("<inline:{}>", index + 1);
             match load_extension_from_factory(
@@ -163,19 +237,6 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
                 }),
             }
         }
-        result.errors.extend(conflicts(&result));
-        for path in &self.options.additional_extension_paths {
-            if is_local_path(path) && !Path::new(&self.resolve_resource_path(path)?).exists() {
-                result.errors.push(ExtensionLoadError {
-                    path: path.clone(),
-                    error: format!("Extension path does not exist: {path}"),
-                });
-            }
-        }
-        let result = apply(self.options.extensions_override.as_ref(), result);
-        self.apply_extension_provenance(&result)?;
-        self.state.borrow_mut().extensions = Rc::new(result);
-        Ok(())
     }
 
     /// Gives each extension a fresh provenance record, shared with its commands and tools.
@@ -198,4 +259,17 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
         }
         Ok(())
     }
+}
+
+/// Defaults are seeded during factory execution, so reselect them from registration order.
+fn restore_flag_defaults<E: ExtensionExecution>(result: &LoadExtensionsResult<E>) {
+    let mut defaults = indexmap::IndexMap::new();
+    for extension in &result.extensions {
+        for (name, value) in &read(extension).initial_flag_values {
+            defaults
+                .entry(name.clone())
+                .or_insert_with(|| value.clone());
+        }
+    }
+    *write(&result.runtime.flag_values) = defaults;
 }
