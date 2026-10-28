@@ -1,5 +1,8 @@
 # Package resources and acquisition
 
+For installation commands, package authoring and resource selection, read
+[install and author resource packages](package-guide.md).
+
 `PackageManager::install` and `remove` acquire or delete the contents of one source
 for the user scope or, with `Some(InstalledSourceScope::Project)`, the project scope;
 `None` means user. The `*_and_persist` variants then edit settings. Source identity,
@@ -193,17 +196,18 @@ collection uses surviving contents outside that catch. Resource collection error
 from remote sources propagate. Ordinary install commands have no added deadline;
 [captured commands](package-updates.md) retain their existing deadline.
 
-Conventional directories are `extensions`, `skills`, `prompts` and `themes`.
-Without a present package-root manifest, a local directory with none of these
-paths is returned as an extension root; an existing conventional path suppresses
-that fallback even when discovery is empty.
+Conventional directories are `extensions`, `skills`, `prompts`, `themes` and
+`contributions`. Without a present package-root manifest, a local directory with
+none of these paths is returned as an extension root; an existing conventional
+path suppresses that fallback even when discovery is empty.
 Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
 paths before `index.ts`, `index.js` or `index.wasm`, in that order. Other extension
 discovery admits top-level `.ts`, `.js` and `.wasm` files and entry-bearing children.
 Suffix matching is case-sensitive; a child's helper files are not implicit entries.
 These entry rules belong to `maestro_resources::package_manifest`, which
 [extension path discovery](extensions/loading.md) shares. Skills stop at an admitted `SKILL.md`;
-loose Markdown is root-only. Prompts and themes recurse by their suffix.
+loose Markdown is root-only. Prompts recurse for `.md`; themes and contributions
+recurse for `.json`.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
 directory-scoped rules from `maestro-pattern` and ignored-parent pruning. Rules match Unicode scalars
@@ -224,8 +228,9 @@ file-pattern policy to [file patterns](package-patterns.md).
 
 A present `maestro` member in `package.json` selects resources instead of
 conventional discovery; missing, null, false, zero or empty-string members use
-conventions. Object members select `extensions`, `skills`, `prompts` and `themes`;
-other present shapes have no named lists. Omitted lists add no resources.
+conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
+and `contributions`; other present shapes have no named lists. Omitted lists add
+no resources.
 
 Positive manifest entries containing `*` or `?` expand against the package root
 without trimming. Other entries, including brace-only or bracket-only forms,
@@ -253,10 +258,10 @@ prefix. Selection inserts admitted candidates in their original candidate order.
 Without exclusions or removals, candidates remain admitted without matching,
 including when only restoration modifiers are supplied.
 
-Lists are consumed in extension, skill, prompt and theme order. A malformed list
-keeps earlier local kinds and stops that source's remaining kinds; the next
-local source can still contribute. Installed remote collection propagates the
-malformed-list failure.
+Lists are consumed in extension, skill, prompt, theme and contribution order.
+A malformed list keeps earlier local kinds and stops that source's remaining
+kinds; the next local source can still contribute. Installed remote collection
+propagates the malformed-list failure.
 
 ## Configured resource resolution
 
@@ -289,8 +294,9 @@ files. Positive patterns select matches before exclusions, exact restorations an
 exact removals, using the [file-pattern operation](package-patterns.md). Disabled
 candidates remain in the returned lists.
 
-Automatic roots are the four conventional directories in each configuration base.
-Automatic prompts and themes are shallow; configured document directories recurse.
+Automatic roots are the five conventional directories in each configuration base.
+Automatic prompts, themes and contributions are shallow; configured document
+directories recurse.
 Conventional skill roots admit loose root Markdown, while `.agents/skills` roots
 admit skill-directory entries. The project also visits `.agents/skills` from its
 working directory through the nearest `.git` marker, inclusive, or to the filesystem
