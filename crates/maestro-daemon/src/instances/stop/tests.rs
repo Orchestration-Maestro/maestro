@@ -410,6 +410,7 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
     use maestro_ipc::local_socket::connect_local_stream_until;
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     let listener = UnixListener::bind(path).unwrap();
+    rustix::net::listen(&listener, 1).unwrap();
     let mut clients = Vec::new();
     loop {
         let result = connect_local_stream_until(path, Instant::now() + SHORT);

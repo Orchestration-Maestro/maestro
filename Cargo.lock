@@ -3920,6 +3920,7 @@ dependencies = [
  "maestro-tui",
  "maestro-workspace",
  "regex",
+ "rustix",
  "serde",
  "serde_json",
  "sha2 0.11.0",
