@@ -4429,6 +4429,7 @@ dependencies = [
  "maestro-entry",
  "maestro-json",
  "maestro-listing",
+ "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-request",
@@ -4439,6 +4440,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "uuid",
 ]

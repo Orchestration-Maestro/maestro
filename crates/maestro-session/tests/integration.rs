@@ -47,3 +47,5 @@ mod support {
     /// Full value comparison.
     pub mod value;
 }
+
+mod session_storage;
