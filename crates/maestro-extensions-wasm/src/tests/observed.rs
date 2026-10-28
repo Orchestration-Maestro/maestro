@@ -149,6 +149,8 @@ pub struct Observed {
     hold: VecDeque<Hold>,
     /// Whether the next session operation fails without running its continuation.
     reject_session: bool,
+    /// Captured standard output of the guest, when the host installed one.
+    pub stdout: Option<wasmtime_wasi::p2::pipe::MemoryOutputPipe>,
 }
 
 impl Observed {
@@ -195,6 +197,13 @@ impl Observed {
         self.next += 1;
         self.lend();
         self.next
+    }
+
+    /// Identities the controlled host still owns, including widget style callbacks.
+    pub fn live_identities(&self) -> Vec<u32> {
+        (1..=self.next)
+            .filter(|id| !self.dropped.contains(id))
+            .collect()
     }
 
     /// Records that the extension dropped an identity.

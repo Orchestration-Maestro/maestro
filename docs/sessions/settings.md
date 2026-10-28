@@ -103,8 +103,11 @@ most) and `images.blockImages` (never send images to a model).
 ## Shell and package manager
 
 `shellPath` selects the shell and `shellCommandPrefix` prefixes every shell
-command. `npmCommand` is the argument vector used for every npm operation,
-including installs, uninstalls and dependency installs inside git packages;
+command. For Bash initialization and a dedicated alias file, see
+[Use aliases in shell commands](../shell-aliases.md).
+
+`npmCommand` is the argument vector used for every npm operation, including
+installs, uninstalls and dependency installs inside git packages;
 write it exactly as the process should be launched.
 
 ```json

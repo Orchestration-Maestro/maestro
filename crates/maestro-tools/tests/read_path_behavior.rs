@@ -71,6 +71,30 @@ fn path_resolution_keeps_absolute_spelling_and_resolves_relative_inputs() {
     );
 }
 
+/// A canonically equivalent pair, precomposed then decomposed.
+const EQUIVALENT: [&str; 2] = ["\u{e9}", "e\u{301}"];
+
+/// Whether this host folds the canonically equivalent pair onto one entry.
+fn folds_equivalents() -> bool {
+    let scratch = Scratch::new().unwrap();
+    !scratch
+        .keeps_distinct(&EQUIVALENT.map(std::ffi::OsStr::new))
+        .unwrap()
+}
+
+/// Whether a case stores a decomposed name and asks without the combining mark on a host that
+/// folds canonically equivalent names. That host finds the stored file under the asked
+/// spelling itself, so the case reports its premise instead.
+fn reaches_decomposed(index: usize, files: &[&str], ask: &str) -> bool {
+    let reaches = files.iter().any(|file| file.contains('\u{301}'))
+        && !ask.contains('\u{301}')
+        && folds_equivalents();
+    if reaches {
+        eprintln!("case {index} needs a host that keeps {EQUIVALENT:?} apart");
+    }
+    reaches
+}
+
 /// Files present, the spelling asked for, and the existing file that spelling must select.
 type Fallback = (&'static [&'static str], &'static str, &'static str);
 
@@ -120,6 +144,9 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
         ),
     ];
     for (index, (files, ask, found)) in cases.into_iter().enumerate() {
+        if reaches_decomposed(index, files, ask) {
+            continue;
+        }
         let dir = Scratch::new().unwrap();
         for file in files {
             dir.file(file, b"");
@@ -383,9 +410,12 @@ fn resolve_rejects_a_working_directory_that_is_not_utf8() {
         &[],
     ) {
         let dir = Scratch::new().unwrap();
-        let raw = dir
-            .path()
-            .join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"cwd-\xff"));
+        let name = <std::ffi::OsStr as OsStrExt>::from_bytes(b"cwd-\xff");
+        if !dir.keeps_distinct(&[name]).unwrap() {
+            eprintln!("the working directory needs a host that stores the name bytes {name:?}");
+            return;
+        }
+        let raw = dir.path().join(name);
         std::fs::create_dir(&raw).unwrap();
         std::env::set_current_dir(&raw).unwrap();
         let error = resolve_to_cwd("x.txt", ".").unwrap_err();

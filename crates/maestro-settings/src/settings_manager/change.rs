@@ -56,6 +56,14 @@ pub(super) struct Change {
 }
 
 impl Change {
+    /// Captures a public edit whose nonempty path was checked before admission.
+    pub(super) fn from_requested(change: super::SettingsChange) -> Self {
+        Self {
+            edit: Edit(change.path),
+            value: change.value,
+        }
+    }
+
     /// Captures precisely the paths a one-level runtime merge can replace.
     pub(super) fn overrides(document: &Map<String, Value>) -> Vec<Self> {
         document
@@ -100,6 +108,14 @@ impl Change {
     /// Borrows the literal components of this requested edit.
     pub(super) fn components(&self) -> Vec<&str> {
         self.edit.0.iter().map(String::as_str).collect()
+    }
+
+    /// Copies this edit for the publisher without exposing persistence internals.
+    pub(super) fn requested(&self) -> super::SettingsChange {
+        super::SettingsChange {
+            path: self.edit.0.clone(),
+            value: self.value.clone(),
+        }
     }
 
     /// Publishes the value immediately and returns its captured persistence identity.
