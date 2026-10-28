@@ -9,7 +9,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::runtime_support::{is_child, rerun, run_set};
-use crate::support::{Rig, START_BYTES, elapse, pipe_output, until};
+use crate::support::{Rig, START_BYTES, elapse, pipe_output, pty, until};
 use crate::{isolated, lifecycle_support::pty_input};
 use maestro_tui::Terminal;
 use maestro_tui::terminal::OutputErrorHandler;
@@ -151,9 +151,23 @@ fn report_with_a_closed_standard_error() {
     });
 }
 
+/// Whether a read from a terminal whose controlling end closed fails with EIO here. Some
+/// kernels report the end of input instead, which the reader treats as a normal end.
+fn hangup_reads_as_an_error() -> bool {
+    let (controlling, terminal) = pty();
+    drop(controlling);
+    let flags = rustix::fs::fcntl_getfl(&terminal).unwrap();
+    rustix::fs::fcntl_setfl(&terminal, flags | rustix::fs::OFlags::NONBLOCK).unwrap();
+    rustix::io::read(&terminal, &mut [0]) == Err(rustix::io::Errno::IO)
+}
+
 #[test]
 fn native_stdin_eio_remains_an_input_failure() {
     isolated!(&[], || {
+        if !hangup_reads_as_an_error() {
+            eprintln!("this host reports a closed terminal as the end of input, not EIO");
+            return;
+        }
         let rig = Rig::paused();
         let input = pty_input();
         let _output = pipe_output();

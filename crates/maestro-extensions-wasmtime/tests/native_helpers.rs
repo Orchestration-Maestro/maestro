@@ -97,6 +97,11 @@ fn helper_frontmatter_preserves_document_kinds() {
 }
 
 #[test]
+fn helper_raw_yaml_preserves_document_values() {
+    check("helper_raw_yaml_preserves_document_values");
+}
+
+#[test]
 fn helper_strip_frontmatter_keeps_parse_failures() {
     check("helper_strip_frontmatter_keeps_parse_failures");
 }
@@ -189,11 +194,8 @@ fn check(name: &str) {
             maestro_theme::LiveTheme::default(),
         );
         let handler = runner.get_command("helpers").unwrap().command.handler;
-        let rows: Vec<Value> =
-            serde_json::from_str(include_str!("fixtures/helper_corpus.json")).unwrap();
         let mut count = 0;
-        for row in rows.iter().filter(|row| row["test"] == name) {
-            let mut row = row.clone();
+        for mut row in runnable_rows(name, &scratch) {
             expand(
                 &mut row,
                 scratch.path().to_str().unwrap(),
@@ -217,6 +219,29 @@ fn check(name: &str) {
         bus.controller.clear();
         maestro_tui::set_kitty_protocol_active(original);
     });
+}
+
+/// The recorded rows of one behavior that this host can exercise.
+///
+/// The fixture stores some names decomposed. A host that folds canonically equivalent names
+/// finds them under the precomposed spelling a row authors, so a row that reaches a decomposed
+/// name from a spelling without the combining mark states that premise instead.
+fn runnable_rows(name: &str, scratch: &maestro_test_directory::Scratch) -> Vec<Value> {
+    let rows: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/helper_corpus.json")).unwrap();
+    let pair = ["\u{e9}", "e\u{301}"].map(std::ffi::OsStr::new);
+    let folds = !scratch.keeps_distinct(&pair).unwrap();
+    let decomposed = |value: &Value| value.as_str().is_some_and(|text| text.contains('\u{301}'));
+    (rows.into_iter())
+        .filter(|row| row["test"] == name)
+        .filter(|row| {
+            let refused = folds && decomposed(&row["ok"]) && !decomposed(&row["args"][0]);
+            if refused {
+                eprintln!("{name} row needs a host that keeps {pair:?} apart: {row}");
+            }
+            !refused
+        })
+        .collect()
 }
 
 /// Runs directory observations under a supplied host home, absent from the guest environment.

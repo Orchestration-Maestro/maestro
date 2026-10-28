@@ -290,7 +290,7 @@ fn tokens(parsed: &Parsed<'_>, graphemes: &[Grapheme], events_end: usize) -> Vec
 
 /// Removes the rows of an overflowing line that show nothing.
 ///
-/// Each source escape is written once, by the row that holds it. The metadata escapes of a
+/// Each metadata escape is written once, by the row that holds it. The metadata escapes of a
 /// removed row move to the next row kept, after its inherited style, or to the end of the last
 /// row kept, followed by the escapes after the line's last grapheme that removed rows held. A
 /// line left without rows keeps one holding only its metadata escapes.

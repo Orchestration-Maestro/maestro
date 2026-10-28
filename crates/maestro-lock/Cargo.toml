@@ -6,11 +6,15 @@ license.workspace = true
 repository.workspace = true
 autotests = false
 
+[dependencies]
+maestro-path = { path = "../maestro-path" }
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
 
 [[test]]
 name = "integration"

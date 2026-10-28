@@ -27,6 +27,7 @@ fn registered_guest_streams_reach_the_native_agent() {
             local.clone(),
             std::env::var("MAESTRO_CONTEXT_COMPONENT").expect("nextest author-component setup"),
             Some(maestro_app::NoTools::All),
+            super::support::widgets(),
         )
         .await;
         command(&session, "agent", "registered").await;

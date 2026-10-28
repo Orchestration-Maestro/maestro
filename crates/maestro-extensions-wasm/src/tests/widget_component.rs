@@ -243,7 +243,7 @@ impl State {
     }
 }
 
-/// The answer of a frame writer request; the frame writer is exercised on the native host.
+/// Unsupported frame writer requests; only redraw requests are recorded here.
 const NO_WRITER: &str = "the component test host lends no frame writer";
 
 impl host::HostWidgetWithStore<State> for super::host::Imports {

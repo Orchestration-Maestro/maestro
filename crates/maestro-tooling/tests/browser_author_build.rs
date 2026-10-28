@@ -200,20 +200,46 @@ fn browser_check_repairs_formatting() {
 }
 
 #[test]
-fn browser_checks_reject_invalid_sources() {
+fn browser_author_checks_accept_valid_sources() {
     let browser = Browser::cached();
-    browser.workspace_sources();
     success(&browser.run("browser-check"));
-    for (path, invalid) in [
-        (browser.fixture("src/main.rs"), "\nnot Rust"),
-        (browser.path("crates/maestro-web/src/lib.rs"), "\nnot Rust"),
-        (browser.fixture("src/main.rs"), "\nfn unused() {}\n"),
-    ] {
-        let original = fs::read_to_string(&path).unwrap();
-        fs::write(&path, format!("{original}{invalid}")).unwrap();
-        assert!(!browser.run("browser-check").status.success());
-        fs::write(path, original).unwrap();
-    }
+    assert_no_browser_distribution(&browser);
+}
+
+#[test]
+fn browser_checks_reject_invalid_fixture_syntax() {
+    assert_browser_source_rejected(
+        "crates/maestro-tooling/tests/fixtures/browser_author/src/main.rs",
+        "\nnot Rust",
+    );
+}
+
+#[test]
+fn browser_checks_reject_invalid_library_syntax() {
+    assert_browser_source_rejected("crates/maestro-web/src/lib.rs", "\nnot Rust");
+}
+
+#[test]
+fn browser_checks_reject_fixture_warnings() {
+    assert_browser_source_rejected(
+        "crates/maestro-tooling/tests/fixtures/browser_author/src/main.rs",
+        "\nfn unused() {}\n",
+    );
+}
+
+/// Exercise each refusal independently while keeping the full authored fixture.
+fn assert_browser_source_rejected(relative: &str, invalid: &str) {
+    let browser = Browser::cached();
+    let path = browser.path(relative);
+    let original = fs::read_to_string(&path).unwrap();
+    fs::write(&path, format!("{original}{invalid}")).unwrap();
+    assert!(!browser.run("browser-check").status.success());
+    fs::write(path, original).unwrap();
+    assert_no_browser_distribution(&browser);
+}
+
+/// Checks must not produce either browser distribution, including after a refusal.
+fn assert_no_browser_distribution(browser: &Browser) {
     assert!(!browser.path("target/maestro-browser/library").exists());
     assert!(!browser.path("target/maestro-browser/example").exists());
 }

@@ -43736,7 +43736,7 @@
           "content": [
             {
               "type": "text",
-              "text": "binary:1: needle\u0000tail"
+              "text": "binary:1: needle"
             }
           ]
         }

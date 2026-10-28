@@ -1,5 +1,8 @@
 # Package resources and acquisition
 
+For installation commands, package authoring and resource selection, read
+[install and author resource packages](package-guide.md).
+
 `PackageManager::install` and `remove` acquire or delete the contents of one source
 for the user scope or, with `Some(InstalledSourceScope::Project)`, the project scope;
 `None` means user. The `*_and_persist` variants then edit settings. Source identity,
@@ -49,6 +52,66 @@ execution selects registrations before applying the offline return.
 `Some(true)` suppresses that remote work, `Some(false)` permits it, and `None` keeps
 reading `MAESTRO_OFFLINE` whenever an operation consults offline mode. The flag
 accepts `1`, or `true` and `yes` in any ASCII letter case, and is never trimmed.
+
+## Resolved packages and pin integrity
+
+`resolve` and `resolve_extension_sources` return `ResolvedPaths::packages` beside
+resource lists. Each `ResolvedPackage` retains the authored source (including its
+pin), a kind-prefixed identity (`npm:`, `git:` or `local:`), the lookup scope and
+its installed path. Configured resolution keeps the project entry when user and
+project entries name the same identity, even with different pins. Explicit
+resolution retains source order and supports the temporary scope. Missing sources
+that are skipped produce no descriptor. Empty packages and packages with all
+resources filtered out still have descriptors; resource files are not needed to
+find their roots.
+
+`verify_pin(source, scope)` inspects an explicitly pinned Git source at its
+managed user or project location. `None` selects user scope. `GitPinStatus` reports
+the locally available expected commit, current HEAD and sorted relative changed
+paths. Missing checkouts or unavailable refs have absent commits and are never
+clean. Changes include the index, working tree, ignored files and other untracked
+files. Inspection does not fetch or change contents.
+
+`restore_pin(source, scope)` resets to the exact pinned commit and removes all
+untracked contents, including nested repositories, even when HEAD already matches.
+Read the status first to retain the paths for a restoration notice. Command
+failure attempts to recover the previous HEAD selection. If local restoration is
+unavailable or fails, online restoration prepares an ordinary installation in an
+owned sibling before replacing the checkout. Preparation failures leave the old
+checkout in place; failed publication attempts to restore it. A failed rollback
+reports the retained backup path. Offline restoration can repair a locally
+available commit but never acquires a missing checkout or commit.
+
+These operations do not edit settings. They reject local sources, npm sources,
+unpinned Git sources, symlinked managed paths and redirected Git metadata. They
+accept sources and scopes, never arbitrary cleanup paths. Restoration deliberately
+discards edits inside managed remote checkouts; use a local source for development.
+Ordinary `install` keeps its existing behavior and does not imply an integrity
+check.
+
+## Release inspection
+
+`list_releases(source)` lists a Git source's tags in name order, pairing each name
+with its peeled commit ID. Annotated and lightweight tags each produce one row.
+An untagged repository returns an empty list. The caller chooses the release;
+this operation does not apply version policy or change a checkout.
+
+`read_candidate_files(source, paths)` requires an explicit Git pin. It clones and
+selects that candidate in an exclusively owned directory below the temporary
+package scope, reads the requested relative files, then removes the staging
+directory before returning. Results preserve input order and raw bytes; a missing
+file is `None`. Absolute paths, parent traversal and links outside the candidate
+are rejected. Read and cleanup failures are returned.
+
+Candidate inspection does not install dependencies, run lifecycle scripts, build
+code or load extensions. Each call has its own checkout, so alternating pins
+cannot change an installed checkout or the ordinary temporary checkout. An
+accepted candidate still installs through `install` with normal dependency
+preparation.
+
+Release inspection rejects non-Git sources and reports remote failures. Offline
+mode returns `NotConnected` without running a command rather than treating an
+unavailable release list as an empty repository. Settings stay unchanged.
 
 ## Progress
 
@@ -157,17 +220,18 @@ collection uses surviving contents outside that catch. Resource collection error
 from remote sources propagate. Ordinary install commands have no added deadline;
 [captured commands](package-updates.md) retain their existing deadline.
 
-Conventional directories are `extensions`, `skills`, `prompts` and `themes`.
-Without a present package-root manifest, a local directory with none of these
-paths is returned as an extension root; an existing conventional path suppresses
-that fallback even when discovery is empty.
+Conventional directories are `extensions`, `skills`, `prompts`, `themes` and
+`contributions`. Without a present package-root manifest, a local directory with
+none of these paths is returned as an extension root; an existing conventional
+path suppresses that fallback even when discovery is empty.
 Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
 paths before `index.ts`, `index.js` or `index.wasm`, in that order. Other extension
 discovery admits top-level `.ts`, `.js` and `.wasm` files and entry-bearing children.
 Suffix matching is case-sensitive; a child's helper files are not implicit entries.
 These entry rules belong to `maestro_resources::package_manifest`, which
 [extension path discovery](extensions/loading.md) shares. Skills stop at an admitted `SKILL.md`;
-loose Markdown is root-only. Prompts and themes recurse by their suffix.
+loose Markdown is root-only. Prompts recurse for `.md`; themes and contributions
+recurse for `.json`.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
 directory-scoped rules from `maestro-pattern` and ignored-parent pruning. Rules match Unicode scalars
@@ -188,8 +252,9 @@ file-pattern policy to [file patterns](package-patterns.md).
 
 A present `maestro` member in `package.json` selects resources instead of
 conventional discovery; missing, null, false, zero or empty-string members use
-conventions. Object members select `extensions`, `skills`, `prompts` and `themes`;
-other present shapes have no named lists. Omitted lists add no resources.
+conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
+and `contributions`; other present shapes have no named lists. Omitted lists add
+no resources.
 
 Positive manifest entries containing `*` or `?` expand against the package root
 without trimming. Other entries, including brace-only or bracket-only forms,
@@ -217,10 +282,10 @@ prefix. Selection inserts admitted candidates in their original candidate order.
 Without exclusions or removals, candidates remain admitted without matching,
 including when only restoration modifiers are supplied.
 
-Lists are consumed in extension, skill, prompt and theme order. A malformed list
-keeps earlier local kinds and stops that source's remaining kinds; the next
-local source can still contribute. Installed remote collection propagates the
-malformed-list failure.
+Lists are consumed in extension, skill, prompt, theme and contribution order.
+A malformed list keeps earlier local kinds and stops that source's remaining
+kinds; the next local source can still contribute. Installed remote collection
+propagates the malformed-list failure.
 
 ## Configured resource resolution
 
@@ -253,8 +318,9 @@ files. Positive patterns select matches before exclusions, exact restorations an
 exact removals, using the [file-pattern operation](package-patterns.md). Disabled
 candidates remain in the returned lists.
 
-Automatic roots are the four conventional directories in each configuration base.
-Automatic prompts and themes are shallow; configured document directories recurse.
+Automatic roots are the five conventional directories in each configuration base.
+Automatic prompts, themes and contributions are shallow; configured document
+directories recurse.
 Conventional skill roots admit loose root Markdown, while `.agents/skills` roots
 admit skill-directory entries. The project also visits `.agents/skills` from its
 working directory through the nearest `.git` marker, inclusive, or to the filesystem

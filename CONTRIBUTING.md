@@ -40,6 +40,8 @@ just test
 ```
 
 Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
+Nextest terminates each test after six minutes, with a ten-second shutdown grace
+period on Unix.
 Required CI runs tests on Linux and checks compilation for Windows and macOS.
 Native Windows and macOS test runs must be restored before the first release.
 A test that binds the fixed OAuth callback port goes in a module named

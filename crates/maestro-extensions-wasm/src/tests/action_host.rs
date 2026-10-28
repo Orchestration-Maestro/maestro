@@ -9,8 +9,12 @@ pub struct Bank {
     pub value: Value,
     /// Optional raw wire record.
     pub raw: Option<String>,
+    /// Exact helper operands mapped to supplied replies.
+    pub helpers: std::collections::HashMap<String, Value>,
     /// Rejection before action effects.
     pub error: Option<String>,
+    /// Rejects the next session entry before recording it.
+    pub entry_error: Option<String>,
 }
 impl Bank {
     /// Replace host state through an acknowledged entry.
@@ -29,13 +33,25 @@ impl Bank {
             .clone()
             .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
     }
-    /// Selects a literal helper reply by both operation and operands, then its default.
+    /// Supplies an exact helper reply before falling back to operation replies.
     pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
         self.check()?;
-        if let Some(reply) = self.value.get(format!("{operation} {data}")) {
-            return Ok(reply.to_string());
+        let key = format!("{operation} {data}");
+        if let Some(value) = self.helpers.get(&key) {
+            Ok(value.to_string())
+        } else if self.value.get(&key).is_some() {
+            self.record_for(&key)
+        } else {
+            self.record_for(operation)
         }
-        self.record_for(operation)
+    }
+    /// Reads a supplied boolean while preserving literal host refusal messages.
+    pub fn boolean(&self, operation: &str) -> Result<bool, String> {
+        self.check()?;
+        let value = self.value.get(operation).unwrap_or(&self.value);
+        value
+            .as_bool()
+            .ok_or_else(|| value.as_str().unwrap_or("missing boolean reply").to_owned())
     }
     /// Supply raw selected record input without changing decoder policy.
     pub fn record(&self) -> Result<String, String> {

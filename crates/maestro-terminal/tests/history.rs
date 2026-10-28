@@ -1,6 +1,10 @@
 //! History coordinates and retained cell positions.
 
+use super::support::LARGE_PAGES;
 use maestro_terminal::{Coordinate, Point};
+
+/// Recorded bytes of one standard page for 4 KiB or 16 KiB host pages.
+const STANDARD_PAGE: u64 = if LARGE_PAGES { 409_600 } else { 401_408 };
 
 #[test]
 fn point_regions_and_coordinate_boundaries() {
@@ -39,14 +43,16 @@ fn point_regions_and_coordinate_boundaries() {
 fn initial_capacity_and_minimum_budget() {
     use maestro_terminal::PageList;
     use std::num::NonZeroU16;
-    for (cols, capacity_rows) in [
-        (1, 23_454),
-        (5, 7818),
-        (80, 579),
-        (215, 217),
-        (430, 108),
-        (65_535, 215),
+    // Rows of one standard page for 4 KiB and for 16 KiB host pages.
+    for (cols, small, large) in [
+        (1, 23_454, 23_966),
+        (5, 7818, 7988),
+        (80, 579, 591),
+        (215, 217, 221),
+        (430, 108, 111),
+        (65_535, 215, 215),
     ] {
+        let capacity_rows = if LARGE_PAGES { large } else { small };
         for rows in [1, 24, 216] {
             if cols == u16::MAX && rows != 1 {
                 continue;
@@ -54,21 +60,22 @@ fn initial_capacity_and_minimum_budget() {
             assert_initial_capacity(cols, rows, capacity_rows);
         }
     }
-    for (limit, maximum) in [
-        (None, u64::MAX),
-        (Some(0), 802_816),
-        (Some(1), 802_816),
-        (Some(802_815), 802_816),
-        (Some(802_816), 802_816),
-        (Some(1_204_224), 1_204_224),
+    // The effective limit never falls below two standard pages.
+    for (limit, small, large) in [
+        (None, u64::MAX, u64::MAX),
+        (Some(0), 802_816, 819_200),
+        (Some(1), 802_816, 819_200),
+        (Some(802_815), 802_816, 819_200),
+        (Some(802_816), 802_816, 819_200),
+        (Some(1_204_224), 1_204_224, 1_204_224),
     ] {
         let list = PageList::init(
             NonZeroU16::new(80).unwrap(),
             NonZeroU16::new(24).unwrap(),
             limit,
         );
-        assert_eq!(list.max_size(), maximum);
-        assert_eq!(list.charged_bytes(), 401_408);
+        assert_eq!(list.max_size(), if LARGE_PAGES { large } else { small });
+        assert_eq!(list.charged_bytes(), STANDARD_PAGE);
     }
 }
 
@@ -574,7 +581,10 @@ fn assert_initial_capacity(cols: u16, rows: u16, capacity_rows: u16) {
         list.charged_bytes(),
         Page::layout(capacity).total_size * u64::try_from(pages).unwrap()
     );
-    assert_eq!(list.max_size(), 401_408 * u64::try_from(pages + 1).unwrap());
+    assert_eq!(
+        list.max_size(),
+        STANDARD_PAGE * u64::try_from(pages + 1).unwrap()
+    );
     assert_eq!(list.count_tracked_pins(), 1);
     assert_eq!(origin.row_and_cell(&list).unwrap().1.codepoint(), '\0');
     assert!(

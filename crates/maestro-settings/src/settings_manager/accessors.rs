@@ -68,7 +68,7 @@ impl SettingsManager {
     /// preference; absent parents stay absent. Each queued edit merges into fresh
     /// storage under the existing write lock, preserving unedited sibling keys.
     pub fn set_global_key_path(&mut self, field: &str, keys: &[&str], value: Option<Value>) {
-        self.set_global_key_paths(field, &[(keys, value)]);
+        self.set_key_path(SettingsScope::Global, field, keys, value);
     }
 
     /// Sets or removes several nested preferences as one cache publication and queued write.
@@ -76,13 +76,40 @@ impl SettingsManager {
     /// Paths are literal and apply in their supplied order. Storage readers observe
     /// the complete batch under the existing lock, never a partially applied batch.
     pub fn set_global_key_paths(&mut self, field: &str, edits: &[(&[&str], Option<Value>)]) {
+        self.edit_key_paths(SettingsScope::Global, field, edits);
+    }
+
+    /// Applies literal paths through the scope's publication and persistence owner.
+    fn edit_key_paths(
+        &mut self,
+        scope: SettingsScope,
+        field: &str,
+        edits: &[(&[&str], Option<Value>)],
+    ) {
         self.edit(
-            SettingsScope::Global,
+            scope,
             edits
                 .iter()
                 .map(|(keys, value)| Change::path(field, keys, value.clone()))
                 .collect(),
         );
+    }
+
+    /// Sets or removes a literal preference path in the selected scope.
+    ///
+    /// Empty `keys` addresses the field itself. `Some(Value::Null)` stores null;
+    /// `None` removes the addressed value without creating absent parents.
+    /// Accepted edits publish immediately and merge into fresh storage on the
+    /// existing queue. Locked paths are refused without publication or a save.
+    /// Use [`Self::flush`] to wait and [`Self::drain_errors`] to take failures.
+    pub fn set_key_path(
+        &mut self,
+        scope: SettingsScope,
+        field: &str,
+        keys: &[&str],
+        value: Option<Value>,
+    ) {
+        self.edit_key_paths(scope, field, &[(keys, value)]);
     }
 
     /// Returns the last changelog version shown, if any.
@@ -289,6 +316,18 @@ impl SettingsManager {
     /// Hides or shows thinking blocks.
     pub fn set_hide_thinking_block(&mut self, value: bool) {
         self.set_global("hideThinkingBlock", value);
+    }
+
+    /// Returns whether unchecked assistant text and tool output are withheld from session
+    /// listeners until checked (default false).
+    #[must_use]
+    pub fn get_hold_unchecked_text(&self) -> bool {
+        self.flag("holdUncheckedText").unwrap_or(false)
+    }
+
+    /// Withholds or delivers unchecked assistant text and tool output.
+    pub fn set_hold_unchecked_text(&mut self, value: bool) {
+        self.set_global("holdUncheckedText", value);
     }
 
     /// Returns the custom shell path, if any.

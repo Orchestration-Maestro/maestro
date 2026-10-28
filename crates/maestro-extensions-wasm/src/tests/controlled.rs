@@ -539,6 +539,50 @@ fn theme_set_result(result: &serde_json::Value) -> crate::ThemeSetResult {
 }
 
 impl Controlled {
+    /// Records the compaction binding of `session` and forwards the request to the action host.
+    fn compact_binding(
+        &self,
+        session: &Session,
+        instructions: Option<&CompactionData>,
+        complete: Option<&Callback>,
+        error: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observed.borrow().actions.check()?;
+        let cwd = session.cwd()?;
+        self.observed
+            .borrow_mut()
+            .log(format!("compact binding {cwd}"));
+        super::action_host::compact(
+            &mut self.observed.borrow_mut(),
+            instructions.and_then(|data| data.custom_instructions.as_deref()),
+            complete.map(|c| c.id),
+            error.map(|c| c.id),
+            instructions.is_some(),
+        )
+    }
+    /// Acquires the user interface owner for the session working in `cwd`.
+    fn acquire_ui(&self, cwd: &str) -> ExtensionResult<Ui> {
+        self.observed.borrow().catalog.check()?;
+        let key = self.observed.borrow_mut().ui.acquire(cwd);
+        Ok(Ui {
+            key,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    /// Whether the scripted catalog reports an interface.
+    fn catalog_has_ui(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.has_ui)
+    }
+    /// A reader over the scripted catalog's model registry.
+    fn catalog_registry(&self) -> ExtensionResult<Reader> {
+        self.observed.borrow().catalog.check()?;
+        let data = self.observed.borrow().catalog.registry.clone();
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
     /// Records one theme request on `resource` and answers it from the controlled host.
     fn ui_themed(
         &self,
@@ -1021,6 +1065,12 @@ impl Imports for Controlled {
             body: "body".into(),
         })
     }
+    fn native_yaml(
+        &self,
+        _content: &str,
+    ) -> ExtensionResult<Vec<crate::bindings::maestro::extension::host::FrontmatterToken>> {
+        Err("raw YAML requires the production helper host".into())
+    }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.observe().actions.helper(operation, data)
     }
@@ -1401,18 +1451,7 @@ impl Imports for Controlled {
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
-        self.observed.borrow().actions.check()?;
-        let cwd = context.session.cwd()?;
-        self.observed
-            .borrow_mut()
-            .log(format!("compact binding {cwd}"));
-        super::action_host::compact(
-            &mut self.observed.borrow_mut(),
-            instructions.and_then(|data| data.custom_instructions.as_deref()),
-            complete.map(|c| c.id),
-            error.map(|c| c.id),
-            instructions.is_some(),
-        )
+        self.compact_binding(&context.session, instructions, complete, error)
     }
     fn command_compact(
         &self,
@@ -1421,18 +1460,7 @@ impl Imports for Controlled {
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
-        self.observed.borrow().actions.check()?;
-        let cwd = context.session.cwd()?;
-        self.observed
-            .borrow_mut()
-            .log(format!("compact binding {cwd}"));
-        super::action_host::compact(
-            &mut self.observed.borrow_mut(),
-            instructions.and_then(|data| data.custom_instructions.as_deref()),
-            complete.map(|c| c.id),
-            error.map(|c| c.id),
-            instructions.is_some(),
-        )
+        self.compact_binding(&context.session, instructions, complete, error)
     }
 
     fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
@@ -1497,7 +1525,14 @@ impl Imports for Controlled {
     fn get_active_tools(&self) -> ExtensionResult<Vec<String>> {
         let o = self.observed.borrow();
         o.actions.check()?;
-        serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
+        serde_json::from_value(
+            o.actions
+                .value
+                .get("getActiveTools")
+                .unwrap_or(&o.actions.value)
+                .clone(),
+        )
+        .map_err(|e| e.to_string())
     }
     fn schema_invoke(
         &self,
@@ -1535,7 +1570,10 @@ impl Imports for Controlled {
         self.observed.borrow().actions.record()
     }
     fn get_thinking_level(&self) -> ExtensionResult<String> {
-        self.observed.borrow().actions.record()
+        self.observed
+            .borrow()
+            .actions
+            .record_for("getThinkingLevel")
     }
     fn call<'a>(
         &'a self,
@@ -1563,20 +1601,7 @@ impl Imports for Controlled {
                 "setModel",
                 &serde_json::json!([serde_json::from_str::<serde_json::Value>(&model).unwrap()]),
             )?;
-            self.observed
-                .borrow()
-                .actions
-                .value
-                .as_bool()
-                .ok_or_else(|| {
-                    self.observed
-                        .borrow()
-                        .actions
-                        .value
-                        .as_str()
-                        .unwrap_or("missing boolean reply")
-                        .to_owned()
-                })
+            self.observed.borrow().actions.boolean("setModel")
         })
     }
 
@@ -2200,6 +2225,8 @@ impl Imports for Controlled {
         let provider = exports.invoke_provider_factory(factory.id, current, &emitter)?;
         let id = crate::component_adapter::keep_provider(self, provider);
         super::provider_host::push(&mut self.observed.borrow_mut(), id);
+        self.observe()
+            .register(format!("provider factory {id}"), factory.id);
         Ok(())
     }
     fn ui_get_editor_component(
@@ -2448,26 +2475,15 @@ impl Imports for Controlled {
     }
 
     fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
-        self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
-        Ok(Ui {
-            key,
-            _lease: Lease::new(&self.observed),
-        })
+        self.acquire_ui(&context.session.cwd)
     }
     fn has_ui(&self, context: &Context) -> ExtensionResult<bool> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.has_ui)
+        self.catalog_has_ui()
     }
     fn model_registry(&self, context: &Context) -> ExtensionResult<Reader> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let data = self.observed.borrow().catalog.registry.clone();
-        Ok(Reader {
-            data,
-            _lease: Lease::new(&self.observed),
-        })
+        self.catalog_registry()
     }
     fn model(&self, context: &Context) -> ExtensionResult<Option<String>> {
         let _ = context;
@@ -2530,26 +2546,15 @@ impl Imports for Controlled {
         Ok(self.observed.borrow().catalog.data.prompt.clone())
     }
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
-        self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
-        Ok(Ui {
-            key,
-            _lease: Lease::new(&self.observed),
-        })
+        self.acquire_ui(&context.session.cwd)
     }
     fn command_has_ui(&self, context: &CommandContext) -> ExtensionResult<bool> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.has_ui)
+        self.catalog_has_ui()
     }
     fn command_model_registry(&self, context: &CommandContext) -> ExtensionResult<Reader> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let data = self.observed.borrow().catalog.registry.clone();
-        Ok(Reader {
-            data,
-            _lease: Lease::new(&self.observed),
-        })
+        self.catalog_registry()
     }
     fn command_model(&self, context: &CommandContext) -> ExtensionResult<Option<String>> {
         let _ = context;
@@ -2901,6 +2906,12 @@ impl Imports for Controlled {
             .shortcuts
             .push((shortcut.into(), description.map(str::to_owned)));
         observed.register(format!("shortcut {shortcut}"), handler.id);
+        Ok(())
+    }
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("load-time {contributions}"));
         Ok(())
     }
     fn register_flag(&self, name: &str, options: &crate::FlagOptions) -> ExtensionResult<()> {

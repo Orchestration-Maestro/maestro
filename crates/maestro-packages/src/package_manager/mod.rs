@@ -9,6 +9,10 @@ mod configuration;
 mod configured_resolution;
 mod git;
 mod git_checks;
+mod inspection;
+mod integrity;
+pub use inspection::GitRelease;
+pub use integrity::GitPinStatus;
 mod glob;
 mod manifest;
 mod npm;
@@ -23,7 +27,7 @@ mod resource_discovery;
 mod resource_patterns;
 mod sources;
 use maestro_resources::SourceScope;
-pub use resolution::{ResolvedPaths, ResolvedResource};
+pub use resolution::{ResolvedPackage, ResolvedPaths, ResolvedResource};
 mod update;
 use maestro_settings::SettingsManager;
 #[cfg(not(target_arch = "wasm32"))]
@@ -196,6 +200,40 @@ pub trait PackageManager {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()>;
+    /// Inspects an explicitly pinned managed Git source without changing its checkout.
+    /// Missing contents or refs are reported as absent commits, not clean checkouts.
+    /// # Errors
+    /// Returns invalid source, unsafe checkout, filesystem or Git command failures.
+    fn verify_pin<'a>(
+        &'a self,
+        source: &'a str,
+        scope: Option<InstalledSourceScope>,
+    ) -> PackageFuture<'a, GitPinStatus>;
+    /// Restores a managed Git pin, removing tracked drift and all untracked files.
+    /// Never edits settings or accepts local sources or caller-selected paths.
+    /// Missing contents are acquired online; failed repairs may reinstall online.
+    /// # Errors
+    /// Returns invalid source, unsafe checkout, offline acquisition or native failures.
+    fn restore_pin<'a>(
+        &'a self,
+        source: &'a str,
+        scope: Option<InstalledSourceScope>,
+    ) -> PackageFuture<'a, ()>;
+    /// Lists Git tags and their peeled commit IDs without selecting a release.
+    /// Offline mode refuses remote work rather than returning stale results.
+    /// # Errors
+    /// Returns invalid source, offline or Git capture failures.
+    fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>>;
+    /// Reads relative files from a pinned Git candidate in isolated temporary staging.
+    /// Results follow input order; a missing file is `None`, and bytes are not decoded.
+    /// No dependencies, builds or extensions run, and no installed checkout is changed.
+    /// # Errors
+    /// Returns invalid source/path, offline, Git, read or cleanup failures.
+    fn read_candidate_files<'a>(
+        &'a self,
+        source: &'a str,
+        paths: &'a [String],
+    ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>>;
     /// Installs, then adds the source to settings; an existing entry is not an error.
     /// Nothing is flushed; a failed settings edit does not undo acquired contents.
     /// # Errors
@@ -277,6 +315,30 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
         Box::pin(async move { self.acquire(source, scope).await.map(drop) })
+    }
+    fn verify_pin<'a>(
+        &'a self,
+        source: &'a str,
+        scope: Option<InstalledSourceScope>,
+    ) -> PackageFuture<'a, GitPinStatus> {
+        Box::pin(self.inspect_pin(source, scope))
+    }
+    fn restore_pin<'a>(
+        &'a self,
+        source: &'a str,
+        scope: Option<InstalledSourceScope>,
+    ) -> PackageFuture<'a, ()> {
+        Box::pin(self.repair_pin(source, scope))
+    }
+    fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>> {
+        Box::pin(self.git_releases(source))
+    }
+    fn read_candidate_files<'a>(
+        &'a self,
+        source: &'a str,
+        paths: &'a [String],
+    ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>> {
+        Box::pin(self.inspect_candidate_files(source, paths))
     }
     fn install_and_persist<'a>(
         &'a self,
