@@ -123,11 +123,21 @@ resolving conflicts, then regenerate the table.
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `sandbox.md` | Sandboxed bash |
+| `sandbox/author.rs` | Registers sandbox lifecycle, configuration display and the shared bash operations. |
+| `sandbox/config.rs` | Layered sandbox configuration read through the extension's supplied directories. |
 | `sandbox/config_data.rs` | Sandbox permission records and their shallow configuration composition. |
+| `sandbox/linux.rs` | Linux filesystem mounts and trusted network bridges for the native bash owner. |
+| `sandbox/macos.rs` | Native macOS command preparation over the shared bash execution backend. |
 | `sandbox/macos_profile.rs` | Native macOS authorization profile serialization. |
 | `sandbox/main.rs` | An opt-in filesystem and network sandbox for bash commands. |
 | `sandbox/network.rs` | Domain rules shared by both sandbox proxies. |
+| `sandbox/platform.rs` | Captures native observations without replacing invalid filesystem bytes. |
 | `sandbox/platform_commands.rs` | Platform command operands and lossless decoding of native path observations. |
+| `sandbox/proxies.rs` | Owned loopback listeners and their connections, run by the shared background owner. |
+| `sandbox/proxy.rs` | HTTP CONNECT and SOCKS5 admission and forwarding on loopback listeners. |
+| `sandbox/proxy_io.rs` | Framing and duplex byte forwarding for the sandbox's two proxy protocols. |
+| `sandbox/runtime.rs` | Initialization and cleanup of the example's platform resources. |
+| `sandbox/seccomp.rs` | Linux socket filters consumed by bubblewrap after the trusted proxy bridges start. |
 | `send_user_message.md` | Send user message |
 | `send_user_message.rs` | User-message delivery: commands that send ordinary, steering, follow-up and structured messages, so a user can reach the agent from an extension. |
 | `session_name.md` | Session name |

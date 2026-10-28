@@ -129,7 +129,7 @@ async fn restrictions(runner: &Rc<ExtensionRunner<Local>>, root: &Path) {
         bash(runner, "printf new-secret > .env.created; cat .env.created").await,
         "new-secret"
     );
-    assert_eq!(bash(runner, "cat .env.created").await, "");
+    assert_eq!(bash(runner, "cat .env.created").await, "(no output)");
     let _socket = std::os::unix::net::UnixListener::bind(root.join("host.sock")).unwrap();
     assert_eq!(
         bash(runner, "if socat -u /dev/null UNIX-CONNECT:host.sock 2>/dev/null; then echo bypass; else echo blocked; fi").await,

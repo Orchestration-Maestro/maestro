@@ -3,7 +3,7 @@ use super::network::NetworkConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-/// The effective configuration, retaining the source's truth semantics for enabled.
+/// Configuration with JSON truth semantics for enabled.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SandboxConfig {
@@ -13,6 +13,12 @@ pub(crate) struct SandboxConfig {
     pub(crate) network: NetworkConfig,
     /// Filesystem permissions.
     pub(crate) filesystem: FilesystemConfig,
+    /// Diagnostic exclusions, never filesystem authorization grants.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) ignore_violations: Option<std::collections::BTreeMap<String, Vec<String>>>,
+    /// Explicitly retains the host process namespace for nested environments.
+    #[serde(default)]
+    pub(crate) enable_weaker_nested_sandbox: bool,
 }
 
 /// Read exclusions and write admission paths.
@@ -25,10 +31,14 @@ pub(crate) struct FilesystemConfig {
     pub(crate) allow_write: Vec<String>,
     /// Write exclusions within admitted paths.
     pub(crate) deny_write: Vec<String>,
+    /// Allows repository configuration while hooks remain protected.
+    #[serde(default)]
+    pub(crate) allow_git_config: bool,
 }
 
 /// Default permissions before user layers.
-pub(crate) fn defaults() -> Value { json!({
+pub(crate) fn defaults() -> Value {
+    json!({
         "enabled": true,
         "network": NetworkConfig::default(),
         "filesystem": {
@@ -36,7 +46,8 @@ pub(crate) fn defaults() -> Value { json!({
             "allowWrite": [".", "/tmp"],
             "denyWrite": [".env", ".env.*", "*.pem", "*.key"]
         }
-    }) }
+    })
+}
 
 /// Merges the two shallow permission objects and the explicitly supported top-level keys.
 pub(crate) fn merge(base: &mut Value, layer: Value) {
@@ -76,3 +87,22 @@ pub(crate) fn display(config: &SandboxConfig) -> String {
         list(&config.filesystem.deny_write)
     )
 }
+
+/// Files and directories whose configuration can introduce executable hooks.
+pub(crate) const PROTECTED: &[&str] = &[
+    ".gitconfig",
+    ".gitmodules",
+    ".bashrc",
+    ".bash_profile",
+    ".zshrc",
+    ".zprofile",
+    ".profile",
+    ".ripgreprc",
+    ".mcp.json",
+    ".vscode",
+    ".idea",
+    ".maestro/commands",
+    ".maestro/roles",
+    ".git/hooks",
+    ".git/config",
+];

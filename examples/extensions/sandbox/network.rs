@@ -10,6 +10,21 @@ pub(crate) struct NetworkConfig {
     pub(crate) allowed_domains: Vec<String>,
     /// Exact host names or wildcard subdomain patterns refused before admission.
     pub(crate) denied_domains: Vec<String>,
+    /// Specific Unix socket paths admitted by the macOS policy.
+    #[serde(default)]
+    pub(crate) allow_unix_sockets: Vec<String>,
+    /// Whether every Unix socket is explicitly admitted.
+    #[serde(default)]
+    pub(crate) allow_all_unix_sockets: bool,
+    /// Whether macOS loopback listeners are explicitly admitted.
+    #[serde(default)]
+    pub(crate) allow_local_binding: bool,
+    /// Explicit user-owned HTTP proxy endpoint instead of the internal server.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) http_proxy_port: Option<u16>,
+    /// Explicit user-owned SOCKS endpoint instead of the internal server.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) socks_proxy_port: Option<u16>,
 }
 
 impl Default for NetworkConfig {
@@ -30,6 +45,11 @@ impl Default for NetworkConfig {
             .map(str::to_owned)
             .into(),
             denied_domains: Vec::new(),
+            allow_unix_sockets: Vec::new(),
+            allow_all_unix_sockets: false,
+            allow_local_binding: false,
+            http_proxy_port: None,
+            socks_proxy_port: None,
         }
     }
 }

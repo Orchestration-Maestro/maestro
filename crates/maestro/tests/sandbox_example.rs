@@ -15,6 +15,8 @@ fn run<F: Future<Output = ()>>(action: impl FnOnce(Rc<tokio::task::LocalSet>) ->
 
 /// Loads the actual component with the production native I/O provider.
 async fn loaded(root: &super::support::Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSession> {
+    #[cfg(target_os = "linux")]
+    std::env::set_current_dir(root.path("project")).unwrap();
     let session = super::support::session::component_session(
         root,
         local,

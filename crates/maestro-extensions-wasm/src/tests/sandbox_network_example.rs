@@ -38,6 +38,7 @@ fn sandbox_domains_preserve_defaults_and_apply_denials_before_wildcards() {
             "blocked.example.test".into(),
             "*.private.example.test".into(),
         ],
+        ..network::NetworkConfig::default()
     };
     for (domain, allowed) in [
         ("EXACT.TEST", true),
