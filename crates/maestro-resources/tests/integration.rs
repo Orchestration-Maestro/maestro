@@ -11,3 +11,5 @@ mod skill_ignore_checks;
 mod support;
 mod template_expansion;
 mod working_directory;
+
+mod yaml_documents;

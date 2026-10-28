@@ -9,4 +9,5 @@ mod qna_example;
 mod startup_modes;
 mod support;
 pub mod tools_example;
+mod truncated_tool_example;
 mod windows_terminal;

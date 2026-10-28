@@ -10,3 +10,6 @@ mod toolchain_support;
 
 #[path = "fixtures/recipe_support.rs"]
 mod recipe_support;
+
+#[path = "../../maestro-extensions-wasm/build/test_modules.rs"]
+mod example_test_modules;

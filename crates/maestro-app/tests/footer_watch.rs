@@ -99,7 +99,17 @@ enum OutputCase {
 
 #[test]
 fn footer_watch_selection_tracks_common_metadata() {
+    let stars = keeps_stars();
     for case in cases::<Selection>(include_str!("fixtures/footer_selection.json")) {
+        if !stars
+            && case
+                .entries
+                .iter()
+                .chain([&case.cwd])
+                .any(|path| path.contains('*'))
+        {
+            continue;
+        }
         let e = Rc::new(Effects::default());
         for path in case.entries {
             if path.ends_with("HEAD") || path.ends_with("tables.list") {
@@ -129,6 +139,27 @@ fn footer_watch_selection_tracks_common_metadata() {
         assert_eq!(e.pending_timers(), 0);
         p.dispose();
     }
+    if stars {
+        literal_pattern_worktree_links();
+    }
+}
+
+/// Whether this host stores a name holding `*`; Windows refuses one, so the literal-pattern
+/// premise cannot be exercised there.
+fn keeps_stars() -> bool {
+    let name = std::ffi::OsStr::new("storage [one]*");
+    let kept = maestro_test_directory::Scratch::new()
+        .unwrap()
+        .keeps_distinct(&[name])
+        .unwrap();
+    if !kept {
+        eprintln!("premise not met: this host refuses the name {name:?}");
+    }
+    kept
+}
+
+/// Worktree links through a directory whose name holds pattern characters stay literal.
+fn literal_pattern_worktree_links() {
     for link in [
         "/storage [one]*/worktrees/one",
         "../storage [one]*/worktrees/one",

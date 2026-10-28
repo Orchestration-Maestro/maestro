@@ -34,10 +34,15 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
             uri.as_str().replace("space", "bad%2fspace"),
             format!("file://foreign.invalid{}", uri.path()),
         ] {
-            assert!(
-                get_uri::load(&url::Url::parse(&text).unwrap(), None, &fetch)
-                    .await
-                    .is_err(),
+            let url = url::Url::parse(&text).unwrap();
+            // The host decides what a file URL names: Windows reads a foreign host as a UNC
+            // server, where other hosts refuse it.
+            let readable = url
+                .to_file_path()
+                .is_ok_and(|path| std::fs::read(path).is_ok());
+            assert_eq!(
+                get_uri::load(&url, None, &fetch).await.is_ok(),
+                readable,
                 "{text}"
             );
         }
@@ -68,15 +73,23 @@ async fn permission_failure(path: &std::path::Path, uri: &url::Url, fetch: &crat
 #[test]
 fn pac_source_errors_keep_not_found_distinct() {
     crate::tests::runtime::run(async {
-        let path = std::env::temp_dir().join(format!("maestro-missing-pac-{}", std::process::id()));
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch.path().join("missing.pac");
         assert!(!path.exists());
-        let file = url::Url::from_file_path(path).unwrap();
+        let file = url::Url::from_file_path(&path).unwrap();
         let fetch = configured_fetch(Route::default());
         let (http, peer) = super::source_server(vec![
             "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into(),
         ])
         .await;
-        for uri in [file, http] {
+        // A link whose target is absent names a missing source too.
+        let link = cfg!(unix).then(|| path.with_extension("link"));
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&path, link.as_ref().unwrap()).unwrap();
+        let links = link
+            .iter()
+            .map(|link| url::Url::from_file_path(link).unwrap());
+        for uri in [file, http].into_iter().chain(links) {
             let error = get_uri::load(&uri, None, &fetch).await.unwrap_err();
             assert!(error.is::<NotFound>());
             assert_eq!(

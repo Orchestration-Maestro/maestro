@@ -2,8 +2,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::{
-    Harness, HarnessOptions, assistant, build_tree, corpus, free_to_change, harness, on_task_set,
-    sdk_definition, sdk_tools, tool_definition, user,
+    Harness, HarnessOptions, as_recorded, assistant, build_tree, corpus, free_to_change, harness,
+    on_task_set, sdk_definition, sdk_tools, tool_definition, user,
 };
 use base64::Engine as _;
 use maestro_app::AgentSession;
@@ -26,7 +26,10 @@ fn jsonl_export_writes_header_and_linear_branch() {
         let names = build_tree(&mut h.session.session_manager().borrow_mut());
         let nested = format!("{root}/exports/deep/branch.jsonl");
         let path = h.session.export_to_jsonl(Some(&nested)).unwrap();
-        assert_eq!(path.replace(&root, "$ROOT"), expected["returned"]);
+        assert_eq!(
+            as_recorded(json!(path), &[(&root, "$ROOT")]),
+            expected["returned"]
+        );
         let text = std::fs::read_to_string(&path).unwrap();
         assert_eq!(text.ends_with('\n'), expected["endsWithNewline"]);
         assert_eq!(json!(text.split('\n').count() - 1), expected["lineCount"]);
@@ -41,7 +44,7 @@ fn jsonl_export_writes_header_and_linear_branch() {
         assert_eq!(header["id"], h.session.session_id());
         header["id"] = json!("$SESSION");
         header["timestamp"] = json!("$ISO");
-        header["cwd"] = json!(header["cwd"].as_str().unwrap().replace(&root, "$ROOT"));
+        header["cwd"] = as_recorded(header["cwd"].clone(), &[(&root, "$ROOT")]);
         header["keys"] = json!(keys);
         assert_eq!(header, expected["header"]);
         let name = |id: &Value| {
@@ -76,10 +79,11 @@ fn jsonl_export_default_name_uses_process_directory() {
         let path = path.unwrap();
         let stamp =
             regex::Regex::new(r"session-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z\.jsonl$").unwrap();
-        let named = stamp
-            .replace(&path, regex::NoExpand("session-$STAMP.jsonl"))
-            .replace(&root, "$ROOT");
-        assert_eq!(named, expected["defaultName"]);
+        let named = stamp.replace(&path, regex::NoExpand("session-$STAMP.jsonl"));
+        assert_eq!(
+            as_recorded(json!(named), &[(&root, "$ROOT")]),
+            expected["defaultName"]
+        );
         assert_eq!(
             std::path::Path::new(&path).exists(),
             expected["defaultExists"]
@@ -234,7 +238,10 @@ fn html_export_carries_prompt_tools_and_theme() {
             .session
             .export_to_html(Some(&output), &operations, environment(published()))
             .unwrap();
-        assert_eq!(path.replace(&root, "$ROOT"), expected["returned"]);
+        assert_eq!(
+            as_recorded(json!(path), &[(&root, "$ROOT")]),
+            expected["returned"]
+        );
         let data = payload(&path);
         let manager = h.session.session_manager().borrow();
         let position = |id: &Value| entry_position(&manager, id);

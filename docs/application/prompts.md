@@ -25,8 +25,8 @@ ends the prompt:
    `<skill name="<name>" location="<file>">`, the line
    `References are relative to <directory>.`, a blank line, the skill body without
    its frontmatter and trimmed, and `</skill>`. The block is read back by the
-   application's `parse_skill_block`, which native frontends and browser builds
-   both use, so a transcript and a rendered document share one parser. An unknown
+   application's `parse_skill_block`. The native transcript uses it, and it is
+   available to browser builds, which do not call it yet. An unknown
    skill keeps the text. A skill file that cannot be read is reported with the file
    as its path and event `skill_expansion`, and the text is kept.
 4. While a response streams, the session queues the prompt instead, as a steering

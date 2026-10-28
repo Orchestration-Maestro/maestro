@@ -3,6 +3,8 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
+mod bash_spawn_hook_example;
+mod built_in_tool_renderer;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
@@ -23,17 +25,21 @@ mod extension_guide;
 mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
+mod handoff_example;
 mod lifetimes;
 mod listener_prefixes;
+mod load_time_contributions;
+mod minimal_mode_example;
 mod module_location;
 mod native_helpers;
 mod native_io;
+mod overlay_test_example;
 mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
 mod startup;
+mod summarize_example;
 mod synchronous_reentry;
-mod truncated_tool_example;
 mod wasi_access;
 mod wasi_network;
 mod wasi_output;
@@ -73,6 +79,7 @@ mod model_signal_selection;
 mod tool_override_example;
 mod tui_capabilities;
 
+mod custom_compaction_example;
 mod custom_ui;
 mod model_lifetimes;
 
@@ -93,5 +100,3 @@ fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extens
         },
     )
 }
-
-mod handoff_example;
