@@ -83,7 +83,7 @@ impl ExtensionUIContextPort for Ui {
 }
 
 /// Builds the player and a file-writing engine using the same public engine interface.
-fn component() -> PathBuf {
+pub(super) fn component() -> PathBuf {
     let directory = Path::new(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../maestro-extensions-wasm"

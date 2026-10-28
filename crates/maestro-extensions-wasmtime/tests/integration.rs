@@ -21,6 +21,7 @@ mod component_loading;
 mod components;
 mod doom_engine_errors;
 mod doom_overlay_files;
+mod doom_wad;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
