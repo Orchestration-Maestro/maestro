@@ -83,12 +83,12 @@ shows the current project's sessions. These are default bindings; customized
 | --- | --- |
 | Type a query | Search ID, name, message text and working directory |
 | Tab | Switch between current-project and all-project scope |
-| Ctrl+P | Show or hide working-directory paths |
+| Ctrl+P | Show or hide session-file paths |
 | Ctrl+S | Cycle Threaded, Recent and Fuzzy ordering |
 | Ctrl+N | Toggle named-only filtering |
 | Up/Down; Page Up/Page Down | Move one row; move ten rows |
 | Enter; Escape | Resume the selected session; cancel the picker |
-| Ctrl+R | Edit the selected session's name; Enter saves, Escape cancels |
+| Ctrl+R | Edit the selected session's name; Enter saves, Escape cancels. Only in `/resume`; the `maestro -r` picker ignores it |
 | Ctrl+D | Ask to delete the selected session; Enter confirms, Escape cancels |
 
 Search accepts fuzzy terms, quoted phrases such as `"retry queue"`, and

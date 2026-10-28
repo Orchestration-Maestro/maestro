@@ -112,6 +112,9 @@ acknowledgment without waiting for exit.
 
 ## Direct shell execution
 
+For session settings and a dedicated Bash alias file, see
+[Use aliases in shell commands](shell-aliases.md).
+
 `execute_bash_with_operations(command, cwd, operations, options)` invokes the supplied
 `BashOperations` with the literal command and directory, the same optional signal,
 and no timeout or replacement environment. Even a pre-aborted signal reaches the operation.

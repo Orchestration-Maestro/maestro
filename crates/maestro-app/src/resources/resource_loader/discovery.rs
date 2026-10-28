@@ -145,7 +145,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let flushed = self.settings_manager.borrow().flush();
         flushed.await;
         self.settings_manager.borrow_mut().reload_from_storage();
-        let mut resolved = self.package_manager.resolve(None).await?;
+        let (mut resolved, base_extensions) = self.resolve_packages().await?;
         let mut explicit = self
             .package_manager
             .resolve_extension_sources(
@@ -169,7 +169,8 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             configured.extensions,
             &[],
         )?;
-        self.load_extension_resources(extension_paths).await?;
+        self.load_extension_resources(extension_paths, base_extensions)
+            .await?;
         let options = &self.options;
         for (collection, kind, explicit, configured, additional) in [
             (

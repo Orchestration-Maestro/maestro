@@ -6,16 +6,31 @@ use std::fs;
 #[test]
 fn chosen_root_is_canonical_and_keeps_written_files() {
     let root = Scratch::new().unwrap();
-    assert_eq!(
-        root.path().as_os_str(),
-        fs::canonicalize(root.path()).unwrap().as_os_str()
-    );
+    assert_eq!(root.path().as_os_str(), canonical(root.path()).unwrap());
     fs::write(root.path().join("kept"), "owned").unwrap();
     let file = root.path().join("kept");
+    assert_eq!(file.as_os_str(), canonical(&file).unwrap());
     assert_eq!(
-        file.as_os_str(),
-        fs::canonicalize(&file).unwrap().as_os_str()
+        fs::read_to_string(root.path().join("kept")).unwrap(),
+        "owned"
     );
+}
+
+/// The canonical spelling of `path`, which on Windows drops the verbatim drive prefix.
+fn canonical(path: &std::path::Path) -> std::io::Result<std::ffi::OsString> {
+    let canonical = fs::canonicalize(path)?.into_os_string();
+    #[cfg(windows)]
+    let canonical = canonical
+        .to_string_lossy()
+        .strip_prefix(r"\\?\")
+        .map_or_else(|| canonical.clone(), Into::into);
+    Ok(canonical)
+}
+
+#[test]
+fn chosen_root_accepts_slash_joined_children() {
+    let root = Scratch::new().unwrap();
+    fs::write(format!("{}/kept", root.path().display()), "owned").unwrap();
     assert_eq!(
         fs::read_to_string(root.path().join("kept")).unwrap(),
         "owned"

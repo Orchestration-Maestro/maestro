@@ -1,5 +1,8 @@
 //! Model, thinking-level and queue-mode selection.
-use super::{AgentSession, AgentSessionEvent, CycleDirection, ModelCycleResult, state::thrown};
+use super::{
+    AgentSession, AgentSessionEvent, CycleDirection, ModelCycleResult, decisions::SelectionError,
+    state::thrown,
+};
 use crate::utils::lock::{read, write};
 use maestro_agent::QueueMode;
 use maestro_catalog::DEFAULT_THINKING_LEVEL;
@@ -10,7 +13,9 @@ use maestro_models::{
     models_are_equal,
 };
 use maestro_session::Presence;
-use maestro_settings::{MessageDeliveryMode, ThinkingLevel as SavedThinkingLevel};
+use maestro_settings::{
+    MessageDeliveryMode, PreparedSettingsEdit, ThinkingLevel as SavedThinkingLevel,
+};
 use std::sync::{Arc, RwLock};
 
 /// A model to cycle to with its explicit thinking level.
@@ -26,7 +31,16 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns `No API key for <provider>/<id>` without changes when the model has no
     /// configured credentials, or a credential, recording or listener failure.
+    /// An admission refusal returns before state, history or settings change.
     pub async fn set_model(&self, model: Arc<RwLock<Model>>) -> Result<(), DiagnosticErrorInfo> {
+        self.set_model_checked(model).await.map_err(Into::into)
+    }
+
+    /// Selects a model while keeping admission refusals distinct from operation failures.
+    pub(super) async fn set_model_checked(
+        &self,
+        model: Arc<RwLock<Model>>,
+    ) -> Result<(), SelectionError> {
         if !self
             .model_registry
             .has_configured_auth(&model)
@@ -36,13 +50,16 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Err(DiagnosticErrorInfo::error(format!(
                 "No API key for {}/{}",
                 model.provider, model.id
-            )));
+            ))
+            .into());
         }
         let previous = self.model();
         let level = self.thinking_level_for_model_switch(None);
-        self.apply_model(&model, level)?;
+        let edits = self.prepare_model_selection(&model, &level)?;
+        self.apply_model(&model, level, edits)?;
         self.emit_model_select(model, previous, ModelSelectSource::Set)
             .await
+            .map_err(Into::into)
     }
 
     /// Selects `model`, records it and its provider, then applies `level` clamped to it.
@@ -50,7 +67,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
         &self,
         model: &Arc<RwLock<Model>>,
         level: ModelThinkingLevel,
+        edits: PreparedSettingsEdit,
     ) -> Result<(), DiagnosticErrorInfo> {
+        let (model_edits, thinking_edits) = edits.split_at(2);
         write(self.agent.state()).model = Arc::clone(model);
         let (provider, id) = {
             let model = read(model);
@@ -62,8 +81,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .map_err(thrown)?;
         self.settings_manager
             .borrow_mut()
-            .set_default_model_and_provider(provider, id);
-        self.set_thinking_level(level)
+            .apply_prepared_edit(model_edits);
+        self.apply_thinking_level(level, thinking_edits)
     }
 
     /// Selects the next or previous scoped model, or else the next or previous available
@@ -72,7 +91,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// The `model_select` notification runs as [`set_model`](Self::set_model)'s does.
     ///
     /// # Errors
-    /// Returns a credential, recording or listener failure.
+    /// Returns an admission refusal before state, history or settings change,
+    /// or a credential, recording or listener failure.
     pub async fn cycle_model(
         &self,
         direction: CycleDirection,
@@ -92,7 +112,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         let (model, explicit) = candidates.swap_remove(next);
         let level = self.thinking_level_for_model_switch(explicit);
-        self.apply_model(&model, level)?;
+        let edits = self
+            .prepare_model_selection(&model, &level)
+            .map_err(DiagnosticErrorInfo::from)?;
+        self.apply_model(&model, level, edits)?;
         self.emit_model_select(Arc::clone(&model), current, ModelSelectSource::Cycle)
             .await?;
         let thinking_level = read(self.agent.state()).thinking_level.clone();
@@ -131,8 +154,19 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Applies `level`, clamped to the model; records, saves and announces an effective change.
     ///
     /// # Errors
-    /// Returns a recording failure after the agent state changed.
+    /// Returns an admission refusal before state, history or settings change,
+    /// or a recording failure after the agent state changed.
     pub fn set_thinking_level(&self, level: ModelThinkingLevel) -> Result<(), DiagnosticErrorInfo> {
+        let edits = self.prepare_thinking_selection(&level)?;
+        self.apply_thinking_level(level, edits)
+    }
+
+    /// Applies an admitted level with the original history, settings and event ordering.
+    fn apply_thinking_level(
+        &self,
+        level: ModelThinkingLevel,
+        edits: PreparedSettingsEdit,
+    ) -> Result<(), DiagnosticErrorInfo> {
         let effective = if self.get_available_thinking_levels().contains(&level) {
             level
         } else {
@@ -150,11 +184,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .borrow_mut()
             .append_thinking_level_change(saved.as_str())
             .map_err(thrown)?;
-        if self.supports_thinking() || effective != ModelThinkingLevel::Off {
-            self.settings_manager
-                .borrow_mut()
-                .set_default_thinking_level(saved);
-        }
+        self.settings_manager
+            .borrow_mut()
+            .apply_prepared_edit(edits);
         self.emit(&AgentSessionEvent::ThinkingLevelChanged {
             level: effective.clone(),
         });
@@ -168,7 +200,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Selects the next supported level; `None` when the model cannot reason.
     ///
     /// # Errors
-    /// Returns a recording failure.
+    /// Returns an admission refusal before state, history or settings change,
+    /// or a recording failure after the agent state changed.
     pub fn cycle_thinking_level(&self) -> Result<Option<ModelThinkingLevel>, DiagnosticErrorInfo> {
         if !self.supports_thinking() {
             return Ok(None);

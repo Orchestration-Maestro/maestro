@@ -532,6 +532,10 @@ fn native_child_abort_keeps_the_original_signal() {
 #[test]
 fn native_io_keeps_full_user_basics() {
     use std::{io::Write, process::Stdio};
+    // The child reads to the end of its input, so no sibling fork may hold the pipe open.
+    if maestro_test_process::run_alone("native_io_keeps_full_user_basics").unwrap() {
+        return;
+    }
     let root = Root::new();
     root.models("http://127.0.0.1:1/v1");
     let outside = root.path("outside Ω");

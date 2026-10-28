@@ -1204,7 +1204,11 @@ fn shared_brand_types_keep_the_theme_import_paths() {
     );
     let native = BrandPack::parse(FORGE_PATH, &source).unwrap();
     let native = native.presentation(BrandMode::Dark).unwrap();
-    assert_eq!(native.mark.template, "/forge/mark.svg");
+    // Asset paths join the pack directory natively.
+    assert_eq!(
+        native.mark.template,
+        maestro_path::join(&["/forge", "mark.svg"])
+    );
     assert_eq!(native.css_properties(), old.css_properties());
     let fonts = BTreeMap::new();
     let mut missing = old;
