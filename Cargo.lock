@@ -4124,6 +4124,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-extensions",
  "maestro-models",
+ "maestro-path",
  "maestro-session",
  "maestro-test-directory",
  "maestro-test-process",
@@ -4177,6 +4178,7 @@ name = "maestro-lock"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-path",
  "maestro-test-directory",
 ]
 

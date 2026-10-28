@@ -70,7 +70,9 @@ stable call that creates a link on the component target, so a component
 creates one through the 0.3 `symlink-at` operation. Rust's `std::fs` always
 passes paths through the root. A directory that a 0.3 caller opens itself
 keeps the standard rules for paths below it, so an absolute link there is
-refused; pass the whole path through the root instead. Atomic saves and file modes remain
+refused; pass the whole path through the root instead. WASI paths are strings: a
+followed link whose final native name is not UTF-8 returns `illegal-byte-sequence`
+rather than opening a replacement-character spelling. Atomic saves and file modes remain
 undelivered. Final application-mode output routing remains separate from these
 host capabilities.
 

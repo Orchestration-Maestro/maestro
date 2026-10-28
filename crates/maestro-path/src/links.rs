@@ -16,6 +16,19 @@ pub fn resolve_final_links(
     path: &Path,
     mut read_link: impl FnMut(&Path) -> io::Result<Option<PathBuf>>,
 ) -> io::Result<PathBuf> {
-    let _ = read_link(path)?;
-    Ok(path.to_path_buf())
+    let mut current = path.to_path_buf();
+    for _ in 0..40 {
+        let Some(target) = read_link(&current)? else {
+            return Ok(current);
+        };
+        current = current
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(target);
+    }
+    if read_link(&current)?.is_some() {
+        Err(io::Error::other("symbolic link chain exceeds 40 links"))
+    } else {
+        Ok(current)
+    }
 }

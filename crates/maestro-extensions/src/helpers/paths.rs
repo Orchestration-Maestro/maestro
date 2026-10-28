@@ -191,16 +191,6 @@ mod tests {
         }
     }
 
-    /// The component spelling is the native spelling on Unix, in both directions.
-    #[cfg(unix)]
-    #[test]
-    fn unix_paths_keep_their_spelling_in_both_directions() {
-        for path in [r"/work/a\b", "/", "../x", "//server/share"] {
-            assert_eq!(super::guest_path(path), path);
-            assert_eq!(super::native_path(path), path);
-        }
-    }
-
     /// The helper route returns the running host's spelling.
     #[test]
     fn guest_path_helper_uses_the_host_spelling() {

@@ -85,6 +85,8 @@ pub(crate) struct State {
     pub(crate) exports: Option<Arc<Exports>>,
     /// The directory behind the one filesystem root the instance lists.
     root: wasmtime_wasi::filesystem::Dir,
+    /// Temporary filesystem entries retired by completed or cancelled operations.
+    retired: crate::wasi::root::Retired,
 }
 impl State {
     /// Constructs the one instance state before canonical linking.
@@ -101,6 +103,7 @@ impl State {
             installation,
             wasi: crate::wasi::build(path, output),
             root: crate::wasi::root::open()?,
+            retired: crate::wasi::root::Retired::default(),
             table: ResourceTable::new(),
             api,
             callbacks,
@@ -111,17 +114,20 @@ impl State {
 impl State {
     /// The standard filesystem beside the directory behind its root.
     pub(crate) fn root_view(&mut self) -> crate::wasi::root::View<'_> {
+        self.retired.drain(&mut self.table);
         crate::wasi::root::View {
             fs: wasmtime_wasi::filesystem::WasiFilesystemCtxView {
                 ctx: self.wasi.filesystem(),
                 table: &mut self.table,
             },
             root: &self.root,
+            retired: self.retired.clone(),
         }
     }
 }
 impl WasiView for State {
     fn ctx(&mut self) -> WasiCtxView<'_> {
+        self.retired.drain(&mut self.table);
         WasiCtxView {
             ctx: &mut self.wasi,
             table: &mut self.table,

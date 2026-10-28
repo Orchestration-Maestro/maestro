@@ -21,6 +21,7 @@ fn cancelled_placement_releases_temporary_descriptor() {
                     table: &mut table,
                 },
                 root: &root,
+                retired: crate::wasi::root::Retired::default(),
             };
             let fd = view.directories().unwrap().remove(0).0;
             for _ in 0..64 {

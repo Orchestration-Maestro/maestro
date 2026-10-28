@@ -28,36 +28,21 @@ impl View<'_> {
             return Ok((fd, path, None));
         }
         match wasmtime_wasi::runtime::spawn_blocking(move || parent(path, follow)).await? {
-            Place::Native(dir, name) => {
-                let held = self.fs.table.push(Descriptor::Dir(dir))?;
-                Ok((Resource::new_borrow(held.rep()), name, Some(held)))
-            }
+            Place::Native(dir, name) => Ok(self.hold(dir, name)?),
+            Place::InvalidName => Err(ErrorCode::IllegalByteSequence.into()),
             Place::Root(path) => Ok((fd, path, None)),
         }
     }
 
-    /// Places both paths of a two-path operation, closing the first directory if the second fails.
+    /// Places both paths while retaining each temporary directory through the operation.
     async fn place_both(
         &mut self,
         (fd, path): (Resource<Descriptor>, String),
         (new_fd, new_path): (Resource<Descriptor>, String),
     ) -> FsResult<(Placed, Placed)> {
         let first = self.place(fd, path, false).await?;
-        match self.place(new_fd, new_path, false).await {
-            Ok(second) => Ok((first, second)),
-            Err(error) => {
-                self.release(first.2)?;
-                Err(error)
-            }
-        }
-    }
-
-    /// Closes a directory that [`View::place`] held.
-    fn release(&mut self, held: Option<Resource<Descriptor>>) -> FsResult<()> {
-        if let Some(held) = held {
-            self.fs.table.delete(held)?;
-        }
-        Ok(())
+        let second = self.place(new_fd, new_path, false).await?;
+        Ok((first, second))
     }
 }
 
@@ -165,7 +150,7 @@ impl HostDescriptor for View<'_> {
     ) -> FsResult<()> {
         let (fd, path, held) = self.place(fd, path, false).await?;
         let result = self.fs.create_directory_at(fd, path).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 
@@ -183,7 +168,7 @@ impl HostDescriptor for View<'_> {
             .place(fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW))
             .await?;
         let result = self.fs.stat_at(fd, flags, path).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 
@@ -199,7 +184,7 @@ impl HostDescriptor for View<'_> {
             .place(fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW))
             .await?;
         let result = self.fs.set_times_at(fd, flags, path, atim, mtim).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 
@@ -214,8 +199,8 @@ impl HostDescriptor for View<'_> {
         let ((fd, old_path, old), (new_fd, new_path, new)) =
             self.place_both((fd, old_path), (new_fd, new_path)).await?;
         let result = self.fs.link_at(fd, flags, old_path, new_fd, new_path).await;
-        self.release(old)?;
-        self.release(new)?;
+        drop(old);
+        drop(new);
         result
     }
 
@@ -227,11 +212,11 @@ impl HostDescriptor for View<'_> {
         open: OpenFlags,
         descriptor: DescriptorFlags,
     ) -> FsResult<Resource<Descriptor>> {
-        let (fd, path, held) = self
-            .place(fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW))
-            .await?;
+        let follow = flags.contains(PathFlags::SYMLINK_FOLLOW)
+            && !open.contains(OpenFlags::CREATE | OpenFlags::EXCLUSIVE);
+        let (fd, path, held) = self.place(fd, path, follow).await?;
         let result = self.fs.open_at(fd, flags, path, open, descriptor).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 
@@ -255,7 +240,7 @@ impl HostDescriptor for View<'_> {
     ) -> FsResult<()> {
         let (fd, path, held) = self.place(fd, path, false).await?;
         let result = self.fs.remove_directory_at(fd, path).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 
@@ -269,8 +254,8 @@ impl HostDescriptor for View<'_> {
         let ((fd, old_path, old), (new_fd, new_path, new)) =
             self.place_both((fd, old_path), (new_fd, new_path)).await?;
         let result = self.fs.rename_at(fd, old_path, new_fd, new_path).await;
-        self.release(old)?;
-        self.release(new)?;
+        drop(old);
+        drop(new);
         result
     }
 
@@ -289,7 +274,7 @@ impl HostDescriptor for View<'_> {
     async fn unlink_file_at(&mut self, fd: Resource<Descriptor>, path: String) -> FsResult<()> {
         let (fd, path, held) = self.place(fd, path, false).await?;
         let result = self.fs.unlink_file_at(fd, path).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 
@@ -338,7 +323,7 @@ impl HostDescriptor for View<'_> {
             .place(fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW))
             .await?;
         let result = self.fs.metadata_hash_at(fd, flags, path).await;
-        self.release(held)?;
+        drop(held);
         result
     }
 }

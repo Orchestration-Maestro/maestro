@@ -12,9 +12,9 @@ use maestro_extensions::helpers::{guest_path, native_path};
 use std::{
     io,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
-use wasmtime::component::{HasData, Linker, Resource, ResourceTable};
+use wasmtime::component::{HasData, Linker, Resource, ResourceTable, ResourceTableError};
 use wasmtime_wasi::{
     FsPerms, OpenMode,
     filesystem::{Descriptor, Dir, WasiFilesystemCtxView},
@@ -35,11 +35,14 @@ pub(crate) struct View<'a> {
     pub(crate) fs: WasiFilesystemCtxView<'a>,
     /// The directory whose handle identifies the root.
     pub(crate) root: &'a Dir,
+    /// Descriptors awaiting reclamation after their operation ends.
+    pub(crate) retired: Retired,
 }
 
 impl View<'_> {
     /// Lists the root under its component name, `/`.
     fn directories(&mut self) -> wasmtime::Result<Vec<(Resource<Descriptor>, String)>> {
+        self.retired.drain(self.fs.table);
         let root = self.fs.table.push(Descriptor::Dir(self.root.clone()))?;
         Ok(vec![(root, "/".into())])
     }
@@ -81,7 +84,61 @@ fn directory(path: &Path) -> io::Result<Dir> {
 }
 
 /// A descriptor and the path to use with it, beside a native directory held for the operation.
-type Placed = (Resource<Descriptor>, String, Option<Resource<Descriptor>>);
+type Placed = (Resource<Descriptor>, String, Option<Held>);
+
+/// Per-instance reclamation of private temporary directory entries.
+#[derive(Clone, Default)]
+pub(crate) struct Retired {
+    /// Only the store-access boundary mutates the resource table.
+    pending: Arc<Mutex<Vec<u32>>>,
+}
+
+impl Retired {
+    /// Reclaims retired entries before the table is exposed to another operation.
+    pub(crate) fn drain(&self, table: &mut ResourceTable) {
+        let mut pending = self
+            .pending
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for rep in pending.drain(..) {
+            // These private entries have no children and are retired exactly once.
+            let _ = table.delete::<Descriptor>(Resource::new_own(rep));
+        }
+    }
+}
+
+/// Retires a temporary descriptor without requiring store access from Drop.
+struct Held {
+    /// The table entry owned by this one operation.
+    rep: u32,
+    /// The instance's shared reclamation queue.
+    retired: Retired,
+}
+
+impl Drop for Held {
+    fn drop(&mut self) {
+        self.retired
+            .pending
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(self.rep);
+    }
+}
+
+impl View<'_> {
+    /// Places a native directory in the table under cancellation-safe ownership.
+    fn hold(&mut self, dir: Dir, name: String) -> Result<Placed, ResourceTableError> {
+        let rep = self.fs.table.push(Descriptor::Dir(dir))?.rep();
+        Ok((
+            Resource::new_borrow(rep),
+            name,
+            Some(Held {
+                rep,
+                retired: self.retired.clone(),
+            }),
+        ))
+    }
+}
 
 /// Whether `fd` is the root itself rather than a directory opened below it.
 fn is_root(table: &ResourceTable, fd: &Resource<Descriptor>, root: &Dir) -> bool {
@@ -94,6 +151,8 @@ enum Place {
     Native(Dir, String),
     /// In the root itself, under the whole path.
     Root(String),
+    /// A native final name that the string-based interface cannot represent.
+    InvalidName,
 }
 
 /// Finds the native directory that holds `path` below the root, and the name to use in it.
@@ -103,21 +162,35 @@ enum Place {
 /// below it stays with the root, where the standard implementation resolves each
 /// component and an absolute link is refused.
 fn parent(path: String, follow: bool) -> io::Result<Place> {
-    let mut native = PathBuf::from(native_path(&format!("/{path}")));
-    if follow {
-        for _ in 0..40 {
-            let Ok(target) = std::fs::read_link(&native) else {
-                break;
-            };
-            native = native
-                .parent()
-                .map_or_else(|| target.clone(), |parent| parent.join(&target));
-        }
-    }
-    let slash = if path.ends_with('/') { "/" } else { "" };
-    let (directory_path, name) = match (native.parent(), native.file_name()) {
-        (Some(parent), Some(name)) => (parent, format!("{}{slash}", name.to_string_lossy())),
-        _ => (native.as_path(), ".".into()),
+    let native = PathBuf::from(native_path(&format!("/{path}")));
+    let native = if follow {
+        maestro_path::resolve_final_links(&native, |path| Ok(std::fs::read_link(path).ok()))?
+    } else {
+        native
+    };
+    // Path components discard a trailing dot, but the kernel must still see it.
+    let bytes = native.as_os_str().as_encoded_bytes();
+    let dot = bytes
+        .rsplit(|byte| std::path::is_separator(char::from(*byte)))
+        .find(|component| !component.is_empty())
+        == Some(b".".as_slice());
+    let slash = if bytes
+        .last()
+        .is_some_and(|byte| std::path::is_separator(char::from(*byte)))
+    {
+        "/"
+    } else {
+        ""
+    };
+    let (directory_path, name) = if dot {
+        (native.as_path(), ".".into())
+    } else if let (Some(parent), Some(name)) = (native.parent(), native.file_name()) {
+        let Some(name) = name.to_str() else {
+            return Ok(Place::InvalidName);
+        };
+        (parent, format!("{name}{slash}"))
+    } else {
+        (native.as_path(), ".".into())
     };
     match directory(directory_path) {
         Ok(dir) => Ok(Place::Native(dir, name)),

@@ -52,39 +52,21 @@ async fn place(
         return Ok((fd, path, None));
     }
     match wasmtime_wasi::runtime::spawn_blocking(move || parent(path, follow)).await? {
-        Place::Native(dir, name) => {
-            let held = store.with(|mut access| access.get().fs.table.push(Descriptor::Dir(dir)))?;
-            Ok((Resource::new_borrow(held.rep()), name, Some(held)))
-        }
+        Place::Native(dir, name) => Ok(store.with(|mut access| access.get().hold(dir, name))?),
+        Place::InvalidName => Err(ErrorCode::IllegalByteSequence.into()),
         Place::Root(path) => Ok((fd, path, None)),
     }
 }
 
-/// Places both paths of a two-path operation, closing the first directory if the second fails.
+/// Places both paths while retaining each temporary directory through the operation.
 async fn place_both(
     store: &Accessor<State, Root>,
     (fd, path): (Resource<Descriptor>, String),
     (new_fd, new_path): (Resource<Descriptor>, String),
 ) -> FilesystemResult<(Placed, Placed)> {
     let first = place(store, fd, path, false).await?;
-    match place(store, new_fd, new_path, false).await {
-        Ok(second) => Ok((first, second)),
-        Err(error) => {
-            release(store, first.2)?;
-            Err(error)
-        }
-    }
-}
-
-/// Closes a directory that [`place`] held.
-fn release(
-    store: &Accessor<State, Root>,
-    held: Option<Resource<Descriptor>>,
-) -> FilesystemResult<()> {
-    if let Some(held) = held {
-        store.with(|mut access| access.get().fs.table.delete(held))?;
-    }
-    Ok(())
+    let second = place(store, new_fd, new_path, false).await?;
+    Ok((first, second))
 }
 
 impl preopens::Host for View<'_> {
@@ -200,7 +182,7 @@ impl HostDescriptorWithStore<State> for Root {
     ) -> FilesystemResult<()> {
         let (fd, path, held) = place(store, fd, path, false).await?;
         let result = WasiFilesystem::create_directory_at(&fs(store), fd, path).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 
@@ -220,7 +202,7 @@ impl HostDescriptorWithStore<State> for Root {
         let (fd, path, held) =
             place(store, fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW)).await?;
         let result = WasiFilesystem::stat_at(&fs(store), fd, flags, path).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 
@@ -235,7 +217,7 @@ impl HostDescriptorWithStore<State> for Root {
         let (fd, path, held) =
             place(store, fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW)).await?;
         let result = WasiFilesystem::set_times_at(&fs(store), fd, flags, path, atim, mtim).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 
@@ -251,8 +233,8 @@ impl HostDescriptorWithStore<State> for Root {
             place_both(store, (fd, old_path), (new_fd, new_path)).await?;
         let result =
             WasiFilesystem::link_at(&fs(store), fd, flags, old_path, new_fd, new_path).await;
-        release(store, old)?;
-        release(store, new)?;
+        drop(old);
+        drop(new);
         result
     }
 
@@ -264,10 +246,11 @@ impl HostDescriptorWithStore<State> for Root {
         open: OpenFlags,
         descriptor: DescriptorFlags,
     ) -> FilesystemResult<Resource<Descriptor>> {
-        let (fd, path, held) =
-            place(store, fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW)).await?;
+        let follow = flags.contains(PathFlags::SYMLINK_FOLLOW)
+            && !open.contains(OpenFlags::CREATE | OpenFlags::EXCLUSIVE);
+        let (fd, path, held) = place(store, fd, path, follow).await?;
         let result = WasiFilesystem::open_at(&fs(store), fd, flags, path, open, descriptor).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 
@@ -291,7 +274,7 @@ impl HostDescriptorWithStore<State> for Root {
     ) -> FilesystemResult<()> {
         let (fd, path, held) = place(store, fd, path, false).await?;
         let result = WasiFilesystem::remove_directory_at(&fs(store), fd, path).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 
@@ -305,8 +288,8 @@ impl HostDescriptorWithStore<State> for Root {
         let ((fd, old_path, old), (new_fd, new_path, new)) =
             place_both(store, (fd, old_path), (new_fd, new_path)).await?;
         let result = WasiFilesystem::rename_at(&fs(store), fd, old_path, new_fd, new_path).await;
-        release(store, old)?;
-        release(store, new)?;
+        drop(old);
+        drop(new);
         result
     }
 
@@ -329,7 +312,7 @@ impl HostDescriptorWithStore<State> for Root {
     ) -> FilesystemResult<()> {
         let (fd, path, held) = place(store, fd, path, false).await?;
         let result = WasiFilesystem::unlink_file_at(&fs(store), fd, path).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 
@@ -357,7 +340,7 @@ impl HostDescriptorWithStore<State> for Root {
         let (fd, path, held) =
             place(store, fd, path, flags.contains(PathFlags::SYMLINK_FOLLOW)).await?;
         let result = WasiFilesystem::metadata_hash_at(&fs(store), fd, flags, path).await;
-        release(store, held)?;
+        drop(held);
         result
     }
 }
