@@ -13,13 +13,6 @@ sources and their usage pages. Its table is generated from each example's own
 documentation; `just example-index-check` checks it against the tree. Each usage
 page keeps its own controlled-run commands and host prerequisites.
 
-`extensions/handoff.rs` generates an editable prompt from the selected branch
-and opens a parent-linked session without submitting it. Loading it is opt-in
-and needs an interactive component host with custom UI, editor dialogs, event
-tails, session replacement and configured model credentials. Real generation
-sends the selected history to that model and can incur charges. The extension
-index lists the controlled `handoff_` run, which needs no live service.
-
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a
 path that exists.

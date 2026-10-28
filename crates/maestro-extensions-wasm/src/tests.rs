@@ -733,6 +733,7 @@ fn registration_signatures(
         (host, "register-shortcut"),
         (host, "register-flag"),
         (host, "get-flag"),
+        (host, "contribute-load-time"),
         (guest, "invoke-completion"),
         (guest, "invoke-shortcut"),
     ]
@@ -749,6 +750,7 @@ fn assert_registration_contract(contract: &Contract) {
         "register-shortcut",
         "register-flag",
         "get-flag",
+        "contribute-load-time",
     ] {
         assert!(sync.contains(&name));
     }
@@ -757,6 +759,7 @@ fn assert_registration_contract(contract: &Contract) {
         (vec!["shortcut: string", "description: option<string>", "handler: borrow<callback>"], vec!["result<_, string>"]),
         (vec!["name: string", "options: record {description: option<string>, type: enum {boolean, string}, default: option<variant {boolean(bool), string(string)}>}"], vec!["result<_, string>"]),
         (vec!["name: string"], vec!["result<option<variant {boolean(bool), string(string)}>, string>"]),
+        (vec!["contributions: string"], vec!["result<_, string>"]),
         (vec!["handler: borrow<callback>", "prefix: string"], vec!["result<option<list<record {value: string, label: string, description: option<string>}>>, string>"]),
         (vec!["handler: borrow<callback>", "ctx: own<context>"], vec!["result<_, string>"]),
     ].map(|(params, results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(), results.into_iter().map(str::to_owned).collect::<Vec<_>>()));

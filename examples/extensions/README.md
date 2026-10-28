@@ -52,8 +52,11 @@ resolving conflicts, then regenerate the table.
 | `bookmark.rs` | Entry bookmarks: commands that label session entries, so that the tree view can find the important points of a conversation again. |
 | `commands.md` | Commands |
 | `commands.rs` | Lists the host's slash commands through an opt-in `/commands` selector. |
+| `confirm_destructive.md` | Confirm destructive |
+| `confirm_destructive.rs` | Opt-in confirmation before replacing or forking a session. |
 | `custom_footer.md` | Custom footer |
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
+| `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
 | `dynamic_tools.md` | Dynamic tools |
 | `dynamic_tools.rs` | Dynamic tools: one echo tool registered when a session starts, and a command that adds more echo tools while the session runs. |
@@ -63,6 +66,7 @@ resolving conflicts, then regenerate the table.
 | `file_trigger.rs` | An opt-in file watcher that sends external triggers to the conversation. |
 | `git_checkpoint.md` | Git checkpoint |
 | `git_checkpoint.rs` | Opt-in Git stash checkpoints for restoring code when forking a conversation. |
+| `handoff.md` | Handoff |
 | `handoff.rs` | Generates an editable prompt from the current branch for a new, parent-linked session. |
 | `hello.md` | Hello |
 | `hello.rs` | A greeting tool registered by an extension factory. |
@@ -74,6 +78,8 @@ resolving conflicts, then regenerate the table.
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
 | `notify.rs` | Sends an opt-in desktop notification when the agent is ready for input. |
+| `overlay_test.md` | Overlay test |
+| `overlay_test.rs` | A floating overlay for checking how the terminal composes one over the conversation. |
 | `permission_gate.md` | Permission gate |
 | `permission_gate.rs` | An opt-in confirmation hook for illustrative dangerous bash patterns. |
 | `pirate.md` | Pirate |
