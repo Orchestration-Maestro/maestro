@@ -62,6 +62,14 @@ async fn produce(
         .io
         .fetch(request::build(model, context, options)?)
         .await?;
+    if !response.ok() {
+        // The status stays in the message, so the session's retry classification sees it.
+        return Err(format!(
+            "HTTP {} {}",
+            response.status(),
+            response.text().await?
+        ));
+    }
     let body = response
         .body()
         .ok_or("Provider stream ended without a response body")?;
