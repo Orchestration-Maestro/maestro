@@ -10,8 +10,7 @@ use std::{
     time::Instant,
 };
 
-#[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
-pub(super) mod cargo;
+pub(super) use super::component_build::cargo;
 
 /// Creates the independent project using the guide's manifest and the shipped source.
 fn project() -> (Scratch, PathBuf) {

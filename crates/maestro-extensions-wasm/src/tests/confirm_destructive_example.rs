@@ -241,7 +241,7 @@ fn native_cases(name: &str, cases: Vec<Case>) -> Result<(), String> {
 
 /// Delivers supplied cases through the built shipped component.
 fn component_cases(name: &str, cases: Vec<Case>) -> Result<(), String> {
-    let path = super::build::example_component("confirm_destructive")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "confirm_destructive")?;
     let mut harness =
         super::block_on(super::host::Harness::start(&path)).map_err(|e| e.to_string())?;
     let key = harness.callback(name).map_err(|e| e.to_string())?;

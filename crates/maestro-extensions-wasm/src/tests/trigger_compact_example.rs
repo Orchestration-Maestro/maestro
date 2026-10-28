@@ -504,7 +504,7 @@ impl ComponentHost {
 
 impl Host for ComponentHost {
     fn start(instances: usize) -> Result<Self, String> {
-        let path = super::build::example_component("trigger_compact")?;
+        let path = super::build::example_component("maestro-extensions-wasm", "trigger_compact")?;
         let (engine, component) =
             super::build::compile(&path).map_err(|error| error.to_string())?;
         let mut started = Vec::new();

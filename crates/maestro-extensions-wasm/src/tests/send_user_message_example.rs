@@ -125,7 +125,7 @@ struct ComponentHost {
 impl ComponentHost {
     /// Instantiates the built example and looks up its registrations.
     fn new() -> Result<Self, String> {
-        let path = super::build::example_component("send_user_message")?;
+        let path = super::build::example_component("maestro-extensions-wasm", "send_user_message")?;
         let harness = super::block_on(Harness::start(&path)).map_err(|error| error.to_string())?;
         let keys = keys(|name| harness.callback(name).map_err(|error| error.to_string()))?;
         Ok(Self { harness, keys })

@@ -376,7 +376,7 @@ fn github_issue_autocomplete_caches_command_and_json_failures() -> Result<(), St
 
 #[test]
 fn github_issue_autocomplete_component_runs_startup_preload_and_completion() -> Result<(), String> {
-    let path = super::build::example_component("github_issue_autocomplete")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "github_issue_autocomplete")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|error| error.to_string())?;

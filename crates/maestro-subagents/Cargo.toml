@@ -1,0 +1,28 @@
+[package]
+name = "maestro-subagents"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Authored agents running in isolated Maestro children."
+
+[lib]
+crate-type = ["rlib"]
+
+[[example]]
+name = "component"
+path = "src/component.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+maestro-extensions-wasm = { path = "../maestro-extensions-wasm" }
+maestro-json = { path = "../maestro-json" }
+serde.workspace = true
+serde_json.workspace = true
+futures-util.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
+[lints]
+workspace = true

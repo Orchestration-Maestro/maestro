@@ -18,6 +18,9 @@ mod compilation_cache;
 mod completion_providers;
 mod component_events;
 mod component_loading;
+
+#[path = "../../maestro-extensions-wasm/src/tests/build/examples.rs"]
+mod component_build;
 mod components;
 mod editor_factories;
 mod exec_io;
@@ -39,6 +42,7 @@ mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
 mod startup;
+mod subagent_example;
 mod summarize_example;
 mod synchronous_reentry;
 mod wasi_access;

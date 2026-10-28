@@ -1889,7 +1889,7 @@ impl Harness {
     /// # Errors
     /// Returns the build, compilation or instantiation failure as text.
     pub fn example(name: &str) -> Result<Self, String> {
-        let path = super::build::example_component(name)?;
+        let path = super::build::example_component("maestro-extensions-wasm", name)?;
         let (engine, component) =
             super::build::compile(&path).map_err(|error| error.to_string())?;
         super::block_on(Self::from_compiled(&engine, &component)).map_err(|error| error.to_string())

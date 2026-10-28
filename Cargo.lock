@@ -4463,6 +4463,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-subagents"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "maestro-dependencies",
+ "maestro-extensions-wasm",
+ "maestro-json",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-terminal"
 version = "0.1.0"
 dependencies = [
