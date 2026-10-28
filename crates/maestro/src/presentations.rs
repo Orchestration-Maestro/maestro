@@ -73,8 +73,8 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
                 callbacks,
             ));
             Ok(PresentedSelector {
-                component: component.clone(),
-                focus: component,
+                focus: component.get_resource_list().clone(),
+                component,
             })
         }),
     }
