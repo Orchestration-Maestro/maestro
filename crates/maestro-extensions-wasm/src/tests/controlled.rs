@@ -1497,7 +1497,14 @@ impl Imports for Controlled {
     fn get_active_tools(&self) -> ExtensionResult<Vec<String>> {
         let o = self.observed.borrow();
         o.actions.check()?;
-        serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
+        serde_json::from_value(
+            o.actions
+                .value
+                .get("getActiveTools")
+                .unwrap_or(&o.actions.value)
+                .clone(),
+        )
+        .map_err(|e| e.to_string())
     }
     fn schema_invoke(
         &self,
@@ -1535,7 +1542,10 @@ impl Imports for Controlled {
         self.observed.borrow().actions.record()
     }
     fn get_thinking_level(&self) -> ExtensionResult<String> {
-        self.observed.borrow().actions.record()
+        self.observed
+            .borrow()
+            .actions
+            .record_for("getThinkingLevel")
     }
     fn call<'a>(
         &'a self,
@@ -1563,20 +1573,7 @@ impl Imports for Controlled {
                 "setModel",
                 &serde_json::json!([serde_json::from_str::<serde_json::Value>(&model).unwrap()]),
             )?;
-            self.observed
-                .borrow()
-                .actions
-                .value
-                .as_bool()
-                .ok_or_else(|| {
-                    self.observed
-                        .borrow()
-                        .actions
-                        .value
-                        .as_str()
-                        .unwrap_or("missing boolean reply")
-                        .to_owned()
-                })
+            self.observed.borrow().actions.boolean("setModel")
         })
     }
 
@@ -2901,6 +2898,12 @@ impl Imports for Controlled {
             .shortcuts
             .push((shortcut.into(), description.map(str::to_owned)));
         observed.register(format!("shortcut {shortcut}"), handler.id);
+        Ok(())
+    }
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("load-time {contributions}"));
         Ok(())
     }
     fn register_flag(&self, name: &str, options: &crate::FlagOptions) -> ExtensionResult<()> {

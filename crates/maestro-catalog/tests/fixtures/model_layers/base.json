@@ -1,0 +1,51 @@
+{
+  "providers": {
+    "openai": {
+      "modelOverrides": {
+        "gpt-4o": {
+          "contextWindow": 12345,
+          "cost": {
+            "input": 1,
+            "output": 2
+          }
+        }
+      }
+    },
+    "layered": {
+      "baseUrl": "https://base.invalid/v1",
+      "api": "openai-completions",
+      "apiKey": "LAYERED_KEY",
+      "headers": {
+        "X-Base": "base"
+      },
+      "models": [
+        {
+          "id": "retained",
+          "name": "Base retained",
+          "maxTokens": 777
+        },
+        {
+          "id": "replaced",
+          "name": "Base replaced",
+          "contextWindow": 9999
+        },
+        {
+          "id": "replaced",
+          "name": "Duplicate base replaced",
+          "contextWindow": 5555
+        }
+      ],
+      "compat": {
+        "openRouterRouting": {
+          "order": [
+            "base"
+          ],
+          "max_price": {
+            "prompt": 1,
+            "completion": 2
+          }
+        }
+      }
+    }
+  }
+}
