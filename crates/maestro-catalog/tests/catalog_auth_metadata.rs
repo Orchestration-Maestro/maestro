@@ -90,7 +90,8 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         ("ENV", AuthSource::Environment, Some("ENV")),
     ] {
         let registry = support::registry_with(
-            &request_support::document(&format!(r#""apiKey":"{field}""#), ""),
+            // A JSON string, so a Windows marker path keeps its backslashes.
+            &request_support::document(&format!(r#""apiKey":{}"#, serde_json::json!(field)), ""),
             crate::support::forbidden(),
         );
         assert_eq!(

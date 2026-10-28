@@ -74,11 +74,7 @@ impl<C: FnMut() -> u128> App<C> {
             self.emit_pane_updated(workspace, pane).await;
         }
         for index in self.state.expire_workspace_metadata_tokens(now) {
-            if let Some(workspace) = self.workspace_info(index) {
-                self.event_hub.push(
-                    maestro_protocol::events::EventData::WorkspaceMetadataUpdated { workspace },
-                );
-            }
+            self.emit_workspace_metadata_updated(index);
         }
         true
     }

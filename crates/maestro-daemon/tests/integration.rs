@@ -27,7 +27,9 @@ mod repository_support;
 mod settings_routes;
 #[cfg(target_os = "linux")]
 mod support;
+mod tab_commands;
 mod tab_status;
 mod terminal_titles;
 mod window_title;
 mod workspace_aggregate;
+mod workspace_commands;

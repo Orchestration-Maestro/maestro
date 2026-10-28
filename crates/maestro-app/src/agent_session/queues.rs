@@ -96,7 +96,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             },
             AgentEvent::MessageEnd { message },
         ] {
-            self.emit(&AgentSessionEvent::Agent(Arc::new(RwLock::new(event))));
+            self.emit_agent_event(Arc::new(RwLock::new(event)));
         }
         Ok(())
     }

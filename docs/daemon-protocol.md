@@ -97,8 +97,54 @@ daemon already took is not undone.
   written once its whole line was written and flushed, or once that attempt failed.
   A client that closed its end is not a write failure.
 
-Commands without a daemon handler yet fail with `not_implemented` and
-`method not implemented yet`.
+## Workspace and tab commands
+
+The daemon answers the workspace commands `workspace.list`, `get`, `create`, `focus`,
+`rename`, `move`, `move_block`, `report_metadata` and `close`, and the tab commands
+`tab.list`, `get`, `create`, `focus`, `rename`, `move` and `close`. A workspace target
+is its stable id, such as `w1`, or a position written `w_N` or `N`. A tab target is
+`w1:t2`, or a position written `w1:2` or `t_w1_2`. A target that names nothing fails
+with `workspace_not_found` or `tab_not_found`.
+
+- `workspace.create` and `tab.create` start the new root pane in `cwd`. Without one,
+  the pane starts where the `newPaneCwd` setting points, which by default is the
+  focused pane's directory. The result holds the new workspace or tab and its root
+  pane. With `focus: false` the existing active workspace and tab stay active.
+  Workspace creation activates the new workspace if none was active.
+- `env` gives the new root pane extra variables. A key must be non-empty and hold no
+  `=` or NUL, and a value must hold no NUL. Otherwise the command fails with
+  `invalid_env` before any pane starts.
+- A move takes an insertion index from 0 to the number of workspaces or tabs.
+  `workspace.move_block` moves its workspaces, in the order given, before
+  `before_workspace_id` or to the end. A move that changes nothing publishes no event.
+- Closing a workspace, or its last tab, publishes the workspace's final record. While
+  close confirmation is on, closing the last tab of a repository with open linked
+  worktrees fails with `confirmation_required`.
+
+`workspace.report_metadata` sets or clears at most 16 tokens per report, and a
+workspace holds at most 32. A key is at most 32 ASCII letters, digits, `_` or `-`. A
+value is trimmed, loses its control characters and keeps at most 80 characters; a
+blank value clears its token. `source` names the reporter in at most 80 ASCII letters,
+digits, `:`, `.`, `_` or `-`. `ttl_ms`, from 1 to 86400000, makes the tokens expire.
+With `seq`, a report no newer than the reporter's last one has no effect, and at most
+32 reporters can use `seq` on one workspace.
+
+`notification.show` shows a workspace notification when notifications go to the
+workspace. CR, LF and tab become spaces; other control characters go. Whitespace
+runs become one space. The title keeps at most 80 characters and the body at most
+240. An empty title fails with
+`invalid_params`. The result reason is `busy` while another notification shows,
+`rate_limited` within a second of the last one, and `disabled` when notifications are
+off. Terminal and system notifications need an attached client, so the daemon answers
+`no_foreground_client`.
+
+`server.reload_config` reloads the settings and reports what applied.
+`server.agent_manifests` reports the detection manifests in use and the last catalog
+check. `server.reload_agent_manifests` reloads them and restarts detection in every
+pane.
+
+The other command families fail with `not_implemented` and
+`method not implemented yet` until the daemon handles them.
 
 ## Binary screen channel
 

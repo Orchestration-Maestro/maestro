@@ -511,6 +511,13 @@ order. YAML parsing remains entirely native.
 native parser causes and coordinates. Ordinary text is not trimmed; a present
 header selects the native trimmed body and newline normalization.
 
+`frontmatter::parse_yaml(&api, content)` reads one complete YAML document through
+the same native parser. It returns `FrontmatterValue` directly, retains empty/null
+roots and authored mapping order, and accepts scalar and sequence roots. Numbers
+retain signed zero, NaN and infinities without JSON conversion. Multiple documents
+are rejected with native causes and source coordinates. Header extraction and
+null-to-empty-map normalization apply only to `parse_frontmatter`.
+
 ### Conversation and output
 
 `convert_to_llm` delegates application-message projection to the native session
@@ -554,3 +561,7 @@ host's installation facts, not the component's inherited environment.
 time zone. It returns the en-US pattern `M/D/YYYY, h:mm:ss AM`, including seconds,
 with unpadded month, day and hour fields on a twelve-hour clock. It does not select
 other locale patterns. The guest carries no time-zone data; host failures remain errors.
+
+`utils::local_time_string(&api, timestamp)` formats an instant, given in milliseconds
+since the Unix epoch, as the host's local time in the same twelve-hour form,
+`h:mm:ss AM`. An instant outside the host's calendar reads as `Invalid Date`.

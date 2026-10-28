@@ -517,9 +517,17 @@ mod tests {
             assert_eq!(request(&storage, "r7").await.unwrap(), None);
             let errors = storage.drain_errors();
             assert!(!errors.is_empty());
+            // The host's own refusal: Unix reports a directory, Windows denies access.
+            let refused = std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(false)
+                .open(&sidecar)
+                .unwrap_err()
+                .kind();
             for error in &errors {
                 let io = error.downcast_ref::<std::io::Error>().unwrap();
-                assert_eq!(io.kind(), std::io::ErrorKind::IsADirectory);
+                assert_eq!(io.kind(), refused);
             }
             assert_eq!(provider.refreshes.load(Ordering::SeqCst), 0);
             assert!(

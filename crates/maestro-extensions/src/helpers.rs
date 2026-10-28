@@ -30,6 +30,7 @@ pub fn call(operation: &str, data: &str) -> Result<String, String> {
     }
     match operation {
         "time.local_date_time_string" => time::local_date_time_string(data),
+        "time.local_time_string" => time::local_time_string(data),
         "visible_width" => {
             let (text,): (String,) = decode(data)?;
             encode(&maestro_tui::visible_width(&text))
@@ -124,7 +125,7 @@ fn columns(operation: &str, data: &str) -> Result<String, String> {
 }
 
 /// Complete native metadata model, not a JSON number projection.
-pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter};
+pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter, parse_yaml};
 
 /// Native size formatting over the complete floating-point argument domain.
 pub use maestro_tools::format_size;

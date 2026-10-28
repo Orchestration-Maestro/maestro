@@ -3,7 +3,7 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
-use support::Workspace;
+use support::{Workspace, native_path};
 
 /// The canonical workspace declaration used by corrected fixtures.
 const JSON: &str = "{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }";
@@ -106,7 +106,7 @@ fn member_error(workspace: &Workspace, directory: &str, section: &str, alias: &s
         workspace
             .root
             .path()
-            .join(directory)
+            .join(native_path(directory))
             .join("Cargo.toml")
             .display()
     )
