@@ -1,6 +1,9 @@
 //! Play DOOM in a retained terminal overlay.
 mod engine_bindings;
 engine_bindings::generate!("player");
+pub mod doom_component;
+pub mod doom_engine;
+pub mod doom_keys;
 mod factory;
 pub use factory::factory;
 
