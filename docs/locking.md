@@ -11,7 +11,9 @@ with SHA-256. For a missing file it uses the canonical parent plus the leaf.
 Lock and recovery files live in `~/.maestro/state/file-locks`, never under a
 configuration-root override. Home selection uses `HOME` on Unix when present,
 otherwise the account home directory. Processes sharing a target must share
-that home; overriding it selects a different lock namespace.
+that home; overriding it selects a different lock namespace. Different hard-link
+names are separate identities, so concurrent writes through them are outside this
+contract.
 
 `maestro_lock::replace` and path-based acquisition share that identity and
 recovery owner. Before any append or rewrite, the holder replays a pending

@@ -1132,7 +1132,9 @@ additions, because nothing local can add one. `guards` is not a lock name.
    `~/.maestro/state/file-locks` do not depend on the session leaf length or the
    configuration root. Symbolic-link aliases share exclusion without changing
    authored manager paths. Processes must share the same account home directory;
-   overriding that home selects another lock namespace.
+   overriding that home selects another lock namespace. Different hard-link names
+   are separate identities, so concurrent writes through them are outside this
+   contract.
    Settings keep their bounded acquisition. The operating system releases the
    lock when its holder exits; no separate stale-lock recovery is needed. Each
    holder keeps the lock for one write only. Ordinary writers hold it only while
