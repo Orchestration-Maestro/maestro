@@ -206,6 +206,11 @@ path = "../../examples/extensions/questionnaire.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "rainbow_editor"
+path = "../../examples/extensions/rainbow_editor.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]

@@ -129,6 +129,8 @@ resolving conflicts, then regenerate the table.
 | `questionnaire.rs` | A questionnaire tool with selectable options and inline custom answers. |
 | `questionnaire/interface.rs` | Retained questionnaire navigation and host-backed inline editor. |
 | `questionnaire/rendering.rs` | Questionnaire frames and compact tool-call/result summaries. |
+| `rainbow_editor.md` | Rainbow editor |
+| `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `send_user_message.md` | Send user message |
