@@ -127,8 +127,9 @@ may depend directly on it.
 
 The [shared filesystem effect contract](specs/maestro-port.md#crates-and-delivery-order)
 declares `maestro-watch` and `maestro-lock` as core leaves below layer 0, including
-when their implementations are absent. Neither may depend on a workspace crate,
-including `maestro-path`. Only theme/application may consume watch; only
+when their implementations are absent. Watch has no workspace dependency; lock
+may use the optional `maestro-path` utility without changing its leaf status.
+Only theme/application may consume watch; only
 settings/credentials/workspace may consume lock. Watch creation/close, injected watch/timer
 interfaces and native notifications belong to watch; bounded synchronous
 contention acquisition of caller-opened files and atomic byte replacement belong

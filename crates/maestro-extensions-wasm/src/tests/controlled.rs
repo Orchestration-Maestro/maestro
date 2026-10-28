@@ -539,6 +539,50 @@ fn theme_set_result(result: &serde_json::Value) -> crate::ThemeSetResult {
 }
 
 impl Controlled {
+    /// Records the compaction binding of `session` and forwards the request to the action host.
+    fn compact_binding(
+        &self,
+        session: &Session,
+        instructions: Option<&CompactionData>,
+        complete: Option<&Callback>,
+        error: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observed.borrow().actions.check()?;
+        let cwd = session.cwd()?;
+        self.observed
+            .borrow_mut()
+            .log(format!("compact binding {cwd}"));
+        super::action_host::compact(
+            &mut self.observed.borrow_mut(),
+            instructions.and_then(|data| data.custom_instructions.as_deref()),
+            complete.map(|c| c.id),
+            error.map(|c| c.id),
+            instructions.is_some(),
+        )
+    }
+    /// Acquires the user interface owner for the session working in `cwd`.
+    fn acquire_ui(&self, cwd: &str) -> ExtensionResult<Ui> {
+        self.observed.borrow().catalog.check()?;
+        let key = self.observed.borrow_mut().ui.acquire(cwd);
+        Ok(Ui {
+            key,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    /// Whether the scripted catalog reports an interface.
+    fn catalog_has_ui(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.has_ui)
+    }
+    /// A reader over the scripted catalog's model registry.
+    fn catalog_registry(&self) -> ExtensionResult<Reader> {
+        self.observed.borrow().catalog.check()?;
+        let data = self.observed.borrow().catalog.registry.clone();
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
     /// Records one theme request on `resource` and answers it from the controlled host.
     fn ui_themed(
         &self,
@@ -1407,18 +1451,7 @@ impl Imports for Controlled {
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
-        self.observed.borrow().actions.check()?;
-        let cwd = context.session.cwd()?;
-        self.observed
-            .borrow_mut()
-            .log(format!("compact binding {cwd}"));
-        super::action_host::compact(
-            &mut self.observed.borrow_mut(),
-            instructions.and_then(|data| data.custom_instructions.as_deref()),
-            complete.map(|c| c.id),
-            error.map(|c| c.id),
-            instructions.is_some(),
-        )
+        self.compact_binding(&context.session, instructions, complete, error)
     }
     fn command_compact(
         &self,
@@ -1427,18 +1460,7 @@ impl Imports for Controlled {
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
-        self.observed.borrow().actions.check()?;
-        let cwd = context.session.cwd()?;
-        self.observed
-            .borrow_mut()
-            .log(format!("compact binding {cwd}"));
-        super::action_host::compact(
-            &mut self.observed.borrow_mut(),
-            instructions.and_then(|data| data.custom_instructions.as_deref()),
-            complete.map(|c| c.id),
-            error.map(|c| c.id),
-            instructions.is_some(),
-        )
+        self.compact_binding(&context.session, instructions, complete, error)
     }
 
     fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
@@ -2453,26 +2475,15 @@ impl Imports for Controlled {
     }
 
     fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
-        self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
-        Ok(Ui {
-            key,
-            _lease: Lease::new(&self.observed),
-        })
+        self.acquire_ui(&context.session.cwd)
     }
     fn has_ui(&self, context: &Context) -> ExtensionResult<bool> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.has_ui)
+        self.catalog_has_ui()
     }
     fn model_registry(&self, context: &Context) -> ExtensionResult<Reader> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let data = self.observed.borrow().catalog.registry.clone();
-        Ok(Reader {
-            data,
-            _lease: Lease::new(&self.observed),
-        })
+        self.catalog_registry()
     }
     fn model(&self, context: &Context) -> ExtensionResult<Option<String>> {
         let _ = context;
@@ -2535,26 +2546,15 @@ impl Imports for Controlled {
         Ok(self.observed.borrow().catalog.data.prompt.clone())
     }
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
-        self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
-        Ok(Ui {
-            key,
-            _lease: Lease::new(&self.observed),
-        })
+        self.acquire_ui(&context.session.cwd)
     }
     fn command_has_ui(&self, context: &CommandContext) -> ExtensionResult<bool> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.has_ui)
+        self.catalog_has_ui()
     }
     fn command_model_registry(&self, context: &CommandContext) -> ExtensionResult<Reader> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let data = self.observed.borrow().catalog.registry.clone();
-        Ok(Reader {
-            data,
-            _lease: Lease::new(&self.observed),
-        })
+        self.catalog_registry()
     }
     fn command_model(&self, context: &CommandContext) -> ExtensionResult<Option<String>> {
         let _ = context;

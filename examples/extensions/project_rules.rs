@@ -3,6 +3,7 @@
 //! At each session start the extension scans `.claude/rules/` in the working directory for
 //! Markdown files at any depth. Every agent run then gets their paths in its system prompt, so
 //! the agent can read the ones that apply. The files are never read here.
+// maestro-component: MAESTRO_PROJECT_RULES_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

@@ -11,6 +11,8 @@
 //! share one cleared child per distinct environment through [`run_per_environment`].
 
 mod alone;
+#[cfg(windows)]
+mod console;
 mod environment;
 mod error;
 mod proof;
@@ -18,6 +20,8 @@ mod selection;
 mod test_process;
 
 pub use alone::run_alone;
+#[cfg(windows)]
+pub use console::on_console;
 pub use environment::{CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
 pub use proof::{CheckedChild, CheckedStdout};

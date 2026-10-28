@@ -47,8 +47,9 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
 /// Spells a native path the way a component's standard library opens it.
 ///
 /// The component's libc treats only `/` as a separator and only a leading `/`
-/// as absolute. The host names each filesystem root it exposes with this same
-/// spelling. Unix paths already have it and stay unchanged.
+/// as absolute. The host lists one root, `/`, and opens each path below it as
+/// the native path [`native_path`] gives back. Unix paths already have this
+/// spelling and stay unchanged.
 #[must_use]
 pub fn guest_path(path: &str) -> String {
     if cfg!(windows) {
@@ -58,80 +59,135 @@ pub fn guest_path(path: &str) -> String {
     }
 }
 
-/// The Windows spelling, kept apart so every host checks it.
+/// Spells a component path as the native path the host opens.
 ///
-/// A drive path gains a leading `/` and an uppercase letter, so `c:\x`
-/// reaches the `/C:` root, and a share `\\server\share` becomes
-/// `/SERVER/SHARE`: the form the component's libc reports for its cwd.
-/// Windows ignores letter case in drive, server and share names, while the
-/// component matches roots byte for byte, so each spelling of one root gets
-/// the same name. Names uppercase as Windows compares them, one character at
-/// a time. The verbatim `\\?\` prefix names the same file and is
-/// dropped.
-fn win32_guest_path(path: &str) -> String {
-    let path = match path.strip_prefix(r"\\?\") {
-        Some(share) if share.starts_with(r"UNC\") => format!(r"\{}", &share[3..]),
-        Some(local) => local.to_owned(),
-        None => path.to_owned(),
-    }
-    .replace('\\', "/");
-    match path.as_bytes() {
-        [letter, b':', ..] if letter.is_ascii_alphabetic() => {
-            format!("/{}{}", letter.to_ascii_uppercase() as char, &path[1..])
-        }
-        [b'/', b'/', ..] => {
-            let root = path[2..]
-                .match_indices('/')
-                .nth(1)
-                .map_or(path.len(), |(at, _)| at + 2);
-            let name: String = path[1..root].chars().map(upcase).collect();
-            format!("{name}{}", &path[root..])
-        }
-        _ => path,
+/// It reverses [`guest_path`]. Unix paths stay unchanged.
+#[must_use]
+pub fn native_path(path: &str) -> String {
+    if cfg!(windows) {
+        win32_native_path(path)
+    } else {
+        path.to_owned()
     }
 }
 
-/// Uppercases one character the way Windows compares names.
+/// The Windows component spelling, kept apart so every host checks it.
 ///
-/// Windows maps each UTF-16 unit to at most one unit, so a character whose
-/// uppercase form is longer, such as `ß`, or that needs two units keeps its
-/// case. Expanding it would give distinct shares like `ß` and `SS` one root.
-fn upcase(character: char) -> char {
-    let mut upper = character.to_uppercase();
-    match (upper.next(), upper.next()) {
-        (Some(single), None) if character.len_utf16() == 1 => single,
-        _ => character,
+/// A drive path gains a leading `/`, so `C:\x` is `/C:/x`; its verbatim
+/// `\\?\` prefix names the same file and is dropped. A share
+/// `\\server\share\x` becomes `/?/UNC/server/share/x`, and any other verbatim
+/// or device path keeps its prefix as `/?/`. No Windows file name is `?`, so
+/// neither form can be read as a path below the current drive's root, which is
+/// what any other leading `/` names. Names keep their spelling, so Windows
+/// alone decides which spellings name one drive or share.
+fn win32_guest_path(path: &str) -> String {
+    let path = path.replace('\\', "/");
+    match path
+        .strip_prefix("//?/")
+        .or_else(|| path.strip_prefix("//./"))
+    {
+        Some(local) if is_drive(local) => format!("/{local}"),
+        Some(verbatim) => format!("/?/{verbatim}"),
+        None if is_drive(&path) => format!("/{path}"),
+        None => match path.strip_prefix("//") {
+            Some(share) => format!("/?/UNC/{share}"),
+            None => path,
+        },
     }
+}
+
+/// The Windows native spelling, kept apart so every host checks it.
+///
+/// It reverses [`win32_guest_path`]: `/C:/x` is `C:\x`, a bare `/C:` is the
+/// drive's root, `/?/UNC/server/share/x` is `\\server\share\x` and any other
+/// `/?/x` is `\\?\x`. Another absolute path, such as `/tmp/x`, stays below the
+/// current drive's root, as it does natively. Relative paths only change
+/// separators.
+fn win32_native_path(path: &str) -> String {
+    let path = path.replace('/', "\\");
+    let Some(below) = path.strip_prefix('\\') else {
+        return path;
+    };
+    if let Some(share) = below.strip_prefix(r"?\UNC\") {
+        format!(r"\\{share}")
+    } else if let Some(verbatim) = below.strip_prefix(r"?\") {
+        format!(r"\\?\{verbatim}")
+    } else if is_drive(below) && below.len() == 2 {
+        format!(r"{below}\")
+    } else if is_drive(below) {
+        below.to_owned()
+    } else {
+        path
+    }
+}
+
+/// Whether a path starts with a Windows drive letter and its colon.
+fn is_drive(path: &str) -> bool {
+    matches!(path.as_bytes(), [letter, b':', ..] if letter.is_ascii_alphabetic())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{call, win32_guest_path};
+    use super::{call, win32_guest_path, win32_native_path};
 
-    /// Windows drive, share and verbatim paths reach the component's roots.
-    /// Share names uppercase one UTF-16 unit at a time, as Windows compares
-    /// them, so shares Windows tells apart keep separate roots.
+    /// Windows drive, share and verbatim paths take spellings the host maps back.
+    /// Server and share names keep their spelling, so Windows alone decides which
+    /// spellings name one share: `ß` and `SS` stay apart.
     #[test]
     fn windows_paths_take_the_component_spelling() {
         for (native, guest) in [
             (r"C:\Users\me\file Ω name", "/C:/Users/me/file Ω name"),
             ("C:/Users/me", "/C:/Users/me"),
-            (r"d:\data", "/D:/data"),
+            (r"d:\data", "/d:/data"),
             (r"C:\", "/C:/"),
             (r"\\?\C:\Users\me", "/C:/Users/me"),
-            (r"\\server\share\dir", "/SERVER/SHARE/dir"),
-            (r"\\Server\sHare Ω\Dir", "/SERVER/SHARE Ω/Dir"),
-            (r"\\server\ω\Dir", "/SERVER/Ω/Dir"),
-            (r"\\localhost\straße\x", "/LOCALHOST/STRAßE/x"),
-            (r"\\localhost\strasse\x", "/LOCALHOST/STRASSE/x"),
-            (r"\\localhost\𐐨\x", "/LOCALHOST/𐐨/x"),
-            (r"\\?\UNC\server\share\dir", "/SERVER/SHARE/dir"),
-            ("//server/share", "/SERVER/SHARE"),
-            ("//server", "/SERVER"),
+            (r"\\server\share\dir", "/?/UNC/server/share/dir"),
+            (r"\\Server\sHare Ω\Dir", "/?/UNC/Server/sHare Ω/Dir"),
+            (r"\\server\ω\Dir", "/?/UNC/server/ω/Dir"),
+            (r"\\localhost\straße\x", "/?/UNC/localhost/straße/x"),
+            (r"\\localhost\strasse\x", "/?/UNC/localhost/strasse/x"),
+            (r"\\localhost\ᾀ\x", "/?/UNC/localhost/ᾀ/x"),
+            (r"\\localhost\𐐨\x", "/?/UNC/localhost/𐐨/x"),
+            (r"\\?\UNC\server\share\dir", "/?/UNC/server/share/dir"),
+            (r"\\?\Volume{0}\dir", "/?/Volume{0}/dir"),
+            (r"\\.\pipe\name", "/?/pipe/name"),
+            ("//server/share", "/?/UNC/server/share"),
+            ("//server", "/?/UNC/server"),
+            (r"\Windows\notes", "/Windows/notes"),
             (r"..\sibling\file", "../sibling/file"),
             ("relative/file", "relative/file"),
         ] {
             assert_eq!(win32_guest_path(native), guest, "{native:?}");
+        }
+    }
+
+    /// The host opens each component spelling as the native path it came from.
+    /// A Unix-style absolute path names the current drive's root, never a share.
+    #[test]
+    fn windows_component_paths_map_back_to_native_paths() {
+        for (guest, native) in [
+            ("/C:/Users/me/file Ω name", r"C:\Users\me\file Ω name"),
+            ("/d:/data", r"d:\data"),
+            ("/C:", r"C:\"),
+            ("/C:/", r"C:\"),
+            ("/?/UNC/server/share/dir", r"\\server\share\dir"),
+            ("/?/UNC/localhost/straße/x", r"\\localhost\straße\x"),
+            ("/?/Volume{0}/dir", r"\\?\Volume{0}\dir"),
+            ("/tmp/x", r"\tmp\x"),
+            ("/", r"\"),
+            ("../sibling/file", r"..\sibling\file"),
+            ("relative/file", r"relative\file"),
+        ] {
+            assert_eq!(win32_native_path(guest), native, "{guest:?}");
+        }
+        for native in [
+            r"C:\Users\me",
+            r"\\server\share\dir",
+            r"\\?\Volume{0}\dir",
+            r"\Windows\notes",
+            r"..\sibling\file",
+        ] {
+            assert_eq!(win32_native_path(&win32_guest_path(native)), native);
         }
     }
 

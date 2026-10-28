@@ -277,30 +277,36 @@ impl SessionConnection {
 
 impl Connection {
     /// Runs a workspace command through the caller's operations, its events written on this
-    /// connection's output.
+    /// connection's output, and writes its response, whose write attempt settles the
+    /// operation's write completion.
     pub(super) async fn run_workspace_command(
         self: &Rc<Self>,
         id: Option<String>,
         command: String,
         workspace_command: workspace::RpcCommand,
-    ) -> RpcResponse {
+    ) -> Reply {
         let Some(workspace) = &self.workspace else {
-            return RpcResponse::Error {
+            return Reply::Handled(Some(RpcResponse::Error {
                 id: None,
                 error: format!("Unknown command: {command}"),
                 command: Some(command),
-            };
+            }));
         };
         let connection = Rc::downgrade(self);
         let events = Rc::new(move |event: workspace_schema::EventData| {
             write_to(&connection, RpcRecord::WorkspaceEvent(&event))
         });
-        let result = workspace.execute(workspace_command, events).await;
-        RpcResponse::Workspace(Box::new(workspace::RpcResponse {
+        let (attempted, write_complete) = tokio::sync::oneshot::channel();
+        let result = workspace
+            .execute(workspace_command, events, write_complete)
+            .await;
+        let response = RpcResponse::Workspace(Box::new(workspace::RpcResponse {
             id,
             command,
             result,
-        }))
+        }));
+        drop(self.send(RpcRecord::Response(&response), Some(attempted)));
+        Reply::Handled(None)
     }
 }
 
