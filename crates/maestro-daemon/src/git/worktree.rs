@@ -1,13 +1,13 @@
 //! Worktree names, checkout paths and the Git commands that add, remove and list worktrees.
 use super::discovery::{
-    canonicalize_best_effort_path, discover_git_paths, git_dir_for_repo_root, git_output,
+    authored_git_dir_for_repo_root, canonicalize_best_effort_path, discover_git_paths, git_output,
 };
 use crate::paths::expand_home_path;
 use maestro_process::SpawnSyncError;
 use std::{
     ffi::OsStr,
     fmt,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::Output,
 };
 
@@ -347,17 +347,36 @@ fn recover_leftover(
 /// Whether the `.git` link file of the checkout names an admin folder under the repository's
 /// `worktrees` directory.
 ///
-/// The link resolves the way repository discovery resolves it: native bytes kept, `.` and `..`
-/// segments folded, and no admin folder required to exist.
+/// The link keeps native bytes and no admin folder is required to exist, but the folder it names
+/// is the one the file system reaches, so a symbolic link before a `..` segment is followed first.
+/// A link whose folder cannot be established names no admin folder.
 fn links_to_repository(repo_root: &Path, path: &Path) -> bool {
-    let Ok(Some(admin)) = git_dir_for_repo_root(path) else {
+    let Ok(Some(admin)) = authored_git_dir_for_repo_root(path) else {
+        return false;
+    };
+    let Some(admin) = resolve_through_links(&admin) else {
         return false;
     };
     let Some(paths) = discover_git_paths(repo_root) else {
         return false;
     };
     let worktrees = canonicalize_best_effort_path(&paths.git_common_dir).join("worktrees");
-    canonicalize_best_effort_path(&admin).starts_with(worktrees)
+    admin.starts_with(worktrees)
+}
+
+/// The folder `path` names on disk: its longest existing prefix canonicalized, links followed
+/// before any `..` after them, plus the segments that do not exist yet.
+///
+/// Returns `None` when a segment that does not exist is followed by `.` or `..`, because no
+/// folder is then named.
+fn resolve_through_links(path: &Path) -> Option<PathBuf> {
+    let (prefix, resolved) = path
+        .ancestors()
+        .find_map(|prefix| Some((prefix, std::fs::canonicalize(prefix).ok()?)))?;
+    let rest = path.strip_prefix(prefix).ok()?;
+    rest.components()
+        .all(|part| matches!(part, Component::Normal(_)))
+        .then(|| resolved.join(rest))
 }
 
 /// Whether the checkout at `path` has modified or untracked files.

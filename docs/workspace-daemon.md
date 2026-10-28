@@ -690,7 +690,9 @@ asked. Without it Git refuses a checkout that holds modified or untracked files;
 lets a caller look first. When a forced removal gets "not a working tree" from Git, the
 directory is deleted only if Git does not list it and its `.git` link names an admin folder
 of the same repository, even when the caller holds the repository through a symbolic link.
-Any other directory stays and Git's message is returned.
+The link is followed the way the file system follows it: a symbolic link before a `..`
+segment decides which folder the segment leaves, and a `..` after a segment that does not
+exist names no folder. Any other directory stays and Git's message is returned.
 
 `list` returns the entries of `git worktree list --porcelain -z` with their branch and their
 bare, detached and prunable flags. Paths keep the bytes Git printed, including bytes that
