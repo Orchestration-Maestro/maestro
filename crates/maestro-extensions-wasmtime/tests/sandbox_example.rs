@@ -10,7 +10,12 @@ use std::{path::Path, rc::Rc, sync::RwLock};
 /// Loads the actual component with a disposable configuration directory.
 async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
     let path = std::env::var("MAESTRO_SANDBOX_COMPONENT").unwrap();
-    let bus = super::components::TracedBus::new();
+    let bus = maestro_extensions::create_event_bus_for::<Local>(
+        Rc::new(|tail| {
+            drop(tokio::task::spawn_local(tail));
+        }),
+        Rc::new(|error| panic!("unexpected sandbox tail error: {error:?}")),
+    );
     let runtime = create_extension_runtime::<Local>();
     let bin_dir = root.to_str().unwrap().to_owned();
     runtime.set_tool_construction(maestro_extensions::ToolConstruction {
@@ -29,7 +34,7 @@ async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
             },
         ),
         root.to_str().unwrap().into(),
-        bus.controller.for_extension(),
+        bus.for_extension(),
         runtime.clone(),
         Some(path),
     )
@@ -43,6 +48,9 @@ async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
         maestro_theme::LiveTheme::default(),
     ))
 }
+
+#[cfg(target_os = "linux")]
+mod linux;
 
 #[test]
 fn sandbox_registers_opt_in_controls_and_bash_override() {
