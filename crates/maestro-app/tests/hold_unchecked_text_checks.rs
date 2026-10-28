@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::support::session_harness::{
-    HarnessOptions, Scripted, echo_tools, harness, on_task_set, prompt_to_end,
+    Harness, HarnessOptions, Scripted, echo_tools, harness, on_task_set, prompt_to_end,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
@@ -46,10 +46,8 @@ fn reply_with_call() -> Scripted {
     }
 }
 
-/// Runs one prompt on a session over `options` and returns every agent event its listeners
-/// heard, serialized, in order.
-async fn heard(options: HarnessOptions) -> Vec<String> {
-    let h = harness(options).await;
+/// Starts recording each agent event the session's listeners hear, serialized, in order.
+fn record_heard(h: &Harness) -> Rc<RefCell<Vec<String>>> {
     let events = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&events);
     drop(h.session.subscribe(Rc::new(move |event| {
@@ -58,6 +56,26 @@ async fn heard(options: HarnessOptions) -> Vec<String> {
                 .push(serde_json::to_string(&*event.read().unwrap()).unwrap());
         }
     })));
+    events
+}
+
+/// Starts recording each event the agent delivers to its own listeners, serialized, in order.
+fn record_delivered(h: &Harness) -> Rc<RefCell<Vec<String>>> {
+    let events = Rc::new(RefCell::new(Vec::new()));
+    let seen = Rc::clone(&events);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        seen.borrow_mut()
+            .push(serde_json::to_string(&*event.read().unwrap()).unwrap());
+        Box::pin(std::future::ready(Ok(())))
+    })));
+    events
+}
+
+/// Runs one prompt on a session over `options` and returns every agent event its listeners
+/// heard, serialized, in order.
+async fn heard(options: HarnessOptions) -> Vec<String> {
+    let h = harness(options).await;
+    let events = record_heard(&h);
     prompt_to_end(&h, "hello", PromptOptions::default()).await;
     events.take()
 }
@@ -291,22 +309,7 @@ fn listeners_hear_the_agent_events_unchanged_while_nothing_is_held() {
             open.settings = settings;
             open.base_tools_override = Some(echo_tools(Rc::new(RefCell::new(false))));
             let h = harness(open).await;
-            let agent = Rc::new(RefCell::new(Vec::new()));
-            let session = Rc::new(RefCell::new(Vec::new()));
-            let (from_agent, from_session) = (Rc::clone(&agent), Rc::clone(&session));
-            let _subscription = h.session.agent().subscribe(Rc::new(move |event, _| {
-                from_agent
-                    .borrow_mut()
-                    .push(serde_json::to_string(&*event.read().unwrap()).unwrap());
-                Box::pin(std::future::ready(Ok(())))
-            }));
-            drop(h.session.subscribe(Rc::new(move |event| {
-                if let AgentSessionEvent::Agent(event) = event {
-                    from_session
-                        .borrow_mut()
-                        .push(serde_json::to_string(&*event.read().unwrap()).unwrap());
-                }
-            })));
+            let (agent, session) = (record_delivered(&h), record_heard(&h));
             prompt_to_end(&h, "hello", PromptOptions::default()).await;
             assert!(
                 kinds(&agent.borrow())
