@@ -36,6 +36,9 @@ pub struct Footer {
     /// The custom footer the host shows, when there is one.
     #[serde(skip)]
     pub custom: Option<WidgetSlot>,
+    /// The identity of the factory that built the custom footer.
+    #[serde(skip)]
+    pub factory: Option<u32>,
     /// Current branch.
     #[serde(default)]
     branch: Option<String>,
@@ -285,8 +288,12 @@ impl Bank {
         self.answer = control.answer;
         self.answers = control.answers;
         if let Some(footer) = control.footer {
-            let custom = self.footer.custom.take();
-            self.footer = Footer { custom, ..footer };
+            let (custom, factory) = (self.footer.custom.take(), self.footer.factory.take());
+            self.footer = Footer {
+                custom,
+                factory,
+                ..footer
+            };
         }
         if let Some(header) = control.header {
             let mut children = vec!["banner".to_owned()];

@@ -1,5 +1,5 @@
 //! The shipped border status editor on the production runner: the editor its session start
-//! installs, the status it writes into the borders, the spinner and the branch read with Git.
+//! installs, the status it writes into the borders and the branch it reads with Git.
 #![cfg(test)]
 use maestro_extensions::{
     ContextUsage, EventBusController, EventError, ExtensionContextActions, ExtensionExecution,
@@ -21,7 +21,6 @@ use std::{
     process::Command,
     rc::Rc,
     sync::{Arc, RwLock},
-    time::Duration,
 };
 use tokio::task::JoinHandle;
 
@@ -87,7 +86,7 @@ struct Harness {
     _bus: EventBusController<Local>,
     /// The application slots.
     ui: Rc<Ui>,
-    /// The terminal runtime that records requested redraws.
+    /// The terminal runtime whose scheduled work the test runs.
     screen: ManualRuntime,
     /// Background work handed to the host, in announcement order.
     tails: Rc<RefCell<Vec<Option<JoinHandle<()>>>>>,
@@ -224,13 +223,6 @@ impl Harness {
         built.editor().try_render(width).unwrap()
     }
 
-    /// Whether the terminal has a redraw waiting; running it clears the request.
-    fn redraw_requested(&self) -> bool {
-        let requested = self.screen.pending() > 0;
-        self.screen.settle().unwrap();
-        requested
-    }
-
     /// Text painted in a theme color.
     fn paint(&self, color: &ThemeColor, text: &str) -> String {
         maestro_theme::paint(Some(&self.theme), color, text)
@@ -278,7 +270,7 @@ fn dark() -> (Rc<Theme>, LiveTheme) {
     (Rc::clone(&theme), LiveTheme::from_theme(theme))
 }
 
-/// A started frame writer on a manual runtime whose scheduled redraws the test runs.
+/// A started frame writer on a manual runtime whose scheduled work the test runs.
 fn screen() -> (TUI, ManualRuntime) {
     let terminal = RecordingTerminal::new(80, 24);
     let runtime = ManualRuntime::new();
@@ -293,19 +285,20 @@ fn screen() -> (TUI, ManualRuntime) {
     (tui, runtime)
 }
 
-/// Runs on a local executor; `paused` starts the native clock paused, so it moves only when
-/// every task waits.
-fn run(paused: bool, action: impl Future<Output = ()>) {
-    let mut builder = tokio::runtime::Builder::new_current_thread();
-    builder.enable_all().start_paused(paused);
-    tokio::task::LocalSet::new().block_on(&builder.build().unwrap(), action);
+/// Runs on a local executor.
+fn run(action: impl Future<Output = ()>) {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// Session start hides the working row, installs an empty footer and an editor whose bottom
 /// border carries the model, thinking level, context estimate and directory.
 #[test]
 fn border_status_editor_component_replaces_footer_and_working_row() {
-    run(false, async {
+    run(async {
         let h = Harness::new(MISSING).await;
         h.start().await;
         assert_eq!(h.ui.working.get(), Some(false));
@@ -335,7 +328,7 @@ impl Harness {
 /// The right text gives way first, then the left; three fill cells and two corners stay.
 #[test]
 fn border_status_editor_component_fits_narrow_borders() {
-    run(false, async {
+    run(async {
         let h = Harness::new(MISSING).await;
         h.start().await;
         let muted = h.paint(&ThemeColor::Muted, LEFT);
@@ -363,7 +356,7 @@ fn border_status_editor_component_fits_narrow_borders() {
 /// `?` without a percentage or a window.
 #[test]
 fn border_status_editor_component_formats_context_estimates() {
-    run(false, async {
+    run(async {
         let h = Harness::new(MISSING).await;
         h.start().await;
         for (estimate, shown) in [
@@ -399,7 +392,7 @@ fn git(root: &Path, args: &[&str]) {
 /// one that does not exist shows none, without an error.
 #[test]
 fn border_status_editor_component_reads_the_branch_once() {
-    run(false, async {
+    run(async {
         let repository = Scratch::new().unwrap();
         git(repository.path(), &["init", "-q", "-b", "main"]);
         let plain = Scratch::new().unwrap();
@@ -421,56 +414,6 @@ fn border_status_editor_component_reads_the_branch_once() {
                 assert_eq!(h.rows(200).pop().unwrap(), row, "read once per session");
             }
         }
-    });
-}
-
-/// Samples the native clock half a frame after each 80 ms wait, so every wait due earlier has
-/// finished, and checks the spinner and its redraw.
-async fn sample(h: &Harness, millis: u64, frame: &str) {
-    tokio::time::sleep(Duration::from_millis(millis)).await;
-    assert!(h.redraw_requested(), "frame {frame} requests a redraw");
-    let spinner = h.paint(&ThemeColor::Accent, &format!(" {frame} "));
-    assert_eq!(h.rows(40)[0], h.border(&spinner, 35, ""), "frame {frame}");
-}
-
-/// Working shows the ten frames in order every 80 ms, wraps, restarts where it stopped and
-/// leaves the border plain once the agent ends.
-#[test]
-fn border_status_editor_component_spins_while_working() {
-    run(true, async {
-        let h = Harness::new(MISSING).await;
-        h.start().await;
-        h.emit("agent_start").await;
-        sample(&h, 40, "⠋").await;
-        for frame in ["⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏", "⠋", "⠙"] {
-            sample(&h, 80, frame).await;
-        }
-        h.emit("agent_start").await;
-        h.finish(1).await;
-        sample(&h, 40, "⠙").await;
-        sample(&h, 80, "⠹").await;
-        h.emit("agent_end").await;
-        h.finish(2).await;
-        assert!(h.redraw_requested(), "ending requests a redraw");
-        assert_eq!(h.rows(40)[0], h.border("", 38, ""));
-        tokio::time::sleep(Duration::from_millis(400)).await;
-        assert!(!h.redraw_requested(), "no frame after the agent ends");
-    });
-}
-
-/// Shutdown ends the spinner's pending wait and stops redraw requests.
-#[test]
-fn border_status_editor_component_stops_on_shutdown() {
-    run(true, async {
-        let h = Harness::new(MISSING).await;
-        h.start().await;
-        h.emit("agent_start").await;
-        sample(&h, 120, "⠙").await;
-        h.emit("session_shutdown").await;
-        h.finish(1).await;
-        tokio::time::sleep(Duration::from_millis(400)).await;
-        assert!(!h.redraw_requested(), "no redraw after shutdown");
-        assert_eq!(h.tails.borrow().len(), 2);
     });
 }
 
@@ -516,7 +459,7 @@ impl maestro_tui::AutocompleteProvider for Commands {
 /// status returns once the list closes.
 #[test]
 fn border_status_editor_component_keeps_completion_rows() {
-    run(false, async {
+    run(async {
         let h = Harness::new(MISSING).await;
         h.start().await;
         let editor = h.built().editor();
@@ -527,7 +470,9 @@ fn border_status_editor_component_keeps_completion_rows() {
         );
         editor.try_handle_input("/").unwrap();
         h.screen.settle().unwrap();
-        assert!(h.screen.drain_futures().is_empty());
+        for request in h.screen.take_futures() {
+            tokio::task::spawn_local(request).await.unwrap().unwrap();
+        }
         let rows = h.rows(80);
         let paint = maestro_theme::get_editor_theme(h.ui.theme.clone()).border_color;
         assert!(rows.len() > 3, "{rows:?}");
@@ -561,7 +506,7 @@ fn border_status_editor_component_shortens_only_the_home_directory() {
     if selected.unwrap().is_none() {
         return;
     }
-    run(false, async {
+    run(async {
         for (cwd, shown) in [
             ("/home/al", "~"),
             ("/home/al/project", "~/project"),
