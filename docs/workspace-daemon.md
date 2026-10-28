@@ -692,6 +692,45 @@ read, so a cache built on the read is rebuilt on the next refresh. The bare-layo
 reftable checks of repository discovery use the same line syntax: the last assignment in
 a plain section wins and quoted values lose their quotes.
 
+### Repository status
+
+`git::status::git_status_snapshot_for_cwd_with_demand` observes the checkout around a
+directory and returns a snapshot of its label, branch, ahead/behind counts and grouping,
+with the cache entry to keep. The entry carries a fingerprint: what `HEAD` names (a branch
+and its commit, or a detached commit) and, when the counts are wanted, the branch's
+upstream and its commit. Loose references are read first, then `packed-refs`; reftable
+storage is read through the `git` command. The tracking configuration comes from
+`read_branch_config` and is kept while `ConfigRead::is_current` holds and the discovered
+checkout is the one it was read for, so a `.git` file retargeted to other metadata is read
+again.
+
+`git rev-list --left-right --count` runs through the process owner only when the
+fingerprint differs from the cached one; otherwise the cached counts are reused. A
+directory outside any repository is remembered for thirty seconds. The cache key of a
+checkout is its canonical root, so each linked worktree has its own, and workspace
+creation takes its key from the same helper.
+
+### Status refresh
+
+The daemon loop refreshes status on its one timer and starts no other scheduler. A
+refresh is wanted while a workspace exists and either a sidebar row shows `branch` or
+`git_status`, or a terminal has reported its directory; a report asks once for a fresh
+branch and label whichever rows are shown. A refresh is due 1.5 seconds after the last
+one ended, or at once when made due. The deadline is one of those the loop already waits
+for, and it does not depend on attached clients.
+
+At most one refresh runs at a time. It runs on the blocking pool and publishes
+`AppEvent::GitStatusRefreshed`, also when it panics, so the running flag cannot stay set.
+A request made while one runs is kept and applied when its result arrives. Workspaces in
+one repository share one observation. After a directory report and every five minutes,
+remembered cache keys are discarded and repositories are found again; making a refresh
+due also drops the results cached for directories outside repositories.
+
+`DaemonState::apply_workspace_git_statuses` applies a result only while its workspace
+still follows the directory the result was requested for. The branch and the counts change
+only when they were demanded, and worktree membership never changes. The loop requests a
+render only when a visible value changed.
+
 ## Retained tab-bar status
 
 `App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,

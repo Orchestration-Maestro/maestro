@@ -233,6 +233,8 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
     use maestro_daemon::terminal::state::AgentMetadataReport;
     let (_directory, paths) = paths();
     let mut app = app();
+    // No sidebar row asks for repository status, so no refresh deadline joins the metadata ones.
+    app.config.ui.sidebar.spaces.rows = Vec::new();
     let (pane, ()) = app
         .state
         .topology
