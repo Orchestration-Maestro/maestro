@@ -64,11 +64,7 @@ async fn produce(
         .await?;
     if !response.ok() {
         // The status stays in the message, so the session's retry classification sees it.
-        return Err(format!(
-            "HTTP {} {}",
-            response.status(),
-            response.text().await?
-        ));
+        return Err(super::oauth::failure(&*response).await);
     }
     let body = response
         .body()

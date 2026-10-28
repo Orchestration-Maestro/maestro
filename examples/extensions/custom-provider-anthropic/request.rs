@@ -234,13 +234,17 @@ fn assistant_block(block: &AssistantContent, subscribed: bool) -> Option<Value> 
         AssistantContent::Text(text) if !text.text.trim().is_empty() => {
             Some(json!({"type":"text","text":text.text}))
         }
-        AssistantContent::Thinking(thinking) if !thinking.thinking.trim().is_empty() => {
-            Some(if let Some(signature) = &thinking.thinking_signature {
+        AssistantContent::Thinking(thinking) if !thinking.thinking.trim().is_empty() => Some(
+            if let Some(signature) = thinking
+                .thinking_signature
+                .as_ref()
+                .filter(|signature| !signature.is_empty())
+            {
                 json!({"type":"thinking","thinking":thinking.thinking,"signature":signature})
             } else {
                 json!({"type":"text","text":thinking.thinking})
-            })
-        }
+            },
+        ),
         AssistantContent::ToolCall(tool) => Some(json!({
             "type":"tool_use","id":tool.id,"name":if subscribed { wire_tool_name(&tool.name) } else { tool.name.clone() },"input":tool.arguments
         })),

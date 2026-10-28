@@ -1,7 +1,9 @@
 //! Subscription sign-in through the host's HTTP and interaction interfaces.
 use maestro_extensions_wasm::{
     AbortSignal, ExtensionFuture, ExtensionResult, Model, OAuthAuthInfo, OAuthCredentials,
-    OAuthLoginCallbacks, OAuthPrompt, OAuthProviderInterface, http::Request, io::NativeIo,
+    OAuthLoginCallbacks, OAuthPrompt, OAuthProviderInterface,
+    http::{Request, Response},
+    io::NativeIo,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -134,9 +136,8 @@ impl CustomAnthropic {
             .await?;
         if !response.ok() {
             return Err(format!(
-                "Token {phase} failed: HTTP {} {}",
-                response.status(),
-                response.text().await?
+                "Token {phase} failed: {}",
+                failure(&*response).await
             ));
         }
         let tokens: Tokens =
@@ -148,6 +149,12 @@ impl CustomAnthropic {
             extra: serde_json::Map::new(),
         })
     }
+}
+
+/// Names a failed response by its status, then its body text or the error that stopped the read.
+pub async fn failure(response: &dyn Response) -> String {
+    let detail = response.text().await.unwrap_or_else(|error| error);
+    format!("HTTP {} {detail}", response.status())
 }
 
 /// Encodes the fixed authorization parameters beside the URL-safe proof key.
