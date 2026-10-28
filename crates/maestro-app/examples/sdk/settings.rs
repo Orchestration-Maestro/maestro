@@ -98,4 +98,5 @@ mod tests {
         assert_eq!(value["memoryRetry"], false);
         Ok(())
     }
+    mod images;
 }
