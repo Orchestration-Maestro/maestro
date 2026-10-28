@@ -9,6 +9,9 @@ use super::host::Harness;
 use maestro_test_directory::Scratch;
 
 /// Starts the shipped component with a private guest temporary directory.
+///
+/// # Errors
+/// Returns an error if building, compiling, mounting or starting the component fails.
 fn start(root: &Scratch) -> Result<Harness, String> {
     let path = super::build::component("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT")?;
     let (engine, component) = super::build::compile(&path).map_err(|e| e.to_string())?;
@@ -73,6 +76,10 @@ fn file_trigger_delivers_nonempty_contents_and_releases_watches() -> Result<(), 
 }
 
 /// Exercises delivery while another instance may be running.
+///
+/// # Errors
+/// Returns an error if scratch creation, component startup, callback delivery,
+/// the overlapping instance or resource release fails.
 fn delivery(overlap: impl FnOnce() -> Result<(), String>) -> Result<(), String> {
     let root = Scratch::new().map_err(|e| e.to_string())?;
     let mut trigger = Trigger::new_in(root.path());
@@ -122,6 +129,9 @@ fn delivery(overlap: impl FnOnce() -> Result<(), String>) -> Result<(), String> 
 }
 
 /// Checks empty contents and replacement of the original watch.
+///
+/// # Errors
+/// Returns an error if event or watch callback delivery fails.
 fn restart(host: &mut Harness, trigger: &mut Trigger) -> Result<(), String> {
     for text in ["", " \r\n\t", "\u{2003}\u{a0}", "\u{feff}", " \u{feff}\t"] {
         trigger.write(text);

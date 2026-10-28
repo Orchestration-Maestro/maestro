@@ -58,6 +58,9 @@ impl Bank {
     }
 
     /// Admits a component callback using the same notification state.
+    ///
+    /// # Errors
+    /// Returns the selected watch creation error, if one is configured.
     pub fn component_watch(&mut self, path: String, id: u32) -> ExtensionResult<Watcher> {
         let mut watcher = self.watch(path, id)?;
         watcher.1 = Some(self.retired.clone());
@@ -97,6 +100,10 @@ impl host::HostFsWatcher for State {
 
 impl super::host::Harness {
     /// Delivers a controlled notification to a live component watch.
+    ///
+    /// # Errors
+    /// Returns an error if emitter allocation or removal, callback invocation
+    /// or retired callback release fails.
     pub fn notify_watch(&mut self, index: usize) -> ExtensionResult<()> {
         let Some(id) = self.observed().native_watch.callback(index) else {
             return Ok(());
@@ -126,6 +133,9 @@ impl super::host::Harness {
     }
 
     /// Releases the component callbacks retired by closed watch resources.
+    ///
+    /// # Errors
+    /// Returns an error if the component cannot release a retired callback.
     pub async fn release_watches(&mut self) -> ExtensionResult<()> {
         let retired = std::mem::take(&mut *self.observed().native_watch.retired.lock().unwrap());
         for id in retired {
