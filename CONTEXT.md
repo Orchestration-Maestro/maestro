@@ -64,8 +64,12 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
 - **Manifest package:** The default-on base package that selects, installs, reads
   and enforces a manifest through the core hooks.
-- **Manifest area:** One folder of a manifest (common, standard, core, language or
-  capability) whose content enters the manifest layer in a fixed order.
+- **Manifest root:** The one folder of a release, `manifests/`, that holds all of
+  its manifest content. Maestro reads manifest content only from it; documentation,
+  schemas and CI stay outside.
+- **Manifest area:** The manifest root itself (the common area) or one folder under
+  it (standard, core, language or capability) whose content enters the manifest
+  layer in a fixed order.
 - **Capability:** A manifest area that is one package bundling a team's roles,
   skills, instructions, prompt templates and workflows, selected by name.
 - **Capability group:** The folder that groups capabilities, usually after the
@@ -77,14 +81,24 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
   locally and in a manifest.
 - **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
   file.
+- **Guard:** A manifest rule that blocks, confirms, redacts or warns on a command, a
+  path or text, from a `maestro.guards/v1` file in the manifest's core area.
+- **Guard family:** The set of guard rules in one guard file, named by the file,
+  such as personal data or destructive commands.
 - **Base layer:** A read-only settings document with locked keys, published by a
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties
   and the relations its entries have.
+- **Requires:** The catalog relation from a release or package to a package it
+  needs. Skills and workflows inherit their package's requirements; selecting an
+  entry installs the transitive required-package closure in its scope.
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
-- **Lock:** A policy entry fixing a value that local layers cannot change.
+- **Lock:** A policy entry that fixes a value or refuses local additions of a
+  resource kind. A lock never loosens another rule.
+- **Lock name:** A `locked` entry that names something other than a settings key:
+  the prompts, the providers or a resource kind that has no settings key.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.
@@ -197,7 +211,7 @@ traversal runs, so one removal and a complete clear both stay cheap.
 ### Interfaces
 
 - **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends. Its read-only contract and live status view belong to `maestro-extensions`, whose footer factories receive them.
-- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application and is available to browser builds, so transcripts and the offline viewer read one implementation.
+- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application; the native transcript reads it, and it is available to browser builds, though the offline viewer does not read it yet.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
@@ -244,7 +258,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Shared request owner:** The core `maestro-request` library below layer 0, whose job is to define shared message and model-request records, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, `SlashCommandInfo`, `SlashCommandSource`, `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, `DiagnosticErrorInfo` as the one thrown-error form with its message-only construction, and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
-- **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
+- **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose permitted internal targets are extensions and the optional native path utility.
 - **Attachment:** Application-owned original bytes, media metadata and optional derived text/preview, with browser-message conversion. See [browser attachments](docs/application/browser-attachments.md).
 - **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping, CSS string serialization, terminal escape stripping and binary-output filtering, BOM-aware lossy UTF-8 decoding and, behind its `collation` and `number-format` features, locale comparator and number-formatter preparation through one locale selector; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing); it depends on no workspace crate and its callers keep their own preprocessing, defaults, duplicate-member policy and error wording. See [JSON boundary](docs/json.md).

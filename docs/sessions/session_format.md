@@ -8,6 +8,14 @@ construction and the operations below are owned by
 listing and working-directory checks by
 [discovery](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/discovery.md).
 
+## Contents
+
+1. [File location](#file-location) and [deleting a session](#deleting-a-session)
+2. [Versions](#versions), [messages](#messages) and [entries](#entries)
+3. [Tree structure](#tree-structure) and [context construction](#context-construction)
+4. [Parsing](#parsing)
+5. [Operations](#operations)
+
 ## File location
 
 ```text
@@ -17,8 +25,43 @@ listing and working-directory checks by
 The encoded directory drops one leading `/` or `\`, then replaces every `/`, `\`
 and `:` with `-` (`/work/tree` becomes `--work-tree--`). The timestamp is the
 header time with `:` and `.` replaced by `-`. An explicit session directory is
-used as given. Deleting a session means deleting its `.jsonl` file; no
-interactive deletion is delivered yet, and no listing operation removes files.
+used as given. The application resolves the agent directory as described in
+[configuration](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/configuration.md).
+Native writers emit UTF-8 with one compact JSON value and an LF per record.
+Native readers replace invalid UTF-8 bytes before parsing rather than rejecting
+the file for invalid encoding. Listing does not remove files.
+
+## Deleting a session
+
+To remove a saved session from the terminal picker:
+
+1. Open `/resume` and highlight the session to remove.
+2. Press **Ctrl+D** to ask for deletion, even if the search field has text.
+3. Press **Enter** to confirm, or **Escape** to return to the list without deleting.
+
+These are the default bindings for `app.session.delete`, `tui.select.confirm`
+and `tui.select.cancel`; [keybindings](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/keybindings.md)
+can change them. **Ctrl+Backspace** (`app.session.deleteNoninvasive`) also asks
+for deletion when the search field is empty; otherwise it edits the query.
+The active session cannot be deleted through the picker: Maestro shows
+`Cannot delete the currently active session`.
+
+Confirmation authorizes **permanent deletion** if the `trash` program is missing
+or fails. Maestro tries `trash` first; if that fails and the file still exists,
+it removes the file directly, without asking again. Do not rely on being able
+to recover a deleted session.
+
+On success the picker removes the session from its cached lists and refreshes
+the visible scope. It shows `Session moved to trash` or `Session deleted`.
+A file already absent after the trash attempt is treated as moved to trash.
+If direct removal fails, `Failed to delete:` includes the error; the session
+stays listed. See the [selector reference](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/chat/session-selector.md#rename-and-delete)
+for the refresh and error rules.
+
+You can also delete the session's `.jsonl` file directly with your file manager.
+Check its path first: direct file deletion bypasses the picker's active-session
+check and trash attempt. Removing a file removes its entire saved tree, not only
+the selected branch.
 
 ## Versions
 
@@ -52,6 +95,12 @@ Message entries hold one `message` object whose `role` selects its shape.
 
 Content blocks: `{"type":"text","text":…}`; `{"type":"image","data":<base64>,"mimeType":…}`;
 `{"type":"thinking","thinking":…}`; `{"type":"toolCall","id":…,"name":…,"arguments":{…}}`.
+Optional block metadata includes `textSignature` on text, `thinkingSignature`
+and `redacted` on thinking, and `thoughtSignature` on tool calls. Assistant
+messages may also carry `responseModel`, `responseId` and `diagnostics`. See
+[invocation records](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/records.md#wire-records-and-helpers)
+for the typed wire rules; the fields above describe the common stored shapes,
+not a schema that raw history must pass before loading.
 `stopReason` is one of `stop`, `length`, `toolUse`, `error` or `aborted`. `usage`
 holds `input`, `output`, `cacheRead`, `cacheWrite`, an optional `totalTokens` and a
 `cost` object with `input`, `output`, `cacheRead`, `cacheWrite` and `total`. A
@@ -166,7 +215,19 @@ roots. Branching moves the selection to an earlier entry before appending.
 ## Context construction
 
 `build_session_context` turns the path from the selected leaf into model-visible
-messages; the selection, compaction and fallback rules are in
+messages. It follows parents back to the root and emits that ancestry in
+root-to-leaf order, not the order of every record in the file. Model and thinking
+changes on that path determine the returned settings; assistant messages also
+supply model observations. The latest compaction on
+the path contributes its summary, the retained range beginning at
+`firstKeptEntryId`, and later messages. Branch summaries and custom messages
+contribute content; custom state, labels and session names do not. A hidden
+custom message still contributes: `display` controls presentation, not context.
+
+Missing parents stop the walk; repeated entries stop it before a cycle repeats.
+The explicit-null leaf selects no entries, while a missing or unknown leaf
+falls back to the last supplied entry. See the selection, compaction and
+fallback rules in
 [session history](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md#branch-selection).
 
 ## Parsing

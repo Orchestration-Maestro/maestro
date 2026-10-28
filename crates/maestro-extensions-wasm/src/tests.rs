@@ -25,6 +25,10 @@ macro_rules! on_both_adapters {
     }};
 }
 
+include!(concat!(env!("OUT_DIR"), "/example_tests.rs"));
+example_tests!();
+
+mod abort_controller;
 pub(crate) mod action_host;
 mod advanced_ui;
 mod agent_events;
@@ -33,25 +37,20 @@ pub(crate) mod author;
 mod authored_editor;
 mod authored_streams;
 mod basic_ui;
-mod bookmark_example;
 mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
-mod commands_example;
 mod completion_contract;
 mod component_driver;
 mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;
 mod documents;
-mod dynamic_tools_example;
-mod event_bus_example;
 mod event_transport;
 mod event_values;
 mod example_support;
 mod exec_records;
-mod file_trigger_example;
 pub(crate) mod file_trigger_path;
 mod finite_records;
 pub(crate) mod stream_host;
@@ -64,30 +63,20 @@ mod editor_driver;
 pub(crate) mod editor_host;
 mod editor_ui;
 mod foreign_host;
-mod git_checkpoint_example;
 mod guest_family;
-mod hello_example;
-mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
 mod host_widgets;
-mod input_transform_example;
 mod join;
 mod json_payloads;
-mod modal_editor_example;
 mod model_streams;
 pub(crate) mod native_http_host;
 mod native_io;
 pub(crate) mod native_io_host;
 pub(crate) mod native_watch_host;
-mod notify_example;
 mod observed;
 pub(crate) mod overlay_host;
 mod parameter_schemas;
-mod permission_gate_example;
-mod pirate_example;
-mod prompt_customizer_example;
-mod protected_paths_example;
 mod provider_catalog;
 mod provider_component;
 mod provider_composition;
@@ -97,7 +86,6 @@ mod registration_callbacks;
 mod registration_corpus;
 mod registration_fixture;
 mod registration_host;
-mod reload_runtime_example;
 mod renderer_callbacks;
 pub(crate) mod renderer_host;
 mod replacement_commands;
@@ -105,11 +93,9 @@ pub(crate) mod replacement_host;
 mod scenario;
 pub(crate) mod schema_host;
 mod selection_events;
-mod send_user_message_example;
 mod session_actions;
 mod session_corpus;
 mod session_events;
-mod session_name_example;
 mod session_reader;
 mod session_records;
 mod session_summary;
@@ -119,18 +105,11 @@ mod shared_messages;
 mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;
-mod shutdown_example;
 mod signal_callbacks;
-mod status_line_example;
 mod stream_events;
-mod system_prompt_header_example;
 pub(crate) mod theme_host;
-mod titlebar_spinner_example;
 mod tool_callbacks;
 mod tool_events;
-mod tool_override_example;
-mod tools_example;
-mod trigger_compact_example;
 pub(crate) mod ui_host;
 pub(crate) mod widget_component;
 mod widget_controlled;
@@ -138,9 +117,6 @@ pub(crate) mod widget_editors;
 pub(crate) mod widget_host;
 pub(crate) mod widget_keys;
 pub(crate) mod widget_lists;
-mod widget_placement_example;
-mod with_deps_example;
-mod working_message_example;
 mod writer_controlled;
 mod writer_ui;
 
@@ -758,6 +734,7 @@ fn registration_signatures(
         (host, "register-shortcut"),
         (host, "register-flag"),
         (host, "get-flag"),
+        (host, "contribute-load-time"),
         (guest, "invoke-completion"),
         (guest, "invoke-shortcut"),
     ]
@@ -774,6 +751,7 @@ fn assert_registration_contract(contract: &Contract) {
         "register-shortcut",
         "register-flag",
         "get-flag",
+        "contribute-load-time",
     ] {
         assert!(sync.contains(&name));
     }
@@ -782,6 +760,7 @@ fn assert_registration_contract(contract: &Contract) {
         (vec!["shortcut: string", "description: option<string>", "handler: borrow<callback>"], vec!["result<_, string>"]),
         (vec!["name: string", "options: record {description: option<string>, type: enum {boolean, string}, default: option<variant {boolean(bool), string(string)}>}"], vec!["result<_, string>"]),
         (vec!["name: string"], vec!["result<option<variant {boolean(bool), string(string)}>, string>"]),
+        (vec!["contributions: string"], vec!["result<_, string>"]),
         (vec!["handler: borrow<callback>", "prefix: string"], vec!["result<option<list<record {value: string, label: string, description: option<string>}>>, string>"]),
         (vec!["handler: borrow<callback>", "ctx: own<context>"], vec!["result<_, string>"]),
     ].map(|(params, results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(), results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
@@ -1251,6 +1230,5 @@ mod credential_host;
 mod native_helpers;
 
 mod custom_ticks;
-mod snake_example;
 
 mod snake_frames;

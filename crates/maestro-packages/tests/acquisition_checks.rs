@@ -1060,7 +1060,9 @@ fn persistence_happens_after_completed_acquisition() {
     native_support::write(fixture.project("pkgdir/file"), "x");
     block_on(manager.install_and_persist("./pkgdir", Some(Project))).unwrap();
     let project = fixture.settings.borrow().get_project_settings().0["packages"].clone();
-    assert_eq!(project, json!(["../pkgdir"]));
+    // The stored source is the native relative path, as the reference stores it.
+    let relative = format!("..{}pkgdir", std::path::MAIN_SEPARATOR);
+    assert_eq!(project, json!([relative]));
     assert!(block_on(manager.remove_and_persist("./pkgdir", Some(Project))).unwrap());
     assert!(!block_on(manager.remove_and_persist("./pkgdir", Some(Project))).unwrap());
 }

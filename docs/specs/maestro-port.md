@@ -94,7 +94,7 @@ The protocol requires: revise the WIT/SDK for recoverable errors, owned persiste
 
 Extension events: an event emitted from inside a synchronous callback (an event-bus listener, or a footer, widget, header, editor or component builder) reaches listeners in other extensions right after that callback returns. Every other ordering follows the reference behavior.
 
-Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest's allowed internal dependencies are maestro-request (message and model-request records), maestro-entry (session interchange records), maestro-tool (tool interchange records) and maestro-json (JSON boundary semantics); it never imports native session, tool or catalog runtimes. The runtime adapter depends only toward the domain and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
+Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest's allowed internal dependencies are maestro-request (message and model-request records), maestro-entry (session interchange records), maestro-tool (tool interchange records) and maestro-json (JSON boundary semantics); it never imports native session, tool or catalog runtimes. The runtime adapter depends toward the domain, with the optional native path utility, and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
 
 Event payloads and results cross the existing generic native-async export as plain JSON beside their typed capability envelope. Use the shared records' existing serde_json representation, not duplicate guest models or a second serializer format. Finite floating-point numbers roundtrip exactly, including signed zero. Ordinary host serialization turns nonfinite numbers into null; this does not promise that null decodes into a required number. An extension writing Infinity or NaN receives a clear error before its edited event or result is encoded. This explicit error is the accepted difference from retaining the nonfinite value until serialization. No bit-encoded numbers, numeric transport wrappers or compatibility decoder are permitted. Shared records retain their existing optional-field semantics without added Presence wrappers; unshared event fields still preserve their meaningful missing/null distinctions. Preserve separate event-edit and callback-result outcomes when either fails.
 
@@ -340,7 +340,7 @@ from the optional foundation utility described below.
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
-| `maestro-lock` | guard file writes | — | below 0 |
+| `maestro-lock` | guard file writes (optional path utility) | — | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
@@ -370,12 +370,12 @@ from the optional foundation utility described below.
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
-| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources` | 2 |
+| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources`, `maestro-lock` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners` | 3 |
 | `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners` | 4 |
-| `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
+| `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
@@ -525,7 +525,7 @@ rather than a new injected discovery port whose only other adapter is a test fak
 The crate is core, sits below layer 0 and depends on no workspace crate, including
 `maestro-path`. Only the table entries that list it
 (models, resources, theme, catalog, session, entry, tool and the guest) may depend on it. The guest still cannot
-depend on models or resources, the runtime adapter still targets extensions only, and no internal dev edge is added. Existing delivery
+depend on models or resources, the runtime adapter still targets extensions with the optional native path utility, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its consumers.
 
 `maestro-pattern` is a core crate below layer 0 whose one job is matching file
@@ -535,19 +535,25 @@ matching) may depend on it. Catalog owns model-scope selection and reuses the gl
 Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
-`maestro-watch` and `maestro-lock` are core leaves below layer 0, with no
-workspace dependencies, including the path utility. Only theme and application
-may depend on watch; only settings, credentials, workspace and detection may depend on lock.
+`maestro-watch` and `maestro-lock` are core leaves below layer 0. Watch has no
+workspace dependencies; lock may use the optional path utility, which does not
+change its leaf status. Only theme and application
+may depend on watch; only settings, credentials, workspace, detection and session
+may depend on lock.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
 retry and polling policy remain in their feature owners. Existing theme watch
 paths may re-export the same moved types, not retain a second implementation.
 
-`maestro-lock` acquires a caller-opened file-write lock with the existing bounded
-synchronous contention retry. It also owns byte-oriented atomic replacement: an
-exclusive temporary sibling is written, synced, closed and renamed before the
-parent directory is synced. Workspace snapshot storage and detection catalog publication use this operation;
+`maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
+locks. Waiting acquisition uses the operating system's file lock, which is released
+when the holder exits. It also owns byte-oriented atomic replacement: a
+short exclusive temporary sibling is written, synced, closed and renamed before the
+parent directory is synced. Replacement preserves existing native permissions;
+a supplied creation mode applies only to missing files. Unix creation applies
+permission bits before first visibility; Windows maps only owner-write to the
+read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
 feature owners retain serialization and symbolic-link policy. File creation for
 lock acquisition, permissions, in-place settings/credentials persistence, unlocking
 policy and asynchronous credential acquisition remain with settings and
@@ -635,18 +641,20 @@ Native crates may depend on it without changing their delivery layer.
 This optional utility edge is ignored when evaluating leaf status and exact
 direct-dependency sets; every other dependency rule, including cycle and internal
 dev-dependency checks, still applies. The guest authoring crate
-(`maestro-extensions-wasm`), component runtime adapter
-(`maestro-extensions-wasmtime`), terminal scenario harness
+(`maestro-extensions-wasm`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
-request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
-(`maestro-lock`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
+request owner (`maestro-request`), watch leaf (`maestro-watch`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers
 take supplied directory observations and add no global environment, filesystem service,
-directory cache, scheduler or workspace dependency.
+directory cache, scheduler or workspace dependency. Final-component link traversal
+uses a caller-supplied observation callback: the utility owns relative-target joining
+and the forty-link bound, while lock and the native component adapter keep native
+link I/O and its error interpretation. Both may declare the optional native utility
+edge; it adds no cycle because the utility has no internal dependencies.
 
 ### Native feature unifier
 
@@ -724,7 +732,7 @@ fixtures, and it is excluded from the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
 and `maestro-tui-crossterm`; a
@@ -744,7 +752,9 @@ completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
 `TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
-temporary directory unless its case sets one.
+temporary directory unless its case sets one. `local_zone_follows_tz()` states the
+premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
+Windows reads its system zone, so such a test reports the premise and returns there.
 
 ### Test directory owner
 
@@ -767,9 +777,11 @@ optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
-root's canonical path. `temporary_root()` reports that parent for tests that
-observe it without owning it. `Scratch::new_in(parent)` preserves native path-join
-spelling, including relative and non-Unicode parents. Both return `io::Result`,
+root's canonical path; on Windows that path drops the verbatim `\\?\` prefix
+of a drive path, so `/` keeps separating components. `temporary_root()` reports
+that parent for tests that observe it without owning it.
+`Scratch::new_in(parent)` preserves native path-join spelling, including relative
+and non-Unicode parents. Both return `io::Result`,
 use PID/atomic-sequence candidates and exclusive `create_dir`, retry only
 `AlreadyExists`, and never delete a colliding entry. The borrowed `path()` stays
 owned by `Scratch`; drop attempts recursive removal without panicking, including
@@ -995,8 +1007,9 @@ only converter. Inside that owner the supplied schema is indexed once: a data-on
 document holds each authored node's kind against the node's identity, a small context owns
 only the named definitions visible on the current conversion call path, and each stage and
 kind keeps its own module (conversion, instantiation, evaluation, comparison, object
-property modifiers). The stages receive the operands they act on, never the conversion
-context or a projection shared between kinds. Serialization writes the supplied JSON
+property modifiers). Structural comparison and evaluation receive only the operands they
+act on, never the conversion context or a projection shared between kinds; conversion and
+instantiation also receive the conversion context. Serialization writes the supplied JSON
 alone: providers, persisted JSON
 and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
 text. The guest carries the declared kinds only inside its opaque internal registration

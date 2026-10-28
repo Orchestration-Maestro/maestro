@@ -27,7 +27,9 @@ enum Node<'a> {
 fn at(root: &str, path: &str) -> String {
     match path {
         "/" => root.into(),
-        path if path.starts_with('/') => format!("{root}{path}"),
+        path if path.starts_with('/') => {
+            format!("{root}{}", path.replace('/', std::path::MAIN_SEPARATOR_STR))
+        }
         path => path.into(),
     }
 }
@@ -125,6 +127,12 @@ fn run_cases(test: &str, cases: &[LoadCase<'_>]) {
     }
     for case in cases {
         let dir = support::Directory::new();
+        let paths: Vec<&str> = case.entries.iter().map(|(path, _)| *path).collect();
+        let folded = dir.0.folded_names(&paths).unwrap();
+        if !folded.is_empty() {
+            eprintln!("{test} case needs names this host keeps apart: {folded:?}");
+            continue;
+        }
         let root = support::text(dir.0.path());
         let Some(_locks) = materialize(root, case.entries) else {
             continue;
@@ -847,8 +855,14 @@ fn prompt_hints_retain_optional_string_values() {
             include_defaults: false,
         })
         .unwrap();
-        let paths: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.path)).collect();
-        let bases: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.base)).collect();
+        let paths: Vec<_> = expected
+            .iter()
+            .map(|t| support::under(dir.0.path(), t.path))
+            .collect();
+        let bases: Vec<_> = expected
+            .iter()
+            .map(|t| support::under(dir.0.path(), t.base))
+            .collect();
         let expected: Vec<_> = expected
             .iter()
             .zip(&paths)

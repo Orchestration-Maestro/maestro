@@ -5,6 +5,7 @@
 //! - `i`: normal mode to insert mode; `a` moves right first.
 //! - `h`, `j`, `k`, `l`: navigation in normal mode.
 //! - Control keys such as Ctrl+C and Ctrl+D work in both modes.
+// maestro-component: MAESTRO_MODAL_EDITOR_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

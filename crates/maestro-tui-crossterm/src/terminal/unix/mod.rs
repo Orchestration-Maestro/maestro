@@ -11,7 +11,9 @@ use std::rc::{Rc, Weak};
 
 use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
 use rustix::stdio::{stdin, stdout};
-use rustix::termios::{OptionalActions, OutputModes, Termios, tcgetattr, tcgetwinsize, tcsetattr};
+use rustix::termios::{
+    InputModes, OptionalActions, OutputModes, Termios, tcgetattr, tcgetwinsize, tcsetattr,
+};
 use tokio::io::Interest;
 use tokio::runtime::Handle;
 use tokio::signal::unix::{Signal, SignalKind, signal};
@@ -78,10 +80,12 @@ impl Drop for Acquired {
 /// `original` in raw mode: no echo, line editing, signal keys, break, parity, strip, newline,
 /// carriage-return or start/stop-key handling on input, reads that return as soon as one byte
 /// is available, and output post-processing with newline-to-CR-LF mapping on so a bare
-/// newline written to the device returns the carriage.
+/// newline written to the device returns the carriage. Some C libraries' raw mode ignores
+/// a break instead, so that flag is cleared here and a break reads the same on every host.
 fn raw(original: &Termios) -> Termios {
     let mut raw = original.clone();
     raw.make_raw();
+    raw.input_modes.remove(InputModes::IGNBRK);
     raw.output_modes
         .insert(OutputModes::OPOST | OutputModes::ONLCR);
     raw

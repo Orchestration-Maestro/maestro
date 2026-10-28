@@ -135,7 +135,7 @@ pub fn tool_name(text: &str) -> Result<String, serde_json::Error> {
 type Listing = (String, Vec<(u32, String, u32)>);
 /// Carry each matching schema binding with its own metadata record.
 pub fn listing(observed: &super::observed::Observed) -> Result<Listing, String> {
-    let text = observed.actions.record()?;
+    let text = observed.actions.record_for("getAllTools")?;
     let names = serde_json::from_str::<Vec<Named>>(&text).unwrap_or_default();
     let mut bindings = Vec::new();
     for (index, tool) in names.into_iter().enumerate() {

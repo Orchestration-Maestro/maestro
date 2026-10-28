@@ -3,7 +3,9 @@
 //! compared with the recorded runtime cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::runtime_fixtures::{Recorded, runtime_for, stored_in};
-use crate::support::session_harness::{Harness, answer, on_task_set, script_responses};
+use crate::support::session_harness::{
+    Harness, answer, as_recorded, on_task_set, script_responses, substituting,
+};
 use maestro_app::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeOptions, PromptOptions,
     create_agent_session_runtime,
@@ -26,16 +28,12 @@ fn expected(name: &str) -> Value {
 
 /// `value` with the scratch root as `$ROOT` and each session file as its recorded label.
 fn normalized(h: &Harness, value: &Value, files: &[(String, &str)]) -> Value {
-    let mut text = value
-        .to_string()
-        .replace(&h.scratch.path().display().to_string(), "$ROOT");
-    for (file, label) in files {
-        text = text.replace(
-            &file.replace(&h.scratch.path().display().to_string(), "$ROOT"),
-            label,
-        );
-    }
-    serde_json::from_str(&text).unwrap()
+    let labels: Vec<_> = files
+        .iter()
+        .map(|(file, label)| (file.as_str(), *label))
+        .collect();
+    let root = h.scratch.path().display().to_string();
+    as_recorded(substituting(value.clone(), &labels), &[(&root, "$ROOT")])
 }
 
 /// A stored session whose working directory `<root>/gone` no longer exists.

@@ -167,6 +167,15 @@ pub fn pipe_output() -> Capture {
     Capture::new(reader)
 }
 
+/// The status flags of standard output that a status-flag change can set or clear. macOS
+/// also reports a kernel-only bit once a descriptor has been written, which none can.
+pub fn stdout_flags() -> OFlags {
+    let flags = fcntl_getfl(stdout()).expect("flags read");
+    #[cfg(target_os = "macos")]
+    let flags = flags.difference(OFlags::from_bits_retain(0x1_0000));
+    flags
+}
+
 /// Installs a pseudo-terminal as standard output and returns what is written to it.
 pub fn pty_output() -> Capture {
     let (master, slave) = pty();
