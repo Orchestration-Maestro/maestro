@@ -675,3 +675,51 @@ fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
     let manager = KeybindingsManager::create(scratch.path().to_str()).unwrap();
     assert!(manager.matches("\u{4}", "app.exit"));
 }
+
+#[test]
+fn reset_keys_never_overwrites_a_backup_or_edits_invalid_input() {
+    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().to_str().unwrap();
+    let path = scratch.path().join("keybindings.json");
+    let backup = scratch.path().join("keybindings.json.bak-7");
+    let original = br#"{"multiplexer.focus":"alt+h"}"#;
+    std::fs::write(&path, original).unwrap();
+    std::fs::write(&backup, "previous backup").unwrap();
+    let error = reset_multiplexer_keybindings(root, 7).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    assert_eq!(std::fs::read(&backup).unwrap(), b"previous backup");
+    for invalid in [b"[]".as_slice(), b"null", b"{", b"{\"bad\":\"\xff\"}"] {
+        std::fs::write(&path, invalid).unwrap();
+        let error = reset_multiplexer_keybindings(root, 8).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        assert_eq!(std::fs::read(&path).unwrap(), invalid);
+        assert!(!scratch.path().join("keybindings.json.bak-8").exists());
+    }
+}
+
+#[test]
+fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
+    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target_dir = scratch.path().join("target");
+    std::fs::create_dir(&target_dir).unwrap();
+    let target = target_dir.join("keys.json");
+    let original = b"{\"multiplexer.focus\":\"alt+h\",\"app.exit\":\"ctrl+d\"}\n";
+    std::fs::write(&target, original).unwrap();
+    let path = scratch.path().join("keybindings.json");
+    std::os::unix::fs::symlink(&target, &path).unwrap();
+    let Some(_guard) = maestro_test_directory::deny(&target_dir, 0o500).unwrap() else {
+        eprintln!("host permits writes to a protected directory; permission premise unavailable");
+        return;
+    };
+    let error = reset_multiplexer_keybindings(scratch.path().to_str().unwrap(), 9).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    assert_eq!(
+        std::fs::read(scratch.path().join("keybindings.json.bak-9")).unwrap(),
+        original
+    );
+    assert!(path.is_symlink());
+}
