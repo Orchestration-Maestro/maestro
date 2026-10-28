@@ -47,9 +47,16 @@ impl ExtensionOperations {
                     .install(&source, Some(installed_scope(scope)))
                     .await
                     .map(|()| Value::Null),
-                _ => Err(std::io::Error::other(
-                    "Extension package operations are not configured",
-                )),
+                HostOperation::VerifyPin(source, scope) => owners
+                    .packages
+                    .verify_pin(&source, Some(installed_scope(scope)))
+                    .await
+                    .map(|status| pin_status(&status)),
+                HostOperation::RestorePin(source, scope) => owners
+                    .packages
+                    .restore_pin(&source, Some(installed_scope(scope)))
+                    .await
+                    .map(|()| Value::Null),
             }
         })
     }
@@ -82,4 +89,15 @@ fn installed_scope(scope: OperationScope) -> maestro_packages::InstalledSourceSc
         OperationScope::User => maestro_packages::InstalledSourceScope::User,
         OperationScope::Project => maestro_packages::InstalledSourceScope::Project,
     }
+}
+
+/// Keeps the owner's exact observations and its own cleanliness decision.
+fn pin_status(status: &maestro_packages::GitPinStatus) -> Value {
+    let clean = status.is_clean();
+    serde_json::json!({
+        "expectedCommit": status.expected_commit,
+        "headCommit": status.head_commit,
+        "changedPaths": status.changed_paths,
+        "clean": clean,
+    })
 }
