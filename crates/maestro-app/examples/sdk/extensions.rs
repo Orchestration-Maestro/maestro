@@ -140,12 +140,7 @@ mod tests {
     /// A real inline factory receives lifecycle events and executes both registered operations.
     #[test]
     fn extensions_dispatches_commands_events_and_model_requested_tools() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(
             value["events"],
             json!(["command:demo", "agent_start", "tool:my_tool", "agent_end"])

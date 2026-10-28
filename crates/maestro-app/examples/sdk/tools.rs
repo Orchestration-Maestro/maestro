@@ -42,13 +42,11 @@ mod tests {
     /// Allowlisted tools stay in order, including sessions rooted in another directory.
     #[test]
     fn tools_selects_read_only_and_custom_cwd_tools() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let root = sample.root.path().display().to_string();
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let mut root = String::new();
+        let value = support::execute(|sample| {
+            root = sample.root.path().display().to_string();
+            run(sample)
+        })?;
         assert_eq!(value[0]["tools"], json!(["read", "grep", "find", "ls"]));
         assert_eq!(value[1]["tools"], json!(["read", "bash", "grep"]));
         assert_eq!(value[2]["tools"], json!(["read", "bash", "edit", "write"]));

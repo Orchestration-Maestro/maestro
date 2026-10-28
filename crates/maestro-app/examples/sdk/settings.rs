@@ -88,12 +88,7 @@ mod tests {
     /// Overrides affect the session while the explicit setter crosses the durability boundary.
     #[test]
     fn settings_applies_overrides_and_flushes_explicit_changes() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["retry"], true);
         assert_eq!(value["maxRetries"], 5.0);
         assert_eq!(value["compaction"], false);

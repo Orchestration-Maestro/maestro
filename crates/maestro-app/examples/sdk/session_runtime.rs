@@ -152,12 +152,7 @@ mod tests {
     /// New and resumed sessions get fresh subscriptions rather than retaining the old session.
     #[test]
     fn session_runtime_rebinds_after_new_and_resumed_sessions() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["newIsDifferent"], true);
         assert_eq!(value["resumedOriginal"], true);
         assert_eq!(value["queues"], json!([1, 1, 1]));

@@ -38,12 +38,7 @@ mod tests {
     /// Discovered and supplied files both reach the public prompt with their paths.
     #[test]
     fn context_files_merges_discovered_and_supplied_instructions() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         let prompt = value["prompt"].as_str().ok_or("missing prompt")?;
         assert!(prompt.contains("Project rule: answer briefly."));
         assert!(prompt.contains("Prefer immutable bindings."));

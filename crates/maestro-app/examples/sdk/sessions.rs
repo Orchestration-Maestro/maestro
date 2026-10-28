@@ -69,13 +69,11 @@ mod tests {
     /// A default session lives below agentDir; continuation and opening retain its exchange.
     #[test]
     fn sessions_persists_continues_and_reopens_the_same_history() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let root = sample.root.path().display().to_string();
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let mut root = String::new();
+        let value = support::execute(|sample| {
+            root = sample.root.path().display().to_string();
+            run(sample)
+        })?;
         assert_eq!(value["memoryFile"], Value::Null);
         assert_eq!(value["explicitManager"], true);
         let file = value["newFile"].as_str().ok_or("missing file")?;

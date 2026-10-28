@@ -61,12 +61,7 @@ mod tests {
     /// Filtering preserves discovered provenance while the custom skill retains its SDK source.
     #[test]
     fn skills_filters_discovery_and_preserves_custom_provenance() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["skills"][0]["name"], "browser");
         assert_eq!(value["skills"][1]["name"], "my-skill");
         assert_eq!(value["skills"][1]["sourceInfo"]["source"], "sdk");

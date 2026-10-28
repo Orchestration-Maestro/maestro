@@ -84,12 +84,7 @@ mod tests {
     /// Explicit resources exclude disk instructions and the tool allowlist reaches the session.
     #[test]
     fn full_control_uses_only_the_supplied_configuration() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["tools"], json!(["read", "bash"]));
         assert_eq!(value["skills"], 0);
         assert_eq!(value["templates"], 0);

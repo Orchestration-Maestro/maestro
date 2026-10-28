@@ -100,3 +100,13 @@ where
     println!("{}", serde_json::to_string_pretty(&value)?);
     Ok(())
 }
+
+/// Run a sample with the same executor and disposable inputs as its executable entry.
+#[cfg(test)]
+pub fn execute<F, Fut>(_run: F) -> Result<Value, Error>
+where
+    F: FnOnce(Sample) -> Fut,
+    Fut: Future<Output = Result<Value, Error>>,
+{
+    Err("The shared sample executor is not connected".into())
+}

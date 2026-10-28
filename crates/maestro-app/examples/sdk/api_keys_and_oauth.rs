@@ -72,12 +72,7 @@ mod tests {
     /// A runtime key wins without overwriting the credential file or replacing its owner.
     #[test]
     fn api_keys_keeps_runtime_overrides_out_of_persistent_credentials() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["stored"], "stored-example-key");
         assert_eq!(value["resolved"], "runtime-example-key");
         assert_eq!(value["restored"], "stored-example-key");

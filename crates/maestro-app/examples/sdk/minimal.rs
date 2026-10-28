@@ -62,12 +62,7 @@ mod tests {
     /// A streamed answer also becomes part of the session's public history.
     #[test]
     fn minimal_streams_and_retains_the_answer() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["text"], "The project contains AGENTS.md.");
         assert_eq!(value["messages"][0]["role"], "user");
         assert_eq!(value["messages"][1]["role"], "assistant");

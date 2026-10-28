@@ -55,12 +55,7 @@ mod tests {
     /// Both templates survive loading and the SDK template expands with its source intact.
     #[test]
     fn prompt_templates_merges_and_expands_the_sdk_template() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["templates"][0]["name"], "review");
         assert_eq!(value["templates"][1]["name"], "deploy");
         assert_eq!(value["templates"][1]["sourceInfo"]["source"], "sdk");

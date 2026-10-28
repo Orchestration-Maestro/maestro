@@ -75,12 +75,7 @@ mod tests {
     /// Explicit model selection keeps the caller's catalog and clamps unsupported thinking.
     #[test]
     fn custom_model_selects_and_prompts_the_catalog_model() -> Result<(), Error> {
-        let local = std::rc::Rc::new(tokio::task::LocalSet::new());
-        let sample = Sample::new(std::rc::Rc::clone(&local))?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let value = runtime.block_on(local.run_until(run(sample)))?;
+        let value = support::execute(run)?;
         assert_eq!(value["selected"], "faux/faux-1");
         assert_eq!(value["thinking"], "off");
         assert_eq!(value["sameCatalog"], true);
