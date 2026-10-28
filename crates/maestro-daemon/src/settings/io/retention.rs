@@ -17,6 +17,7 @@ impl AcceptedAreas {
     }
 
     /// Advances only accepted areas, retaining documents rejected by runtime checks.
+    #[cfg(target_os = "linux")]
     pub(crate) fn accept(&mut self, loaded: &LoadedConfig) {
         self.0.extend(
             loaded
