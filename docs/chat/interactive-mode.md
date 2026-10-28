@@ -153,9 +153,10 @@ HUP and native stdout/stderr disconnection errors take the emergency route:
 remove handlers, kill tracked children and exit 129, without draining, restoring
 the terminal or disposing the application runtime. EIO, broken-pipe and
 not-connected errors select this route; input errors and other output errors
-keep their existing handling. During graceful disposal, a second termination or
-hangup signal takes its native default action. Windows console-close integration
-is not provided by this mode.
+keep their existing handling. During graceful disposal, once the mode's signal
+handlers are removed and no other registration in the process is live, a later
+termination or hangup signal takes its native default action. Windows
+console-close integration is not provided by this mode.
 
 At agent end, a requested shutdown follows transient-row cleanup through this
 same graceful owner instead of requesting a final frame. Extension requests reach
