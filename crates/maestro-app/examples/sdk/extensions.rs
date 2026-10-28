@@ -155,4 +155,5 @@ mod tests {
         );
         Ok(())
     }
+    mod registration;
 }
