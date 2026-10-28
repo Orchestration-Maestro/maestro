@@ -76,6 +76,11 @@ path = "../../examples/extensions/git_checkpoint.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "github_issue_autocomplete"
+path = "../../examples/extensions/github_issue_autocomplete.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "handoff"
 path = "../../examples/extensions/handoff.rs"
 crate-type = ["cdylib"]
@@ -105,6 +110,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "local_shell_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "mac_system_theme"
+path = "../../examples/extensions/mac_system_theme.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -216,6 +226,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "timed_confirm"
+path = "../../examples/extensions/timed_confirm.rs"
 crate-type = ["cdylib"]
 
 [[example]]
