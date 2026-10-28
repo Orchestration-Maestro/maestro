@@ -1516,7 +1516,7 @@ fn direct_package_operations_ask_decider_before_effects() {
     }
 }
 
-/// Allows requests while retaining their order for comparison with progress events.
+/// Allows explicit package operations and their preference edits.
 struct AllowPackageEdit;
 impl maestro_settings::SettingsDecider for AllowPackageEdit {
     fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
