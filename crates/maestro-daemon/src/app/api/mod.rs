@@ -16,7 +16,9 @@ use super::{
     actions::{PaneStateUpdate, notification_context},
     state::ToastNotification,
 };
-use crate::{events::AppEvent, paths::DaemonPaths, settings::model::ToastDelivery};
+use crate::{
+    api::RequestMessage, events::AppEvent, paths::DaemonPaths, settings::model::ToastDelivery,
+};
 use maestro_protocol::{
     rpc_types::RpcCommand,
     schema::{ErrorBody, ResponseResult},
@@ -25,6 +27,27 @@ use maestro_settings::SettingsManager;
 use responses::api_error;
 
 impl<C: FnMut() -> u128> App<C> {
+    /// Answers one connection request through its response channel.
+    pub async fn answer_request(
+        &mut self,
+        request: RequestMessage,
+        settings: &mut SettingsManager,
+        paths: &DaemonPaths,
+    ) {
+        let RequestMessage {
+            command,
+            respond_to,
+            ..
+        } = request;
+        let response = self.handle_api_request(command, settings, paths).await;
+        let _ = respond_to.send(response);
+    }
+
+    /// Applies the worktree operations whose Git work has finished.
+    pub async fn settle_worktree_operations(&mut self) {
+        self.shutdown_detached_terminal_runtimes().await;
+    }
+
     /// Answers one workspace command after applying every queued internal observation.
     ///
     /// A command that changes what a view shows marks render work. `settings` and `paths`

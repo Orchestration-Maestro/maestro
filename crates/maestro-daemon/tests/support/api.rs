@@ -2,7 +2,10 @@
 
 use super::{launch::launch_inputs, manifest_cache, populate_terminals, runtime::block_on};
 use maestro_daemon::{
-    api::event_hub::EventHub, app::App, paths::DaemonPaths, settings::model::Config,
+    api::{RequestMessage, event_hub::EventHub},
+    app::App,
+    paths::DaemonPaths,
+    settings::model::Config,
 };
 use maestro_protocol::{
     events::EventData,
@@ -12,6 +15,7 @@ use maestro_protocol::{
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use serde_json::Value;
 use std::sync::Arc;
+use tokio::sync::oneshot::{self, error::TryRecvError};
 
 /// Daemon owner with a deterministic identity clock.
 pub type TestApp = App<fn() -> u128>;
@@ -74,6 +78,51 @@ pub fn command(wire: Value) -> RpcCommand {
 pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
     block_on(app.handle_api_request(command(wire), &mut settings, &untouched_paths()))
+}
+
+/// The answer of a request the daemon has accepted and may still be working on.
+pub type Awaiting = oneshot::Receiver<Result<ResponseResult, ErrorBody>>;
+
+/// Hands the wire-form `wire` to the daemon the way a connection does.
+pub async fn submit(app: &mut TestApp, wire: Value) -> Awaiting {
+    let (respond_to, response) = oneshot::channel();
+    let (_attempted, response_write_complete) = oneshot::channel();
+    let request = RequestMessage {
+        command: command(wire),
+        respond_to,
+        response_write_complete,
+    };
+    let mut settings = settings();
+    app.answer_request(request, &mut settings, &untouched_paths())
+        .await;
+    response
+}
+
+/// Applies the daemon's observations until `response` is answered.
+pub async fn settle(
+    app: &mut TestApp,
+    mut response: Awaiting,
+) -> Result<ResponseResult, ErrorBody> {
+    loop {
+        match response.try_recv() {
+            Ok(result) => return result,
+            Err(TryRecvError::Closed) => panic!("the daemon dropped the request"),
+            Err(TryRecvError::Empty) => {}
+        }
+        let event = app
+            .event_rx
+            .recv()
+            .await
+            .expect("the daemon keeps its queue");
+        app.handle_internal_event(event);
+        app.settle_worktree_operations().await;
+    }
+}
+
+/// Answers the wire-form `wire` as a connection would, finishing any background work.
+pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
+    let response = submit(app, wire).await;
+    settle(app, response).await
 }
 
 /// The failure with `code` and `message`.

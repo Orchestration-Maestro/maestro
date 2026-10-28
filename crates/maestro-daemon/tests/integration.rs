@@ -36,3 +36,4 @@ mod terminal_titles;
 mod window_title;
 mod workspace_aggregate;
 mod workspace_commands;
+mod worktree_commands;

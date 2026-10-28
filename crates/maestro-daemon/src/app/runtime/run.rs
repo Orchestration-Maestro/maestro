@@ -34,9 +34,7 @@ impl<C: FnMut() -> u128> App<C> {
                     else { self.state.should_quit.0 = true; }
                 }
                 Some(request) = requests.recv() => {
-                    let response =
-                        self.handle_api_request(request.command, settings, paths).await;
-                    let _ = request.respond_to.send(response);
+                    self.answer_request(request, settings, paths).await;
                 }
                 () = self.launch.render_notify.notified() => {}
                 () = wait_for_deadline(deadline) => {}
