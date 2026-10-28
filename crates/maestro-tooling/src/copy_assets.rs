@@ -152,6 +152,14 @@ fn input_error(source: &Path, error: &io::Error) -> io::Error {
     )
 }
 
+/// The refusal of an input that is not a regular file.
+fn not_regular(source: &Path) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::InvalidInput,
+        format!("cannot copy {}: not a regular file", source.display()),
+    )
+}
+
 /// Copy one input file, naming the source for every failure on its side.
 ///
 /// Readings and writes are separate calls: a source failure names the source path,
@@ -159,15 +167,16 @@ fn input_error(source: &Path, error: &io::Error) -> io::Error {
 /// is created only after the source is opened and checked as a regular file, and it
 /// carries the source's own restrictions before a byte is written.
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
-    let mut reader = fs::File::open(source).map_err(|error| input_error(source, &error))?;
+    let mut reader = fs::File::open(source).map_err(|error| match fs::metadata(source) {
+        // Windows refuses to open a directory, so the entry's kind names that refusal.
+        Ok(metadata) if !metadata.is_file() => not_regular(source),
+        _ => input_error(source, &error),
+    })?;
     let metadata = reader
         .metadata()
         .map_err(|error| input_error(source, &error))?;
     if !metadata.is_file() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("cannot copy {}: not a regular file", source.display()),
-        ));
+        return Err(not_regular(source));
     }
     let mut writer = create_destination(destination, &metadata)?;
     let mut buffer = [0; 8 * 1024];

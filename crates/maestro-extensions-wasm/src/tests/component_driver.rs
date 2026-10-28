@@ -1507,4 +1507,5 @@ async fn shell_pending(
 }
 
 mod custom_footer_example;
+mod message_renderer_example;
 pub(crate) mod schema_qualification;

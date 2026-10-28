@@ -344,7 +344,9 @@ events. See [shell execution](tools.md) for output and cancellation policy.
 ```
 
 Compaction calls the selected model and can incur charges. Its summary and entry
-ID depend on the conversation; `details` is optional extension-supplied JSON.
+ID depend on the conversation; `details` is optional JSON: built-in compaction
+records the files it read and modified, and an extension's compaction supplies its
+own data.
 Automatic compaction also emits these events with `reason` `threshold` or
 `overflow`. A cancelled compaction omits `result` and has `aborted:true`. A failed
 one omits `result` and has `aborted:false` and an `errorMessage`. An overflow recovery

@@ -27,12 +27,14 @@ pub struct Scratch {
 
 impl Scratch {
     /// Create a directory under the native temporary root and retain its canonical path.
+    /// On Windows the path drops the verbatim `\\?\` prefix of a drive path, which would
+    /// make `/` an ordinary character and differs from the paths users see.
     ///
     /// # Errors
     /// Returns a directory creation or canonicalization failure.
     pub fn new() -> io::Result<Self> {
         let mut scratch = Self::new_in(&temporary_root())?;
-        scratch.path = fs::canonicalize(&scratch.path)?;
+        scratch.path = without_verbatim_disk(fs::canonicalize(&scratch.path)?);
         Ok(scratch)
     }
 
@@ -206,6 +208,23 @@ impl Drop for Restore {
 fn name_refused(directory: &Path, error: &io::Error) -> bool {
     error.kind() == io::ErrorKind::AlreadyExists
         || fs::write(directory.join("control"), "control").is_ok()
+}
+
+/// `path` with a verbatim drive prefix (`\\?\C:`) replaced by the plain drive (`C:`).
+fn without_verbatim_disk(path: PathBuf) -> PathBuf {
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        let mut components = path.components();
+        if let Some(Component::Prefix(prefix)) = components.next()
+            && let Prefix::VerbatimDisk(disk) = prefix.kind()
+        {
+            let mut plain = PathBuf::from(format!("{}:", char::from(disk)));
+            plain.push(components.as_path());
+            return plain;
+        }
+    }
+    path
 }
 
 /// Retry only existing candidate names, retaining every pre-existing entry.

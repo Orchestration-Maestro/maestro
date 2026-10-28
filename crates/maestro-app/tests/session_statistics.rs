@@ -369,7 +369,9 @@ fn owner_view(h: &Harness) -> Value {
         "model": model_view(&h.session.model()),
         "thinkingLevel": h.session.thinking_level(),
         "streaming": h.session.is_streaming(),
-        "systemPrompt": h.session.system_prompt().ends_with(&format!("directory: {}", h.cwd)),
+        // The prompt spells the working directory with `/` separators on every host.
+        "systemPrompt": h.session.system_prompt()
+            .ends_with(&format!("directory: {}", h.cwd.replace('\\', "/"))),
         "liveHistory": live_history,
         "sessionId": h.session.session_id() == h.session.session_manager().borrow().get_session_id(),
         "templates": h.session.prompt_templates().prompts.len(),

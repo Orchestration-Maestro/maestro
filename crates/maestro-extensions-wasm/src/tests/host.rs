@@ -232,6 +232,8 @@ pub struct State {
     clock: Option<Clock>,
     /// Host-side resources by handle.
     pub table: ResourceTable,
+    /// Reports delivery of caller-owned cancellation to a pending component dialog.
+    pub abort_notice: Option<oneshot::Sender<()>>,
     /// What the host observed.
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
@@ -332,6 +334,7 @@ impl State {
             wasi: builder.build(),
             clock,
             table: ResourceTable::new(),
+            abort_notice: None,
             observed: Observed::default(),
             guest: None,
             schema_origin: None,
@@ -344,6 +347,9 @@ impl State {
             .get_mut(&Resource::<Flag>::new_borrow(flag))?
             .0
             .store(true, std::sync::atomic::Ordering::SeqCst);
+        if let Some(notice) = self.abort_notice.take() {
+            let _ = notice.send(());
+        }
         Ok(())
     }
 
@@ -1158,6 +1164,12 @@ impl host::Host for State {
             body: "body".into(),
         }))
     }
+    fn native_yaml(
+        &mut self,
+        _content: String,
+    ) -> wasmtime::Result<Result<Vec<host::FrontmatterToken>, String>> {
+        Ok(Err("raw YAML requires the production helper host".into()))
+    }
     fn native_helper(
         &mut self,
         operation: String,
@@ -1559,6 +1571,9 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let Some(error) = self.observed.actions.entry_error.take() {
+            return self.routed(Err(error));
+        }
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {

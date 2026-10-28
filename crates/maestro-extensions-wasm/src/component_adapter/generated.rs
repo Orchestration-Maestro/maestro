@@ -282,6 +282,7 @@ impl Imports for Generated {
     forward_resources! { functions {
         native_format_size(bytes: f64) -> ExtensionResult<String> => host::native_format_size;
         native_frontmatter(content: &str) -> ExtensionResult<host::FrontmatterDocument> => host::native_frontmatter;
+        native_yaml(content: &str) -> ExtensionResult<Vec<host::FrontmatterToken>> => host::native_yaml;
         native_helper(operation: &str, data: &str) -> ExtensionResult<String> => host::native_helper;
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;

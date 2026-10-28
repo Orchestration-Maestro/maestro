@@ -27,18 +27,22 @@ called.
 
 Before binding, preparation creates parents, rejects a live listener with
 `maestro server is already running (socket busy at {path})`, and removes stale
-socket entries. A connection failure that is not stale does not authorize
-unlinking: preparation reads the entry's type without following a link, and when
-that entry is not a socket it preserves the entry and returns `AlreadyExists`. A
-link to a live listener takes the live-listener branch.
+socket entries. Preparation inspects the entry in two cases only: a stale
+connection failure (connection refused, not found or timed out) and a native
+not-a-socket failure. Every other connection failure is returned unchanged and
+nothing is inspected. Inspection reads the entry's type without following a link,
+and when that entry is not a socket it preserves the entry and returns
+`AlreadyExists`. A link to a live listener takes the live-listener branch.
 
 The not-a-socket test follows the native error, because the general error kind does
-not separate these cases. An ordinary file reports a native not-a-socket failure,
-which admits the entry inspection; a datagram socket reports a native
-wrong-protocol failure with that same general kind, and preparation keeps its
-exact native error and socket identity. A real socket that fails any other way
-keeps that failure too. Only a stale connection failure removes a socket.
-Unclassified errors propagate unchanged.
+not separate these cases on macOS. There an ordinary file reports a native
+not-a-socket failure, which admits the entry inspection, and a datagram socket
+reports a native wrong-protocol failure with that same general kind; preparation
+keeps the datagram socket's exact native error and socket identity. On Linux an
+ordinary file reports connection refused, so it is admitted through the stale case,
+while a datagram socket still reports wrong-protocol. On both platforms the ordinary
+file is preserved and preparation returns `AlreadyExists`. Only a stale connection
+failure removes a socket.
 
 Binding disables automatic pathname removal on listener drop. The caller records
 `SocketFileIdentity` and can remove the pathname if its current device and inode
@@ -655,6 +659,38 @@ the checkout root. A linked worktree's automatic label names the checkout, not
 the repository group. Display operations read admitted labels without repeating
 filesystem discovery. Root-terminal metadata can select a newer admitted label
 without changing the workspace's retained fallback directory.
+
+## Git and worktrees
+
+### Branch tracking configuration
+
+`maestro-workspace::workspace::git::config::read_branch_config` reads the remote and
+merge reference of a branch. Files apply in Git's order: the user files the caller
+supplies, then the repository file in the shared metadata directory, then the checkout's
+`config.worktree` when the repository file turns on `extensions.worktreeConfig`. The
+extension is read from the repository file alone, as Git does, and its last value wins.
+`ConfigEnvironment::from_variables` builds the user list from `XDG_CONFIG_HOME` and the
+home directory; the reader itself reads no environment variable.
+
+Includes apply where they appear. A file already being read is not entered again inside
+itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
+`gitdir/i`, `onbranch` and `hasconfig:remote.*.url`. A `hasconfig` include is skipped when
+it, or a file it includes, sets a remote URL, and URLs set in the worktree file never
+satisfy the condition. For `gitdir`, `gitdir/i` and `onbranch` patterns, `*` and `?`
+stop at `/`, `**` crosses it and a trailing `/` means everything below. URL conditions
+allow wildcards across `/`. Matching takes time proportional to the pattern length
+times the text length.
+
+The fetch refspecs of the tracked remote map the merge reference to its local tracking
+reference. A remote of `.` tracks the merge reference itself, a remote without refspecs
+uses `+refs/heads/*:refs/remotes/<remote>/*`, and a negative refspec removes no mapping
+because it only filters what a fetch downloads.
+
+A read keeps what it saw of each file. `ConfigRead::is_current` turns false after an
+edit, a newly created include, a retargeted symbolic link or a file that could not be
+read, so a cache built on the read is rebuilt on the next refresh. The bare-layout and
+reftable checks of repository discovery use the same line syntax: the last assignment in
+a plain section wins and quoted values lose their quotes.
 
 ## Retained tab-bar status
 

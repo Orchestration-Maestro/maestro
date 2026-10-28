@@ -1,14 +1,15 @@
 //! The agent-event dispatch: one ordered queue that tells the extensions, then the session
 //! listeners, persists finished messages and decides on retry and compaction.
+use super::held::heard_while_held;
 use super::state::{Gate, SharedAgentEvent, thrown};
 use super::{AgentSession, AgentSessionEvent};
 use crate::utils::lock::{read, write};
 use futures_util::FutureExt;
 use maestro_agent::{AgentEvent, AgentListener, AgentMessage};
 use maestro_extensions::{
-    AgentEndEvent, AgentStartEvent, ExtensionRunner, MessageEndEvent, MessageStartEvent,
-    MessageUpdateEvent, NativeAgentMessage, ToolExecutionEndEvent, ToolExecutionStartEvent,
-    ToolExecutionUpdateEvent, TurnEndEvent, TurnStartEvent,
+    AgentEndEvent, AgentStartEvent, ExtensionExecution, ExtensionRunner, MessageEndEvent,
+    MessageStartEvent, MessageUpdateEvent, NativeAgentMessage, ToolExecutionEndEvent,
+    ToolExecutionStartEvent, ToolExecutionUpdateEvent, TurnEndEvent, TurnStartEvent,
 };
 use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage,
@@ -31,6 +32,23 @@ pub(super) fn agent_listener(
         }
         Box::pin(std::future::ready(Ok(())))
     })
+}
+
+impl<E: ExtensionExecution> AgentSession<E> {
+    /// Tells the session listeners about `event`, the one place they are told of any. With
+    /// `holdUncheckedText` set, an event that carries assistant text, thinking or partial tool
+    /// output reaches them without it, or not at all, until the message or tool result is
+    /// complete.
+    pub(super) fn emit_agent_event(&self, event: SharedAgentEvent) {
+        let heard = if self.settings_manager.borrow().get_hold_unchecked_text() {
+            heard_while_held(&event)
+        } else {
+            Some(event)
+        };
+        if let Some(heard) = heard {
+            self.emit(&AgentSessionEvent::Agent(heard));
+        }
+    }
 }
 
 impl AgentSession<Local> {
@@ -105,7 +123,7 @@ impl AgentSession<Local> {
             self.remove_delivered_text(&text);
         }
         self.emit_extension_event(event).await?;
-        self.emit(&AgentSessionEvent::Agent(Arc::clone(event)));
+        self.emit_agent_event(Arc::clone(event));
         let (finished, run_ended) = match &*read(event) {
             AgentEvent::MessageEnd { message } => (Some(message.clone()), false),
             AgentEvent::AgentEnd { .. } => (None, true),
