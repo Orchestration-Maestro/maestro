@@ -128,7 +128,12 @@ fn paths_for_root(
 }
 
 /// Locate a directory's metadata marker, including standalone bare layouts.
-pub(super) fn git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> {
+///
+/// A `.git` link file resolves to its target without checking that the target exists.
+///
+/// # Errors
+/// Returns the native failure of resolving a link.
+pub fn git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> {
     git_dir_for_root(root, DiscoveryPolicy::Workspace)
 }
 

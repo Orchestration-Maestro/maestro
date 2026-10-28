@@ -8,7 +8,8 @@ pub use maestro_workspace::workspace::git::discovery::{
     git_worktree_info,
 };
 pub use maestro_workspace::workspace::git::native::{
-    GitPaths, discover_git_paths, git_ref_storage_is_reftable, read_text, trim,
+    GitPaths, discover_git_paths, git_dir_for_repo_root, git_ref_storage_is_reftable, read_text,
+    trim,
 };
 
 /// Read the branch name, querying Git only for reftable storage.

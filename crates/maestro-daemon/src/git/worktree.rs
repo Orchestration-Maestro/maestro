@@ -1,6 +1,6 @@
 //! Worktree names, checkout paths and the Git commands that add, remove and list worktrees.
 use super::discovery::{
-    canonicalize_best_effort_path, discover_git_paths, git_output, read_text, trim,
+    canonicalize_best_effort_path, discover_git_paths, git_dir_for_repo_root, git_output,
 };
 use crate::paths::expand_home_path;
 use maestro_process::SpawnSyncError;
@@ -346,18 +346,18 @@ fn recover_leftover(
 
 /// Whether the `.git` link file of the checkout names an admin folder under the repository's
 /// `worktrees` directory.
+///
+/// The link resolves the way repository discovery resolves it: native bytes kept, `.` and `..`
+/// segments folded, and no admin folder required to exist.
 fn links_to_repository(repo_root: &Path, path: &Path) -> bool {
-    let Ok(link) = read_text(&path.join(".git")) else {
-        return false;
-    };
-    let Some(admin) = trim(&link).strip_prefix("gitdir:") else {
+    let Ok(Some(admin)) = git_dir_for_repo_root(path) else {
         return false;
     };
     let Some(paths) = discover_git_paths(repo_root) else {
         return false;
     };
     let worktrees = canonicalize_best_effort_path(&paths.git_common_dir).join("worktrees");
-    canonicalize_best_effort_path(&path.join(trim(admin))).starts_with(worktrees)
+    canonicalize_best_effort_path(&admin).starts_with(worktrees)
 }
 
 /// Whether the checkout at `path` has modified or untracked files.
