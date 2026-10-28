@@ -215,3 +215,22 @@ fn assert_missing_and_unreadable(dir: &Directory, attempt: &impl Fn(&Path) -> bo
     assert_eq!(events[0]["message"], format!("failed to read {noun}"));
     assert!(!events[0]["err"].is_empty());
 }
+
+#[cfg(unix)]
+#[test]
+fn saving_preserves_snapshot_target_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let target = dir.path().join("session.json");
+    let link = dir.path().join("link.json");
+    fs::write(&target, b"old").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+    std::os::unix::fs::symlink("session.json", &link).unwrap();
+    save_to_paths(&link, &dir.path().join("history"), &empty(), None).unwrap();
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o640
+    );
+    assert_eq!(fs::read_link(link).unwrap(), Path::new("session.json"));
+    assert!(load(&target).is_some());
+}
