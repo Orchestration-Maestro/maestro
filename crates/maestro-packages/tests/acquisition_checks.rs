@@ -950,7 +950,19 @@ fn stored(fixture: &Fixture) -> serde_json::Value {
 
 #[test]
 fn manager_aliases_remain_usable_during_acquisition() {
+    check_manager_aliases_during_acquisition(false);
+}
+
+/// Admission preserves callback reentry and held acquisition edits.
+#[test]
+fn admitted_manager_aliases_remain_usable_during_acquisition() {
+    check_manager_aliases_during_acquisition(true);
+}
+
+/// Exercises live edits with and without an installed publisher.
+fn check_manager_aliases_during_acquisition(admitted: bool) {
     let fixture = Fixture::new(&json!({"packages": ["npm:listed"]}));
+    allow_package_edits(&fixture, admitted);
     let weak = Rc::downgrade(&fixture.manager);
     let uses = Rc::new(Cell::new(0));
     let counter = uses.clone();
@@ -1131,9 +1143,21 @@ fn failed_acquisition_does_not_publish_settings() {
 
 #[test]
 fn persistence_reads_settings_after_acquisition() {
+    check_persistence_after_acquisition(false);
+}
+
+/// Admitted installation and removal retain edits accepted while waiting.
+#[test]
+fn admitted_persistence_reads_settings_after_acquisition() {
+    check_persistence_after_acquisition(true);
+}
+
+/// Exercises late reads without changing their original effect order.
+fn check_persistence_after_acquisition(admitted: bool) {
     let fixture = Fixture::new(
         &json!({"packages": [{"source": "npm:keep", "extensions": ["x"], "extra": 1}]}),
     );
+    allow_package_edits(&fixture, admitted);
     fixture.script.held.set(true);
     let mut operation = fixture.manager.install_and_persist("npm:added", None);
     assert!(poll_once(&mut operation).is_none());
@@ -1618,5 +1642,66 @@ fn allowed_package_admission_keeps_progress_before_preference_publication() {
             }
         );
         assert_eq!(stored(&fixture), json!(["npm:pkg"]));
+    }
+}
+
+/// Borrow contention is recoverable before either explicit package operation.
+#[test]
+fn package_admission_returns_borrow_errors_before_effects() {
+    for remove in [false, true] {
+        let fixture = Fixture::new(&json!({}));
+        let _guard = fixture.settings.borrow_mut();
+        let result = if remove {
+            block_on(fixture.manager.remove("npm:pkg", None))
+        } else {
+            block_on(fixture.manager.install("npm:pkg", None))
+        };
+        assert!(result.is_err());
+        assert!(fixture.calls().is_empty());
+        assert!(fixture.phases().is_empty());
+    }
+}
+
+/// A shared guard retained during acquisition returns an error at publication.
+#[test]
+fn admitted_package_publication_returns_borrow_errors() {
+    for remove in [false, true] {
+        let fixture = Fixture::new(&json!({"packages":["npm:pkg"]}));
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+        fixture.script.held.set(true);
+        let mut operation = if remove {
+            fixture.manager.remove_and_persist("npm:pkg", None)
+        } else {
+            Box::pin(async {
+                fixture
+                    .manager
+                    .install_and_persist("npm:new", None)
+                    .await
+                    .map(|()| true)
+            })
+        };
+        assert!(poll_once(&mut operation).is_none());
+        let guard = fixture.settings.borrow();
+        fixture.script.held.set(false);
+        assert!(poll_once(&mut operation).unwrap().is_err());
+        assert_eq!(
+            guard.get_global_settings().0.get("packages"),
+            Some(&json!(["npm:pkg"]))
+        );
+    }
+}
+
+/// Installs the same allowing publisher only for the admitted variants.
+fn allow_package_edits(fixture: &Fixture, admitted: bool) {
+    if admitted {
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
     }
 }

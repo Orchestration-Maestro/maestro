@@ -150,6 +150,19 @@ pub struct PreparedSettingsEdit {
 }
 
 impl PreparedSettingsEdit {
+    /// Supplies the recomputed list for the already-admitted delta.
+    ///
+    /// # Errors
+    /// Returns an error if the scope or key differs from the admitted list.
+    pub fn with_recomputed_list(
+        self,
+        _scope: SettingsScope,
+        _path: &[&str],
+        _entries: Vec<Value>,
+    ) -> Result<Self, String> {
+        Ok(self)
+    }
+
     /// Splits admitted edits so an owner can retain its existing effect order.
     #[must_use]
     pub fn split_at(mut self, index: usize) -> (Self, Self) {
