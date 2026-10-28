@@ -91,6 +91,21 @@ fn win32_guest_path(path: &str) -> String {
     }
 }
 
+/// Spells a component path as the native path the host opens.
+#[must_use]
+pub fn native_path(path: &str) -> String {
+    if cfg!(windows) {
+        win32_native_path(path)
+    } else {
+        path.to_owned()
+    }
+}
+
+/// The Windows native spelling of a component path.
+fn win32_native_path(path: &str) -> String {
+    path.to_owned()
+}
+
 /// Uppercases one character the way Windows compares names.
 ///
 /// Windows maps each UTF-16 unit to at most one unit, so a character whose
@@ -106,32 +121,76 @@ fn upcase(character: char) -> char {
 
 #[cfg(test)]
 mod tests {
-    use super::{call, win32_guest_path};
+    use super::{call, win32_guest_path, win32_native_path};
 
-    /// Windows drive, share and verbatim paths reach the component's roots.
-    /// Share names uppercase one UTF-16 unit at a time, as Windows compares
-    /// them, so shares Windows tells apart keep separate roots.
+    /// Windows drive, share and verbatim paths take spellings the host maps back.
+    /// Server and share names keep their spelling, so Windows alone decides which
+    /// spellings name one share: `ß` and `SS` stay apart.
     #[test]
     fn windows_paths_take_the_component_spelling() {
         for (native, guest) in [
             (r"C:\Users\me\file Ω name", "/C:/Users/me/file Ω name"),
             ("C:/Users/me", "/C:/Users/me"),
-            (r"d:\data", "/D:/data"),
+            (r"d:\data", "/d:/data"),
             (r"C:\", "/C:/"),
             (r"\\?\C:\Users\me", "/C:/Users/me"),
-            (r"\\server\share\dir", "/SERVER/SHARE/dir"),
-            (r"\\Server\sHare Ω\Dir", "/SERVER/SHARE Ω/Dir"),
-            (r"\\server\ω\Dir", "/SERVER/Ω/Dir"),
-            (r"\\localhost\straße\x", "/LOCALHOST/STRAßE/x"),
-            (r"\\localhost\strasse\x", "/LOCALHOST/STRASSE/x"),
-            (r"\\localhost\𐐨\x", "/LOCALHOST/𐐨/x"),
-            (r"\\?\UNC\server\share\dir", "/SERVER/SHARE/dir"),
-            ("//server/share", "/SERVER/SHARE"),
-            ("//server", "/SERVER"),
+            (r"\\server\share\dir", "/?/UNC/server/share/dir"),
+            (r"\\Server\sHare Ω\Dir", "/?/UNC/Server/sHare Ω/Dir"),
+            (r"\\server\ω\Dir", "/?/UNC/server/ω/Dir"),
+            (r"\\localhost\straße\x", "/?/UNC/localhost/straße/x"),
+            (r"\\localhost\strasse\x", "/?/UNC/localhost/strasse/x"),
+            (r"\\localhost\ᾀ\x", "/?/UNC/localhost/ᾀ/x"),
+            (r"\\localhost\𐐨\x", "/?/UNC/localhost/𐐨/x"),
+            (r"\\?\UNC\server\share\dir", "/?/UNC/server/share/dir"),
+            (r"\\?\Volume{0}\dir", "/?/Volume{0}/dir"),
+            (r"\\.\pipe\name", "/?/pipe/name"),
+            ("//server/share", "/?/UNC/server/share"),
+            ("//server", "/?/UNC/server"),
+            (r"\Windows\notes", "/Windows/notes"),
             (r"..\sibling\file", "../sibling/file"),
             ("relative/file", "relative/file"),
         ] {
             assert_eq!(win32_guest_path(native), guest, "{native:?}");
+        }
+    }
+
+    /// The host opens each component spelling as the native path it came from.
+    /// A Unix-style absolute path names the current drive's root, never a share.
+    #[test]
+    fn windows_component_paths_map_back_to_native_paths() {
+        for (guest, native) in [
+            ("/C:/Users/me/file Ω name", r"C:\Users\me\file Ω name"),
+            ("/d:/data", r"d:\data"),
+            ("/C:", r"C:\"),
+            ("/C:/", r"C:\"),
+            ("/?/UNC/server/share/dir", r"\\server\share\dir"),
+            ("/?/UNC/localhost/straße/x", r"\\localhost\straße\x"),
+            ("/?/Volume{0}/dir", r"\\?\Volume{0}\dir"),
+            ("/tmp/x", r"\tmp\x"),
+            ("/", r"\"),
+            ("../sibling/file", r"..\sibling\file"),
+            ("relative/file", r"relative\file"),
+        ] {
+            assert_eq!(win32_native_path(guest), native, "{guest:?}");
+        }
+        for native in [
+            r"C:\Users\me",
+            r"\\server\share\dir",
+            r"\\?\Volume{0}\dir",
+            r"\Windows\notes",
+            r"..\sibling\file",
+        ] {
+            assert_eq!(win32_native_path(&win32_guest_path(native)), native);
+        }
+    }
+
+    /// The component spelling is the native spelling on Unix, in both directions.
+    #[cfg(unix)]
+    #[test]
+    fn unix_paths_keep_their_spelling_in_both_directions() {
+        for path in [r"/work/a\b", "/", "../x", "//server/share"] {
+            assert_eq!(super::guest_path(path), path);
+            assert_eq!(super::native_path(path), path);
         }
     }
 

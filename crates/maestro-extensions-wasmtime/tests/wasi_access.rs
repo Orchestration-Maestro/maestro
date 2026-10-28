@@ -460,6 +460,97 @@ fn component_windows_roots_reach_a_share_working_directory() {
     std::env::set_current_dir(original).unwrap();
 }
 
+#[cfg(windows)]
+#[test]
+fn component_windows_root_reaches_later_drives_other_shares_and_links() {
+    use std::process::Command;
+    if maestro_test_process::run_alone(
+        "component_windows_root_reaches_later_drives_other_shares_and_links",
+    )
+    .unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("inner")).unwrap();
+    let target = scratch.path().join(r"inner\file Ω name");
+    std::fs::write(&target, b"").unwrap();
+    let local = plain(scratch.path());
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        // Every path below is created after the component has listed its root.
+        let drive = ('D'..='Z')
+            .rev()
+            .map(|letter| format!("{letter}:"))
+            .find(|drive| {
+                Command::new("subst")
+                    .arg(drive)
+                    .arg(&local)
+                    .status()
+                    .is_ok_and(|status| status.success())
+            })
+            .unwrap();
+        let _mounted = Subst(drive.clone());
+        let junction = scratch.path().join("junction");
+        let linked = Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(&junction)
+            .arg(scratch.path().join("inner"))
+            .status()
+            .unwrap();
+        assert!(linked.success(), "mklink /J");
+        std::os::windows::fs::symlink_file(&target, scratch.path().join("absolute Ω")).unwrap();
+        let long = scratch.path().join("l".repeat(200)).join("m".repeat(100));
+        std::fs::create_dir_all(&long).unwrap();
+        std::os::windows::fs::symlink_dir(scratch.path().join("inner"), long.join("deep")).unwrap();
+        let share = format!(r"localhost\{}${}", &local[..1], &local[2..]);
+        let mut paths = vec![
+            format!(r"{drive}\inner\file Ω name"),
+            format!(r"\\{share}\inner\file Ω name"),
+            format!(r"\\?\UNC\{share}\inner\file Ω name"),
+            format!(r"{local}\junction\file Ω name"),
+            format!(r"{drive}\junction\file Ω name"),
+            format!(r"{local}\absolute Ω"),
+            format!(r"{}\deep\file Ω name", plain(&long)),
+        ];
+        let cwd = plain(&std::env::current_dir().unwrap());
+        if cwd[..1].eq_ignore_ascii_case(&local[..1]) {
+            paths.push(format!(r"{}\inner\file Ω name", &local[2..]));
+        }
+        reach_after_load(&host, &paths, &target).await;
+    });
+}
+
+/// Each path writes and reads the target, reporting every path that missed it.
+#[cfg(windows)]
+async fn reach_after_load(host: &Harness, paths: &[String], target: &Path) {
+    let bytes = b"file\0\xff\x1b\xce\xa9".as_slice();
+    let mut missed = Vec::new();
+    for generation in ["p2", "p3"] {
+        for path in paths {
+            std::fs::write(target, b"").unwrap();
+            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"write":true,"bytes":bytes})).await;
+            if observed["bytes"] != json!(bytes) || std::fs::read(target).unwrap() != bytes {
+                missed.push(format!("{generation} {path}: {observed}"));
+            }
+        }
+    }
+    assert!(missed.is_empty(), "{missed:#?}");
+}
+
+/// Removes a substituted drive when the test ends, even after a failed assertion.
+#[cfg(windows)]
+struct Subst(String);
+#[cfg(windows)]
+impl Drop for Subst {
+    fn drop(&mut self) {
+        let _removed = std::process::Command::new("subst")
+            .arg(&self.0)
+            .arg("/D")
+            .status();
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn component_filesystem_failures_remain_os_failures() {
@@ -598,8 +689,8 @@ fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, ki
 
 #[cfg(unix)]
 #[test]
-fn component_absolute_link_qualification() {
-    if maestro_test_process::run_alone("component_absolute_link_qualification").unwrap() {
+fn component_absolute_links_reach_native_targets() {
+    if maestro_test_process::run_alone("component_absolute_links_reach_native_targets").unwrap() {
         return;
     }
     let original = std::env::current_dir().unwrap();
@@ -623,15 +714,15 @@ fn component_absolute_link_qualification() {
             std::fs::read(&denied).unwrap_err().kind(),
             std::io::ErrorKind::PermissionDenied
         );
-        run(qualify_links(&target, Some(&denied)));
+        run(absolute_links(&target, Some(&denied)));
     }
-    run(qualify_links(&target, None));
+    run(absolute_links(&target, None));
     std::env::set_current_dir(original).unwrap();
 }
 
-/// Separates a runtime's absolute-link refusal from native permission denial.
+/// Follows direct paths and relative and absolute links as a native process does.
 #[cfg(unix)]
-async fn qualify_links(target: &Path, denied: Option<&Path>) {
+async fn absolute_links(target: &Path, denied: Option<&Path>) {
     let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
     for bytes in [
         b"first\0\xff".as_slice(),
@@ -656,6 +747,8 @@ async fn qualify_links(target: &Path, denied: Option<&Path>) {
                 target,
                 Path::new("relative-file"),
                 Path::new("relative-directory/bytes"),
+                Path::new("absolute-file"),
+                Path::new("absolute-directory/bytes"),
             ] {
                 let observed = host
                     .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
@@ -666,29 +759,18 @@ async fn qualify_links(target: &Path, denied: Option<&Path>) {
                     "{generation} {path:?}: {observed}"
                 );
             }
-            qualify_refusals(&host, generation, denied).await;
+            link_failures(&host, generation, denied).await;
         }
     }
 }
 
-/// Checks the runtime's refusal and a genuinely unreadable native target separately.
+/// A dangling link and a genuinely unreadable target fail as they do natively.
 #[cfg(unix)]
-async fn qualify_refusals(host: &Harness, generation: &str, denied: Option<&Path>) {
-    for path in ["absolute-file", "absolute-directory/bytes", "dangling"] {
-        let observed = host
-            .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
-            .await;
-        assert_eq!(
-            observed["error"], "permission-denied",
-            "{generation} {path}: {observed}"
-        );
-        if generation == "p3" {
-            assert_eq!(
-                observed["code"], "ErrorCode::NotPermitted",
-                "{path}: {observed}"
-            );
-        }
-    }
+async fn link_failures(host: &Harness, generation: &str, denied: Option<&Path>) {
+    let observed = host
+        .request(json!({"op":"file","generation":generation,"path":"dangling","bytes":[]}))
+        .await;
+    assert_eq!(observed["error"], "not-found", "{generation}: {observed}");
     let Some(denied) = denied else {
         return;
     };
