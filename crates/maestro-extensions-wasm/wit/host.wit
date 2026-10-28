@@ -6,10 +6,12 @@ interface host {
     enum operation-scope { user, project }
     /// Source spelling retains its authored pin.
     record package-request { source: string, scope: operation-scope }
+    /// Sources a factory selected itself, resolved in one installed scope.
+    record package-sources { sources: list<string>, scope: operation-scope }
     /// Factory-time requests on the application's original owners.
     variant host-operation {
         read-settings(operation-scope),
-        resolve-packages,
+        resolve-packages(option<package-sources>),
         acquire(package-request),
         verify-pin(package-request),
         restore-pin(package-request),

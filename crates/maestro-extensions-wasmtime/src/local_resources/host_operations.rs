@@ -33,6 +33,15 @@ struct Package {
     /// Installed location policy.
     scope: Scope,
 }
+/// Sources the factory selected itself and their one installed scope.
+#[derive(ComponentType, Lift)]
+#[component(record)]
+struct Sources {
+    /// Authored sources including their pins.
+    sources: Vec<String>,
+    /// Installed location policy shared by every source.
+    scope: Scope,
+}
 /// Canonical domain requests, not an untyped operation-name dispatcher.
 #[derive(ComponentType, Lift)]
 #[component(variant)]
@@ -40,9 +49,9 @@ enum Operation {
     /// Raw document read.
     #[component(name = "read-settings")]
     ReadSettings(Scope),
-    /// Configured package resolution.
+    /// Configured, or explicitly supplied, package resolution.
     #[component(name = "resolve-packages")]
-    ResolvePackages,
+    ResolvePackages(Option<Sources>),
     /// Pinned acquisition.
     #[component(name = "acquire")]
     Acquire(Package),
@@ -57,7 +66,9 @@ impl From<Operation> for HostOperation {
     fn from(operation: Operation) -> Self {
         match operation {
             Operation::ReadSettings(scope) => Self::ReadSettings(scope.into()),
-            Operation::ResolvePackages => Self::ResolvePackages(None),
+            Operation::ResolvePackages(explicit) => Self::ResolvePackages(
+                explicit.map(|sources| (sources.sources, sources.scope.into())),
+            ),
             Operation::Acquire(package) => Self::Acquire(package.source, package.scope.into()),
             Operation::VerifyPin(package) => Self::VerifyPin(package.source, package.scope.into()),
             Operation::RestorePin(package) => {
