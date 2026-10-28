@@ -2,28 +2,19 @@
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionResult,
     child_process::{ChildProcess, SpawnOptions},
-    streams::Readable,
+    streams::read_to_end,
 };
 use std::{rc::Rc, task::Poll};
 
 pub(super) use maestro_text::shell_quote as quote;
-
-/// Drains original bytes without decoding or merging standard error into file contents.
-async fn collect(stream: Rc<dyn Readable>) -> ExtensionResult<Vec<u8>> {
-    let mut bytes = Vec::new();
-    while let Some(chunk) = stream.read().await? {
-        bytes.extend(chunk);
-    }
-    Ok(bytes)
-}
 
 /// Drains both outputs beside input, retaining write errors for the exit-status check.
 async fn transfer(
     child: &Rc<dyn ChildProcess>,
     input: Option<String>,
 ) -> ExtensionResult<(Vec<u8>, Vec<u8>, ExtensionResult<()>)> {
-    let mut stdout = Box::pin(collect(child.stdout().ok_or("SSH stdout missing")?));
-    let mut stderr = Box::pin(collect(child.stderr().ok_or("SSH stderr missing")?));
+    let mut stdout = Box::pin(read_to_end(child.stdout().ok_or("SSH stdout missing")?));
+    let mut stderr = Box::pin(read_to_end(child.stderr().ok_or("SSH stderr missing")?));
     let stdin = child.stdin().ok_or("SSH stdin missing")?;
     let mut write = Box::pin(async move {
         let result = if let Some(input) = input {

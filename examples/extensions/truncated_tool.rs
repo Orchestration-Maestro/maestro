@@ -9,7 +9,7 @@ use maestro_extensions_wasm::{
     TextContent, Theme, ToolDefinition, ToolMetadata, ToolRenderResultLike,
     ToolRenderResultOptions, UserBlock,
     child_process::{SpawnOptions, Stdio},
-    streams::Readable,
+    streams::{Readable, read_to_end},
     tools, utils,
 };
 use serde::{Deserialize, Serialize};
@@ -70,17 +70,15 @@ struct SearchOutput {
     stderr: String,
 }
 
-/// Reads one output pipe to its end, decoding it lossily.
+/// Reads an optional output pipe, decoding its bytes lossily.
 ///
 /// # Errors
 /// Returns native pipe-read errors.
-async fn read_to_end(pipe: Option<Rc<dyn Readable>>) -> ExtensionResult<String> {
-    let mut bytes = Vec::new();
-    if let Some(pipe) = pipe {
-        while let Some(chunk) = pipe.read().await? {
-            bytes.extend(chunk);
-        }
-    }
+async fn read_text(pipe: Option<Rc<dyn Readable>>) -> ExtensionResult<String> {
+    let bytes = match pipe {
+        Some(pipe) => read_to_end(pipe).await?,
+        None => Vec::new(),
+    };
     Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
@@ -110,8 +108,8 @@ async fn search_output(
         ..SpawnOptions::default()
     };
     let child = api.native_io().spawn("rg".into(), args, options).await?;
-    let stdout = read_to_end(child.stdout()).await?;
-    let stderr = read_to_end(child.stderr()).await?;
+    let stdout = read_text(child.stdout()).await?;
+    let stderr = read_text(child.stderr()).await?;
     let code = child.wait().await?.code;
     Ok(SearchOutput {
         code,

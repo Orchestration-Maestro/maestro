@@ -30,6 +30,10 @@ pub trait Writable {
 ///
 /// # Errors
 /// Returns a stream-read error unchanged.
-pub async fn read_to_end(_stream: Rc<dyn Readable>) -> ExtensionResult<Vec<u8>> {
-    std::future::ready(Ok(Vec::new())).await
+pub async fn read_to_end(stream: Rc<dyn Readable>) -> ExtensionResult<Vec<u8>> {
+    let mut bytes = Vec::new();
+    while let Some(chunk) = stream.read().await? {
+        bytes.extend(chunk);
+    }
+    Ok(bytes)
 }
