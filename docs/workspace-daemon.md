@@ -651,9 +651,10 @@ Includes apply where they appear. A file already being read is not entered again
 itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
 `gitdir/i`, `onbranch` and `hasconfig:remote.*.url`. A `hasconfig` include is skipped when
 it, or a file it includes, sets a remote URL, and URLs set in the worktree file never
-satisfy the condition. Patterns follow Git's path rules: `*` and `?` stop at `/`, `**`
-crosses it and a trailing `/` means everything below. Matching takes time proportional to
-the pattern length times the text length.
+satisfy the condition. For `gitdir`, `gitdir/i` and `onbranch` patterns, `*` and `?`
+stop at `/`, `**` crosses it and a trailing `/` means everything below. URL conditions
+allow wildcards across `/`. Matching takes time proportional to the pattern length
+times the text length.
 
 The fetch refspecs of the tracked remote map the merge reference to its local tracking
 reference. A remote of `.` tracks the merge reference itself, a remote without refspecs
