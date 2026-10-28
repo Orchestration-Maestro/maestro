@@ -1,8 +1,13 @@
 //! Pane commands: list, current, get, focus, layout, process info and neighbours here, and
-//! split, resize, swap, zoom, move and close in the child modules.
+//! split, resize, swap, zoom, move, close, input, rename, read and reports in the child modules.
 
 mod close;
+mod input;
+mod metadata;
 mod move_pane;
+mod read;
+mod rename;
+mod reports;
 mod resize;
 mod split;
 mod swap;
@@ -90,6 +95,23 @@ impl<C: FnMut() -> u128> App<C> {
             RpcCommand::PaneMove(params) => self.handle_pane_move(params).await,
             RpcCommand::PaneZoom(params) => self.handle_pane_zoom(&params),
             RpcCommand::PaneClose(target) => self.handle_pane_close(&target.pane_id).await,
+            RpcCommand::PaneInputSet(params) => self.handle_pane_input_set(&params),
+            RpcCommand::PaneRename(params) => self.handle_pane_rename(params).await,
+            RpcCommand::PaneRead(params) => self.handle_pane_read(&params),
+            RpcCommand::PaneSendText(params) => self.handle_pane_send_text(params),
+            RpcCommand::PaneSendKeys(params) => self.handle_pane_send_keys(&params),
+            RpcCommand::PaneSendInput(params) => self.handle_pane_send_input(params),
+            RpcCommand::PaneReportAgent(params) => self.handle_pane_report_agent(params),
+            RpcCommand::PaneReportAgentSession(params) => {
+                self.handle_pane_report_agent_session(params)
+            }
+            RpcCommand::PaneReportMetadata(params) => {
+                self.handle_pane_report_metadata(params).await
+            }
+            RpcCommand::PaneClearAgentAuthority(params) => {
+                self.handle_pane_clear_agent_authority(params)
+            }
+            RpcCommand::PaneReleaseAgent(params) => self.handle_pane_release_agent(params),
             _ => Err(api_error("not_implemented", "method not implemented yet")),
         }
     }
@@ -155,12 +177,7 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Result<ResponseResult, ErrorBody> {
         let (workspace, pane) = self.optional_pane(pane_id)?;
         let runtime = self
-            .state
-            .topology
-            .workspaces
-            .get(workspace)
-            .and_then(|target| target.terminal_id(pane))
-            .and_then(|terminal| self.terminal_runtimes.get(terminal))
+            .pane_runtime(workspace, pane)
             .ok_or_else(pane_unresolved)?;
         let observed = runtime
             .observe_processes(observe_foreground)

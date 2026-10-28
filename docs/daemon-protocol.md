@@ -220,6 +220,51 @@ when a command changes nothing.
   worktree group that asks first, it fails with `confirmation_required` and the daemon
   waits for the answer.
 
+## Pane input and report commands
+
+The daemon also answers `pane.input.set`, `rename`, `read`, `send_text`, `send_keys`,
+`send_input`, `report_agent`, `report_agent_session`, `report_metadata`,
+`clear_agent_authority` and `release_agent`. Each names its pane; one that is gone fails
+with `pane_not_found` and `pane <id> not found`.
+
+- `pane.input.set` sends right clicks in the pane to the program (`pane`) or to Maestro
+  (`maestro`).
+- `pane.rename` sets the pane's label, or clears it when `label` is missing or blank, and
+  answers with the pane. A changed label is published as `pane_updated` with the complete
+  record; setting the label it already has publishes nothing.
+- `pane.read` returns screen text from `source` (`visible`, `recent`, `recent_unwrapped`
+  or `detection`) as `text` or `ansi`. `lines`, at most 1000, keeps the last lines of a
+  `visible` or `detection` read and sets how many rows a `recent` read takes (80 without
+  it). The answer names the pane, its workspace and its tab, and `truncated` says that
+  older lines or rows were left out. A pane without a live process fails with
+  `pane_not_found`.
+- `pane.send_text` writes `text` as given. `pane.send_keys` writes each key as its own
+  write. `pane.send_input` writes `text`, framed as a paste when the program asked for
+  bracketed paste, and then the keys, as one write. Keys follow the key-binding grammar
+  (`ctrl+c`, `shift+tab`, `Enter`), and `C-c`, `c-c` and a lone `+` are also accepted.
+  Every key is checked before a byte is written. A key that is not one, including a
+  prefix binding such as `prefix+h`, fails with `invalid_key` and `unsupported key <key>`.
+  A pane whose process cannot take the bytes fails with `pane_send_failed`.
+- `pane.report_agent` sets the state an integration reports (`idle`, `working`, `blocked`
+  or `unknown`) for `agent` from `source`, with an optional `message`, sequence and session
+  identity. `pane.report_agent_session` records the session identity alone.
+  `pane.clear_agent_authority` withdraws the authority of `source`, or of any source, and
+  the detected state shows again. `pane.release_agent` hands the pane back to the shell;
+  an official integration's release waits for its live process to exit. A blank `agent`
+  fails with `invalid_agent`. A recognized agent is stored under its catalogue name, and
+  any other label is kept as it is.
+- `pane.report_metadata` sets a title, display agent, state labels and tokens for a
+  `source`, with a lifetime of 1 ms to one day. Text is cleaned of control characters and
+  limited to 80 characters, and a state label must name an execution state. A request
+  that sets and clears one field, or asks for nothing, fails with
+  `invalid_metadata_request`. A pane holds at most 32 tokens, a request sets at most 16,
+  and sequences are tracked for at most 32 token sources. Presentation and tokens share
+  one sequence per source; a stale sequence, or a report that follows the exit of the
+  agent it names, is accepted without effect. A changed token set publishes `pane_updated`.
+  The other failures are `invalid_metadata_source`, `invalid_metadata_token`,
+  `invalid_metadata_ttl`, `invalid_state_label`, `metadata_token_limit` and
+  `metadata_sequence_source_limit`.
+
 ## Binary screen channel
 
 Binary is explicitly selected at connection creation, using `Hello`/`Welcome` on

@@ -2,7 +2,7 @@
 //! request adapter under one connection.
 #![cfg(target_os = "linux")]
 use maestro_app::SettingsManager;
-use maestro_app::daemon::api::client::{ConnectionTarget, DaemonClient};
+use maestro_app::daemon::api::client::{ApiClientError, ConnectionTarget, DaemonClient};
 use maestro_app::daemon::api::{RequestMessage, RuntimeStatus, event_hub::EventHub};
 use maestro_app::daemon::app::App;
 use maestro_app::daemon::app::construction::{
@@ -17,7 +17,8 @@ use maestro_app::rpc_mode::{
 };
 use maestro_app::rpc_types::workspace::{Request, RpcResponse};
 use maestro_app::rpc_types::workspace_schema::{
-    AgentManifestInfo, ErrorBody, ResponseResult, ServerCapabilities, TabInfo, WorkspaceInfo,
+    AgentManifestInfo, AgentStatus, ErrorBody, ResponseResult, ServerCapabilities, TabInfo,
+    WorkspaceInfo,
 };
 use maestro_app::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_rpc::daemon::run_server;
@@ -794,6 +795,17 @@ fn call(socket: &Path, request: serde_json::Value) -> Result<ResponseResult, Err
         .result
 }
 
+/// The failure the daemon answers the wire-form `request` with.
+fn refused(socket: &Path, request: serde_json::Value) -> ErrorBody {
+    let request: Request = serde_json::from_value(request).unwrap();
+    match DaemonClient::for_target(ConnectionTarget::SocketPath(socket.to_path_buf()))
+        .request(&request)
+    {
+        Err(ApiClientError::ErrorResponse(response)) => response.result.unwrap_err(),
+        other => panic!("expected a refusal: {other:?}"),
+    }
+}
+
 /// The workspace a single-workspace result reports.
 fn workspace_of(result: Result<ResponseResult, ErrorBody>) -> WorkspaceInfo {
     match result {
@@ -1094,6 +1106,81 @@ fn socket_pane_mutations_round_trip() {
         };
         assert_eq!(panes.len(), 1);
         assert_eq!(panes[0].terminal_id, root_pane.terminal_id);
+    });
+}
+
+/// Writes text, keys and combined input to `pane` over the socket, and sends a key the daemon
+/// refuses before it writes anything.
+fn write_to_pane(socket: &Path, pane: &str) {
+    for write in [
+        json!({"type": "pane.send_text", "pane_id": pane, "text": "true"}),
+        json!({"type": "pane.send_keys", "pane_id": pane, "keys": ["Enter"]}),
+        json!({"type": "pane.send_input", "pane_id": pane, "text": "true", "keys": ["Enter"]}),
+    ] {
+        assert_eq!(
+            call(socket, write.clone()),
+            Ok(ResponseResult::Ok {}),
+            "{write}"
+        );
+    }
+    let unknown = json!({"type": "pane.send_keys", "pane_id": pane, "keys": ["no-such-key"]});
+    assert_eq!(
+        refused(socket, unknown),
+        ErrorBody {
+            code: "invalid_key".into(),
+            message: "unsupported key no-such-key".into()
+        }
+    );
+}
+
+/// Through `run_server`, a live pane is renamed, routed, written to, read and reported on with
+/// typed answers.
+#[test]
+fn socket_pane_io_round_trip() {
+    served_live("socket_pane_io_round_trip", |socket| {
+        let created = call(&socket, json!({"type": "workspace.create"}));
+        let Ok(ResponseResult::WorkspaceCreated {
+            workspace,
+            root_pane,
+            ..
+        }) = created
+        else {
+            panic!("expected a created workspace: {created:?}")
+        };
+        let pane = root_pane.pane_id.as_str();
+        let rename = json!({"type": "pane.rename", "pane_id": pane, "label": "build"});
+        let Ok(ResponseResult::PaneInfo { pane: renamed }) = call(&socket, rename) else {
+            panic!("expected the renamed pane")
+        };
+        assert_eq!(renamed.label.as_deref(), Some("build"));
+        let routing = json!({"type": "pane.input.set", "pane_id": pane, "right_click": "pane"});
+        assert_eq!(call(&socket, routing), Ok(ResponseResult::Ok {}));
+        write_to_pane(&socket, pane);
+        let read = json!({"type": "pane.read", "pane_id": pane, "source": "visible"});
+        let Ok(ResponseResult::PaneRead { read }) = call(&socket, read) else {
+            panic!("expected a read")
+        };
+        assert_eq!(read.pane_id, root_pane.pane_id);
+        assert_eq!(read.workspace_id, workspace.workspace_id);
+        assert_eq!(read.tab_id, root_pane.tab_id);
+        let report = json!({
+            "type": "pane.report_agent", "pane_id": pane, "source": "custom:hermes",
+            "agent": "hermes", "state": "working"
+        });
+        assert_eq!(call(&socket, report), Ok(ResponseResult::Ok {}));
+        let tokens = json!({
+            "type": "pane.report_metadata", "pane_id": pane, "source": "custom:hermes",
+            "tokens": {"summary": "reviewing"}
+        });
+        assert_eq!(call(&socket, tokens), Ok(ResponseResult::Ok {}));
+        let get = call(&socket, json!({"type": "pane.get", "pane_id": pane}));
+        let Ok(ResponseResult::PaneInfo { pane: reported }) = get else {
+            panic!("expected the pane")
+        };
+        assert_eq!(reported.agent.as_deref(), Some("hermes"));
+        assert_eq!(reported.agent_status, AgentStatus::Working);
+        assert_eq!(reported.tokens["summary"], "reviewing");
+        assert_eq!(reported.label.as_deref(), Some("build"));
     });
 }
 

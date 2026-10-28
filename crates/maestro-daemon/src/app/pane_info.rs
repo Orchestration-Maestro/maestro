@@ -1,6 +1,7 @@
 //! Public pane observations over topology, retained metadata and live runtimes.
 
 use super::{App, actions::pane_agent_status};
+use crate::pane::PaneRuntime;
 use maestro_protocol::{
     events::EventData,
     schema::{AgentSessionInfo, PaneInfo, PaneScrollInfo},
@@ -65,6 +66,17 @@ impl<C: FnMut() -> u128> App<C> {
             scroll,
             revision: terminal.revision,
         })
+    }
+
+    /// The live process of a pane, if it has one.
+    pub(super) fn pane_runtime(&self, workspace: usize, pane: PaneId) -> Option<&PaneRuntime> {
+        let terminal = self
+            .state
+            .topology
+            .workspaces
+            .get(workspace)?
+            .terminal_id(pane)?;
+        self.terminal_runtimes.get(terminal)
     }
 
     /// Publishes the complete pane record through the shared event history.

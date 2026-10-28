@@ -82,7 +82,8 @@ impl PaneRuntime {
     }
 
     /// Frames pasted text only when the child enabled paste delimiters.
-    fn paste_payload(&self, text: String) -> Vec<u8> {
+    #[must_use]
+    pub fn paste_payload(&self, text: String) -> Vec<u8> {
         if self.bracketed_paste_enabled() {
             format!("\x1b[200~{text}\x1b[201~").into_bytes()
         } else {

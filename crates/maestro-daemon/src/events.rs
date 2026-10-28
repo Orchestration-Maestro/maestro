@@ -2,6 +2,7 @@
 
 use std::time::Instant;
 
+use crate::terminal::state::{AgentMetadataReport, SessionStartReport};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::layout::PaneId;
 use tokio::sync::mpsc;
@@ -67,6 +68,29 @@ pub enum AppEvent {
         seq: Option<u64>,
         /// Validated session identity.
         session_ref: Option<crate::agent_resume::AgentSessionRef>,
+    },
+    /// Agent session identity was reported without state authority.
+    AgentSessionReported {
+        /// Pane receiving the report.
+        pane_id: PaneId,
+        /// Supplied identity, freshness and lifecycle-start provenance.
+        report: SessionStartReport,
+    },
+    /// Display-only agent metadata was reported for a pane.
+    HookMetadataReported {
+        /// Pane receiving the report.
+        pane_id: PaneId,
+        /// Canonical presentation update with its clear, guard and lifetime controls.
+        report: AgentMetadataReport,
+    },
+    /// Integration authority was explicitly cleared for a pane.
+    HookAuthorityCleared {
+        /// Pane receiving the clear.
+        pane_id: PaneId,
+        /// Integration provenance whose authority is cleared, or any when absent.
+        source: Option<String>,
+        /// Source-local sequence.
+        seq: Option<u64>,
     },
     /// Integration ownership released back to the shell.
     HookAgentReleased {
