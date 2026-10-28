@@ -1157,6 +1157,12 @@ impl host::Host for State {
             body: "body".into(),
         }))
     }
+    fn native_yaml(
+        &mut self,
+        _content: String,
+    ) -> wasmtime::Result<Result<Vec<host::FrontmatterToken>, String>> {
+        Ok(Err("raw YAML requires the production helper host".into()))
+    }
     fn native_helper(
         &mut self,
         operation: String,

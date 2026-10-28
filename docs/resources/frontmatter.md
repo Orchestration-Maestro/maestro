@@ -33,5 +33,5 @@ The reader accepts document start/end markers and separator text inside block
 scalars. It rejects multiple documents and reports parser causes with source
 coordinates. Newlines use the same normalization as headers.
 
-`parse_frontmatter` still extracts only a leading header, converts an empty or
-null header to an empty mapping, and returns its body as before.
+`parse_frontmatter` extracts only a leading header, converts an empty or
+null header to an empty mapping, and returns its parsed body.
