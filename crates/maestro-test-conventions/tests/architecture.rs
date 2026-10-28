@@ -206,6 +206,7 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-json", "core"),
         ("maestro-entry", "core"),
         ("maestro-tool", "core"),
+        ("maestro-package", "core"),
         ("maestro-brand", "core"),
         ("maestro-models", "core"),
         ("maestro-resources", "core"),
@@ -953,6 +954,7 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-json", "core"),
         ("maestro-entry", "core"),
         ("maestro-tool", "core"),
+        ("maestro-package", "core"),
         ("maestro-brand", "core"),
     ]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));

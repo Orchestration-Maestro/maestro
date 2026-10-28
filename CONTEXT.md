@@ -349,3 +349,10 @@ as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
 crate dependency: both extension adapters already reach the request owner through
 their declared edges.
+
+## Package interchange
+
+- **Package records:** `maestro-package` defines portable resolved-package and Git-pin
+  observations shared by native packages and guest authoring. It runs no effects.
+- **Package manager:** `maestro-packages` owns native resolution, acquisition and
+  Git operations; it re-exports the package records at its existing public paths.
