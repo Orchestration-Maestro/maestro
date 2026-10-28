@@ -30,26 +30,31 @@ fn snapshot(
     git_status_snapshot_for_cwd_with_demand(cwd, cached, ALL, &ConfigEnvironment::default())
 }
 
-/// A repository whose branch `main` tracks `origin/main`, written without running Git.
-fn write_tracked_repository(root: &Path) {
-    std::fs::create_dir_all(root.join(".git/refs/heads")).unwrap();
-    std::fs::create_dir_all(root.join(".git/refs/remotes/origin")).unwrap();
-    std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
+/// Metadata whose branch `main` tracks `merge` of `remote`, whose tracking reference is at `oid`.
+fn write_tracking_metadata(git_dir: &Path, remote: &str, merge: &str, oid: &str) {
+    std::fs::create_dir_all(git_dir.join("refs/heads")).unwrap();
+    std::fs::create_dir_all(git_dir.join("refs/remotes").join(remote)).unwrap();
+    std::fs::write(git_dir.join("HEAD"), "ref: refs/heads/main\n").unwrap();
     std::fs::write(
-        root.join(".git/refs/heads/main"),
+        git_dir.join("refs/heads/main"),
         format!("{}\n", "1".repeat(40)),
     )
     .unwrap();
     std::fs::write(
-        root.join(".git/refs/remotes/origin/main"),
-        format!("{}\n", "2".repeat(40)),
+        git_dir.join("refs/remotes").join(remote).join(merge),
+        format!("{oid}\n"),
     )
     .unwrap();
     std::fs::write(
-        root.join(".git/config"),
-        "[branch \"main\"]\n\tremote = origin\n\tmerge = refs/heads/main\n",
+        git_dir.join("config"),
+        format!("[branch \"main\"]\n\tremote = {remote}\n\tmerge = refs/heads/{merge}\n"),
     )
     .unwrap();
+}
+
+/// A repository whose branch `main` tracks `origin/main`, written without running Git.
+fn write_tracked_repository(root: &Path) {
+    write_tracking_metadata(&root.join(".git"), "origin", "main", &"2".repeat(40));
 }
 
 #[cfg(target_os = "linux")]
@@ -327,6 +332,32 @@ fn packed_refs_search_skips_a_line_it_cannot_read() {
 
     let upstream = entry.unwrap().fingerprint.unwrap().upstream.unwrap();
     assert_eq!(upstream.oid, Some("2".repeat(40)));
+}
+
+#[test]
+fn retargeting_the_checkout_marker_reads_the_new_repository_tracking() {
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let checkout = directory.path().join("checkout");
+    let (first, second) = (
+        directory.path().join("first.git"),
+        directory.path().join("second.git"),
+    );
+    std::fs::create_dir_all(&checkout).unwrap();
+    write_tracking_metadata(&first, "origin", "main", &"2".repeat(40));
+    write_tracking_metadata(&second, "backup", "trunk", &"3".repeat(40));
+    let marker = checkout.join(".git");
+    std::fs::write(&marker, format!("gitdir: {}\n", first.display())).unwrap();
+    let (_, entry) = snapshot(&checkout, None);
+    let before = entry.as_ref().unwrap().fingerprint.as_ref().unwrap();
+    assert_eq!(before.upstream.as_ref().unwrap().remote, "origin");
+    std::fs::write(&marker, format!("gitdir: {}\n", second.display())).unwrap();
+
+    let (_, entry) = snapshot(&checkout, entry.as_ref());
+
+    let upstream = entry.unwrap().fingerprint.unwrap().upstream.unwrap();
+    assert_eq!(upstream.remote, "backup");
+    assert_eq!(upstream.merge_ref, "refs/heads/trunk");
+    assert_eq!(upstream.oid, Some("3".repeat(40)));
 }
 
 #[test]
