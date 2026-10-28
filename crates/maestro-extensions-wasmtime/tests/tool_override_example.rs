@@ -77,6 +77,13 @@ async fn read(runner: &Rc<ExtensionRunner<Local>>, params: Value) -> Value {
     json!({"content":value.content,"details":value.details})
 }
 
+/// The host's resolved spelling of a fixture path below `root`, with native separators.
+fn native(root: &Path, path: &str) -> String {
+    root.join(path.replace('/', std::path::MAIN_SEPARATOR_STR))
+        .display()
+        .to_string()
+}
+
 /// Executes the registered log-display command without a prompt or provider.
 async fn show_log(runner: &ExtensionRunner<Local>) {
     let command = runner.get_command("read-log").unwrap();
@@ -164,7 +171,7 @@ fn tool_override_preserves_authored_file_identity() {
             assert!(
                 std::fs::read_to_string(root.join("read-access.log"))
                     .unwrap()
-                    .ends_with(&format!("ALLOWED: {}\n", root.join(path).display()))
+                    .ends_with(&format!("ALLOWED: {}\n", native(root, path)))
             );
         }
     });
@@ -200,7 +207,7 @@ fn tool_override_reduces_paths_before_access_checks() {
                 .unwrap()
                 .ends_with(&format!(
                     "BLOCKED: {} (matches blocked pattern)\n",
-                    root.join(".ssh/key").display()
+                    native(root, ".ssh/key")
                 ))
         );
     });
@@ -236,7 +243,7 @@ fn tool_override_blocks_sensitive_paths_and_records_every_attempt() {
             let log = std::fs::read_to_string(root.join("read-access.log")).unwrap();
             assert!(log.ends_with(&format!(
                 "BLOCKED: {} (matches blocked pattern)\n",
-                root.join(path).display()
+                native(root, path)
             )));
         }
         for path in [".ENV", ".env.", "secret.txt", ".SSH/key", "missing.txt"] {
@@ -251,7 +258,7 @@ fn tool_override_blocks_sensitive_paths_and_records_every_attempt() {
             assert!(
                 std::fs::read_to_string(root.join("read-access.log"))
                     .unwrap()
-                    .ends_with(&format!("ALLOWED: {}\n", root.join(path).display()))
+                    .ends_with(&format!("ALLOWED: {}\n", native(root, path)))
             );
         }
         let log = std::fs::read_to_string(root.join("read-access.log")).unwrap();
