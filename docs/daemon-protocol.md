@@ -69,6 +69,85 @@ negotiated protocol. Product versions remain separate strings. Existing JSONL
 clients need no header, handshake, version field or unsolicited startup record.
 JSONL framing belongs to `maestro-json::jsonl`, not a second codec here.
 
+## Socket server
+
+`maestro_rpc::daemon::run_server` serves this protocol on the daemon's API socket.
+Each accepted connection runs the application's one connection runner without a
+session, so a line read during a long request is the next command, and responses
+can arrive out of order. Match them by `id`. A connection ends when the client ends
+its input: requests still waiting on the daemon get no response, but a request the
+daemon already took is not undone.
+
+- The first line must arrive within 5 s of the connection's acceptance. A partial
+  line does not extend the deadline. Once the first line arrives, later lines have
+  no deadline.
+- A line is at most 1 MiB before its LF, a CR included, and must be valid UTF-8.
+  A longer line or invalid UTF-8 closes the connection without a response.
+- Each line is trimmed of Unicode whitespace before it is parsed; U+FEFF is not
+  whitespace. A blank first line, or input that ends before a complete first line,
+  closes the connection without a response.
+- `ping` answers at once, even while the daemon is busy. It reports the product
+  version, protocol 21 and the server's capabilities.
+- `server.stop` answers at once and stops the daemon after its response write
+  attempt settles. Once stopping, every request but `ping` and `server.stop` fails
+  with `server_unavailable` and `server is shutting down`.
+- Other requests wait for the daemon however long it takes. A daemon that is gone
+  fails them with `server_unavailable`.
+- A response write that makes no progress for 5 s fails the connection. Each write
+  that takes bytes starts a new budget. The daemon learns that a response was
+  written once its whole line was written and flushed, or once that attempt failed.
+  A client that closed its end ends the connection normally, but the daemon's
+  private write receipt still reports the failed write attempt.
+
+## Workspace and tab commands
+
+The daemon answers the workspace commands `workspace.list`, `get`, `create`, `focus`,
+`rename`, `move`, `move_block`, `report_metadata` and `close`, and the tab commands
+`tab.list`, `get`, `create`, `focus`, `rename`, `move` and `close`. A workspace target
+is its stable id, such as `w1`, or a position written `w_N` or `N`. A tab target is
+`w1:t2`, or a position written `w1:2` or `t_w1_2`. A target that names nothing fails
+with `workspace_not_found` or `tab_not_found`.
+
+- `workspace.create` and `tab.create` start the new root pane in `cwd`. Without one,
+  the pane starts where the `newPaneCwd` setting points, which by default is the
+  focused pane's directory. The result holds the new workspace or tab and its root
+  pane. With `focus: false` the existing active workspace and tab stay active.
+  Workspace creation activates the new workspace if none was active.
+- `env` gives the new root pane extra variables. A key must be non-empty and hold no
+  `=` or NUL, and a value must hold no NUL. Otherwise the command fails with
+  `invalid_env` before any pane starts.
+- A move takes an insertion index from 0 to the number of workspaces or tabs.
+  `workspace.move_block` moves its workspaces, in the order given, before
+  `before_workspace_id` or to the end. A move that changes nothing publishes no event.
+- Closing a workspace, or its last tab, publishes the workspace's final record. While
+  close confirmation is on, closing the last tab of a repository with open linked
+  worktrees fails with `confirmation_required`.
+
+`workspace.report_metadata` sets or clears at most 16 tokens per report, and a
+workspace holds at most 32. A key is at most 32 ASCII letters, digits, `_` or `-`. A
+value is trimmed, loses its control characters and keeps at most 80 characters; a
+blank value clears its token. `source` names the reporter in at most 80 ASCII letters,
+digits, `:`, `.`, `_` or `-`. `ttl_ms`, from 1 to 86400000, makes the tokens expire.
+With `seq`, a report no newer than the reporter's last one has no effect, and at most
+32 reporters can use `seq` on one workspace.
+
+`notification.show` shows a workspace notification when notifications go to the
+workspace. CR, LF and tab become spaces; other control characters go. Whitespace
+runs become one space. The title keeps at most 80 characters and the body at most
+240. An empty title fails with
+`invalid_params`. The result reason is `busy` while another notification shows,
+`rate_limited` within a second of the last one, and `disabled` when notifications are
+off. Terminal and system notifications need an attached client, so the daemon answers
+`no_foreground_client`.
+
+`server.reload_config` reloads the settings and reports what applied.
+`server.agent_manifests` reports the detection manifests in use and the last catalog
+check. `server.reload_agent_manifests` reloads them and restarts detection in every
+pane.
+
+The other command families fail with `not_implemented` and
+`method not implemented yet` until the daemon handles them.
+
 ## Binary screen channel
 
 Binary is explicitly selected at connection creation, using `Hello`/`Welcome` on

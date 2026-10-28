@@ -536,6 +536,42 @@ original diagnostic. `platform::current_process_is_detached_server_daemon`
 reports whether the process leads its own session, which is how a detached
 daemon runs.
 
+## Server mode
+
+`maestro_rpc::daemon::run_server` takes the daemon's `App`, its `SettingsManager`, its
+`DaemonPaths` and a shutdown future. It installs the file log for the `daemon` role,
+filtered by a valid `MAESTRO_LOG` directive, and binds the API socket at
+`DaemonPaths::api_socket_path`.
+The socket is readable and writable by its owner only. A stale socket is replaced; a
+live one fails the start as address-in-use, and a file that is not a socket is kept.
+After binding, a daemon without workspaces opens one in the directory
+`MAESTRO_STARTUP_CWD` names, focused; a daemon that already has workspaces ignores it.
+Panes never inherit the variable. The server then logs `maestro server started` and
+writes three lines to standard error:
+
+```text
+maestro server running; you can use any maestro CLI command in another terminal.
+api socket: <path>
+logs: <daemon log path>
+```
+
+A start against a running daemon writes `error: maestro server is already running`
+and the socket path instead. No startup record goes on the socket, and no status
+file is written. The daemon loop then runs beside the socket until the shutdown
+future resolves or a client sends `server.stop`. Afterwards the server removes its
+socket, unless another file has replaced it. Ping reports live handoff as
+unavailable, and the detached capability is the process's own session check.
+
+`App::run` takes the request queue the socket feeds and the settings owner a
+configuration reload reads through. `App::handle_api_request` applies every queued
+internal event before it answers, and marks render work for a command that changes
+what a view shows. It sets the quit flag for `server.stop`, answers the server,
+notification, workspace and tab commands, and answers every other command with
+`not_implemented`. Creating a workspace from the view goes through the same
+`workspace.create` handler.
+The [socket server](daemon-protocol.md#socket-server) section describes the
+connection rules.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and

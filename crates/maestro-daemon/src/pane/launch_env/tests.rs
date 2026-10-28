@@ -10,6 +10,7 @@ fn capture(extra: Vec<(String, String)>, script: &str) -> String {
         ("TERM".into(), "outer-terminal".into()),
         ("COLORTERM".into(), "outer-color".into()),
         ("CODEX_THREAD_ID".into(), "outer-session".into()),
+        ("MAESTRO_STARTUP_CWD".into(), "/outer-startup".into()),
     ]);
     PaneLaunchEnv::from_extra(extra).apply(&mut description, Path::new("/tmp/maestro.sock"), None);
     let mut command = Command::new(description.program);
@@ -27,6 +28,14 @@ fn capture(extra: Vec<(String, String)>, script: &str) -> String {
 fn outer_agent_thread_is_not_inherited_by_panes() {
     assert_eq!(
         capture(vec![], "printf '%s' \"${CODEX_THREAD_ID-unset}\""),
+        "unset"
+    );
+}
+
+#[test]
+fn startup_directory_is_not_inherited_by_panes() {
+    assert_eq!(
+        capture(vec![], "printf '%s' \"${MAESTRO_STARTUP_CWD-unset}\""),
         "unset"
     );
 }

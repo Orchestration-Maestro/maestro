@@ -29,6 +29,11 @@ once that attempt failed. It disconnects if the response is dropped before any a
 says nothing about whether the peer read the line. After a write fails, the connection admits
 no further lines, so no frame follows a partial one.
 
+`JsonlLineReader::new` decodes invalid UTF-8 with replacement characters and reads a final
+line without its LF. `JsonlLineReader::strict` reads only LF-terminated lines, decodes each as
+strict UTF-8 and fails a line whose bytes before its LF exceed its limit, a CR included, as
+soon as they arrive; the first failure ends the input. The daemon socket reads this way.
+
 When the input of a connection without a session ends, the workspace operations still waiting
 are dropped and get no response. Responses already queued are still written, and a write that
 fails after the connection ended becomes its result. Commands still running when the runner
@@ -102,8 +107,11 @@ not hold back a fast one, so responses can arrive out of order. Match them by `i
 A record that is not valid JSON, not an object, or has no string `type` is answered with
 an uncorrelated failure. Invalid JSON uses the command `parse` and the message
 `Failed to parse command: ` followed by the decoder's message. An unknown `type` answers
-`Unknown command: <type>` without the supplied `id`. A known command with a missing or
-wrongly typed field keeps its `id` and command and answers the decoder's message. The
+`Unknown command: <type>` without the supplied `id`. A known session command with a
+missing or wrongly typed field keeps its `id` and command and answers the decoder's
+message. A known workspace command with such a field answers in the workspace envelope,
+with an empty `id`, its command, the code `invalid_request` and `invalid request: `
+followed by the decoder's message. Unknown members of a valid command are ignored. The
 connection keeps serving after each of these.
 
 ### Session commands
