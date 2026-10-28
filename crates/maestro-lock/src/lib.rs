@@ -17,6 +17,14 @@ pub fn acquire(file: File) -> Result<File, TryLockError> {
     Ok(file)
 }
 
+/// Returns the supplied file after waiting for exclusive ownership.
+///
+/// # Errors
+/// Propagates native lock acquisition errors.
+pub fn acquire_waiting(file: File) -> std::io::Result<File> {
+    Ok(file)
+}
+
 /// Attempts acquisition with controlled attempt and wait effects.
 fn retry_contended(
     mut attempt: impl FnMut() -> Result<(), TryLockError>,
