@@ -85,9 +85,9 @@ impl RetryFixture {
         let remote = self.repo.remote.to_string_lossy().into_owned();
         let hook = self.effects.run_hook.borrow().clone().unwrap();
         *self.effects.run_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
-            if args.first().is_some_and(|arg| arg == "clone") {
+            if let Some(index) = args.iter().position(|arg| arg == "clone") {
                 let mut local = args.to_vec();
-                local[1].clone_from(&remote);
+                local[index + 1].clone_from(&remote);
                 return hook(command, &local, cwd);
             }
             hook(command, args, cwd)
@@ -128,13 +128,18 @@ async fn execute(
         }
         return Ok(Some(0));
     }
-    if *fail.borrow() == "selection-recovery" && call.args[0] == "symbolic-ref" {
+    let operation = if call.args[0] == "-c" {
+        &call.args[2]
+    } else {
+        &call.args[0]
+    };
+    if *fail.borrow() == "selection-recovery" && operation == "symbolic-ref" {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             "selection restoration rejected",
         ));
     }
-    if fail.borrow().as_str() == call.args[0] {
+    if fail.borrow().as_str() == operation {
         fail.borrow_mut().clear();
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
@@ -144,7 +149,7 @@ async fn execute(
     let result = native
         .run_command(&call.command, &call.args, call.cwd.as_deref())
         .await?;
-    if *fail.borrow() == "after-checkout" && call.args[0] == "checkout" {
+    if *fail.borrow() == "after-checkout" && operation == "checkout" {
         fail.borrow_mut().clear();
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
