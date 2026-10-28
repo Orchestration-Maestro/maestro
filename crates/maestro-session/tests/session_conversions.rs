@@ -71,6 +71,9 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         check_converted_timestamps(local);
         return;
     }
+    if !maestro_test_process::local_zone_follows_tz() {
+        return;
+    }
     for zone in ["UTC", "America/New_York"] {
         let output = maestro_test_process::TestProcess::current(
             "converted_context_uses_existing_local_timestamp_policy",

@@ -290,6 +290,9 @@ fn tree_local_dates_use_the_native_local_zone() {
         assert_eq!(shape(&tree[0]), expected);
         return;
     }
+    if !maestro_test_process::local_zone_follows_tz() {
+        return;
+    }
     for zone in ["UTC", "America/New_York"] {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()

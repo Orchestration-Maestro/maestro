@@ -68,6 +68,9 @@ impl Harness {
             &["config", "user.email", "checkpoint@example.invalid"],
         );
         git(root.path(), &["config", "user.name", "Checkpoint test"]);
+        // Git for Windows converts line endings system-wide; the example's own Git commands
+        // read this repository's setting instead.
+        git(root.path(), &["config", "core.autocrlf", "false"]);
         std::fs::write(root.path().join("tracked.txt"), "committed\n").unwrap();
         git(root.path(), &["add", "tracked.txt"]);
         git(root.path(), &["commit", "-qm", "initial"]);

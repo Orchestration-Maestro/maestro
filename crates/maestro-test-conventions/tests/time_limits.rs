@@ -3,7 +3,7 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
-use support::{Workspace, source};
+use support::{Workspace, native_path, source};
 
 /// Writes each authored source and compares the complete located diagnostics.
 fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)]) {
@@ -27,11 +27,11 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
             .iter()
             .map(|(file, line, api)| {
                 if *api == "optional-poll" {
-                    format!("{}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())", directory.join(file).display())
+                    format!("{}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())", directory.join(native_path(file)).display())
                 } else if api.starts_with("tracing::") {
-                    format!("{}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead", directory.join(file).display())
+                    format!("{}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead", directory.join(native_path(file)).display())
                 } else {
-                    format!("{}:{line}: test-owned time limit: {api}; wait for completion instead", directory.join(file).display())
+                    format!("{}:{line}: test-owned time limit: {api}; wait for completion instead", directory.join(native_path(file)).display())
                 }
             })
             .collect::<Vec<_>>()

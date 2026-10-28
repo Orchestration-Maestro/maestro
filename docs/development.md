@@ -375,14 +375,58 @@ Cargo compilation, tests and watches remain generation-free.
 
 ## Identity and execution modes
 
-The application will support source checkout, installed package and standalone
-execution. Configuration determines its name, configuration directory and
-executable identity, including banners, environment names and configuration paths.
-Those configuration and central asset-path functions are owned by
-[#216](https://github.com/Orchestration-Maestro/maestro/issues/216); no substitute
-configuration schema or asset lookup is provided by the development commands.
-Use the owner's central asset paths, not the location of the current source file.
-The source executable is delivered. Installed distributions still require their prepared assets.
+### Compiled identity and brand customization
+
+[`maestro_app::configuration::config`](../crates/maestro-app/src/configuration/config/mod.rs)
+defines the package and command name `maestro`, display title `Maestro` and
+compiled Cargo package version. It re-exports the resource owner's `.maestro`
+configuration-directory name and derives `MAESTRO_CODING_AGENT_DIR` and
+`MAESTRO_CODING_AGENT_SESSION_DIR` from the command name. The default agent root
+is `<home>/.maestro/agent`; a nonempty `MAESTRO_CODING_AGENT_DIR` overrides it.
+See [application configuration](application/configuration.md#identity-and-roots)
+for root selection. Renaming the executable alone does not change these values.
+Changing compiled identity requires source edits and a rebuild; there is no
+runtime rebranding configuration API.
+
+Brand customization uses the [brand pack](identity.md#pack-shape-and-swapping),
+not installation identity. The pack supplies visual values such as colors,
+fonts, glyphs and mark paths. `maestro-brand` parses and projects those values;
+`maestro-theme` loads native packs and templates and generates terminal themes.
+Changing a pack does not rename the command, environment variables or settings
+directory, and does not install that pack into a running application.
+
+Use the existing [brand theme example](theme.md#brand-pack) to try a pack without
+changing shipped files. Run this from the checkout root:
+
+```sh
+scratch=$(mktemp -d)
+mise exec -- cargo run --locked -p maestro-theme --example brand_themes -- \
+  assets/brand/packs/signal.json "$scratch"
+test -s "$scratch/dark.json" && test -s "$scratch/light.json"
+```
+
+The output directory holds generated themes for inspection; remove it when
+finished. Runtime preferences belong to [settings](settings.md), where `theme`
+selects a terminal theme. They do not replace the compiled identity or select a
+brand pack. See [brand projection](brand.md) and
+[native pack loading](theme.md#brand-pack) for the existing author interfaces.
+
+### Central asset paths
+
+Use `maestro_app::configuration::config` rather than paths relative to the
+current Rust source file. Its native `get_package_dir`, `get_readme_path`,
+`get_docs_path`, `get_examples_path` and `get_theme_directories` query the running
+installation. `config::paths` supplies explicit-input operations for themes,
+interactive assets and export templates; callers supply the package directory
+and layout. These queries return paths, not a guarantee that assets exist.
+
+A build whose compile-time crate directory remains below its source workspace
+uses that workspace root and package layout. Otherwise it uses standalone layout
+with assets beside the executable. A nonempty `MAESTRO_PACKAGE_DIR` overrides
+package-root discovery. See
+[installation paths](application/configuration.md#installation-paths)
+for layout selection and individual asset routes. Installed distributions still
+need prepared assets; the copy recipes below do not create missing inputs.
 
 The copy recipes default to `maestro-app-assets` and `maestro-binary-assets`
 under Cargo's configured target directory. `app-clean` removes both asset trees;
@@ -403,9 +447,28 @@ These commands do not generate a viewer or regenerate assets. A missing or unusa
 input fails with a message naming the path it could not read; already copied groups
 and unrelated destination files remain. `app-build` compiles
 before library copying. `build-binary` compiles toolkit, models, agent, application
-and executable in that order before standalone copying. The browser's bundle
-build is owned by #113; [session serialization](export.md) accepts a supplied
-viewer bundle rather than building it.
+and executable in that order before standalone copying. Use the
+[browser author build](browser-build.md) for browser bundles;
+[session serialization](export.md) accepts a supplied viewer bundle rather than
+building it.
+
+## Source owners
+
+Start at the owner of the behavior, not the executable's wiring. The
+[crate graph](specs/maestro-port.md#crates-and-delivery-order) defines allowed
+dependencies; this map points to the implementations and their usage guides.
+
+| Work | Source owner | Guide |
+| --- | --- | --- |
+| Native startup wiring | [`maestro/src`](../crates/maestro/src/main.rs); `maestro-cli` owns argument preparation, startup selection and print output | [Command line](cli.md) |
+| Session coordination and embedding | [`maestro-app/src`](../crates/maestro-app/src/lib.rs) | [SDK](application/sdk.md) |
+| Model invocation, protocol conversion and streams | [`maestro-models/src`](../crates/maestro-models/src/lib.rs) | [Model records](records.md) |
+| Conversation loop, tool batches and steering | [`maestro-agent/src`](../crates/maestro-agent/src/lib.rs) | [Agent](agent.md) |
+| Terminal components, input and frame rendering | [`maestro-tui/src`](../crates/maestro-tui/src/lib.rs) | [Components](terminal/components.md) |
+| Interactive chat presentation | [`maestro-chat/src`](../crates/maestro-chat/src/lib.rs) | [Chat](chat/interactive-mode.md) |
+| Native terminal effects | [`maestro-tui-crossterm/src`](../crates/maestro-tui-crossterm/src/lib.rs) | [Native terminal](terminal/native-terminal.md) |
+| Standard-stream RPC adapter | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs); the connection runner belongs to `maestro-app::rpc_mode` | [Daemon protocol](daemon-protocol.md) |
+| Extension author API and canonical component interfaces | [`maestro-extensions-wasm/src`](../crates/maestro-extensions-wasm/src/lib.rs) and its `wit/` directory; native execution is adapted by `maestro-extensions-wasmtime` | [Guest authoring](extensions/guest.md) |
 
 ## Debugging
 
