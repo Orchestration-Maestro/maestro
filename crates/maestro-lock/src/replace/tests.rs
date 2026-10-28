@@ -627,6 +627,7 @@ fn first_use_persists_directory_ancestry_before_target_write() {
 #[cfg(unix)]
 #[test]
 fn completed_readonly_creation_recovers_after_parent_sync_failure() {
+    use std::os::unix::fs::PermissionsExt;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     EFFECTS.set(Effects {
@@ -655,6 +656,10 @@ fn completed_readonly_creation_recovers_after_parent_sync_failure() {
     drop(crate::acquire_write(&target, true).unwrap());
     EFFECTS.take();
     assert_eq!(fs::read(&target).unwrap(), b"intended");
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
     assert!(!fs::read_dir(root()).unwrap().any(|entry| {
         entry
             .unwrap()
@@ -743,4 +748,32 @@ fn sync_waiter(pid: u32, stream: &std::net::TcpStream) -> bool {
             }
         }
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn writable_creation_replays_even_when_unsynced_bytes_and_mode_match() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    EFFECTS.set(Effects {
+        fault: Some(("target_sync", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    assert!(
+        replace(
+            &target,
+            b"intended",
+            Replace {
+                creation_mode: Some(0o600),
+                ..Replace::default()
+            }
+        )
+        .is_err()
+    );
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    let events = EFFECTS.take().events;
+    assert!(events.contains(&"target_write"));
+    assert!(events.contains(&"target_sync"));
+    assert_eq!(fs::read(&target).unwrap(), b"intended");
 }
