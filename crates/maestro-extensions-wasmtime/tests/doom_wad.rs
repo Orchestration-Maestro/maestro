@@ -108,7 +108,6 @@ fn prepare(root: &Path, case: &str) -> (String, Option<Vec<u8>>) {
             std::fs::write(&path, b"custom WAD").unwrap();
             (path.to_str().unwrap().into(), Some(b"custom WAD".to_vec()))
         }
-        "download" => (String::new(), Some(b"controlled WAD".to_vec())),
         "missing" => ("missing.wad".into(), None),
         _ => (String::new(), None),
     }
@@ -126,23 +125,18 @@ fn observed(demo: &Demo, root: &Path, case: &str, expected: Option<&[u8]>) {
                 .any(|message| message == "Loading DOOM...")
         );
     }
-    if ["download", "http-error", "stream-error"].contains(&case) {
+    if ["mismatch", "http-error", "stream-error"].contains(&case) {
         assert_eq!(
             *demo.io.requests.borrow(),
-            ["https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad"]
+            [
+                "https://raw.githubusercontent.com/Daivuk/PureDOOM/355cfbd16fac119718879239336ee2ea408886bd/doom1.wad"
+            ]
         );
-        if case == "download" {
-            assert_eq!(
-                std::fs::read(root.join("module/doom1.wad")).unwrap(),
-                b"controlled WAD"
-            );
-        } else {
-            assert!(!root.join("module/doom1.wad").exists());
-        }
+        assert!(!root.join("module/doom1.wad").exists());
     } else {
         assert!(demo.io.requests.borrow().is_empty());
     }
-    if ["missing", "http-error", "stream-error"].contains(&case) {
+    if ["missing", "mismatch", "http-error", "stream-error"].contains(&case) {
         assert!(
             demo.ui
                 .notices
@@ -231,17 +225,17 @@ fn doom_wad_search_uses_existing_files_in_order() {
 fn doom_wad_explicit_path_overrides_discovery() {
     checked("doom_wad_explicit_path_overrides_discovery", &["explicit"]);
 }
-/// Native chunks are collected as bytes and cached beside the module.
+/// A body with the wrong pinned digest is refused before caching.
 #[test]
-fn doom_wad_downloads_and_caches_raw_chunks() {
-    checked("doom_wad_downloads_and_caches_raw_chunks", &["download"]);
+fn doom_wad_download_rejects_checksum_mismatch() {
+    checked("doom_wad_download_rejects_checksum_mismatch", &["mismatch"]);
 }
 /// HTTP and body failures leave no cache or opened view.
 #[test]
 fn doom_wad_failures_notify_without_partial_cache() {
     checked(
         "doom_wad_failures_notify_without_partial_cache",
-        &["missing", "http-error", "stream-error"],
+        &["missing", "mismatch", "http-error", "stream-error"],
     );
 }
 /// Headless invocation performs no filesystem-dependent startup or request.

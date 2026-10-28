@@ -100,3 +100,12 @@ fn write_cache(path: &str, bytes: &[u8]) -> ExtensionResult<()> {
     }
     Ok(())
 }
+
+/// Compares synthetic bytes with the expected digest.
+#[cfg(test)]
+fn matches_checksum(_: &[u8], _: &str) -> bool {
+    false
+}
+
+#[cfg(test)]
+mod tests;

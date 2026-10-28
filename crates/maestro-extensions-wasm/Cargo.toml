@@ -64,6 +64,7 @@ crate-type = ["cdylib"]
 name = "doom_overlay"
 path = "../../examples/extensions/doom-overlay/main.rs"
 crate-type = ["cdylib"]
+test = true
 
 [[example]]
 name = "dynamic_tools"
