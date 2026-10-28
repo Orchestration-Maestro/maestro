@@ -1,4 +1,7 @@
-//! Safe native hostname and local calendar observations.
+//! Safe native hostname, local calendar and process-session observations.
+
+#[cfg(unix)]
+pub use maestro_process::foreground::current_process_is_detached_server_daemon;
 
 /// Reads the Linux kernel hostname, without invoking a shell.
 #[must_use]

@@ -3,6 +3,7 @@
 
 mod capture_lifecycle;
 mod child_status_checks;
+mod detached_server;
 mod helper_launches;
 mod interactive_pipes;
 mod pty_children;

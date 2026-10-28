@@ -284,6 +284,13 @@ pub fn delete_session(agent_dir: &str, name: &str) -> Result<SessionInfo, String
     }
 }
 
+/// A graceful stop through the selected API socket.
+#[cfg(unix)]
+mod stop;
+
+#[cfg(unix)]
+pub use stop::stop_session;
+
 /// Probe the existing local socket owner without a second transport or stop protocol.
 #[cfg(unix)]
 fn is_running_at(socket: &str) -> bool {

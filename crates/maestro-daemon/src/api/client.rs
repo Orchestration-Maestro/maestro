@@ -1,13 +1,15 @@
 //! Reusable synchronous client for a retained native daemon endpoint.
 
+use crate::api::status::RuntimeStatus;
 use crate::instances::Selection;
 use maestro_ipc::local_socket::connect_local_stream;
 use maestro_json::jsonl::serialize_native_json_line;
-use maestro_protocol::rpc_types::Request;
+use maestro_protocol::rpc_types::{Request, RpcResponse};
 use std::{
     fmt,
     io::{self, BufRead, BufReader, Write},
     path::{Path, PathBuf},
+    time::Duration,
 };
 
 /// The resolved API endpoint retained by a client.
@@ -72,6 +74,36 @@ impl DaemonClient {
         }
         Ok(serde_json::from_str(&line)?)
     }
+
+    /// Sends one request and decodes the shared response.
+    ///
+    /// # Errors
+    /// Not yet implemented: always fails.
+    pub fn request(&self, request: &Request) -> Result<RpcResponse, ApiClientError> {
+        let _ = request;
+        Err(ApiClientError::EmptyResponse)
+    }
+
+    /// Sends one request with the native send and receive timeouts of its connection.
+    ///
+    /// # Errors
+    /// Not yet implemented: always fails.
+    pub fn request_value_with_timeout(
+        &self,
+        request: &Request,
+        timeout: Duration,
+    ) -> Result<serde_json::Value, ApiClientError> {
+        let _ = (request, timeout);
+        Err(ApiClientError::EmptyResponse)
+    }
+
+    /// Reads the daemon's live status from a ping.
+    ///
+    /// # Errors
+    /// Not yet implemented: always fails.
+    pub fn status(&self) -> Result<RuntimeStatus, ApiClientError> {
+        Err(ApiClientError::EmptyResponse)
+    }
 }
 
 /// A native client transport or response decoding failure.
@@ -81,8 +113,12 @@ pub enum ApiClientError {
     Io(io::Error),
     /// Request encoding or response decoding failed.
     Json(serde_json::Error),
+    /// The daemon answered with a failure, kept with its correlation and command.
+    ErrorResponse(Box<RpcResponse>),
     /// The peer sent no nonblank response line.
     EmptyResponse,
+    /// A success carried data other than the request's own result.
+    UnexpectedResult(String),
 }
 
 impl fmt::Display for ApiClientError {
@@ -90,7 +126,15 @@ impl fmt::Display for ApiClientError {
         match self {
             Self::Io(error) => error.fmt(f),
             Self::Json(error) => error.fmt(f),
+            Self::ErrorResponse(response) => f.write_str(
+                response
+                    .result
+                    .as_ref()
+                    .err()
+                    .map_or("", |error| error.message.as_str()),
+            ),
             Self::EmptyResponse => f.write_str("empty api response"),
+            Self::UnexpectedResult(result) => write!(f, "unexpected api result: {result}"),
         }
     }
 }
@@ -100,7 +144,7 @@ impl std::error::Error for ApiClientError {
         match self {
             Self::Io(error) => Some(error),
             Self::Json(error) => Some(error),
-            Self::EmptyResponse => None,
+            Self::ErrorResponse(_) | Self::EmptyResponse | Self::UnexpectedResult(_) => None,
         }
     }
 }

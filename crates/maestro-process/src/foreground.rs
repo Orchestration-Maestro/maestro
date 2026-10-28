@@ -23,3 +23,10 @@ pub struct ForegroundJob {
     /// Observed group members.
     pub processes: Vec<ForegroundProcess>,
 }
+
+/// Whether this process leads its own native session, as a detached daemon does.
+#[cfg(unix)]
+#[must_use]
+pub fn current_process_is_detached_server_daemon() -> bool {
+    false
+}
