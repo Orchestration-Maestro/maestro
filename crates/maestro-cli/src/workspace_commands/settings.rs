@@ -30,7 +30,14 @@ pub fn run_reset_keys(
             return Ok(1);
         }
     };
-    writeln!(stdout, "Created backup: {}", reset.backup_path.display())?;
+    writeln!(
+        stdout,
+        "Created backup: {}",
+        reset
+            .backup_path
+            .as_ref()
+            .map_or_else(String::new, |path| path.display().to_string())
+    )?;
     writeln!(stdout, "Removed {} multiplexer overrides.", reset.removed)?;
     writeln!(
         stdout,
@@ -41,3 +48,16 @@ pub fn run_reset_keys(
     }
     Ok(0)
 }
+
+/// Present the application outcome without changing its commit status.
+#[cfg(test)]
+fn present_reset(
+    _reset: maestro_app::presentation_data::keybindings::KeybindingsReset,
+    _stdout: &mut dyn Write,
+    _stderr: &mut dyn Write,
+) -> io::Result<i32> {
+    Err(io::Error::other("reset presentation unavailable"))
+}
+
+#[cfg(test)]
+mod tests;

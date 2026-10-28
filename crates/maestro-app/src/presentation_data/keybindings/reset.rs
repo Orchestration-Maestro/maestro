@@ -9,8 +9,8 @@ use std::{
 /// A completed reset and any postcommit durability warning.
 #[derive(Debug)]
 pub struct KeybindingsReset {
-    /// Exclusive timestamped backup containing the original bytes.
-    pub backup_path: PathBuf,
+    /// Exclusive timestamped backup, or `None` when no overrides needed removal.
+    pub backup_path: Option<PathBuf>,
     /// Number of multiplexer overrides removed.
     pub removed: usize,
     /// Parent-directory sync failure after successful publication.
@@ -58,7 +58,7 @@ pub fn reset_multiplexer_keybindings(
         },
     )?;
     Ok(KeybindingsReset {
-        backup_path,
+        backup_path: Some(backup_path),
         removed: before - raw.len(),
         dir_sync: committed.dir_sync,
     })

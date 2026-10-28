@@ -40,6 +40,8 @@ fn reset_keys_rejects_usage_before_effects_and_preserves_error_cause() {
     assert!(stdout.is_empty());
     assert!(!missing.exists());
     stderr.clear();
+    fs::create_dir(&missing).unwrap();
+    fs::write(missing.join("keybindings.json"), "[]").unwrap();
     assert_eq!(
         run_reset_keys(&[], root, 42, &mut stdout, &mut stderr).unwrap(),
         1
@@ -47,10 +49,24 @@ fn reset_keys_rejects_usage_before_effects_and_preserves_error_cause() {
     let text = String::from_utf8(stderr).unwrap();
     assert!(text.contains("could not reset keybindings"), "{text}");
     assert!(text.contains(root), "{text}");
-    let cause = fs::read(missing.join("keybindings.json"))
-        .unwrap_err()
-        .to_string();
-    assert!(text.contains(&cause), "{text}");
+    assert!(text.contains("object"), "{text}");
     assert!(stdout.is_empty());
+    assert_eq!(fs::read(missing.join("keybindings.json")).unwrap(), b"[]");
+}
+
+#[test]
+fn reset_keys_presents_defaults_without_effects() {
+    let scratch = Scratch::new().unwrap();
+    let missing = scratch.path().join("missing");
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    assert_eq!(
+        run_reset_keys(&[], missing.to_str().unwrap(), 42, &mut stdout, &mut stderr).unwrap(),
+        0
+    );
+    assert_eq!(
+        stdout,
+        b"No multiplexer overrides; defaults already apply.\n"
+    );
+    assert!(stderr.is_empty());
     assert!(!missing.exists());
 }

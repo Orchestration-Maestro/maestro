@@ -654,22 +654,25 @@ fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
     use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = scratch.path().join("keybindings.json");
-    let original = b"{\n  \"app.exit\": \"ctrl+d\",\n  \"unknown\": {\"kept\":true},\n  \"multiplexer.focus\": [\"alt+h\"],\n  \"multiplexer.\": null,\n  \"multiplexer\": 42\n}\n";
+    let original = b"{\n  \"app.exit\": \"ctrl+d\",\n  \"unknown\": {\"kept\":true,\"large\":[9007199254740993,18446744073709551615,-9223372036854775808]},\n  \"multiplexer.focus\": [\"alt+h\"],\n  \"multiplexer.\": null,\n  \"multiplexer\": 42\n}\n";
     std::fs::write(&path, original).unwrap();
     let reset =
         reset_multiplexer_keybindings(scratch.path().to_str().unwrap(), 1_700_000_000).unwrap();
     assert_eq!(
         reset.backup_path,
-        scratch.path().join("keybindings.json.bak-1700000000")
+        Some(scratch.path().join("keybindings.json.bak-1700000000"))
     );
-    assert_eq!(std::fs::read(&reset.backup_path).unwrap(), original);
+    assert_eq!(
+        std::fs::read(reset.backup_path.as_ref().unwrap()).unwrap(),
+        original
+    );
     assert_eq!(reset.removed, 2);
     assert!(reset.dir_sync.is_none());
     let actual: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
     assert_eq!(
         actual,
         serde_json::json!({
-            "app.exit": "ctrl+d", "unknown": {"kept": true}, "multiplexer": 42
+            "app.exit": "ctrl+d", "unknown": {"kept": true, "large": [9_007_199_254_740_993_u64, u64::MAX, i64::MIN]}, "multiplexer": 42
         })
     );
     let manager = KeybindingsManager::create(scratch.path().to_str()).unwrap();
@@ -722,4 +725,43 @@ fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
         original
     );
     assert!(path.is_symlink());
+}
+
+#[test]
+fn reset_keys_leaves_missing_configuration_untouched() {
+    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let missing = scratch.path().join("missing");
+    let reset = reset_multiplexer_keybindings(missing.to_str().unwrap(), 42).unwrap();
+    assert_eq!(reset.removed, 0);
+    assert!(reset.backup_path.is_none());
+    assert!(reset.dir_sync.is_none());
+    assert!(!missing.exists());
+}
+
+#[test]
+fn reset_keys_leaves_override_free_configuration_untouched() {
+    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().to_str().unwrap();
+    let path = scratch.path().join("keybindings.json");
+    let backup = scratch.path().join("keybindings.json.bak-42");
+    for original in [
+        "{}",
+        "{ \"app.exit\": \"ctrl+d\", \"unknown\": 9007199254740993 }\n",
+    ] {
+        std::fs::write(&path, original).unwrap();
+        let reset = reset_multiplexer_keybindings(root, 42).unwrap();
+        assert_eq!(reset.removed, 0);
+        assert!(reset.backup_path.is_none());
+        assert!(reset.dir_sync.is_none());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), original);
+        assert!(!backup.exists());
+        std::fs::write(&backup, "collision").unwrap();
+        let reset = reset_multiplexer_keybindings(root, 42).unwrap();
+        assert_eq!(reset.removed, 0);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), original);
+        assert_eq!(std::fs::read_to_string(&backup).unwrap(), "collision");
+        std::fs::remove_file(&backup).unwrap();
+    }
 }
