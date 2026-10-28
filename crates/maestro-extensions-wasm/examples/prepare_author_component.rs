@@ -24,6 +24,7 @@ const COMPILED: &str = "context_bridge";
 // example-index:start
 /// Each prepared example and the variable that hands its component path to the tests.
 const COMPONENTS: &[(&str, &str)] = &[
+    ("bash_spawn_hook", "MAESTRO_BASH_SPAWN_HOOK_COMPONENT"),
     ("context_bridge", "MAESTRO_CONTEXT_COMPONENT"),
     ("dynamic_resources", "MAESTRO_DYNAMIC_RESOURCES_COMPONENT"),
     ("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT"),
@@ -40,6 +41,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("summarize", "MAESTRO_SUMMARIZE_COMPONENT"),
     ("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT"),
     ("tools", "MAESTRO_TOOLS_COMPONENT"),
+    ("truncated_tool", "MAESTRO_TRUNCATED_TOOL_COMPONENT"),
     ("wasi_capabilities", "MAESTRO_WASI_COMPONENT"),
 ];
 // example-index:end

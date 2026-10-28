@@ -1,4 +1,6 @@
 //! A ripgrep tool that retains full output when the host's output limits are reached.
+
+// Tests receive this component's path in MAESTRO_TRUNCATED_TOOL_COMPONENT.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

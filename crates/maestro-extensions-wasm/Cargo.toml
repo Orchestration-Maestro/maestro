@@ -57,6 +57,11 @@ path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "dirty_repo_guard"
+path = "../../examples/extensions/dirty_repo_guard.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dynamic_resources"
 path = "../../examples/extensions/dynamic-resources/main.rs"
 crate-type = ["cdylib"]
