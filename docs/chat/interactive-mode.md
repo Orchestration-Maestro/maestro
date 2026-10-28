@@ -290,9 +290,11 @@ on the transcript, completes no waiting input and enters no history. `/export`,
 `/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
 only on normal completion, leaving text written during a rejected operation intact.
 Import confirmation and directory retry reuse the native dialogs, and its
-replacement is [bound](#session-binding) before the replay. Near spellings are
-prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
-`/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
+replacement is [bound](#session-binding) before the replay. The submission is trimmed
+first, so `/export` followed only by a tab runs the command and a submission of white
+space alone is dropped. Near spellings are prompt text, so `/exporter notes.jsonl`,
+`/export<Tab>path`, `/share extra`, `/important`, `/import<Tab>path` and `/copyx`
+reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
@@ -330,8 +332,9 @@ for it.
 
 ## Session replay
 
-`render_initial_messages` rebuilds the transcript from the session's current
-context. Each message is shown by its existing component:
+`render_initial_messages` appends the session's current context to the transcript and
+clears nothing first; the rebuild after the thinking shortcut clears the transcript and
+then replays the same way. Each message is shown by its existing component:
 
 - user text, with its text blocks joined without a separator; a skill block shows
   as a collapsible skill row followed by any text after it as a separate user row;
@@ -570,8 +573,11 @@ up.
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
 every expandable transcript row: loaded-resource sections, tool rows, shell runs,
-summaries, skill rows and custom messages. The walk uses the transcript's rows as they are when it starts, so
-a row a renderer appends during the walk is reached, and a row it removes is not.
+summaries, skill rows and custom messages. The walk goes through the child array the
+transcript holds when it starts, one position at a time: a row a renderer appends to
+that array is reached when its position comes up, and a row it removes before then
+is not. Replacing or clearing the transcript during the walk does not stop it, which
+finishes over the array it started with.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript, puts a streaming row back after it with the new visibility

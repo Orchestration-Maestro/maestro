@@ -1,12 +1,14 @@
 # Interactive commands
 
 The interactive mode reads a few commands from the editor before ordinary
-input. Submitted text is trimmed with the shared whitespace rule first: BOM and
-no-break space count as whitespace, while U+0085 and zero-width space do not. The
-editor empties itself before calling back; a slash command never answers the
-waiting input and never enters the editor history. Any other text, including
-`/Model`, `/models`, `/model<Tab>term`, `/scoped-models extra`, `/login extra` and
-`/logout extra`, is ordinary input.
+input. Submitted text is trimmed with the shared whitespace rule first, and commands
+are recognized after the trim: BOM and no-break space count as whitespace, while
+U+0085 and zero-width space do not. The editor empties itself before calling back; a
+slash command never answers the waiting input and never enters the editor history.
+Any other text, including `/Model`, `/models`, `/model<Tab>term`,
+`/scoped-models extra`, `/login extra` and `/logout extra`, is ordinary input. A
+submission that is empty after the trim is dropped: it reaches neither the waiting
+input nor the history.
 
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/thinking`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
@@ -370,7 +372,9 @@ reading, not shell parsing:
 
 - The text must be exactly `/export` or `/import`, or that token followed by
   one literal space. A prefix such as `/exporter` or `/important`, or either
-  command followed by a tab, is ordinary prompt input.
+  command followed by a tab and more text, such as `/export<Tab>path`, is ordinary
+  prompt input. A command followed by only a tab is trimmed to the bare command
+  before it is recognized, so it runs.
 - After that single space, leading whitespace is removed under the shared
   [whitespace policy](../terminal/text.md): Unicode white space other than
   U+0085, plus U+FEFF.
