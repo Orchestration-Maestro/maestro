@@ -179,10 +179,3 @@ before constructing its frame writer, forwards saved cursor and clear-on-shrink
 policies, and returns the fallback directory only for Continue. Cancellation,
 repeated notifications and dropped operations share the existing selector's
 one-shot cleanup. It does not start a theme watch or bind session services.
-
-## Print mode
-
-`run_print_mode` runs one session to completion over a caller-owned runtime and
-presents the result as its final text or as session event records. See [print
-mode](print.md) for the options, the exact output and the cleanup and error
-boundary.

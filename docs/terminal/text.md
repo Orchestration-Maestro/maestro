@@ -92,8 +92,8 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
   background colour, or an inverse or background style left open that paints the
   cells after it. The metadata escapes of a dropped row move to the next row kept,
   after its inherited style, or to the end of the last row kept, followed by the
-  escapes after the line's last grapheme that the dropped rows held. Every escape is
-  written once.
+  escapes after the line's last grapheme that the dropped rows held. Every metadata
+  escape is written once.
 - Every authored line keeps at least one output row. If all its rows are dropped,
   that row holds only its metadata escapes; style escapes alone give an empty line.
 - A row starts only when a grapheme or an escape is written to it, so no row holds
