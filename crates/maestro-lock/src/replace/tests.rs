@@ -803,6 +803,7 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
         ..Effects::default()
     });
     assert!(crate::acquire_write(&target, true).is_err());
+    assert!(fs::metadata(&target).unwrap().permissions().readonly());
     assert!(fs::read_dir(root()).unwrap().any(|entry| {
         entry
             .unwrap()
@@ -814,6 +815,17 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
     drop(crate::acquire_write(&target, true).unwrap());
     assert_eq!(fs::read(&target).unwrap(), b"intended");
     assert!(fs::metadata(&target).unwrap().permissions().readonly());
+    #[cfg(windows)]
+    {
+        let mut permissions = fs::metadata(&target).unwrap().permissions();
+        #[expect(
+            clippy::permissions_set_readonly_false,
+            reason = "clears the Windows read-only attribute for fixture cleanup"
+        )]
+        permissions.set_readonly(false);
+        fs::set_permissions(&target, permissions).unwrap();
+    }
+    fs::remove_file(&target).unwrap();
 }
 
 #[cfg(unix)]
