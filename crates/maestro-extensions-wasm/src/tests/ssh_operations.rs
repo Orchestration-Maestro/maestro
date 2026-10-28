@@ -54,3 +54,25 @@ fn ssh_maps_windows_host_paths_to_posix_without_rewriting_other_roots() -> Exten
     );
     Ok(())
 }
+
+#[test]
+fn ssh_maps_forward_slash_unc_prefix_using_host_resolution() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_io.exit_code = Some(0);
+    host.observe().actions.value = serde_json::json!({
+        "paths.resolve": r"\\server\share\work"
+    });
+    let remote = operations::Remote {
+        api: captured_api(&host)?,
+        host: "user@controlled".into(),
+        cwd: "/srv".into(),
+        local_cwd: "//server/share/work".into(),
+    };
+    let read = remote.options("read")?.read.operations.unwrap();
+    super::block_on((read.read_file)(r"\\server\share\work\note.txt".into())).unwrap();
+    assert_eq!(
+        host.observed().native_io.launches.last().unwrap().1[2],
+        "cat -- '/srv/note.txt'"
+    );
+    Ok(())
+}
