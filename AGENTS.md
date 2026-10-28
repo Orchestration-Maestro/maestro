@@ -281,7 +281,7 @@ to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
 and the native, non-optional dev-dependencies
-of the twenty-five declared callers on `maestro-test-process`, the owner of
+of the twenty-six declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
@@ -295,9 +295,10 @@ creation and cleanup. It has no internal edge except the native unifier, and no
 foundation utility permission. Only the crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
 as a non-optional native development dependency when used. `Scratch::new`
-canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
-spelling. On Unix, `enter_removed` and `enter_unreadable` put a test process in a
-removed or unreadable working directory, and `deny(path, mode)` sets a mode and
+canonicalizes its chosen root, without the Windows verbatim drive prefix;
+`Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
+and `enter_unreadable` put a test process in a removed or unreadable working
+directory, and `deny(path, mode)` sets a mode and
 returns its restoring guard, or `None` when the process is not refused, as in a
 privileged run. `keeps_distinct(names)` reports whether the running host keeps a set of
 leaf names apart, and `folded_names(paths)` reports every name group it does not keep

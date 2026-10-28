@@ -18,7 +18,7 @@ mod selection;
 mod test_process;
 
 pub use alone::run_alone;
-pub use environment::{CaseSelection, run_per_environment, selection};
+pub use environment::{CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
 pub use proof::{CheckedChild, CheckedStdout};
 pub use selection::test_name;

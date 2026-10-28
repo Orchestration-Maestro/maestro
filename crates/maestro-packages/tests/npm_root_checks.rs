@@ -90,11 +90,12 @@ fn npm_root_cache_tracks_all_arguments_and_nonempty_results() {
             ));
             paths.push(manager.get_installed_path("npm:pkg", User).unwrap());
         }
+        // The manager joins a relative default root natively, so Windows spells it with `\`.
         assert_eq!(
             paths,
             row.expected
                 .iter()
-                .map(|path| Some(below(path)))
+                .map(|path| Some(maestro_path::join(&[&below(path)])))
                 .collect::<Vec<_>>()
         );
         assert_eq!(*effects.calls.borrow(), row.calls);

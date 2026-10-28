@@ -129,7 +129,9 @@ The program handles glob syntax and scoped ignore files. It includes hidden user
 files and unignored dependencies, excludes `.git`, and receives zero as unlimited.
 Negative and fractional limits are left for fd to reject. Patterns containing `/`
 use full-path mode, with `**/` prefixed unless already rooted or prefixed; `--`
-separates patterns from options. NUL-delimited output keeps filename whitespace,
+separates patterns from options. fd matches a full-path pattern against the native
+absolute path, so on Windows the glob reaches fd as the regex fd compiles from it,
+with every separator it matches widened to `/` or `\`. NUL-delimited output keeps filename whitespace,
 embedded newlines and directory markers. Native nonzero exits with records return
 those records; without records they fail with trimmed stderr or an exit-code message.
 

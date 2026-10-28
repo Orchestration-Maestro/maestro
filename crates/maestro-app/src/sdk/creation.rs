@@ -183,6 +183,10 @@ pub async fn create_agent_session(
         )),
     };
     let resource_loader = resources(&services, options.resources, options.offline).await?;
+    services
+        .model_registry
+        .set_base_model_files(resource_loader.get_model_files())
+        .map_err(thrown)?;
     let (agent, runner_ref, model_fallback_message) = prepare_agent(
         &services,
         &session_manager,

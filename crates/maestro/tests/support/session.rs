@@ -6,7 +6,8 @@ use maestro_app::{
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// Build an isolated SDK session with the production component factory and no ambient auth.
+/// Build an isolated SDK session with the production component factory, the application's
+/// native effects and no ambient auth.
 pub async fn component_session(
     root: &super::Root,
     local: Rc<tokio::task::LocalSet>,
@@ -14,10 +15,9 @@ pub async fn component_session(
     no_tools: Option<NoTools>,
     widgets: Rc<dyn maestro_app::ExtensionWidgets>,
 ) -> Rc<AgentSession> {
-    let mut resources = ResourceLoaderOptions::<Local>::new(
-        local.clone(),
-        Rc::new(|_| Box::pin(async { Ok(None) })),
-    );
+    let io = maestro_app::extension_native_io::extension_native_io(&local);
+    let mut resources =
+        ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
     resources
         .extension_factories
         .push(maestro_extensions_wasmtime::artifact_factory_with_io(
@@ -27,7 +27,7 @@ pub async fn component_session(
                 version: env!("CARGO_PKG_VERSION").into(),
                 agent_dir: root.path("agent").display().to_string(),
             },
-            maestro_app::extension_native_io::extension_native_io(&local),
+            io,
         ));
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());

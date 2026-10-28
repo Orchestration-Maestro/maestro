@@ -6,8 +6,8 @@ mod entry_routes;
 mod model_streams;
 mod native_io;
 mod qna_example;
+mod ssh_example;
 mod startup_modes;
 mod support;
 pub mod tools_example;
-
-mod ssh_example;
+mod truncated_tool_example;
