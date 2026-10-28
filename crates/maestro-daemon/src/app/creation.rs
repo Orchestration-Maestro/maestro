@@ -6,7 +6,10 @@ use crate::{
     settings::model::NewTerminalCwdConfig,
     terminal::state::TerminalState,
 };
-use maestro_protocol::schema::{ErrorBody, WorkspaceCreateParams};
+use maestro_protocol::{
+    events::EventData,
+    schema::{ErrorBody, WorkspaceCreateParams},
+};
 use maestro_workspace::{
     layout::PaneId,
     workspace::{public_pane_id_for_number, public_tab_id_for_number},
@@ -421,21 +424,14 @@ impl<C: FnMut() -> u128> App<C> {
 }
 
 impl<C: FnMut() -> u128> App<C> {
-    /// Publishes a new workspace with its first tab and that tab's root pane.
+    /// Publishes a new workspace, then its first tab with each of its panes.
     pub(super) async fn emit_workspace_open_events(&self, index: usize) {
         let Some(workspace) = self.workspace_info(index) else {
             return;
         };
-        let Some(tab) = self.tab_info(index, 0) else {
-            return;
-        };
-        let Some(root_pane) = self.root_pane_info(index, 0).await else {
-            return;
-        };
         self.event_hub
-            .push(maestro_protocol::events::EventData::WorkspaceCreated { workspace });
-        self.emit_tab_and_pane_created_events(tab, root_pane);
-        self.emit_layout_updated_event(index, 0);
+            .push(EventData::WorkspaceCreated { workspace });
+        self.emit_tab_created_events(index, 0).await;
     }
 
     /// Publishes a new tab and each of its panes in layout order, then its layout.
@@ -447,25 +443,13 @@ impl<C: FnMut() -> u128> App<C> {
             return;
         };
         self.event_hub
-            .push(maestro_protocol::events::EventData::TabCreated { tab: tab_record });
+            .push(EventData::TabCreated { tab: tab_record });
         for pane in record.layout.pane_ids() {
             if let Some(pane) = self.pane_info(workspace, pane).await {
-                self.event_hub
-                    .push(maestro_protocol::events::EventData::PaneCreated { pane });
+                self.event_hub.push(EventData::PaneCreated { pane });
             }
         }
         self.emit_layout_updated_event(workspace, tab);
-    }
-
-    /// Publishes a created tab, then its root pane.
-    fn emit_tab_and_pane_created_events(
-        &self,
-        tab: maestro_protocol::schema::TabInfo,
-        pane: maestro_protocol::schema::PaneInfo,
-    ) {
-        use maestro_protocol::events::EventData;
-        self.event_hub.push(EventData::TabCreated { tab });
-        self.event_hub.push(EventData::PaneCreated { pane });
     }
 
     /// The result of creating the workspace at `index`: it, its first tab and root pane.

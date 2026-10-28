@@ -1,12 +1,7 @@
 //! `layout.apply`: builds a requested tree as a new tab, replacing a tab when one is named.
 
 use super::tree::{first_leaf, leaf_launch, validate_layout_tree};
-use crate::app::{
-    App,
-    api::responses::{api_error, tab_not_found},
-    creation::RootLaunch,
-    state::Mode,
-};
+use crate::app::{App, api::responses::api_error, creation::RootLaunch, state::Mode};
 use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, LayoutApplyParams, LayoutNode, LayoutPane, ResponseResult},
@@ -70,11 +65,7 @@ impl<C: FnMut() -> u128> App<C> {
         params: &LayoutApplyParams,
     ) -> Result<(usize, Option<usize>), ErrorBody> {
         let replaced = match params.tab_id.as_deref() {
-            Some(id) => Some(
-                self.state
-                    .parse_tab_id(id)
-                    .ok_or_else(|| tab_not_found(id))?,
-            ),
+            Some(id) => Some(self.target_tab(id)?),
             None => None,
         };
         if replaced.is_some() && params.workspace_id.is_some() {
@@ -226,18 +217,16 @@ impl<C: FnMut() -> u128> App<C> {
     /// Removes a tab built for a layout that failed, with its processes.
     async fn discard_layout_tab(&mut self, workspace: usize, root_pane: PaneId) {
         if let Some(tab) = self.tab_of_root(workspace, root_pane) {
-            self.state.retire_tab(workspace, tab);
-            self.shutdown_detached_terminal_runtimes().await;
+            self.retire_tab_and_stop_panes(workspace, tab).await;
         }
     }
 
     /// Closes the tab a finished layout replaces and publishes its closing.
     async fn close_replaced_tab(&mut self, workspace: usize, tab: usize) {
         let closed = self.state.public_tab_id(workspace, tab);
-        if !self.state.retire_tab(workspace, tab) {
+        if !self.retire_tab_and_stop_panes(workspace, tab).await {
             return;
         }
-        self.shutdown_detached_terminal_runtimes().await;
         if let Some(tab_id) = closed {
             let workspace_id = self.state.topology.workspaces[workspace].id.clone();
             self.event_hub.push(EventData::TabClosed {

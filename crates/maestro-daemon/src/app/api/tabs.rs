@@ -160,13 +160,12 @@ impl<C: FnMut() -> u128> App<C> {
             });
             return Ok(ResponseResult::Ok {});
         }
-        if !self.state.retire_tab(workspace, tab) {
+        if !self.retire_tab_and_stop_panes(workspace, tab).await {
             return Err(api_error(
                 "tab_close_failed",
                 format!("tab {id} could not be closed"),
             ));
         }
-        self.shutdown_detached_terminal_runtimes().await;
         self.state.session_dirty = true;
         self.event_hub.push(EventData::TabClosed {
             tab_id,
@@ -175,8 +174,18 @@ impl<C: FnMut() -> u128> App<C> {
         Ok(ResponseResult::Ok {})
     }
 
+    /// Retires a tab that is not the last of its workspace and stops the processes of its
+    /// panes; `false` when the tab could not be retired.
+    pub(super) async fn retire_tab_and_stop_panes(&mut self, workspace: usize, tab: usize) -> bool {
+        let retired = self.state.retire_tab(workspace, tab);
+        if retired {
+            self.shutdown_detached_terminal_runtimes().await;
+        }
+        retired
+    }
+
     /// Resolves a tab target to its live workspace and tab display positions.
-    fn target_tab(&self, id: &str) -> Result<(usize, usize), ErrorBody> {
+    pub(super) fn target_tab(&self, id: &str) -> Result<(usize, usize), ErrorBody> {
         self.state.parse_tab_id(id).ok_or_else(|| tab_not_found(id))
     }
 
