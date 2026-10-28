@@ -57,13 +57,14 @@ organization's configuration when asked.
 
 Settings name one manifest release, for example
 `"manifest": "git:github.com/org/maestro-manifests@v1.4.0"`. The manifest package
-installs that release with the ordinary package installer, reads its areas and
-publishes a base settings layer and its policy through the core hooks. The session
-is built from five layers: engine defaults, the manifest, the user, the project and
-the run. The policy decides which local changes are allowed, and every governed
-change is checked before it has any effect. Teams ship capabilities: one package
-per team area, bundling roles, skills, instructions, prompt templates and
-workflows. Guard rules in the manifest's core area confirm destructive commands,
+installs that release with the ordinary package installer, reads its areas from the
+release's manifest root and publishes a base settings layer and its policy through
+the core hooks. The session is built from five layers: engine defaults, the
+manifest, the user, the project and the run. The policy decides which local changes
+are allowed, and every governed change is checked before it has any effect. Teams
+ship capabilities: one package per team area, bundling roles, skills,
+instructions, prompt templates and workflows. Guard rules in the manifest's core
+area confirm destructive commands,
 refuse writes to protected paths, replace personal data with markers and withhold
 prompt injection from the model. A broken manifest makes the manifest package fail
 its load, which stops agent sessions with the exact fix. `/manifest update` moves
@@ -201,7 +202,8 @@ answer questions about it.
    mode.
 3. The source must be a Git source pinned to a ref (a tag or a commit), so that every
    start can verify the release (M2.5). An npm source, a local path, an unpinned
-   source or a wrong-typed value is an invalid selection (M9).
+   source or a wrong-typed value is an invalid selection (M9). The source names the
+   whole repository and no folder in it: the manifest root is fixed (M3).
 4. The manifest package reads the selection from the raw user and project settings
    documents through the settings readers (H5), before any manifest loads. With one
    value, that value is used. With two values naming the same identity, the project
@@ -231,8 +233,9 @@ answer questions about it.
 3. A pinned Git release whose checkout is not at its ref is checked out at the ref
    (corrected defect). A pin change made by a pull request therefore takes effect at
    the next start.
-4. A release that is installed but contains no resources is valid; absence of
-   files is not a missing release.
+4. A release whose manifest root contains no resources is valid; absence of
+   files is not a missing release. A release with no manifest root is invalid
+   (M3, M9).
 5. **Integrity.** At every session start the manifest package checks that the
    release checkout is clean and at its pinned commit: the working tree matches the
    commit, with no modified, added, deleted or untracked files, and the checked-out
@@ -248,12 +251,22 @@ answer questions about it.
 
 ### M3 — Layout and reading
 
-The manifest is read as areas, found by location. Maestro reads no area
-descriptor; ownership records in a manifest repository are repository data.
+A release keeps its manifest content in one folder, `manifests/`: the **manifest
+root**. Maestro reads nothing outside the manifest root, except the catalog's
+ownership lookup in the release's `CODEOWNERS` (M16.3, M17.3), which is repository
+data and never manifest content. Documentation, schemas, catalog blueprints, CI
+files and the README are repository tooling outside the root and are never read as
+manifest content. Every other path in this specification that names manifest
+content is relative to the manifest root. One repository holds one manifest, with
+one manifest root, and the `manifest` setting stays a plain pinned Git source (M1).
 
-| Area | Location | Loaded |
+The manifest is read as areas, found by location under the manifest root. Maestro
+reads no area descriptor; ownership records in a manifest repository are
+repository data.
+
+| Area | Location under the manifest root | Loaded |
 |---|---|---|
-| Common | the release root | always, first |
+| Common | the manifest root itself | always, first |
 | Standards | `standards/<domain>/` | always, every domain, in directory-name order |
 | Core | `core/` | always |
 | Languages | `languages/<name>/` | when listed in `manifestAreas`, in list order |
@@ -270,6 +283,9 @@ Every area may contain:
 | `settings/settings.json` | A settings layer using the ordinary settings keys (M4) |
 | `settings/policy.json` | Policy (M4) |
 
+Only the common area may contain `CHANGELOG.md`, the release's changelog (M10.6,
+M11.3).
+
 Only the core area may contain `SYSTEM.md` (base system prompt), the role named
 `maestro` (the main agent's persona and tools), `llm/models.json` (model file in the
 ordinary models format), `backends/mcp/mcp.json` (MCP servers, M13) and
@@ -280,11 +296,12 @@ resources ([M16](#m16--capabilities-and-ownership)). `<group>` and `<name>` are
 lowercase, hyphenated and at most 64 characters each.
 
 `manifestAreas` is a list of `languages/<name>` and `capabilities/<group>/<name>`
-entries. Its value resolves like any setting: the manifest's common, standards and
-core settings give the default, then user, then project. A listed area that does
-not exist, an entry with another prefix, or a `manifestAreas`, `manifest`,
-`minimumRelease` or `updateCheckMinutes` value or constraint inside a language area
-or capability makes the manifest invalid. Duplicate entries load once.
+entries, relative to the manifest root. Its value resolves like any setting: the
+manifest's common, standards and core settings give the default, then user, then
+project. A listed area that does not exist, an entry with another prefix, or a
+`manifestAreas`, `manifest`, `minimumRelease` or `updateCheckMinutes` value or
+constraint inside a language area or capability makes the manifest invalid.
+Duplicate entries load once.
 
 Settings layers combine in area order with the ordinary one-level merge. The
 manifest's settings must not set the resource path keys `extensions`, `skills`,
@@ -329,7 +346,7 @@ invalid):
 | `locked` | L | Each entry is a settings key path (dotted for nested members) or one of the lock names `systemPrompt`, `appendSystemPrompt`, `providers`. The locked value is the manifest's settings value, or the engine default when the manifest sets none; a `manifest` lock fixes the manifest's own identity (M1). |
 | `bounds` | B | `min` and/or `max` for numeric keys and for thinking levels (order: off < minimal < low < medium < high < xhigh). |
 | `models` | B (allowed set) | Model patterns in the `enabledModels` syntax. Every model selection must match. |
-| `required` | A | Paths relative to the release root. A resource at or under a required path is required. A required workflow also requires its references (M15). How required instructions stay present is settled with the rules system. |
+| `required` | A | Paths relative to the manifest root. A resource at or under a required path is required. A required workflow also requires its references (M15). How required instructions stay present is settled with the rules system. |
 | `roles` | L/B per role | `locked` (`model`, `thinking`, `tools`), `bounds.thinking`, `models` for one role (M12). |
 | `credentialHeaders` | Credential classification | Header names added to the default credential list (M7); additions from every selected area combine. |
 | `minimumRelease` | Release floor | The lowest release a laptop may run (M11). A release version; Git tags compare as semantic versions after an optional leading `v`. Common and core areas only. |
@@ -437,8 +454,8 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 
 1. Each selected area root is contributed as a package-origin source with the
    selection's source string and scope (H4), so manifest resources rank below
-   project and user resources. Their base directory is the release root, so
-   filters and `maestro config` patterns are relative to the release root.
+   project and user resources. Their base directory is the manifest root, so
+   filters and `maestro config` patterns are relative to the manifest root.
 2. The selection's object filters apply with the ordinary filter semantics. A filter
    that disables a required resource is ignored with a diagnostic; `maestro config`
    refuses to write one.
@@ -521,7 +538,7 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 | No manifest named | Internal mode |
 | Invalid selection (not pinned, local, wrong type) | The manifest package fails its load; agent sessions refuse |
 | Release missing and not installable (offline, network, authentication) | The manifest package fails its load; agent sessions refuse |
-| Invalid manifest: malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, invalid guard file, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
+| Invalid manifest: no manifest root, malformed settings or policy, unknown or conflicting lock, impossible bound, invalid role file, invalid model file, invalid workflow, invalid guard file, literal secret, invalid `manifestAreas` | The manifest package fails its load; agent sessions refuse |
 | Missing required package, or a required resource that fails to load | Agent sessions refuse |
 | Optional resource that fails to load | Skipped with the ordinary warning |
 | A kind absent from the manifest | No manifest layer for that kind; engine defaults apply |
@@ -531,9 +548,10 @@ the daemon only reads the persisted global layer, because it hosts no extensions
 A failed load uses the foundation's extension-load failure: the error is reported as
 `Failed to load extension "<path>": <message>` and the program exits with status 1
 in every mode. The message names the settings file that selects the manifest, the
-source, the problem and the fix, and no model request is made. There is no silent
-fallback to internal mode or to an earlier copy; unrepairable drift uses the last
-accepted composition with a warning (M2.5).
+source, the problem and the fix, and no model request is made. For a release with
+no manifest root the problem reads `release <ref> has no manifests/ folder`. There
+is no silent fallback to internal mode or to an earlier copy; unrepairable drift
+uses the last accepted composition with a warning (M2.5).
 
 Before failing its load at session start for a broken pinned release, the manifest
 package checks for a newer release of the same identity. If that release loads
@@ -574,7 +592,8 @@ permission comparisons; a start runs on it only for unrepairable drift (M2.5).
    entry and the manifest.
 6. `/manifest status` shows the active release, the settings file that selects it,
    the newest known release, the minimum release, and the changelog entries between
-   the active and newest releases read from the candidate's `CHANGELOG.md`.
+   the active and newest releases read from the `CHANGELOG.md` in the candidate's
+   manifest root.
 7. RPC and JSON output gain no fields.
 
 ### M11 — Updates
@@ -589,13 +608,13 @@ permission comparisons; a start runs on it only for unrepairable drift (M2.5).
    `MAESTRO_OFFLINE`; offline keeps the current pin with a warning. A newer release
    shows a notice in that session; a required one says that it applies at the next
    start and that `/manifest update` applies it now.
-3. **Inspection.** A check lists the source's releases and reads the newest
-   candidate's common `settings/policy.json`, core `core/settings/policy.json` and
-   `CHANGELOG.md` through the package operations (H5) in the temporary package
-   scope, without the install step. The two policy files are optional; their
-   `minimumRelease` values combine in area order under M4 (the higher floor wins)
-   before the check decides whether the release is required. Inspection runs no
-   lifecycle script, build step or component.
+3. **Inspection.** A check lists the source's releases and reads, from the newest
+   candidate's manifest root, the common `settings/policy.json`, the core
+   `core/settings/policy.json` and `CHANGELOG.md` through the package operations
+   (H5) in the temporary package scope, without the install step. The two policy
+   files are optional; their `minimumRelease` values combine in area order under M4
+   (the higher floor wins) before the check decides whether the release is
+   required. Inspection runs no lifecycle script, build step or component.
 4. **Required releases.** When the newest release's `minimumRelease` is above the
    active pin, the release is required. At the next session start it applies
    without asking unless it grows permissions; then the user is asked, and declining
@@ -654,7 +673,8 @@ manifest server.
 
 Each artifact kind has one format. `U` is the configuration root
 (`~/.maestro/agent` by default), `Pj` is the project's `.maestro` folder and `A` is a
-selected manifest area.
+selected manifest area. Every path in the Manifest column is relative to the
+manifest root (M3).
 
 | Artifact kind | Format | Local | Manifest | Read by |
 |---|---|---|---|---|
@@ -728,8 +748,8 @@ chain:
    required manifest workflow cannot be shadowed. Project workflows that name project roles keep the
    reference's confirmation before project roles run.
 7. **Required workflows.** A required workflow's roles, prompt files and other
-   referenced files resolve only from its own release; local definitions with the
-   same names do not apply to it.
+   referenced files resolve only from its own release's manifest root; local
+   definitions with the same names do not apply to it.
 8. **Running.** The runner lets a user run, list and show workflows with their
    sources, and lets the agent check a workflow file, so a user can ask Maestro to
    write, check and run one. Chains and parallel tasks use the subagent tool's own
@@ -744,14 +764,16 @@ chain:
 ### M16 — Capabilities and ownership
 
 1. A capability is one package inside a manifest release, at
-   `capabilities/<group>/<name>/`, with its own `package.json` and resources. It is
-   selected by `capabilities/<group>/<name>` in `manifestAreas`.
+   `capabilities/<group>/<name>/` in the manifest root, with its own `package.json`
+   and resources. It is selected by `capabilities/<group>/<name>` in
+   `manifestAreas`.
 2. The group and name follow the organization's own structure. An organization
    whose source-hosting teams are grouped by area may use that grouping as
    `<group>` and the team as `<name>`.
-3. Ownership is repository data. The release's `.github/CODEOWNERS` gives each group
-   folder, each capability folder and every other path its owning team. Sessions
-   never read it; the catalog does (M17).
+3. Ownership is repository data, outside the manifest root. The release's
+   `.github/CODEOWNERS` gives each group folder, each capability folder and every
+   other path its owning team. Sessions never read it; only the catalog's ownership
+   lookup does (M17.3), the one read outside the manifest root (M3).
 4. A capability that needs its own release cycle is published as its own package
    and listed in the manifest's `packages` with a pin. Capabilities inside the
    release share the release's version.
@@ -766,20 +788,24 @@ chain:
 1. **Blueprints.** The manifest package declares one catalog blueprint per artifact
    kind, as data: manifest release, capability group, capability, policy, role,
    workflow, instruction, alongside the existing package, skill and prompt kinds.
-   A blueprint lists the entry's properties (name, description, source area,
-   release, required, locked, modified locally) and its relations.
+   A blueprint lists the entry's properties (name, description, source area as its
+   path under the manifest root, release, required, locked, modified locally) and
+   its relations.
 2. **Relations.** A release requires packages and contains areas; a capability
    group contains capabilities; a capability provides skills, prompts, roles,
    instructions and workflows; a workflow uses roles and prompts; a policy locks,
    bounds or requires entries; every entry is owned by a team.
 3. **Ownership.** Every entry's owning team comes from the release's `CODEOWNERS`,
-   applied the way the source host applies it: the last matching pattern wins.
-   An entry with no matching pattern shows as unowned.
+   applied the way the source host applies it to the entry's path in the
+   repository (the manifest root's folder, then the entry's path under it): the
+   last matching pattern wins. An entry with no matching pattern shows as unowned.
+   This is the catalog's only read outside the manifest root (M3).
 4. **Views.** Each entry gets a card with its properties, owner and relations; the
    catalog draws the dependency graph from the relations, so a team sees what its
    capability provides and what depends on it.
 5. Locked entries are read-only in the catalog, and edits go through their owners.
-   The catalog reads the installed release when a page opens and keeps no copy.
+   When a page opens, the catalog reads the installed release's manifest root and
+   the ownership file (item 3); it keeps no copy.
 
 ### M18 — Documentation
 
@@ -793,7 +819,8 @@ chain:
    the `manifest` skill also names the active release's `docs/` folder. The
    system prompt's documentation list is unchanged.
 3. Each manifest release documents itself: a `README.md` and one page per artifact
-   kind under `docs/`.
+   kind under `docs/`. These sit outside the manifest root and are never read as
+   manifest content; the `manifest` skill only points the agent at them.
 
 ### M19 — Schemas and checks
 
@@ -804,12 +831,13 @@ chain:
    published rules and the loading rules cannot drift. Generation uses `schemars`
    and validation uses `jsonschema`, both already pinned in the workspace. YAML and
    frontmatter are converted to their JSON value before validation.
-2. **In the manifest repository.** The generated schemas live under `schemas/`. A
-   pre-commit hook validates every artifact against them, so a malformed file
-   cannot be committed. A required pull-request check runs the same validation,
-   fails when the committed schemas differ from freshly generated ones, and loads
-   the release with Maestro (`maestro -p "/manifest status"` on the pull request's
-   commit), so a malformed or broken release cannot merge.
+2. **In the manifest repository.** The generated schemas live under `schemas/`,
+   outside the manifest root. A pre-commit hook validates every artifact in the
+   manifest root against them, so a malformed file cannot be committed. A required
+   pull-request check runs the same validation, fails when the committed schemas
+   differ from freshly generated ones, and loads the release with Maestro
+   (`maestro -p "/manifest status"` on the pull request's commit), so a malformed or
+   broken release cannot merge.
 3. **Tests.** Every schema has fixtures that must pass and fixtures that must fail,
    covering each member, each wrong JSON kind and each unknown member.
 
@@ -822,9 +850,10 @@ run only in manifest mode, in every session that loads the manifest package. The
 is no local guard file and no setting that adds, removes or disables a rule; rules
 change only with the manifest.
 
-1. **Files.** Each `core/guards/<family>.yaml` file has two members: `apiVersion`
-   (`maestro.guards/v1`) and `rules`, a non-empty list. `<family>` is lowercase and
-   hyphenated, at most 64 characters, and names the rule family, for example
+1. **Files.** Each `core/guards/<family>.yaml` file in the manifest root has two
+   members: `apiVersion` (`maestro.guards/v1`) and `rules`, a non-empty list.
+   `<family>` is lowercase and hyphenated, at most 64 characters, and names the
+   rule family, for example
    `destructive-commands`, `protected-paths`, `pii` or `prompt-injection`. The
    manifest package reads files in file-name order and rules in list order.
 
@@ -1094,6 +1123,13 @@ changes nothing, and enabling it only withholds text until checked.
 - Use synthetic current-format manifest fixtures checked into the tests, with
   every policy class, area kind, workflow form and failure case. No private or
   captured organization configuration is a fixture.
+- Manifest root: a fixture release that also holds files beside the root
+  (documentation, schemas, a README and a decoy `core/` folder with a `SYSTEM.md`,
+  a policy and a guard file) loads only the root's content: the decoys change no
+  resource, prompt, policy or guard. A release with no manifest root fails the
+  load, so agent sessions refuse, with the message M9 gives. Release inspection
+  and `/manifest status` read `CHANGELOG.md` from the root, and the ownership file
+  is the catalog's only read outside it.
 - Every refused request asserts that memory, pending edits, files, session
   history and emitted events are unchanged, not only the error text.
 - Package commands: a persisted `packages` lock refuses install, and required
@@ -1202,7 +1238,7 @@ Each item is a deliberate difference from the reference.
 1. The `manifest` setting, its self-lock and the user-first reading of a locked
    selection.
 2. The manifest layer between engine defaults and user settings, and the areas and
-   their order, including capabilities.
+   their order, including capabilities, all under one manifest root.
 3. The `manifestAreas` setting.
 4. `settings/policy.json`: locks, bounds, the model allowed set, required entries,
    role constraints, credential headers, the minimum release and the check
@@ -1292,8 +1328,12 @@ Add to `CONTEXT.md`:
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
 - **Manifest package:** The default-on base package that selects, installs, reads
   and enforces a manifest through the core hooks.
-- **Manifest area:** One folder of a manifest (common, standard, core, language or
-  capability) whose content enters the manifest layer in a fixed order.
+- **Manifest root:** The one folder of a release, `manifests/`, that holds all of
+  its manifest content. Maestro reads manifest content only from it; documentation,
+  schemas and CI stay outside.
+- **Manifest area:** The manifest root itself (the common area) or one folder under
+  it (standard, core, language or capability) whose content enters the manifest
+  layer in a fixed order.
 - **Capability:** A manifest area that is one package bundling a team's roles,
   skills, instructions, prompt templates and workflows, selected by name.
 - **Capability group:** The folder that groups capabilities, usually after the
