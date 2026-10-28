@@ -36,6 +36,7 @@ mod minimal_mode_example;
 mod module_location;
 mod native_helpers;
 mod native_io;
+mod overlay_qa_tests_example;
 mod overlay_test_example;
 mod project_rules_example;
 mod provider_catalog;

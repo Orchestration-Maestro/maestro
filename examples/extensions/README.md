@@ -114,6 +114,12 @@ resolving conflicts, then regenerate the table.
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
 | `notify.rs` | Sends an opt-in desktop notification when the agent is ready for input. |
+| `overlay_qa_tests.md` | Overlay QA tests |
+| `overlay_qa_tests.rs` | Overlay demonstrations covering animation, placement, stacking, overflow, visibility, passive overlays, focus and streaming input. |
+| `overlay_qa_tests/dialogs.rs` | Views that only react to keys: placement cycles, stacked layers, the edge and maximum-height notices and the side panel. |
+| `overlay_qa_tests/live.rs` | Views with periodic or external updates: the animation, streamed process output and the visibility toggle. |
+| `overlay_qa_tests/paint.rs` | Themed borders, fitted rows and key checks shared by every demonstration view. |
+| `overlay_qa_tests/panels.rs` | Non-capturing overlays shown from a view: the passive timer, focus cycling and the streaming input panels. |
 | `overlay_test.md` | Overlay test |
 | `overlay_test.rs` | A floating overlay for checking how the terminal composes one over the conversation. |
 | `permission_gate.md` | Permission gate |

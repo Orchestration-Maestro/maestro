@@ -172,6 +172,11 @@ path = "../../examples/extensions/notify.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "overlay_qa_tests"
+path = "../../examples/extensions/overlay_qa_tests.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "overlay_test"
 path = "../../examples/extensions/overlay_test.rs"
 crate-type = ["cdylib"]
