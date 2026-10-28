@@ -92,7 +92,7 @@ impl SessionManager {
         Self::base(cwd.to_owned(), directory, true)
     }
 
-    /// Open or recover an explicit lexical filename, reading it once.
+    /// Open or recover an explicit lexical filename, retrying conversion if its bytes change.
     ///
     /// # Errors
     /// Propagates required cwd, file, conversion and selected-field errors.
