@@ -1187,3 +1187,35 @@ fn sdk_restoration_resolves_recorded_values_without_rewriting_history() {
         );
     });
 }
+
+/// A publisher refusing explicit SDK tool requests.
+struct RefuseTools;
+impl maestro_settings::SettingsDecider for RefuseTools {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(request, maestro_settings::DecisionRequest::Tools(_)) {
+            return Err("release refuses SDK tools".into());
+        }
+        Ok(())
+    }
+}
+
+/// Explicit SDK tool requests refuse before creation appends initial history entries.
+#[test]
+fn sdk_explicit_tools_are_admitted_before_initial_history() {
+    on_task_set(|_| async {
+        let h = fixture(Auth::Key).await;
+        let mut options = options(&h, json!({}));
+        options.tools = Some(vec!["bash".into()]);
+        let manager = options.session_manager.as_ref().unwrap().clone();
+        options
+            .settings_manager
+            .as_ref()
+            .unwrap()
+            .borrow_mut()
+            .register_decider(Arc::new(RefuseTools))
+            .unwrap();
+        let result = create_agent_session(options).await;
+        assert_eq!(result.err().unwrap().message, "release refuses SDK tools");
+        assert!(manager.borrow().get_entries().is_empty());
+    });
+}
