@@ -39,7 +39,6 @@ mod provider_catalog;
 mod retained_components;
 mod retained_contexts;
 mod sandbox_commands_example;
-mod sandbox_example;
 mod startup;
 mod summarize_example;
 mod synchronous_reentry;

@@ -1,7 +1,7 @@
 //! Native isolation and loopback proxy traffic through the shipped component.
-use maestro_extensions::{
-    Cancellation, EventError, ExtensionRunner, ExtensionUIContext, Local,
-    types::{ExtensionUIContextPort, NotificationType},
+use maestro_app::{
+    Cancellation, EventError, ExtensionRunner, ExtensionUIContext, ExtensionUIContextPort, Local,
+    NotificationType,
 };
 use serde_json::json;
 use std::{cell::RefCell, path::Path, rc::Rc};
@@ -43,11 +43,11 @@ impl ExtensionUIContextPort for Ui {
 }
 
 /// Supplies separate global and project layers without touching user settings.
-fn fixture(root: &Path) {
-    std::fs::create_dir(root.join("extensions")).unwrap();
+fn fixture(root: &Path, agent: &Path) {
+    std::fs::create_dir(agent.join("extensions")).unwrap();
     std::fs::create_dir(root.join(".maestro")).unwrap();
     std::fs::write(
-        root.join("extensions/sandbox.json"),
+        agent.join("extensions/sandbox.json"),
         json!({
             "network":{"allowedDomains":["127.0.0.1"]},
             "filesystem":{"denyRead":[".env.*","*.pem"]}
@@ -71,7 +71,7 @@ fn fixture(root: &Path) {
 /// Executes the actual registered bash and returns its selected text.
 async fn bash(runner: &Rc<ExtensionRunner<Local>>, command: &str) -> String {
     let tools = runner.get_all_registered_tools();
-    let tool = maestro_extensions::wrap_registered_tool(&tools[0], runner.clone());
+    let tool = maestro_app::wrap_registered_tool(&tools[0], runner.clone());
     let result = (tool.execute)(
         "sandbox-probe".into(),
         json!({"command":command}),
@@ -87,11 +87,11 @@ async fn bash(runner: &Rc<ExtensionRunner<Local>>, command: &str) -> String {
 /// Delivers an ordinary startup or shutdown lifecycle event.
 async fn event(runner: &ExtensionRunner<Local>, start: bool) {
     if start {
-        let mut event: maestro_extensions::SessionStartEvent =
+        let mut event: maestro_app::SessionStartEvent =
             serde_json::from_value(json!({"reason":"startup"})).unwrap();
         runner.emit(&mut event).await.unwrap();
     } else {
-        let mut event: maestro_extensions::types::SessionShutdownEvent =
+        let mut event: maestro_app::SessionShutdownEvent =
             serde_json::from_value(json!({"reason":"quit"})).unwrap();
         runner.emit(&mut event).await.unwrap();
     }
@@ -206,7 +206,7 @@ async fn tunnel(mut peer: TcpStream, bytes: &[u8]) {
 /// Native timeout and cancellation remain policies of the existing bash owner.
 async fn cancellation(runner: &Rc<ExtensionRunner<Local>>) {
     let registered = runner.get_all_registered_tools();
-    let tool = maestro_extensions::wrap_registered_tool(&registered[0], runner.clone());
+    let tool = maestro_app::wrap_registered_tool(&registered[0], runner.clone());
     let timeout = (tool.execute)(
         "timeout".into(),
         json!({"command":"exec /bin/sleep 60","timeout":0.001}),
@@ -235,12 +235,14 @@ async fn cancellation(runner: &Rc<ExtensionRunner<Local>>) {
 
 /// The user-shell hook retains the same isolated execution capability as the tool.
 async fn user_bash(runner: &ExtensionRunner<Local>, root: &Path) {
-    let mut event: maestro_extensions::UserBashEvent = serde_json::from_value(json!({
+    let mut event: maestro_app::UserBashEvent = serde_json::from_value(json!({
         "command":"cat .env.local; printf user-shell", "cwd":root, "excludeFromContext":false
     }))
     .unwrap();
     let result = runner
-        .emit_user_bash::<Rc<dyn maestro_extensions::BashOperations<Local>>, maestro_extensions::BashResult>(&mut event)
+        .emit_user_bash::<Rc<dyn maestro_app::BashOperations<Local>>, maestro_app::BashResult>(
+            &mut event,
+        )
         .await
         .unwrap()
         .unwrap();
@@ -251,7 +253,7 @@ async fn user_bash(runner: &ExtensionRunner<Local>, root: &Path) {
         .exec(
             &event.command,
             root.to_str().unwrap(),
-            maestro_extensions::BashExecOptions {
+            maestro_app::BashExecOptions {
                 on_data: &mut output,
                 signal: None,
                 timeout: None,
@@ -264,17 +266,8 @@ async fn user_bash(runner: &ExtensionRunner<Local>, root: &Path) {
     assert_eq!(bytes, b"user-shell");
 }
 
-/// The filesystem policy exercised by an isolated child.
-#[derive(Clone, Copy)]
-enum Fixture {
-    /// Writable project with protected secrets.
-    Session,
-    /// No configured write paths; the sandbox still supplies its own temporary directory.
-    TemporaryDirectory,
-}
-
 /// Runs the selected case below one disposable parent, with distinct caller and sandbox temp paths.
-fn isolated(test: &str, selected: Fixture) -> bool {
+fn isolated(test: &str) -> bool {
     if std::env::var_os("MAESTRO_SANDBOX_CHILD").is_some() {
         return false;
     }
@@ -284,14 +277,6 @@ fn isolated(test: &str, selected: Fixture) -> bool {
     let sandbox_temporary = scratch.path().join("sandbox-temporary");
     std::fs::create_dir(&root).unwrap();
     std::fs::create_dir(&caller_temporary).unwrap();
-    fixture(&root);
-    if matches!(selected, Fixture::TemporaryDirectory) {
-        std::fs::write(
-            root.join(".maestro/sandbox.json"),
-            json!({"filesystem":{"allowWrite":[],"denyRead":[],"denyWrite":[]}}).to_string(),
-        )
-        .unwrap();
-    }
     let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env_clear()
@@ -314,31 +299,33 @@ fn isolated(test: &str, selected: Fixture) -> bool {
 
 #[test]
 fn sandbox_session_wraps_bash_and_filters_loopback_traffic() {
-    if isolated(
-        "sandbox_session_wraps_bash_and_filters_loopback_traffic",
-        Fixture::Session,
-    ) {
+    if isolated("sandbox_session_wraps_bash_and_filters_loopback_traffic") {
         return;
     }
-    super::super::wasi_support::run(session());
+    super::run(session);
 }
 
 #[test]
 fn sandbox_temp_directory_keeps_artifacts_without_configured_write_paths() {
-    if isolated(
-        "sandbox_temp_directory_keeps_artifacts_without_configured_write_paths",
-        Fixture::TemporaryDirectory,
-    ) {
+    if isolated("sandbox_temp_directory_keeps_artifacts_without_configured_write_paths") {
         return;
     }
-    super::super::wasi_support::run(temporary_directory());
+    super::run(temporary_directory);
 }
 
 /// A supplied temporary directory is writable, private and retained after shutdown.
-async fn temporary_directory() {
+async fn temporary_directory(local: Rc<tokio::task::LocalSet>) {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
-    let root = std::env::current_dir().unwrap();
-    let runner = super::loaded(&root).await;
+    let directory = super::super::support::Root::new();
+    let root = directory.path("project");
+    fixture(&root, &directory.path("agent"));
+    std::fs::write(
+        root.join(".maestro/sandbox.json"),
+        json!({"filesystem":{"allowWrite":[],"denyRead":[],"denyWrite":[]}}).to_string(),
+    )
+    .unwrap();
+    let session = super::loaded(&directory, local).await;
+    let runner = session.extension_runner();
     let ui = Rc::new(Ui::default());
     runner.set_ui_context(Some(ExtensionUIContext::new(ui)));
     event(&runner, true).await;
@@ -358,9 +345,12 @@ async fn temporary_directory() {
 }
 
 /// Exercises one initialized session through its tools, commands and lifecycle events.
-async fn session() {
-    let root = std::env::current_dir().unwrap();
-    let runner = super::loaded(&root).await;
+async fn session(local: Rc<tokio::task::LocalSet>) {
+    let directory = super::super::support::Root::new();
+    let root = directory.path("project");
+    fixture(&root, &directory.path("agent"));
+    let session = super::loaded(&directory, local).await;
+    let runner = session.extension_runner();
     let ui = Rc::new(Ui::default());
     runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
     initialized(&runner, &ui).await;
