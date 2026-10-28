@@ -3804,3 +3804,20 @@ fn example_components_prepare_directory_targets() {
         "MAESTRO_DIRECTORY_COMPONENT=/components/with_deps.wasm\n"
     );
 }
+
+/// A top-level main source retains its file-stem target rather than its root name.
+#[test]
+fn example_components_prepare_top_level_main() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::write(
+        root.path().join("main.rs"),
+        "// maestro-component: MAESTRO_MAIN_COMPONENT\n",
+    )
+    .unwrap();
+    let entries = tooling::example_files::prepare(&[root.path().to_path_buf()], |name, _| {
+        assert_eq!(name, "main");
+        Ok(PathBuf::from("/components/main.wasm"))
+    })
+    .unwrap();
+    assert_eq!(entries, "MAESTRO_MAIN_COMPONENT=/components/main.wasm\n");
+}
