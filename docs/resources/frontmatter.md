@@ -21,3 +21,17 @@ metadata returns a parsing error with source coordinates where available.
 Single-quoted, plain and block scalars do not interpret these backslash escapes;
 ordinary valid eight-digit scalar escapes remain supported in double-quoted
 strings.
+
+## Raw YAML documents
+
+`maestro_resources::frontmatter::parse_yaml` parses one complete YAML document.
+It returns `FrontmatterValue` directly: empty documents and null roots stay null,
+and scalar, sequence and mapping roots retain their kinds. Mappings keep authored
+key order. Numbers retain signed zero, NaN and infinities.
+
+The reader accepts document start/end markers and separator text inside block
+scalars. It rejects multiple documents and reports parser causes with source
+coordinates. Newlines use the same normalization as headers.
+
+`parse_frontmatter` extracts only a leading header, converts an empty or
+null header to an empty mapping, and returns its parsed body.

@@ -1021,6 +1021,12 @@ impl Imports for Controlled {
             body: "body".into(),
         })
     }
+    fn native_yaml(
+        &self,
+        _content: &str,
+    ) -> ExtensionResult<Vec<crate::bindings::maestro::extension::host::FrontmatterToken>> {
+        Err("raw YAML requires the production helper host".into())
+    }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.observe().actions.helper(operation, data)
     }
