@@ -349,6 +349,9 @@ fn daemon_tab_create_response_includes_root_pane() {
                 [
                     EventData::TabCreated { tab },
                     EventData::PaneCreated { pane: root_pane },
+                    EventData::LayoutUpdated {
+                        layout: app.pane_layout_snapshot(0, 1).unwrap()
+                    },
                 ]
             );
             let unfocused = json!({"type": "tab.create", "workspace_id": "w1"});

@@ -23,6 +23,7 @@ mod desktop_notification;
 mod event_replay;
 mod key_combo;
 mod pane_chrome;
+mod pane_commands;
 mod repository_discovery;
 mod repository_identity;
 mod repository_support;

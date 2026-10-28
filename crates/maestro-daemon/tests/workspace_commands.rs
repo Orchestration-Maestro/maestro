@@ -411,6 +411,9 @@ fn daemon_workspace_create_response_includes_initial_tab_and_root_pane() {
                     EventData::WorkspaceCreated { workspace },
                     EventData::TabCreated { tab },
                     EventData::PaneCreated { pane: root_pane },
+                    EventData::LayoutUpdated {
+                        layout: app.pane_layout_snapshot(0, 0).unwrap()
+                    },
                 ]
             );
             let unfocused = answer(app, json!({"type": "workspace.create", "focus": false})).await;
