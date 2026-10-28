@@ -6,7 +6,8 @@ use maestro_app::{
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// Build an isolated SDK session with the production component factory and no ambient auth.
+/// Build an isolated SDK session with the production component factory, the application's
+/// native effects and no ambient auth.
 pub async fn component_session(
     root: &super::Root,
     local: Rc<tokio::task::LocalSet>,

@@ -12,8 +12,18 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "bash_spawn_hook"
+path = "../../examples/extensions/bash_spawn_hook.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "bookmark"
 path = "../../examples/extensions/bookmark.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "built_in_tool_renderer"
+path = "../../examples/extensions/built_in_tool_renderer.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -28,6 +38,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "context_bridge"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "custom_compaction"
+path = "../../examples/extensions/custom_compaction.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -66,6 +81,11 @@ path = "../../examples/extensions/git_checkpoint.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "github_issue_autocomplete"
+path = "../../examples/extensions/github_issue_autocomplete.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "handoff"
 path = "../../examples/extensions/handoff.rs"
 crate-type = ["cdylib"]
@@ -95,6 +115,21 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "local_shell_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "mac_system_theme"
+path = "../../examples/extensions/mac_system_theme.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "message_renderer"
+path = "../../examples/extensions/message_renderer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "minimal_mode"
+path = "../../examples/extensions/minimal_mode.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -151,6 +186,16 @@ path = "../../examples/extensions/qna.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "question"
+path = "../../examples/extensions/question.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "questionnaire"
+path = "../../examples/extensions/questionnaire.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
@@ -184,13 +229,28 @@ path = "../../examples/extensions/snake.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "space_invaders"
+path = "../../examples/extensions/space_invaders.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "summarize"
+path = "../../examples/extensions/summarize.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "system_prompt_header"
 path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "timed_confirm"
+path = "../../examples/extensions/timed_confirm.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -255,6 +315,7 @@ serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 [dev-dependencies]
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+num-traits.workspace = true
 regex.workspace = true
 ryu-js.workspace = true
 sha2 = { version = "=0.11.0", default-features = false }

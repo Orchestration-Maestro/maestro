@@ -1021,6 +1021,12 @@ impl Imports for Controlled {
             body: "body".into(),
         })
     }
+    fn native_yaml(
+        &self,
+        _content: &str,
+    ) -> ExtensionResult<Vec<crate::bindings::maestro::extension::host::FrontmatterToken>> {
+        Err("raw YAML requires the production helper host".into())
+    }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.observe().actions.helper(operation, data)
     }
@@ -2197,6 +2203,8 @@ impl Imports for Controlled {
         let provider = exports.invoke_provider_factory(factory.id, current, &emitter)?;
         let id = crate::component_adapter::keep_provider(self, provider);
         super::provider_host::push(&mut self.observed.borrow_mut(), id);
+        self.observe()
+            .register(format!("provider factory {id}"), factory.id);
         Ok(())
     }
     fn ui_get_editor_component(
@@ -2898,6 +2906,12 @@ impl Imports for Controlled {
             .shortcuts
             .push((shortcut.into(), description.map(str::to_owned)));
         observed.register(format!("shortcut {shortcut}"), handler.id);
+        Ok(())
+    }
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("load-time {contributions}"));
         Ok(())
     }
     fn register_flag(&self, name: &str, options: &crate::FlagOptions) -> ExtensionResult<()> {

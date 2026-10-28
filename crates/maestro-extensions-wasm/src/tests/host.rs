@@ -1,8 +1,9 @@
 //! A test-only native host: it instantiates the built author component and implements the
 //! imports the component calls.
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use std::time::Duration;
 
 use tokio::sync::oneshot;
@@ -231,6 +232,8 @@ pub struct State {
     clock: Option<Clock>,
     /// Host-side resources by handle.
     pub table: ResourceTable,
+    /// Reports delivery of caller-owned cancellation to a pending component dialog.
+    pub abort_notice: Option<oneshot::Sender<()>>,
     /// What the host observed.
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
@@ -331,6 +334,7 @@ impl State {
             wasi: builder.build(),
             clock,
             table: ResourceTable::new(),
+            abort_notice: None,
             observed: Observed::default(),
             guest: None,
             schema_origin: None,
@@ -343,6 +347,9 @@ impl State {
             .get_mut(&Resource::<Flag>::new_borrow(flag))?
             .0
             .store(true, std::sync::atomic::Ordering::SeqCst);
+        if let Some(notice) = self.abort_notice.take() {
+            let _ = notice.send(());
+        }
         Ok(())
     }
 
@@ -1157,6 +1164,12 @@ impl host::Host for State {
             body: "body".into(),
         }))
     }
+    fn native_yaml(
+        &mut self,
+        _content: String,
+    ) -> wasmtime::Result<Result<Vec<host::FrontmatterToken>, String>> {
+        Ok(Err("raw YAML requires the production helper host".into()))
+    }
     fn native_helper(
         &mut self,
         operation: String,
@@ -1424,6 +1437,13 @@ impl host::Host for State {
             .register(format!("shortcut {shortcut}"), handler.rep());
         Ok(Ok(()))
     }
+    fn contribute_load_time(
+        &mut self,
+        contributions: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.observed.log(format!("load-time {contributions}"));
+        Ok(Ok(()))
+    }
     fn register_flag(
         &mut self,
         name: String,
@@ -1551,6 +1571,9 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let Some(error) = self.observed.actions.entry_error.take() {
+            return self.routed(Err(error));
+        }
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {
@@ -1815,12 +1838,22 @@ pub struct Harness {
     pub exports: Guest,
 }
 
-/// Shares an engine within a process and cached compilation beside the built artifact.
-pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
-    static COMPILED: OnceLock<Result<(Engine, Component), String>> = OnceLock::new();
-    COMPILED
-        .get_or_init(|| super::build::compile(path).map_err(|error| error.to_string()))
+/// Shares one engine within a process and caches each component by its artifact path.
+pub(super) fn compiled(path: &Path) -> wasmtime::Result<(Engine, Component)> {
+    static ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
+    static COMPONENTS: LazyLock<Mutex<HashMap<PathBuf, Result<Component, String>>>> =
+        LazyLock::new(Mutex::default);
+    let engine = ENGINE
+        .get_or_init(|| super::build::engine().map_err(|error| error.to_string()))
         .as_ref()
+        .map_err(|message| wasmtime::format_err!("{message}"))?;
+    COMPONENTS
+        .lock()
+        .unwrap()
+        .entry(path.to_path_buf())
+        .or_insert_with(|| Component::from_file(engine, path).map_err(|error| error.to_string()))
+        .as_ref()
+        .map(|component| (engine.clone(), component.clone()))
         .map_err(|message| wasmtime::format_err!("{message}"))
 }
 
@@ -1848,7 +1881,7 @@ impl Harness {
     /// Instantiates the component and runs its factory.
     pub async fn start(path: &Path) -> wasmtime::Result<Self> {
         let (engine, component) = compiled(path)?;
-        Self::from_compiled(engine, component).await
+        Self::from_compiled(&engine, &component).await
     }
 
     /// Instantiates one registered example and runs its factory.
@@ -1940,7 +1973,7 @@ impl Harness {
         let (_, component) = compiled(path)?;
         let origin = Arc::new(OnceLock::new());
         let linker = component_linker(self.store.engine())?;
-        let extension = Extension::instantiate_async(&mut self.store, component, &linker).await?;
+        let extension = Extension::instantiate_async(&mut self.store, &component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
         let _ = origin.set(exports.clone());
         self.store.data_mut().schema_origin = Some(origin);

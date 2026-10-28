@@ -17,9 +17,8 @@ pub(super) fn cwd() -> Value {
     json!({"p2":ordinary,"p3":wasi::cli::environment::get_initial_cwd()})
 }
 
-/// Performs an actual write/read or read and reports semantic standard/OS failures.
-pub(super) async fn operate(request: &Value) -> Result<Value, String> {
-    let path = request["path"].as_str().ok_or("missing path")?;
+/// Performs an actual write/read or read of the guest-spelled path and reports OS failures.
+pub(super) async fn operate(request: &Value, path: &str) -> Result<Value, String> {
     let write = request["write"].as_bool().unwrap_or(false);
     let bytes: Vec<u8> =
         serde_json::from_value(request["bytes"].clone()).map_err(|error| error.to_string())?;
@@ -32,7 +31,7 @@ pub(super) async fn operate(request: &Value) -> Result<Value, String> {
     } else {
         let result = asynchronous(path, bytes, write).await;
         Ok(result.map_or_else(
-            |error| json!({"error":asynchronous_error(error)}),
+            |error| json!({"error":asynchronous_error(&error),"code":format!("{error:?}")}),
             |bytes| json!({"bytes":bytes}),
         ))
     }
@@ -46,13 +45,8 @@ fn ordinary(path: &str, bytes: &[u8], write: bool) -> std::io::Result<Vec<u8>> {
     std::fs::read(path)
 }
 
-/// Uses the same root and cwd through the native async filesystem implementation.
+/// Opens the path below its matching root through the native async filesystem implementation.
 async fn asynchronous(path: &str, bytes: Vec<u8>, write: bool) -> Result<Vec<u8>, ErrorCode> {
-    let roots = wasi::filesystem::preopens::get_directories();
-    let (root, _) = roots
-        .iter()
-        .find(|(_, path)| path == "/")
-        .ok_or(ErrorCode::NoEntry)?;
     let absolute = if path.starts_with('/') {
         path.to_owned()
     } else {
@@ -61,7 +55,19 @@ async fn asynchronous(path: &str, bytes: Vec<u8>, write: bool) -> Result<Vec<u8>
             wasi::cli::environment::get_initial_cwd().ok_or(ErrorCode::NoEntry)?
         )
     };
-    let path = absolute.trim_start_matches('/').to_owned();
+    let roots = wasi::filesystem::preopens::get_directories();
+    // The longest root name that ends at a separator, as the ordinary libc selects it.
+    let (root, name) = roots
+        .iter()
+        .map(|(root, name)| (root, name.trim_end_matches('/')))
+        .filter(|(_, name)| {
+            absolute.starts_with(name)
+                && matches!(absolute.as_bytes().get(name.len()), None | Some(b'/'))
+        })
+        .max_by_key(|(_, name)| name.len())
+        .ok_or(ErrorCode::NoEntry)?;
+    let path = absolute[name.len()..].trim_start_matches('/');
+    let path = if path.is_empty() { "." } else { path }.to_owned();
     let flags = if write {
         OpenFlags::CREATE | OpenFlags::TRUNCATE
     } else {
@@ -101,7 +107,7 @@ fn ordinary_error(error: &std::io::Error) -> String {
 }
 
 /// The corresponding native asynchronous error distinctions.
-fn asynchronous_error(error: ErrorCode) -> String {
+fn asynchronous_error(error: &ErrorCode) -> String {
     match error {
         ErrorCode::NoEntry => "not-found".into(),
         ErrorCode::Access | ErrorCode::NotPermitted => "permission-denied".into(),

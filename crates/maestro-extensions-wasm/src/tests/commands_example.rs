@@ -276,7 +276,7 @@ fn commands_lists_filtered_inventory_and_handles_cancellation() -> Result<(), St
     run_controlled(&listing_cases())
 }
 
-/// Source paths are shown only after an affirmative confirmation.
+/// Path notifications require affirmative confirmation.
 fn path_cases() -> Vec<Case> {
     let mut cases = Vec::new();
     for (selected, name, path) in [
@@ -311,7 +311,7 @@ fn path_cases() -> Vec<Case> {
 }
 
 #[test]
-fn commands_shows_source_paths_only_after_confirmation() -> Result<(), String> {
+fn commands_notifies_source_paths_only_after_confirmation() -> Result<(), String> {
     run_controlled(&path_cases())
 }
 
