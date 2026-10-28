@@ -1400,3 +1400,37 @@ fn git_windows_dot_segments_never_select_a_checkout() {
         rejected_git_source_preserves_checkout(source, selected);
     }
 }
+
+/// Refuses the package preference edit before a managed source can run.
+struct RefusePackageEdit;
+impl maestro_settings::SettingsDecider for RefusePackageEdit {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Err("release refuses packages".into())
+    }
+}
+
+/// No child, progress callback or project file precedes a refused package edit.
+#[test]
+fn refused_package_edits_have_no_acquisition_or_removal_effects() {
+    for scope in [User, Project] {
+        for remove in [false, true] {
+            let fixture = Fixture::new(&json!({"packages":["npm:pkg"]}));
+            fixture
+                .settings
+                .borrow_mut()
+                .register_decider(Arc::new(RefusePackageEdit))
+                .unwrap();
+            let before = fixture.settings.borrow().get_global_settings();
+            let result = if remove {
+                block_on(fixture.manager.remove_and_persist("npm:pkg", Some(scope))).map(drop)
+            } else {
+                block_on(fixture.manager.install_and_persist("npm:pkg", Some(scope)))
+            };
+            assert_eq!(result.unwrap_err().to_string(), "release refuses packages");
+            assert!(fixture.calls().is_empty());
+            assert!(fixture.phases().is_empty());
+            assert!(!std::path::Path::new(&fixture.project(".maestro/npm")).exists());
+            assert_eq!(fixture.settings.borrow().get_global_settings(), before);
+        }
+    }
+}
