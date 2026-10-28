@@ -25,6 +25,7 @@ impl<C: FnMut() -> u128> App<C> {
         let (workspace, replaced) = self.layout_apply_scope(&params)?;
         validate_layout_tree(&params.root)?;
         let target = &self.state.topology.workspaces[workspace];
+        let workspace_id = target.id.clone();
         let name = params
             .tab_label
             .clone()
@@ -41,8 +42,8 @@ impl<C: FnMut() -> u128> App<C> {
         if let Some(tab) = replaced {
             self.close_replaced_tab(workspace, tab).await;
         }
-        let tab = self
-            .tab_of_root(workspace, root_pane)
+        let (workspace, tab) = self
+            .applied_tab(&workspace_id, root_pane)
             .ok_or_else(|| api_error("layout_apply_failed", "new layout tab disappeared"))?;
         if let Some(name) = name {
             self.state.topology.workspaces[workspace].tabs[tab].set_custom_name(name);
@@ -214,6 +215,18 @@ impl<C: FnMut() -> u128> App<C> {
             .position(|tab| tab.root_pane == root_pane)
     }
 
+    /// The display positions of the workspace `workspace_id` and of its tab rooted at
+    /// `root_pane`, when both are still there.
+    fn applied_tab(&self, workspace_id: &str, root_pane: PaneId) -> Option<(usize, usize)> {
+        let workspace = self
+            .state
+            .topology
+            .workspaces
+            .iter()
+            .position(|workspace| workspace.id == workspace_id)?;
+        Some((workspace, self.tab_of_root(workspace, root_pane)?))
+    }
+
     /// Removes a tab built for a layout that failed, with its processes.
     async fn discard_layout_tab(&mut self, workspace: usize, root_pane: PaneId) {
         if let Some(tab) = self.tab_of_root(workspace, root_pane) {
@@ -221,14 +234,16 @@ impl<C: FnMut() -> u128> App<C> {
         }
     }
 
-    /// Closes the tab a finished layout replaces and publishes its closing.
+    /// Closes the tab a finished layout replaces and publishes its closing. Stopping its
+    /// processes applies the events that arrive meanwhile, so a workspace may close or move
+    /// before this returns.
     async fn close_replaced_tab(&mut self, workspace: usize, tab: usize) {
         let closed = self.state.public_tab_id(workspace, tab);
+        let workspace_id = self.state.topology.workspaces[workspace].id.clone();
         if !self.retire_tab_and_stop_panes(workspace, tab).await {
             return;
         }
         if let Some(tab_id) = closed {
-            let workspace_id = self.state.topology.workspaces[workspace].id.clone();
             self.event_hub.push(EventData::TabClosed {
                 tab_id,
                 workspace_id,

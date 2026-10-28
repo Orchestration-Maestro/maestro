@@ -670,7 +670,9 @@ the same owners as the pane commands.
   through `spawn_split`, as `pane.split` does. A failure removes the new tab with
   `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
   and plugin records and stops their processes. The replaced tab is retired only after the
-  new tab stands. `emit_tab_created_events` publishes every pane of the
+  new tab stands. Stopping its processes applies the events that arrive meanwhile, which can
+  close or move workspaces, so the apply looks its workspace up again by identity and fails
+  with `layout_apply_failed` when the new tab is gone. `emit_tab_created_events` publishes every pane of the
   new tab, which for a tab with one pane is its root; a new workspace publishes its first
   tab through it too.
 

@@ -294,9 +294,10 @@ its arguments, run without a shell) and `env`. An answer carries the workspace, 
   the active tab. A tree of more than 24 panes or 16 levels, an empty `command`, a bad
   `env` or a ratio that is not finite fails with `invalid_layout` before anything starts.
   A process that cannot start fails with `layout_apply_failed`, and the tab built so far
-  is removed again, leaving the replaced tab as it was. A success publishes `tab_closed`
-  for a replaced tab, `tab_created`, `pane_created` for each pane in layout order, and
-  `layout_updated`.
+  is removed again, leaving the replaced tab as it was. A new tab whose panes all exit
+  while the replaced tab stops fails with `layout_apply_failed` too, after `tab_closed`.
+  A success publishes `tab_closed` for a replaced tab, `tab_created`, `pane_created` for
+  each pane in layout order, and `layout_updated`.
 
 ## Binary screen channel
 
