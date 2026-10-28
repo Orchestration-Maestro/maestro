@@ -6,10 +6,7 @@ use maestro_extensions_wasm::{
 };
 use std::{rc::Rc, task::Poll};
 
-/// Quotes one literal operand for a POSIX shell, including embedded apostrophes.
-pub(super) fn quote(text: &str) -> String {
-    format!("'{}'", text.replace('\'', "'\\''"))
-}
+pub(super) use maestro_text::shell_quote as quote;
 
 /// Drains original bytes without decoding or merging standard error into file contents.
 async fn collect(stream: Rc<dyn Readable>) -> ExtensionResult<Vec<u8>> {
@@ -20,21 +17,24 @@ async fn collect(stream: Rc<dyn Readable>) -> ExtensionResult<Vec<u8>> {
     Ok(bytes)
 }
 
-/// Polls all three pipes together so large writes and either output cannot deadlock.
+/// Drains both outputs beside input, retaining write errors for the exit-status check.
 async fn transfer(
     child: &Rc<dyn ChildProcess>,
     input: Option<String>,
-) -> ExtensionResult<(Vec<u8>, Vec<u8>)> {
+) -> ExtensionResult<(Vec<u8>, Vec<u8>, ExtensionResult<()>)> {
     let mut stdout = Box::pin(collect(child.stdout().ok_or("SSH stdout missing")?));
     let mut stderr = Box::pin(collect(child.stderr().ok_or("SSH stderr missing")?));
     let stdin = child.stdin().ok_or("SSH stdin missing")?;
     let mut write = Box::pin(async move {
-        if let Some(input) = input {
-            stdin.write(input.as_bytes()).await?;
-        }
-        stdin.end().await
+        let result = if let Some(input) = input {
+            stdin.write(input.as_bytes()).await
+        } else {
+            Ok(())
+        };
+        let ended = stdin.end().await;
+        result.and(ended)
     });
-    let (mut output, mut error, mut written) = (None, None, false);
+    let (mut output, mut error, mut written) = (None, None, None);
     std::future::poll_fn(|cx| {
         if output.is_none()
             && let Poll::Ready(bytes) = stdout.as_mut().poll(cx)
@@ -46,23 +46,25 @@ async fn transfer(
         {
             error = Some(bytes?);
         }
-        if !written && let Poll::Ready(result) = write.as_mut().poll(cx) {
-            result?;
-            written = true;
+        if written.is_none()
+            && let Poll::Ready(result) = write.as_mut().poll(cx)
+        {
+            written = Some(result);
         }
-        if written
+        if written.is_some()
             && output.is_some()
             && error.is_some()
-            && let (Some(output), Some(error)) = (output.take(), error.take())
+            && let (Some(output), Some(error), Some(written)) =
+                (output.take(), error.take(), written.take())
         {
-            return Poll::Ready(Ok((output, error)));
+            return Poll::Ready(Ok((output, error, written)));
         }
         Poll::Pending
     })
     .await
 }
 
-/// Runs one SSH child, reaping it on pipe failure and retaining exit diagnostics.
+/// Runs one SSH child, reaping it on output-pipe failure and retaining exit diagnostics.
 pub(super) async fn execute(
     api: &ExtensionAPI,
     remote: &str,
@@ -77,7 +79,7 @@ pub(super) async fn execute(
             SpawnOptions::default(),
         )
         .await?;
-    let (stdout, stderr) = match transfer(&child, input).await {
+    let (stdout, stderr, written) = match transfer(&child, input).await {
         Ok(output) => output,
         Err(error) => {
             let _ = child.kill(None);
@@ -96,5 +98,6 @@ pub(super) async fn execute(
             String::from_utf8_lossy(&stderr)
         ));
     }
+    written?;
     Ok(stdout)
 }

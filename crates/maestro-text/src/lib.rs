@@ -1,5 +1,5 @@
 //! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8,
-//! whitespace membership, UTF-16 lexical order, markup escaping, CSS string serialization,
+//! whitespace membership, UTF-16 lexical order, markup escaping, CSS string serialization, POSIX shell operands,
 //! environment flag truth,
 //! optional `collation` locale comparison and optional `number-format` locale-number presentation.
 //!

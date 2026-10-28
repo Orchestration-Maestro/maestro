@@ -21,11 +21,29 @@ pub(super) struct Remote {
 }
 
 impl Remote {
-    /// Maps only a complete local directory prefix, leaving other absolute paths alone.
+    /// Maps a complete host directory prefix to the remote directory’s POSIX spelling.
     fn path(&self, path: &str) -> String {
-        path.strip_prefix(self.local_cwd.trim_end_matches('/'))
-            .filter(|suffix| suffix.is_empty() || suffix.starts_with('/'))
-            .map_or_else(|| path.to_owned(), |suffix| format!("{}{suffix}", self.cwd))
+        let windows = !self.local_cwd.starts_with('/')
+            && (self.local_cwd.starts_with("\\\\")
+                || self.local_cwd.as_bytes().get(1) == Some(&b':'));
+        let separators: &[char] = if windows { &['/', '\\'] } else { &['/'] };
+        path.strip_prefix(self.local_cwd.trim_end_matches(separators))
+            .filter(|suffix| {
+                suffix.is_empty()
+                    || suffix.starts_with('/')
+                    || (windows && suffix.starts_with('\\'))
+            })
+            .map_or_else(
+                || path.to_owned(),
+                |suffix| {
+                    let suffix = if windows {
+                        suffix.replace('\\', "/")
+                    } else {
+                        suffix.to_owned()
+                    };
+                    format!("{}{suffix}", self.cwd)
+                },
+            )
     }
 
     /// Carries child diagnostics through the tool owner's structured error interface.
