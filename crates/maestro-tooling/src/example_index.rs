@@ -213,7 +213,7 @@ fn components(targets: &[Target]) -> io::Result<String> {
     let mut result = String::from(
         "/// Each prepared example and the variable that hands its component path to the tests.\nconst COMPONENTS: &[(&str, &str)] = &[\n",
     );
-    let mut variables = BTreeSet::new();
+    let mut variables = BTreeSet::from([String::from("MAESTRO_AUTHOR_COMPONENT")]);
     for target in targets {
         let Some(variable) = variable(&target.source)? else {
             continue;
