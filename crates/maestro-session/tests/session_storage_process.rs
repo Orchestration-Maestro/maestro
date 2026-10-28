@@ -101,3 +101,76 @@ fn append_child(path: &str) {
         .unwrap();
     stream.write_all(b"done").unwrap();
 }
+
+#[test]
+fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
+    if let Ok(path) = std::env::var("MAESTRO_SESSION_MIGRATE_PATH") {
+        migrate_child(&path);
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let path = root.path().join("migration.jsonl");
+    let path = path.to_str().unwrap();
+    let original = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":2,\"cwd\":\"/work\"}\n";
+    fs::write(path, original).unwrap();
+    let previous = root.path().join("previous.jsonl");
+    fs::hard_link(path, &previous).unwrap();
+    let holder =
+        maestro_lock::acquire_waiting(fs::File::create(format!("{path}.lock")).unwrap()).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let child =
+        TestProcess::current("migration_rechecks_a_concurrent_append_before_atomic_publication")
+            .unwrap()
+            .nocapture()
+            .env("MAESTRO_SESSION_MIGRATE_PATH", path)
+            .env(
+                "MAESTRO_SESSION_APPEND_ADDRESS",
+                listener.local_addr().unwrap().to_string(),
+            )
+            .spawn()
+            .unwrap();
+    let (mut stream, _) = listener.accept().unwrap();
+    let mut pid = [0; 4];
+    stream.read_exact(&mut pid).unwrap();
+    let blocked = observe_waiter(u32::from_be_bytes(pid), &stream);
+    fs::OpenOptions::new()
+        .append(true)
+        .open(path)
+        .unwrap()
+        .write_all(b"{\"type\":\"custom\",\"id\":\"concurrent\",\"parentId\":null}\n")
+        .unwrap();
+    let before_replace = fs::read(path).unwrap();
+    drop(holder);
+    let output = child.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        blocked,
+        "migration published without waiting for the concurrent writer"
+    );
+    assert_eq!(fs::read(&previous).unwrap(), before_replace);
+    let mut manager = SessionManager::open(path, None, Some("/work")).unwrap();
+    let start = std::time::Instant::now();
+    manager
+        .append_message(serde_json::json!({"role":"assistant","content":"measured"}))
+        .unwrap();
+    eprintln!(
+        "single-process append: {} microseconds",
+        start.elapsed().as_micros()
+    );
+    let entries = maestro_session::session_manager::load_entries_from_file(path).unwrap();
+    assert_eq!(entries[0]["version"], 3);
+    assert_eq!(entries[1]["id"], "concurrent");
+}
+
+/// Announces migration before opening the history, then signals completion.
+fn migrate_child(path: &str) {
+    let mut stream =
+        TcpStream::connect(std::env::var("MAESTRO_SESSION_APPEND_ADDRESS").unwrap()).unwrap();
+    stream.write_all(&std::process::id().to_be_bytes()).unwrap();
+    SessionManager::open(path, None, Some("/work")).unwrap();
+    stream.write_all(b"done").unwrap();
+}
