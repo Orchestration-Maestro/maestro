@@ -628,6 +628,28 @@ the leaf swap and the pane transfer have one implementation.
   `remove_emptied_workspace` keeps the active and selected workspaces on the workspaces
   they were on.
 
+### Pane input, reads and reports
+
+The handlers in `app/api/panes/` for input, rename, read and the agent reports resolve
+their pane like the reads do, and hand the work to the owners that already exist.
+
+- **Keys.** A request key goes through `key_combo::parse_key_combo` after the legacy
+  `C-c`, `c-c` and `+` spellings are mapped, then through the pane's terminal encoder, so
+  the live keyboard modes decide the bytes. All keys are encoded before the first write.
+  Text is framed by `PaneRuntime::paste_payload`, the same framing a paste uses.
+- **Reads.** `app/api/reads.rs` is the one conversion from a source, format and line
+  count to screen text. Viewport and detection reads clip with
+  `TerminalReadSnapshot::limited`; recent reads use the runtime's own row budget. Any
+  command that reads a resolved pane calls `App::read_pane`.
+- **Reports.** A report becomes an `AppEvent` (`HookStateReported`, `AgentSessionReported`,
+  `HookMetadataReported`, `HookAuthorityCleared` or `HookAgentReleased`) and goes through
+  `handle_internal_event`, so the terminal state owner, the status events and the runtime
+  detection controls see it as they see any other observation. Metadata tokens are
+  admitted and patched on the terminal state, and a changed token set publishes the
+  pane with `emit_pane_updated`.
+- **Rename.** The label lives on the terminal state. A changed label is published with
+  `emit_pane_updated`.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and
