@@ -603,3 +603,30 @@ fn native_probe_preserves_cwd_and_environment_order() {
     assert_eq!(records, ["first", "second"]);
     assert_eq!(std::env::var_os(KEY), before);
 }
+
+#[test]
+fn workspace_skill_path_resolves_the_shipped_safety_guide() {
+    let root = if cfg!(windows) {
+        r"C:\maestro"
+    } else {
+        "/opt/maestro"
+    };
+    assert_eq!(
+        std::path::Path::new(&paths::get_workspace_skill_path(root).unwrap()),
+        std::path::Path::new(root).join("docs/skills/workspace/SKILL.md")
+    );
+    let package = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+    let path = paths::get_workspace_skill_path(package).unwrap();
+    let skill = std::fs::read_to_string(path).unwrap();
+    for instruction in [
+        "name: workspace",
+        "MAESTRO_ENV",
+        "--help",
+        "--current",
+        "maestro attach --daemon",
+        "Do not answer an approval",
+        "Do not use bare `maestro` for discovery",
+    ] {
+        assert!(skill.contains(instruction), "missing {instruction}");
+    }
+}

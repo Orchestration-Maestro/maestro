@@ -212,3 +212,11 @@ pub fn get_sessions_dir(agent_dir: &str) -> String {
 pub fn get_debug_log_path(agent_dir: &str) -> String {
     join(&[agent_dir, &format!("{APP_NAME}-debug.log")])
 }
+
+/// Resolve the shipped workspace skill beneath the package directory.
+///
+/// # Errors
+/// Returns path-resolution failures.
+pub fn get_workspace_skill_path(_package_dir: &str) -> io::Result<String> {
+    Err(io::ErrorKind::Unsupported.into())
+}
