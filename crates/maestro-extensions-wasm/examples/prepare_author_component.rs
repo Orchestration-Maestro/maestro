@@ -17,8 +17,8 @@ mod example_files;
 
 /// Builds and compiles the components, then hands their paths to nextest's environment file.
 fn main() -> Result<(), String> {
-    let rg = pinned_search_tool("rg")?;
-    let fd = pinned_search_tool("fd")?;
+    let rg = pinned_search_tool("rg", "ripgrep")?;
+    let fd = pinned_search_tool("fd", "fd")?;
     let path = build::author_component()?;
     build::compile(path).map_err(|error| error.to_string())?;
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
@@ -53,23 +53,38 @@ fn main() -> Result<(), String> {
 ///
 /// Returns an error if mise cannot resolve the tool, its output is not UTF-8,
 /// or the returned path is not absolute or does not name a file.
-fn pinned_search_tool(name: &str) -> Result<String, String> {
-    let output = std::process::Command::new("mise")
-        .args(["which", name])
-        .output()
-        .map_err(|error| format!("{name}: cannot resolve pinned tool with mise: {error}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "{name}: mise could not resolve pinned tool: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    let path = String::from_utf8(output.stdout).map_err(|error| format!("{name}: {error}"))?;
-    let path = path.trim();
-    if !std::path::Path::new(path).is_absolute() || !std::path::Path::new(path).is_file() {
+fn pinned_search_tool(name: &str, tool: &str) -> Result<String, String> {
+    let config = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mise.toml");
+    let version = mise_output(&["config", "get", "--file", config, &format!("tools.{tool}")])?;
+    let path = mise_output(&["which", name, "--tool", &format!("{tool}@{version}")])?;
+    if !std::path::Path::new(&path).is_absolute() || !std::path::Path::new(&path).is_file() {
         return Err(format!(
             "{name}: mise returned no absolute executable path: {path}"
         ));
     }
-    Ok(path.to_owned())
+    Ok(path)
+}
+
+/// Reads stored pins or resolves installed binaries without evaluating project configuration.
+///
+/// # Errors
+///
+/// Returns an error if mise cannot run, exits unsuccessfully or returns invalid UTF-8.
+fn mise_output(args: &[&str]) -> Result<String, String> {
+    let output = std::process::Command::new("mise")
+        // Reading stored pins needs no trust; binary lookup must not evaluate project hooks.
+        .env("MISE_NO_CONFIG", "1")
+        .args(args)
+        .output()
+        .map_err(|error| format!("mise {}: {error}", args.join(" ")))?;
+    if !output.status.success() {
+        return Err(format!(
+            "mise {}: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    String::from_utf8(output.stdout)
+        .map(|value| value.trim().to_owned())
+        .map_err(|error| format!("mise {}: {error}", args.join(" ")))
 }
