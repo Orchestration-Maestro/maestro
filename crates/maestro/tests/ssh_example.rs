@@ -102,6 +102,9 @@ assert sys.argv[1] == '--', sys.argv
 if sys.argv[2] == 'user@broken':
     sys.stderr.write('controlled connection failure')
     sys.exit(37)
+if sys.argv[3].startswith('cat > ') and 'early-write.txt' in sys.argv[3]:
+    sys.stderr.write('controlled remote write rejection')
+    sys.exit(38)
 assert sys.argv[2] == 'user@controlled', sys.argv
 os.chdir(root / 'remote')
 os.execv('/bin/bash', ['bash', '-c', sys.argv[3]])
@@ -404,6 +407,54 @@ fn ssh_enabled_routes_coding_tools_shell_and_session_context() {
         assert_eq!(
             std::fs::read_to_string(local.join("local.txt")).unwrap(),
             "local again"
+        );
+    });
+}
+
+/// A remote child that never consumes a large write retains its own diagnostic.
+#[cfg(unix)]
+#[test]
+fn ssh_early_write_failure_retains_remote_exit_diagnostic() {
+    if isolated("ssh_early_write_failure_retains_remote_exit_diagnostic") {
+        return;
+    }
+    run(|executor| async move {
+        let root = super::support::Root::new();
+        let session = loaded(&root, executor).await;
+        let runner = session.extension_runner();
+        session
+            .bind_extensions(maestro_app::ExtensionBindings {
+                ui_context: Some(
+                    maestro_app::ExtensionUIContext::new(Rc::new(Ui::default())).into(),
+                ),
+                ..maestro_app::ExtensionBindings::default()
+            })
+            .await
+            .unwrap();
+        start(
+            &runner,
+            &format!("user@controlled:{}", fixture("remote").display()),
+        )
+        .await;
+        let tools = runner.get_all_registered_tools();
+        let write = tools
+            .iter()
+            .find(|tool| tool.metadata().definition.name == "write")
+            .unwrap();
+        let tool = maestro_app::wrap_registered_tool(write, runner);
+        let error = (tool.execute)(
+            "early-write".into(),
+            json!({"path":"early-write.txt","content":"x".repeat(2_000_000)}),
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("SSH failed (38): controlled remote write rejection"),
+            "{error}"
         );
     });
 }

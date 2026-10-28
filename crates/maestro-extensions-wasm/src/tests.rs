@@ -125,6 +125,7 @@ mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
 mod signal_callbacks;
+mod ssh_operations;
 mod status_line_example;
 mod stream_events;
 mod system_prompt_header_example;
