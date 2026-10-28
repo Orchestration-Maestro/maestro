@@ -3,6 +3,7 @@
 
 use crate::support::Root;
 mod errors;
+mod render;
 use maestro_app::AgentSession;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
