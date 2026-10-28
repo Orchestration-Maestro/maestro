@@ -1,7 +1,7 @@
 //! The example's shared domain-admission seam, without DNS or internet access.
 
 #[path = "../../../../examples/extensions/sandbox/network.rs"]
-mod network;
+pub(super) mod network;
 
 #[test]
 fn sandbox_domains_preserve_defaults_and_apply_denials_before_wildcards() {

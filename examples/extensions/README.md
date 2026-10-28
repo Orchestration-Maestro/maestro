@@ -123,6 +123,8 @@ resolving conflicts, then regenerate the table.
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
 | `sandbox.md` | Sandboxed bash |
+| `sandbox/config_data.rs` | Sandbox permission records and their shallow configuration composition. |
+| `sandbox/macos_profile.rs` | Native macOS authorization profile serialization. |
 | `sandbox/main.rs` | An opt-in filesystem and network sandbox for bash commands. |
 | `sandbox/network.rs` | Domain rules shared by both sandbox proxies. |
 | `sandbox/platform_commands.rs` | Platform command operands and lossless decoding of native path observations. |
