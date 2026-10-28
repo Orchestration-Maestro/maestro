@@ -1705,3 +1705,60 @@ fn allow_package_edits(fixture: &Fixture, admitted: bool) {
             .unwrap();
     }
 }
+
+/// Admission covers the intended delta even when preflight finds it already satisfied.
+#[test]
+fn admitted_noop_package_intents_recompute_after_acquisition() {
+    for admitted in [false, true] {
+        check_noop_package_intents(admitted);
+    }
+}
+
+/// Exercises each satisfied intent while another operation changes its entry.
+fn check_noop_package_intents(admitted: bool) {
+    for remove in [false, true] {
+        let initial = if remove {
+            json!([])
+        } else {
+            json!(["npm:pkg"])
+        };
+        let fixture = Fixture::new(&json!({"packages": initial}));
+        allow_package_edits(&fixture, admitted);
+        fixture.script.held.set(true);
+        let mut operation = if remove {
+            fixture.manager.remove_and_persist("npm:pkg", None)
+        } else {
+            Box::pin(async {
+                fixture
+                    .manager
+                    .install_and_persist("npm:pkg", None)
+                    .await
+                    .map(|()| true)
+            })
+        };
+        assert!(poll_once(&mut operation).is_none());
+        fixture.settings.borrow_mut().set_packages(if remove {
+            vec![PackageSource::Source("npm:pkg".into())]
+        } else {
+            Vec::new()
+        });
+        fixture.script.held.set(false);
+        assert!(poll_once(&mut operation).unwrap().unwrap());
+        assert_eq!(stored(&fixture), initial);
+    }
+}
+
+/// A publisher can forbid an explicit install even when the entry already exists.
+#[test]
+fn forbidden_existing_package_install_has_no_effects() {
+    let fixture = Fixture::new(&json!({"packages":["npm:pkg"]}));
+    fixture
+        .settings
+        .borrow_mut()
+        .register_decider(Arc::new(RefusePackageEdit))
+        .unwrap();
+    assert!(block_on(fixture.manager.install_and_persist("npm:pkg", None)).is_err());
+    assert!(fixture.calls().is_empty());
+    assert!(fixture.phases().is_empty());
+    assert_eq!(stored(&fixture), json!(["npm:pkg"]));
+}
