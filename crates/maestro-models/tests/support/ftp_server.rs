@@ -483,6 +483,10 @@ fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
 ///
 /// Closing with the client's bytes unread would answer them with a reset, and some hosts,
 /// macOS among them, report that reset to the client before the end of stream it follows.
+///
+/// # Errors
+/// Returns the write shutdown or read failure, except the broken pipe, reset, aborted and
+/// not-connected errors of a peer that already closed, which end the stream normally.
 fn end_stream(mut stream: &TcpStream) -> std::io::Result<()> {
     if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
         return if vanished(&error) { Ok(()) } else { Err(error) };
