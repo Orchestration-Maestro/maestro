@@ -362,6 +362,29 @@ async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn component_root_reaches_below_a_directory_it_may_search_but_not_list() {
+    if maestro_test_process::run_alone(
+        "component_root_reaches_below_a_directory_it_may_search_but_not_list",
+    )
+    .unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let searchable = scratch.path().join("searchable Ω");
+    std::fs::create_dir(&searchable).unwrap();
+    let target = searchable.join("file Ω name");
+    std::fs::write(&target, b"").unwrap();
+    // A privileged run lists every directory, so it has no unlistable parent to reach through.
+    let Some(_restore) = maestro_test_directory::deny(&searchable, 0o311).unwrap() else {
+        eprintln!("skipped: this process may list every directory");
+        return;
+    };
+    run(root_paths(std::slice::from_ref(&target), &target));
+}
+
 /// The drive spelling of a native path, without the verbatim prefix a canonical path keeps.
 #[cfg(windows)]
 fn plain(path: &Path) -> String {
